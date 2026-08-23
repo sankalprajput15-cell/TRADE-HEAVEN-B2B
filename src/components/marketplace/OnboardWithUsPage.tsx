@@ -126,6 +126,43 @@ export const OnboardWithUsPage: React.FC<Props> = ({
     }
   };
 
+  // One-click Auto-Fill with full dummy profile data & uploaded photo assets
+  const handleFillDemoProfile = (targetStep: number = 1) => {
+    setOnboardingType('VERIFIED_SUPPLIER');
+    setFullName('Alexander Vance');
+    setCorporateEmail('export@apexprecision-dynamics.com');
+    setPassword('ApexSecureTrade#2026');
+    setPhoneOrWhatsapp('+1 (302) 849-2100');
+    setCompanyName('Apex Precision Dynamics Ltd.');
+    setWebsiteUrl('https://apexprecision-dynamics.com');
+    setCountry('United States');
+    setCity('Wilmington, DE');
+    setBusinessType('Factory / Manufacturer');
+    setLegalRegistrationNumber('US-DE-CORP-8849201-B');
+    setTaxOrVatId('EIN-47-8392019');
+    setDunsNumber('08-392-1920');
+    setEstablishedYear(2012);
+    setAnnualTradeVolumeUsd('$50M - $100M+');
+    setSelectedCategories(['Industrial Machinery & CNC', 'Automotive Parts & Engines', 'Electrical & Robotics']);
+    setSelectedCertifications([
+      'ISO 9001:2015 (Quality)',
+      'CE Marking (European Conformity)',
+      'RoHS & REACH Compliant',
+      'SGS Verified Facility',
+      'TÜV Rheinland Audited'
+    ]);
+    setSelectedIncoterms(['FOB', 'CIF', 'EXW', 'DDP']);
+    setFactoryAddress('850 Precision Parkway, Industrial Park West, Wilmington, DE 19801');
+    setProductionCapacityOrRequirement('250,000 Precision Units / Year • 12 Multi-Axis CNC Workstations • 35,000 m² Audited Floor');
+    setVerificationDocName('ISO_9001_IATF_SGS_Audit_Report_2026.pdf');
+    setUploadedDocSize('3.8 MB (Verified PDF / KYC)');
+    setAgreedToVettingPolicy(true);
+    setError(null);
+    if (targetStep > 1) {
+      setStep(targetStep);
+    }
+  };
+
   // Step 1 Validation
   const handleNextToStep2 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,6 +371,49 @@ export const OnboardWithUsPage: React.FC<Props> = ({
               <p className="text-[10px] text-slate-500 hidden md:block">Instant Activation</p>
             </div>
 
+          </div>
+        </div>
+
+        {/* ONE-CLICK DEMO TEST & DIRECT PROFILE PREVIEW BANNER */}
+        <div className="mb-8 p-5 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl border border-blue-700/60 shadow-xl text-white flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-lg shrink-0 shadow-md">
+              ⚡
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-black text-sm tracking-wide text-white">Instant Demo &amp; Profile Explorer</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-bold">
+                  All Fields + Photos Ready
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Populate all registration steps with verified factory credentials or open the live Vendor Profile storefront.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              type="button"
+              id="demo-autofill-registration-btn"
+              onClick={() => handleFillDemoProfile(1)}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              <span>Fill Demo Registration</span>
+            </button>
+
+            <button
+              type="button"
+              id="demo-view-vendor-profile-btn"
+              onClick={() => onNavigate('VENDOR_PROFILE')}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs border border-blue-400/30 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Building2 className="w-4 h-4 text-blue-200" />
+              <span>View Vendor Profile Page</span>
+              <ExternalLink className="w-3.5 h-3.5 text-blue-200" />
+            </button>
           </div>
         </div>
 

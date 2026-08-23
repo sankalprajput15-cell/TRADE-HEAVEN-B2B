@@ -231,6 +231,10 @@ const MainApp: React.FC = () => {
       setActiveView('NEGOTIATION_ROOM');
       return;
     }
+    if (target === 'VENDOR_PROFILE' || target === 'VENDOR' || target === 'PROFILE' || target === 'STOREFRONT' || target === 'SUPPLIER_PROFILE' || target === 'DEMO_PROFILE') {
+      setActiveView('VENDOR_PROFILE');
+      return;
+    }
     if (target === 'CMS_MANAGEMENT' || target === 'CMS' || target === 'SITE_EDITOR') {
       setActiveView('CMS_MANAGEMENT');
       return;

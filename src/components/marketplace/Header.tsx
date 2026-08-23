@@ -340,6 +340,24 @@ export const Header: React.FC<Props> = ({
               Suppliers
             </button>
 
+            {/* Direct Vendor Profile Demo */}
+            <button
+              id="nav-link-vendor-profile"
+              onClick={() => handleNavClick('VENDOR_PROFILE')}
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'VENDOR_PROFILE'
+                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
+                  : 'text-blue-700 bg-blue-50/70 hover:bg-blue-100 hover:text-blue-900 border border-blue-200/60'
+              }`}
+              title="View full verified vendor profile with 16:9 banner, ISO certs, factory tour and RFQ form"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Vendor Profile</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black uppercase">
+                Demo
+              </span>
+            </button>
+
             <button
               id="nav-link-rfqs"
               onClick={() => handleNavClick('RFQ_HUB')}
@@ -655,6 +673,13 @@ export const Header: React.FC<Props> = ({
               className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
             >
               Verified Suppliers
+            </button>
+            <button
+              onClick={() => handleNavClick('VENDOR_PROFILE')}
+              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between cursor-pointer"
+            >
+              <span>Vendor Profile (Demo)</span>
+              <Building2 className="w-3.5 h-3.5 text-blue-600" />
             </button>
             <button
               onClick={() => handleNavClick('RFQ_HUB')}
