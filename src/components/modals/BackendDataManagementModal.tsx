@@ -1,0 +1,247 @@
+import React, { useState } from 'react';
+import { 
+  X, 
+  Database, 
+  Download, 
+  Upload, 
+  RefreshCw, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Trash2, 
+  Server, 
+  Sparkles,
+  Layers,
+  FileCode,
+  AlertTriangle
+} from 'lucide-react';
+import { api } from '../../services/apiService';
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const BackendDataManagementModal: React.FC<Props> = ({ isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState<'EXPORT' | 'RESTORE' | 'HEALTH'>('EXPORT');
+  const [jsonText, setJsonText] = useState('');
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleExportData = () => {
+    try {
+      const dump = {
+        exportedAt: new Date().toISOString(),
+        siteContent: localStorage.getItem('th_site_content'),
+        products: localStorage.getItem('th_products'),
+        rfqs: localStorage.getItem('th_rfqs'),
+        companies: localStorage.getItem('th_companies'),
+        orders: localStorage.getItem('th_orders'),
+        inquiries: localStorage.getItem('th_inquiries')
+      };
+      const formatted = JSON.stringify(dump, null, 2);
+      setJsonText(formatted);
+
+      // Download file
+      const blob = new Blob([formatted], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `trade-heaven-db-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setStatusMsg({ type: 'success', text: 'Database dump generated & downloaded successfully!' });
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: `Export failed: ${err.message}` });
+    }
+  };
+
+  const handleRestoreData = () => {
+    try {
+      if (!jsonText.trim()) {
+        setStatusMsg({ type: 'error', text: 'Please paste valid JSON database backup content.' });
+        return;
+      }
+
+      const parsed = JSON.parse(jsonText);
+      if (parsed.siteContent) localStorage.setItem('th_site_content', parsed.siteContent);
+      if (parsed.products) localStorage.setItem('th_products', parsed.products);
+      if (parsed.rfqs) localStorage.setItem('th_rfqs', parsed.rfqs);
+      if (parsed.companies) localStorage.setItem('th_companies', parsed.companies);
+      if (parsed.orders) localStorage.setItem('th_orders', parsed.orders);
+      if (parsed.inquiries) localStorage.setItem('th_inquiries', parsed.inquiries);
+
+      setStatusMsg({ type: 'success', text: 'Database state restored! Refreshing platform...' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: `Invalid JSON format: ${err.message}` });
+    }
+  };
+
+  const handleResetFactoryDefaults = () => {
+    if (window.confirm('Are you sure you want to reset all mock databases to clean factory defaults?')) {
+      localStorage.removeItem('th_site_content');
+      localStorage.removeItem('th_products');
+      localStorage.removeItem('th_rfqs');
+      localStorage.removeItem('th_companies');
+      localStorage.removeItem('th_orders');
+      localStorage.removeItem('th_inquiries');
+      setStatusMsg({ type: 'success', text: 'Reset completed! Reloading clean state...' });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl my-8 text-slate-900 relative">
+        
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
+            <Database className="w-4 h-4 text-amber-400" /> Database &amp; State Persistence Console
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white">
+            Live Database Backup &amp; JSON Engine
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
+            Export, import, inspect schemas, and administer realtime persisted storage entities.
+          </p>
+        </div>
+
+        {/* Status Message */}
+        {statusMsg && (
+          <div className={`p-4 border-b text-xs font-bold flex items-center gap-2 ${
+            statusMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}>
+            {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertTriangle className="w-4 h-4 text-rose-600" />}
+            <span>{statusMsg.text}</span>
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200 px-6 pt-4 gap-4 text-xs font-bold bg-slate-50">
+          <button
+            onClick={() => setActiveTab('EXPORT')}
+            className={`pb-3 cursor-pointer ${activeTab === 'EXPORT' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            Export Backup
+          </button>
+          <button
+            onClick={() => setActiveTab('RESTORE')}
+            className={`pb-3 cursor-pointer ${activeTab === 'RESTORE' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            Restore JSON Dump
+          </button>
+          <button
+            onClick={() => setActiveTab('HEALTH')}
+            className={`pb-3 cursor-pointer ${activeTab === 'HEALTH' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            System Diagnostics
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6 sm:p-8 space-y-4 text-xs">
+          {activeTab === 'EXPORT' && (
+            <div className="space-y-4">
+              <p className="text-slate-600">
+                Generate an all-in-one JSON snapshot containing all CMS content overrides, registered products, active RFQ tenders, escrow transactions, and support tickets.
+              </p>
+
+              <button
+                onClick={handleExportData}
+                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Generate &amp; Download Full Database Backup (.JSON)</span>
+              </button>
+
+              {jsonText && (
+                <div className="space-y-1 pt-2">
+                  <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">Snapshot Preview:</span>
+                  <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl font-mono text-[11px] max-h-48 overflow-y-auto">
+                    {jsonText.slice(0, 1000)}...
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'RESTORE' && (
+            <div className="space-y-4">
+              <p className="text-slate-600">
+                Paste a previous Trade Heaven database JSON export to restore your catalog, customized header/footer CMS text, and active negotiations.
+              </p>
+
+              <textarea
+                rows={6}
+                placeholder="Paste backup JSON string here..."
+                value={jsonText}
+                onChange={e => setJsonText(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-[11px] text-slate-900 focus:outline-none focus:border-blue-500"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRestoreData}
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Restore From JSON</span>
+                </button>
+
+                <button
+                  onClick={handleResetFactoryDefaults}
+                  className="px-4 py-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Reset All</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'HEALTH' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 font-semibold">API Microservices:</span>
+                  <div className="font-bold text-slate-900 text-sm mt-0.5 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span> 100% Operational
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 font-semibold">Swiss Escrow Rail:</span>
+                  <div className="font-bold text-slate-900 text-sm mt-0.5 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Connected (FINMA PSD2)
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-blue-900 text-xs">
+                <div className="font-bold">Persistent Storage Engine:</div>
+                <div className="text-[11px] text-blue-800 mt-0.5">
+                  Synchronized with browser LocalStorage state layer and mock REST endpoints in <code>src/services/apiService.ts</code>.
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

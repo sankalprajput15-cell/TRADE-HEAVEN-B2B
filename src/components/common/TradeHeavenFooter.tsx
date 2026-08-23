@@ -1,0 +1,407 @@
+import React from 'react';
+import { 
+  ShieldCheck, 
+  Globe2, 
+  ExternalLink, 
+  Database, 
+  Lock, 
+  Star, 
+  Send, 
+  Award, 
+  CheckCircle2,
+  Mail,
+  Phone,
+  Building2,
+  Layers,
+  HeartHandshake,
+  Headphones,
+  MessageCircle,
+  Clock,
+  Edit3
+} from 'lucide-react';
+import { TradeHeavenLogo } from './TradeHeavenLogo';
+import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from './TradeHeavenSocialBar';
+import { ActiveView, AuthUser } from '../../types';
+import { useSiteContent } from '../../context/SiteContentContext';
+
+interface Props {
+  onNavigate: (view: ActiveView | string) => void;
+  onOpenBackendModal?: () => void;
+  totalProductsCount?: number;
+  totalRfqsCount?: number;
+  currentUser?: AuthUser | null;
+  onContactClick?: () => void;
+  onOpenAuthModal?: () => void;
+}
+
+export const TradeHeavenFooter: React.FC<Props> = ({
+  onNavigate,
+  onOpenBackendModal,
+  totalProductsCount = 1200,
+  totalRfqsCount = 350,
+  currentUser,
+  onContactClick,
+  onOpenAuthModal
+}) => {
+  const { siteContent, isUserAuthorized, isLiveEditMode, openQuickEdit, currentUser: contextUser } = useSiteContent();
+  const effectiveUser = currentUser || contextUser || null;
+  const userAuth = isUserAuthorized(effectiveUser);
+  const isAdmin = Boolean(
+    effectiveUser && (
+      effectiveUser.role === 'ADMIN' || 
+      userAuth.isSuperAdmin || 
+      userAuth.isAuthorized
+    )
+  );
+
+  const [showAdminNotice, setShowAdminNotice] = React.useState<boolean>(false);
+
+  const handleCmsClick = () => {
+    if (isAdmin) {
+      onNavigate('CMS_MANAGEMENT');
+    } else {
+      setShowAdminNotice(true);
+      if (onOpenAuthModal) {
+        onOpenAuthModal();
+      }
+      setTimeout(() => setShowAdminNotice(false), 5000);
+    }
+  };
+
+  const brand = siteContent.brand;
+  const hf = siteContent.headerAndFooter;
+
+  const whatsappPhone = brand.whatsappNumber || OFFICIAL_WHATSAPP_DATA.phone;
+  const whatsappUrl = brand.whatsappUrl || OFFICIAL_WHATSAPP_DATA.url;
+  const supportEmail = brand.supportEmail || 'help@tradeheaven.net';
+
+  const handleContactOpen = () => {
+    if (onContactClick) {
+      onContactClick();
+    } else {
+      onNavigate('CONTACT_US');
+    }
+  };
+
+  return (
+    <footer id="trade-heaven-global-footer" className="relative mt-16 bg-slate-950 text-slate-400 text-xs border-t border-slate-800 group">
+      
+      {/* Live Edit Mode Trigger Button */}
+      {isLiveEditMode && (
+        <button
+          type="button"
+          onClick={() => openQuickEdit('FOOTER')}
+          className="absolute top-4 right-4 z-20 px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-xl hover:bg-amber-300 transition-all cursor-pointer"
+        >
+          <Edit3 className="w-3.5 h-3.5" />
+          <span>Edit Footer &amp; Legal</span>
+        </button>
+      )}
+
+      {/* Top Banner: Corporate Guarantee & TrustScore */}
+      <div className="border-b border-slate-800/80 bg-slate-900/60 px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 text-center md:text-left">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-xs">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>100% Escrow &amp; Verified Factory Assurance</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-bold text-xs">
+              <Headphones className="w-3.5 h-3.5 text-blue-400" />
+              <span>H2H Human-to-Human Dedicated Account Support</span>
+            </div>
+          </div>
+          {/* Social Links Row */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-400 mr-1">Follow {brand.siteName || 'Trade Heaven'}:</span>
+            {SOCIAL_LINKS.map(item => {
+              const Icon = item.icon;
+              return (
+                <a
+                  key={item.name}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Trade Heaven on ${item.name}`}
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all group"
+                >
+                  <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Multi-Column Footer */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6">
+          
+          {/* Column 1: Brand & Mission (2 cols on lg) */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center gap-3">
+              <TradeHeavenLogo size="md" variant="gold" showWordmark={true} />
+            </div>
+            <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
+              {hf?.footerMission || "Trade Heaven is an international B2B marketplace and export portal connecting verified global buyers with vetted manufacturing plants across 180+ countries."}
+            </p>
+            <div className="space-y-2 text-[11px] text-slate-400">
+              <div className="flex items-center gap-2">
+                <Globe2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>Global Sourcing in Europe, Asia, Americas &amp; Middle East</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <HeartHandshake className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>IEM (International Export Manager) Strategic Services</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Verified Supplier Audits with SGS, Bureau Veritas &amp; TÜV</span>
+              </div>
+            </div>
+            {/* Official Social Badges */}
+            <div className="pt-2">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Official Media Channels
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {SOCIAL_LINKS.map(s => (
+                  <a
+                    key={s.name}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-blue-600 hover:text-white border border-slate-800 text-slate-300 text-[10px] font-bold transition-colors inline-flex items-center gap-1"
+                  >
+                    <span>{s.name}</span>
+                    <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Sourcing & Buy Leads */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Buyer Sourcing Hub
+            </h4>
+            <ul className="space-y-2 text-xs">
+              <li>
+                <button onClick={() => onNavigate('PRODUCT_DIRECTORY')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Verified Product Catalog
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('BUY_LEADS')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Global Buy Leads Feed
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('POST_BUY_REQUIREMENT')} className="hover:text-amber-400 transition-colors text-left font-bold text-blue-400 cursor-pointer">
+                  Post Buy Requirement (RFQ)
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('SUPPLIERS_DIRECTORY')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Audited Factories Directory
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('RFQ_HUB')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  RFQ Comparison Studio
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Incoterms &amp; Freight Tools
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Supplier & Membership */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Suppliers &amp; Exporters
+            </h4>
+            <ul className="space-y-2 text-xs">
+              <li>
+                <button onClick={() => onNavigate('ONBOARD_WITH_US')} className="hover:text-emerald-300 transition-colors text-left font-black text-emerald-400 flex items-center gap-1.5 cursor-pointer">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Work With Us (Free Vetting)</span>
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('SELLER_OFFER')} className="hover:text-amber-400 transition-colors text-left font-bold text-slate-300 cursor-pointer">
+                  Post Export Cargo Offer
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('PREMIUM_PLANS')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Gold &amp; VIP Membership Tiers
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('CLIENT_PORTAL')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Exporter Client Admin Portal
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('TRADE_ESCROW')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Custodial Escrow Vaults
+                </button>
+              </li>
+              <li className="relative">
+                <button 
+                  id="footer-cms-admin-btn"
+                  onClick={handleCmsClick} 
+                  className={`transition-colors text-left font-bold cursor-pointer flex items-center gap-1.5 ${
+                    isAdmin 
+                      ? 'text-amber-400 hover:text-amber-300' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title={isAdmin ? "Full-Site CMS Editor (Admin Access Granted)" : "Full-Site CMS Editor (Admin Credentials Required)"}
+                >
+                  {isAdmin ? (
+                    <>
+                      <span>Full-Site CMS Editor</span>
+                      <span className="text-[9px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
+                        Admin
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span>Full-Site CMS Editor</span>
+                      <span className="text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded font-semibold uppercase">
+                        Admin Only
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                {showAdminNotice && (
+                  <div className="absolute left-0 bottom-full mb-2 z-30 w-64 p-3 rounded-2xl bg-slate-900 border border-amber-500/40 text-amber-300 text-[11px] shadow-2xl space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                      <Lock className="w-3.5 h-3.5 shrink-0" />
+                      <span>Admin Authorization Required</span>
+                    </div>
+                    <p className="text-[10px] text-slate-300 leading-tight">
+                      The Full-Site CMS Editor is restricted to System Administrators. Please sign in with an Administrator account.
+                    </p>
+                    {onOpenAuthModal && (
+                      <button
+                        onClick={onOpenAuthModal}
+                        className="w-full mt-1 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-lg text-[10px] cursor-pointer transition-colors shadow-xs"
+                      >
+                        Sign In as Administrator
+                      </button>
+                    )}
+                  </div>
+                )}
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Contact & WhatsApp Desk */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+              Official Help Desk &amp; Direct
+            </h4>
+
+            <div className="space-y-2.5">
+              {/* Help Desk Email Card */}
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 text-blue-400 font-bold text-xs">
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    <span>Official Help Desk</span>
+                  </div>
+                  <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    24/7
+                  </span>
+                </div>
+                <div className="font-mono text-xs font-bold text-white tracking-wide truncate">
+                  {supportEmail}
+                </div>
+                <p className="text-[10px] text-slate-300 leading-tight">
+                  Dispatches immediately to senior trade managers &amp; escrow team.
+                </p>
+                <button
+                  id="footer-open-contact-form-btn"
+                  onClick={handleContactOpen}
+                  className="w-full mt-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Open Contact Form</span>
+                </button>
+              </div>
+
+              {/* WhatsApp Card */}
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-[#25D366]/10 to-emerald-900/20 border border-[#25D366]/30 space-y-1.5">
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                    <span>Official WhatsApp</span>
+                  </div>
+                  <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30">
+                    Live
+                  </span>
+                </div>
+                <div className="font-mono text-xs font-bold text-white tracking-wide">
+                  {whatsappPhone}
+                </div>
+                <a
+                  id="footer-whatsapp-chat-btn"
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full mt-1 px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Corporate Trust & Legal Strip */}
+        <div className="mt-10 pt-6 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+            <span className="font-bold text-slate-300">{hf?.footerCopyright || '© 2025–2026 Trade Heaven Inc. All rights reserved.'}</span>
+            <span className="hidden sm:inline text-slate-700">•</span>
+            <span className="text-slate-400">{hf?.footerIsoText || 'ISO 9001 & ISO 27001 Certified Enterprise'}</span>
+            <span className="hidden sm:inline text-slate-700">•</span>
+            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              PCI-DSS Level 1 Escrow Vault
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-400">
+            <button onClick={() => onNavigate('REFUND_POLICY')} className="hover:text-white transition-colors text-slate-300 font-semibold underline decoration-slate-700 underline-offset-4 cursor-pointer">
+              Return &amp; Refund Policy
+            </button>
+            <span className="text-slate-700">•</span>
+            <button onClick={handleContactOpen} className="hover:text-white transition-colors cursor-pointer">
+              Help Center
+            </button>
+            <span className="text-slate-700">•</span>
+            <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-white transition-colors cursor-pointer">
+              Incoterms 2020 Rules
+            </button>
+            <span className="text-slate-700">•</span>
+            <button onClick={handleContactOpen} className="hover:text-white transition-colors cursor-pointer">
+              Dispute Mediation
+            </button>
+            <span className="text-slate-700">•</span>
+            <a href={`mailto:${supportEmail}`} className="hover:text-white font-mono transition-colors text-blue-400">
+              {supportEmail}
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};

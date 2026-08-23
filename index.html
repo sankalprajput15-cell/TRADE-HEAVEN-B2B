@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trade Heaven - B2B Marketplace & Architecture Blueprint</title>
+    <script>
+      (function() {
+        try {
+          if (typeof window !== 'undefined') {
+            var _nativeFetch = window.fetch ? window.fetch.bind(window) : undefined;
+            var _activeFetch = _nativeFetch;
+            var desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+            if (!desc || desc.configurable || !desc.set) {
+              Object.defineProperty(window, 'fetch', {
+                get: function() {
+                  return _activeFetch;
+                },
+                set: function(val) {
+                  _activeFetch = typeof val === 'function' ? val : _activeFetch;
+                },
+                configurable: true,
+                enumerable: true
+              });
+            }
+          }
+        } catch (e) {
+          // Fallback gracefully
+        }
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23000000'/><path d='M 14 24 H 48 V 35 H 36 V 76 H 26 V 35 H 14 Z M 54 24 H 64 V 45 H 78 V 24 H 88 V 76 H 78 V 55 H 64 V 76 H 54 Z' fill='%23ffffff'/></svg>" />
+    <meta name="description" content="Production-ready enterprise architectural blueprint, technical specification suite, and interactive B2B international trade marketplace platform." />
+    <meta property="og:title" content="Trade Heaven - B2B Marketplace & Architecture Blueprint" />
+    <meta property="og:description" content="Enterprise B2B trade engine & architectural blueprint." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
