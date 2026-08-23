@@ -148,25 +148,31 @@ export const AuthModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto font-sans">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl my-8 text-slate-900 relative animate-in fade-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden font-sans"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-md max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col shadow-2xl relative text-slate-900 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-100/80 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white/90 hover:text-white transition-colors cursor-pointer shadow-sm"
           aria-label="Close authentication modal"
+          title="Close Modal"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7">
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1.5">
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 shrink-0 pr-14">
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Secure Enterprise Authentication</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">
+          <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
             {currentUser 
               ? 'Verified Account Credentials' 
               : (authMode === 'LOGIN' 
@@ -186,7 +192,7 @@ export const AuthModal: React.FC<Props> = ({
 
         {/* ACTIVE SESSION VIEW (When Logged In) */}
         {currentUser ? (
-          <div className="p-6 space-y-5">
+          <div className="p-4 sm:p-6 space-y-5 flex-1 overflow-y-auto">
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-200 border border-slate-300 shrink-0">
                 <SafeImage src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
@@ -283,7 +289,7 @@ export const AuthModal: React.FC<Props> = ({
             </button>
           </div>
         ) : (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
             {/* Mode Switcher: Sign In vs Register Free vs Work With Us */}
             <div className="grid grid-cols-3 bg-slate-100 p-1 rounded-xl gap-1 text-[11px] font-bold">
               <button

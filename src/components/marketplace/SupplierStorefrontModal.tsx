@@ -86,17 +86,23 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-5xl overflow-hidden shadow-2xl my-8 text-slate-900 relative">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-5xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden shadow-2xl relative text-slate-900 animate-in fade-in zoom-in-95 duration-150">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/90 text-slate-700 hover:text-slate-950 hover:bg-white transition-colors shadow-sm cursor-pointer"
+          className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white/90 hover:text-white transition-colors shadow-md cursor-pointer"
+          title="Close Modal"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div ref={modalContainerRef} className="max-h-[85vh] overflow-y-auto space-y-5">
+        <div ref={modalContainerRef} className="overflow-y-auto space-y-5 flex-1 pb-6">
           {/* Company Hero Banner */}
           <div className="relative h-52 sm:h-64 w-full bg-slate-100">
             <img

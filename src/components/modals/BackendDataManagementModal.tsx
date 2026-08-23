@@ -47,11 +47,17 @@ export const BackendDataManagementModal: React.FC<Props> = ({
 
   if (!isAdmin) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
-        <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl my-8 text-slate-900 relative p-6 sm:p-8 text-center space-y-5 animate-in zoom-in-95 duration-150">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-md max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] overflow-y-auto shadow-2xl text-slate-900 relative p-6 sm:p-8 text-center space-y-5 animate-in zoom-in-95 duration-150">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+            title="Close Modal"
           >
             <X className="w-4 h-4" />
           </button>
@@ -180,23 +186,29 @@ export const BackendDataManagementModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl my-8 text-slate-900 relative">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col shadow-2xl relative text-slate-900 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white/90 hover:text-white transition-colors cursor-pointer shadow-sm"
+          title="Close Modal"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8">
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 shrink-0 pr-14">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
             <Database className="w-4 h-4 text-amber-400" /> Database &amp; State Persistence Console
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">
+          <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
             Live Database Backup &amp; JSON Engine
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
@@ -206,7 +218,7 @@ export const BackendDataManagementModal: React.FC<Props> = ({
 
         {/* Status Message */}
         {statusMsg && (
-          <div className={`p-4 border-b text-xs font-bold flex items-center gap-2 ${
+          <div className={`p-3.5 border-b text-xs font-bold flex items-center gap-2 shrink-0 ${
             statusMsg.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
           }`}>
             {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertTriangle className="w-4 h-4 text-rose-600" />}
@@ -215,29 +227,29 @@ export const BackendDataManagementModal: React.FC<Props> = ({
         )}
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 px-6 pt-4 gap-4 text-xs font-bold bg-slate-50">
+        <div className="flex border-b border-slate-200 px-4 sm:px-6 pt-3 gap-4 text-xs font-bold bg-slate-50 shrink-0">
           <button
             onClick={() => setActiveTab('EXPORT')}
-            className={`pb-3 cursor-pointer ${activeTab === 'EXPORT' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`pb-2.5 cursor-pointer ${activeTab === 'EXPORT' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Export Backup
           </button>
           <button
             onClick={() => setActiveTab('RESTORE')}
-            className={`pb-3 cursor-pointer ${activeTab === 'RESTORE' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`pb-2.5 cursor-pointer ${activeTab === 'RESTORE' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Restore JSON Dump
           </button>
           <button
             onClick={() => setActiveTab('HEALTH')}
-            className={`pb-3 cursor-pointer ${activeTab === 'HEALTH' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`pb-2.5 cursor-pointer ${activeTab === 'HEALTH' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
           >
             System Diagnostics
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6 sm:p-8 space-y-4 text-xs">
+        <div className="p-4 sm:p-6 md:p-7 space-y-4 text-xs flex-1 overflow-y-auto">
           {activeTab === 'EXPORT' && (
             <div className="space-y-4">
               <p className="text-slate-600">

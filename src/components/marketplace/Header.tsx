@@ -3,7 +3,6 @@ import { Currency, UserRole, ActiveView, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { SafeImage } from '../common/SafeImage';
-import { QuickControlsModal } from '../modals/QuickControlsModal';
 import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { 
@@ -86,7 +85,6 @@ export const Header: React.FC<Props> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const [isQuickControlsOpen, setIsQuickControlsOpen] = useState(false);
 
   const auth = isUserAuthorized(currentUser);
   const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
@@ -228,17 +226,6 @@ export const Header: React.FC<Props> = ({
                 ))}
               </select>
             </div>
-
-            {/* Workspace & Role Quick Switcher */}
-            <button
-              id="top-quick-controls-btn"
-              onClick={() => setIsQuickControlsOpen(true)}
-              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border border-slate-700/80 cursor-pointer shadow-2xs"
-              title="Workspace Mode & Trading Preferences"
-            >
-              <Sliders className="w-3 h-3 text-blue-400" />
-              <span className="font-bold">Workspace</span>
-            </button>
 
             {/* AUTHENTICATION CONTROL SECTION */}
             {currentUser ? (
@@ -451,20 +438,6 @@ export const Header: React.FC<Props> = ({
                       <div className="text-[10px] text-slate-400 font-normal">30-Day Escrow Terms &amp; Compliance</div>
                     </div>
                   </button>
-                  <button
-                    id="menu-quick-controls-btn"
-                    onClick={() => {
-                      setServicesMenuOpen(false);
-                      setIsQuickControlsOpen(true);
-                    }}
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-blue-50 flex items-center gap-2.5 text-blue-900 border-t border-slate-100 cursor-pointer"
-                  >
-                    <Sliders className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>Workspace &amp; Quick Controls</div>
-                      <div className="text-[10px] text-slate-500 font-normal">Currencies, preferences &amp; roles</div>
-                    </div>
-                  </button>
                 </div>
               )}
             </div>
@@ -543,21 +516,7 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
               </div>
-            ) : (
-              <button
-                id="nav-link-admin"
-                onClick={() => handleNavClick('CLIENT_ADMIN')}
-                className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                  activeView === 'CLIENT_ADMIN'
-                    ? 'bg-amber-100 text-amber-900 font-extrabold'
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                }`}
-                title="Admin Suite (Restricted)"
-              >
-                <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                <span>Admin</span>
-              </button>
-            )}
+            ) : null}
           </nav>
 
           {/* Right: Key Direct Action Cluster */}
@@ -601,7 +560,7 @@ export const Header: React.FC<Props> = ({
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
-              title="Trade Workspace Dashboard"
+              title="Trade Dashboard"
             >
               <LayoutDashboard className="w-4 h-4 shrink-0" />
             </button>
@@ -709,13 +668,14 @@ export const Header: React.FC<Props> = ({
             >
               Buy Leads Feed
             </button>
-            <button
-              onClick={() => handleNavClick('CLIENT_ADMIN')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-between cursor-pointer"
-            >
-              <span>Admin Suite</span>
-              {!isAdmin && <Lock className="w-3 h-3 text-slate-400" />}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => handleNavClick('CLIENT_ADMIN')}
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-between cursor-pointer"
+              >
+                <span>Admin Suite</span>
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => handleNavClick('CMS_MANAGEMENT')}
@@ -750,17 +710,6 @@ export const Header: React.FC<Props> = ({
               Refund Policy
             </button>
             <button
-              id="mobile-quick-controls-btn"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                setIsQuickControlsOpen(true);
-              }}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-between cursor-pointer"
-            >
-              <span>Workspace Controls</span>
-              <Sliders className="w-3.5 h-3.5 text-blue-600" />
-            </button>
-            <button
               onClick={() => handleNavClick('CONTACT_US')}
               className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between col-span-2 cursor-pointer"
             >
@@ -784,28 +733,6 @@ export const Header: React.FC<Props> = ({
           </button>
         </div>
       )}
-
-      {/* QUICK CONTROLS MODAL */}
-      <QuickControlsModal
-        isOpen={isQuickControlsOpen}
-        onClose={() => setIsQuickControlsOpen(false)}
-        activeView={activeView}
-        setActiveView={handleNavClick}
-        selectedCurrency={selectedCurrency}
-        setSelectedCurrency={setSelectedCurrency}
-        currentUser={currentUser}
-        currentUserRole={currentUserRole}
-        setCurrentUserRole={setCurrentUserRole}
-        onOpenCreateRfq={() => {
-          setIsQuickControlsOpen(false);
-          onOpenCreateRfq();
-        }}
-        onOpenBackendManager={onOpenBackendManager}
-        onOpenAuthModal={() => {
-          setIsQuickControlsOpen(false);
-          onOpenAuthModal();
-        }}
-      />
     </header>
   );
 };

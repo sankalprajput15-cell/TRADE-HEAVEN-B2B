@@ -103,22 +103,28 @@ export const RfqCreationModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl my-8 text-slate-900 relative">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-3xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col shadow-2xl relative text-slate-900 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-white/90 hover:text-white transition-colors cursor-pointer shadow-sm"
+          title="Close Modal"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Modal Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8">
+        {/* Modal Header (Fixed at top of modal) */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 md:p-7 shrink-0 pr-14">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
             <Sparkles className="w-4 h-4" /> Global Sourcing RFQ Dispatch
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">
+          <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
             Post Buy Requirement &amp; Request Factory Quotes
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl font-normal">
@@ -127,7 +133,7 @@ export const RfqCreationModal: React.FC<Props> = ({
         </div>
 
         {isSuccess ? (
-          <div className="p-12 text-center space-y-4">
+          <div className="p-8 sm:p-12 text-center space-y-4 flex-1 overflow-y-auto">
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-10 h-10" />
             </div>
@@ -135,9 +141,16 @@ export const RfqCreationModal: React.FC<Props> = ({
             <p className="text-xs text-slate-600 max-w-md mx-auto">
               Your sourcing requirement has been dispatched to audited manufacturers matching the <strong>{category}</strong> vertical.
             </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
+            >
+              Close &amp; Return to Marketplace
+            </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5 max-h-[75vh] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 md:p-7 space-y-5 flex-1 overflow-y-auto">
             {/* Step 1: Product Definition */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">

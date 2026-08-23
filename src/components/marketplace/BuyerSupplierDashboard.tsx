@@ -51,7 +51,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Enterprise B2B Trade &amp; Escrow Workspace</span>
+            <span>Enterprise B2B Trade &amp; Escrow Center</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
             {currentUserRole === 'SUPPLIER' ? 'Manufacturer & Exporter Console' : 'Global Procurement & Sourcing Dashboard'}
