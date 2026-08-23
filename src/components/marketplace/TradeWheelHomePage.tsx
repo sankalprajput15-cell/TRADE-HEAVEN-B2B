@@ -49,7 +49,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;

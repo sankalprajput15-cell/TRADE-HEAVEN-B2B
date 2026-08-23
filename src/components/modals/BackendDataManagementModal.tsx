@@ -12,21 +12,95 @@ import {
   Sparkles,
   Layers,
   FileCode,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  LogIn
 } from 'lucide-react';
 import { api } from '../../services/apiService';
+import { AuthUser } from '../../types';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  currentUser?: AuthUser | null;
+  onOpenAuthModal?: () => void;
 }
 
-export const BackendDataManagementModal: React.FC<Props> = ({ isOpen, onClose }) => {
+export const BackendDataManagementModal: React.FC<Props> = ({ 
+  isOpen, 
+  onClose,
+  currentUser,
+  onOpenAuthModal
+}) => {
   const [activeTab, setActiveTab] = useState<'EXPORT' | 'RESTORE' | 'HEALTH'>('EXPORT');
   const [jsonText, setJsonText] = useState('');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   if (!isOpen) return null;
+
+  const isAdmin = Boolean(
+    currentUser && (
+      currentUser.role === 'ADMIN' || 
+      (currentUser.email && currentUser.email.toLowerCase() === 'admin@tradeheaven.net')
+    )
+  );
+
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto">
+        <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl my-8 text-slate-900 relative p-6 sm:p-8 text-center space-y-5 animate-in zoom-in-95 duration-150">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-2.5 py-0.5 rounded-full">
+              Restricted Console
+            </span>
+            <h3 className="text-lg font-black text-slate-900">
+              Admin Access Only
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-xs mx-auto">
+              The Database Sandbox &amp; State Persistence Console is restricted exclusively to System Administrators.
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-500 space-y-1">
+            <div className="font-bold text-slate-700">Required Credentials:</div>
+            <div>Role: <span className="font-mono text-slate-900 font-semibold">ADMIN</span> or root admin account</div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+            >
+              Cancel
+            </button>
+            {onOpenAuthModal && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAuthModal();
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-colors"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Admin Login</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleExportData = () => {
     try {
@@ -61,6 +135,15 @@ export const BackendDataManagementModal: React.FC<Props> = ({ isOpen, onClose })
     try {
       if (!jsonText.trim()) {
         setStatusMsg({ type: 'error', text: 'Please paste valid JSON database backup content.' });
+        return;
+      }
+
+      // Safeguard: Limit restore payload size to prevent browser localStorage quota crash (max 4MB string)
+      if (jsonText.length > 4 * 1024 * 1024) {
+        setStatusMsg({ 
+          type: 'error', 
+          text: `JSON payload is too large (${(jsonText.length / (1024 * 1024)).toFixed(1)} MB). Limit is 4 MB to prevent browser memory freezing.` 
+        });
         return;
       }
 

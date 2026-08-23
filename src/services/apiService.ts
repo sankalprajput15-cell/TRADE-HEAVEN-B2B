@@ -171,8 +171,8 @@ export const api = {
       }
 
       // Check registered users in local storage
-      const stored = loadStoredUsers();
-      const matched = Object.values(stored).find(u => u.email.toLowerCase().trim() === clean);
+      const stored = loadStoredUsers() || {};
+      const matched = Object.values(stored || {}).find(u => u && u.email && u.email.toLowerCase().trim() === clean);
       if (matched && password) {
         const token = securityService.generateSessionToken(matched);
         const userWithToken = { ...matched, token };
@@ -317,12 +317,12 @@ export const api = {
         totalEmployees: '250+',
         annualRevenueUsd: application.annualTradeVolumeUsd || '$10M - $25M',
         mainMarkets: ['North America', 'European Union', 'Middle East', 'Southeast Asia'],
-        certifications: application.certifications.length > 0 ? application.certifications : ['ISO 9001:2015', 'CE Certified'],
+        certifications: (application.certifications?.length ?? 0) > 0 ? application.certifications : ['ISO 9001:2015', 'CE Certified'],
         factorySizeSqM: 18000,
         productionLines: 6,
         logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&auto=format&fit=crop&q=80',
         bannerUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200&auto=format&fit=crop&q=80',
-        description: `Verified manufacturer & exporter specializing in ${application.primaryCategories.join(', ') || 'industrial manufacturing'}. Audited facility with guaranteed compliance and Swiss escrow backing.`,
+        description: `Verified manufacturer & exporter specializing in ${(application.primaryCategories || []).join(', ') || 'industrial manufacturing'}. Audited facility with guaranteed compliance and Swiss escrow backing.`,
         contactPerson: application.fullName,
         contactEmail: application.corporateEmail,
         contactPhone: application.phoneOrWhatsapp,
@@ -365,8 +365,8 @@ export const api = {
     if (token) {
       const payload = securityService.verifySessionToken(token);
       if (payload) {
-        const stored = loadStoredUsers();
-        const existing = Object.values(stored).find(u => u.id === payload.uid);
+        const stored = loadStoredUsers() || {};
+        const existing = Object.values(stored || {}).find(u => u && u.id === payload.uid);
         return {
           id: payload.uid,
           email: payload.email,
@@ -775,7 +775,7 @@ export const api = {
     updates: Partial<RfqRequirement>,
     callerUser?: AuthUser | null
   ): Promise<{ success: boolean; data?: RfqRequirement; error?: string; message?: string }> {
-    const existing = activeRfqsStore.find(r => r.id === id);
+    const existing = (activeRfqsStore || []).find(r => r && r.id === id);
     if (!existing) {
       return { success: false, error: 'RFQ not found' };
     }
@@ -787,14 +787,14 @@ export const api = {
     }
 
     const updated = { ...existing, ...updates };
-    activeRfqsStore = activeRfqsStore.map(r => r.id === id ? updated : r);
+    activeRfqsStore = (activeRfqsStore || []).map(r => r.id === id ? updated : r);
     persistStoredRfqs(activeRfqsStore);
 
     return { success: true, data: updated, message: 'RFQ updated successfully' };
   },
 
   async deleteRfq(id: string, callerUser?: AuthUser | null): Promise<{ success: boolean; error?: string; message?: string }> {
-    const existing = activeRfqsStore.find(r => r.id === id);
+    const existing = (activeRfqsStore || []).find(r => r && r.id === id);
     if (existing) {
       const ownership = securityService.enforceOwnership(callerUser || null, existing.ownerUid || 'user-buyer-001', 'RFQ Requirement');
       if (!ownership.allowed) {
@@ -802,7 +802,7 @@ export const api = {
       }
     }
 
-    activeRfqsStore = activeRfqsStore.filter(r => r.id !== id);
+    activeRfqsStore = (activeRfqsStore || []).filter(r => r.id !== id);
     persistStoredRfqs(activeRfqsStore);
     return { success: true, message: 'RFQ deleted' };
   },
@@ -813,7 +813,7 @@ export const api = {
   async getSuppliers(callerUser?: AuthUser | null): Promise<CompanyProfile[]> {
     // SERVER-SIDE CONTACT DATA GATING
     // Free and Guest users receive masked contacts. Verified paid premium members & Admins receive unmasked.
-    return activeSuppliersStore.map(company => 
+    return (activeSuppliersStore || []).map(company => 
       securityService.gateCompanyProfile(company, callerUser || null)
     );
   },
@@ -823,7 +823,7 @@ export const api = {
     updates: Partial<CompanyProfile>,
     callerUser?: AuthUser | null
   ): Promise<{ success: boolean; data?: CompanyProfile; error?: string; message?: string }> {
-    const existing = activeSuppliersStore.find(c => c.id === id);
+    const existing = (activeSuppliersStore || []).find(c => c && c.id === id);
     if (!existing) {
       return { success: false, error: 'Supplier company profile not found' };
     }

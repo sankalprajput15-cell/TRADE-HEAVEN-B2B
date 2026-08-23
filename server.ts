@@ -288,6 +288,108 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// CMS Site Content in-memory cache on server
+let serverSiteContent: any = null;
+let serverAuthorizedUsers = [
+  {
+    id: 'perm-admin-001',
+    email: ADMIN_EMAIL,
+    name: 'Sarah Jenkins',
+    role: 'ADMIN',
+    companyName: 'Trade Heaven Global Operations & Treasury',
+    grantedBy: 'System Root',
+    grantedAt: '2025-01-01',
+    scopes: ['ALL_ADMIN', 'EDIT_CONTENT', 'EDIT_PRICING', 'EDIT_MEDIA', 'PUBLISH_PRODUCTS', 'MANAGE_PERMISSIONS'],
+    status: 'ACTIVE',
+    notes: 'Super Administrator with unconditional global rights'
+  },
+  {
+    id: 'perm-delegated-001',
+    email: 'marcus.vance@tradeheaven-audit.org',
+    name: 'Dr. Marcus Vance',
+    role: 'VERIFIER',
+    companyName: 'SGS / TUV Verified Trade Audit Bureau',
+    grantedBy: 'Sarah Jenkins (Super Admin)',
+    grantedAt: '2025-02-15',
+    scopes: ['EDIT_CONTENT', 'EDIT_MEDIA', 'PUBLISH_PRODUCTS'],
+    status: 'ACTIVE',
+    notes: 'Senior Verifier delegated to update audit notices and directory media'
+  }
+];
+
+let serverAccessRequests = [
+  {
+    id: 'req-001',
+    userId: 'user-supp-001',
+    email: 'elena.zhao@apexmicro.cn',
+    name: 'Elena Zhao',
+    companyName: 'Shenzhen Apex Microelectronics Co., Ltd.',
+    role: 'SUPPLIER',
+    requestedScopes: ['EDIT_CONTENT', 'PUBLISH_PRODUCTS'],
+    reason: 'Requesting permission to maintain supplier directory copy and update factory certification media.',
+    requestedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+    status: 'PENDING'
+  }
+];
+
+// GET /api/site-content
+app.get('/api/site-content', (req, res) => {
+  res.json({
+    success: true,
+    data: serverSiteContent || {}
+  });
+});
+
+// PUT /api/site-content
+app.put('/api/site-content', (req, res) => {
+  const userRole = req.headers['x-user-role'];
+  const userEmail = req.headers['x-user-email'];
+
+  // Check authorization
+  const isAuthorized = userRole === 'ADMIN' || (userEmail && userEmail === ADMIN_EMAIL) || (serverAuthorizedUsers.some(u => u.status === 'ACTIVE' && u.email.toLowerCase() === String(userEmail).toLowerCase()));
+  if (!isAuthorized) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access Denied: Administrative or authorized editor privileges required.'
+    });
+  }
+
+  serverSiteContent = { ...(serverSiteContent || {}), ...req.body };
+  res.json({
+    success: true,
+    message: 'Site content updated and published successfully.'
+  });
+});
+
+// GET /api/cms/permissions
+app.get('/api/cms/permissions', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      authorizedUsers: serverAuthorizedUsers,
+      accessRequests: serverAccessRequests
+    }
+  });
+});
+
+// POST /api/cms/permissions/grant
+app.post('/api/cms/permissions/grant', (req, res) => {
+  const newPerm = req.body;
+  if (!newPerm || !newPerm.email) {
+    return res.status(400).json({ success: false, message: 'Invalid permission payload' });
+  }
+  serverAuthorizedUsers = serverAuthorizedUsers.filter(u => u.email.toLowerCase() !== newPerm.email.toLowerCase());
+  serverAuthorizedUsers.push(newPerm);
+  res.json({ success: true, message: 'Permission granted', data: serverAuthorizedUsers });
+});
+
+// POST /api/cms/permissions/revoke
+app.post('/api/cms/permissions/revoke', (req, res) => {
+  const { id, email } = req.body;
+  serverAuthorizedUsers = serverAuthorizedUsers.filter(u => u.id !== id && u.email.toLowerCase() !== (email || '').toLowerCase());
+  res.json({ success: true, message: 'Permission revoked', data: serverAuthorizedUsers });
+});
+
 // -------------------------------------------------------------
 // VITE MIDDLEWARE SETUP
 // -------------------------------------------------------------

@@ -38,10 +38,10 @@ export const RfqComparisonView: React.FC<Props> = ({
   onOpenCreateRfq,
   onAcceptQuote
 }) => {
-  const activeRfq = rfqs.find(r => r.id === selectedRfqId) || rfqs[0];
-  const relatedQuotes = MOCK_QUOTES.filter(q => q.rfqId === activeRfq?.id);
+  const activeRfq = (rfqs || []).find(r => r.id === selectedRfqId) || (rfqs && rfqs[0]);
+  const relatedQuotes = (MOCK_QUOTES || []).filter(q => q.rfqId === activeRfq?.id);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;

@@ -104,6 +104,10 @@ export const SiteContentCmsEditor: React.FC = () => {
 
   const handleApplyJson = () => {
     try {
+      if (jsonInput.length > 5 * 1024 * 1024) {
+        setJsonError(`JSON payload exceeds 5 MB limit (${(jsonInput.length / (1024 * 1024)).toFixed(1)} MB).`);
+        return;
+      }
       const parsed = JSON.parse(jsonInput);
       setFormData(parsed);
       updateSiteContent(parsed, currentUser);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CompanyProfile, Product, Currency, AuthUser } from '../../types';
 import { CURRENCY_RATES, MOCK_COMPANIES, MOCK_PRODUCTS } from '../../data/mockData';
 import { api } from '../../services/apiService';
@@ -50,15 +50,22 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
   onOpenUpgradeModal
 }) => {
   const [activeCompany, setActiveCompany] = useState<CompanyProfile | null>(initialCompany || null);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (modalContainerRef.current) {
+      modalContainerRef.current.scrollTop = 0;
+    }
+  }, [companyId, initialCompany?.id]);
 
   useEffect(() => {
     if (companyId) {
       api.getSuppliers(currentUser).then(allSuppliers => {
-        const found = allSuppliers.find(c => c.id === companyId);
+        const found = (allSuppliers || []).find(c => c && c.id === companyId);
         if (found) {
           setActiveCompany(found);
         } else {
-          const fallback = MOCK_COMPANIES.find(c => c.id === companyId) || MOCK_COMPANIES[0];
+          const fallback = (MOCK_COMPANIES || []).find(c => c && c.id === companyId) || (MOCK_COMPANIES && MOCK_COMPANIES[0]);
           setActiveCompany(fallback);
         }
       });
@@ -69,9 +76,9 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const company = activeCompany || MOCK_COMPANIES[0];
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
-  const companyProducts = products.filter(p => p.supplierId === company.id);
+  const company = activeCompany || (MOCK_COMPANIES && MOCK_COMPANIES[0]);
+  const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
+  const companyProducts = (products || []).filter(p => p && p.supplierId === company?.id);
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
@@ -89,7 +96,7 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="max-h-[85vh] overflow-y-auto space-y-5">
+        <div ref={modalContainerRef} className="max-h-[85vh] overflow-y-auto space-y-5">
           {/* Company Hero Banner */}
           <div className="relative h-52 sm:h-64 w-full bg-slate-100">
             <img
@@ -175,7 +182,7 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
                 <div className="pt-2">
                   <div className="text-xs font-bold text-slate-700 mb-2">Main Export Markets:</div>
                   <div className="flex flex-wrap gap-2">
-                    {company.mainMarkets.map((market, idx) => (
+                    {(company?.mainMarkets || []).map((market, idx) => (
                       <span key={idx} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200">
                         • {market}
                       </span>
@@ -189,7 +196,7 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
                   <FileCheck className="w-4 h-4 text-emerald-600" /> Verified Audit Certifications
                 </h3>
                 <div className="space-y-1.5 text-xs">
-                  {company.certifications.map((cert, idx) => (
+                  {(company?.certifications || []).map((cert, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-slate-800 bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span className="font-bold text-xs">{cert}</span>
@@ -200,13 +207,17 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
                 {/* Direct Contact Clearance Gated Box */}
                 <div className="pt-2 border-t border-slate-200">
                   <PremiumContactGate
-                    isLocked={Boolean(company.isContactGated)}
-                    email={company.contactEmail || 'export@factory.cn'}
-                    phone={company.contactPhone || '+86 755 8320 9811'}
-                    companyName={company.companyName}
-                    label="Factory Export Desk"
-                    onUpgrade={onOpenUpgradeModal}
-                  />
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                    isMasked={Boolean(company?.isContactMasked)}
+                    resourceTitle="Factory Export Desk Contact"
+                  >
+                    <div className="space-y-1.5 text-xs text-slate-700">
+                      <div><strong>Contact:</strong> {company?.contactPerson || 'Export Liaison'}</div>
+                      <div><strong>Email:</strong> {company?.contactEmail || 'export@factory.cn'}</div>
+                      <div><strong>Phone:</strong> {company?.contactPhone || '+86 755 8320 9811'}</div>
+                    </div>
+                  </PremiumContactGate>
                 </div>
               </div>
             </div>
@@ -216,7 +227,7 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <Package className="w-4 h-4 text-blue-600" />
-                  Export Product Catalog ({companyProducts.length} Items)
+                  Export Product Catalog ({(companyProducts || []).length} Items)
                 </h3>
 
                 {onOpenCreateRfq && (
@@ -234,7 +245,7 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {companyProducts.map(prod => (
+                {(companyProducts || []).map(prod => (
                   <div
                     key={prod.id}
                     onClick={() => {

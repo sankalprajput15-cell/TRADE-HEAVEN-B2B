@@ -42,7 +42,7 @@ export const ProductCatalog: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usdPrice: number) => {
     const converted = usdPrice * curr.rateToUSD;
@@ -273,12 +273,18 @@ export const ProductCatalog: React.FC<Props> = ({
                       <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-200">
                         <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">FOB Volume Price</div>
                         <div className="text-sm sm:text-base font-black text-emerald-700 font-mono mt-0.5">
-                          {formatPrice(product.priceTiers[product.priceTiers.length - 1].priceUsd)} - {formatPrice(product.priceTiers[0].priceUsd)}
-                          <span className="text-[11px] sm:text-xs font-normal text-slate-600"> / {product.moqUnit}</span>
+                          {product.priceTiers && product.priceTiers.length > 0 ? (
+                            <>
+                              {formatPrice(product.priceTiers[product.priceTiers.length - 1]?.priceUsd ?? 0)} - {formatPrice(product.priceTiers[0]?.priceUsd ?? 0)}
+                            </>
+                          ) : (
+                            formatPrice(product.fobPriceUsd ?? 0)
+                          )}
+                          <span className="text-[11px] sm:text-xs font-normal text-slate-600"> / {product.moqUnit || 'Unit'}</span>
                         </div>
                         <div className="text-[10px] sm:text-[11px] text-slate-600 mt-1.5 flex items-center justify-between font-medium pt-1.5 border-t border-slate-200/60">
-                          <span>MOQ: <strong className="text-slate-900 font-bold">{product.moq.toLocaleString()} {product.moqUnit}</strong></span>
-                          <span>Lead: <strong className="text-slate-900 font-bold">{product.leadTimeDays}d</strong></span>
+                          <span>MOQ: <strong className="text-slate-900 font-bold">{(product.moq ?? 1).toLocaleString()} {product.moqUnit || 'Units'}</strong></span>
+                          <span>Lead: <strong className="text-slate-900 font-bold">{product.leadTimeDays ?? 15}d</strong></span>
                         </div>
                       </div>
 
@@ -360,9 +366,15 @@ export const ProductCatalog: React.FC<Props> = ({
                   <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                     <div className="text-left sm:text-right">
                       <div className="text-xs sm:text-base font-extrabold text-emerald-700 font-mono">
-                        {formatPrice(product.priceTiers[product.priceTiers.length - 1].priceUsd)} - {formatPrice(product.priceTiers[0].priceUsd)}
+                        {product.priceTiers && product.priceTiers.length > 0 ? (
+                          <>
+                            {formatPrice(product.priceTiers[product.priceTiers.length - 1]?.priceUsd ?? 0)} - {formatPrice(product.priceTiers[0]?.priceUsd ?? 0)}
+                          </>
+                        ) : (
+                          formatPrice(product.fobPriceUsd ?? 0)
+                        )}
                       </div>
-                      <div className="text-[9px] sm:text-[10px] text-slate-500">per {product.moqUnit} (FOB)</div>
+                      <div className="text-[9px] sm:text-[10px] text-slate-500">per {product.moqUnit || 'Unit'} (FOB)</div>
                     </div>
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <button

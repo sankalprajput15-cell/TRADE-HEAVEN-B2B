@@ -41,7 +41,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   useEffect(() => {
     setIsLoading(true);
@@ -211,19 +211,22 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                 {/* Direct Contact Clearance Gated Component */}
                 <div className="pt-2 border-t border-slate-100">
                   <PremiumContactGate
-                    isLocked={Boolean(company.isContactGated)}
-                    email={company.contactEmail || 'export@factory.cn'}
-                    phone={company.contactPhone || '+86 755 8320 9811'}
-                    companyName={company.companyName}
-                    label="Factory Export Desk"
-                    onUpgrade={onOpenUpgradeModal}
-                  />
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                    isMasked={Boolean(company.isContactMasked)}
+                    resourceTitle="Factory Export Desk Contact"
+                  >
+                    <div className="space-y-1 text-xs text-slate-700">
+                      <div><strong>Email:</strong> {company.contactEmail || 'export@factory.cn'}</div>
+                      <div><strong>Phone:</strong> {company.contactPhone || '+86 755 8320 9811'}</div>
+                    </div>
+                  </PremiumContactGate>
                 </div>
 
                 <div className="space-y-1 pt-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Verified Certifications:</div>
                   <div className="flex flex-wrap gap-1">
-                    {company.certifications.slice(0, 3).map((cert, idx) => (
+                    {(company.certifications || []).slice(0, 3).map((cert, idx) => (
                       <span key={idx} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
                         {cert}
                       </span>

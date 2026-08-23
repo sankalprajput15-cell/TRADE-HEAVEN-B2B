@@ -29,8 +29,12 @@ import {
   ShieldAlert,
   ChevronRight,
   Stamp,
-  UserCheck
+  UserCheck,
+  Upload,
+  Image as ImageIcon,
+  Trash2
 } from 'lucide-react';
+import { validateUploadFile, compressAndResizeImage, UPLOAD_LIMITS } from '../../utils/fileUploadGuard';
 
 interface Props {
   currentUser: AuthUser | null;
@@ -85,6 +89,9 @@ export const OnboardWithUsPage: React.FC<Props> = ({
   const [factoryAddress, setFactoryAddress] = useState('');
   const [productionCapacityOrRequirement, setProductionCapacityOrRequirement] = useState('');
   const [verificationDocName, setVerificationDocName] = useState('');
+  const [uploadedDocSize, setUploadedDocSize] = useState<string | null>(null);
+  const [docUploadError, setDocUploadError] = useState<string | null>(null);
+  const [isProcessingDoc, setIsProcessingDoc] = useState(false);
   const [agreedToVettingPolicy, setAgreedToVettingPolicy] = useState(true);
 
   // Status & loading
@@ -703,6 +710,92 @@ export const OnboardWithUsPage: React.FC<Props> = ({
                   onChange={e => setFactoryAddress(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-medium focus:bg-white focus:border-blue-500 focus:outline-none"
                 />
+              </div>
+
+              {/* Upload Certificate / Tax License (Capped & Protected) */}
+              <div className="sm:col-span-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-700">
+                    Business Registration License / Tax Certificate (PDF or Image)
+                  </label>
+                  <span className="text-[10px] text-slate-500 font-semibold">Strict Limit: Max 5 MB</span>
+                </div>
+
+                {!verificationDocName ? (
+                  <label className="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors text-center">
+                    <div className="p-2.5 rounded-full bg-blue-100 text-blue-600">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">
+                        {isProcessingDoc ? 'Verifying & compressing upload...' : 'Click or Drag to Upload Business License'}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Supports PDF, PNG, JPG (capped at 5MB to preserve site speed)
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      className="hidden"
+                      disabled={isProcessingDoc}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setDocUploadError(null);
+                        const val = validateUploadFile(file, file.type.startsWith('image/') ? 'IMAGE' : 'DOCUMENT');
+                        if (!val.valid) {
+                          setDocUploadError(val.error || 'Upload exceeded permitted capacity.');
+                          e.target.value = '';
+                          return;
+                        }
+                        try {
+                          setIsProcessingDoc(true);
+                          if (file.type.startsWith('image/')) {
+                            const res = await compressAndResizeImage(file);
+                            setVerificationDocName(file.name);
+                            setUploadedDocSize((res.sizeBytes / 1024).toFixed(0) + ' KB');
+                          } else {
+                            setVerificationDocName(file.name);
+                            setUploadedDocSize((file.size / 1024).toFixed(0) + ' KB');
+                          }
+                        } catch (err: any) {
+                          setDocUploadError(err?.message || 'Error processing upload safely.');
+                        } finally {
+                          setIsProcessingDoc(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-emerald-950 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-bold truncate">{verificationDocName}</p>
+                        <p className="text-[10px] text-emerald-700">Validated &amp; compressed ({uploadedDocSize})</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVerificationDocName('');
+                        setUploadedDocSize(null);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-rose-600 font-bold hover:bg-rose-50 text-[11px] cursor-pointer"
+                    >
+                      Replace
+                    </button>
+                  </div>
+                )}
+
+                {docUploadError && (
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{docUploadError}</span>
+                  </div>
+                )}
               </div>
 
             </div>

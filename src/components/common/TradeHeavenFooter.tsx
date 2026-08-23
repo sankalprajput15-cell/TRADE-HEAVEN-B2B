@@ -54,17 +54,9 @@ export const TradeHeavenFooter: React.FC<Props> = ({
     )
   );
 
-  const [showAdminNotice, setShowAdminNotice] = React.useState<boolean>(false);
-
   const handleCmsClick = () => {
     if (isAdmin) {
       onNavigate('CMS_MANAGEMENT');
-    } else {
-      setShowAdminNotice(true);
-      if (onOpenAuthModal) {
-        onOpenAuthModal();
-      }
-      setTimeout(() => setShowAdminNotice(false), 5000);
     }
   };
 
@@ -252,55 +244,21 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                   Custodial Escrow Vaults
                 </button>
               </li>
-              <li className="relative">
-                <button 
-                  id="footer-cms-admin-btn"
-                  onClick={handleCmsClick} 
-                  className={`transition-colors text-left font-bold cursor-pointer flex items-center gap-1.5 ${
-                    isAdmin 
-                      ? 'text-amber-400 hover:text-amber-300' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                  title={isAdmin ? "Full-Site CMS Editor (Admin Access Granted)" : "Full-Site CMS Editor (Admin Credentials Required)"}
-                >
-                  {isAdmin ? (
-                    <>
-                      <span>Full-Site CMS Editor</span>
-                      <span className="text-[9px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
-                        Admin
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-3 h-3 text-slate-500 shrink-0" />
-                      <span>Full-Site CMS Editor</span>
-                      <span className="text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded font-semibold uppercase">
-                        Admin Only
-                      </span>
-                    </>
-                  )}
-                </button>
-
-                {showAdminNotice && (
-                  <div className="absolute left-0 bottom-full mb-2 z-30 w-64 p-3 rounded-2xl bg-slate-900 border border-amber-500/40 text-amber-300 text-[11px] shadow-2xl space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-amber-400">
-                      <Lock className="w-3.5 h-3.5 shrink-0" />
-                      <span>Admin Authorization Required</span>
-                    </div>
-                    <p className="text-[10px] text-slate-300 leading-tight">
-                      The Full-Site CMS Editor is restricted to System Administrators. Please sign in with an Administrator account.
-                    </p>
-                    {onOpenAuthModal && (
-                      <button
-                        onClick={onOpenAuthModal}
-                        className="w-full mt-1 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-lg text-[10px] cursor-pointer transition-colors shadow-xs"
-                      >
-                        Sign In as Administrator
-                      </button>
-                    )}
-                  </div>
-                )}
-              </li>
+              {isAdmin && (
+                <li className="relative">
+                  <button 
+                    id="footer-cms-admin-btn"
+                    onClick={handleCmsClick} 
+                    className="transition-colors text-left font-bold cursor-pointer flex items-center gap-1.5 text-amber-400 hover:text-amber-300"
+                    title="Full-Site CMS Editor (Admin Access Granted)"
+                  >
+                    <span>Full-Site CMS Editor</span>
+                    <span className="text-[9px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
+                      Admin
+                    </span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 

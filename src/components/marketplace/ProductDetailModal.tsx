@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Product, Currency, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { SafeImage } from '../common/SafeImage';
@@ -38,20 +38,27 @@ export const ProductDetailModal: React.FC<Props> = ({
   onStartNegotiation
 }) => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
-  const [selectedIncoterm, setSelectedIncoterm] = useState<Incoterm>(product.supportedIncoterms[0] || 'FOB');
-  const [orderQuantity, setOrderQuantity] = useState<number>(product.moq);
+  const [selectedIncoterm, setSelectedIncoterm] = useState<Incoterm>(product?.supportedIncoterms?.[0] || 'FOB');
+  const [orderQuantity, setOrderQuantity] = useState<number>(product?.moq || 1);
   const [customInquiryNote, setCustomInquiryNote] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
+  const modalScrollRef = useRef<HTMLDivElement>(null);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  useEffect(() => {
+    if (modalScrollRef.current) {
+      modalScrollRef.current.scrollTop = 0;
+    }
+  }, [product?.id]);
+
+  const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   // Determine active price tier
-  const matchedTier = product.priceTiers.find(tier => {
+  const matchedTier = (product?.priceTiers || []).find(tier => {
     if (tier.maxUnits) {
       return orderQuantity >= tier.minUnits && orderQuantity <= tier.maxUnits;
     }
     return orderQuantity >= tier.minUnits;
-  }) || product.priceTiers[0];
+  }) || product?.priceTiers?.[0] || { minUnits: 1, maxUnits: 100, priceUsd: 100 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
@@ -77,27 +84,27 @@ export const ProductDetailModal: React.FC<Props> = ({
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-6 lg:p-8 space-y-6 max-h-[85vh] overflow-y-auto">
+        <div ref={modalScrollRef} className="p-6 lg:p-8 space-y-6 max-h-[85vh] overflow-y-auto">
           {/* Top Section: Media + Pricing & Inquiry Form */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Gallery Left */}
             <div className="lg:col-span-5 space-y-3">
               <div className="h-64 w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 relative">
                 <SafeImage
-                  src={product.images[activeImageIdx]}
-                  alt={product.title}
+                  src={product?.images?.[activeImageIdx] || product?.images?.[0] || ''}
+                  alt={product?.title || 'Product Image'}
                   className="w-full h-full"
                 />
               </div>
 
               {/* Thumbnails */}
-              {product.images.length > 1 && (
-                <div className="flex gap-2">
-                  {product.images.map((img, idx) => (
+              {(product?.images?.length ?? 0) > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {(product?.images || []).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                         activeImageIdx === idx ? 'border-blue-600 scale-105 shadow-sm' : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
@@ -162,7 +169,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                   <span className="text-[10px] text-slate-500 font-mono font-bold">Currency: {curr.code}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-1">
-                  {product.priceTiers.map((tier, idx) => {
+                  {(product?.priceTiers || []).map((tier, idx) => {
                     const isSelected = orderQuantity >= tier.minUnits && (!tier.maxUnits || orderQuantity <= tier.maxUnits);
                     return (
                       <div
@@ -174,12 +181,12 @@ export const ProductDetailModal: React.FC<Props> = ({
                         }`}
                       >
                         <div className="text-[10px] text-slate-500 font-medium">
-                          {tier.minUnits} {tier.maxUnits ? `- ${tier.maxUnits}` : '+'} {product.moqUnit}
+                          {tier.minUnits} {tier.maxUnits ? `- ${tier.maxUnits}` : '+'} {product.moqUnit || 'Units'}
                         </div>
                         <div className="text-sm sm:text-base font-black text-emerald-700 font-mono mt-0.5">
                           {formatPrice(tier.priceUsd)}
                         </div>
-                        <div className="text-[10px] text-slate-400">per {product.moqUnit}</div>
+                        <div className="text-[10px] text-slate-400">per {product.moqUnit || 'Unit'}</div>
                       </div>
                     );
                   })}
@@ -192,15 +199,15 @@ export const ProductDetailModal: React.FC<Props> = ({
                   {/* Quantity Input */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Order Quantity (Min: {product.moq} {product.moqUnit})
+                      Order Quantity (Min: {product.moq || 1} {product.moqUnit || 'Units'})
                     </label>
                     <input
                       id="pdp-quantity-input"
                       type="number"
-                      min={product.moq}
+                      min={product.moq || 1}
                       step="1"
                       value={orderQuantity}
-                      onChange={e => setOrderQuantity(Math.max(product.moq, parseInt(e.target.value) || product.moq))}
+                      onChange={e => setOrderQuantity(Math.max(product.moq || 1, parseInt(e.target.value) || product.moq || 1))}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:border-blue-500 focus:outline-none shadow-xs"
                     />
                   </div>
@@ -213,7 +220,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                       onChange={e => setSelectedIncoterm(e.target.value as Incoterm)}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-semibold focus:border-blue-500 focus:outline-none cursor-pointer shadow-xs"
                     >
-                      {product.supportedIncoterms.map(term => (
+                      {(product.supportedIncoterms || ['FOB', 'CIF', 'EXW', 'DDP']).map(term => (
                         <option key={term} value={term}>{term} (Shipping &amp; Port Delivery)</option>
                       ))}
                     </select>
@@ -223,9 +230,9 @@ export const ProductDetailModal: React.FC<Props> = ({
                 {/* Subtotal Calculation */}
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-[10px] text-slate-500 font-medium">Estimated Cargo Value ({orderQuantity} {product.moqUnit})</div>
+                    <div className="text-[10px] text-slate-500 font-medium">Estimated Cargo Value ({orderQuantity} {product.moqUnit || 'Units'})</div>
                     <div className="text-lg font-black text-slate-900 font-mono">
-                      {formatPrice(matchedTier.priceUsd * orderQuantity)}
+                      {formatPrice((matchedTier?.priceUsd ?? product.fobPriceUsd ?? 0) * orderQuantity)}
                     </div>
                   </div>
                   <div className="text-right text-[11px] text-emerald-700 font-bold">
@@ -294,7 +301,7 @@ export const ProductDetailModal: React.FC<Props> = ({
               Technical Parameter Specifications
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {product.specifications.map((spec, idx) => (
+              {(product?.specifications || []).map((spec, idx) => (
                 <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between text-xs">
                   <span className="text-slate-500 font-medium">{spec.name}</span>
                   <span className="text-slate-900 font-bold text-right">{spec.value}</span>

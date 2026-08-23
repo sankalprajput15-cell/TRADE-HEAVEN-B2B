@@ -41,17 +41,17 @@ export const CategoryMegaMenu: React.FC<Props> = ({ selectedCategory, onSelectCa
     }
   };
 
-  const hp = siteContent.homepage;
-  const categoriesToRender = (hp.categoriesList && hp.categoriesList.length > 0) 
+  const hp = siteContent?.homepage;
+  const categoriesToRender = (hp?.categoriesList && hp.categoriesList.length > 0) 
     ? hp.categoriesList 
-    : CATEGORIES_TREE.map(c => ({
+    : (CATEGORIES_TREE || []).map(c => ({
         id: c.id,
         name: c.name,
-        description: c.subcategories.join(', '),
+        description: (c.subcategories || []).join(', '),
         iconName: c.icon,
         image: (c as any).image || 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
         badge: 'Verified',
-        productCount: c.count
+        productCount: c.count || 0
       }));
 
   return (

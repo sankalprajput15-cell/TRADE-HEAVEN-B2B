@@ -196,6 +196,7 @@ export interface Product {
   images: string[];
   description: string;
   priceTiers: VolumePriceTier[];
+  fobPriceUsd?: number;
   moq: number;
   moqUnit: string; // 'Pieces', 'Metric Tons', 'Cartons', 'Sets', 'Kg'
   sampleAvailable: boolean;

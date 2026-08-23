@@ -36,8 +36,27 @@ export const TradeNegotiationChat: React.FC<Props> = ({
   const [counterPriceUsd, setCounterPriceUsd] = useState<number>(0);
   const [isCounterOfferOpen, setIsCounterOfferOpen] = useState(false);
 
-  const activeThread = threads.find(t => t.id === activeThreadId) || threads[0];
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const activeThread = (threads || []).find(t => t.id === activeThreadId) || (threads && threads[0]) || {
+    id: 'th-default',
+    rfqId: 'rfq-default',
+    rfqTitle: 'Commodity Procurement',
+    supplierId: 'supp-default',
+    supplierName: 'Verified Supplier',
+    supplierCompany: 'Global Trading Partner',
+    supplierCountry: 'Global',
+    buyerId: 'buyer-default',
+    buyerName: 'Procurement Officer',
+    buyerCompany: 'Enterprise Buyer',
+    status: 'ACTIVE',
+    targetPriceUsd: 100,
+    incoterm: 'FOB',
+    destinationPort: 'Hamburg Port',
+    quantity: 100,
+    unit: 'Units',
+    lastUpdated: new Date().toISOString(),
+    messages: []
+  } as any;
+  const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
@@ -117,9 +136,10 @@ export const TradeNegotiationChat: React.FC<Props> = ({
           </div>
 
           <div className="space-y-2.5">
-            {threads.map(thread => {
-              const isSelected = thread.id === activeThread.id;
-              const lastMessage = thread.messages[thread.messages.length - 1];
+            {(threads || []).map(thread => {
+              const isSelected = thread.id === activeThread?.id;
+              const msgs = thread?.messages || [];
+              const lastMessage = msgs[msgs.length - 1];
 
               return (
                 <div
@@ -203,7 +223,7 @@ export const TradeNegotiationChat: React.FC<Props> = ({
 
               {/* Chat Thread Messages */}
               <div className="p-6 space-y-4 max-h-[420px] overflow-y-auto bg-slate-50">
-                {activeThread.messages.map(msg => {
+                {(activeThread?.messages || []).map(msg => {
                   const isBuyer = msg.senderRole === 'BUYER';
                   return (
                     <div

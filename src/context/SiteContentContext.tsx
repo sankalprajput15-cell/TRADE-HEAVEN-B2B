@@ -133,6 +133,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
             isVerified: payload.isVerified,
             tier: payload.tier,
             companyName: payload.companyName,
+            country: 'United States',
             token: savedToken
           };
         }
@@ -265,8 +266,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }
         }
         if (permsData) {
-          if (permsData.authorizedUsers) setAuthorizedUsers(permsData.authorizedUsers);
-          if (permsData.accessRequests) setAccessRequests(permsData.accessRequests);
+          if (Array.isArray(permsData.authorizedUsers)) setAuthorizedUsers(permsData.authorizedUsers);
+          if (Array.isArray(permsData.accessRequests)) setAccessRequests(permsData.accessRequests);
         }
       } catch (err) {
         console.warn('Using local site content store');
@@ -288,7 +289,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
     // 1. Super Admin role or root admin email
-    if (user.role === 'ADMIN' || user.email.toLowerCase() === 'admin@tradeheaven.net') {
+    if (user.role === 'ADMIN' || (user.email && user.email.toLowerCase() === 'admin@tradeheaven.net')) {
       return {
         isAuthorized: true,
         isSuperAdmin: true,
@@ -297,9 +298,17 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
     // 2. Delegated user permission check
-    const userEmail = user.email.trim().toLowerCase();
-    const perm = authorizedUsers.find(
-      u => u.status === 'ACTIVE' && u.email.toLowerCase() === userEmail
+    const userEmail = (user.email || '').trim().toLowerCase();
+    if (!userEmail) {
+      return {
+        isAuthorized: false,
+        isSuperAdmin: false,
+        scopes: [],
+        statusText: 'Access Restricted (Invalid Email)'
+      };
+    }
+    const perm = (authorizedUsers || []).find(
+      u => u && u.status === 'ACTIVE' && (u.email || '').toLowerCase() === userEmail
     );
     if (perm) {
       return {

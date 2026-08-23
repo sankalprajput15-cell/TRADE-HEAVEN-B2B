@@ -20,6 +20,9 @@ import { TradeHeavenFooter } from './components/common/TradeHeavenFooter';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { FloatingLiveEditorBar } from './components/cms/FloatingLiveEditorBar';
 import { LiveSectionEditModal } from './components/cms/LiveSectionEditModal';
+import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
+import { ScrollToTop } from './components/common/ScrollToTop';
+import { NotFoundView } from './components/common/NotFoundView';
 
 // Views
 import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
@@ -79,7 +82,21 @@ const MainApp: React.FC = () => {
       if (prods && prods.length > 0) {
         setProducts(prods);
       }
-    });
+    }).catch(err => console.error('[Failed to load products]:', err));
+  }, []);
+
+  // Global listener for cross-component navigation events
+  useEffect(() => {
+    const handleGlobalNav = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent?.detail) {
+        handleNavigate(customEvent.detail);
+      }
+    };
+    window.addEventListener('tradeheaven_navigate', handleGlobalNav);
+    return () => {
+      window.removeEventListener('tradeheaven_navigate', handleGlobalNav);
+    };
   }, []);
 
   // Handlers
@@ -130,38 +147,94 @@ const MainApp: React.FC = () => {
   };
 
   const handleNavigate = (view: ActiveView | string) => {
-    if (view === 'POST_BUY_REQUIREMENT') {
+    const target = String(view || '').trim().toUpperCase();
+
+    // Reset modals on navigation
+    setSelectedProduct(null);
+    setStorefrontCompanyId(null);
+
+    // Specific modal actions
+    if (target === 'POST_BUY_REQUIREMENT' || target === 'CREATE_RFQ') {
       setIsCreateRfqOpen(true);
       return;
     }
-    if (view === 'CONTACT_US') {
+    if (target === 'CONTACT_US' || target === 'CONTACT' || target === 'SUPPORT') {
       setIsContactModalOpen(true);
       return;
     }
-    if (view === 'TRADE_TOOLS') {
-      setActiveView('INCOTERMS_CALCULATOR');
+    if (target === 'AUTH_LOGIN' || target === 'LOGIN') {
+      setAuthModalMode('LOGIN');
+      setIsAuthModalOpen(true);
       return;
     }
-    if (view === 'PREMIUM_PLANS' || view === 'PREMIUM_SERVICES') {
-      setActiveView('PREMIUM_MEMBERSHIP');
+    if (target === 'AUTH_REGISTER' || target === 'REGISTER') {
+      setAuthModalMode('REGISTER');
+      setIsAuthModalOpen(true);
       return;
     }
-    if (view === 'CLIENT_PORTAL') {
-      setActiveView('CLIENT_ADMIN');
+    if (target === 'DATABASE_BACKUP' || target === 'DATA_MANAGEMENT') {
+      setIsDbModalOpen(true);
       return;
     }
-    if (view === 'TRADE_ESCROW') {
-      setActiveView('DASHBOARD');
-      return;
-    }
-    if (view === 'MARKETPLACE_HOME') {
+
+    // View Aliases
+    if (target === 'HOME' || target === 'MARKETPLACE_HOME' || target === 'HOMEPAGE' || target === '/') {
       setActiveView('HOMEPAGE');
       return;
     }
-    if (view === 'SELLER_OFFER') {
+    if (target === 'PRODUCTS' || target === 'PRODUCT_CATALOG' || target === 'PRODUCT_DIRECTORY' || target === 'CATALOG' || target === 'LISTINGS' || target === 'CATEGORIES') {
+      setActiveView('PRODUCT_DIRECTORY');
+      return;
+    }
+    if (target === 'RFQS' || target === 'RFQ_HUB' || target === 'RFQ_COMPARISON' || target === 'TENDERS') {
+      setActiveView('RFQ_HUB');
+      return;
+    }
+    if (target === 'TRADE_TOOLS' || target === 'INCOTERMS_CALCULATOR' || target === 'TOOLS' || target === 'CALCULATOR') {
+      setActiveView('INCOTERMS_CALCULATOR');
+      return;
+    }
+    if (target === 'PREMIUM_PLANS' || target === 'PREMIUM_SERVICES' || target === 'PREMIUM_MEMBERSHIP' || target === 'PRICING') {
+      setActiveView('PREMIUM_MEMBERSHIP');
+      return;
+    }
+    if (target === 'CLIENT_PORTAL' || target === 'CLIENT_ADMIN' || target === 'ADMIN_PORTAL') {
+      setActiveView('CLIENT_ADMIN');
+      return;
+    }
+    if (target === 'TRADE_ESCROW' || target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
+      setActiveView('DASHBOARD');
+      return;
+    }
+    if (target === 'SELLER_OFFER' || target === 'POST_SELL_OFFER' || target === 'SELL') {
       setActiveView('POST_SELL_OFFER');
       return;
     }
+    if (target === 'BUY_LEADS' || target === 'LEADS') {
+      setActiveView('BUY_LEADS');
+      return;
+    }
+    if (target === 'SUPPLIERS_DIRECTORY' || target === 'SUPPLIERS' || target === 'EXPORTERS') {
+      setActiveView('SUPPLIERS_DIRECTORY');
+      return;
+    }
+    if (target === 'REFUND_POLICY' || target === 'REFUND' || target === 'ESCROW_POLICY') {
+      setActiveView('REFUND_POLICY');
+      return;
+    }
+    if (target === 'ONBOARD_WITH_US' || target === 'ONBOARD' || target === 'REGISTER_SELLER' || target === 'WORK_WITH_US') {
+      setActiveView('ONBOARD_WITH_US');
+      return;
+    }
+    if (target === 'NEGOTIATION' || target === 'NEGOTIATION_ROOM' || target === 'CHAT') {
+      setActiveView('NEGOTIATION_ROOM');
+      return;
+    }
+    if (target === 'CMS_MANAGEMENT' || target === 'CMS' || target === 'SITE_EDITOR') {
+      setActiveView('CMS_MANAGEMENT');
+      return;
+    }
+
     setActiveView(view as ActiveView);
   };
 
@@ -177,9 +250,11 @@ const MainApp: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
-      
+      {/* Scroll restoration anchor */}
+      <ScrollToTop activeView={activeView} />
+
       {/* 1. TOP ANNOUNCEMENT & LIVE RFQ TICKER */}
-      <LiveRfqTicker onRfqClick={() => setActiveView('RFQ_HUB')} />
+      <LiveRfqTicker onSelectRfq={() => setActiveView('RFQ_HUB')} />
 
       {/* 2. MAIN MARKETPLACE APP HEADER */}
       <Header
@@ -205,160 +280,189 @@ const MainApp: React.FC = () => {
         onOpenCreateRfq={handleOpenCreateRfq}
       />
 
-      {/* 4. MAIN CONTENT CONTAINER */}
+      {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        
-        {activeView === 'HOMEPAGE' && (
-          <TradeWheelHomePage
-            products={products}
-            selectedCurrency={selectedCurrency}
-            onSelectProduct={handleSelectProduct}
-            onOpenStorefront={handleOpenStorefront}
-            onContactSupplier={handleContactSupplier}
-            onOpenCreateRfq={handleOpenCreateRfq}
-            onNavigate={handleNavigate}
-            onOpenLiveTool={handleOpenLiveTool}
-          />
-        )}
+        <GlobalErrorBoundary fallbackTitle="TradeHeaven Section View Recovery" onReset={() => setActiveView('HOMEPAGE')}>
+          {(() => {
+            switch (activeView) {
+              case 'HOMEPAGE':
+                return (
+                  <TradeWheelHomePage
+                    products={products}
+                    selectedCurrency={selectedCurrency}
+                    onSelectProduct={handleSelectProduct}
+                    onOpenStorefront={handleOpenStorefront}
+                    onContactSupplier={handleContactSupplier}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    onNavigate={handleNavigate}
+                    onOpenLiveTool={handleOpenLiveTool}
+                  />
+                );
 
-        {activeView === 'PRODUCT_DIRECTORY' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-                Global Product Catalog &amp; Wholesale Directory
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                Browse verified factory inventory across 12 industrial sectors. Compare tiered volume pricing and verify manufacturing certifications.
-              </p>
-            </div>
+              case 'PRODUCT_DIRECTORY':
+                return (
+                  <div className="space-y-6">
+                    <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+                      <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+                        Global Product Catalog &amp; Wholesale Directory
+                      </h1>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                        Browse verified factory inventory across 12 industrial sectors. Compare tiered volume pricing and verify manufacturing certifications.
+                      </p>
+                    </div>
 
-            <ProductCatalog
-              products={products}
-              selectedCurrency={selectedCurrency}
-              onSelectProduct={handleSelectProduct}
-              onOpenStorefront={handleOpenStorefront}
-              onContactSupplier={handleContactSupplier}
-            />
-          </div>
-        )}
+                    <ProductCatalog
+                      products={products}
+                      selectedCurrency={selectedCurrency}
+                      onSelectProduct={handleSelectProduct}
+                      onOpenStorefront={handleOpenStorefront}
+                      onContactSupplier={handleContactSupplier}
+                    />
+                  </div>
+                );
 
-        {activeView === 'RFQ_HUB' && (
-          <RfqComparisonView
-            selectedCurrency={selectedCurrency}
-            onOpenCreateRfq={handleOpenCreateRfq}
-            onAcceptQuote={(rfq, quote) => {
-              setActiveView('NEGOTIATION_ROOM');
-            }}
-          />
-        )}
+              case 'RFQ_HUB':
+                return (
+                  <RfqComparisonView
+                    rfqs={MOCK_RFQS}
+                    selectedRfqId={MOCK_RFQS[0]?.id || null}
+                    onSelectRfqId={() => {}}
+                    selectedCurrency={selectedCurrency}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    onAcceptQuote={() => {
+                      setActiveView('NEGOTIATION_ROOM');
+                    }}
+                  />
+                );
 
-        {activeView === 'NEGOTIATION_ROOM' && (
-          <TradeNegotiationChat
-            selectedCurrency={selectedCurrency}
-            onInitiateEscrow={handleInitiateEscrow}
-          />
-        )}
+              case 'NEGOTIATION_ROOM':
+                return (
+                  <TradeNegotiationChat
+                    selectedCurrency={selectedCurrency}
+                    onInitiateEscrow={handleInitiateEscrow}
+                  />
+                );
 
-        {activeView === 'DASHBOARD' && (
-          <BuyerSupplierDashboard
-            currentUserRole={currentUser?.role || 'BUYER'}
-            selectedCurrency={selectedCurrency}
-            onOpenCreateRfq={handleOpenCreateRfq}
-            onOpenStorefront={handleOpenStorefront}
-          />
-        )}
+              case 'DASHBOARD':
+                return (
+                  <BuyerSupplierDashboard
+                    currentUserRole={currentUser?.role || 'BUYER'}
+                    selectedCurrency={selectedCurrency}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    onOpenStorefront={handleOpenStorefront}
+                  />
+                );
 
-        {activeView === 'INCOTERMS_CALCULATOR' && (
-          <IncotermsCalculator selectedCurrency={selectedCurrency} />
-        )}
+              case 'INCOTERMS_CALCULATOR':
+                return (
+                  <IncotermsCalculator selectedCurrency={selectedCurrency} />
+                );
 
-        {activeView === 'PREMIUM_MEMBERSHIP' && (
-          <PremiumServicesView
-            selectedCurrency={selectedCurrency}
-            onOpenPaymentCheckout={handleOpenPaymentCheckout}
-          />
-        )}
+              case 'PREMIUM_MEMBERSHIP':
+                return (
+                  <PremiumServicesView
+                    selectedCurrency={selectedCurrency}
+                    onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                  />
+                );
 
-        {activeView === 'POST_SELL_OFFER' && (
-          <PostSellOfferView
-            selectedCurrency={selectedCurrency}
-            onProductCreated={handleProductCreated}
-          />
-        )}
+              case 'POST_SELL_OFFER':
+                return (
+                  <PostSellOfferView
+                    selectedCurrency={selectedCurrency}
+                    onProductCreated={handleProductCreated}
+                  />
+                );
 
-        {activeView === 'BUY_LEADS' && (
-          <BuyLeadsView
-            selectedCurrency={selectedCurrency}
-            onSelectRfq={() => setActiveView('RFQ_HUB')}
-            onOpenCreateRfq={handleOpenCreateRfq}
-            currentUser={currentUser}
-            onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
-          />
-        )}
+              case 'BUY_LEADS':
+                return (
+                  <BuyLeadsView
+                    selectedCurrency={selectedCurrency}
+                    onSelectRfq={() => setActiveView('RFQ_HUB')}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                  />
+                );
 
-        {activeView === 'SUPPLIERS_DIRECTORY' && (
-          <SuppliersDirectoryView
-            selectedCurrency={selectedCurrency}
-            onOpenStorefront={handleOpenStorefront}
-            currentUser={currentUser}
-            onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
-          />
-        )}
+              case 'SUPPLIERS_DIRECTORY':
+                return (
+                  <SuppliersDirectoryView
+                    selectedCurrency={selectedCurrency}
+                    onOpenStorefront={handleOpenStorefront}
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                  />
+                );
 
-        {activeView === 'REFUND_POLICY' && (
-          <RefundPolicyView onOpenContactModal={() => setIsContactModalOpen(true)} />
-        )}
+              case 'REFUND_POLICY':
+                return (
+                  <RefundPolicyView onOpenContactModal={() => setIsContactModalOpen(true)} />
+                );
 
-        {activeView === 'ONBOARD_WITH_US' && (
-          <OnboardWithUsPage
-            currentUser={currentUser}
-            onLogin={user => setCurrentUser(user)}
-            onNavigate={handleNavigate}
-            onOpenCreateRfq={handleOpenCreateRfq}
-          />
-        )}
+              case 'ONBOARD_WITH_US':
+                return (
+                  <OnboardWithUsPage
+                    currentUser={currentUser}
+                    onLogin={user => setCurrentUser(user)}
+                    onNavigate={handleNavigate}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                  />
+                );
 
-        {activeView === 'CLIENT_ADMIN' && (
-          <ClientAdminView
-            selectedCurrency={selectedCurrency}
-            onOpenPaymentCheckout={handleOpenPaymentCheckout}
-            currentUser={currentUser}
-            onUpdateCurrentUser={setCurrentUser}
-          />
-        )}
+              case 'CLIENT_ADMIN':
+                return (
+                  <ClientAdminView
+                    selectedCurrency={selectedCurrency}
+                    onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                    currentUser={currentUser}
+                    onUpdateCurrentUser={setCurrentUser}
+                  />
+                );
 
-        {activeView === 'CMS_MANAGEMENT' && (
-          currentUser?.role === 'ADMIN' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net' ? (
-            <div className="space-y-8">
-              <SiteContentCmsEditor />
-              <CmsPermissionsPanel />
-            </div>
-          ) : (
-            <div className="max-w-xl mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-xl">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
-                <span className="text-2xl">🔒</span>
-              </div>
-              <h2 className="text-xl font-black text-slate-900">Administrator Access Required</h2>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                The Full-Site CMS Editor and RBAC Governance Matrix are restricted to verified System Administrators.
-              </p>
-              <div className="pt-2 flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer shadow-xs"
-                >
-                  Sign In as Administrator
-                </button>
-                <button
-                  onClick={() => setActiveView('HOMEPAGE')}
-                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-                >
-                  Return to Homepage
-                </button>
-              </div>
-            </div>
-          )
-        )}
+              case 'CMS_MANAGEMENT':
+                return currentUser?.role === 'ADMIN' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net' ? (
+                  <div className="space-y-8">
+                    <SiteContentCmsEditor />
+                    <CmsPermissionsPanel />
+                  </div>
+                ) : (
+                  <div className="max-w-xl mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-xl">
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
+                      <span className="text-2xl">🔒</span>
+                    </div>
+                    <h2 className="text-xl font-black text-slate-900">Administrator Access Required</h2>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      The Full-Site CMS Editor and RBAC Governance Matrix are restricted to verified System Administrators.
+                    </p>
+                    <div className="pt-2 flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => setIsAuthModalOpen(true)}
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer shadow-xs"
+                      >
+                        Sign In as Administrator
+                      </button>
+                      <button
+                        onClick={() => setActiveView('HOMEPAGE')}
+                        className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                      >
+                        Return to Homepage
+                      </button>
+                    </div>
+                  </div>
+                );
+
+              default:
+                return (
+                  <NotFoundView
+                    attemptedView={String(activeView)}
+                    onNavigate={handleNavigate}
+                    onOpenContactModal={() => setIsContactModalOpen(true)}
+                  />
+                );
+            }
+          })()}
+        </GlobalErrorBoundary>
       </main>
 
       {/* 4. OFFICIAL SOCIAL & WHATSAPP NETWORK BAR */}
@@ -396,24 +500,12 @@ const MainApp: React.FC = () => {
       {selectedProduct && (
         <ProductDetailModal
           product={selectedProduct}
-          isOpen={Boolean(selectedProduct)}
           onClose={() => setSelectedProduct(null)}
           selectedCurrency={selectedCurrency}
           onOpenStorefront={handleOpenStorefront}
-          onStartNegotiation={prod => {
+          onStartNegotiation={() => {
             setSelectedProduct(null);
             setActiveView('NEGOTIATION_ROOM');
-          }}
-          onOpenCheckout={prod => {
-            setSelectedProduct(null);
-            setCheckoutData({
-              planId: prod.id,
-              title: prod.title,
-              description: `MOQ Sample / Initial Order: ${prod.moq} ${prod.moqUnit} @ $${prod.priceTiers[0]?.priceUsd || 100}/unit`,
-              amountUsd: prod.moq * (prod.priceTiers[0]?.priceUsd || 100),
-              type: 'ESCROW_DEPOSIT',
-              supplierCompany: prod.supplierName
-            });
           }}
         />
       )}
@@ -470,6 +562,11 @@ const MainApp: React.FC = () => {
       <BackendDataManagementModal
         isOpen={isDbModalOpen}
         onClose={() => setIsDbModalOpen(false)}
+        currentUser={currentUser}
+        onOpenAuthModal={() => {
+          setAuthModalMode('LOGIN');
+          setIsAuthModalOpen(true);
+        }}
       />
     </div>
   );
@@ -477,8 +574,11 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <SiteContentProvider>
-      <MainApp />
-    </SiteContentProvider>
+    <GlobalErrorBoundary fallbackTitle="TradeHeaven Marketplace Recovery">
+      <SiteContentProvider>
+        <MainApp />
+      </SiteContentProvider>
+    </GlobalErrorBoundary>
   );
 }
+

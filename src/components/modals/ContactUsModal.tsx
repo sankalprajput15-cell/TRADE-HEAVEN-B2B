@@ -12,10 +12,16 @@ import {
   Building2,
   Clock,
   Headphones,
-  Globe2
+  Globe2,
+  Upload,
+  Image as ImageIcon,
+  FileText,
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { OFFICIAL_WHATSAPP_DATA, SOCIAL_LINKS } from '../common/TradeHeavenSocialBar';
 import { api } from '../../services/apiService';
+import { validateUploadFile, compressAndResizeImage, UPLOAD_LIMITS } from '../../utils/fileUploadGuard';
 
 interface Props {
   isOpen: boolean;
@@ -34,6 +40,9 @@ export const ContactUsModal: React.FC<Props> = ({
   const [subject, setSubject] = useState(defaultSubject);
   const [message, setMessage] = useState('');
   const [inquiryType, setInquiryType] = useState<'BUYER' | 'SUPPLIER' | 'ESCROW_DISPUTE' | 'IEM_SERVICES'>('BUYER');
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; size: string; previewUrl?: string }>>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -215,6 +224,98 @@ export const ContactUsModal: React.FC<Props> = ({
                 onChange={e => setMessage(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
               />
+            </div>
+
+            {/* Optional Attachments (Capped & Safe) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Attach Relevant Documents / Photos (Optional)</span>
+                </span>
+                <span className="text-[10px] text-slate-500 font-semibold">Strict Limit: Max 5 MB</span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors border border-slate-200">
+                  <Upload className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{isProcessingFile ? 'Verifying...' : 'Select File / Photo (Max 5MB)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    disabled={isProcessingFile}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadError(null);
+                      const validation = validateUploadFile(file, file.type.startsWith('image/') ? 'IMAGE' : 'DOCUMENT');
+                      if (!validation.valid) {
+                        setUploadError(validation.error || 'File exceeded allowed upload capacity.');
+                        e.target.value = '';
+                        return;
+                      }
+                      try {
+                        setIsProcessingFile(true);
+                        if (file.type.startsWith('image/')) {
+                          const compressed = await compressAndResizeImage(file);
+                          setAttachedFiles(prev => [
+                            ...prev,
+                            {
+                              name: file.name,
+                              size: (compressed.sizeBytes / 1024).toFixed(0) + ' KB',
+                              previewUrl: compressed.dataUrl
+                            }
+                          ]);
+                        } else {
+                          setAttachedFiles(prev => [
+                            ...prev,
+                            {
+                              name: file.name,
+                              size: (file.size / 1024).toFixed(0) + ' KB'
+                            }
+                          ]);
+                        }
+                      } catch (err: any) {
+                        setUploadError(err?.message || 'Failed to process file safely.');
+                      } finally {
+                        setIsProcessingFile(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+
+                {attachedFiles.map((att, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium"
+                  >
+                    {att.previewUrl ? (
+                      <img src={att.previewUrl} alt="" className="w-5 h-5 rounded object-cover" />
+                    ) : (
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                    <span className="truncate max-w-[120px] font-bold">{att.name}</span>
+                    <span className="text-[10px] text-blue-600">({att.size})</span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachedFiles(attachedFiles.filter((_, i) => i !== idx))}
+                      className="text-slate-400 hover:text-rose-600 p-0.5 rounded cursor-pointer"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {uploadError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
             </div>
 
             {/* Escrow & Privacy Guarantee */}

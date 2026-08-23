@@ -65,7 +65,7 @@ export const ClientAdminView: React.FC<Props> = ({
   const [editCountry, setEditCountry] = useState(currentUser?.country || 'United States');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
@@ -383,7 +383,9 @@ export const ClientAdminView: React.FC<Props> = ({
                         <div className="font-bold text-slate-900 flex items-center gap-1.5">
                           <span>{user.name}</span>
                           {user.isPremium && (
-                            <Crown className="w-3 h-3 text-amber-500" title="Paid Premium Member" />
+                            <span title="Paid Premium Member">
+                              <Crown className="w-3 h-3 text-amber-500" />
+                            </span>
                           )}
                         </div>
                         <div className="text-[11px] text-slate-500">{user.email}</div>
@@ -687,7 +689,7 @@ export const ClientAdminView: React.FC<Props> = ({
                   className={`p-3.5 rounded-2xl border text-xs space-y-1.5 transition-all ${
                     log.status === 'FORBIDDEN_403'
                       ? 'bg-rose-50/80 border-rose-200 text-rose-950'
-                      : log.action === 'PRIVILEGE_ELEVATION_ATTEMPT_BLOCKED'
+                      : log.action === 'UNAUTHORIZED_ACCESS_BLOCKED' || log.action === 'OWNERSHIP_VIOLATION_BLOCKED'
                       ? 'bg-amber-50 border-amber-200 text-amber-950'
                       : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}

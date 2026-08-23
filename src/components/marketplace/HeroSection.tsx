@@ -163,7 +163,7 @@ export const HeroSection: React.FC<Props> = ({
   }, []);
 
   const curr = useMemo(() => {
-    return CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+    return (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
   }, [selectedCurrency]);
 
   const formatPrice = (usd: number) => {

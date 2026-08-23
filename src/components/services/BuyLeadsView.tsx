@@ -43,7 +43,7 @@ export const BuyLeadsView: React.FC<Props> = ({
   const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
@@ -228,13 +228,16 @@ export const BuyLeadsView: React.FC<Props> = ({
                 {/* Gated Buyer Email & Phone */}
                 <div className="pt-1">
                   <PremiumContactGate
-                    isLocked={Boolean(rfq.isContactGated)}
-                    email={rfq.buyerEmail || 'procurement@buyer.org'}
-                    phone={rfq.buyerPhone || '+1 (555) 902-8411'}
-                    companyName={rfq.buyerCompany}
-                    label="Buyer Direct Desk"
-                    onUpgrade={onOpenUpgradeModal}
-                  />
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                    isMasked={Boolean(rfq.isContactMasked)}
+                    resourceTitle="Buyer Direct Desk Contact"
+                  >
+                    <div className="space-y-1 text-xs text-slate-700">
+                      <div><strong>Email:</strong> {rfq.buyerEmail || 'procurement@buyer.org'}</div>
+                      <div><strong>Phone:</strong> {rfq.buyerPhone || '+1 (555) 902-8411'}</div>
+                    </div>
+                  </PremiumContactGate>
                 </div>
               </div>
             </div>

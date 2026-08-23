@@ -41,7 +41,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
 
   if (!isOpen || !checkoutData) return null;
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
   const convertedPrice = checkoutData.amountUsd * curr.rateToUSD;
 
   const formatPrice = (amount: number) => {

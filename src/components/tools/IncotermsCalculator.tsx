@@ -29,7 +29,7 @@ export const IncotermsCalculator: React.FC<Props> = ({ selectedCurrency }) => {
   const [destPortHandling, setDestPortHandling] = useState<number>(450);
   const [destFinalDelivery, setDestFinalDelivery] = useState<number>(850);
 
-  const curr = CURRENCY_RATES.find(c => c.code === selectedCurrency) || CURRENCY_RATES[0];
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   // Calculated Incoterms totals
   const fobTotal = exwPrice + originTrucking + exportCustoms;
