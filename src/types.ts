@@ -156,8 +156,8 @@ export interface CompanyProfile {
   avgResponseTime: string; // e.g., '< 2 hours'
   totalEmployees: string;
   annualRevenueUsd: string;
-  mainMarkets: string[];
-  certifications: string[]; // e.g., ['ISO 9001:2015', 'CE', 'RoHS', 'FDA', 'SGS Audited']
+  mainMarkets?: string[];
+  certifications?: string[]; // e.g., ['ISO 9001:2015', 'CE', 'RoHS', 'FDA', 'SGS Audited']
   factorySizeSqM: number;
   productionLines: number;
   logoUrl: string;
@@ -381,7 +381,108 @@ export type ActiveView =
   | 'TRADE_TOOLS'
   | 'REFUND_POLICY'
   | 'CONTACT_US'
-  | 'ONBOARD_WITH_US';
+  | 'ONBOARD_WITH_US'
+  | 'VENDOR_PROFILE';
+
+export interface ComplianceCertificate {
+  id: string;
+  name: string;
+  category: 'QUALITY' | 'SAFETY' | 'ENVIRONMENT' | 'REGISTRATION' | 'FOOD_AGRICULTURE' | 'TRADE' | string;
+  certificateNumber: string;
+  issuingAuthority: string;
+  issueDate: string;
+  expiryDate: string;
+  documentUrl: string;
+  thumbnailUrl?: string;
+  type: 'IMAGE' | 'PDF';
+  verified: boolean;
+  scope?: string;
+  fileSizeMb?: number;
+}
+
+export interface FactoryTourImage {
+  id: string;
+  title: string;
+  department: string;
+  imageUrl: string;
+  caption?: string;
+  order?: number;
+}
+
+export interface MarketDistributionItem {
+  market: string;
+  percentage: number;
+  topCountries?: string[];
+}
+
+export interface FactoryDetails {
+  factorySizeSqM: number;
+  productionLines: number;
+  annualOutputUnits?: string;
+  monthlyCapacity?: string;
+  rdEngineersCount?: number;
+  qaInspectorsCount?: number;
+  qcProcedures?: string[];
+  testingEquipment?: string[];
+  tourGallery?: FactoryTourImage[];
+}
+
+export interface VendorContactDetails {
+  avatarUrl?: string;
+  name: string;
+  designation: string;
+  email: string;
+  phone: string;
+  whatsapp?: string;
+  languages?: string[];
+  timezone?: string;
+  isVerified: boolean;
+  responseTime?: string;
+}
+
+export interface DetailedVendorProfile extends CompanyProfile {
+  tradeName?: string;
+  taxVatNumber?: string;
+  dunsNumber?: string;
+  memberTierLabel?: string;
+  yearsInBusiness?: number;
+  tagline?: string;
+  acceptedPaymentTerms?: string[];
+  supportedIncotermsList?: Incoterm[];
+  portsOfDispatch?: string[];
+  marketDistribution?: MarketDistributionItem[];
+  oemOdmCapabilities?: {
+    oemServicesOffered: boolean;
+    customLogoPrinting: boolean;
+    customPackaging: boolean;
+    sampleLeadTimeDays: number;
+    prototype3DModeling?: boolean;
+    reverseEngineering?: boolean;
+  };
+  contactPersonDetails?: VendorContactDetails;
+  complianceCertificates?: ComplianceCertificate[];
+  factoryDetails?: FactoryDetails;
+  downloadableBrochureUrl?: string;
+}
+
+export interface MediaUploadValidationResult {
+  valid: boolean;
+  error?: string;
+  formattedSize?: string;
+}
+
+export interface UploadedMediaItem {
+  id: string;
+  file?: File;
+  previewUrl: string;
+  name: string;
+  sizeBytes: number;
+  type: 'IMAGE' | 'PDF';
+  category: 'LOGO' | 'BANNER' | 'PRODUCT' | 'CERTIFICATE' | 'FACTORY';
+  title?: string;
+  meta?: Record<string, string | number | boolean>;
+  uploadedAt: string;
+}
 
 export interface VerifiedPartnerRegistration {
   id?: string;

@@ -40,6 +40,7 @@ import { ClientAdminView } from './components/services/ClientAdminView';
 import { SiteContentCmsEditor } from './components/cms/SiteContentCmsEditor';
 import { CmsPermissionsPanel } from './components/cms/CmsPermissionsPanel';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
+import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 
 // Modals
 import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
@@ -410,6 +411,20 @@ const MainApp: React.FC = () => {
                   />
                 );
 
+              case 'VENDOR_PROFILE':
+                return (
+                  <VendorProfilePage
+                    companyId={storefrontCompanyId || 'comp-apex-motorsport'}
+                    products={products}
+                    selectedCurrency={selectedCurrency}
+                    onSelectProduct={handleSelectProduct}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={() => handleNavigate('PREMIUM_MEMBERSHIP')}
+                    onNavigate={handleNavigate}
+                  />
+                );
+
               case 'CLIENT_ADMIN':
                 return (
                   <ClientAdminView
@@ -486,8 +501,12 @@ const MainApp: React.FC = () => {
         onOpenStorefront={handleOpenStorefront}
       />
 
-      {/* 7. LIVE VISUAL ON-SCREEN SITE EDITOR BAR */}
-      <FloatingLiveEditorBar onNavigate={handleNavigate} />
+      {/* 7. LIVE VISUAL ON-SCREEN SITE EDITOR & ADMIN WORKSPACE BAR */}
+      <FloatingLiveEditorBar 
+        onNavigate={handleNavigate} 
+        currentView={activeView}
+        onOpenBackendManager={() => setIsDbModalOpen(true)}
+      />
 
       {/* 8. QUICK SECTION LIVE EDIT MODAL */}
       <LiveSectionEditModal

@@ -235,8 +235,8 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('CLIENT_PORTAL')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
-                  Exporter Client Admin Portal
+                <button onClick={() => onNavigate('DASHBOARD')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Exporter Orders &amp; Shipments
                 </button>
               </li>
               <li>

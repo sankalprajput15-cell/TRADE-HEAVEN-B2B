@@ -212,7 +212,52 @@ export const ClientAdminView: React.FC<Props> = ({
     setTimeout(() => setActionMessage(null), 6000);
   };
 
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+
+  if (!isAdmin) {
+    return (
+      <div id="client-admin-restricted-view" className="py-12 px-4 max-w-2xl mx-auto text-center space-y-6">
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-black uppercase tracking-wider">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+              <span>Admin Authentication Required</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+              Administrator Control Panel
+            </h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              This portal contains zero-trust role management, custodial escrow treasury vaults, and server security controls. Please sign in with administrator credentials to access.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'AUTH_LOGIN' }));
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Sign In as Administrator</span>
+            </button>
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'HOMEPAGE' }));
+              }}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+            >
+              <span>Return to Marketplace</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="client-admin-treasury-root" className="space-y-6">

@@ -17,7 +17,11 @@ import {
   Copy,
   Crown,
   Key,
-  UserPlus
+  UserPlus,
+  Landmark,
+  SlidersHorizontal,
+  Database,
+  ArrowRight
 } from 'lucide-react';
 
 interface Props {
@@ -84,10 +88,18 @@ export const AuthModal: React.FC<Props> = ({
       const res = await api.login(cleanEmail, password);
       if (res.success && res.user) {
         onLogin(res.user);
-        setSuccess(`Authenticated successfully as ${res.user.name} (${res.user.role}).`);
+        const isAdminUser = res.user.role === 'ADMIN' || res.user.email?.toLowerCase() === 'admin@tradeheaven.net';
+        setSuccess(
+          isAdminUser 
+            ? `Admin session verified. Entering Administrator Control Center...`
+            : `Authenticated successfully as ${res.user.name} (${res.user.role}).`
+        );
         setTimeout(() => {
           setSuccess(null);
           onClose();
+          if (isAdminUser && onNavigate) {
+            onNavigate('CLIENT_ADMIN');
+          }
         }, 750);
       } else {
         setError(res.message || 'Invalid email or password. Access denied.');
@@ -277,6 +289,63 @@ export const AuthModal: React.FC<Props> = ({
                 )}
               </div>
             </div>
+
+            {/* Admin Dedicated Control Center Quick Access (Visible only when logged in as ADMIN) */}
+            {currentUser?.role === 'ADMIN' && (
+              <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-950 font-black text-xs">
+                    <Landmark className="w-4 h-4 text-amber-600" />
+                    <span>Administrator Control Center</span>
+                  </div>
+                  <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                    Full Access
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onNavigate) onNavigate('CLIENT_ADMIN');
+                    }}
+                    className="p-3 rounded-xl bg-white hover:bg-amber-100/50 border border-amber-200 text-left transition-all group cursor-pointer shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between font-bold text-slate-900 text-xs">
+                      <span className="flex items-center gap-1.5 text-amber-900">
+                        <Landmark className="w-3.5 h-3.5 text-amber-600" />
+                        Admin &amp; Treasury
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Manage RBAC users, custodial escrow vaults, and data gating.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      if (onNavigate) onNavigate('CMS_MANAGEMENT');
+                    }}
+                    className="p-3 rounded-xl bg-white hover:bg-amber-100/50 border border-amber-200 text-left transition-all group cursor-pointer shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between font-bold text-slate-900 text-xs">
+                      <span className="flex items-center gap-1.5 text-amber-900">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600" />
+                        Full Site CMS Editor
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Edit site copy, hero banners, WhatsApp numbers, and categories.
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => {

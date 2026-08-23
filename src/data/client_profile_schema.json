@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "B2BClientVendorProfile",
+  "description": "Comprehensive schema and mock dataset for international B2B Client/Vendor profile and media assets modeled after go4WorldBusiness, Alibaba, and Global Sources.",
+  "type": "object",
+  "required": [
+    "id",
+    "companyName",
+    "legalRegistrationNumber",
+    "country",
+    "city",
+    "establishedYear",
+    "businessType",
+    "tier",
+    "logoUrl",
+    "bannerUrl",
+    "products",
+    "complianceCertificates",
+    "factoryDetails"
+  ],
+  "properties": {
+    "id": { "type": "string", "example": "comp-apex-motorsport" },
+    "companyName": { "type": "string", "example": "Apex Dynamics Precision Forging & Motorsport Ltd." },
+    "tradeName": { "type": "string", "example": "Apex Dynamics Racing Systems" },
+    "legalRegistrationNumber": { "type": "string", "example": "US-IN-2006-LLC-884920" },
+    "taxVatNumber": { "type": "string", "example": "US849302194" },
+    "dunsNumber": { "type": "string", "example": "08-492-8193" },
+    "country": { "type": "string", "example": "United States" },
+    "countryCode": { "type": "string", "example": "US" },
+    "city": { "type": "string", "example": "Indianapolis, IN" },
+    "address": { "type": "string", "example": "4200 Speedway Boulevard, Industrial Park II, Indianapolis, IN 46222" },
+    "establishedYear": { "type": "integer", "example": 2006 },
+    "yearsInBusiness": { "type": "integer", "example": 19 },
+    "businessType": {
+      "type": "string",
+      "enum": ["Manufacturer", "Trading Company", "Wholesaler", "Exporter", "OEM/ODM Partner"],
+      "example": "Manufacturer"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["FREE", "SILVER", "GOLD", "VIP"],
+      "example": "VIP"
+    },
+    "memberTierLabel": { "type": "string", "example": "Diamond VIP Verified Exporter" },
+    "isVerifiedKYC": { "type": "boolean", "example": true },
+    "kycVerificationDate": { "type": "string", "format": "date", "example": "2025-02-14" },
+    "auditedBy": { "type": "string", "example": "TÜV Rheinland & SGS Global Bureau" },
+    "trustScore": { "type": "number", "minimum": 0, "maximum": 100, "example": 98.4 },
+    "responseRate": { "type": "string", "example": "99.2%" },
+    "avgResponseTime": { "type": "string", "example": "< 1 hour" },
+    "totalEmployees": { "type": "string", "example": "350 - 500 Staff" },
+    "annualRevenueUsd": { "type": "string", "example": "$45M - $75M USD" },
+    "tradeAssuranceLimitUsd": { "type": "number", "example": 2500000 },
+    "completedOrdersCount": { "type": "integer", "example": 520 },
+    "onTimeDeliveryRate": { "type": "string", "example": "99.6%" },
+    "logoUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "1:1 aspect ratio company logo",
+      "example": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=400&auto=format&fit=crop&q=80"
+    },
+    "bannerUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "16:9 panoramic cover banner",
+      "example": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1600&auto=format&fit=crop&q=80"
+    },
+    "tagline": {
+      "type": "string",
+      "example": "Aerospace-Grade Precision Forged Alloy Wheels, Turbochargers & Monobloc Braking Hardware"
+    },
+    "description": {
+      "type": "string",
+      "example": "Apex Dynamics is an ISO/IATF 16949-certified global manufacturer specializing in ultra-lightweight forged 6061-T6 aluminum alloy wheels, CNC billet turbocharger systems, and carbon-ceramic brake systems for international racing teams and tier-1 OEM automotive distributors."
+    },
+    "acceptedPaymentTerms": {
+      "type": "array",
+      "items": { "type": "string" },
+      "example": [
+        "Trade Assurance Escrow (Zero-Risk)",
+        "L/C at Sight (Irrevocable Confirmed)",
+        "30% T/T Advance + 70% against B/L",
+        "D/P (Documents Against Payment)"
+      ]
+    },
+    "supportedIncoterms": {
+      "type": "array",
+      "items": { "type": "string" },
+      "example": ["FOB", "CIF", "CFR", "EXW", "DDP", "FCA"]
+    },
+    "portsOfDispatch": {
+      "type": "array",
+      "items": { "type": "string" },
+      "example": ["Port of Los Angeles (USLAX)", "Port of Long Beach", "Port of New York / New Jersey"]
+    },
+    "marketDistribution": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "market": { "type": "string" },
+          "percentage": { "type": "number" },
+          "topCountries": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "example": [
+        { "market": "North America", "percentage": 42, "topCountries": ["USA", "Canada", "Mexico"] },
+        { "market": "Western Europe", "percentage": 28, "topCountries": ["Germany", "UK", "Italy", "France"] },
+        { "market": "Asia-Pacific & Japan", "percentage": 18, "topCountries": ["Japan", "Australia", "South Korea"] },
+        { "market": "Middle East & Gulf", "percentage": 12, "topCountries": ["UAE", "Saudi Arabia", "Qatar"] }
+      ]
+    },
+    "oemOdmCapabilities": {
+      "type": "object",
+      "properties": {
+        "oemServicesOffered": { "type": "boolean", "example": true },
+        "customLogoPrinting": { "type": "boolean", "example": true },
+        "customPackaging": { "type": "boolean", "example": true },
+        "sampleLeadTimeDays": { "type": "integer", "example": 5 },
+        "prototype3DModeling": { "type": "boolean", "example": true },
+        "reverseEngineering": { "type": "boolean", "example": true }
+      }
+    },
+    "contactPerson": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "example": "Brett Vance" },
+        "designation": { "type": "string", "example": "Director of International Trade & OEM Relations" },
+        "email": { "type": "string", "example": "b.vance@apexdynamics-racing.com" },
+        "phone": { "type": "string", "example": "+1 (317) 890-4420" },
+        "whatsapp": { "type": "string", "example": "+13178904420" },
+        "avatarUrl": { "type": "string", "example": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80" },
+        "languages": { "type": "array", "items": { "type": "string" }, "example": ["English", "German", "Mandarin"] },
+        "timezone": { "type": "string", "example": "EST (UTC-5) / Business Hours 08:00 - 18:00" },
+        "isVerified": { "type": "boolean", "example": true }
+      }
+    },
+    "complianceCertificates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "certificateNumber": { "type": "string" },
+          "issuingAuthority": { "type": "string" },
+          "issueDate": { "type": "string" },
+          "expiryDate": { "type": "string" },
+          "documentUrl": { "type": "string" },
+          "thumbnailUrl": { "type": "string" },
+          "verified": { "type": "boolean" },
+          "scope": { "type": "string" }
+        }
+      }
+    },
+    "factoryDetails": {
+      "type": "object",
+      "properties": {
+        "factorySizeSqM": { "type": "number", "example": 38000 },
+        "productionLines": { "type": "integer", "example": 8 },
+        "annualOutputUnits": { "type": "string", "example": "250,000 Forged Wheel Sets / Year" },
+        "monthlyCapacity": { "type": "string", "example": "22,000 Units / Month" },
+        "rdEngineersCount": { "type": "integer", "example": 32 },
+        "qaInspectorsCount": { "type": "integer", "example": 24 },
+        "qcProcedures": {
+          "type": "array",
+          "items": { "type": "string" },
+          "example": [
+            "100% In-Line Spectrometer Chemical Composition Analysis",
+            "CMM 3D Coordinate Precision Laser Scanning (±0.005mm)",
+            "Dynamic Radial & Cornering Fatigue Testing (SAE J2530 Standards)",
+            "100% Helium Leak Detection & X-Ray Structural Integrity Scan",
+            "Pre-Shipment Salt Spray Corrosion Testing (1000 Hours ASTM B117)"
+          ]
+        },
+        "testingEquipment": {
+          "type": "array",
+          "items": { "type": "string" },
+          "example": [
+            "Zeiss Industrial 3D CMM Laser Scanner",
+            "Tinius Olsen 300kN Universal Tensile Testing Machine",
+            "Shimadzu Optical Emission Spectrometer (OES)",
+            "MTS Dynamic Wheel Radial Bending Fatigue Rig",
+            "Ascott 450L Atmospheric Salt Spray Chamber"
+          ]
+        },
+        "tourGallery": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "department": { "type": "string" },
+              "imageUrl": { "type": "string" },
+              "caption": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "category": { "type": "string" },
+          "subCategory": { "type": "string" },
+          "images": { "type": "array", "items": { "type": "string" } },
+          "fobPriceRange": { "type": "string" },
+          "fobPriceUsd": { "type": "number" },
+          "moq": { "type": "number" },
+          "moqUnit": { "type": "string" },
+          "leadTimeDays": { "type": "integer" },
+          "priceTiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "minUnits": { "type": "number" },
+                "priceUsd": { "type": "number" }
+              }
+            }
+          },
+          "specifications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "string" }
+              }
+            }
+          },
+          "featured": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
