@@ -293,11 +293,11 @@ export const Header: React.FC<Props> = ({
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 w-full">
+        <div className="flex items-center justify-between gap-2 lg:gap-3 xl:gap-4 w-full">
           
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               id="header-logo-home-btn"
               onClick={() => handleNavClick('HOMEPAGE')}
@@ -308,11 +308,11 @@ export const Header: React.FC<Props> = ({
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 shrink-0">
             <button
               id="nav-link-homepage"
               onClick={() => handleNavClick('HOMEPAGE')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -323,7 +323,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-products"
               onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'PRODUCT_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -334,7 +334,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-suppliers"
               onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'SUPPLIERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -345,7 +345,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-rfqs"
               onClick={() => handleNavClick('RFQ_HUB')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'RFQ_HUB'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -356,7 +356,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-buy-leads"
               onClick={() => handleNavClick('BUY_LEADS')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'BUY_LEADS'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -369,7 +369,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-onboard"
               onClick={() => handleNavClick('ONBOARD_WITH_US')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'ONBOARD_WITH_US'
                   ? 'bg-emerald-600 text-white font-extrabold shadow-sm'
                   : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/80'
@@ -383,7 +383,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-admin"
               onClick={() => handleNavClick('CLIENT_ADMIN')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'CLIENT_ADMIN'
                   ? 'bg-amber-100 text-amber-900 font-extrabold'
                   : currentUserRole === 'ADMIN'
@@ -391,10 +391,10 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Landmark className="w-3.5 h-3.5 text-amber-600" />
+              <Landmark className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>Admin &amp; Treasury</span>
               {currentUserRole !== 'ADMIN' && (
-                <Lock className="w-3 h-3 text-slate-400" />
+                <Lock className="w-3 h-3 text-slate-400 shrink-0" />
               )}
             </button>
 
@@ -402,13 +402,13 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-contact"
               onClick={() => handleNavClick('CONTACT_US')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'CONTACT_US'
                   ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Mail className="w-3.5 h-3.5 text-blue-600" />
+              <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
               <span>Contact Us</span>
             </button>
 
@@ -416,29 +416,29 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-cms"
               onClick={() => handleNavClick('CMS_MANAGEMENT')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'CMS_MANAGEMENT'
                   ? 'bg-amber-100 text-amber-950 font-black border border-amber-300'
                   : 'text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80'
               }`}
               title="Full-Site Live CMS Editor"
             >
-              <Sliders className="w-3.5 h-3.5 text-amber-600" />
+              <Sliders className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>Edit Site</span>
             </button>
 
             {/* Dropdown: More B2B Services */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setMoreToolsOpen(!moreToolsOpen)}
-                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                className={`px-2.5 xl:px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
                   isSecondaryActive && activeView !== 'CLIENT_ADMIN' && activeView !== 'CONTACT_US'
                     ? 'bg-blue-50 text-blue-600'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 <span>Services</span>
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-3 h-3 shrink-0" />
               </button>
 
               {moreToolsOpen && (
@@ -519,14 +519,14 @@ export const Header: React.FC<Props> = ({
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Post RFQ Button */}
             <button
               id="header-post-rfq-btn"
               onClick={onOpenCreateRfq}
-              className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-all shadow-sm cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-all shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle className="w-4 h-4 shrink-0" />
               <span>Post Buy RFQ</span>
             </button>
 
@@ -534,14 +534,14 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-negotiation-btn"
               onClick={() => handleNavClick('NEGOTIATION_ROOM')}
-              className={`p-2 rounded-xl border relative transition-all cursor-pointer ${
+              className={`p-2 rounded-xl border relative transition-all shrink-0 cursor-pointer ${
                 activeView === 'NEGOTIATION_ROOM'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
               title="Negotiation Room &amp; Inquiries"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4 shrink-0" />
               {unreadMessagesCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
                   {unreadMessagesCount}
@@ -553,21 +553,21 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-dashboard-btn"
               onClick={() => handleNavClick('DASHBOARD')}
-              className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              className={`p-2 rounded-xl border transition-all shrink-0 cursor-pointer ${
                 activeView === 'DASHBOARD'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
               title="Trade Workspace Dashboard"
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-4 h-4 shrink-0" />
             </button>
 
             {/* Mobile Menu Hamburger */}
             <button
               id="header-mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+              className="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>

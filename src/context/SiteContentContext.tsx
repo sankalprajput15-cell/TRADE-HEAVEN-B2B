@@ -465,11 +465,31 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isLiveEditMode, setIsLiveEditMode] = useState<boolean>(false);
   const [activeQuickEditSection, setActiveQuickEditSection] = useState<string | null>(null);
 
+  // Automatically deactivate live edit mode if current user is not an administrator
+  useEffect(() => {
+    const auth = isUserAuthorized(currentUser);
+    const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+    if (!isAdmin) {
+      setIsLiveEditMode(false);
+      setActiveQuickEditSection(null);
+    }
+  }, [currentUser]);
+
   const toggleLiveEditMode = () => {
+    const auth = isUserAuthorized(currentUser);
+    const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+    if (!isAdmin) {
+      return;
+    }
     setIsLiveEditMode(prev => !prev);
   };
 
   const openQuickEdit = (section: string) => {
+    const auth = isUserAuthorized(currentUser);
+    const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+    if (!isAdmin) {
+      return;
+    }
     setActiveQuickEditSection(section);
   };
 

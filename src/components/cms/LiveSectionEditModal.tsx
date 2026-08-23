@@ -23,15 +23,18 @@ export const LiveSectionEditModal: React.FC<Props> = ({
   onClose,
   sectionKey
 }) => {
-  const { siteContent, updateSiteContent, currentUser } = useSiteContent();
+  const { siteContent, updateSiteContent, currentUser, isUserAuthorized } = useSiteContent();
   const [formData, setFormData] = useState(siteContent);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const auth = isUserAuthorized(currentUser);
+  const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
 
   React.useEffect(() => {
     setFormData(siteContent);
   }, [siteContent, isOpen]);
 
-  if (!isOpen || !sectionKey) return null;
+  if (!isOpen || !sectionKey || !isAdmin) return null;
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

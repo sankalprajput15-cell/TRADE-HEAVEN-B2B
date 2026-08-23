@@ -18,7 +18,9 @@ import {
   Phone,
   Settings,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert,
+  Lock
 } from 'lucide-react';
 
 interface Props {
@@ -32,13 +34,20 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({ onNavigate }) => {
     openQuickEdit, 
     resetToDefaults, 
     exportContentJson,
-    currentUser 
+    currentUser,
+    isUserAuthorized
   } = useSiteContent();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
-  if (isDismissed) return null;
+  // Check admin authorization: VISIBLE & ACCESSIBLE ONLY BY ADMIN
+  const auth = isUserAuthorized(currentUser);
+  const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+
+  if (!isAdmin || isDismissed) {
+    return null;
+  }
 
   const handleExport = () => {
     const jsonStr = exportContentJson();
@@ -223,7 +232,7 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({ onNavigate }) => {
         <button
           type="button"
           onClick={() => setIsExpanded(prev => !prev)}
-          className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 shadow-2xl backdrop-blur-md transition-all transform hover:scale-105 cursor-pointer select-none active:scale-95"
+          className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white border border-amber-500/40 shadow-2xl backdrop-blur-md transition-all transform hover:scale-105 cursor-pointer select-none active:scale-95 ring-1 ring-amber-500/20"
         >
           <span className="relative flex h-3 w-3">
             {isLiveEditMode && (
@@ -233,10 +242,12 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({ onNavigate }) => {
           </span>
 
           <span className="text-xs font-bold flex items-center gap-1.5">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" />
-            <span>Edit Website</span>
-            {isLiveEditMode && (
+            <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+            <span>Admin Live Editor</span>
+            {isLiveEditMode ? (
               <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-mono text-[9px]">ACTIVE</span>
+            ) : (
+              <span className="px-1.5 py-0.2 rounded bg-slate-800 text-amber-400/90 font-mono text-[9px] border border-amber-500/30">ADMIN</span>
             )}
           </span>
 

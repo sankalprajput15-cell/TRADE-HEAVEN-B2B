@@ -176,7 +176,7 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
       
       {/* 1. TOP ANNOUNCEMENT & LIVE RFQ TICKER */}
       <LiveRfqTicker onRfqClick={() => setActiveView('RFQ_HUB')} />
