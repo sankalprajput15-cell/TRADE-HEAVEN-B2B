@@ -29,6 +29,7 @@ import {
 
 interface Props {
   products: Product[];
+  rfqs?: RfqRequirement[];
   selectedCurrency: Currency;
   onSelectProduct: (product: Product) => void;
   onOpenStorefront: (companyId: string) => void;
@@ -40,6 +41,7 @@ interface Props {
 
 export const TradeWheelHomePage: React.FC<Props> = ({
   products,
+  rfqs = MOCK_RFQS,
   selectedCurrency,
   onSelectProduct,
   onOpenStorefront,
@@ -220,7 +222,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_RFQS.slice(0, 3).map(rfq => (
+          {(rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).slice(0, 3).map(rfq => (
             <div
               key={rfq.id}
               onClick={() => onNavigate('RFQ_HUB')}

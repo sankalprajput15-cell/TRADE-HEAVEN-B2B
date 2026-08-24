@@ -11,8 +11,8 @@ const PORT = 3000;
 app.use(express.json());
 
 // Server environment credentials
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@tradeheaven.net').toLowerCase().trim();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'TradeHeavenAdmin2025!';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yr943334@gmail.com').toLowerCase().trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Yash@8532';
 const JWT_SECRET_SALT = process.env.JWT_SECRET || 'trade_heaven_b2b_sec_2025_swiss_escrow';
 
 // In-memory server-managed user registry
@@ -35,8 +35,23 @@ interface ServerUserRecord {
 const serverUsersStore: ServerUserRecord[] = [
   {
     id: 'user-admin-root',
-    email: ADMIN_EMAIL,
-    passwordHash: ADMIN_PASSWORD,
+    email: 'yr943334@gmail.com',
+    passwordHash: 'Yash@8532',
+    name: 'Administrator',
+    role: 'ADMIN',
+    companyName: 'Trade Heaven Global Operations & Treasury',
+    country: 'United Kingdom',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: true,
+    membershipStatus: 'paid',
+    tier: 'VIP',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'user-admin-legacy',
+    email: 'admin@tradeheaven.net',
+    passwordHash: 'Yash@8532',
     name: 'Sarah Jenkins',
     role: 'ADMIN',
     companyName: 'Trade Heaven Global Operations & Treasury',

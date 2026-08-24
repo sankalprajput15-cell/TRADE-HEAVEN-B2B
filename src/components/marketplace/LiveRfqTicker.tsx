@@ -4,20 +4,25 @@ import { RfqRequirement } from '../../types';
 import { Radio, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 
 interface Props {
+  rfqs?: RfqRequirement[];
   onSelectRfq: (rfq: RfqRequirement) => void;
 }
 
-export const LiveRfqTicker: React.FC<Props> = ({ onSelectRfq }) => {
+export const LiveRfqTicker: React.FC<Props> = ({ rfqs = MOCK_RFQS, onSelectRfq }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const displayList = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % MOCK_RFQS.length);
+      setCurrentIndex(prev => (prev + 1) % displayList.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [displayList.length]);
 
-  const activeRfq = MOCK_RFQS[currentIndex];
+  const activeRfq = displayList[currentIndex % displayList.length] || displayList[0];
+
+  if (!activeRfq) return null;
 
   return (
     <div id="live-rfq-ticker" className="bg-amber-50/70 border-y border-amber-200/80 py-1.5 px-3 sm:px-4 lg:px-8 text-xs flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">

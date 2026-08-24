@@ -69,23 +69,33 @@ export const RfqCreationModal: React.FC<Props> = ({
     e.preventDefault();
     setIsSubmitting(true);
 
-    const newRfq: Partial<RfqRequirement> = {
-      productName,
-      category,
-      targetQuantity: Number(targetQuantity),
-      quantityUnit,
-      targetPriceUsd: Number(targetPriceUsd),
-      preferredIncoterm,
-      destinationPort,
+    const generatedId = `rfq-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+
+    const newRfq: RfqRequirement = {
+      id: generatedId,
+      buyerName: buyerCompany ? `${buyerCompany} (Buyer)` : 'Procurement Officer',
+      buyerCompany: buyerCompany || 'International Procurement Corp',
+      buyerCountry: buyerCountry || 'Global',
+      buyerVerified: true,
+      productName: productName || 'Commercial Bulk Sourcing Requirement',
+      category: category || 'Industrial Machinery',
+      targetQuantity: Number(targetQuantity) || 100,
+      quantityUnit: quantityUnit || 'Units',
+      targetPriceUsd: Number(targetPriceUsd) || 100,
+      preferredIncoterm: preferredIncoterm || 'FOB',
+      destinationPort: destinationPort || 'Global Major Hub',
       shippingMethod,
-      paymentTerms,
+      paymentTerms: paymentTerms || '30% TT Deposit, 70% against B/L',
       targetDeliveryDate,
-      detailedDescription: description || `Seeking direct OEM/ODM factory quotation for ${targetQuantity} ${quantityUnit} of ${productName}. Delivery to ${destinationPort}.`,
-      buyerCompany,
-      buyerCountry,
-      buyerEmail,
+      detailedRequirements: description || `Seeking direct OEM/ODM factory quotation for ${targetQuantity} ${quantityUnit} of ${productName}. Target Incoterm: ${preferredIncoterm}, Destination Port: ${destinationPort}.`,
+      buyerEmail: buyerEmail || 'buyer@tradeheaven.net',
+      urgency: 'STANDARD',
+      quotesCount: 0,
+      postedDate: new Date().toISOString().split('T')[0],
+      expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       status: 'OPEN',
-      quotesCount: 0
+      matchedSupplierCount: 6,
+      spamScore: 1.0
     };
 
     try {
@@ -94,8 +104,8 @@ export const RfqCreationModal: React.FC<Props> = ({
         name: buyerCompany || 'Procurement Officer',
         email: buyerEmail || 'buyer@tradeheaven.net',
         phone: '',
-        subject: `Buy Lead RFQ: ${targetQuantity} ${quantityUnit} of ${productName}`,
-        message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedDescription}`,
+        subject: `Buy Lead RFQ [${generatedId}]: ${targetQuantity} ${quantityUnit} of ${productName}`,
+        message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedRequirements}`,
         product_name: productName,
         status: 'pending'
       });
@@ -114,8 +124,68 @@ export const RfqCreationModal: React.FC<Props> = ({
         } else {
           onClose();
         }
-      }, 1000);
-    }, 600);
+      }, 900);
+    }, 500);
+  };
+
+  const handleApplyPreset = (preset: 'SOLAR' | 'CNC' | 'DENIM' | 'BATTERY') => {
+    if (preset === 'SOLAR') {
+      setProductName('580W TOPCon Bifacial Monocrystalline Solar Panels');
+      setCategory('Renewable Energy & Solar');
+      setTargetQuantity(620);
+      setQuantityUnit('Pieces');
+      setTargetPriceUsd(68);
+      setPreferredIncoterm('CIF');
+      setDestinationPort('Hamburg Port, Germany');
+      setShippingMethod('SEA_FCL');
+      setPaymentTerms('30% TT Deposit, 70% against B/L');
+      setDescription('Require 1x40ft FCL container of 580W Grade-A TOPCon bifacial modules. IEC 61215 and TÜV Rheinland certifications required. Complete with MC4-EVO2 connectors.');
+      setBuyerCompany('Helios Green Power GmbH');
+      setBuyerCountry('Germany');
+      setBuyerEmail('procurement@helios-power.de');
+    } else if (preset === 'CNC') {
+      setProductName('5-Axis High Precision CNC Machining Center with Siemens Controller');
+      setCategory('Industrial Machinery & Automation');
+      setTargetQuantity(2);
+      setQuantityUnit('Sets');
+      setTargetPriceUsd(135000);
+      setPreferredIncoterm('CIF');
+      setDestinationPort('Port of Los Angeles, USA');
+      setShippingMethod('SEA_FCL');
+      setPaymentTerms('Trade Assurance Escrow');
+      setDescription('Seeking 2 sets of 5-axis vertical machining centers for aerospace titanium components. 24,000 RPM spindle, 40-tool ATC, linear scales on all axes.');
+      setBuyerCompany('Aerospace Tech Dynamics Corp');
+      setBuyerCountry('United States');
+      setBuyerEmail('sourcing@aerospacedynamics.us');
+    } else if (preset === 'DENIM') {
+      setProductName('100% GOTS Certified Organic Aegean Cotton Denim Fabric 12.5 oz');
+      setCategory('Textiles, Fabrics & Apparel');
+      setTargetQuantity(15000);
+      setQuantityUnit('Meters');
+      setTargetPriceUsd(3.90);
+      setPreferredIncoterm('DDP');
+      setDestinationPort('Paris Logistics Warehouse, France');
+      setShippingMethod('SEA_FCL');
+      setPaymentTerms('50% Deposit, 50% upon SGS pre-shipment report');
+      setDescription('Need 15,000 meters of 3/1 right-hand twill 12.5oz deep indigo organic denim. GOTS Transaction Certificate is mandatory. Need 5m sample swatch first.');
+      setBuyerCompany('Atelier Haute Couture Paris');
+      setBuyerCountry('France');
+      setBuyerEmail('imports@atelierhautecouture.fr');
+    } else if (preset === 'BATTERY') {
+      setProductName('51.2V 100Ah 5.12kWh LiFePO4 Server Rack Battery Modules');
+      setCategory('Renewable Energy & Solar');
+      setTargetQuantity(500);
+      setQuantityUnit('Units');
+      setTargetPriceUsd(650);
+      setPreferredIncoterm('CIF');
+      setDestinationPort('Gothenburg Port, Sweden');
+      setShippingMethod('SEA_FCL');
+      setPaymentTerms('30% TT Deposit, 70% against B/L');
+      setDescription('Looking for 500 units of 51.2V 100Ah LiFePO4 server rack batteries for telecom backup. Must have UL1973, CE, and UN38.3 test reports. CAN/RS485 communication.');
+      setBuyerCompany('Nordic Clean Energy Solutions AB');
+      setBuyerCountry('Sweden');
+      setBuyerEmail('marcus.vance@nordicenergy.se');
+    }
   };
 
   return (
@@ -167,6 +237,46 @@ export const RfqCreationModal: React.FC<Props> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 md:p-7 space-y-5 flex-1 overflow-y-auto">
+            {/* Quick Fill Sample Sourcing Requirements */}
+            <div className="bg-slate-100/90 border border-slate-200 rounded-2xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>1-Click Sample Pre-fills (Test with verified real-world data):</span>
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('SOLAR')}
+                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-[11px] font-bold text-slate-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>☀️ 580W Solar Panels (620 pcs / CIF)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('BATTERY')}
+                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-[11px] font-bold text-slate-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>🔋 LiFePO4 Rack Batteries (500 units)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('CNC')}
+                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-[11px] font-bold text-slate-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>⚙️ 5-Axis CNC Mill (2 sets / $135k)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('DENIM')}
+                  className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-[11px] font-bold text-slate-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>🧵 Organic Cotton Denim (15k meters)</span>
+                </button>
+              </div>
+            </div>
+
             {/* Step 1: Product Definition */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">

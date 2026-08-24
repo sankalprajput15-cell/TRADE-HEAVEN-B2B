@@ -66,6 +66,8 @@ const MainApp: React.FC = () => {
 
   // Products and entities in state for live additions
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
+  const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -77,14 +79,23 @@ const MainApp: React.FC = () => {
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<PaymentCheckoutData | null>(null);
 
-  // Fetch initial products
+  // Fetch initial products and RFQs
   useEffect(() => {
     api.getProducts().then(prods => {
       if (prods && prods.length > 0) {
         setProducts(prods);
       }
     }).catch(err => console.error('[Failed to load products]:', err));
-  }, []);
+
+    api.getRfqs(undefined, currentUser).then(loadedRfqs => {
+      if (loadedRfqs && loadedRfqs.length > 0) {
+        setRfqs(loadedRfqs);
+        if (!selectedRfqId) {
+          setSelectedRfqId(loadedRfqs[0].id);
+        }
+      }
+    }).catch(err => console.error('[Failed to load rfqs]:', err));
+  }, [currentUser]);
 
   // Global listener for cross-component navigation events
   useEffect(() => {
@@ -118,7 +129,42 @@ const MainApp: React.FC = () => {
     setIsCreateRfqOpen(true);
   };
 
-  const handleRfqCreated = (newRfq: Partial<RfqRequirement>) => {
+  const handleRfqCreated = async (newRfq: Partial<RfqRequirement>) => {
+    try {
+      const res = await api.createRfq(newRfq, currentUser);
+      const created = (res.data || newRfq) as RfqRequirement;
+      setRfqs(prev => {
+        const filtered = prev.filter(r => r.id !== created.id);
+        return [created, ...filtered];
+      });
+      setSelectedRfqId(created.id);
+    } catch (e) {
+      const fallbackRfq: RfqRequirement = {
+        id: newRfq.id || `rfq-${Date.now()}`,
+        buyerName: newRfq.buyerName || currentUser?.name || 'Procurement Officer',
+        buyerCompany: newRfq.buyerCompany || 'Enterprise Buyer Ltd',
+        buyerCountry: newRfq.buyerCountry || 'Global',
+        buyerVerified: true,
+        productName: newRfq.productName || 'Industrial Sourcing Requirement',
+        category: newRfq.category || 'Industrial Machinery',
+        targetQuantity: newRfq.targetQuantity || 100,
+        quantityUnit: newRfq.quantityUnit || 'Units',
+        targetPriceUsd: newRfq.targetPriceUsd || 100,
+        preferredIncoterm: newRfq.preferredIncoterm || 'FOB',
+        destinationPort: newRfq.destinationPort || 'Global Port',
+        paymentTerms: newRfq.paymentTerms || '30% TT Deposit, 70% against B/L',
+        detailedRequirements: newRfq.detailedRequirements || newRfq.detailedDescription || '',
+        urgency: 'STANDARD',
+        quotesCount: 0,
+        postedDate: new Date().toISOString().split('T')[0],
+        expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+        status: 'OPEN',
+        matchedSupplierCount: 4,
+        spamScore: 1.0
+      };
+      setRfqs(prev => [fallbackRfq, ...prev]);
+      setSelectedRfqId(fallbackRfq.id);
+    }
     setIsCreateRfqOpen(false);
     setActiveView('RFQ_HUB');
   };
@@ -259,7 +305,13 @@ const MainApp: React.FC = () => {
       <ScrollToTop activeView={activeView} />
 
       {/* 1. TOP ANNOUNCEMENT & LIVE RFQ TICKER */}
-      <LiveRfqTicker onSelectRfq={() => setActiveView('RFQ_HUB')} />
+      <LiveRfqTicker
+        rfqs={rfqs}
+        onSelectRfq={(rfq) => {
+          setSelectedRfqId(rfq.id);
+          setActiveView('RFQ_HUB');
+        }}
+      />
 
       {/* 2. MAIN MARKETPLACE APP HEADER */}
       <Header
@@ -294,6 +346,7 @@ const MainApp: React.FC = () => {
                 return (
                   <TradeWheelHomePage
                     products={products}
+                    rfqs={rfqs}
                     selectedCurrency={selectedCurrency}
                     onSelectProduct={handleSelectProduct}
                     onOpenStorefront={handleOpenStorefront}
@@ -329,9 +382,9 @@ const MainApp: React.FC = () => {
               case 'RFQ_HUB':
                 return (
                   <RfqComparisonView
-                    rfqs={MOCK_RFQS}
-                    selectedRfqId={MOCK_RFQS[0]?.id || null}
-                    onSelectRfqId={() => {}}
+                    rfqs={rfqs}
+                    selectedRfqId={selectedRfqId || rfqs[0]?.id || null}
+                    onSelectRfqId={setSelectedRfqId}
                     selectedCurrency={selectedCurrency}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     onAcceptQuote={() => {
@@ -353,6 +406,7 @@ const MainApp: React.FC = () => {
                   <BuyerSupplierDashboard
                     currentUserRole={currentUser?.role || 'BUYER'}
                     selectedCurrency={selectedCurrency}
+                    rfqs={rfqs}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     onOpenStorefront={handleOpenStorefront}
                   />

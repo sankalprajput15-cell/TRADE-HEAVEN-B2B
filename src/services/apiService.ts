@@ -139,14 +139,15 @@ export const api = {
     } catch {
       // Local fallback with strict credential verification
       const clean = email.toLowerCase().trim();
-      const adminEmail = 'admin@tradeheaven.net';
-      const adminPass = 'TradeHeavenAdmin2025!';
+      const adminEmailPrimary = 'yr943334@gmail.com';
+      const adminEmailLegacy = 'admin@tradeheaven.net';
+      const adminPass = 'Yash@8532';
 
-      if (clean === adminEmail && password === adminPass) {
+      if ((clean === adminEmailPrimary || clean === adminEmailLegacy) && password === adminPass) {
         const adminUser: AuthUser = {
           id: 'user-admin-root',
-          email: adminEmail,
-          name: 'Sarah Jenkins',
+          email: clean,
+          name: clean === adminEmailPrimary ? 'Administrator' : 'Sarah Jenkins',
           role: 'ADMIN',
           companyName: 'Trade Heaven Global Operations & Treasury',
           country: 'United Kingdom',

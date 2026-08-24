@@ -352,7 +352,9 @@ export const ClientAdminView: React.FC<Props> = ({
     }, 800);
   };
 
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+  const isAdmin = currentUser?.role === 'ADMIN' || 
+    currentUser?.email?.toLowerCase() === 'yr943334@gmail.com' || 
+    currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
 
   const filteredInquiries = inquiries.filter(inq => {
     const matchStatus = inquiryStatusFilter === 'ALL' || inq.status === inquiryStatusFilter;

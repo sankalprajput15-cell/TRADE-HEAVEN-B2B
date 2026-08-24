@@ -26,6 +26,7 @@ import {
 interface Props {
   currentUserRole: UserRole;
   selectedCurrency: Currency;
+  rfqs?: RfqRequirement[];
   onOpenCreateRfq: () => void;
   onOpenStorefront: (companyId: string) => void;
 }
@@ -33,6 +34,7 @@ interface Props {
 export const BuyerSupplierDashboard: React.FC<Props> = ({
   currentUserRole,
   selectedCurrency,
+  rfqs = MOCK_RFQS,
   onOpenCreateRfq,
   onOpenStorefront
 }) => {
@@ -249,7 +251,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       {/* Tab Content: RFQs */}
       {activeTab === 'RFQS' && (
         <div className="space-y-3">
-          {MOCK_RFQS.map(rfq => (
+          {(rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(rfq => (
             <div
               key={rfq.id}
               className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"

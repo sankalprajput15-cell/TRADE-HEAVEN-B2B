@@ -61,8 +61,8 @@ export const DEFAULT_USERS: Record<UserRole, AuthUser> = {
   },
   ADMIN: {
     id: 'user-admin-001',
-    name: 'Sarah Jenkins',
-    email: 'admin@tradeheaven.net',
+    name: 'Administrator',
+    email: 'yr943334@gmail.com',
     companyName: 'Trade Heaven Global Operations & Treasury',
     country: 'United Kingdom',
     role: 'ADMIN',

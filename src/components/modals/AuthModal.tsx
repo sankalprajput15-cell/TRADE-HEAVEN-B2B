@@ -77,12 +77,6 @@ export const AuthModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const fillAdminCredentials = () => {
-    setEmail('admin@tradeheaven.net');
-    setPassword('TradeHeavenAdmin2025!');
-    setError(null);
-  };
-
   // Production Sign-In Form Handler (Strictly sends { email, password } to backend)
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +94,7 @@ export const AuthModal: React.FC<Props> = ({
       const res = await api.login(cleanEmail, password);
       if (res.success && res.user) {
         onLogin(res.user);
-        const isAdminUser = res.user.role === 'ADMIN' || res.user.email?.toLowerCase() === 'admin@tradeheaven.net';
+        const isAdminUser = res.user.role === 'ADMIN' || res.user.email?.toLowerCase() === 'yr943334@gmail.com' || res.user.email?.toLowerCase() === 'admin@tradeheaven.net';
         setSuccess(
           isAdminUser 
             ? `Admin session verified. Entering Administrator Control Center...`
@@ -480,24 +474,6 @@ export const AuthModal: React.FC<Props> = ({
             {/* PRODUCTION SIGN-IN FORM: ONLY EMAIL & PASSWORD */}
             {authMode === 'LOGIN' && (
               <form onSubmit={handleSignIn} className="space-y-4 text-xs">
-                {/* Admin Quick Fill Banner */}
-                <div className="p-3 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-indigo-600 shrink-0" />
-                    <div>
-                      <div className="font-bold text-slate-900 text-[11px]">Admin Access Ready</div>
-                      <div className="text-[10px] text-slate-500">Sign in to manage Supabase database</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={fillAdminCredentials}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer shrink-0 transition-colors shadow-2xs"
-                  >
-                    Fill Admin Login
-                  </button>
-                </div>
-
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Corporate / Work Email</label>
                   <div className="relative">

@@ -289,7 +289,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
     // 1. Super Admin role or root admin email
-    if (user.role === 'ADMIN' || (user.email && user.email.toLowerCase() === 'admin@tradeheaven.net')) {
+    if (user.role === 'ADMIN' || (user.email && (user.email.toLowerCase() === 'yr943334@gmail.com' || user.email.toLowerCase() === 'admin@tradeheaven.net'))) {
       return {
         isAuthorized: true,
         isSuperAdmin: true,
