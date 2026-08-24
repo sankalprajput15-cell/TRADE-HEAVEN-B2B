@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Product, Currency, Incoterm } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
-import { supabaseService } from '../../lib/supabaseClient';
+import { bigrockApi } from '../../services/bigrockApi';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
 import { 
   PackagePlus, 
@@ -105,14 +105,13 @@ export const PostSellOfferView: React.FC<Props> = ({
       return;
     }
     setIsUploadingImage(true);
-    setUploadMessage('Optimizing & uploading to Supabase Storage...');
+    setUploadMessage('Processing image...');
     try {
       const compressed = await compressAndResizeImage(file);
-      // Upload to Supabase Storage bucket
-      const res = await supabaseService.uploadFile(file, 'products');
+      const res = await bigrockApi.uploadFile(file, 'products');
       if (res.success && res.publicUrl) {
         setImageUrl(res.publicUrl);
-        setUploadMessage('✓ Image stored in Supabase site-uploads bucket!');
+        setUploadMessage('✓ Image processed successfully!');
       } else {
         setImageUrl(compressed.dataUrl);
         setUploadMessage('✓ Image optimized and loaded');
@@ -155,8 +154,8 @@ export const PostSellOfferView: React.FC<Props> = ({
     };
 
     try {
-      // Save directly to Supabase listings table
-      await supabaseService.createListing({
+      // Save directly to BigRock listings database
+      await bigrockApi.createListing({
         title,
         description: description || `Factory direct supply of ${title}. MOQ: ${moq} ${moqUnit}, Port: ${portOfDispatch}.`,
         category,
@@ -289,8 +288,8 @@ export const PostSellOfferView: React.FC<Props> = ({
 
               <div className="sm:col-span-2 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block font-bold text-slate-700">Product Image (Supabase Storage)</label>
-                  <span className="text-[10px] text-blue-600 font-bold">Upload to 'site-uploads' bucket</span>
+                  <label className="block font-bold text-slate-700">Product Image URL / Asset</label>
+                  <span className="text-[10px] text-blue-600 font-bold">Image Attachment</span>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { RfqRequirement, Currency, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
-import { supabaseService } from '../../lib/supabaseClient';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { 
@@ -70,14 +69,13 @@ export const BuyLeadsView: React.FC<Props> = ({
   useEffect(() => {
     loadLiveRfqs();
 
-    const unsubscribe = supabaseService.subscribeToInquiries(() => {
+    const handleRfqCreated = () => {
       loadLiveRfqs();
-    });
+    };
+    window.addEventListener('tradeheaven_rfq_created', handleRfqCreated);
 
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      window.removeEventListener('tradeheaven_rfq_created', handleRfqCreated);
     };
   }, [currentUser]);
 
@@ -191,7 +189,7 @@ export const BuyLeadsView: React.FC<Props> = ({
             onClick={loadLiveRfqs}
             disabled={isLoading}
             className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
-            title="Refresh Live RFQ Feed from Supabase"
+            title="Refresh Live RFQ Feed from Database"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
           </button>

@@ -3,7 +3,7 @@ import { AuthUser } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
-import { supabaseService } from '../../lib/supabaseClient';
+import { bigrockApi } from '../../services/bigrockApi';
 import { 
   X, 
   LogIn, 
@@ -141,8 +141,8 @@ export const AuthModal: React.FC<Props> = ({
       });
 
       if (res.success && res.user) {
-        // Sync registration to Supabase database
-        await supabaseService.upsertUser({
+        // Sync registration to BigRock MySQL database
+        await bigrockApi.upsertUser({
           name: regName.trim(),
           email: cleanEmail,
           role: regAccountType,

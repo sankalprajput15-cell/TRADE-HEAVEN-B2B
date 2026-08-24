@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseService, DbFaq } from '../../lib/supabaseClient';
+import { bigrockApi, DbFaq } from '../../services/bigrockApi';
 import { 
   HelpCircle, 
   ChevronDown, 
@@ -7,10 +7,10 @@ import {
   Search, 
   ShieldCheck, 
   Sparkles, 
-  MessageSquare,
-  Filter,
-  RefreshCw,
-  PlusCircle
+  MessageSquare, 
+  Filter, 
+  RefreshCw, 
+  PlusCircle 
 } from 'lucide-react';
 
 interface Props {
@@ -28,7 +28,7 @@ export const DynamicFaqSection: React.FC<Props> = ({ onOpenContactModal, classNa
   const fetchFaqs = async () => {
     setIsLoading(true);
     try {
-      const data = await supabaseService.fetchFaqs();
+      const data = await bigrockApi.fetchFaqs();
       setFaqs(data);
       if (data.length > 0 && !openFaqId) {
         setOpenFaqId(data[0].id || 'faq-1');

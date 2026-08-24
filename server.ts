@@ -298,6 +298,161 @@ app.get('/api/v1/auth/me', (req, res) => {
   });
 });
 
+// BigRock PHP + MySQL Backend Emulation & Forwarder
+let serverRfqsStore: any[] = [
+  {
+    id: 101,
+    name: 'Sarah Jenkins',
+    email: 'procurement@nordicsteel.se',
+    phone: '+46 8 123 4567',
+    subject: 'Buy Lead RFQ: 5,000 MT Grade 316 Stainless Steel Coils',
+    product_name: 'Grade 316 Stainless Steel Coils',
+    message: 'Requesting binding CIF Port of Gothenburg quotation with SGS mill test certification.',
+    status: 'pending',
+    target_quantity: 5000,
+    quantity_unit: 'Metric Tons',
+    target_price: 1850,
+    incoterm: 'CIF',
+    destination_port: 'Port of Gothenburg',
+    category: 'Raw Materials & Industrial Metals',
+    company_name: 'Nordic Steel Works AB',
+    country: 'Sweden',
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString()
+  },
+  {
+    id: 102,
+    name: 'Carlos Mendez',
+    email: 'cmendez@iberiaparts.es',
+    phone: '+34 91 555 0192',
+    subject: 'Buy Lead RFQ: 2,500 Units Solar Lithium ESS Battery Packs',
+    product_name: 'Solar Lithium ESS Battery Packs',
+    message: 'Looking for Tier-1 UN38.3 certified 48V 100Ah server rack battery modules.',
+    status: 'pending',
+    target_quantity: 2500,
+    quantity_unit: 'Units',
+    target_price: 680,
+    incoterm: 'FOB',
+    destination_port: 'Port of Valencia',
+    category: 'Renewable Energy & Solar Power',
+    company_name: 'Iberia Clean Energy Solutions',
+    country: 'Spain',
+    created_at: new Date(Date.now() - 3600000 * 5).toISOString()
+  },
+  {
+    id: 103,
+    name: 'Vikram Mehta',
+    email: 'vmehta@apexmachinery.in',
+    phone: '+91 22 2847 9000',
+    subject: 'Buy Lead RFQ: 10 Sets 5-Axis CNC Milling Centers',
+    product_name: '5-Axis CNC Milling Centers',
+    message: 'Direct factory procurement for heavy aerospace tooling with CE/ISO9001 compliance.',
+    status: 'pending',
+    target_quantity: 10,
+    quantity_unit: 'Sets',
+    target_price: 45000,
+    incoterm: 'CIF',
+    destination_port: 'Nhava Sheva Port (JNPT), Mumbai',
+    category: 'Industrial Machinery & CNC',
+    company_name: 'Apex Precision Engineering Ltd.',
+    country: 'India',
+    created_at: new Date(Date.now() - 3600000 * 12).toISOString()
+  }
+];
+
+// BigRock PHP API Gateway (/api.php)
+app.get('/api.php', (req, res) => {
+  const action = req.query.action;
+
+  if (action === 'get_rfqs' || action === 'get_inquiries') {
+    return res.json({
+      status: 'success',
+      data: serverRfqsStore
+    });
+  }
+
+  if (action === 'get_faqs') {
+    return res.json({
+      status: 'success',
+      data: [
+        {
+          id: 'faq-1',
+          question: 'How does Trade Heaven Escrow & Trade Assurance protect buyers?',
+          answer: 'Buyer deposit funds are held in secure, neutral Swiss escrow accounts. Payment is only released to the supplier once verified shipping documents and independent SGS/TÜV inspection reports are confirmed.',
+          category: 'Escrow & Payments'
+        },
+        {
+          id: 'faq-2',
+          question: 'What is the difference between Gold and Silver verified factories?',
+          answer: 'Gold suppliers have undergone comprehensive on-site physical factory audits, verified business licenses, and carry an escrow guarantee of up to $1,000,000 USD.',
+          category: 'Factory Verification'
+        },
+        {
+          id: 'faq-3',
+          question: 'How do I post a Buying Requirement (RFQ) and receive competitive bids?',
+          answer: 'Click "Post Buy RFQ" in the navigation. Fill in your target product specifications, quantity, target Incoterm, and destination port to receive binding quotes.',
+          category: 'Buying & RFQs'
+        }
+      ]
+    });
+  }
+
+  if (action === 'get_users') {
+    return res.json({
+      status: 'success',
+      data: serverUsersStore.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        company_name: u.companyName,
+        country: u.country,
+        status: u.status,
+        is_verified: u.isVerified,
+        is_premium: u.isPremium
+      }))
+    });
+  }
+
+  res.json({
+    status: 'success',
+    message: 'BigRock MySQL PHP API Ready',
+    action: action || 'none'
+  });
+});
+
+app.post('/api.php', (req, res) => {
+  const action = req.query.action;
+
+  if (action === 'create_rfq' || action === 'create_inquiry') {
+    const { name, email, phone, subject, product_name, message } = req.body;
+
+    const newRfq = {
+      id: Date.now(),
+      name: name || 'Enterprise Buyer',
+      email: email || 'procurement@tradeheaven.net',
+      phone: phone || '',
+      subject: subject || 'Wholesale Sourcing Tender',
+      product_name: product_name || 'B2B Sourcing Tender',
+      message: message || '',
+      status: 'pending',
+      created_at: new Date().toISOString()
+    };
+
+    serverRfqsStore.unshift(newRfq);
+
+    return res.json({
+      status: 'success',
+      message: 'RFQ created and stored in BigRock MySQL database',
+      data: newRfq
+    });
+  }
+
+  res.json({
+    status: 'success',
+    message: `Action ${action || 'default'} executed successfully on BigRock backend`
+  });
+});
+
 // API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

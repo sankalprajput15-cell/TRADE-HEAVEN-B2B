@@ -3,7 +3,7 @@ import { Currency, PaymentTerms, AuthUser, UserRole, MembershipStatus, AccountSt
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
-import { supabaseService, DbInquiry, DbListing, DbFaq, DbUser } from '../../lib/supabaseClient';
+import { bigrockApi, DbInquiry, DbListing, DbFaq, DbUser } from '../../services/bigrockApi';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
 import { 
   Landmark, 
@@ -64,22 +64,22 @@ export const ClientAdminView: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 1. Inquiries & Leads State (Supabase)
+  // 1. Inquiries & Leads State (BigRock MySQL)
   const [inquiries, setInquiries] = useState<DbInquiry[]>([]);
   const [inquirySearch, setInquirySearch] = useState('');
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState<'ALL' | 'pending' | 'resolved'>('ALL');
   const [selectedInquiry, setSelectedInquiry] = useState<DbInquiry | null>(null);
 
-  // 2. Users State (Supabase & Local Store)
+  // 2. Users State (BigRock MySQL & Local Store)
   const [usersList, setUsersList] = useState<AuthUser[]>([]);
-  const [supabaseUsers, setSupabaseUsers] = useState<DbUser[]>([]);
+  const [dbUsers, setDbUsers] = useState<DbUser[]>([]);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('BUYER');
   const [newUserCompany, setNewUserCompany] = useState('');
 
-  // 3. Listings State (Supabase)
+  // 3. Listings State (BigRock MySQL)
   const [listings, setListings] = useState<DbListing[]>([]);
   const [showAddListingModal, setShowAddListingModal] = useState(false);
   const [newListingTitle, setNewListingTitle] = useState('');
@@ -91,14 +91,14 @@ export const ClientAdminView: React.FC<Props> = ({
   const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
   const [isUploadingListingImage, setIsUploadingListingImage] = useState(false);
 
-  // 4. FAQs State (Supabase)
+  // 4. FAQs State (BigRock MySQL)
   const [faqs, setFaqs] = useState<DbFaq[]>([]);
   const [showAddFaqModal, setShowAddFaqModal] = useState(false);
   const [newFaqQuestion, setNewFaqQuestion] = useState('');
   const [newFaqAnswer, setNewFaqAnswer] = useState('');
   const [newFaqCategory, setNewFaqCategory] = useState('Escrow & Payments');
 
-  // 5. Site Settings State (Supabase)
+  // 5. Site Settings State (BigRock MySQL)
   const [siteSettings, setSiteSettings] = useState<Record<string, string>>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -124,37 +124,37 @@ export const ClientAdminView: React.FC<Props> = ({
     setTimeout(() => setActionMessage(null), 4000);
   };
 
-  // Central Load Data Function (Fetches directly from Supabase & Backend Services)
+  // Central Load Data Function (Fetches directly from BigRock PHP MySQL API & Backend Services)
   const loadAllData = async () => {
     setIsLoading(true);
     try {
       const [
         inquiriesData,
         usersData,
-        supabaseUsersData,
+        dbUsersData,
         listingsData,
         faqsData,
         settingsData
       ] = await Promise.all([
-        supabaseService.fetchInquiries(),
+        bigrockApi.fetchInquiries(),
         api.getAllUsers(currentUser),
-        supabaseService.fetchUsers(),
-        supabaseService.fetchListings(),
-        supabaseService.fetchFaqs(),
-        supabaseService.fetchSiteSettings()
+        bigrockApi.fetchUsers(),
+        bigrockApi.fetchListings(),
+        bigrockApi.fetchFaqs(),
+        bigrockApi.fetchSiteSettings()
       ]);
 
       setInquiries(inquiriesData);
       setUsersList(usersData);
-      setSupabaseUsers(supabaseUsersData);
+      setDbUsers(dbUsersData);
       setListings(listingsData);
       setFaqs(faqsData);
       setSiteSettings(settingsData);
       setAuditLogs(securityService.getAuditLogs());
 
-      showToast('success', '✓ Real-time database records refreshed from Supabase');
+      showToast('success', '✓ Real-time database records refreshed from BigRock MySQL API');
     } catch (err: any) {
-      showToast('error', 'Error refreshing Supabase data: ' + (err?.message || 'Check network'));
+      showToast('error', 'Error refreshing BigRock data: ' + (err?.message || 'Check network'));
     } finally {
       setIsLoading(false);
     }
@@ -180,11 +180,11 @@ export const ClientAdminView: React.FC<Props> = ({
     // Optimistic UI update
     setInquiries(prev => prev.map(item => item.id === inquiry.id ? { ...item, status: newStatus } : item));
 
-    const res = await supabaseService.updateInquiryStatus(inquiry.id, newStatus);
+    const res = await bigrockApi.updateInquiryStatus(inquiry.id, newStatus);
     if (res.success) {
-      showToast('success', `Inquiry #${inquiry.id.slice(0, 8)} status marked as "${newStatus}" in Supabase.`);
+      showToast('success', `Inquiry #${inquiry.id.slice(0, 8)} status marked as "${newStatus}" in MySQL.`);
     } else {
-      showToast('error', 'Failed to update status in Supabase: ' + res.error);
+      showToast('error', 'Failed to update status: ' + res.error);
       loadAllData();
     }
   };
@@ -195,7 +195,7 @@ export const ClientAdminView: React.FC<Props> = ({
     if (!newListingTitle.trim()) return;
 
     setIsLoading(true);
-    const res = await supabaseService.createListing({
+    const res = await bigrockApi.createListing({
       title: newListingTitle.trim(),
       description: newListingDesc.trim() || `Factory direct supply of ${newListingTitle}. Direct export with Swiss Escrow guarantee.`,
       category: newListingCategory,
@@ -209,7 +209,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
     setIsLoading(false);
     if (res.success) {
-      showToast('success', '✓ New Product/Service listing published to Supabase database.');
+      showToast('success', '✓ New Product/Service listing published to BigRock MySQL database.');
       setShowAddListingModal(false);
       setNewListingTitle('');
       setNewListingDesc('');
@@ -222,12 +222,12 @@ export const ClientAdminView: React.FC<Props> = ({
   // DELETE LISTING
   const handleDeleteListing = async (id?: string) => {
     if (!id) return;
-    if (!confirm('Are you sure you want to delete this listing from Supabase?')) return;
+    if (!confirm('Are you sure you want to delete this listing?')) return;
 
     setListings(prev => prev.filter(l => l.id !== id));
-    const res = await supabaseService.deleteListing(id);
+    const res = await bigrockApi.deleteListing(id);
     if (res.success) {
-      showToast('success', 'Listing deleted from Supabase.');
+      showToast('success', 'Listing deleted from BigRock database.');
     } else {
       showToast('error', 'Failed to delete: ' + res.error);
       loadAllData();
@@ -240,7 +240,7 @@ export const ClientAdminView: React.FC<Props> = ({
     if (!newFaqQuestion.trim() || !newFaqAnswer.trim()) return;
 
     setIsLoading(true);
-    const res = await supabaseService.createFaq({
+    const res = await bigrockApi.createFaq({
       question: newFaqQuestion.trim(),
       answer: newFaqAnswer.trim(),
       category: newFaqCategory,
@@ -249,7 +249,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
     setIsLoading(false);
     if (res.success) {
-      showToast('success', '✓ New FAQ added to Supabase database.');
+      showToast('success', '✓ New FAQ added to database.');
       setShowAddFaqModal(false);
       setNewFaqQuestion('');
       setNewFaqAnswer('');
@@ -265,7 +265,7 @@ export const ClientAdminView: React.FC<Props> = ({
     if (!confirm('Are you sure you want to delete this FAQ?')) return;
 
     setFaqs(prev => prev.filter(f => f.id !== id));
-    const res = await supabaseService.deleteFaq(id);
+    const res = await bigrockApi.deleteFaq(id);
     if (res.success) {
       showToast('success', 'FAQ deleted.');
     } else {
@@ -277,11 +277,11 @@ export const ClientAdminView: React.FC<Props> = ({
   // SAVE SITE SETTINGS
   const handleSaveSetting = async (key: string, value: string) => {
     setIsSavingSettings(true);
-    const res = await supabaseService.updateSiteSetting(key, value);
+    const res = await bigrockApi.updateSiteSetting(key, value);
     setIsSavingSettings(false);
     if (res.success) {
       setSiteSettings(prev => ({ ...prev, [key]: value }));
-      showToast('success', `Setting "${key}" updated in Supabase site_settings.`);
+      showToast('success', `Setting "${key}" updated in BigRock database.`);
     } else {
       showToast('error', 'Failed to save setting: ' + res.error);
     }
@@ -293,7 +293,7 @@ export const ClientAdminView: React.FC<Props> = ({
     if (!newUserName.trim() || !newUserEmail.trim()) return;
 
     setIsLoading(true);
-    const res = await supabaseService.upsertUser({
+    const res = await bigrockApi.upsertUser({
       name: newUserName.trim(),
       email: newUserEmail.trim(),
       role: newUserRole,
@@ -306,7 +306,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
     setIsLoading(false);
     if (res.success) {
-      showToast('success', `✓ User ${newUserEmail} registered in Supabase users table.`);
+      showToast('success', `✓ User ${newUserEmail} registered in database.`);
       setShowAddUserModal(false);
       setNewUserName('');
       setNewUserEmail('');
@@ -381,10 +381,10 @@ export const ClientAdminView: React.FC<Props> = ({
               <span>Admin Authentication Required</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-              Supabase Admin Control Panel
+              BigRock MySQL Admin Control Panel
             </h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              This portal manages live Supabase database tables (<code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">inquiries</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">users</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">listings</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">faqs</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">site_settings</code>). Please sign in as an administrator.
+              This portal manages live BigRock MySQL database tables (<code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">inquiries</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">users</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">listings</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">faqs</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">site_settings</code>). Please sign in as an administrator.
             </p>
           </div>
 
@@ -420,13 +420,13 @@ export const ClientAdminView: React.FC<Props> = ({
           <div className="space-y-2.5 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Live Supabase Database &amp; Swiss Treasury Console</span>
+              <span>Live BigRock MySQL Database &amp; Swiss Treasury Console</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight">
               Administrator Database &amp; Operations Center
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-              Directly connected to live Supabase project <code className="font-mono bg-black/40 px-1.5 py-0.5 rounded text-amber-300 text-xs">mcundxmcynpejdtdkacc</code>. View real-time RFQ inquiries, manage user roles, publish listings, and configure dynamic site settings.
+              Connected to BigRock PHP MySQL API (<code className="font-mono bg-black/40 px-1.5 py-0.5 rounded text-amber-300 text-xs">tradeheaven.net/api.php</code>). View real-time RFQ inquiries, manage user roles, publish listings, and configure dynamic site settings.
             </p>
           </div>
 
@@ -438,11 +438,11 @@ export const ClientAdminView: React.FC<Props> = ({
               className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>{isLoading ? 'Fetching Supabase...' : 'Refresh Live Data'}</span>
+              <span>{isLoading ? 'Fetching MySQL...' : 'Refresh Live Data'}</span>
             </button>
             <div className="text-[11px] text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-500/30 px-3 py-2.5 rounded-2xl flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Supabase Sync Active</span>
+              <span>BigRock MySQL Sync Active</span>
             </div>
           </div>
         </div>
@@ -588,7 +588,7 @@ export const ClientAdminView: React.FC<Props> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: LEADS & RFQ INQUIRIES (SUPABASE) */}
+      {/* TAB 1: LEADS & RFQ INQUIRIES (MYSQL) */}
       {/* ========================================================================= */}
       {activeTab === 'INQUIRIES' && (
         <div className="space-y-4">
@@ -639,7 +639,7 @@ export const ClientAdminView: React.FC<Props> = ({
             {filteredInquiries.length === 0 ? (
               <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                 <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
-                <div className="font-bold text-sm text-slate-700">No inquiry records found in Supabase</div>
+                <div className="font-bold text-sm text-slate-700">No inquiry records found in database</div>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   New submissions from the Contact modal or RFQ form will appear here in real-time.
                 </p>
@@ -700,7 +700,7 @@ export const ClientAdminView: React.FC<Props> = ({
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                                 : 'bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200'
                             }`}
-                            title="Click to toggle status in Supabase"
+                            title="Click to toggle status"
                           >
                             {inq.status === 'resolved' ? (
                               <>
@@ -810,7 +810,7 @@ export const ClientAdminView: React.FC<Props> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: RBAC & USER MANAGEMENT (SUPABASE & ACTIVE STORE) */}
+      {/* TAB 2: RBAC & USER MANAGEMENT (MYSQL & ACTIVE STORE) */}
       {/* ========================================================================= */}
       {activeTab === 'RBAC_USERS' && (
         <div className="space-y-4">
@@ -822,7 +822,7 @@ export const ClientAdminView: React.FC<Props> = ({
                   Registered Accounts (<code className="font-mono text-xs text-blue-600">users</code> table)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Synchronized with Supabase and auth state. Toggle user verification, VIP access, and administrative role privileges.
+                  Synchronized with BigRock MySQL database. Toggle user verification, VIP access, and administrative role privileges.
                 </p>
               </div>
 
@@ -831,7 +831,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>Add User to Supabase</span>
+                <span>Add User to Database</span>
               </button>
             </div>
 
@@ -937,7 +937,7 @@ export const ClientAdminView: React.FC<Props> = ({
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="font-black text-slate-900 text-base flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-600" />
-                <span>Register User to Supabase</span>
+                <span>Register User to Database</span>
               </div>
               <button
                 type="button"
@@ -1017,7 +1017,7 @@ export const ClientAdminView: React.FC<Props> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: LISTINGS & PRODUCT CATALOG (SUPABASE) */}
+      {/* TAB 3: LISTINGS & PRODUCT CATALOG (MYSQL) */}
       {/* ========================================================================= */}
       {activeTab === 'LISTINGS' && (
         <div className="space-y-4">
@@ -1029,7 +1029,7 @@ export const ClientAdminView: React.FC<Props> = ({
                   Product &amp; Service Listings (<code className="font-mono text-xs text-blue-600">listings</code> table)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Live products hosted on Supabase and indexed in the global B2B catalog. Upload images directly to the <code className="font-mono text-xs text-slate-700">site-uploads</code> bucket.
+                  Live products hosted on BigRock MySQL database and indexed in the global B2B catalog.
                 </p>
               </div>
 
@@ -1045,7 +1045,7 @@ export const ClientAdminView: React.FC<Props> = ({
             {listings.length === 0 ? (
               <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                 <Package className="w-8 h-8 text-slate-400 mx-auto" />
-                <div className="font-bold text-sm text-slate-700">No database listings currently in Supabase</div>
+                <div className="font-bold text-sm text-slate-700">No database listings currently in database</div>
                 <button
                   onClick={() => setShowAddListingModal(true)}
                   className="text-xs text-blue-600 font-bold hover:underline"
@@ -1163,7 +1163,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
             {/* Image Upload / Storage */}
             <div className="space-y-1.5">
-              <label className="block font-bold text-slate-700">Product Image (Supabase Storage)</label>
+              <label className="block font-bold text-slate-700">Product Image URL / Asset</label>
               <div className="flex items-center gap-2">
                 <label className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 flex items-center gap-1.5 cursor-pointer shrink-0">
                   {isUploadingListingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
@@ -1177,10 +1177,10 @@ export const ClientAdminView: React.FC<Props> = ({
                       const f = e.target.files?.[0];
                       if (!f) return;
                       setIsUploadingListingImage(true);
-                      const res = await supabaseService.uploadFile(f, 'listings');
+                      const res = await bigrockApi.uploadFile(f, 'listings');
                       if (res.success && res.publicUrl) {
                         setNewListingImageUrl(res.publicUrl);
-                        showToast('success', 'Image uploaded to Supabase site-uploads!');
+                        showToast('success', 'Image processed successfully!');
                       }
                       setIsUploadingListingImage(false);
                       e.target.value = '';
@@ -1221,7 +1221,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 disabled={isLoading}
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer shadow-sm disabled:opacity-50"
               >
-                Publish to Supabase
+                Publish Listing
               </button>
             </div>
           </form>
@@ -1229,7 +1229,7 @@ export const ClientAdminView: React.FC<Props> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: DYNAMIC FAQS (SUPABASE) */}
+      {/* TAB 4: DYNAMIC FAQS (MYSQL) */}
       {/* ========================================================================= */}
       {activeTab === 'FAQS' && (
         <div className="space-y-4">
@@ -1358,7 +1358,7 @@ export const ClientAdminView: React.FC<Props> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 5: SITE SETTINGS (SUPABASE) */}
+      {/* TAB 5: SITE SETTINGS (MYSQL) */}
       {/* ========================================================================= */}
       {activeTab === 'SETTINGS' && (
         <div className="space-y-4">
@@ -1369,7 +1369,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 Dynamic Site Settings (<code className="font-mono text-xs text-blue-600">site_settings</code> table)
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Manage global banner announcements, contact details, and platform configuration persisted in Supabase.
+                Manage global banner announcements, contact details, and platform configuration persisted in BigRock MySQL database.
               </p>
             </div>
 

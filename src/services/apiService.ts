@@ -13,7 +13,7 @@ import {
 } from '../types';
 import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_COMPANIES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS } from '../data/mockData';
 import { securityService } from './securityService';
-import { supabaseService, mapInquiryToRfq } from '../lib/supabaseClient';
+import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
 
 // Storage keys for reactive state persistence
 const USERS_STORAGE_KEY = 'th_registered_users_store';
@@ -692,15 +692,15 @@ export const api = {
   },
 
   // ==========================================
-  // RFQS / BUY LEADS (SUPABASE REALTIME PERSISTENCE)
+  // RFQS / BUY LEADS (BIGROCK PHP + MYSQL PERSISTENCE)
   // ==========================================
   async getRfqs(
     params?: { category?: string; urgency?: string; status?: string; country?: string },
     callerUser?: AuthUser | null
   ): Promise<RfqRequirement[]> {
     try {
-      // 1. Fetch live inquiries directly from Supabase database
-      const liveRfqs = await supabaseService.fetchRfqs();
+      // 1. Fetch live inquiries directly from BigRock PHP API (GET /api.php?action=get_rfqs)
+      const liveRfqs = await bigrockApi.fetchRfqs();
       let list = liveRfqs && liveRfqs.length > 0 ? liveRfqs : [...activeRfqsStore];
 
       if (params?.category && params.category !== 'ALL') {
@@ -753,7 +753,7 @@ export const api = {
       targetDeliveryDate: rfq.targetDeliveryDate || '2026-10-31',
       preferredIncoterm: rfq.preferredIncoterm || 'FOB',
       destinationPort: rfq.destinationPort || 'Port of Hamburg / Los Angeles',
-      paymentTerms: rfq.paymentTerms || 'Trade Assurance Escrow (Swiss Vault)',
+      paymentTerms: 'Trade Assurance Escrow (Swiss Vault)',
       detailedRequirements: rfq.detailedRequirements || rfq.detailedDescription || 'Standard export quality specification required.',
       detailedDescription: rfq.detailedDescription || rfq.detailedRequirements || 'Standard export quality specification required.',
       urgency: rfq.urgency || 'STANDARD',
@@ -766,20 +766,19 @@ export const api = {
     };
 
     try {
-      // 1. Insert directly into Supabase inquiries table for permanent cross-client persistence
+      // 1. Submit directly to BigRock PHP MySQL API (POST /api.php?action=create_rfq)
       const structuredMessage = `Target Quantity: ${newRfq.targetQuantity} ${newRfq.quantityUnit} | Target Price: $${newRfq.targetPriceUsd} | Incoterm: ${newRfq.preferredIncoterm} | Port: ${newRfq.destinationPort} | Terms: ${newRfq.paymentTerms} | Description: ${newRfq.detailedRequirements}`;
       
-      await supabaseService.createInquiry({
+      await bigrockApi.createRfq({
         name: newRfq.buyerCompany,
         email: newRfq.buyerEmail,
         phone: newRfq.buyerPhone,
         subject: `Buy Lead RFQ [${generatedId}]: ${newRfq.targetQuantity} ${newRfq.quantityUnit} of ${newRfq.productName}`,
-        message: structuredMessage,
         product_name: newRfq.productName,
-        status: 'pending'
+        message: structuredMessage
       });
     } catch (e) {
-      console.warn('[Supabase RFQ sync warning]:', e);
+      console.warn('[BigRock RFQ sync warning]:', e);
     }
 
     activeRfqsStore.unshift(newRfq);
@@ -798,7 +797,7 @@ export const api = {
     return {
       success: true,
       data: newRfq,
-      message: 'RFQ broadcast successfully across verified international supplier network and synced to Supabase!'
+      message: 'RFQ broadcast successfully across verified international supplier network and stored in BigRock MySQL backend!'
     };
   },
 

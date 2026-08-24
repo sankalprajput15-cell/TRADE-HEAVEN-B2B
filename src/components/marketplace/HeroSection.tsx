@@ -215,7 +215,7 @@ export const HeroSection: React.FC<Props> = ({
       );
     }).slice(0, 4);
 
-    // 3. Match RFQs & Buy Leads (Searches live Supabase feed)
+    // 3. Match RFQs & Buy Leads (Searches live database feed)
     const activeRfqPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
     const matchedRfqs = activeRfqPool.filter(r => {
       const pName = (r.productName || '').toLowerCase();

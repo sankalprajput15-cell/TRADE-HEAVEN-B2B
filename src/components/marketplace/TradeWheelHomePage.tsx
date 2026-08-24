@@ -307,7 +307,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 6. DYNAMIC SUPABASE FAQS ACCORDION */}
+      {/* 6. DYNAMIC FAQS ACCORDION */}
       <DynamicFaqSection onOpenContactModal={onOpenCreateRfq} />
 
       {/* 7. TRADE HEAVEN TRUST & ESCROW RAIL INFRASTRUCTURE */}

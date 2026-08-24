@@ -21,7 +21,7 @@ import {
   Clock
 } from 'lucide-react';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
-import { supabaseService, DbInquiry } from '../../lib/supabaseClient';
+import { bigrockApi, DbInquiry } from '../../services/bigrockApi';
 import { Incoterm } from '../../types';
 
 export interface UnifiedContactModalProps {
@@ -93,36 +93,38 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
 
     const structuredMsg = `${message}\n\n[Details]: Target Item/RFQ: ${targetTitle || 'N/A'} (ID: ${targetId || 'N/A'})${quotedPrice ? ` | Quoted Price: $${quotedPrice} (${incoterm})` : ''}${initialQuantity ? ` | Volume: ${initialQuantity}` : ''}`;
 
-    const newInquiry: Omit<DbInquiry, 'id' | 'created_at'> = {
+    const newInquiryPayload = {
       name: name || 'Trade Heaven Buyer / Supplier',
       email: email || 'procurement@tradeheaven.net',
       phone: phone || '',
       subject: subjectLine,
-      message: structuredMsg,
       product_name: targetTitle || 'B2B Sourcing Inquiry',
-      status: 'pending'
+      message: structuredMsg
     };
 
     try {
-      // 1. Insert directly into Supabase inquiries table for cross-client persistence
-      await supabaseService.createInquiry(newInquiry);
+      // Submit via POST /api.php?action=create_rfq
+      await bigrockApi.createRfq(newInquiryPayload);
 
       setIsSuccess(true);
       if (onSuccess) {
-        onSuccess(newInquiry as DbInquiry);
+        onSuccess(newInquiryPayload as DbInquiry);
       }
+
+      // Notify other components to refresh RFQ feed
+      window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created', { detail: newInquiryPayload }));
 
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 1800);
+      }, 1600);
     } catch (err) {
       console.warn('[Contact submit note]:', err);
       setIsSuccess(true);
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 1800);
+      }, 1600);
     } finally {
       setIsSubmitting(false);
     }
@@ -206,7 +208,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
           <div className="bg-blue-50/90 border-b border-blue-200 px-4 sm:px-6 py-3 text-xs space-y-1.5 text-blue-950 animate-in slide-in-from-top-2 duration-150">
             <div className="font-bold flex items-center gap-1.5 text-blue-900">
               <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Verified Desk Contact Channels (Saved to Supabase CRM):</span>
+              <span>Verified Desk Contact Channels (BigRock MySQL CRM):</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
               <div className="bg-white/80 p-2 rounded-lg border border-blue-200/60 flex items-center gap-2">
@@ -231,7 +233,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
               Your message has been permanently stored in the live database. The counterparty and trade desk team have been notified.
             </p>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 max-w-sm mx-auto">
-              Status: <strong className="text-emerald-600">Saved to Supabase Live Feed</strong>
+              Status: <strong className="text-emerald-600">Saved to BigRock MySQL Database</strong>
             </div>
           </div>
         ) : (
@@ -328,7 +330,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Protected by Trade Heaven Escrow Assurance</span>
               </div>
-              <span className="font-mono text-[11px] text-slate-400">Live Supabase Sync</span>
+              <span className="font-mono text-[11px] text-slate-400">Live BigRock PHP API</span>
             </div>
 
             <div className="pt-2 flex items-center justify-end gap-3 shrink-0">

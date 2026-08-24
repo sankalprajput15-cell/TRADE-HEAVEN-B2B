@@ -3,7 +3,7 @@ import { Product, Currency, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { SafeImage } from '../common/SafeImage';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
-import { supabaseService } from '../../lib/supabaseClient';
+import { bigrockApi } from '../../services/bigrockApi';
 import { 
   X, 
   ShieldCheck, 
@@ -71,15 +71,15 @@ export const ProductDetailModal: React.FC<Props> = ({
     setInquirySent(true);
 
     try {
-      await supabaseService.createInquiry({
+      await bigrockApi.createRfq({
         name: 'Procurement Buyer',
         email: 'buyer@tradeheaven.net',
         phone: '',
         subject: `Direct Product Inquiry: ${orderQuantity} ${product.moqUnit || 'Units'} of ${product.title}`,
         message: `Product ID: ${product.id} | Supplier: ${product.supplierName} (${product.supplierCountry}) | Incoterm: ${selectedIncoterm} | Target Unit Rate: $${matchedTier.priceUsd} | Buyer Note: ${customInquiryNote || 'Seeking FOB/CIF commercial quotation and lead times.'}`,
-        product_name: product.title,
-        status: 'pending'
+        product_name: product.title
       });
+      window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created'));
     } catch {
       // safe fallback
     }

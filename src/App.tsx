@@ -50,7 +50,7 @@ import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactIn
 import { AuthModal } from './components/modals/AuthModal';
 import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
 import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
-import { supabaseService } from './lib/supabaseClient';
+import { bigrockApi } from './services/bigrockApi';
 
 const MainApp: React.FC = () => {
   const { 
@@ -94,7 +94,7 @@ const MainApp: React.FC = () => {
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<PaymentCheckoutData | null>(null);
 
-  // Fetch live RFQs from Supabase
+  // Fetch live RFQs from BigRock PHP API (GET /api.php?action=get_rfqs)
   const fetchRFQs = async () => {
     try {
       const loadedRfqs = await api.getRfqs(undefined, currentUser);
@@ -103,11 +103,11 @@ const MainApp: React.FC = () => {
         setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
       }
     } catch (err) {
-      console.error('[Failed to load rfqs]:', err);
+      console.error('[Failed to load BigRock rfqs]:', err);
     }
   };
 
-  // Fetch initial products and RFQs & subscribe to live Supabase updates
+  // Fetch initial products and RFQs
   useEffect(() => {
     api.getProducts().then(prods => {
       if (prods && prods.length > 0) {
@@ -117,15 +117,14 @@ const MainApp: React.FC = () => {
 
     fetchRFQs();
 
-    // Live Supabase Realtime Subscription for new inquiries / RFQs
-    const unsubscribe = supabaseService.subscribeToInquiries(() => {
+    // Listen for custom RFQ creation / refresh triggers
+    const handleRfqRefresh = () => {
       fetchRFQs();
-    });
+    };
+    window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
 
     return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     };
   }, [currentUser]);
 

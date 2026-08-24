@@ -24,7 +24,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { validateUploadFile, compressAndResizeImage, UPLOAD_LIMITS } from '../../utils/fileUploadGuard';
-import { supabaseService } from '../../lib/supabaseClient';
+import { bigrockApi } from '../../services/bigrockApi';
 
 interface Props {
   isOpen?: boolean;
@@ -99,16 +99,16 @@ export const RfqCreationModal: React.FC<Props> = ({
     };
 
     try {
-      // Sync to live Supabase inquiries table
-      await supabaseService.createInquiry({
+      // Sync to live BigRock PHP MySQL API (POST /api.php?action=create_rfq)
+      await bigrockApi.createRfq({
         name: buyerCompany || 'Procurement Officer',
         email: buyerEmail || 'buyer@tradeheaven.net',
         phone: '',
         subject: `Buy Lead RFQ [${generatedId}]: ${targetQuantity} ${quantityUnit} of ${productName}`,
         message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedRequirements}`,
-        product_name: productName,
-        status: 'pending'
+        product_name: productName
       });
+      window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created', { detail: newRfq }));
     } catch {
       // graceful fallback
     }
