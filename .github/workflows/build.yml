@@ -1,9 +1,12 @@
-name: Build and Release Dist
+name: Build and Push Dist
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -23,8 +26,10 @@ jobs:
       - name: Build production bundle
         run: npm run build
 
-      - name: Upload dist folder artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-build
-          path: dist/
+      - name: Commit dist folder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f dist/
+          git commit -m "build: compile production dist bundle" || echo "No changes"
+          git push
