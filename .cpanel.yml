@@ -1,6 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home3/a17604c7/tradeheaven.net/
+    - export DEPLOYPATH=/home3/a17604c7/public_html/
     - /bin/cp -R dist/* $DEPLOYPATH
     - /bin/cp api.php $DEPLOYPATH
