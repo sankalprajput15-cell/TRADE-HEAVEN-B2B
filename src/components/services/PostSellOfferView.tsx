@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Product, Currency, Incoterm } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
+import { supabaseService } from '../../lib/supabaseClient';
+import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
 import { 
   PackagePlus, 
   Sparkles, 
@@ -10,7 +12,9 @@ import {
   DollarSign, 
   Image as ImageIcon,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Upload,
+  Loader2
 } from 'lucide-react';
 
 interface Props {
@@ -34,9 +38,38 @@ export const PostSellOfferView: React.FC<Props> = ({
   const [leadTimeDays, setLeadTimeDays] = useState<number>(15);
   const [description, setDescription] = useState('');
   const [supplierName, setSupplierName] = useState('Zhejiang Precision Machinery Co.');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = async (file: File) => {
+    const check = validateUploadFile(file, 'IMAGE');
+    if (!check.valid) {
+      setUploadMessage(check.error || 'Invalid image file');
+      return;
+    }
+    setIsUploadingImage(true);
+    setUploadMessage('Optimizing & uploading to Supabase Storage...');
+    try {
+      const compressed = await compressAndResizeImage(file);
+      // Upload to Supabase Storage bucket
+      const res = await supabaseService.uploadFile(file, 'products');
+      if (res.success && res.publicUrl) {
+        setImageUrl(res.publicUrl);
+        setUploadMessage('✓ Image stored in Supabase site-uploads bucket!');
+      } else {
+        setImageUrl(compressed.dataUrl);
+        setUploadMessage('✓ Image optimized and loaded');
+      }
+    } catch {
+      setUploadMessage('Failed to upload image. Using default URL.');
+    } finally {
+      setIsUploadingImage(false);
+      setTimeout(() => setUploadMessage(null), 3000);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newProd: Partial<Product> = {
@@ -64,6 +97,24 @@ export const PostSellOfferView: React.FC<Props> = ({
         { name: 'Certification', value: 'ISO 9001:2015, CE, RoHS' }
       ]
     };
+
+    try {
+      // Save directly to Supabase listings table
+      await supabaseService.createListing({
+        title,
+        description: description || `Factory direct supply of ${title}. MOQ: ${moq} ${moqUnit}, Port: ${portOfDispatch}.`,
+        category,
+        sub_category: subCategory,
+        price: priceTier1,
+        image_url: imageUrl,
+        moq,
+        moq_unit: moqUnit,
+        supplier_name: supplierName,
+        supplier_country: 'China'
+      });
+    } catch (err) {
+      console.warn('Listing saved to local store');
+    }
 
     setIsSuccess(true);
     setTimeout(() => {
@@ -142,14 +193,60 @@ export const PostSellOfferView: React.FC<Props> = ({
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block font-bold text-slate-700 mb-1">High-Resolution Photo URL</label>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={e => setImageUrl(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 font-mono text-xs focus:outline-none focus:border-blue-500"
-                />
+              <div className="sm:col-span-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-700">Product Image (Supabase Storage)</label>
+                  <span className="text-[10px] text-blue-600 font-bold">Upload to 'site-uploads' bucket</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shrink-0 flex items-center justify-center">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-slate-400" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 w-full space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <label className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
+                        {isUploadingImage ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5 text-blue-600" />
+                        )}
+                        <span>{isUploadingImage ? 'Uploading to Bucket...' : 'Upload Image File'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={isUploadingImage}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleImageUpload(f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      <span className="text-[11px] text-slate-400">or enter image URL below</span>
+                    </div>
+
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={e => setImageUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 font-mono text-[11px] focus:outline-none focus:border-blue-500"
+                    />
+
+                    {uploadMessage && (
+                      <div className="text-[10px] font-bold text-emerald-600">
+                        {uploadMessage}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

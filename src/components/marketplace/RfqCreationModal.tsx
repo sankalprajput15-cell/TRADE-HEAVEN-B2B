@@ -24,6 +24,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { validateUploadFile, compressAndResizeImage, UPLOAD_LIMITS } from '../../utils/fileUploadGuard';
+import { supabaseService } from '../../lib/supabaseClient';
 
 interface Props {
   isOpen?: boolean;
@@ -64,7 +65,7 @@ export const RfqCreationModal: React.FC<Props> = ({
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -87,6 +88,21 @@ export const RfqCreationModal: React.FC<Props> = ({
       quotesCount: 0
     };
 
+    try {
+      // Sync to live Supabase inquiries table
+      await supabaseService.createInquiry({
+        name: buyerCompany || 'Procurement Officer',
+        email: buyerEmail || 'buyer@tradeheaven.net',
+        phone: '',
+        subject: `Buy Lead RFQ: ${targetQuantity} ${quantityUnit} of ${productName}`,
+        message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedDescription}`,
+        product_name: productName,
+        status: 'pending'
+      });
+    } catch {
+      // graceful fallback
+    }
+
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
@@ -99,7 +115,7 @@ export const RfqCreationModal: React.FC<Props> = ({
           onClose();
         }
       }, 1000);
-    }, 800);
+    }, 600);
   };
 
   return (

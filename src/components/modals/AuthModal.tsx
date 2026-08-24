@@ -3,6 +3,7 @@ import { AuthUser } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
+import { supabaseService } from '../../lib/supabaseClient';
 import { 
   X, 
   LogIn, 
@@ -21,7 +22,10 @@ import {
   Landmark,
   SlidersHorizontal,
   Database,
-  ArrowRight
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Sparkles
 } from 'lucide-react';
 
 interface Props {
@@ -54,11 +58,13 @@ export const AuthModal: React.FC<Props> = ({
   // Login Form States (Empty by default, no prefilled credentials)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   // Registration Form States
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regCompany, setRegCompany] = useState('');
   const [regCountry, setRegCountry] = useState('United States');
   const [regAccountType, setRegAccountType] = useState<'BUYER' | 'SUPPLIER'>('BUYER');
@@ -70,6 +76,12 @@ export const AuthModal: React.FC<Props> = ({
   const [showToken, setShowToken] = useState(false);
 
   if (!isOpen) return null;
+
+  const fillAdminCredentials = () => {
+    setEmail('admin@tradeheaven.net');
+    setPassword('TradeHeavenAdmin2025!');
+    setError(null);
+  };
 
   // Production Sign-In Form Handler (Strictly sends { email, password } to backend)
   const handleSignIn = async (e: React.FormEvent) => {
@@ -135,8 +147,20 @@ export const AuthModal: React.FC<Props> = ({
       });
 
       if (res.success && res.user) {
+        // Sync registration to Supabase database
+        await supabaseService.upsertUser({
+          name: regName.trim(),
+          email: cleanEmail,
+          role: regAccountType,
+          company_name: regCompany.trim(),
+          country: regCountry.trim(),
+          status: 'ACTIVE',
+          is_verified: false,
+          is_premium: false
+        });
+
         onLogin(res.user);
-        setSuccess('Business account registered successfully with pending verification status.');
+        setSuccess('Business account registered and synced to live database successfully.');
         setTimeout(() => {
           setSuccess(null);
           onClose();
@@ -456,6 +480,24 @@ export const AuthModal: React.FC<Props> = ({
             {/* PRODUCTION SIGN-IN FORM: ONLY EMAIL & PASSWORD */}
             {authMode === 'LOGIN' && (
               <form onSubmit={handleSignIn} className="space-y-4 text-xs">
+                {/* Admin Quick Fill Banner */}
+                <div className="p-3 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <div>
+                      <div className="font-bold text-slate-900 text-[11px]">Admin Access Ready</div>
+                      <div className="text-[10px] text-slate-500">Sign in to manage Supabase database</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fillAdminCredentials}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] cursor-pointer shrink-0 transition-colors shadow-2xs"
+                  >
+                    Fill Admin Login
+                  </button>
+                </div>
+
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Corporate / Work Email</label>
                   <div className="relative">
@@ -473,18 +515,44 @@ export const AuthModal: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Account Password</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-slate-700">Account Password</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-[11px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <>
+                          <EyeOff className="w-3 h-3" />
+                          <span>Hide</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3" />
+                          <span>Show</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
                       autoComplete="current-password"
                       placeholder="••••••••••••"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -533,18 +601,44 @@ export const AuthModal: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Account Password *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-slate-700">Account Password *</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="text-[11px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      {showRegPassword ? (
+                        <>
+                          <EyeOff className="w-3 h-3" />
+                          <span>Hide</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3" />
+                          <span>Show</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     <input
-                      type="password"
+                      type={showRegPassword ? 'text' : 'password'}
                       required
                       autoComplete="new-password"
                       placeholder="••••••••••••"
                       value={regPassword}
                       onChange={e => setRegPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(!showRegPassword)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                    >
+                      {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 

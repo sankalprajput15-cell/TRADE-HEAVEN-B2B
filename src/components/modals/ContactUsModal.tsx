@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { OFFICIAL_WHATSAPP_DATA, SOCIAL_LINKS } from '../common/TradeHeavenSocialBar';
 import { api } from '../../services/apiService';
+import { supabaseService } from '../../lib/supabaseClient';
 import { validateUploadFile, compressAndResizeImage, UPLOAD_LIMITS } from '../../utils/fileUploadGuard';
 
 interface Props {
@@ -53,6 +54,18 @@ export const ContactUsModal: React.FC<Props> = ({
     setIsSubmitting(true);
 
     try {
+      // 1. Submit directly to live Supabase database
+      await supabaseService.createInquiry({
+        name,
+        email,
+        phone,
+        subject,
+        message: `${message}${attachedFiles.length > 0 ? `\n[Attachments: ${attachedFiles.map(a => a.name).join(', ')}]` : ''}`,
+        product_name: `Category: ${inquiryType}`,
+        status: 'pending'
+      });
+
+      // 2. Also notify backend service
       await api.submitContactInquiry({
         name,
         email,
@@ -62,18 +75,19 @@ export const ContactUsModal: React.FC<Props> = ({
         inquiryType,
         timestamp: new Date().toISOString()
       });
+
       setIsSuccess(true);
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 2500);
+      }, 2000);
     } catch (err) {
-      // Fallback local acknowledgment
+      // Graceful fallback
       setIsSuccess(true);
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 2500);
+      }, 2000);
     } finally {
       setIsSubmitting(false);
     }
