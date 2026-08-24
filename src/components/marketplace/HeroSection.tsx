@@ -33,10 +33,12 @@ interface Props {
   onOpenCreateRfq: () => void;
   onOpenLiveTool: (tool: 'incoterms' | 'rfq_checker' | 'api_sandbox') => void;
   products?: Product[];
+  rfqs?: RfqRequirement[];
   selectedCurrency?: Currency;
   onSelectProduct?: (product: Product) => void;
   onOpenStorefront?: (companyId: string) => void;
   onNavigate?: (view: ActiveView) => void;
+  onSelectRfq?: (rfq: RfqRequirement) => void;
 }
 
 type SearchFilterType = 'ALL' | 'PRODUCTS' | 'SUPPLIERS' | 'RFQS' | 'CATEGORIES' | 'TOOLS';
@@ -132,10 +134,12 @@ export const HeroSection: React.FC<Props> = ({
   onOpenCreateRfq,
   onOpenLiveTool,
   products = [],
+  rfqs = [],
   selectedCurrency = 'USD',
   onSelectProduct,
   onOpenStorefront,
-  onNavigate
+  onNavigate,
+  onSelectRfq
 }) => {
   const { siteContent, isLiveEditMode, openQuickEdit } = useSiteContent();
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,16 +215,27 @@ export const HeroSection: React.FC<Props> = ({
       );
     }).slice(0, 4);
 
-    // 3. Match RFQs & Buy Leads
-    const matchedRfqs = MOCK_RFQS.filter(r => {
+    // 3. Match RFQs & Buy Leads (Searches live Supabase feed)
+    const activeRfqPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
+    const matchedRfqs = activeRfqPool.filter(r => {
+      const pName = (r.productName || '').toLowerCase();
+      const bCompany = (r.buyerCompany || '').toLowerCase();
+      const bName = (r.buyerName || '').toLowerCase();
+      const desc = (r.detailedRequirements || r.detailedDescription || '').toLowerCase();
+      const cat = (r.category || '').toLowerCase();
+      const port = (r.destinationPort || '').toLowerCase();
+      const rfqId = (r.id || '').toLowerCase();
+
       return (
-        r.productName.toLowerCase().includes(q) ||
-        r.category.toLowerCase().includes(q) ||
-        r.buyerCompany.toLowerCase().includes(q) ||
-        (r.destinationPort && r.destinationPort.toLowerCase().includes(q)) ||
-        (r.preferredIncoterm && r.preferredIncoterm.toLowerCase().includes(q))
+        pName.includes(q) ||
+        bCompany.includes(q) ||
+        bName.includes(q) ||
+        desc.includes(q) ||
+        cat.includes(q) ||
+        port.includes(q) ||
+        rfqId.includes(q)
       );
-    }).slice(0, 4);
+    }).slice(0, 6);
 
     // 4. Match Categories & Subcategories
     const matchedCategories: { name: string; icon: string; count: string; subcategory?: string }[] = [];
@@ -259,7 +274,7 @@ export const HeroSection: React.FC<Props> = ({
       tools: matchedTools,
       totalCount
     };
-  }, [searchQuery, selectedCat, products]);
+  }, [searchQuery, selectedCat, products, rfqs]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,6 +314,9 @@ export const HeroSection: React.FC<Props> = ({
 
   const handleRfqClick = (rfq: RfqRequirement) => {
     setIsSearchPopoverOpen(false);
+    if (onSelectRfq) {
+      onSelectRfq(rfq);
+    }
     if (onNavigate) {
       onNavigate('RFQ_HUB');
     }

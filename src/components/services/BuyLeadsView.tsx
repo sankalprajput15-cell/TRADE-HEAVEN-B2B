@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { RfqRequirement, Currency, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
+import { supabaseService } from '../../lib/supabaseClient';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { 
   Radio, 
   Search, 
@@ -20,7 +22,8 @@ import {
   Crown,
   Lock,
   Mail,
-  Phone
+  Phone,
+  RefreshCw
 } from 'lucide-react';
 
 interface Props {
@@ -50,19 +53,44 @@ export const BuyLeadsView: React.FC<Props> = ({
     return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  useEffect(() => {
+  const loadLiveRfqs = async () => {
     setIsLoading(true);
-    api.getRfqs(currentUser).then(data => {
-      setRfqs(data);
+    try {
+      const data = await api.getRfqs(currentUser);
+      if (data) {
+        setRfqs(data);
+      }
+    } catch (err) {
+      console.error('[BuyLeadsView error loading rfqs]:', err);
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLiveRfqs();
+
+    const unsubscribe = supabaseService.subscribeToInquiries(() => {
+      loadLiveRfqs();
     });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [currentUser]);
 
   const filtered = rfqs.filter(r => {
-    const matchesSearch = searchTerm === '' ||
-      r.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.buyerCompany.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.destinationPort.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = q === '' ||
+      (r.productName || '').toLowerCase().includes(q) ||
+      (r.buyerCompany || '').toLowerCase().includes(q) ||
+      (r.buyerName || '').toLowerCase().includes(q) ||
+      (r.detailedRequirements || r.detailedDescription || '').toLowerCase().includes(q) ||
+      (r.destinationPort || '').toLowerCase().includes(q) ||
+      (r.preferredIncoterm || '').toLowerCase().includes(q) ||
+      (r.id || '').toLowerCase().includes(q);
     const matchesCat = selectedCategory === 'ALL' || r.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
@@ -158,8 +186,18 @@ export const BuyLeadsView: React.FC<Props> = ({
           ))}
         </div>
 
-        <div className="text-xs text-slate-500 font-mono shrink-0">
-          <strong>{filtered.length}</strong> Live Sourcing Leads
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={loadLiveRfqs}
+            disabled={isLoading}
+            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
+            title="Refresh Live RFQ Feed from Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
+          </button>
+          <div className="text-xs text-slate-500 font-mono">
+            <strong>{filtered.length}</strong> Live Leads
+          </div>
         </div>
       </div>
 
@@ -242,13 +280,25 @@ export const BuyLeadsView: React.FC<Props> = ({
               </div>
             </div>
 
-            <button
-              onClick={() => onSelectRfq(rfq)}
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer mt-2"
-            >
-              <span>Submit Binding Factory Quote</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <button
+                onClick={() => onSelectRfq(rfq)}
+                className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+              >
+                <span>Quote Tender</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <a
+                href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm text-center"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
+            </div>
           </div>
         ))}
       </div>

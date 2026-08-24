@@ -186,7 +186,7 @@ export const supabaseService = {
     }
   },
 
-  // 2. INQUIRIES & LEADS
+  // 2. INQUIRIES & LEADS / RFQS
   async fetchInquiries(): Promise<DbInquiry[]> {
     try {
       const { data, error } = await supabase
@@ -201,6 +201,31 @@ export const supabaseService = {
       return data || [];
     } catch (err) {
       console.warn('[Supabase inquiries error]:', err);
+      return [];
+    }
+  },
+
+  async fetchRfqs(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('inquiries')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('[Supabase inquiries fetch error]:', error.message);
+        return [];
+      }
+
+      if (data && data.length > 0) {
+        return data.map((inq, idx) => mapInquiryToRfq(inq, idx));
+      }
+
+      // If database table is empty on first load, seed initial verified inquiries
+      const seeded = await seedInitialInquiries();
+      return seeded.map((inq, idx) => mapInquiryToRfq(inq, idx));
+    } catch (err) {
+      console.warn('[Supabase fetchRfqs exception]:', err);
       return [];
     }
   },
@@ -224,11 +249,35 @@ export const supabaseService = {
         .select();
 
       if (error) {
+        console.error('[Supabase insert inquiry error]:', error.message);
         return { success: false, error: error.message };
       }
       return { success: true, data: data?.[0] };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Failed to submit inquiry' };
+    }
+  },
+
+  subscribeToInquiries(onUpdate: (payload?: any) => void): () => void {
+    try {
+      const channel = supabase
+        .channel('public:inquiries')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'inquiries' },
+          (payload) => {
+            console.log('[Supabase Realtime Inquiries Update]:', payload);
+            onUpdate(payload);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (err) {
+      console.warn('[Supabase realtime subscribe warning]:', err);
+      return () => {};
     }
   },
 
@@ -460,3 +509,164 @@ export const supabaseService = {
     }
   }
 };
+
+export const INITIAL_SEED_INQUIRIES: Omit<DbInquiry, 'id' | 'created_at'>[] = [
+  {
+    name: 'Nordic Clean Energy Solutions AB',
+    email: 'procurement@nordic-energy.se',
+    phone: '+46 31 790 4420',
+    subject: 'Buy Lead RFQ [rfq-2026-901]: 500 Pieces of Commercial 5.12kWh LiFePO4 Server Rack Batteries (48V / 51.2V 100Ah)',
+    message: 'Looking for Tier-1 certified LiFePO4 battery modules for telecom backup and commercial solar projects. Must have UL1973, CE, and UN38.3 test reports. Compatible with Victron GX and Deye inverters. Need initial 500 units with recurring quarterly orders. Target Incoterm: CIF | Port: Gothenburg Port, Sweden | Target Price: $650/unit | Terms: 30% TT Deposit, 70% against B/L',
+    product_name: 'Commercial 5.12kWh LiFePO4 Server Rack Batteries (48V / 51.2V 100Ah)',
+    status: 'pending'
+  },
+  {
+    name: 'Nippon Precision Molding Corp',
+    email: 'takahashi@nippon-molding.co.jp',
+    phone: '+81 45 682 9100',
+    subject: 'Buy Lead RFQ [rfq-2026-902]: 120 Metric Tons of Virgin HDPE Granules (Blow Molding Grade - MFI 0.05)',
+    message: 'Require 120 MT of prime virgin HDPE blow molding grade for 20L chemical jerry cans. Must pass ESCR > 1000 hours test. Need full COA (Certificate of Analysis) and REACH compliance declarations before shipment. Target Incoterm: CIF | Port: Yokohama Port, Japan | Target Price: $1020/MT | Terms: 100% L/C at sight',
+    product_name: 'Virgin HDPE Granules (Blow Molding Grade - MFI 0.05)',
+    status: 'pending'
+  },
+  {
+    name: 'Atelier Mode Paris SARL',
+    email: 'sourcing@ateliermode.fr',
+    phone: '+33 1 42 68 55 00',
+    subject: 'Buy Lead RFQ [rfq-2026-903]: 15,000 Meters of GOTS Organic Cotton Denim Fabric (12-13 oz Indigo Dyed)',
+    message: 'Sourcing 15,000 meters of 100% organic cotton raw selvedge/ring denim for Spring collection. Must provide GOTS TC (Transaction Certificate) issued to our company name. Need lab dips and sample rolls. Target Incoterm: DDP | Port: Le Havre / Paris, France | Target Price: $4.10/m | Terms: Trade Assurance Escrow',
+    product_name: 'GOTS Organic Cotton Denim Fabric (12-13 oz Indigo Dyed)',
+    status: 'pending'
+  },
+  {
+    name: 'Al-Mansoor Food Trading LLC',
+    email: 'import@almansoor-dubai.ae',
+    phone: '+971 4 228 9011',
+    subject: 'Buy Lead RFQ [rfq-2026-904]: 250 Metric Tons of Vietnam ST25 Jasmine Fragrant Rice (5% Broken, Long Grain)',
+    message: 'Sourcing 250 MT fresh harvest ST25 fragrant jasmine rice packed in 25kg and 50kg BOPP bags for supermarkets across UAE and Saudi Arabia. Need SGS inspection at loading port. Target Incoterm: CIF | Port: Jebel Ali Port, Dubai | Target Price: $720/MT | Terms: 30% TT, 70% upon B/L copy',
+    product_name: 'Vietnam ST25 Jasmine Fragrant Rice (5% Broken, Long Grain)',
+    status: 'pending'
+  },
+  {
+    name: 'Apex Precision Engineering LLC',
+    email: 'procurement@apexprecision-us.com',
+    phone: '+1 312 894 2200',
+    subject: 'Buy Lead RFQ [rfq-2026-905]: 400 Sets of Custom 6061-T6 Monoblock Forged Alloy Wheels (19-21 Inch)',
+    message: 'Seeking OEM/ODM factory with 10,000-ton forging presses and 5-axis CNC machining centers for motorsport alloy wheels. JWL / VIA / TÜV compliance certification required. Target Incoterm: FOB | Port: Ningbo / Shanghai Port | Target Price: $145/piece | Terms: 40% TT, 60% upon inspection',
+    product_name: 'Custom 6061-T6 Monoblock Forged Alloy Wheels (19-21 Inch)',
+    status: 'pending'
+  }
+];
+
+export async function seedInitialInquiries(): Promise<DbInquiry[]> {
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .insert(INITIAL_SEED_INQUIRIES.map(i => ({ ...i, created_at: new Date().toISOString() })))
+      .select();
+
+    if (error) {
+      console.warn('[Seed initial inquiries note]:', error.message);
+      return INITIAL_SEED_INQUIRIES as any;
+    }
+    return data || (INITIAL_SEED_INQUIRIES as any);
+  } catch {
+    return INITIAL_SEED_INQUIRIES as any;
+  }
+}
+
+export function mapInquiryToRfq(inq: any, index: number = 0): any {
+  let targetQuantity = 1000;
+  let quantityUnit = 'Units';
+  let targetPriceUsd = 150;
+  let preferredIncoterm = 'FOB';
+  let destinationPort = 'Global Hub Port';
+  let paymentTerms = '30% TT Deposit, 70% against B/L';
+  let category = 'Industrial & Commercial';
+  let buyerCountry = 'Global';
+
+  const msg = inq.message || inq.detailedRequirements || inq.detailedDescription || '';
+  const subj = inq.subject || '';
+
+  // Extract structured parameters from message / subject if present
+  const qtyMatch = msg.match(/(?:Quantity|Target Volume|Qty):\s*([0-9,]+)\s*([a-zA-Z]+)?/i) || subj.match(/([0-9,]+)\s*([a-zA-Z]+)\s+of/i);
+  if (qtyMatch) {
+    targetQuantity = parseInt(qtyMatch[1].replace(/,/g, ''), 10) || targetQuantity;
+    if (qtyMatch[2]) quantityUnit = qtyMatch[2].trim();
+  }
+
+  const priceMatch = msg.match(/(?:Target Price|Price|Unit Price):\s*\$?([0-9,.]+)/i);
+  if (priceMatch) {
+    targetPriceUsd = parseFloat(priceMatch[1]) || targetPriceUsd;
+  }
+
+  const incoMatch = msg.match(/(?:Incoterm|Target Incoterm):\s*(FOB|CIF|EXW|CFR|DDP|DAP|CIP|FCA)/i);
+  if (incoMatch) {
+    preferredIncoterm = incoMatch[1].toUpperCase();
+  }
+
+  const portMatch = msg.match(/(?:Port|Destination Port):\s*([^|\n,]+)/i);
+  if (portMatch) {
+    destinationPort = portMatch[1].trim();
+  }
+
+  const countryMatch = msg.match(/(?:Country):\s*([^|\n,]+)/i);
+  if (countryMatch) {
+    buyerCountry = countryMatch[1].trim();
+  }
+
+  // Determine realistic category based on product title or message
+  const textToCheck = `${inq.product_name || ''} ${subj} ${msg}`.toLowerCase();
+  if (textToCheck.includes('batter') || textToCheck.includes('solar') || textToCheck.includes('pcb') || textToCheck.includes('led') || textToCheck.includes('electronic')) {
+    category = 'Electronics & Renewable Energy';
+  } else if (textToCheck.includes('hdpe') || textToCheck.includes('polymer') || textToCheck.includes('resin') || textToCheck.includes('chemical')) {
+    category = 'Chemicals, Polymers & Resins';
+  } else if (textToCheck.includes('denim') || textToCheck.includes('cotton') || textToCheck.includes('fabric') || textToCheck.includes('yarn') || textToCheck.includes('textile')) {
+    category = 'Textiles, Fabrics & Apparel';
+  } else if (textToCheck.includes('rice') || textToCheck.includes('grain') || textToCheck.includes('coffee') || textToCheck.includes('spice') || textToCheck.includes('food')) {
+    category = 'Agriculture & Food Commodities';
+  } else if (textToCheck.includes('wheel') || textToCheck.includes('alloy') || textToCheck.includes('cnc') || textToCheck.includes('machin') || textToCheck.includes('motor')) {
+    category = 'Industrial Machinery & Auto Parts';
+  }
+
+  let id = inq.id || `rfq-live-${index}-${Date.now().toString().slice(-4)}`;
+  const idInSubject = subj.match(/\[(rfq-[^\]]+)\]/i);
+  if (idInSubject) {
+    id = idInSubject[1];
+  }
+
+  const cleanProductName = inq.product_name && inq.product_name !== 'General Wholesale Inquiry'
+    ? inq.product_name
+    : subj.replace(/^Buy Lead RFQ \[.*?\]:\s*/, '').replace(/^[0-9,]+\s+[a-zA-Z]+\s+of\s+/i, '') || 'Wholesale Industrial Sourcing Tender';
+
+  return {
+    id,
+    ownerUid: inq.email || `user-${index}`,
+    buyerName: inq.name || 'Verified Sourcing Manager',
+    buyerCompany: inq.name || 'International Procurement Corp',
+    buyerEmail: inq.email || 'buyer@tradeheaven.net',
+    buyerPhone: inq.phone || '+1 (800) 555-0199',
+    buyerCountry: buyerCountry,
+    buyerVerified: true,
+    productName: cleanProductName,
+    category: inq.category || category,
+    targetQuantity: inq.targetQuantity || targetQuantity,
+    quantityUnit: inq.quantityUnit || quantityUnit,
+    targetPriceUsd: inq.targetPriceUsd || targetPriceUsd,
+    targetDeliveryDate: inq.targetDeliveryDate || '2026-11-30',
+    preferredIncoterm: inq.preferredIncoterm || preferredIncoterm,
+    destinationPort: inq.destinationPort || destinationPort,
+    paymentTerms: inq.paymentTerms || paymentTerms,
+    detailedRequirements: msg || subj || 'Standard export quality specification required.',
+    detailedDescription: msg || subj || 'Standard export quality specification required.',
+    urgency: inq.urgency || 'STANDARD',
+    quotesCount: inq.quotesCount ?? (index % 3 + 2),
+    postedDate: inq.created_at ? inq.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+    expiryDate: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+    status: inq.status === 'resolved' ? 'CLOSED' : 'OPEN',
+    matchedSupplierCount: 6,
+    spamScore: 1.0,
+    isContactMasked: false,
+    rawInquiryId: inq.id
+  };
+}

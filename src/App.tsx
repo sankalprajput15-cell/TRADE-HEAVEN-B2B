@@ -46,10 +46,11 @@ import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
 import { SupplierStorefrontModal } from './components/marketplace/SupplierStorefrontModal';
 import { RfqCreationModal } from './components/marketplace/RfqCreationModal';
-import { ContactUsModal } from './components/modals/ContactUsModal';
+import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactInquiryModal';
 import { AuthModal } from './components/modals/AuthModal';
 import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
 import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
+import { supabaseService } from './lib/supabaseClient';
 
 const MainApp: React.FC = () => {
   const { 
@@ -73,13 +74,40 @@ const MainApp: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [storefrontCompanyId, setStorefrontCompanyId] = useState<string | null>(null);
   const [isCreateRfqOpen, setIsCreateRfqOpen] = useState(false);
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [contactModalConfig, setContactModalConfig] = useState<{
+    isOpen: boolean;
+    targetType: 'RFQ' | 'PRODUCT' | 'SUPPLIER' | 'GENERAL';
+    targetId?: string;
+    targetTitle?: string;
+    targetSubtitle?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    supplierCompany?: string;
+    initialQuantity?: number;
+    initialPrice?: number;
+  }>({
+    isOpen: false,
+    targetType: 'GENERAL'
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'LOGIN' | 'REGISTER' | 'WORK_WITH_US'>('LOGIN');
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<PaymentCheckoutData | null>(null);
 
-  // Fetch initial products and RFQs
+  // Fetch live RFQs from Supabase
+  const fetchRFQs = async () => {
+    try {
+      const loadedRfqs = await api.getRfqs(undefined, currentUser);
+      if (loadedRfqs && loadedRfqs.length > 0) {
+        setRfqs(loadedRfqs);
+        setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
+      }
+    } catch (err) {
+      console.error('[Failed to load rfqs]:', err);
+    }
+  };
+
+  // Fetch initial products and RFQs & subscribe to live Supabase updates
   useEffect(() => {
     api.getProducts().then(prods => {
       if (prods && prods.length > 0) {
@@ -87,14 +115,18 @@ const MainApp: React.FC = () => {
       }
     }).catch(err => console.error('[Failed to load products]:', err));
 
-    api.getRfqs(undefined, currentUser).then(loadedRfqs => {
-      if (loadedRfqs && loadedRfqs.length > 0) {
-        setRfqs(loadedRfqs);
-        if (!selectedRfqId) {
-          setSelectedRfqId(loadedRfqs[0].id);
-        }
+    fetchRFQs();
+
+    // Live Supabase Realtime Subscription for new inquiries / RFQs
+    const unsubscribe = supabaseService.subscribeToInquiries(() => {
+      fetchRFQs();
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
       }
-    }).catch(err => console.error('[Failed to load rfqs]:', err));
+    };
   }, [currentUser]);
 
   // Global listener for cross-component navigation events
@@ -193,6 +225,25 @@ const MainApp: React.FC = () => {
     setCheckoutData(data);
   };
 
+  const handleOpenContactModal = (config?: Partial<typeof contactModalConfig>) => {
+    setContactModalConfig({
+      isOpen: true,
+      targetType: config?.targetType || 'GENERAL',
+      targetId: config?.targetId,
+      targetTitle: config?.targetTitle,
+      targetSubtitle: config?.targetSubtitle,
+      contactEmail: config?.contactEmail,
+      contactPhone: config?.contactPhone,
+      supplierCompany: config?.supplierCompany,
+      initialQuantity: config?.initialQuantity,
+      initialPrice: config?.initialPrice
+    });
+  };
+
+  const handleCloseContactModal = () => {
+    setContactModalConfig(prev => ({ ...prev, isOpen: false }));
+  };
+
   const handleNavigate = (view: ActiveView | string) => {
     const target = String(view || '').trim().toUpperCase();
 
@@ -206,7 +257,7 @@ const MainApp: React.FC = () => {
       return;
     }
     if (target === 'CONTACT_US' || target === 'CONTACT' || target === 'SUPPORT') {
-      setIsContactModalOpen(true);
+      handleOpenContactModal({ targetType: 'GENERAL' });
       return;
     }
     if (target === 'AUTH_LOGIN' || target === 'LOGIN') {
@@ -332,7 +383,7 @@ const MainApp: React.FC = () => {
         onOpenOnboardModal={() => {
           handleNavigate('ONBOARD_WITH_US');
         }}
-        onOpenContactModal={() => setIsContactModalOpen(true)}
+        onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
         onOpenDbModal={() => setIsDbModalOpen(true)}
         onOpenCreateRfq={handleOpenCreateRfq}
       />
@@ -354,6 +405,10 @@ const MainApp: React.FC = () => {
                     onOpenCreateRfq={handleOpenCreateRfq}
                     onNavigate={handleNavigate}
                     onOpenLiveTool={handleOpenLiveTool}
+                    onSelectRfq={(rfq) => {
+                      setSelectedRfqId(rfq.id);
+                      setActiveView('RFQ_HUB');
+                    }}
                   />
                 );
 
@@ -437,7 +492,19 @@ const MainApp: React.FC = () => {
                 return (
                   <BuyLeadsView
                     selectedCurrency={selectedCurrency}
-                    onSelectRfq={() => setActiveView('RFQ_HUB')}
+                    onSelectRfq={(rfq) => {
+                      handleOpenContactModal({
+                        targetType: 'RFQ',
+                        targetId: rfq.id,
+                        targetTitle: rfq.productName,
+                        targetSubtitle: `${rfq.targetQuantity} ${rfq.quantityUnit} to ${rfq.destinationPort}`,
+                        supplierCompany: rfq.buyerCompany,
+                        contactEmail: rfq.buyerEmail,
+                        contactPhone: rfq.buyerPhone,
+                        initialQuantity: rfq.targetQuantity,
+                        initialPrice: rfq.targetPriceUsd
+                      });
+                    }}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     currentUser={currentUser}
                     onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
@@ -456,7 +523,7 @@ const MainApp: React.FC = () => {
 
               case 'REFUND_POLICY':
                 return (
-                  <RefundPolicyView onOpenContactModal={() => setIsContactModalOpen(true)} />
+                  <RefundPolicyView onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
                 );
 
               case 'ONBOARD_WITH_US':
@@ -530,7 +597,7 @@ const MainApp: React.FC = () => {
                   <NotFoundView
                     attemptedView={String(activeView)}
                     onNavigate={handleNavigate}
-                    onOpenContactModal={() => setIsContactModalOpen(true)}
+                    onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
                   />
                 );
             }
@@ -540,13 +607,13 @@ const MainApp: React.FC = () => {
 
       {/* 4. OFFICIAL SOCIAL & WHATSAPP NETWORK BAR */}
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <TradeHeavenSocialBar onContactClick={() => setIsContactModalOpen(true)} />
+        <TradeHeavenSocialBar onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
       </div>
 
       {/* 5. GLOBAL FOOTER */}
       <TradeHeavenFooter
         onNavigate={handleNavigate}
-        onContactClick={() => setIsContactModalOpen(true)}
+        onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })}
         currentUser={currentUser}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
@@ -554,7 +621,7 @@ const MainApp: React.FC = () => {
       {/* 6. REAL-TIME AI LIVE CHAT & WHATSAPP DESK WIDGET */}
       <TradeHeavenLiveChatWidget
         currentUser={currentUser}
-        onOpenContactModal={() => setIsContactModalOpen(true)}
+        onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
         onOpenRfqModal={handleOpenCreateRfq}
         onOpenStorefront={handleOpenStorefront}
       />
@@ -611,9 +678,21 @@ const MainApp: React.FC = () => {
         onRfqCreated={handleRfqCreated}
       />
 
-      <ContactUsModal
-        isOpen={isContactModalOpen}
-        onClose={() => setIsContactModalOpen(false)}
+      <UnifiedContactInquiryModal
+        isOpen={contactModalConfig.isOpen}
+        onClose={handleCloseContactModal}
+        targetType={contactModalConfig.targetType}
+        targetId={contactModalConfig.targetId}
+        targetTitle={contactModalConfig.targetTitle}
+        targetSubtitle={contactModalConfig.targetSubtitle}
+        contactEmail={contactModalConfig.contactEmail}
+        contactPhone={contactModalConfig.contactPhone}
+        supplierCompany={contactModalConfig.supplierCompany}
+        initialQuantity={contactModalConfig.initialQuantity}
+        initialPrice={contactModalConfig.initialPrice}
+        onSuccess={() => {
+          fetchRFQs();
+        }}
       />
 
       <AuthModal

@@ -37,6 +37,7 @@ interface Props {
   onOpenCreateRfq: () => void;
   onNavigate: (view: ActiveView) => void;
   onOpenLiveTool: (tool: 'incoterms' | 'rfq_checker' | 'api_sandbox') => void;
+  onSelectRfq?: (rfq: RfqRequirement) => void;
 }
 
 export const TradeWheelHomePage: React.FC<Props> = ({
@@ -48,7 +49,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onContactSupplier,
   onOpenCreateRfq,
   onNavigate,
-  onOpenLiveTool
+  onOpenLiveTool,
+  onSelectRfq
 }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
@@ -73,10 +75,12 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenCreateRfq={onOpenCreateRfq}
         onOpenLiveTool={onOpenLiveTool}
         products={products}
+        rfqs={rfqs}
         selectedCurrency={selectedCurrency}
         onSelectProduct={onSelectProduct}
         onOpenStorefront={onOpenStorefront}
         onNavigate={onNavigate}
+        onSelectRfq={onSelectRfq}
       />
 
       {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}
