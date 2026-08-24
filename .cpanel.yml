@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home3/a17604c7/public_html/
+    - export DEPLOYPATH=/home3/a17604c7/tradeheaven.net/
     - /bin/cp -R * $DEPLOYPATH
