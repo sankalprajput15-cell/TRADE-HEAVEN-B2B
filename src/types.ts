@@ -244,6 +244,8 @@ export interface RfqRequirement {
   spamScore: number; // 0 to 100 (low is good)
 }
 
+export type RFQ = RfqRequirement;
+
 export interface SupplierQuote {
   id: string;
   rfqId: string;

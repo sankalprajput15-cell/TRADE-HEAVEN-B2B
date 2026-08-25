@@ -7,10 +7,11 @@ import {
   CompanyProfile, 
   RfqRequirement, 
   NegotiationThread, 
-  PaymentCheckoutData 
+  PaymentCheckoutData,
+  AuthUser
 } from './types';
-import { MOCK_PRODUCTS, MOCK_COMPANIES, MOCK_RFQS } from './data/mockData';
 import { api } from './services/apiService';
+import { apiClient } from './services/apiClient';
 
 // Common Components
 import { Header } from './components/marketplace/Header';
@@ -51,6 +52,7 @@ import { AuthModal } from './components/modals/AuthModal';
 import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
 import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
 import { bigrockApi } from './services/bigrockApi';
+import { Loader2 } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { 
@@ -65,10 +67,11 @@ const MainApp: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('HOMEPAGE');
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
 
-  // Products and entities in state for live additions
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
-  const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
-  const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
+  // Products and entities initialized with clean empty states
+  const [products, setProducts] = useState<Product[]>([]);
+  const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
+  const [selectedRfqId, setSelectedRfqId] = useState<string | null>(null);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(true);
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -98,26 +101,57 @@ const MainApp: React.FC = () => {
   const fetchRFQs = async () => {
     try {
       const loadedRfqs = await api.getRfqs(undefined, currentUser);
-      if (loadedRfqs && loadedRfqs.length > 0) {
+      if (Array.isArray(loadedRfqs)) {
         setRfqs(loadedRfqs);
-        setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
+        if (loadedRfqs.length > 0) {
+          setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
+        }
       }
     } catch (err) {
       console.error('[Failed to load BigRock rfqs]:', err);
     }
   };
 
-  // Fetch initial products and RFQs
-  useEffect(() => {
-    api.getProducts().then(prods => {
-      if (prods && prods.length > 0) {
+  // Fetch live Products/Listings
+  const fetchProducts = async () => {
+    try {
+      const prods = await api.getProducts();
+      if (Array.isArray(prods)) {
         setProducts(prods);
       }
-    }).catch(err => console.error('[Failed to load products]:', err));
+    } catch (err) {
+      console.error('[Failed to load products]:', err);
+    }
+  };
 
-    fetchRFQs();
+  // Async Initialization & Session Hydration on Mount
+  useEffect(() => {
+    // 1. Session Hydration from localStorage
+    try {
+      const storedUser = localStorage.getItem('tradeheaven_user') || localStorage.getItem('tradeheaven_auth_user');
+      if (storedUser && !currentUser) {
+        const parsed = JSON.parse(storedUser) as AuthUser;
+        if (parsed && parsed.email) {
+          setCurrentUser(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn('[Session restoration error]:', e);
+    }
 
-    // Listen for custom RFQ creation / refresh triggers
+    // 2. Fetch live data with Promise.allSettled to guarantee UI never hangs
+    const initializeData = async () => {
+      setIsLoadingInitialData(true);
+      await Promise.allSettled([
+        fetchProducts(),
+        fetchRFQs()
+      ]);
+      setIsLoadingInitialData(false);
+    };
+
+    initializeData();
+
+    // 3. Listen for custom RFQ creation / refresh triggers
     const handleRfqRefresh = () => {
       fetchRFQs();
     };
@@ -126,7 +160,7 @@ const MainApp: React.FC = () => {
     return () => {
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     };
-  }, [currentUser]);
+  }, []);
 
   // Global listener for cross-component navigation events
   useEffect(() => {

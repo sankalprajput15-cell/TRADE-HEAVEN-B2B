@@ -388,14 +388,14 @@ export const bigrockApi = {
       const json = await response.json();
       const rawList = Array.isArray(json) ? json : (json.data || json.rfqs || []);
 
-      if (Array.isArray(rawList) && rawList.length > 0) {
+      if (Array.isArray(rawList)) {
         return rawList.map((item, idx) => mapInquiryToRfq(item, idx));
       }
 
-      return [...MOCK_RFQS];
+      return [];
     } catch (err) {
-      console.warn('[BigRock API get_rfqs fallback active]:', err);
-      return [...MOCK_RFQS];
+      console.warn('[BigRock API get_rfqs fetch]:', err);
+      return [];
     }
   },
 

@@ -671,23 +671,7 @@ export const api = {
   // PRODUCTS & LISTINGS (BIGROCK MYSQL + REST)
   // ==========================================
   async getProducts(params?: { category?: string; country?: string; keyword?: string; tier?: string }): Promise<Product[]> {
-    let baseProducts: Product[] = [...MOCK_PRODUCTS];
-
-    try {
-      const searchParams = new URLSearchParams();
-      if (params?.category) searchParams.append('category', params.category);
-      if (params?.country) searchParams.append('country', params.country);
-      if (params?.keyword) searchParams.append('keyword', params.keyword);
-      if (params?.tier) searchParams.append('tier', params.tier);
-
-      const res = await fetch(`/api/v1/products?${searchParams.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.data) && data.data.length > 0) {
-          baseProducts = data.data;
-        }
-      }
-    } catch {}
+    let baseProducts: Product[] = [];
 
     // Fetch dynamic listings from BigRock PHP MySQL database
     try {
@@ -730,13 +714,29 @@ export const api = {
           description: l.description || l.title
         }));
 
-        // Put database products at the top and deduplicate by title or id
-        const existingTitles = new Set(convertedListings.map(p => p.title.toLowerCase()));
-        baseProducts = [...convertedListings, ...baseProducts.filter(p => !existingTitles.has(p.title.toLowerCase()))];
+        baseProducts = convertedListings;
       }
     } catch (e) {
-      console.warn('[BigRock listings fetch fallback]:', e);
+      console.warn('[BigRock listings fetch]:', e);
     }
+
+    try {
+      const searchParams = new URLSearchParams();
+      if (params?.category) searchParams.append('category', params.category);
+      if (params?.country) searchParams.append('country', params.country);
+      if (params?.keyword) searchParams.append('keyword', params.keyword);
+      if (params?.tier) searchParams.append('tier', params.tier);
+
+      const res = await fetch(`/api/v1/products?${searchParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.data) && data.data.length > 0) {
+          const existingIds = new Set(baseProducts.map(p => p.id));
+          const additions = (data.data as Product[]).filter(p => !existingIds.has(p.id));
+          baseProducts = [...baseProducts, ...additions];
+        }
+      }
+    } catch {}
 
     if (params?.category && params.category !== 'ALL') {
       baseProducts = baseProducts.filter(p => p.category === params.category);
@@ -814,7 +814,7 @@ export const api = {
     try {
       // 1. Fetch live inquiries directly from BigRock PHP API (GET /api.php?action=get_rfqs)
       const liveRfqs = await bigrockApi.fetchRfqs();
-      let list = liveRfqs && liveRfqs.length > 0 ? liveRfqs : [...activeRfqsStore];
+      let list = Array.isArray(liveRfqs) ? liveRfqs : [];
 
       if (params?.category && params.category !== 'ALL') {
         list = list.filter(r => r.category === params.category);
@@ -836,9 +836,8 @@ export const api = {
       // SERVER-SIDE CONTACT DATA GATING
       return list.map(rfq => securityService.gateRfqRequirement(rfq, callerUser || null));
     } catch (err) {
-      console.warn('[api.getRfqs fallback]:', err);
-      let list = [...activeRfqsStore];
-      return list.map(rfq => securityService.gateRfqRequirement(rfq, callerUser || null));
+      console.warn('[api.getRfqs fetch]:', err);
+      return [];
     }
   },
 

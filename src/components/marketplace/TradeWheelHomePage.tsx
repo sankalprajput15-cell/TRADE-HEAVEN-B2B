@@ -42,7 +42,7 @@ interface Props {
 
 export const TradeWheelHomePage: React.FC<Props> = ({
   products,
-  rfqs = MOCK_RFQS,
+  rfqs = [],
   selectedCurrency,
   onSelectProduct,
   onOpenStorefront,
@@ -225,49 +225,65 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).slice(0, 3).map(rfq => (
-            <div
-              key={rfq.id}
-              onClick={() => onNavigate('RFQ_HUB')}
-              className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                    {rfq.id}
+        {rfqs && rfqs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rfqs.slice(0, 3).map(rfq => (
+              <div
+                key={rfq.id}
+                onClick={() => onNavigate('RFQ_HUB')}
+                className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                      {rfq.id}
+                    </span>
+                    <h4 className="font-bold text-sm text-slate-900 mt-1.5 line-clamp-1">
+                      {rfq.productName}
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                    {rfq.quotesCount} Bids
                   </span>
-                  <h4 className="font-bold text-sm text-slate-900 mt-1.5 line-clamp-1">
-                    {rfq.productName}
-                  </h4>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                  {rfq.quotesCount} Bids
-                </span>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200/80">
-                <div>
-                  <span className="text-[10px] text-slate-500">Target Quantity:</span>
-                  <div className="font-mono font-bold text-slate-900">
-                    {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200/80">
+                  <div>
+                    <span className="text-[10px] text-slate-500">Target Quantity:</span>
+                    <div className="font-mono font-bold text-slate-900">
+                      {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500">Destination:</span>
+                    <div className="font-bold text-slate-800 truncate">
+                      {rfq.destinationPort}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-500">Destination:</span>
-                  <div className="font-bold text-slate-800 truncate">
-                    {rfq.destinationPort}
-                  </div>
+
+                <div className="text-[11px] text-slate-500 flex items-center justify-between">
+                  <span>By: <strong>{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
+                  <span className="text-blue-600 font-bold">Submit Quote &rarr;</span>
                 </div>
               </div>
-
-              <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                <span>By: <strong>{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
-                <span className="text-blue-600 font-bold">Submit Quote &rarr;</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-center space-y-3">
+            <div className="text-sm font-bold text-slate-800">No active buying requirements posted yet</div>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Post the first request for quotation (RFQ) and start receiving direct quotes from verified global manufacturers.
+            </p>
+            <button
+              onClick={onOpenCreateRfq}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Post New RFQ Now</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}

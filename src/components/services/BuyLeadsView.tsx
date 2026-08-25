@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
+import { EmptyState } from '../EmptyState';
 import { 
   Radio, 
   Search, 
@@ -22,7 +23,8 @@ import {
   Lock,
   Mail,
   Phone,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 
 interface Props {
@@ -199,107 +201,123 @@ export const BuyLeadsView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Leads Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map(rfq => (
-          <div
-            key={rfq.id}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between space-y-4 shadow-sm"
-          >
-            <div className="space-y-3">
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-                <div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                    {rfq.id}
-                  </span>
-                  <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
-                </div>
+      {/* Leads Grid / Empty State */}
+      {isLoading ? (
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto" />
+          <div className="text-base font-bold text-slate-800">Fetching live procurement buy leads from database...</div>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">Connecting to MySQL backend on BigRock to retrieve verified international importer tenders.</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          type="rfqs"
+          title="No Active Buying Leads Found"
+          description={searchTerm || selectedCategory !== 'ALL' ? "No live buyer inquiries match your current category or keyword filters. Try clearing your search parameters." : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."}
+          actionLabel="Post a Buy Requirement (RFQ)"
+          onAction={onOpenCreateRfq}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map(rfq => (
+            <div
+              key={rfq.id}
+              className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between space-y-4 shadow-sm"
+            >
+              <div className="space-y-3">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                      {rfq.id}
+                    </span>
+                    <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
+                  </div>
 
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                  {rfq.quotesCount} Factory Bids
-                </span>
-              </div>
-
-              {/* Title */}
-              <h3 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
-                {rfq.productName}
-              </h3>
-
-              {/* Volume & Destination Matrix */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Target Volume:</span>
-                  <span className="font-mono font-bold text-slate-900">
-                    {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Destination Port:</span>
-                  <span className="font-semibold text-slate-800 truncate max-w-[170px]">{rfq.destinationPort}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Incoterms / Target:</span>
-                  <span className="font-mono font-bold text-emerald-700">
-                    {rfq.preferredIncoterm} • {formatPrice(rfq.targetPriceUsd)}/unit
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                    {rfq.quotesCount} Factory Bids
                   </span>
                 </div>
-              </div>
 
-              <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
-                "{rfq.detailedDescription}"
-              </p>
+                {/* Title */}
+                <h3 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
+                  {rfq.productName}
+                </h3>
 
-              {/* Buyer Contact Channel with Server-Side Gating */}
-              <div className="pt-2 border-t border-slate-100 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate font-semibold text-slate-700">
-                      {rfq.buyerCompany} ({rfq.buyerCountry})
+                {/* Volume & Destination Matrix */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Target Volume:</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Destination Port:</span>
+                    <span className="font-semibold text-slate-800 truncate max-w-[170px]">{rfq.destinationPort}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Incoterms / Target:</span>
+                    <span className="font-mono font-bold text-emerald-700">
+                      {rfq.preferredIncoterm} • {formatPrice(rfq.targetPriceUsd)}/unit
                     </span>
                   </div>
                 </div>
 
-                {/* Gated Buyer Email & Phone */}
-                <div className="pt-1">
-                  <PremiumContactGate
-                    currentUser={currentUser}
-                    onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
-                    isMasked={Boolean(rfq.isContactMasked)}
-                    resourceTitle="Buyer Direct Desk Contact"
-                  >
-                    <div className="space-y-1 text-xs text-slate-700">
-                      <div><strong>Email:</strong> {rfq.buyerEmail || 'procurement@buyer.org'}</div>
-                      <div><strong>Phone:</strong> {rfq.buyerPhone || '+1 (555) 902-8411'}</div>
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
+                  "{rfq.detailedDescription}"
+                </p>
+
+                {/* Buyer Contact Channel with Server-Side Gating */}
+                <div className="pt-2 border-t border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate font-semibold text-slate-700">
+                        {rfq.buyerCompany} ({rfq.buyerCountry})
+                      </span>
                     </div>
-                  </PremiumContactGate>
+                  </div>
+
+                  {/* Gated Buyer Email & Phone */}
+                  <div className="pt-1">
+                    <PremiumContactGate
+                      currentUser={currentUser}
+                      onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                      isMasked={Boolean(rfq.isContactMasked)}
+                      resourceTitle="Buyer Direct Desk Contact"
+                    >
+                      <div className="space-y-1 text-xs text-slate-700">
+                        <div><strong>Email:</strong> {rfq.buyerEmail || 'procurement@buyer.org'}</div>
+                        <div><strong>Phone:</strong> {rfq.buyerPhone || '+1 (555) 902-8411'}</div>
+                      </div>
+                    </PremiumContactGate>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-              <button
-                onClick={() => onSelectRfq(rfq)}
-                className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-              >
-                <span>Quote Tender</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <button
+                  onClick={() => onSelectRfq(rfq)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                >
+                  <span>Quote Tender</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
 
-              <a
-                href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm text-center"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
-              </a>
+                <a
+                  href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm text-center"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>WhatsApp</span>
+                </a>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
