@@ -94,21 +94,35 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
     const structuredMsg = `${message}\n\n[Details]: Target Item/RFQ: ${targetTitle || 'N/A'} (ID: ${targetId || 'N/A'})${quotedPrice ? ` | Quoted Price: $${quotedPrice} (${incoterm})` : ''}${initialQuantity ? ` | Volume: ${initialQuantity}` : ''}`;
 
     const newInquiryPayload = {
+      buyer_name: name || 'Trade Heaven Buyer / Supplier',
+      buyer_email: email || 'procurement@tradeheaven.net',
+      buyer_phone: phone || '',
+      buyer_company: supplierCompany || name || 'Trade Partner Enterprise',
+      buyer_country: 'United States',
+      product_name: targetTitle || 'B2B Sourcing Inquiry',
+      category: 'General',
+      quantity: Number(initialQuantity) || 1000,
+      quantity_unit: 'Pieces',
+      target_price: Number(quotedPrice) || 0,
+      incoterm: incoterm || 'FOB',
+      destination_port: 'Port of Dispatch',
+      payment_terms: 'Trade Assurance Escrow (Swiss Vault)',
+      requirements: structuredMsg,
+      status: 'pending',
       name: name || 'Trade Heaven Buyer / Supplier',
       email: email || 'procurement@tradeheaven.net',
       phone: phone || '',
       subject: subjectLine,
-      product_name: targetTitle || 'B2B Sourcing Inquiry',
       message: structuredMsg
     };
 
     try {
-      // Submit via POST /api.php?action=create_rfq
-      await bigrockApi.createRfq(newInquiryPayload);
+      // Submit via POST ./api.php?action=submit_rfq
+      await bigrockApi.submitRfq(newInquiryPayload);
 
       setIsSuccess(true);
       if (onSuccess) {
-        onSuccess(newInquiryPayload as DbInquiry);
+        onSuccess(newInquiryPayload as unknown as DbInquiry);
       }
 
       // Notify other components to refresh RFQ feed

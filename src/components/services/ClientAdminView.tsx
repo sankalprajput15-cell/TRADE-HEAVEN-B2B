@@ -182,7 +182,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
     const res = await bigrockApi.updateInquiryStatus(inquiry.id, newStatus);
     if (res.success) {
-      showToast('success', `Inquiry #${inquiry.id.slice(0, 8)} status marked as "${newStatus}" in MySQL.`);
+      showToast('success', `Inquiry #${String(inquiry.id).slice(0, 8)} status marked as "${newStatus}" in MySQL.`);
     } else {
       showToast('error', 'Failed to update status: ' + res.error);
       loadAllData();
@@ -220,7 +220,7 @@ export const ClientAdminView: React.FC<Props> = ({
   };
 
   // DELETE LISTING
-  const handleDeleteListing = async (id?: string) => {
+  const handleDeleteListing = async (id?: string | number) => {
     if (!id) return;
     if (!confirm('Are you sure you want to delete this listing?')) return;
 
@@ -260,7 +260,7 @@ export const ClientAdminView: React.FC<Props> = ({
   };
 
   // DELETE FAQ
-  const handleDeleteFaq = async (id?: string) => {
+  const handleDeleteFaq = async (id?: string | number) => {
     if (!id) return;
     if (!confirm('Are you sure you want to delete this FAQ?')) return;
 
@@ -741,7 +741,7 @@ export const ClientAdminView: React.FC<Props> = ({
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="font-black text-slate-900 text-base flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-blue-600" />
-                <span>Inquiry Details (#{selectedInquiry.id?.slice(0, 8) || 'Lead'})</span>
+                <span>Inquiry Details (#{selectedInquiry.id ? String(selectedInquiry.id).slice(0, 8) : 'Lead'})</span>
               </div>
               <button
                 onClick={() => setSelectedInquiry(null)}

@@ -71,13 +71,26 @@ export const ProductDetailModal: React.FC<Props> = ({
     setInquirySent(true);
 
     try {
-      await bigrockApi.createRfq({
+      await bigrockApi.submitRfq({
+        buyer_name: 'Procurement Buyer',
+        buyer_email: 'buyer@tradeheaven.net',
+        buyer_phone: '',
+        buyer_company: 'Procurement Buyer Enterprise',
+        buyer_country: 'United States',
+        product_name: product.title,
+        category: product.category,
+        quantity: orderQuantity,
+        quantity_unit: product.moqUnit || 'Units',
+        target_price: matchedTier.priceUsd,
+        incoterm: selectedIncoterm,
+        destination_port: product.portOfDispatch || 'Port of Hamburg',
+        payment_terms: 'Trade Assurance Escrow (Swiss Vault)',
+        requirements: `Product ID: ${product.id} | Supplier: ${product.supplierName} (${product.supplierCountry}) | Incoterm: ${selectedIncoterm} | Target Unit Rate: $${matchedTier.priceUsd} | Buyer Note: ${customInquiryNote || 'Seeking FOB/CIF commercial quotation and lead times.'}`,
         name: 'Procurement Buyer',
         email: 'buyer@tradeheaven.net',
         phone: '',
         subject: `Direct Product Inquiry: ${orderQuantity} ${product.moqUnit || 'Units'} of ${product.title}`,
-        message: `Product ID: ${product.id} | Supplier: ${product.supplierName} (${product.supplierCountry}) | Incoterm: ${selectedIncoterm} | Target Unit Rate: $${matchedTier.priceUsd} | Buyer Note: ${customInquiryNote || 'Seeking FOB/CIF commercial quotation and lead times.'}`,
-        product_name: product.title
+        message: `Product ID: ${product.id} | Supplier: ${product.supplierName} (${product.supplierCountry}) | Incoterm: ${selectedIncoterm} | Target Unit Rate: $${matchedTier.priceUsd} | Buyer Note: ${customInquiryNote || 'Seeking FOB/CIF commercial quotation and lead times.'}`
       });
       window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created'));
     } catch {

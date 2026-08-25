@@ -118,7 +118,14 @@ const SiteContentContext = createContext<SiteContentContextType | undefined>(und
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
+      const savedUserStr = localStorage.getItem('th_session_user');
       const savedToken = localStorage.getItem('th_session_jwt_token');
+      if (savedUserStr) {
+        const parsed = JSON.parse(savedUserStr);
+        if (parsed && parsed.email) {
+          return { ...parsed, token: savedToken || parsed.token };
+        }
+      }
       if (savedToken) {
         const payload = securityService.verifySessionToken(savedToken);
         if (payload) {
@@ -146,8 +153,10 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       if (currentUser?.token) {
         localStorage.setItem('th_session_jwt_token', currentUser.token);
+        localStorage.setItem('th_session_user', JSON.stringify(currentUser));
       } else if (!currentUser) {
         localStorage.removeItem('th_session_jwt_token');
+        localStorage.removeItem('th_session_user');
       }
     } catch {}
   }, [currentUser]);

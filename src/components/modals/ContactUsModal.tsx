@@ -54,13 +54,26 @@ export const ContactUsModal: React.FC<Props> = ({
     setIsSubmitting(true);
 
     try {
-      // 1. Submit directly to BigRock PHP MySQL API (POST /api.php?action=create_rfq)
-      await bigrockApi.createRfq({
+      // 1. Submit directly to BigRock PHP MySQL API (POST ./api.php?action=submit_rfq)
+      await bigrockApi.submitRfq({
+        buyer_name: name,
+        buyer_email: email,
+        buyer_phone: phone,
+        buyer_company: name,
+        buyer_country: 'United States',
+        product_name: `Inquiry: ${inquiryType}`,
+        category: inquiryType,
+        quantity: 1000,
+        quantity_unit: 'Units',
+        target_price: 0,
+        incoterm: 'FOB',
+        destination_port: 'Port of Dispatch',
+        payment_terms: 'Trade Assurance Escrow',
+        requirements: `${subject}\n\n${message}${attachedFiles.length > 0 ? `\n[Attachments: ${attachedFiles.map(a => a.name).join(', ')}]` : ''}`,
         name,
         email,
         phone,
         subject,
-        product_name: `Category: ${inquiryType}`,
         message: `${message}${attachedFiles.length > 0 ? `\n[Attachments: ${attachedFiles.map(a => a.name).join(', ')}]` : ''}`
       });
 

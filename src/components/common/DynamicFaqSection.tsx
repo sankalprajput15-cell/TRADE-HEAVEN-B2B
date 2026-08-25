@@ -23,7 +23,7 @@ export const DynamicFaqSection: React.FC<Props> = ({ onOpenContactModal, classNa
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [openFaqId, setOpenFaqId] = useState<string | null>('faq-1');
+  const [openFaqId, setOpenFaqId] = useState<string | number | null>('faq-1');
 
   const fetchFaqs = async () => {
     setIsLoading(true);
@@ -54,8 +54,8 @@ export const DynamicFaqSection: React.FC<Props> = ({ onOpenContactModal, classNa
     return matchCategory && matchSearch;
   });
 
-  const toggleFaq = (id?: string) => {
-    if (!id) return;
+  const toggleFaq = (id?: string | number) => {
+    if (id === undefined || id === null) return;
     setOpenFaqId(prev => (prev === id ? null : id));
   };
 
