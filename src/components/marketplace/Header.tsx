@@ -120,7 +120,10 @@ export const Header: React.FC<Props> = ({
 
   const handleLogout = () => {
     try {
+      localStorage.removeItem('tradeheaven_user');
+      localStorage.removeItem('th_session_user');
       localStorage.removeItem('th_session_jwt_token');
+      localStorage.removeItem('tradeheaven_auth_user');
     } catch {}
     if (setCurrentUser) {
       setCurrentUser(null);

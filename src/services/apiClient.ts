@@ -224,28 +224,67 @@ export const apiClient = {
   /**
    * Authenticate user with corporate email and password
    */
-  async login(email: string, password?: string): Promise<{ success: boolean; token?: string; user?: AuthUser; message?: string }> {
+  async login(
+    email: string, 
+    password?: string
+  ): Promise<{ success: boolean; data?: any; token?: string; user?: AuthUser; error?: string; message?: string }> {
     try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      if (!cleanEmail) {
+        return { success: false, error: 'Corporate email is required.', message: 'Corporate email is required.' };
+      }
+
       const res = await fetch(`${API_BASE}?action=login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: cleanEmail, password: password || '' })
       });
-      const json = await res.json();
-      if (json.status === 'success' && json.user) {
+
+      const json = await res.json().catch(() => ({}));
+      const isSuccess = res.ok && (json.status === 'success' || json.success === true);
+
+      if (isSuccess && (json.user || json.data)) {
+        const rawUser = json.user || json.data;
+        const normalizedUser: AuthUser = {
+          id: String(rawUser.id || `user-${Date.now()}`),
+          name: rawUser.name || 'Trade Partner',
+          email: rawUser.email || cleanEmail,
+          role: (String(rawUser.role || 'BUYER').toUpperCase() as any),
+          isPremium: Boolean(rawUser.isPremium ?? (rawUser.role === 'SUPPLIER' || rawUser.role === 'ADMIN')),
+          membershipStatus: rawUser.membershipStatus || 'free',
+          status: rawUser.status || 'ACTIVE',
+          isVerified: Boolean(rawUser.isVerified ?? true),
+          tier: rawUser.tier || (String(rawUser.role).toUpperCase() === 'ADMIN' ? 'VIP' : (String(rawUser.role).toUpperCase() === 'SUPPLIER' ? 'SILVER' : 'FREE')),
+          companyName: rawUser.companyName || rawUser.company_name || 'Enterprise Trading Firm',
+          country: rawUser.country || 'United States',
+          phone: rawUser.phone || '',
+          avatarUrl: rawUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          token: json.token || rawUser.token
+        };
+
         try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(json.user));
-          localStorage.setItem('th_session_user', JSON.stringify(json.user));
+          localStorage.setItem('tradeheaven_user', JSON.stringify(normalizedUser));
+          localStorage.setItem('th_session_user', JSON.stringify(normalizedUser));
           if (json.token) localStorage.setItem('th_session_jwt_token', json.token);
         } catch {}
-        return { success: true, token: json.token, user: json.user, message: json.message };
+
+        return { 
+          success: true, 
+          token: json.token, 
+          data: json.data || normalizedUser, 
+          user: normalizedUser, 
+          message: json.message || 'Authenticated successfully' 
+        };
       }
-      return { success: false, message: json.message || 'Invalid credentials' };
+
+      const errMsg = json.message || json.error || 'Invalid email or password';
+      return { success: false, error: errMsg, message: errMsg };
     } catch (e: any) {
-      return { success: false, message: e.message || 'Login connection failure' };
+      const errMsg = e.message || 'Login connection failure';
+      return { success: false, error: errMsg, message: errMsg };
     }
   },
 
@@ -256,32 +295,88 @@ export const apiClient = {
     name: string;
     email: string;
     password?: string;
-    companyName: string;
+    company_name?: string;
+    companyName?: string;
+    phone?: string;
     phoneOrWhatsapp?: string;
     country?: string;
+    role?: string;
     accountType?: 'BUYER' | 'SUPPLIER';
-  }): Promise<{ success: boolean; token?: string; user?: AuthUser; message?: string }> {
+  }): Promise<{ success: boolean; data?: any; token?: string; user?: AuthUser; error?: string; message?: string }> {
     try {
+      const cleanEmail = (payload.email || '').trim().toLowerCase();
+      if (!cleanEmail) {
+        return { success: false, error: 'Email address is required.', message: 'Email address is required.' };
+      }
+
+      const company = (payload.company_name || payload.companyName || 'Enterprise Trading Firm').trim();
+      const phone = (payload.phone || payload.phoneOrWhatsapp || '').trim();
+      const resolvedRole = (payload.accountType === 'SUPPLIER' || payload.role === 'supplier' || payload.role === 'SUPPLIER') ? 'supplier' : 'buyer';
+
+      const requestPayload = {
+        name: (payload.name || 'Trade Partner').trim(),
+        email: cleanEmail,
+        password: payload.password || '',
+        company_name: company,
+        companyName: company,
+        phone: phone,
+        phoneOrWhatsapp: phone,
+        country: (payload.country || 'United States').trim(),
+        role: resolvedRole,
+        accountType: resolvedRole === 'supplier' ? 'SUPPLIER' : 'BUYER'
+      };
+
       const res = await fetch(`${API_BASE}?action=register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(requestPayload)
       });
-      const json = await res.json();
-      if (json.status === 'success' && json.user) {
+
+      const json = await res.json().catch(() => ({}));
+      const isSuccess = res.ok && (json.status === 'success' || json.success === true);
+
+      if (isSuccess && (json.user || json.data)) {
+        const rawUser = json.user || json.data;
+        const normalizedUser: AuthUser = {
+          id: String(rawUser.id || `user-${Date.now()}`),
+          name: rawUser.name || requestPayload.name,
+          email: rawUser.email || cleanEmail,
+          role: (resolvedRole === 'supplier' ? 'SUPPLIER' : 'BUYER'),
+          isPremium: resolvedRole === 'supplier',
+          membershipStatus: 'free',
+          status: 'ACTIVE',
+          isVerified: true,
+          tier: resolvedRole === 'supplier' ? 'SILVER' : 'FREE',
+          companyName: company,
+          country: requestPayload.country,
+          phone: phone,
+          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+          token: json.token || rawUser.token
+        };
+
         try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(json.user));
-          localStorage.setItem('th_session_user', JSON.stringify(json.user));
+          localStorage.setItem('tradeheaven_user', JSON.stringify(normalizedUser));
+          localStorage.setItem('th_session_user', JSON.stringify(normalizedUser));
           if (json.token) localStorage.setItem('th_session_jwt_token', json.token);
         } catch {}
-        return { success: true, token: json.token, user: json.user, message: json.message };
+
+        return { 
+          success: true, 
+          token: json.token, 
+          data: json.data || normalizedUser, 
+          user: normalizedUser, 
+          message: json.message || 'Account successfully registered!' 
+        };
       }
-      return { success: false, message: json.message || 'Registration failed' };
+
+      const errMsg = json.message || json.error || 'Registration failed';
+      return { success: false, error: errMsg, message: errMsg };
     } catch (e: any) {
-      return { success: false, message: e.message || 'Registration connection error' };
+      const errMsg = e.message || 'Registration connection error';
+      return { success: false, error: errMsg, message: errMsg };
     }
   }
 };

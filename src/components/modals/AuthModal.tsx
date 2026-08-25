@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthUser } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { api } from '../../services/apiService';
+import { apiClient } from '../../services/apiClient';
 import { securityService } from '../../services/securityService';
 import { bigrockApi } from '../../services/bigrockApi';
 import { 
@@ -83,7 +84,7 @@ export const AuthModal: React.FC<Props> = ({
     setError(null);
     setSuccess(null);
 
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password) {
       setError('Please enter both corporate email and password.');
       return;
@@ -91,8 +92,15 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsLoading(true);
     try {
-      const res = await api.login(cleanEmail, password);
+      const res = await apiClient.login(cleanEmail, password);
       if (res.success && res.user) {
+        // Sync to localStorage
+        try {
+          localStorage.setItem('tradeheaven_user', JSON.stringify(res.user));
+          localStorage.setItem('th_session_user', JSON.stringify(res.user));
+          if (res.token) localStorage.setItem('th_session_jwt_token', res.token);
+        } catch {}
+
         onLogin(res.user);
         const isAdminUser = res.user.role === 'ADMIN' || res.user.email?.toLowerCase() === 'yr943334@gmail.com' || res.user.email?.toLowerCase() === 'admin@tradeheaven.net';
         setSuccess(
@@ -108,10 +116,10 @@ export const AuthModal: React.FC<Props> = ({
           }
         }, 750);
       } else {
-        setError(res.message || 'Invalid email or password. Access denied.');
+        setError(res.error || res.message || 'Invalid email or password. Access denied.');
       }
-    } catch {
-      setError('An error occurred during authentication. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'An error occurred during authentication. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +131,7 @@ export const AuthModal: React.FC<Props> = ({
     setError(null);
     setSuccess(null);
 
-    const cleanEmail = regEmail.trim();
+    const cleanEmail = regEmail.trim().toLowerCase();
     if (!cleanEmail || !regPassword || !regName.trim() || !regCompany.trim()) {
       setError('Please complete all required fields.');
       return;
@@ -131,39 +139,36 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsLoading(true);
     try {
-      const res = await api.register({
+      const res = await apiClient.register({
         email: cleanEmail,
         password: regPassword,
         name: regName.trim(),
+        company_name: regCompany.trim(),
         companyName: regCompany.trim(),
         country: regCountry.trim(),
+        role: regAccountType === 'SUPPLIER' ? 'supplier' : 'buyer',
         accountType: regAccountType
       });
 
       if (res.success && res.user) {
-        // Sync registration to BigRock MySQL database
-        await bigrockApi.upsertUser({
-          name: regName.trim(),
-          email: cleanEmail,
-          role: regAccountType,
-          company_name: regCompany.trim(),
-          country: regCountry.trim(),
-          status: 'ACTIVE',
-          is_verified: false,
-          is_premium: false
-        });
+        // Sync to localStorage
+        try {
+          localStorage.setItem('tradeheaven_user', JSON.stringify(res.user));
+          localStorage.setItem('th_session_user', JSON.stringify(res.user));
+          if (res.token) localStorage.setItem('th_session_jwt_token', res.token);
+        } catch {}
 
         onLogin(res.user);
-        setSuccess('Business account registered and synced to live database successfully.');
+        setSuccess('Business account registered and stored in database successfully.');
         setTimeout(() => {
           setSuccess(null);
           onClose();
         }, 850);
       } else {
-        setError(res.message || 'Registration failed. Please check your information.');
+        setError(res.error || res.message || 'Registration failed. Please check your information.');
       }
-    } catch {
-      setError('Registration service unavailable. Please retry.');
+    } catch (err: any) {
+      setError(err?.message || 'Registration service unavailable. Please retry.');
     } finally {
       setIsLoading(false);
     }
