@@ -99,14 +99,27 @@ export const RfqCreationModal: React.FC<Props> = ({
     };
 
     try {
-      // Sync to live BigRock PHP MySQL API (POST /api.php?action=create_rfq)
-      await bigrockApi.createRfq({
+      // Sync to live BigRock PHP MySQL API (POST ./api.php?action=submit_rfq)
+      await bigrockApi.submitRfq({
+        buyer_name: buyerCompany || 'Procurement Officer',
+        buyer_email: buyerEmail || 'buyer@tradeheaven.net',
+        buyer_phone: '',
+        buyer_company: buyerCompany || 'Procurement Officer',
+        buyer_country: 'United States',
+        product_name: productName,
+        category,
+        quantity: Number(targetQuantity) || 100,
+        quantity_unit: quantityUnit || 'Units',
+        target_price: Number(targetPriceUsd) || 100,
+        incoterm: preferredIncoterm,
+        destination_port: destinationPort,
+        payment_terms: paymentTerms,
+        requirements: description || `Seeking direct OEM/ODM factory quotation for ${targetQuantity} ${quantityUnit} of ${productName}. Target Incoterm: ${preferredIncoterm}, Destination Port: ${destinationPort}.`,
         name: buyerCompany || 'Procurement Officer',
         email: buyerEmail || 'buyer@tradeheaven.net',
         phone: '',
         subject: `Buy Lead RFQ [${generatedId}]: ${targetQuantity} ${quantityUnit} of ${productName}`,
-        message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedRequirements}`,
-        product_name: productName
+        message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedRequirements}`
       });
       window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created', { detail: newRfq }));
     } catch {

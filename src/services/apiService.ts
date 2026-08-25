@@ -766,15 +766,29 @@ export const api = {
     };
 
     try {
-      // 1. Submit directly to BigRock PHP MySQL API (POST /api.php?action=create_rfq)
+      // 1. Submit directly to BigRock PHP MySQL API (POST ./api.php?action=submit_rfq)
       const structuredMessage = `Target Quantity: ${newRfq.targetQuantity} ${newRfq.quantityUnit} | Target Price: $${newRfq.targetPriceUsd} | Incoterm: ${newRfq.preferredIncoterm} | Port: ${newRfq.destinationPort} | Terms: ${newRfq.paymentTerms} | Description: ${newRfq.detailedRequirements}`;
       
-      await bigrockApi.createRfq({
+      await bigrockApi.submitRfq({
+        buyer_name: newRfq.buyerName,
+        buyer_email: newRfq.buyerEmail,
+        buyer_phone: newRfq.buyerPhone,
+        buyer_company: newRfq.buyerCompany,
+        buyer_country: newRfq.buyerCountry,
+        product_name: newRfq.productName,
+        category: newRfq.category,
+        quantity: newRfq.targetQuantity,
+        quantity_unit: newRfq.quantityUnit,
+        target_price: newRfq.targetPriceUsd,
+        incoterm: newRfq.preferredIncoterm,
+        destination_port: newRfq.destinationPort,
+        payment_terms: newRfq.paymentTerms,
+        requirements: newRfq.detailedRequirements,
+        status: newRfq.status,
         name: newRfq.buyerCompany,
         email: newRfq.buyerEmail,
         phone: newRfq.buyerPhone,
         subject: `Buy Lead RFQ [${generatedId}]: ${newRfq.targetQuantity} ${newRfq.quantityUnit} of ${newRfq.productName}`,
-        product_name: newRfq.productName,
         message: structuredMessage
       });
     } catch (e) {
