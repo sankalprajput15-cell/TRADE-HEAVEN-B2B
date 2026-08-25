@@ -8,6 +8,7 @@ on:
 
 jobs:
   web-deploy:
+    name: Deploy React SPA & PHP API to BigRock cPanel
     runs-on: ubuntu-latest
     steps:
       - name: 🚚 Get latest code

@@ -6,11 +6,11 @@
 import { RfqRequirement } from '../types';
 import { MOCK_RFQS } from '../data/mockData';
 
-export const BIGROCK_API_URL = typeof window !== 'undefined' && window.location.hostname === 'tradeheaven.net'
-  ? 'http://tradeheaven.net/api.php'
-  : ((import.meta as any).env?.VITE_API_URL || '/api.php');
+export const BIGROCK_API_URL = typeof window !== 'undefined'
+  ? ((import.meta as any).env?.VITE_API_URL || './api.php')
+  : './api.php';
 
-export const DIRECT_BIGROCK_URL = 'http://tradeheaven.net/api.php';
+export const DIRECT_BIGROCK_URL = './api.php';
 
 export interface BigRockRfqPayload {
   name: string;
