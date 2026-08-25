@@ -1,7 +1,11 @@
 /**
- * Trade Heaven - Centralized API Client
- * Clean, type-safe wrapper communicating directly with MySQL backend via /api.php
- * Guarantees zero crashing, graceful empty-state handling, and instant state synchronization.
+ * Trade4Deals / Trade Heaven - Pure REST API Client
+ *
+ * Requirements:
+ * 1. getRfqs(): Fetches `./api.php?action=get_rfqs`, safely unwraps `res.data || []`.
+ * 2. submitRfq(rfq): POSTs raw JSON with `headers: { 'Content-Type': 'application/json' }`
+ *    to `./api.php?action=submit_rfq`, validates `res.status === 'success'`, and returns `{ success: true, data: res.data }`.
+ * 3. Never overrides `window.fetch`.
  */
 
 import { RFQ, Product, AuthUser } from '../types';
@@ -17,19 +21,24 @@ export interface ApiResponse<T> {
 
 export interface RawRFQPayload {
   title?: string;
-  buyer_name?: string;
-  buyer_email?: string;
-  buyer_phone?: string;
-  buyer_company?: string;
-  buyer_country?: string;
-  product_name?: string;
   category?: string;
-  quantity?: number;
+  quantity?: string | number;
+  unit?: string;
+  targetPrice?: string | number;
+  incoterms?: string;
+  destinationPort?: string;
+  specifications?: string;
+  buyer_name?: string;
+  buyer_country?: string;
+  buyer_email?: string;
+  buyer_company?: string;
+  buyer_phone?: string;
+  // Alternative aliases for maximum cross-compatibility
+  product_name?: string;
   quantity_unit?: string;
-  target_price?: number;
+  target_price?: number | string;
   incoterm?: string;
   destination_port?: string;
-  payment_terms?: string;
   requirements?: string;
   status?: string;
 }
@@ -52,20 +61,27 @@ export interface RawListingPayload {
   status?: string;
 }
 
-const API_BASE = '/api.php';
+const API_BASE = './api.php';
 
 export const apiClient = {
   /**
-   * Fetch all active RFQ buying leads from MySQL
+   * Fetch all active RFQ buying leads from MySQL backend via ./api.php?action=get_rfqs
+   * Safely unwraps res.data || [] (always returns an array, never null or string)
    */
   async getRfqs(): Promise<RFQ[]> {
     try {
       const res = await fetch(`${API_BASE}?action=get_rfqs`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
+        headers: { 
+          'Accept': 'application/json' 
+        },
         cache: 'no-cache'
       });
-      if (!res.ok) return [];
+
+      if (!res.ok) {
+        return [];
+      }
+
       const json: ApiResponse<RFQ[]> = await res.json();
       if (json && json.status === 'success' && Array.isArray(json.data)) {
         return json.data;
@@ -78,29 +94,51 @@ export const apiClient = {
   },
 
   /**
-   * Submit an RFQ to MySQL database
+   * Submit an RFQ to MySQL database via ./api.php?action=submit_rfq
+   * POSTs raw JSON with 'Content-Type': 'application/json', validates status === 'success',
+   * and returns { success: true, data: res.data }
    */
   async submitRfq(payload: RawRFQPayload): Promise<{ success: boolean; data?: RFQ; message?: string }> {
     try {
+      // Normalize payload with both schema standards
+      const normalizedPayload = {
+        title: payload.title || payload.product_name || 'Wholesale Product',
+        category: payload.category || 'Industrial Machinery & CNC',
+        quantity: String(payload.quantity || '1000'),
+        unit: payload.unit || payload.quantity_unit || 'Pieces',
+        targetPrice: String(payload.targetPrice ?? payload.target_price ?? '0'),
+        incoterms: payload.incoterms || payload.incoterm || 'FOB',
+        destinationPort: payload.destinationPort || payload.destination_port || 'Port of Hamburg',
+        specifications: payload.specifications || payload.requirements || 'Standard export specifications.',
+        buyer_name: payload.buyer_name || 'Procurement Officer',
+        buyer_country: payload.buyer_country || 'United States',
+        buyer_email: payload.buyer_email || 'buyer@tradeheaven.net',
+        buyer_company: payload.buyer_company || payload.buyer_name || 'Enterprise Trading Firm',
+        buyer_phone: payload.buyer_phone || ''
+      };
+
       const res = await fetch(`${API_BASE}?action=submit_rfq`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(normalizedPayload)
       });
+
       if (!res.ok) {
-        throw new Error(`Server returned status ${res.status}`);
+        throw new Error(`Server returned HTTP status ${res.status}`);
       }
+
       const json = await res.json();
-      if (json.status === 'success' && json.data) {
+      if (json && json.status === 'success' && json.data) {
         return { success: true, data: json.data, message: json.message };
       }
-      return { success: false, message: json.message || 'Failed to record RFQ.' };
+
+      return { success: false, message: json.message || 'Failed to record RFQ into MySQL database.' };
     } catch (e: any) {
       console.error('[apiClient] submitRfq error:', e);
-      return { success: false, message: e.message || 'Network communication failure.' };
+      return { success: false, message: e.message || 'Network communication failure with database.' };
     }
   },
 
@@ -117,7 +155,6 @@ export const apiClient = {
       if (!res.ok) return [];
       const json: ApiResponse<any[]> = await res.json();
       if (json && json.status === 'success' && Array.isArray(json.data)) {
-        // Convert to standard frontend Product schema
         return json.data.map(item => ({
           id: `prod-db-${item.id}`,
           title: item.title,
@@ -199,7 +236,6 @@ export const apiClient = {
       });
       const json = await res.json();
       if (json.status === 'success' && json.user) {
-        // Persist session
         try {
           localStorage.setItem('tradeheaven_user', JSON.stringify(json.user));
           localStorage.setItem('th_session_user', JSON.stringify(json.user));
@@ -236,7 +272,6 @@ export const apiClient = {
       });
       const json = await res.json();
       if (json.status === 'success' && json.user) {
-        // Persist session
         try {
           localStorage.setItem('tradeheaven_user', JSON.stringify(json.user));
           localStorage.setItem('th_session_user', JSON.stringify(json.user));

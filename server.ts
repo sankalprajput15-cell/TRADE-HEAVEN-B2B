@@ -430,10 +430,48 @@ app.get('/api.php', (req, res) => {
   const action = String(req.query.action || '');
 
   if (action === 'get_rfqs' || action === 'rfqs') {
+    const standardized = serverRfqsStore.map(r => ({
+      id: typeof r.id === 'string' && r.id.startsWith('rfq-') ? r.id : `rfq-${r.id}`,
+      raw_id: typeof r.id === 'number' ? r.id : parseInt(String(r.id).replace(/\D/g, '') || '101', 10),
+      title: r.title || r.product_name || r.subject || 'Sourcing Requirement',
+      productName: r.product_name || r.title || r.subject || 'Sourcing Requirement',
+      category: r.category || 'Industrial Machinery & CNC',
+      quantity: String(r.quantity || r.target_quantity || '1000'),
+      targetQuantity: Number(r.quantity || r.target_quantity || 1000),
+      unit: r.unit || r.quantity_unit || 'Pieces',
+      quantityUnit: r.unit || r.quantity_unit || 'Pieces',
+      targetPrice: String(r.targetPrice || r.target_price || '0'),
+      targetPriceUsd: Number(r.targetPrice || r.target_price || 0),
+      incoterms: r.incoterms || r.incoterm || 'FOB',
+      preferredIncoterm: r.incoterms || r.incoterm || 'FOB',
+      destinationPort: r.destinationPort || r.destination_port || 'Port of Hamburg',
+      destination_port: r.destinationPort || r.destination_port || 'Port of Hamburg',
+      specifications: r.specifications || r.requirements || r.message || '',
+      detailedRequirements: r.specifications || r.requirements || r.message || '',
+      detailedDescription: r.specifications || r.requirements || r.message || '',
+      buyer_name: r.buyer_name || r.buyerName || r.name || 'Procurement Officer',
+      buyerName: r.buyer_name || r.buyerName || r.name || 'Procurement Officer',
+      buyer_country: r.buyer_country || r.buyerCountry || r.country || 'United States',
+      buyerCountry: r.buyer_country || r.buyerCountry || r.country || 'United States',
+      buyer_email: r.buyer_email || r.buyerEmail || r.email || '',
+      buyerEmail: r.buyer_email || r.buyerEmail || r.email || '',
+      buyer_company: r.buyer_company || r.buyerCompany || r.company_name || r.company || 'Enterprise Buyer',
+      buyerCompany: r.buyer_company || r.buyerCompany || r.company_name || r.company || 'Enterprise Buyer',
+      buyerVerified: true,
+      targetDeliveryDate: new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0],
+      paymentTerms: r.payment_terms || 'Trade Assurance Escrow (Swiss Vault)',
+      urgency: 'STANDARD',
+      quotesCount: 0,
+      postedDate: r.created_at ? r.created_at.substring(0, 10) : new Date().toISOString().split('T')[0],
+      expiryDate: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+      status: r.status || 'OPEN',
+      created_at: r.created_at || new Date().toISOString()
+    }));
+
     return res.json({
       success: true,
       status: 'success',
-      data: serverRfqsStore
+      data: standardized
     });
   }
 
@@ -656,35 +694,51 @@ app.post('/api.php', (req, res) => {
     const buyerPhone = input.buyer_phone || input.phone || '';
     const buyerCompany = input.buyer_company || input.company || buyerName;
     const buyerCountry = input.buyer_country || input.country || 'United States';
-    const productName = input.product_name || input.subject || 'Wholesale Product';
+    const productName = input.title || input.product_name || input.subject || 'Wholesale Product';
     const category = input.category || 'Industrial Machinery & CNC';
-    const quantity = Number(input.quantity || input.target_quantity) || 1000;
-    const quantityUnit = input.quantity_unit || 'Pieces';
-    const targetPrice = Number(input.target_price || input.target_price_usd) || 0.0;
-    const incoterm = input.incoterm || input.incoterms || input.preferred_incoterm || 'FOB';
-    const destinationPort = input.destination_port || 'Port of Hamburg';
-    const paymentTerms = input.payment_terms || 'Trade Assurance Escrow (Swiss Vault)';
-    const requirements = input.requirements || input.detailed_requirements || input.message || 'Standard export specifications.';
+    const quantity = String(input.quantity || input.target_quantity || '1000');
+    const unit = input.unit || input.quantity_unit || 'Pieces';
+    const targetPrice = String(input.targetPrice ?? input.target_price ?? input.target_price_usd ?? '0');
+    const incoterms = input.incoterms || input.incoterm || input.preferred_incoterm || 'FOB';
+    const destinationPort = input.destinationPort || input.destination_port || 'Port of Hamburg';
+    const specifications = input.specifications || input.requirements || input.detailed_requirements || input.message || 'Standard export specifications.';
 
     const newId = Date.now();
     const formattedRfq = {
-      id: newId,
-      name: buyerName,
-      email: buyerEmail,
-      phone: buyerPhone,
-      company_name: buyerCompany,
-      country: buyerCountry,
-      subject: `Buy Lead RFQ [rfq-${newId}]: ${quantity} ${quantityUnit} of ${productName}`,
-      product_name: productName,
+      id: `rfq-${newId}`,
+      raw_id: newId,
+      title: productName,
+      productName,
       category,
-      target_quantity: quantity,
-      quantity_unit: quantityUnit,
-      target_price: targetPrice,
-      incoterm,
-      destination_port: destinationPort,
-      payment_terms: paymentTerms,
-      message: requirements,
-      status: 'pending',
+      quantity,
+      targetQuantity: Number(quantity) || 1000,
+      unit,
+      quantityUnit: unit,
+      targetPrice,
+      targetPriceUsd: Number(targetPrice) || 0,
+      incoterms,
+      preferredIncoterm: incoterms,
+      destinationPort,
+      specifications,
+      detailedRequirements: specifications,
+      detailedDescription: specifications,
+      buyer_name: buyerName,
+      buyerName,
+      buyer_email: buyerEmail,
+      buyerEmail,
+      buyer_phone: buyerPhone,
+      buyer_company: buyerCompany,
+      buyerCompany,
+      buyer_country: buyerCountry,
+      buyerCountry,
+      buyerVerified: true,
+      targetDeliveryDate: new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0],
+      paymentTerms: 'Trade Assurance Escrow (Swiss Vault)',
+      urgency: 'STANDARD',
+      quotesCount: 0,
+      postedDate: new Date().toISOString().split('T')[0],
+      expiryDate: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+      status: 'OPEN',
       created_at: new Date().toISOString()
     };
 
@@ -694,7 +748,7 @@ app.post('/api.php', (req, res) => {
       success: true,
       status: 'success',
       id: newId,
-      message: 'RFQ submitted and stored permanently in BigRock MySQL database!',
+      message: 'RFQ submitted and saved to database!',
       data: formattedRfq
     });
   }

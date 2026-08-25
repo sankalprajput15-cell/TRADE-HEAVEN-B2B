@@ -100,9 +100,9 @@ const MainApp: React.FC = () => {
   // Fetch live RFQs from BigRock PHP API (GET /api.php?action=get_rfqs)
   const fetchRFQs = async () => {
     try {
-      const loadedRfqs = await api.getRfqs(undefined, currentUser);
+      const loadedRfqs = await apiClient.getRfqs();
       if (Array.isArray(loadedRfqs)) {
-        setRfqs(loadedRfqs);
+        setRfqs(loadedRfqs as any);
         if (loadedRfqs.length > 0) {
           setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
         }
@@ -196,39 +196,59 @@ const MainApp: React.FC = () => {
 
   const handleRfqCreated = async (newRfq: Partial<RfqRequirement>) => {
     try {
-      const res = await api.createRfq(newRfq, currentUser);
-      const created = (res.data || newRfq) as RfqRequirement;
-      setRfqs(prev => {
-        const filtered = prev.filter(r => r.id !== created.id);
-        return [created, ...filtered];
-      });
-      setSelectedRfqId(created.id);
-    } catch (e) {
-      const fallbackRfq: RfqRequirement = {
-        id: newRfq.id || `rfq-${Date.now()}`,
-        buyerName: newRfq.buyerName || currentUser?.name || 'Procurement Officer',
-        buyerCompany: newRfq.buyerCompany || 'Enterprise Buyer Ltd',
-        buyerCountry: newRfq.buyerCountry || 'Global',
-        buyerVerified: true,
-        productName: newRfq.productName || 'Industrial Sourcing Requirement',
-        category: newRfq.category || 'Industrial Machinery',
-        targetQuantity: newRfq.targetQuantity || 100,
-        quantityUnit: newRfq.quantityUnit || 'Units',
-        targetPriceUsd: newRfq.targetPriceUsd || 100,
-        preferredIncoterm: newRfq.preferredIncoterm || 'FOB',
-        destinationPort: newRfq.destinationPort || 'Global Port',
-        paymentTerms: newRfq.paymentTerms || '30% TT Deposit, 70% against B/L',
-        detailedRequirements: newRfq.detailedRequirements || newRfq.detailedDescription || '',
-        urgency: 'STANDARD',
-        quotesCount: 0,
-        postedDate: new Date().toISOString().split('T')[0],
-        expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-        status: 'OPEN',
-        matchedSupplierCount: 4,
-        spamScore: 1.0
+      // Direct submission via apiClient if not already saved
+      const payload = {
+        title: newRfq.productName || (newRfq as any).title || 'Industrial Sourcing Requirement',
+        category: newRfq.category || 'Industrial Machinery & CNC',
+        quantity: String(newRfq.targetQuantity || (newRfq as any).quantity || '1000'),
+        unit: newRfq.quantityUnit || (newRfq as any).unit || 'Pieces',
+        targetPrice: String(newRfq.targetPriceUsd || (newRfq as any).targetPrice || '0'),
+        incoterms: newRfq.preferredIncoterm || (newRfq as any).incoterms || 'FOB',
+        destinationPort: newRfq.destinationPort || 'Port of Hamburg',
+        specifications: newRfq.detailedRequirements || newRfq.detailedDescription || (newRfq as any).specifications || '',
+        buyer_name: newRfq.buyerName || currentUser?.name || 'Procurement Officer',
+        buyer_country: newRfq.buyerCountry || 'United States',
+        buyer_email: (newRfq as any).buyerEmail || currentUser?.email || 'buyer@tradeheaven.net',
+        buyer_company: newRfq.buyerCompany || currentUser?.companyName || 'Enterprise Buyer Ltd'
       };
-      setRfqs(prev => [fallbackRfq, ...prev]);
-      setSelectedRfqId(fallbackRfq.id);
+
+      const res = await apiClient.submitRfq(payload);
+      if (res.success && res.data) {
+        const created = res.data as RfqRequirement;
+        setRfqs(prev => {
+          const filtered = prev.filter(r => r.id !== created.id);
+          return [created, ...filtered];
+        });
+        setSelectedRfqId(created.id);
+      } else {
+        const fallbackRfq: RfqRequirement = {
+          id: newRfq.id || `rfq-${Date.now()}`,
+          buyerName: newRfq.buyerName || currentUser?.name || 'Procurement Officer',
+          buyerCompany: newRfq.buyerCompany || currentUser?.companyName || 'Enterprise Buyer Ltd',
+          buyerCountry: newRfq.buyerCountry || 'United States',
+          buyerVerified: true,
+          productName: newRfq.productName || 'Industrial Sourcing Requirement',
+          category: newRfq.category || 'Industrial Machinery & CNC',
+          targetQuantity: newRfq.targetQuantity || 100,
+          quantityUnit: newRfq.quantityUnit || 'Units',
+          targetPriceUsd: newRfq.targetPriceUsd || 100,
+          preferredIncoterm: newRfq.preferredIncoterm || 'FOB',
+          destinationPort: newRfq.destinationPort || 'Port of Hamburg',
+          paymentTerms: newRfq.paymentTerms || 'Trade Assurance Escrow (Swiss Vault)',
+          detailedRequirements: newRfq.detailedRequirements || newRfq.detailedDescription || '',
+          urgency: 'STANDARD',
+          quotesCount: 0,
+          postedDate: new Date().toISOString().split('T')[0],
+          expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          status: 'OPEN',
+          matchedSupplierCount: 4,
+          spamScore: 1.0
+        };
+        setRfqs(prev => [fallbackRfq, ...prev]);
+        setSelectedRfqId(fallbackRfq.id);
+      }
+    } catch (e) {
+      console.error('[handleRfqCreated error]:', e);
     }
     setIsCreateRfqOpen(false);
     setActiveView('RFQ_HUB');

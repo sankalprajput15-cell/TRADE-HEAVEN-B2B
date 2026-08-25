@@ -1,13 +1,30 @@
 /**
- * Trade Heaven - Multi-step RFQ Submission Modal
- * Features:
- * 1. Automatic draft persistence in localStorage ('trade_heaven_rfq_draft')
- * 2. Instant optimistic UI sync upon submission
- * 3. Direct integration with api.php & MySQL backend
+ * Trade4Deals / Trade Heaven - Multi-step RFQ Submission Modal
+ *
+ * Requirements:
+ * 1. Auto-save form progress into localStorage under 'rfq_form_draft' with a 400ms debounce.
+ * 2. When the user clicks Submit:
+ *    - Send payload via apiClient.submitRfq().
+ *    - On success, call parent callback onRfqCreated(newRfq) to immediately prepend the new item.
+ *    - Purge localStorage.removeItem('rfq_form_draft').
+ *    - Close modal and show success feedback.
  */
 
-import React, { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck, Upload, AlertCircle, Loader2, Sparkles, Building, Globe, DollarSign, Package } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  X, 
+  ArrowRight, 
+  ArrowLeft, 
+  CheckCircle2, 
+  ShieldCheck, 
+  AlertCircle, 
+  Loader2, 
+  Sparkles, 
+  DollarSign, 
+  Package, 
+  Globe, 
+  Building 
+} from 'lucide-react';
 import { RFQ } from '../types';
 import { apiClient } from '../services/apiClient';
 
@@ -15,10 +32,11 @@ interface PostRFQModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (newRfq: RFQ) => void;
+  onRfqCreated?: (newRfq: RFQ) => void;
   prefillCategory?: string;
 }
 
-const DRAFT_KEY = 'trade_heaven_rfq_draft';
+const DRAFT_KEY = 'rfq_form_draft';
 
 const CATEGORIES = [
   'Industrial Machinery & CNC',
@@ -40,6 +58,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  onRfqCreated,
   prefillCategory
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -50,28 +69,28 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
   // Form State
   const [formData, setFormData] = useState({
     // Step 1: Product Specs
-    productName: '',
+    title: '',
     category: prefillCategory || 'Industrial Machinery & CNC',
-    targetQuantity: 1000,
-    quantityUnit: 'Pieces',
-    targetPriceUsd: 25,
-    detailedRequirements: '',
+    quantity: '1000',
+    unit: 'Pieces',
+    targetPrice: '25',
+    specifications: '',
 
     // Step 2: Logistics & Trade Terms
-    incoterm: 'FOB',
+    incoterms: 'FOB',
     destinationPort: 'Port of Hamburg',
-    paymentTerms: 'Trade Assurance Escrow (Swiss Vault)',
-    urgency: 'STANDARD',
 
     // Step 3: Buyer & Company Profile
-    buyerName: '',
-    buyerCompany: '',
-    buyerEmail: '',
-    buyerPhone: '',
-    buyerCountry: 'United States'
+    buyer_name: '',
+    buyer_company: '',
+    buyer_email: '',
+    buyer_phone: '',
+    buyer_country: 'United States'
   });
 
-  // Restore draft from localStorage or user session on open
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Restore draft from localStorage under 'rfq_form_draft' on open
   useEffect(() => {
     if (!isOpen) return;
 
@@ -87,24 +106,36 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
           const u = JSON.parse(userStr);
           setFormData(prev => ({
             ...prev,
-            buyerName: u.name || prev.buyerName,
-            buyerEmail: u.email || prev.buyerEmail,
-            buyerCompany: u.companyName || prev.buyerCompany,
-            buyerPhone: u.phone || prev.buyerPhone,
-            buyerCountry: u.country || prev.buyerCountry
+            buyer_name: u.name || prev.buyer_name,
+            buyer_email: u.email || prev.buyer_email,
+            buyer_company: u.companyName || u.company || prev.buyer_company,
+            buyer_phone: u.phone || prev.buyer_phone,
+            buyer_country: u.country || prev.buyer_country
           }));
         }
       }
     } catch {}
   }, [isOpen]);
 
-  // Persist draft on changes
+  // Auto-save form progress into localStorage under 'rfq_form_draft' with a 400ms debounce
   useEffect(() => {
-    if (isOpen && !isSubmitted) {
+    if (!isOpen || isSubmitted) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
       } catch {}
-    }
+    }, 400);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [formData, isOpen, isSubmitted]);
 
   if (!isOpen) return null;
@@ -116,11 +147,11 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
   const handleNext = () => {
     setErrorMessage('');
     if (step === 1) {
-      if (!formData.productName.trim()) {
-        setErrorMessage('Please enter the exact product or commodity name.');
+      if (!formData.title.trim()) {
+        setErrorMessage('Please enter the exact product or commodity title.');
         return;
       }
-      if (!formData.targetQuantity || formData.targetQuantity <= 0) {
+      if (!formData.quantity || Number(formData.quantity) <= 0) {
         setErrorMessage('Please enter a valid procurement quantity.');
         return;
       }
@@ -138,11 +169,11 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
     e.preventDefault();
     setErrorMessage('');
 
-    if (!formData.buyerName.trim()) {
+    if (!formData.buyer_name.trim()) {
       setErrorMessage('Please enter your procurement contact name.');
       return;
     }
-    if (!formData.buyerEmail.trim() || !formData.buyerEmail.includes('@')) {
+    if (!formData.buyer_email.trim() || !formData.buyer_email.includes('@')) {
       setErrorMessage('Please enter a valid corporate email address.');
       return;
     }
@@ -151,46 +182,51 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
     try {
       const payload = {
-        product_name: formData.productName,
-        title: `Buy Lead RFQ: ${formData.targetQuantity} ${formData.quantityUnit} of ${formData.productName}`,
+        title: formData.title,
         category: formData.category,
-        quantity: Number(formData.targetQuantity),
-        quantity_unit: formData.quantityUnit,
-        target_price: Number(formData.targetPriceUsd),
-        incoterm: formData.incoterm,
-        destination_port: formData.destinationPort,
-        payment_terms: formData.paymentTerms,
-        requirements: formData.detailedRequirements || `Procurement of ${formData.productName}. Target quantity: ${formData.targetQuantity} ${formData.quantityUnit}. Incoterm: ${formData.incoterm}.`,
-        buyer_name: formData.buyerName,
-        buyer_company: formData.buyerCompany || formData.buyerName,
-        buyer_email: formData.buyerEmail,
-        buyer_phone: formData.buyerPhone,
-        buyer_country: formData.buyerCountry,
-        status: 'OPEN'
+        quantity: formData.quantity,
+        unit: formData.unit,
+        targetPrice: formData.targetPrice,
+        incoterms: formData.incoterms,
+        destinationPort: formData.destinationPort,
+        specifications: formData.specifications || `Procurement requirement for ${formData.quantity} ${formData.unit} of ${formData.title}. Target terms: ${formData.incoterms} to ${formData.destinationPort}.`,
+        buyer_name: formData.buyer_name,
+        buyer_country: formData.buyer_country,
+        buyer_email: formData.buyer_email,
+        buyer_company: formData.buyer_company || formData.buyer_name,
+        buyer_phone: formData.buyer_phone
       };
 
       const result = await apiClient.submitRfq(payload);
 
       if (result.success && result.data) {
-        // Clear draft
+        const newRfq = result.data;
+
+        // 3. Purge localStorage.removeItem('rfq_form_draft')
         try {
           localStorage.removeItem(DRAFT_KEY);
         } catch {}
 
         setIsSubmitted(true);
 
-        // Optimistic UI state update in parent
-        if (onSuccess) {
-          onSuccess(result.data);
+        // 2. Call parent callback onRfqCreated(newRfq) / onSuccess(newRfq)
+        if (onRfqCreated) {
+          onRfqCreated(newRfq);
+        } else if (onSuccess) {
+          onSuccess(newRfq);
         }
 
+        // Trigger window event for any independent listener
+        window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created', { detail: newRfq }));
+
+        // 4. Close modal after brief success presentation
         setTimeout(() => {
           setIsSubmitted(false);
           setStep(1);
           onClose();
-        }, 1800);
+        }, 1500);
       } else {
-        setErrorMessage(result.message || 'Failed to submit RFQ to database.');
+        setErrorMessage(result.message || 'Failed to persist RFQ to MySQL database.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Network communication error. Please try again.');
@@ -200,8 +236,8 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8">
+    <div id="post-rfq-modal-backdrop" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+      <div id="post-rfq-modal-container" className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8">
         {/* Header */}
         <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -210,18 +246,19 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold">Broadcast Sourcing RFQ (Buy Lead)</h2>
-              <p className="text-xs text-slate-400">Free broadcast to 50,000+ audited manufacturers & exporters</p>
+              <p className="text-xs text-slate-400">Direct persistence to MySQL via api.php • Verified B2B Suppliers</p>
             </div>
           </div>
           <button
+            id="post-rfq-close-btn"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Step Bar */}
         <div className="grid grid-cols-3 bg-slate-100 border-b border-slate-200 text-xs font-semibold">
           <div className={`py-2.5 px-4 text-center border-r border-slate-200 ${step === 1 ? 'bg-blue-50 text-blue-700 font-bold' : step > 1 ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500'}`}>
             1. Product Specs
@@ -236,17 +273,17 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
         {/* Success Screen */}
         {isSubmitted ? (
-          <div className="p-10 text-center flex flex-col items-center">
+          <div id="post-rfq-success-card" className="p-10 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900">RFQ Published to Live Network!</h3>
+            <h3 className="text-2xl font-bold text-slate-900">RFQ Saved to MySQL Database!</h3>
             <p className="text-sm text-slate-600 mt-2 max-w-md">
-              Your sourcing requirement has been saved into the Trade Heaven database and broadcasted to verified global suppliers.
+              Your sourcing requirement is permanently saved and will remain visible across page reloads.
             </p>
             <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
-              <span>Quotes will be filtered for ISO compliance and routed to your dashboard.</span>
+              <span>Verified suppliers can now submit competitive binding quotations.</span>
             </div>
           </div>
         ) : (
@@ -263,13 +300,14 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Product / Commodity Name *
+                    Product Title / Commodity Name *
                   </label>
                   <input
+                    id="rfq-input-title"
                     type="text"
-                    value={formData.productName}
-                    onChange={(e) => handleChange('productName', e.target.value)}
-                    placeholder="e.g. 5-Axis CNC Milling Center, Grade A Arabica Coffee Beans, 500W Solar Panels"
+                    value={formData.title}
+                    onChange={(e) => handleChange('title', e.target.value)}
+                    placeholder="e.g. Grade 316 Stainless Steel Heavy Coils, 580W Solar Panels"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     required
                   />
@@ -281,6 +319,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                       Industry Category
                     </label>
                     <select
+                      id="rfq-select-category"
                       value={formData.category}
                       onChange={(e) => handleChange('category', e.target.value)}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
@@ -293,15 +332,16 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Target Unit Price (USD)
+                      Target Price (USD)
                     </label>
                     <div className="relative">
                       <DollarSign className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                       <input
-                        type="number"
-                        step="0.01"
-                        value={formData.targetPriceUsd}
-                        onChange={(e) => handleChange('targetPriceUsd', Number(e.target.value))}
+                        id="rfq-input-price"
+                        type="text"
+                        value={formData.targetPrice}
+                        onChange={(e) => handleChange('targetPrice', e.target.value)}
+                        placeholder="e.g. 25.00"
                         className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       />
                     </div>
@@ -311,13 +351,14 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Required Quantity *
+                      Quantity *
                     </label>
                     <input
-                      type="number"
-                      min="1"
-                      value={formData.targetQuantity}
-                      onChange={(e) => handleChange('targetQuantity', Number(e.target.value))}
+                      id="rfq-input-quantity"
+                      type="text"
+                      value={formData.quantity}
+                      onChange={(e) => handleChange('quantity', e.target.value)}
+                      placeholder="e.g. 1000"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       required
                     />
@@ -325,11 +366,12 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Quantity Unit
+                      Unit
                     </label>
                     <select
-                      value={formData.quantityUnit}
-                      onChange={(e) => handleChange('quantityUnit', e.target.value)}
+                      id="rfq-select-unit"
+                      value={formData.unit}
+                      onChange={(e) => handleChange('unit', e.target.value)}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     >
                       {UNITS.map(u => (
@@ -341,13 +383,14 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Detailed Technical Specifications & Packaging
+                    Specifications & Technical Requirements
                   </label>
                   <textarea
+                    id="rfq-textarea-specifications"
                     rows={3}
-                    value={formData.detailedRequirements}
-                    onChange={(e) => handleChange('detailedRequirements', e.target.value)}
-                    placeholder="Specify certifications needed (CE, ISO, FDA), material grades, packaging requirements, or custom branding..."
+                    value={formData.specifications}
+                    onChange={(e) => handleChange('specifications', e.target.value)}
+                    placeholder="Enter detailed technical specs, certifications (CE, ISO, SGS), packaging, or delivery requirements..."
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
                 </div>
@@ -360,11 +403,12 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Preferred Incoterm (ICC Rules)
+                      Incoterms (ICC Standards)
                     </label>
                     <select
-                      value={formData.incoterm}
-                      onChange={(e) => handleChange('incoterm', e.target.value)}
+                      id="rfq-select-incoterms"
+                      value={formData.incoterms}
+                      onChange={(e) => handleChange('incoterms', e.target.value)}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     >
                       {INCOTERMS.map(term => (
@@ -375,39 +419,24 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Destination Port / Delivery City *
+                      Destination Port / City *
                     </label>
                     <input
+                      id="rfq-input-destination-port"
                       type="text"
                       value={formData.destinationPort}
                       onChange={(e) => handleChange('destinationPort', e.target.value)}
-                      placeholder="e.g. Port of Los Angeles, Rotterdam, Nhava Sheva"
+                      placeholder="e.g. Port of Los Angeles, Hamburg, Nhava Sheva"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       required
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Payment & Escrow Protection
-                  </label>
-                  <select
-                    value={formData.paymentTerms}
-                    onChange={(e) => handleChange('paymentTerms', e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                  >
-                    <option value="Trade Assurance Escrow (Swiss Vault)">Trade Assurance Escrow (Swiss Vault) - 0% Fee</option>
-                    <option value="Irrevocable LC at Sight (Tier 1 Bank)">Irrevocable LC at Sight (Tier 1 Bank)</option>
-                    <option value="30% TT Deposit, 70% against BL Copy">30% TT Deposit, 70% against BL Copy</option>
-                    <option value="100% CAD (Cash Against Documents)">100% CAD (Cash Against Documents)</option>
-                  </select>
-                </div>
-
                 <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl flex items-start gap-3">
                   <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-blue-900">
-                    <span className="font-bold">Trade Heaven Escrow Guarantee:</span> Your funds remain securely held in segregated Swiss banking vault accounts until Bill of Lading and SGS Quality Inspections are confirmed.
+                    <span className="font-bold">MySQL Cloud Persistence:</span> All posted requirements are committed via prepared PDO statements directly to the central B2B marketplace database.
                   </div>
                 </div>
               </div>
@@ -419,12 +448,13 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                      Contact / Buyer Name *
+                      Buyer Name *
                     </label>
                     <input
+                      id="rfq-input-buyer-name"
                       type="text"
-                      value={formData.buyerName}
-                      onChange={(e) => handleChange('buyerName', e.target.value)}
+                      value={formData.buyer_name}
+                      onChange={(e) => handleChange('buyer_name', e.target.value)}
                       placeholder="e.g. Alex Morgan"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       required
@@ -436,9 +466,10 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                       Company Name *
                     </label>
                     <input
+                      id="rfq-input-buyer-company"
                       type="text"
-                      value={formData.buyerCompany}
-                      onChange={(e) => handleChange('buyerCompany', e.target.value)}
+                      value={formData.buyer_company}
+                      onChange={(e) => handleChange('buyer_company', e.target.value)}
                       placeholder="e.g. Pacific Logistics Corp"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       required
@@ -452,9 +483,10 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                       Corporate Email *
                     </label>
                     <input
+                      id="rfq-input-buyer-email"
                       type="email"
-                      value={formData.buyerEmail}
-                      onChange={(e) => handleChange('buyerEmail', e.target.value)}
+                      value={formData.buyer_email}
+                      onChange={(e) => handleChange('buyer_email', e.target.value)}
                       placeholder="procurement@company.com"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       required
@@ -466,9 +498,10 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                       Phone / WhatsApp
                     </label>
                     <input
+                      id="rfq-input-buyer-phone"
                       type="tel"
-                      value={formData.buyerPhone}
-                      onChange={(e) => handleChange('buyerPhone', e.target.value)}
+                      value={formData.buyer_phone}
+                      onChange={(e) => handleChange('buyer_phone', e.target.value)}
                       placeholder="+1 (555) 019-2834"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
@@ -480,9 +513,10 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                     Buyer Country
                   </label>
                   <input
+                    id="rfq-input-buyer-country"
                     type="text"
-                    value={formData.buyerCountry}
-                    onChange={(e) => handleChange('buyerCountry', e.target.value)}
+                    value={formData.buyer_country}
+                    onChange={(e) => handleChange('buyer_country', e.target.value)}
                     placeholder="e.g. United States, Germany, United Kingdom"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
                   />
@@ -494,9 +528,10 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
               {step > 1 ? (
                 <button
+                  id="rfq-btn-back"
                   type="button"
                   onClick={() => setStep((step - 1) as any)}
-                  className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-semibold flex items-center gap-2"
+                  className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-semibold flex items-center gap-2 cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span>Back</span>
@@ -507,28 +542,30 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
 
               {step < 3 ? (
                 <button
+                  id="rfq-btn-continue"
                   type="button"
                   onClick={handleNext}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 cursor-pointer"
                 >
                   <span>Continue</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
                 <button
+                  id="rfq-btn-submit"
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                  className="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Broadcasting to MySQL...</span>
+                      <span>Saving to MySQL...</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Publish Sourcing RFQ</span>
+                      <span>Submit RFQ to Database</span>
                     </>
                   )}
                 </button>
