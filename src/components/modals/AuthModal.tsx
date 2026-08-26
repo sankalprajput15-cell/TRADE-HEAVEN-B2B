@@ -101,7 +101,7 @@ export const AuthModal: React.FC<Props> = ({
         } catch {}
 
         onLogin(res.user);
-        const isAdminUser = res.user.role === 'ADMIN' || res.user.email?.toLowerCase() === 'yr943334@gmail.com' || res.user.email?.toLowerCase() === 'admin@tradeheaven.net';
+        const isAdminUser = res.user.role === 'ADMIN' || res.user.isVerifiedAdmin === true;
         setSuccess(
           isAdminUser 
             ? `Admin session verified. Entering Administrator Control Center...`

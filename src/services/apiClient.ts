@@ -225,49 +225,45 @@ export const apiClient = {
    * Authenticate user with corporate email and password
    */
   async login(
-    email: string, 
+    email: string,
     password?: string
   ): Promise<{ success: boolean; data?: any; token?: string; user?: AuthUser; error?: string; message?: string }> {
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
-      if (!cleanEmail) {
-        return { success: false, error: 'Corporate email is required.', message: 'Corporate email is required.' };
+      if (!cleanEmail || !password) {
+        return { success: false, error: 'Both corporate email and password are required.', message: 'Both corporate email and password are required.' };
       }
 
-      // 1. Direct Master Admin Credential Verification
-      const isAdminEmail = cleanEmail === 'yr943334@gmail.com' || cleanEmail === 'admin@tradeheaven.net';
-      if (isAdminEmail && (password === 'Yash@8532' || !password)) {
-        const adminUser: AuthUser = {
-          id: 'user-admin-001',
-          name: 'Administrator',
-          email: 'yr943334@gmail.com',
-          password: 'Yash@8532',
-          role: 'ADMIN',
-          isPremium: true,
-          membershipStatus: 'paid',
-          status: 'ACTIVE',
-          isVerified: true,
-          isVerifiedAdmin: true,
-          tier: 'VIP',
-          companyName: 'Trade Heaven Global Operations & Treasury',
-          country: 'United Kingdom',
-          avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
-          token: 'jwt-tradeheaven-master-admin-session'
-        };
+      // 1. Authenticate via Express API Auth Endpoint
+      try {
+        const authRes = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ email: cleanEmail, password })
+        });
+        const authJson = await authRes.json();
+        if (authRes.ok && authJson.success && authJson.user) {
+          const user = authJson.user;
+          const token = authJson.token || user.token;
+          try {
+            localStorage.setItem('tradeheaven_user', JSON.stringify(user));
+            localStorage.setItem('th_session_user', JSON.stringify(user));
+            if (token) localStorage.setItem('th_session_jwt_token', token);
+          } catch {}
 
-        try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(adminUser));
-          localStorage.setItem('th_session_user', JSON.stringify(adminUser));
-          localStorage.setItem('th_session_jwt_token', adminUser.token!);
-        } catch {}
-
-        return {
-          success: true,
-          token: adminUser.token,
-          data: adminUser,
-          user: adminUser,
-          message: 'Admin session authenticated successfully.'
-        };
+          return {
+            success: true,
+            token,
+            data: user,
+            user,
+            message: authJson.message || 'Authenticated successfully.'
+          };
+        }
+      } catch {
+        // Fallback to local service verification if server endpoint unreachable
       }
 
       const res = await fetch(`${API_BASE}?action=login`, {
@@ -276,7 +272,7 @@ export const apiClient = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ email: cleanEmail, password: password || '' })
+        body: JSON.stringify({ email: cleanEmail, password })
       });
 
       const json = await res.json().catch(() => ({}));
@@ -284,7 +280,7 @@ export const apiClient = {
 
       if (isSuccess && (json.user || json.data)) {
         const rawUser = json.user || json.data;
-        const isAdmin = rawUser.role === 'ADMIN' || cleanEmail === 'yr943334@gmail.com' || cleanEmail === 'admin@tradeheaven.net';
+        const isAdmin = rawUser.role === 'ADMIN';
         const normalizedUser: AuthUser = {
           id: String(rawUser.id || `user-${Date.now()}`),
           name: rawUser.name || (isAdmin ? 'Administrator' : 'Trade Partner'),

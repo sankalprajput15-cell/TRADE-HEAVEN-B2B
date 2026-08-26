@@ -71,7 +71,7 @@ export const Header: React.FC<Props> = ({
   setSelectedCurrency,
   onCurrencyChange,
   currentUser,
-  currentUserRole = currentUser?.role || 'ADMIN',
+  currentUserRole = currentUser?.role || 'BUYER',
   setCurrentUserRole,
   onOpenCreateRfq = () => {},
   onOpenBackendManager,

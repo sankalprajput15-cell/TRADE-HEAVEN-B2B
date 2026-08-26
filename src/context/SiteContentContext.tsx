@@ -113,76 +113,15 @@ interface SiteContentContextType {
 const LOCAL_STORAGE_KEY = 'trade_heaven_site_content_v1';
 const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
 
-export const DEFAULT_ADMIN_USER: AuthUser = {
-  id: 'user-admin-001',
-  name: 'Administrator',
-  email: 'yr943334@gmail.com',
-  password: 'Yash@8532',
-  companyName: 'Trade Heaven Global Operations & Treasury',
-  country: 'United Kingdom',
-  role: 'ADMIN',
-  status: 'ACTIVE',
-  tier: 'VIP',
-  isVerified: true,
-  isVerifiedAdmin: true,
-  isPremium: true,
-  membershipStatus: 'paid',
-  joinedDate: '2022-01-10',
-  avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
-};
-
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
-      const savedUserStr = localStorage.getItem('th_session_user') || localStorage.getItem('tradeheaven_user');
       const savedToken = localStorage.getItem('th_session_jwt_token');
-      if (savedUserStr) {
-        const parsed = JSON.parse(savedUserStr);
-        if (parsed && parsed.email) {
-          const isAdmin = parsed.role === 'ADMIN' || parsed.email.toLowerCase() === 'yr943334@gmail.com' || parsed.email.toLowerCase() === 'admin@tradeheaven.net';
-          if (isAdmin || parsed.email.toLowerCase() === 'yr943334@gmail.com') {
-            return {
-              ...DEFAULT_ADMIN_USER,
-              ...parsed,
-              email: 'yr943334@gmail.com',
-              role: 'ADMIN',
-              isVerifiedAdmin: true,
-              isVerified: true,
-              isPremium: true,
-              membershipStatus: 'paid',
-              status: 'ACTIVE',
-              tier: 'VIP',
-              token: savedToken || parsed.token || securityService.generateSessionToken(DEFAULT_ADMIN_USER)
-            };
-          }
-          return {
-            ...parsed,
-            isVerifiedAdmin: isAdmin,
-            token: savedToken || parsed.token || securityService.generateSessionToken(parsed)
-          };
-        }
-      }
       if (savedToken) {
         const payload = securityService.verifySessionToken(savedToken);
         if (payload) {
-          const isAdmin = payload.role === 'ADMIN' || payload.email.toLowerCase() === 'yr943334@gmail.com' || payload.email.toLowerCase() === 'admin@tradeheaven.net';
-          if (isAdmin || payload.email.toLowerCase() === 'yr943334@gmail.com') {
-            return {
-              ...DEFAULT_ADMIN_USER,
-              id: payload.uid,
-              email: 'yr943334@gmail.com',
-              role: 'ADMIN',
-              isPremium: true,
-              membershipStatus: 'paid',
-              status: 'ACTIVE',
-              isVerified: true,
-              isVerifiedAdmin: true,
-              tier: 'VIP',
-              token: savedToken
-            };
-          }
           return {
             id: payload.uid,
             email: payload.email,
@@ -192,18 +131,30 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
             membershipStatus: payload.membershipStatus,
             status: payload.status,
             isVerified: payload.isVerified,
-            isVerifiedAdmin: isAdmin,
+            isVerifiedAdmin: payload.role === 'ADMIN',
             tier: payload.tier,
             companyName: payload.companyName,
             country: 'United Kingdom',
             token: savedToken
           };
+        } else {
+          // Token is invalid, expired or tampered: purge invalid session storage
+          localStorage.removeItem('th_session_jwt_token');
+          localStorage.removeItem('th_session_user');
+          localStorage.removeItem('tradeheaven_user');
+          localStorage.removeItem('tradeheaven_auth_user');
         }
+      } else {
+        // No valid token: clean any stale unauthenticated session keys
+        localStorage.removeItem('th_session_user');
+        localStorage.removeItem('tradeheaven_user');
+        localStorage.removeItem('tradeheaven_auth_user');
       }
-    } catch {}
+    } catch {
+      // Storage access exception in restricted sandboxes
+    }
 
-    // By default, visitors start in a clean logged-out guest state.
-    // They only log in when they explicitly sign in or restore their existing stored credentials.
+    // By default, visitors strictly start in a clean logged-out guest state (null)
     return null;
   });
 
@@ -217,6 +168,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         localStorage.removeItem('th_session_jwt_token');
         localStorage.removeItem('th_session_user');
         localStorage.removeItem('tradeheaven_user');
+        localStorage.removeItem('tradeheaven_auth_user');
       }
     } catch {}
   }, [currentUser]);
@@ -359,7 +311,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     loadServerContent();
   }, []);
 
-  // Helper to check if a specific user is authorized to edit CMS
+  // Helper to check if a specific user is authorized to edit CMS or access admin areas
   const isUserAuthorized = (user: AuthUser | null): UserAuthorizationResult => {
     if (!user) {
       return {
@@ -369,30 +321,38 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         statusText: 'Guest / Not Signed In (Read-Only)'
       };
     }
-    // 1. Super Admin role or Creator / Root admin email
-    const email = (user.email || '').trim().toLowerCase();
-    const isRootOrCreator = 
-      user.role === 'ADMIN' || 
-      user.isVerifiedAdmin === true ||
-      email === 'sankalprajput15@gmail.com' || 
-      email === 'admin@tradeheaven.net' || 
-      email === 'yr943334@gmail.com';
 
-    if (isRootOrCreator) {
+    // 1. Strict Server-Resolved Administrator Role
+    if (user.role === 'ADMIN' || user.isVerifiedAdmin === true) {
       return {
         isAuthorized: true,
         isSuperAdmin: true,
         scopes: ['ALL_ADMIN', 'EDIT_CONTENT', 'EDIT_PRICING', 'EDIT_MEDIA', 'PUBLISH_PRODUCTS', 'MANAGE_PERMISSIONS'],
-        statusText: 'Administrator / Creator (Full Unrestricted Access)'
+        statusText: 'Administrator (Full Unrestricted Access)'
+      };
+    }
+
+    // 2. Check explicitly granted delegated permission matrix
+    const email = (user.email || '').trim().toLowerCase();
+    const delegated = authorizedUsers.find(
+      u => u.status === 'ACTIVE' && u.email.toLowerCase() === email
+    );
+    if (delegated) {
+      return {
+        isAuthorized: true,
+        isSuperAdmin: false,
+        permission: delegated,
+        scopes: delegated.scopes,
+        statusText: `Delegated Staff (${delegated.role})`
       };
     }
     
-    // Non-admin / Non-creator users have zero edit access
+    // Non-admin users have zero edit/admin access
     return {
       isAuthorized: false,
       isSuperAdmin: false,
       scopes: [],
-      statusText: 'Access Restricted (Admin & Creator Only)'
+      statusText: 'Access Restricted (Administrator Privileges Required)'
     };
   };
 

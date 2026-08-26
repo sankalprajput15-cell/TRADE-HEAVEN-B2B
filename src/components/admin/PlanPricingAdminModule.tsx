@@ -54,7 +54,7 @@ interface PlanPricingAdminModuleProps {
 type AdminSubTab = 'PLANS_CRUD' | 'PRICING_PREVIEW' | 'RATE_LIMITS' | 'STRIPE_GATEWAY' | 'SCHEMA_INSPECTOR';
 
 export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
-  currentUserRole = 'ADMIN',
+  currentUserRole = 'BUYER',
   onNavigateView
 }) => {
   // Data State

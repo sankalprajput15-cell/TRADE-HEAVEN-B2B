@@ -57,6 +57,7 @@ import { AuthModal } from './components/modals/AuthModal';
 import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
 import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
 import { bigrockApi } from './services/bigrockApi';
+import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { Loader2 } from 'lucide-react';
 
 const MainApp: React.FC = () => {
@@ -137,22 +138,9 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Async Initialization & Session Hydration on Mount
+  // Async Initialization on Mount
   useEffect(() => {
-    // 1. Session Hydration from localStorage
-    try {
-      const storedUser = localStorage.getItem('tradeheaven_user') || localStorage.getItem('tradeheaven_auth_user');
-      if (storedUser && !currentUser) {
-        const parsed = JSON.parse(storedUser) as AuthUser;
-        if (parsed && parsed.email) {
-          setCurrentUser(parsed);
-        }
-      }
-    } catch (e) {
-      console.warn('[Session restoration error]:', e);
-    }
-
-    // 2. Fetch live data with Promise.allSettled to guarantee UI never hangs
+    // 1. Fetch live data with Promise.allSettled to guarantee UI never hangs
     const initializeData = async () => {
       setIsLoadingInitialData(true);
       await Promise.allSettled([
@@ -164,7 +152,7 @@ const MainApp: React.FC = () => {
 
     initializeData();
 
-    // 3. Listen for custom RFQ creation / refresh triggers
+    // 2. Listen for custom RFQ creation / refresh triggers
     const handleRfqRefresh = () => {
       fetchRFQs();
     };
@@ -670,52 +658,55 @@ const MainApp: React.FC = () => {
 
               case 'CLIENT_ADMIN':
                 return (
-                  <ClientAdminView
-                    selectedCurrency={selectedCurrency}
-                    onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                  <AdminRouteGuard
                     currentUser={currentUser}
-                    onUpdateCurrentUser={setCurrentUser}
-                  />
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Treasury & Administrative Control Center"
+                    description="Access to custodial escrow releases, user management, and database orchestration requires authenticated administrator credentials."
+                    targetViewName="CLIENT_ADMIN"
+                  >
+                    <ClientAdminView
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      currentUser={currentUser}
+                      onUpdateCurrentUser={setCurrentUser}
+                    />
+                  </AdminRouteGuard>
                 );
 
               case 'PLAN_PRICING_ADMIN':
                 return (
-                  <PlanPricingAdminModule
-                    currentUserRole={currentUser?.role}
-                    onNavigateView={handleNavigate}
-                  />
+                  <AdminRouteGuard
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Plan & Pricing Engine (Gemini & Subscriptions)"
+                    description="Configure SaaS membership tiers, Gemini context rate limits, and Stripe synchronization with verified administrator credentials."
+                    targetViewName="PLAN_PRICING_ADMIN"
+                  >
+                    <PlanPricingAdminModule
+                      currentUserRole={currentUser?.role}
+                      onNavigateView={handleNavigate}
+                    />
+                  </AdminRouteGuard>
                 );
 
               case 'CMS_MANAGEMENT':
-                return auth.isAuthorized || currentUser?.role === 'ADMIN' || currentUser?.isVerifiedAdmin || currentUser?.email?.toLowerCase() === 'yr943334@gmail.com' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net' ? (
-                  <div className="space-y-8">
-                    <SiteContentCmsEditor />
-                    <CmsPermissionsPanel />
-                  </div>
-                ) : (
-                  <div className="max-w-xl mx-auto my-16 p-8 bg-white rounded-3xl border border-slate-200 text-center space-y-4 shadow-xl">
-                    <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
-                      <span className="text-2xl">🔒</span>
+                return (
+                  <AdminRouteGuard
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Full-Site CMS & Access Permissions"
+                    description="The Full-Site CMS Editor and RBAC Governance Matrix are restricted to verified System Administrators."
+                    targetViewName="CMS_MANAGEMENT"
+                  >
+                    <div className="space-y-8">
+                      <SiteContentCmsEditor />
+                      <CmsPermissionsPanel />
                     </div>
-                    <h2 className="text-xl font-black text-slate-900">Administrator Access Required</h2>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      The Full-Site CMS Editor and RBAC Governance Matrix are restricted to verified System Administrators.
-                    </p>
-                    <div className="pt-2 flex items-center justify-center gap-3">
-                      <button
-                        onClick={() => setIsAuthModalOpen(true)}
-                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer shadow-xs"
-                      >
-                        Sign In as Administrator
-                      </button>
-                      <button
-                        onClick={() => setActiveView('HOMEPAGE')}
-                        className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-                      >
-                        Return to Homepage
-                      </button>
-                    </div>
-                  </div>
+                  </AdminRouteGuard>
                 );
 
               default:
