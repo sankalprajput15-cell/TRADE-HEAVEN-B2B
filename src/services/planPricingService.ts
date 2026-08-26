@@ -54,20 +54,24 @@ class PlanPricingService {
   }
 
   private getAuthHeaders() {
-    const userJson = localStorage.getItem('th_active_auth_user');
-    let email = 'yr943334@gmail.com';
-    let role = 'ADMIN';
-    if (userJson) {
-      try {
+    let email = '';
+    let role = 'BUYER';
+    let token = '';
+    try {
+      token = localStorage.getItem('th_session_jwt_token') || '';
+      const userJson = localStorage.getItem('th_session_user') || localStorage.getItem('tradeheaven_user');
+      if (userJson) {
         const u = JSON.parse(userJson);
         if (u.email) email = u.email;
         if (u.role) role = u.role;
-      } catch {}
-    }
+      }
+    } catch {}
+
     return {
       'Content-Type': 'application/json',
       'x-user-role': role,
-      'x-user-email': email
+      'x-user-email': email,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     };
   }
 
