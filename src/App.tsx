@@ -714,10 +714,34 @@ const MainApp: React.FC = () => {
 
               default:
                 return (
-                  <NotFoundView
-                    attemptedView={String(activeView)}
+                  <TradeWheelHomePage
+                    products={products}
+                    rfqs={rfqs}
+                    selectedCurrency={selectedCurrency}
+                    onSelectProduct={handleSelectProduct}
+                    onOpenStorefront={handleOpenStorefront}
+                    onContactSupplier={handleContactSupplier}
+                    onOpenCreateRfq={handleOpenCreateRfq}
                     onNavigate={handleNavigate}
-                    onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
+                    onOpenLiveTool={handleOpenLiveTool}
+                    onSelectRfq={(rfq) => {
+                      setSelectedRfqId(rfq.id);
+                      setSelectedRfqForModal(rfq);
+                    }}
+                    onNavigateToCategory={(cat, sub) => {
+                      setCatalogCategory(cat || 'ALL');
+                      setCatalogSearch(sub || '');
+                      setActiveView('PRODUCT_DIRECTORY');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onNavigateToSuppliers={() => {
+                      setActiveView('SUPPLIERS_DIRECTORY');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onNavigateToRfqs={() => {
+                      setActiveView('BUY_LEADS');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   />
                 );
             }
