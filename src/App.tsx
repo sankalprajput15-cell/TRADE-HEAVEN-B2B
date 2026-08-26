@@ -59,6 +59,7 @@ import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
 import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
+import { GuardedRootView } from './components/admin/GuardedRootView';
 import { Loader2 } from 'lucide-react';
 
 const MainApp: React.FC = () => {
@@ -941,11 +942,13 @@ const MainApp: React.FC = () => {
 export default function App() {
   return (
     <GlobalErrorBoundary fallbackTitle="TradeHeaven Marketplace Recovery">
-      <AuthProvider>
-        <SiteContentProvider>
-          <MainApp />
-        </SiteContentProvider>
-      </AuthProvider>
+      <GuardedRootView>
+        <AuthProvider>
+          <SiteContentProvider>
+            <MainApp />
+          </SiteContentProvider>
+        </AuthProvider>
+      </GuardedRootView>
     </GlobalErrorBoundary>
   );
 }
