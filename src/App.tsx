@@ -60,8 +60,12 @@ const MainApp: React.FC = () => {
     setCurrentUser, 
     siteContent,
     activeQuickEditSection,
-    closeQuickEdit
+    closeQuickEdit,
+    isUserAuthorized
   } = useSiteContent();
+
+  const auth = isUserAuthorized(currentUser);
+  const isAdmin = auth.isAuthorized;
 
   // Navigation & Currency State
   const [activeView, setActiveView] = useState<ActiveView>('HOMEPAGE');
@@ -679,19 +683,23 @@ const MainApp: React.FC = () => {
         onOpenStorefront={handleOpenStorefront}
       />
 
-      {/* 7. LIVE VISUAL ON-SCREEN SITE EDITOR & ADMIN WORKSPACE BAR */}
-      <FloatingLiveEditorBar 
-        onNavigate={handleNavigate} 
-        currentView={activeView}
-        onOpenBackendManager={() => setIsDbModalOpen(true)}
-      />
+      {/* 7. LIVE VISUAL ON-SCREEN SITE EDITOR & ADMIN WORKSPACE BAR (Strictly Creator & Admin Only) */}
+      {isAdmin && (
+        <FloatingLiveEditorBar 
+          onNavigate={handleNavigate} 
+          currentView={activeView}
+          onOpenBackendManager={() => setIsDbModalOpen(true)}
+        />
+      )}
 
-      {/* 8. QUICK SECTION LIVE EDIT MODAL */}
-      <LiveSectionEditModal
-        isOpen={Boolean(activeQuickEditSection)}
-        onClose={closeQuickEdit}
-        sectionKey={activeQuickEditSection}
-      />
+      {/* 8. QUICK SECTION LIVE EDIT MODAL (Strictly Creator & Admin Only) */}
+      {isAdmin && (
+        <LiveSectionEditModal
+          isOpen={Boolean(activeQuickEditSection)}
+          onClose={closeQuickEdit}
+          sectionKey={activeQuickEditSection}
+        />
+      )}
 
       {/* 9. ALL MODALS */}
       {selectedProduct && (

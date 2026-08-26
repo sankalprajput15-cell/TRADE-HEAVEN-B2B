@@ -68,7 +68,7 @@ export const SiteContentCmsEditor: React.FC = () => {
   const [jsonError, setJsonError] = useState<string | null>(null);
 
   const auth = isUserAuthorized(currentUser);
-  const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+  const isAdmin = auth.isAuthorized;
 
   // Sync state if context changes externally
   React.useEffect(() => {

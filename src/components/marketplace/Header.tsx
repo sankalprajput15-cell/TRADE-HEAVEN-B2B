@@ -87,10 +87,7 @@ export const Header: React.FC<Props> = ({
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const auth = isUserAuthorized(currentUser);
-  const isAdmin = currentUser?.role === 'ADMIN' || 
-    auth.isSuperAdmin || 
-    currentUser?.email?.toLowerCase() === 'yr943334@gmail.com' || 
-    currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+  const isAdmin = auth.isAuthorized;
 
   // Automatically close open dropdown menus when clicking outside or pressing Escape
   useEffect(() => {

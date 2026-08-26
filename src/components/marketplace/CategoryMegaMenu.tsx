@@ -24,7 +24,9 @@ interface Props {
 }
 
 export const CategoryMegaMenu: React.FC<Props> = ({ selectedCategory, onSelectCategory }) => {
-  const { siteContent, isLiveEditMode, openQuickEdit } = useSiteContent();
+  const { siteContent, isLiveEditMode, openQuickEdit, currentUser, isUserAuthorized } = useSiteContent();
+  const auth = isUserAuthorized(currentUser);
+  const isAdmin = auth.isAuthorized;
 
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
@@ -57,8 +59,8 @@ export const CategoryMegaMenu: React.FC<Props> = ({ selectedCategory, onSelectCa
   return (
     <div id="category-mega-menu" className="relative bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-sm group">
       
-      {/* Live Visual Edit Trigger */}
-      {isLiveEditMode && (
+      {/* Live Visual Edit Trigger (Strictly Admin / Creator Only) */}
+      {isAdmin && isLiveEditMode && (
         <button
           type="button"
           onClick={() => openQuickEdit('CATEGORIES')}

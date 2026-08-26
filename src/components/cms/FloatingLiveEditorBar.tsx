@@ -56,9 +56,9 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({
   const [isDismissed, setIsDismissed] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'WORKSPACES' | 'VISUAL_EDITOR'>('WORKSPACES');
 
-  // Check admin authorization: VISIBLE & ACCESSIBLE ONLY BY ADMIN
+  // Check admin authorization: VISIBLE & ACCESSIBLE ONLY BY ADMIN / CREATOR
   const auth = isUserAuthorized(currentUser);
-  const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+  const isAdmin = auth.isAuthorized;
 
   if (!isAdmin || isDismissed) {
     return null;

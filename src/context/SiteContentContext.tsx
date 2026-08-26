@@ -297,42 +297,29 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         statusText: 'Guest / Not Signed In (Read-Only)'
       };
     }
-    // 1. Super Admin role or root admin email
-    if (user.role === 'ADMIN' || (user.email && (user.email.toLowerCase() === 'yr943334@gmail.com' || user.email.toLowerCase() === 'admin@tradeheaven.net'))) {
+    // 1. Super Admin role or Creator / Root admin email
+    const email = (user.email || '').trim().toLowerCase();
+    const isRootOrCreator = 
+      user.role === 'ADMIN' || 
+      email === 'sankalprajput15@gmail.com' || 
+      email === 'admin@tradeheaven.net' || 
+      email === 'yr943334@gmail.com';
+
+    if (isRootOrCreator) {
       return {
         isAuthorized: true,
         isSuperAdmin: true,
         scopes: ['ALL_ADMIN', 'EDIT_CONTENT', 'EDIT_PRICING', 'EDIT_MEDIA', 'PUBLISH_PRODUCTS', 'MANAGE_PERMISSIONS'],
-        statusText: 'Super Administrator (Full Unrestricted Access)'
+        statusText: 'Administrator / Creator (Full Unrestricted Access)'
       };
     }
-    // 2. Delegated user permission check
-    const userEmail = (user.email || '').trim().toLowerCase();
-    if (!userEmail) {
-      return {
-        isAuthorized: false,
-        isSuperAdmin: false,
-        scopes: [],
-        statusText: 'Access Restricted (Invalid Email)'
-      };
-    }
-    const perm = (authorizedUsers || []).find(
-      u => u && u.status === 'ACTIVE' && (u.email || '').toLowerCase() === userEmail
-    );
-    if (perm) {
-      return {
-        isAuthorized: true,
-        isSuperAdmin: false,
-        permission: perm,
-        scopes: perm.scopes || ['EDIT_CONTENT'],
-        statusText: `Authorized Delegated Editor (Granted by ${perm.grantedBy})`
-      };
-    }
+    
+    // Non-admin / Non-creator users have zero edit access
     return {
       isAuthorized: false,
       isSuperAdmin: false,
       scopes: [],
-      statusText: 'Access Restricted (Requires Admin Delegation)'
+      statusText: 'Access Restricted (Admin & Creator Only)'
     };
   };
 
@@ -483,11 +470,10 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isLiveEditMode, setIsLiveEditMode] = useState<boolean>(false);
   const [activeQuickEditSection, setActiveQuickEditSection] = useState<string | null>(null);
 
-  // Automatically deactivate live edit mode if current user is not an administrator
+  // Automatically deactivate live edit mode if current user is not an administrator or creator
   useEffect(() => {
     const auth = isUserAuthorized(currentUser);
-    const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
-    if (!isAdmin) {
+    if (!auth.isAuthorized) {
       setIsLiveEditMode(false);
       setActiveQuickEditSection(null);
     }
@@ -495,8 +481,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const toggleLiveEditMode = () => {
     const auth = isUserAuthorized(currentUser);
-    const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
-    if (!isAdmin) {
+    if (!auth.isAuthorized) {
       return;
     }
     setIsLiveEditMode(prev => !prev);
@@ -504,8 +489,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const openQuickEdit = (section: string) => {
     const auth = isUserAuthorized(currentUser);
-    const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
-    if (!isAdmin) {
+    if (!auth.isAuthorized) {
       return;
     }
     setActiveQuickEditSection(section);

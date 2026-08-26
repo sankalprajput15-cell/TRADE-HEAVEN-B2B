@@ -141,7 +141,9 @@ export const HeroSection: React.FC<Props> = ({
   onNavigate,
   onSelectRfq
 }) => {
-  const { siteContent, isLiveEditMode, openQuickEdit } = useSiteContent();
+  const { siteContent, isLiveEditMode, openQuickEdit, currentUser, isUserAuthorized } = useSiteContent();
+  const auth = isUserAuthorized(currentUser);
+  const isAdmin = auth.isAuthorized;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState('All Categories');
   
@@ -358,68 +360,47 @@ export const HeroSection: React.FC<Props> = ({
   };
 
   return (
-    <div id="trade-heaven-hero" className="relative rounded-3xl bg-slate-950 p-6 sm:p-9 lg:p-12 shadow-2xl text-white border border-slate-800 group">
+    <div id="trade-heaven-hero" className="relative bg-slate-900 overflow-hidden min-h-[580px] rounded-3xl flex items-center shadow-2xl border border-slate-800 group">
       
-      {/* Live Visual Edit Trigger Button */}
-      {isLiveEditMode && (
+      {/* Live Visual Edit Trigger Button (Strictly Admin / Creator Only) */}
+      {isAdmin && isLiveEditMode && (
         <button
           type="button"
           onClick={() => openQuickEdit('HERO')}
-          className="absolute top-4 right-4 z-30 px-3.5 py-1.5 rounded-full bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-xl hover:bg-amber-300 transition-all cursor-pointer animate-bounce"
+          className="absolute top-4 right-4 z-30 px-3.5 py-1.5 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-xl hover:bg-blue-500 transition-all cursor-pointer"
         >
           <Edit3 className="w-3.5 h-3.5" />
-          <span>Edit Hero &amp; Specialist</span>
+          <span>Edit Hero Content</span>
         </button>
       )}
 
-      {/* Real High-Resolution Maritime Cargo Port Background */}
-      <div 
-        className="absolute inset-0 rounded-3xl overflow-hidden bg-cover bg-center opacity-30 mix-blend-luminosity scale-105 transition-transform duration-1000 pointer-events-none"
-        style={{ backgroundImage: `url('${hp.heroBgImage || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=85'}')` }}
-      />
-      <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-slate-950 via-slate-950/90 to-blue-950/80 pointer-events-none" />
-      <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(#ffffff10_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none opacity-40" />
+      {/* Background Image with Professional Gradient Overlay */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={hp.heroBgImage || "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80"} 
+          alt="Global B2B Logistics and Trade Shipping Port" 
+          className="w-full h-full object-cover object-center"
+        />
+        {/* Balanced gradient overlay ensuring high text readability while keeping port colors luminous */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-slate-900/25"></div>
+      </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto space-y-7">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-left space-y-4 max-w-2xl">
-            {/* Trust Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 backdrop-blur-md border border-blue-400/30 text-xs font-semibold text-blue-200">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>{hp.heroTrustEyebrow || 'Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance'}</span>
-            </div>
-
-            {/* Hero Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              {hp.heroHeadline || 'Direct Global Factory Sourcing &'} <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-400">
-                {hp.heroHeadlineGradient || 'Container Logistics Marketplace'}
-              </span>
-            </h1>
-
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl font-normal">
-              {hp.heroSubheadline || 'Connect directly with verified tier-1 manufacturing plants across 180+ countries. Negotiate volume FOB/CIF pricing, verify factory audits, and dispatch cargo with full escrow protection.'}
-            </p>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">
+        <div className="max-w-3xl">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30 backdrop-blur-md mb-6">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">Global B2B Sourcing Platform</span>
           </div>
 
-          {/* Verified Trade Specialist Card */}
-          <div className="hidden lg:flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-xl shrink-0 max-w-xs">
-            <img 
-              src={specialist.avatar} 
-              alt={specialist.name} 
-              referrerPolicy="no-referrer"
-              className="w-14 h-14 rounded-xl object-cover border border-amber-400/50 shadow-md shrink-0" 
-            />
-            <div className="text-left space-y-0.5">
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-white">{specialist.name}</span>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              </div>
-              <div className="text-[10px] text-amber-300 font-semibold uppercase tracking-wider">{specialist.title}</div>
-              <div className="text-[10px] text-slate-300 leading-tight">"{specialist.quote}"</div>
-            </div>
-          </div>
-        </div>
+          {/* Main Headline */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-6">
+            Connect Directly with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">Verified Global</span> Suppliers.
+          </h1>
+
+          <p className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl font-normal leading-relaxed">
+            Trade Heaven connects manufacturers, exporters, and buyers globally with transparent pricing, verified credentials, and secure cross-border logistics.
+          </p>
 
         {/* ------------------------------------------------------------- */}
         {/* ENHANCED PROFESSIONAL OMNIBAR SEARCH & DOWNWARD MENUS */}
@@ -551,13 +532,12 @@ export const HeroSection: React.FC<Props> = ({
                 )}
               </div>
 
-              {/* 3. Search Submit Button */}
+      {/* 3. Search Submit Button */}
               <button
                 type="submit"
-                className="w-full sm:w-auto px-7 py-2.5 rounded-xl sm:rounded-2xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md shrink-0 cursor-pointer"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg text-sm shrink-0 cursor-pointer"
               >
-                <Search className="w-4 h-4 text-slate-950" />
-                <span>Search Catalog</span>
+                Source Products
               </button>
             </div>
           </form>
@@ -866,77 +846,58 @@ export const HeroSection: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Popular Sourcing Suggestions Chips */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-          <span className="text-slate-400 font-medium flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-            Trending:
-          </span>
-          {POPULAR_SEARCH_CHIPS.map(chip => (
+          {/* Trust Metrics */}
+          <div className="mt-8 flex flex-wrap items-center gap-6 text-xs text-slate-300 font-medium">
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              100% Verified Manufacturers
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              Secure Cross-Border Escrow
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              Zero Middleman Markup
+            </span>
+          </div>
+
+          {/* Popular Sourcing Suggestions Chips */}
+          <div className="flex flex-wrap items-center gap-2 pt-6 text-xs">
+            <span className="text-slate-400 font-medium flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+              Popular:
+            </span>
+            {POPULAR_SEARCH_CHIPS.map(chip => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => handleChipClick(chip)}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-slate-200 hover:text-white text-[11px] font-medium transition-all cursor-pointer"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Sourcing Action Callouts */}
+          <div className="flex flex-wrap items-center gap-4 pt-3">
             <button
-              key={chip}
-              type="button"
-              onClick={() => handleChipClick(chip)}
-              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-slate-200 hover:text-white text-[11px] font-medium transition-all cursor-pointer"
+              onClick={onOpenCreateRfq}
+              className="flex items-center gap-2 text-xs font-semibold text-emerald-300 hover:text-white transition-colors bg-emerald-950/40 px-3.5 py-1.5 rounded-full border border-emerald-500/30 cursor-pointer shadow-xs"
             >
-              {chip}
+              <span>Need supplier quotes in 24h?</span>
+              <span className="underline decoration-blue-300 underline-offset-4 text-blue-300 font-bold">Post Custom RFQ</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
-          ))}
-        </div>
-
-        {/* Quick Sourcing Action Callouts */}
-        <div className="flex flex-wrap items-center gap-4 pt-1">
-          <button
-            onClick={onOpenCreateRfq}
-            className="flex items-center gap-2 text-xs font-semibold text-emerald-300 hover:text-white transition-colors bg-emerald-950/40 px-3.5 py-1.5 rounded-full border border-emerald-500/30 cursor-pointer shadow-xs"
-          >
-            <span>Need supplier quotes in 24h?</span>
-            <span className="underline decoration-amber-300 underline-offset-4 text-amber-300 font-bold">Post Custom RFQ</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-          <span className="text-white/30 hidden sm:inline">•</span>
-          <button
-            onClick={() => onOpenLiveTool('incoterms')}
-            className="flex items-center gap-1.5 text-xs text-sky-300 hover:text-white transition-colors bg-blue-950/40 px-3.5 py-1.5 rounded-full border border-blue-500/30 cursor-pointer shadow-xs"
-          >
-            <Globe2 className="w-3.5 h-3.5" />
-            <span>FOB / CIF Landed Cost &amp; Freight Calculator</span>
-          </button>
-        </div>
-
-        {/* Platform Metric Counters */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-slate-800">
-          <div className="p-3 sm:p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 text-center flex flex-col justify-center min-w-0">
-            <div className="text-lg sm:text-xl lg:text-2xl font-black text-white font-mono tracking-tight break-words truncate">
-              {hp.tradeVolumeGmv || '$142M+'}
-            </div>
-            <div className="text-[10px] sm:text-xs text-slate-300 font-medium mt-1 leading-snug line-clamp-2">
-              {hp.tradeVolumeGmvLabel || 'Escrow Settled Volume'}
-            </div>
-          </div>
-          <div className="p-3 sm:p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 text-center flex flex-col justify-center min-w-0">
-            <div className="text-lg sm:text-xl lg:text-2xl font-black text-emerald-400 font-mono tracking-tight break-words truncate">
-              {hp.supportedCountriesCount || '180+'}
-            </div>
-            <div className="text-[10px] sm:text-xs text-slate-300 font-medium mt-1 leading-snug line-clamp-2">
-              {hp.supportedCountriesLabel || 'Export Corridors'}
-            </div>
-          </div>
-          <div className="p-3 sm:p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 text-center flex flex-col justify-center min-w-0">
-            <div className="text-lg sm:text-xl lg:text-2xl font-black text-sky-300 font-mono tracking-tight break-words truncate">
-              {hp.verifiedBuyersCount || '45,000+'}
-            </div>
-            <div className="text-[10px] sm:text-xs text-slate-300 font-medium mt-1 leading-snug line-clamp-2">
-              {hp.verifiedBuyersLabel || 'Verified Importers'}
-            </div>
-          </div>
-          <div className="p-3 sm:p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 text-center flex flex-col justify-center min-w-0">
-            <div className="text-lg sm:text-xl lg:text-2xl font-black text-amber-400 font-mono tracking-tight break-words truncate">
-              {hp.activeSuppliersCount || '12,500+'}
-            </div>
-            <div className="text-[10px] sm:text-xs text-slate-300 font-medium mt-1 leading-snug line-clamp-2">
-              {hp.activeSuppliersLabel || 'Audited Factories'}
-            </div>
+            <span className="text-white/30 hidden sm:inline">•</span>
+            <button
+              onClick={() => onOpenLiveTool('incoterms')}
+              className="flex items-center gap-1.5 text-xs text-sky-300 hover:text-white transition-colors bg-blue-950/40 px-3.5 py-1.5 rounded-full border border-blue-500/30 cursor-pointer shadow-xs"
+            >
+              <Globe2 className="w-3.5 h-3.5" />
+              <span>FOB / CIF Landed Cost &amp; Freight Calculator</span>
+            </button>
           </div>
         </div>
       </div>

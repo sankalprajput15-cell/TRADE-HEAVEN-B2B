@@ -120,78 +120,78 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       </div>
 
       {/* 4. VERIFIED FACTORY EXPORTERS SHOWCASE */}
-      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-9 lg:p-10 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-slate-50/90 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-10 space-y-6 relative overflow-hidden border border-slate-200 shadow-sm">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30 mb-2">
-              <Award className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200 mb-2">
+              <Award className="w-3.5 h-3.5 text-blue-600" />
               <span>Audited Global Manufacturers (ISO 9001, CE, TÜV)</span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-black text-white">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
               Featured Verified Supplier Storefronts
             </h3>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl">
+            <p className="text-xs text-slate-600 mt-1 max-w-xl">
               Inspect on-site factory audit certificates, production line capacity, and escrow limits of premier export partners.
             </p>
           </div>
 
           <button
             onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
-            className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold flex items-center gap-2 transition-colors shrink-0 cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 shadow-sm cursor-pointer"
           >
             <span>Explore All 480k+ Suppliers</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
           {MOCK_COMPANIES.map(company => (
             <div
               key={company.id}
               onClick={() => onOpenStorefront(company.id)}
-              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-amber-400 rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white hover:bg-white border border-slate-200 hover:border-blue-500 rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-xs hover:shadow-md"
             >
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <SafeImage
                     src={company.logoUrl}
                     alt={company.companyName}
-                    className="w-12 h-12 rounded-xl object-cover border border-white/20 bg-white shrink-0"
+                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-50 shrink-0"
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-bold">
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                         {company.tier}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">{company.country}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{company.country}</span>
                     </div>
-                    <div className="font-bold text-sm text-white group-hover:text-amber-300 transition-colors truncate mt-0.5">
+                    <div className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-0.5">
                       {company.companyName}
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-normal">
                   {company.description}
                 </p>
 
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/80 text-xs">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-400">Escrow Limit:</span>
-                    <div className="font-mono font-bold text-emerald-400">
+                    <span className="text-[10px] text-slate-500">Escrow Limit:</span>
+                    <div className="font-mono font-bold text-emerald-600">
                       ${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k USD
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400">Factory Size:</span>
-                    <div className="font-bold text-slate-200">
+                    <span className="text-[10px] text-slate-500">Factory Size:</span>
+                    <div className="font-bold text-slate-800">
                       {company.factorySizeSqM.toLocaleString()} m²
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-700/80 flex items-center justify-between text-xs text-amber-300 font-bold">
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-semibold">
                 <span>View Factory Audit &amp; Catalog</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -287,19 +287,17 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       </div>
 
       {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-6 sm:p-10 border border-blue-800/80 shadow-2xl text-white relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        
+      <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-200 shadow-sm text-slate-900 relative overflow-hidden">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
           <div className="space-y-2.5 max-w-2xl text-center lg:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>100% Free Registration • Real &amp; Genuine Partner Vetting</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold uppercase tracking-wider">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>100% Free Registration • Verified Partner Vetting</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-              Ready to Board with Us? Connect with <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-emerald-300">Audited Factories &amp; Real Buyers</span>
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
+              Ready to Board with Us? Connect with <span className="text-blue-600">Audited Factories &amp; Verified Buyers</span>
             </h3>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
               Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss escrow protection, and direct wholesale pricing.
             </p>
           </div>
@@ -307,7 +305,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full lg:w-auto">
             <button
               onClick={() => onNavigate('ONBOARD_WITH_US')}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition-all cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Onboard / Work With Us</span>
@@ -315,7 +313,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             </button>
             <button
               onClick={() => onNavigate('POST_BUY_REQUIREMENT')}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-white/20 transition-all cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-300 shadow-xs transition-all cursor-pointer"
             >
               <span>Post Free Buy RFQ</span>
             </button>
@@ -327,61 +325,61 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       <DynamicFaqSection onOpenContactModal={onOpenCreateRfq} />
 
       {/* 7. TRADE HEAVEN TRUST & ESCROW RAIL INFRASTRUCTURE */}
-      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-9 lg:p-12 space-y-8 shadow-xl">
-        <div className="max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+      <div className="bg-gradient-to-b from-slate-50 via-slate-50/80 to-blue-50/30 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-12 space-y-8 shadow-sm border border-slate-200 relative overflow-hidden">
+        <div className="relative z-10 max-w-3xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
             <span>Escrow &amp; Compliance Guarantee</span>
           </div>
-          <h3 className="text-2xl sm:text-3xl font-black text-white">
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
             Why Enterprise Importers &amp; Factories Choose Trade Heaven
           </h3>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
             Eliminating international trade risk through certified multi-currency escrow vaults, third-party SGS factory inspections, and automated Proforma Invoice (P/I) reconciliation.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-5 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 space-y-2.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold">
-              <ShieldCheck className="w-6 h-6" />
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-white">100% Escrow Protection</h4>
-            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+            <h4 className="font-bold text-base text-slate-900">100% Escrow Protection</h4>
+            <p className="text-xs text-slate-600 leading-relaxed font-normal">
               Buyer deposits are held in neutral Swiss escrow vaults and only released upon certified Bill of Lading (B/L) and SGS pre-shipment sign-off.
             </p>
           </div>
 
-          <div className="p-5 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 space-y-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold">
-              <Building2 className="w-6 h-6" />
+          <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs hover:shadow-md hover:border-blue-300 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold">
+              <Building2 className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-white">Factory On-Site Audits</h4>
-            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+            <h4 className="font-bold text-base text-slate-900">Factory On-Site Audits</h4>
+            <p className="text-xs text-slate-600 leading-relaxed font-normal">
               Every Gold and VIP supplier undergoes strict legal KYC registration, environmental compliance, and physical manufacturing capacity verification.
             </p>
           </div>
 
-          <div className="p-5 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 space-y-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold">
-              <Headphones className="w-6 h-6" />
+          <div className="p-6 bg-white rounded-2xl border border-slate-200 space-y-3 shadow-xs hover:shadow-md hover:border-blue-300 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center font-bold">
+              <Headphones className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-white">Dedicated Trade Managers</h4>
-            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+            <h4 className="font-bold text-base text-slate-900">Dedicated Trade Managers</h4>
+            <p className="text-xs text-slate-600 leading-relaxed font-normal">
               Human-to-Human (H2H) trade specialists assist with Incoterms 2020 compliance, sea freight container booking, and customs clearance mediation.
             </p>
           </div>
         </div>
 
         {/* WhatsApp & Sourcing Assistance Strip */}
-        <div className="p-4 bg-emerald-950/40 rounded-2xl border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative z-10 p-5 bg-white rounded-2xl border border-emerald-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-md">
+            <div className="w-11 h-11 rounded-2xl bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-md">
               <MessageCircle className="w-6 h-6" />
             </div>
             <div>
-              <div className="font-bold text-sm text-white">Need Urgent Sourcing or Factory Matchmaking?</div>
-              <div className="text-xs text-emerald-300">Connect directly with our senior trade desk on WhatsApp: +91 8532934479</div>
+              <div className="font-bold text-sm text-slate-900">Need Urgent Sourcing or Factory Matchmaking?</div>
+              <div className="text-xs text-emerald-700 font-semibold mt-0.5">Connect directly with our senior trade desk on WhatsApp: +91 8532934479</div>
             </div>
           </div>
 

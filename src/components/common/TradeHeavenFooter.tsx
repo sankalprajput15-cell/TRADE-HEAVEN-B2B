@@ -78,8 +78,8 @@ export const TradeHeavenFooter: React.FC<Props> = ({
   return (
     <footer id="trade-heaven-global-footer" className="relative mt-16 bg-slate-950 text-slate-400 text-xs border-t border-slate-800 group">
       
-      {/* Live Edit Mode Trigger Button */}
-      {isLiveEditMode && (
+      {/* Live Edit Mode Trigger Button (Strictly Admin / Creator Only) */}
+      {isAdmin && isLiveEditMode && (
         <button
           type="button"
           onClick={() => openQuickEdit('FOOTER')}

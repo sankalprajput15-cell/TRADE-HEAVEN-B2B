@@ -28,7 +28,7 @@ export const LiveSectionEditModal: React.FC<Props> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const auth = isUserAuthorized(currentUser);
-  const isAdmin = currentUser?.role === 'ADMIN' || auth.isSuperAdmin || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net';
+  const isAdmin = auth.isAuthorized;
 
   React.useEffect(() => {
     setFormData(siteContent);

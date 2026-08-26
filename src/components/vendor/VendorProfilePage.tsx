@@ -92,6 +92,12 @@ export const VendorProfilePage: React.FC<Props> = ({
   // Media Management Studio state
   const [isMediaStudioOpen, setIsMediaStudioOpen] = useState(false);
 
+  const isAuthorizedToEdit = Boolean(
+    currentUser?.role === 'ADMIN' ||
+    (currentUser?.email && ['sankalprajput15@gmail.com', 'admin@tradeheaven.net', 'yr943334@gmail.com'].includes(currentUser.email.toLowerCase())) ||
+    (currentUser?.email && profile.contactEmail && currentUser.email.toLowerCase() === profile.contactEmail.toLowerCase())
+  );
+
   // Lightbox Modal state
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; subtitle?: string } | null>(null);
 
@@ -187,14 +193,16 @@ export const VendorProfilePage: React.FC<Props> = ({
 
           {/* Top Floating Actions */}
           <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-            <button
-              onClick={() => setIsMediaStudioOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white font-bold text-xs backdrop-blur-md border border-white/20 shadow-lg transition-all cursor-pointer hover:scale-105"
-              title="Manage Media, Logos, Certificates &amp; Factory Photos"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Manage Media Studio</span>
-            </button>
+            {isAuthorizedToEdit && (
+              <button
+                onClick={() => setIsMediaStudioOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white font-bold text-xs backdrop-blur-md border border-white/20 shadow-lg transition-all cursor-pointer hover:scale-105"
+                title="Manage Media, Logos, Certificates &amp; Factory Photos"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Manage Media Studio</span>
+              </button>
+            )}
 
             {isModalView && onCloseModal && (
               <button
@@ -379,13 +387,15 @@ export const VendorProfilePage: React.FC<Props> = ({
           </button>
         </div>
 
-        <button
-          onClick={() => setIsMediaStudioOpen(true)}
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
-        >
-          <Sparkles className="w-3 h-3 text-amber-600" />
-          <span>Edit Assets</span>
-        </button>
+        {isAuthorizedToEdit && (
+          <button
+            onClick={() => setIsMediaStudioOpen(true)}
+            className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-3 h-3 text-amber-600" />
+            <span>Edit Assets</span>
+          </button>
+        )}
       </div>
 
       {/* 3. MAIN BODY WITH STICKY SIDEBAR LEAD GENERATOR */}
@@ -702,13 +712,15 @@ export const VendorProfilePage: React.FC<Props> = ({
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => setIsMediaStudioOpen(true)}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Upload Certificate</span>
-                  </button>
+                  {isAuthorizedToEdit && (
+                    <button
+                      onClick={() => setIsMediaStudioOpen(true)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Upload Certificate</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Certificates Grid with Lightbox Zoom */}
@@ -835,13 +847,15 @@ export const VendorProfilePage: React.FC<Props> = ({
                     Factory Production Floor Tour Gallery ({(profile.factoryDetails?.tourGallery || []).length} Photos)
                   </h3>
 
-                  <button
-                    onClick={() => setIsMediaStudioOpen(true)}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Add Photo</span>
-                  </button>
+                  {isAuthorizedToEdit && (
+                    <button
+                      onClick={() => setIsMediaStudioOpen(true)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Add Photo</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
