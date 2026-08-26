@@ -29,18 +29,29 @@ jobs:
           cp api.php dist/ 2>/dev/null || true
           cp .htaccess dist/ 2>/dev/null || true
 
+      - name: 🧹 Sanitize FTP Server Hostname
+        run: |
+          RAW_SERVER="${{ secrets.FTP_SERVER }}"
+          # Trim leading/trailing whitespace
+          CLEAN_SERVER="$(echo -n "$RAW_SERVER" | xargs)"
+          # Remove protocol prefixes
+          CLEAN_SERVER="${CLEAN_SERVER#ftp://}"
+          CLEAN_SERVER="${CLEAN_SERVER#ftps://}"
+          CLEAN_SERVER="${CLEAN_SERVER#https://}"
+          CLEAN_SERVER="${CLEAN_SERVER#http://}"
+          # Remove trailing slashes and any path segments
+          CLEAN_SERVER="${CLEAN_SERVER%%/*}"
+          echo "CLEAN_FTP_SERVER=$CLEAN_SERVER" >> $GITHUB_ENV
+
       - name: 🚀 Sync Files via FTP to BigRock
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          # NOTE: In GitHub Settings -> Secrets -> Actions:
-          # FTP_SERVER must be raw host/IP only (e.g. 'ftp.tradeheaven.net' or '103.xxx.xxx.xxx') WITHOUT 'ftp://' or 'http://'
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ env.CLEAN_FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
-          protocol: ftp
+          server-dir: public_html/
           local-dir: ./dist/
-          server-dir: ./public_html/
+          protocol: ftp
+          port: 21
           dangerous-clean-slate: false
           security: loose
-
