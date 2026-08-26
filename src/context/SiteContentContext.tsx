@@ -202,15 +202,9 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } catch {}
 
-    // Default active logged-in session: Master Administrator
-    const initialToken = securityService.generateSessionToken(DEFAULT_ADMIN_USER);
-    const defaultUserWithToken = { ...DEFAULT_ADMIN_USER, token: initialToken };
-    try {
-      localStorage.setItem('th_session_jwt_token', initialToken);
-      localStorage.setItem('th_session_user', JSON.stringify(defaultUserWithToken));
-      localStorage.setItem('tradeheaven_user', JSON.stringify(defaultUserWithToken));
-    } catch {}
-    return defaultUserWithToken;
+    // By default, visitors start in a clean logged-out guest state.
+    // They only log in when they explicitly sign in or restore their existing stored credentials.
+    return null;
   });
 
   useEffect(() => {
