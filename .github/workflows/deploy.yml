@@ -1,4 +1,4 @@
-name: Auto Deploy to BigRock
+name: Auto Deploy to BigRock cPanel
 
 on:
   push:
@@ -24,19 +24,23 @@ jobs:
           npm ci || npm install
           npm run build
 
-      - name: 📄 Copy api.php into dist
+      - name: 📄 Copy api.php & .htaccess into dist
         run: |
           cp api.php dist/ 2>/dev/null || true
+          cp .htaccess dist/ 2>/dev/null || true
 
-      - name: 🚀 Sync Files via FTP
+      - name: 🚀 Sync Files via FTP to BigRock
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
+          # NOTE: In GitHub Settings -> Secrets -> Actions:
+          # FTP_SERVER must be raw host/IP only (e.g. 'ftp.tradeheaven.net' or '103.xxx.xxx.xxx') WITHOUT 'ftp://' or 'http://'
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           protocol: ftp
           local-dir: ./dist/
-          server-dir: /
+          server-dir: ./public_html/
           dangerous-clean-slate: false
           security: loose
+
