@@ -180,6 +180,16 @@ const MainApp: React.FC = () => {
     };
   }, []);
 
+  // Guard against unauthenticated visitors accessing admin views directly
+  useEffect(() => {
+    const adminViews: ActiveView[] = ['CLIENT_ADMIN', 'PLAN_PRICING_ADMIN', 'CMS_MANAGEMENT'];
+    if (adminViews.includes(activeView) && (!currentUser || !isAdmin)) {
+      setActiveView('HOMEPAGE');
+      setAuthModalMode('LOGIN');
+      setIsAuthModalOpen(true);
+    }
+  }, [activeView, currentUser, isAdmin]);
+
   // Handlers
   const handleSelectProduct = (product: Product) => {
     setSelectedProduct(product);
@@ -354,7 +364,23 @@ const MainApp: React.FC = () => {
       return;
     }
     if (target === 'CLIENT_PORTAL' || target === 'CLIENT_ADMIN' || target === 'ADMIN_PORTAL') {
+      if (!currentUser || !isAdmin) {
+        setActiveView('HOMEPAGE');
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
       setActiveView('CLIENT_ADMIN');
+      return;
+    }
+    if (target === 'PLAN_PRICING_ADMIN' || target === 'PRICING_ADMIN') {
+      if (!currentUser || !isAdmin) {
+        setActiveView('HOMEPAGE');
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
+      setActiveView('PLAN_PRICING_ADMIN');
       return;
     }
     if (target === 'TRADE_ESCROW' || target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
@@ -398,6 +424,12 @@ const MainApp: React.FC = () => {
       return;
     }
     if (target === 'CMS_MANAGEMENT' || target === 'CMS' || target === 'SITE_EDITOR') {
+      if (!currentUser || !isAdmin) {
+        setActiveView('HOMEPAGE');
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
       setActiveView('CMS_MANAGEMENT');
       return;
     }
@@ -436,7 +468,7 @@ const MainApp: React.FC = () => {
         selectedCurrency={selectedCurrency}
         onCurrencyChange={setSelectedCurrency}
         currentUser={currentUser}
-        onLogout={() => setCurrentUser(null)}
+        onLogout={() => logout()}
         onOpenAuthModal={() => {
           setAuthModalMode('LOGIN');
           setIsAuthModalOpen(true);
