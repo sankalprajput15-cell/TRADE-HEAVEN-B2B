@@ -93,7 +93,7 @@ export const VendorProfilePage: React.FC<Props> = ({
 
   const isAuthorizedToEdit = Boolean(
     currentUser?.role === 'ADMIN' ||
-    (currentUser?.email && ['sankalprajput15@gmail.com', 'admin@tradeheaven.net', 'yr943334@gmail.com'].includes(currentUser.email.toLowerCase())) ||
+    currentUser?.isVerifiedAdmin === true ||
     (currentUser?.email && profile.contactEmail && currentUser.email.toLowerCase() === profile.contactEmail.toLowerCase())
   );
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
 import { 
   ActiveView, 
@@ -63,17 +64,19 @@ import { Loader2 } from 'lucide-react';
 const MainApp: React.FC = () => {
   const { 
     currentUser, 
-    setCurrentUser, 
+    setCurrentUser,
+    isAuthenticated,
+    isAdmin,
+    logout
+  } = useAuth();
+
+  const { 
     siteContent,
     activeQuickEditSection,
-    closeQuickEdit,
-    isUserAuthorized
+    closeQuickEdit
   } = useSiteContent();
 
-  const auth = isUserAuthorized(currentUser);
-  const isAdmin = auth.isAuthorized;
-
-  // Navigation & Currency State
+  // Navigation & Currency State - Strictly defaults to public marketplace landing
   const [activeView, setActiveView] = useState<ActiveView>('HOMEPAGE');
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
 
@@ -849,20 +852,10 @@ const MainApp: React.FC = () => {
         initialMode={authModalMode}
         onNavigate={handleNavigate}
         onLogin={user => {
-          try {
-            localStorage.setItem('tradeheaven_user', JSON.stringify(user));
-            localStorage.setItem('th_session_user', JSON.stringify(user));
-          } catch {}
           setCurrentUser(user);
         }}
         onLogout={() => {
-          try {
-            localStorage.removeItem('tradeheaven_user');
-            localStorage.removeItem('th_session_user');
-            localStorage.removeItem('th_session_jwt_token');
-            localStorage.removeItem('tradeheaven_auth_user');
-          } catch {}
-          setCurrentUser(null);
+          logout();
         }}
       />
 
@@ -892,9 +885,11 @@ const MainApp: React.FC = () => {
 export default function App() {
   return (
     <GlobalErrorBoundary fallbackTitle="TradeHeaven Marketplace Recovery">
-      <SiteContentProvider>
-        <MainApp />
-      </SiteContentProvider>
+      <AuthProvider>
+        <SiteContentProvider>
+          <MainApp />
+        </SiteContentProvider>
+      </AuthProvider>
     </GlobalErrorBoundary>
   );
 }
