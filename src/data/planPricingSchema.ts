@@ -4,7 +4,7 @@
  */
 
 export const PRISMA_SCHEMA_CODE = `// =========================================================================
-// Prisma Schema Definition for Gemini AI Studio SaaS Plan & Pricing Engine
+// Prisma Schema Definition for SaaS Plan & Pricing Engine
 // =========================================================================
 
 datasource db {
@@ -236,7 +236,7 @@ model StripeSyncLog {
 
 export const SQL_DDL_CODE = `-- =========================================================================
 -- PostgreSQL / Cloud SQL Relational DDL & Check Constraints
--- Gemini AI Studio SaaS Plan & Pricing Management
+-- SaaS Plan & Pricing Management
 -- =========================================================================
 
 -- 1. Create Enums

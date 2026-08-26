@@ -29,6 +29,8 @@ export interface GeminiModelMeta {
   isThinkingModel?: boolean;
 }
 
+export type PlanCategory = 'API_SAAS' | 'SUPPLIER_MEMBERSHIP' | 'BUYER_MEMBERSHIP';
+
 export interface SaaSPlan {
   id: string;
   name: string;
@@ -38,6 +40,9 @@ export interface SaaSPlan {
   tierBadge: string;
   isPopular?: boolean;
   displayOrder: number;
+  category?: PlanCategory;
+  targetAudience?: string;
+  featuresList?: string[]; // Direct list of bullet points for membership tiers
   
   // Billing & Pricing
   monthlyPriceUsd: number;

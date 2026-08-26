@@ -11,7 +11,6 @@ import {
   Zap, 
   Save, 
   Check, 
-  Sparkles,
   Info,
   Clock
 } from 'lucide-react';
@@ -80,7 +79,7 @@ export const ModelRateLimitsMatrix: React.FC<ModelRateLimitsMatrixProps> = ({
           </div>
           <div>
             <h3 className="text-base font-black text-white flex items-center gap-2">
-              Gemini Model Dynamic Rate Limiting &amp; Routing Engine
+              Model Dynamic Rate Limiting &amp; Routing Engine
             </h3>
             <p className="text-xs text-slate-400">
               Configure fine-grained Request Per Minute (RPM), Daily caps (RPD), and Concurrency overrides per tier and model.
@@ -139,7 +138,7 @@ export const ModelRateLimitsMatrix: React.FC<ModelRateLimitsMatrixProps> = ({
             </span>
           </div>
           <span className="text-[11px] text-slate-500">
-            {modelsCatalog.length} Supported Google AI Models
+            {modelsCatalog.length} Supported Platform Models
           </span>
         </div>
 
@@ -147,7 +146,7 @@ export const ModelRateLimitsMatrix: React.FC<ModelRateLimitsMatrixProps> = ({
           <table className="w-full text-xs text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                <th className="py-3 px-4">Google AI Model</th>
+                <th className="py-3 px-4">Model Name &amp; ID</th>
                 <th className="py-3 px-4">Allowed in Plan</th>
                 <th className="py-3 px-4">RPM Override</th>
                 <th className="py-3 px-4">RPD Override</th>
@@ -177,7 +176,7 @@ export const ModelRateLimitsMatrix: React.FC<ModelRateLimitsMatrixProps> = ({
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
                           isModelAllowed ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'
                         }`}>
-                          <Sparkles className="w-4 h-4" />
+                          <Cpu className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="font-black text-slate-900">{model.name}</div>

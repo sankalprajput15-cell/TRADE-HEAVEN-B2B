@@ -576,6 +576,7 @@ const MainApp: React.FC = () => {
                   <PremiumServicesView
                     selectedCurrency={selectedCurrency}
                     onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                    onNavigateToAdmin={() => setActiveView('PLAN_PRICING_ADMIN')}
                   />
                 );
 

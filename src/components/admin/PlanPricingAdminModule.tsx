@@ -6,7 +6,8 @@ import {
   StripeSyncEvent, 
   GeminiModelMeta, 
   FeatureFlagDefinition,
-  UserRole
+  UserRole,
+  PlanCategory
 } from '../../types/planPricingTypes';
 import { planPricingService } from '../../services/planPricingService';
 import { PlanEditModal } from './planPricing/PlanEditModal';
@@ -15,7 +16,6 @@ import { ModelRateLimitsMatrix } from './planPricing/ModelRateLimitsMatrix';
 import { StripeGatewayHub } from './planPricing/StripeGatewayHub';
 import { SchemaInspector } from './planPricing/SchemaInspector';
 import { 
-  Sparkles, 
   Plus, 
   Search, 
   Filter, 
@@ -38,7 +38,12 @@ import {
   Cpu, 
   ExternalLink,
   ShieldCheck,
-  Check
+  Check,
+  CreditCard,
+  Factory,
+  ShoppingBag,
+  Terminal,
+  Sparkles
 } from 'lucide-react';
 
 interface PlanPricingAdminModuleProps {
@@ -64,6 +69,7 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
   // Filter & Search
   const [activeSubTab, setActiveSubTab] = useState<AdminSubTab>('PLANS_CRUD');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals & Interactivity
@@ -167,14 +173,19 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
     showNotice('SUCCESS', 'Model rate limit overrides updated.');
   };
 
-  // Filter plans based on search query
+  // Filter plans based on search query and category
   const displayedPlans = plans.filter(p => {
+    if (categoryFilter !== 'ALL') {
+      const planCat = p.category || 'API_SAAS';
+      if (planCat !== categoryFilter) return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = p.name.toLowerCase().includes(q);
       const matchSlug = p.slug.toLowerCase().includes(q);
       const matchDesc = (p.description || '').toLowerCase().includes(q);
-      if (!matchName && !matchSlug && !matchDesc) return false;
+      const matchAudience = (p.targetAudience || '').toLowerCase().includes(q);
+      if (!matchName && !matchSlug && !matchDesc && !matchAudience) return false;
     }
     return true;
   });
@@ -193,14 +204,13 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                   Admin Management
                 </span>
                 <span className="text-slate-500">/</span>
-                <span className="text-xs font-bold text-slate-300">Google AI Studio &amp; Gemini Access</span>
+                <span className="text-xs font-bold text-slate-300">Model API &amp; SaaS Plans</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-                <Sparkles className="w-6 h-6 text-blue-400" />
                 <span>SaaS Plan &amp; Pricing Management Engine</span>
               </h1>
               <p className="text-xs text-slate-400">
-                Dynamic tier provisioning, Gemini model rate limits, token allocations, and bi-directional Stripe catalog synchronization.
+                Dynamic tier provisioning, model rate limits, token allocations, and bi-directional Stripe catalog synchronization.
               </p>
             </div>
 
@@ -262,7 +272,7 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
               }`}
             >
               <Cpu className="w-4 h-4" />
-              <span>Gemini Model Rate Limits Matrix</span>
+              <span>Model Rate Limits &amp; Routing Matrix</span>
             </button>
 
             <button
@@ -389,31 +399,88 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
           <div className="space-y-4 animate-in fade-in duration-150">
             
             {/* Search & Filter Bar */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  placeholder="Search plan by name, slug or description..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                />
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+              {/* Category Quick Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('ALL')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                    categoryFilter === 'ALL'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>All Categories ({plans.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('SUPPLIER_MEMBERSHIP')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                    categoryFilter === 'SUPPLIER_MEMBERSHIP'
+                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/60'
+                  }`}
+                >
+                  <Factory className="w-3.5 h-3.5" />
+                  <span>Supplier Export Tiers ({plans.filter(p => p.category === 'SUPPLIER_MEMBERSHIP').length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('BUYER_MEMBERSHIP')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                    categoryFilter === 'BUYER_MEMBERSHIP'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200/60'
+                  }`}
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Buyer Procurement Tiers ({plans.filter(p => p.category === 'BUYER_MEMBERSHIP').length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('API_SAAS')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                    categoryFilter === 'API_SAAS'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/60'
+                  }`}
+                >
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span>Developer API &amp; SaaS ({plans.filter(p => !p.category || p.category === 'API_SAAS').length})</span>
+                </button>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-xs font-bold text-slate-600">Status:</span>
-                <select
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="ALL">All Statuses ({plans.length})</option>
-                  <option value="ACTIVE">Active Only</option>
-                  <option value="ARCHIVED">Archived Only</option>
-                  <option value="DRAFT">Drafts</option>
-                </select>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 border-t border-slate-100">
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search plan by name, slug, target audience..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-600">Status:</span>
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="ALL">All Statuses ({plans.length})</option>
+                    <option value="ACTIVE">Active Only</option>
+                    <option value="ARCHIVED">Archived Only</option>
+                    <option value="DRAFT">Drafts</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -424,9 +491,9 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-black uppercase tracking-wider text-slate-500">
                       <th className="py-3 px-4">Order</th>
-                      <th className="py-3 px-4">Plan Name &amp; Slug</th>
+                      <th className="py-3 px-4">Plan &amp; Realm</th>
                       <th className="py-3 px-4">Pricing</th>
-                      <th className="py-3 px-4">Token Quota / Mo</th>
+                      <th className="py-3 px-4">Key Inclusions / Quota</th>
                       <th className="py-3 px-4">Rate Limits</th>
                       <th className="py-3 px-4">Allowed Models</th>
                       <th className="py-3 px-4">Subscribers</th>
@@ -443,7 +510,7 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                           #{plan.displayOrder || idx + 1}
                         </td>
 
-                        {/* Name & Slug */}
+                        {/* Name & Realm */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <span className="font-black text-slate-900 text-sm">{plan.name}</span>
@@ -453,7 +520,22 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                               </span>
                             )}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono">{plan.slug}</div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-slate-400 font-mono">{plan.slug}</span>
+                            <span className={`text-[9px] font-black px-1.5 py-0.2 rounded ${
+                              plan.category === 'SUPPLIER_MEMBERSHIP' ? 'bg-amber-100 text-amber-800' :
+                              plan.category === 'BUYER_MEMBERSHIP' ? 'bg-blue-100 text-blue-800' :
+                              'bg-purple-100 text-purple-800'
+                            }`}>
+                              {plan.category === 'SUPPLIER_MEMBERSHIP' ? 'Supplier Plan' :
+                               plan.category === 'BUYER_MEMBERSHIP' ? 'Buyer Plan' : 'API SaaS'}
+                            </span>
+                          </div>
+                          {plan.targetAudience && (
+                            <div className="text-[10px] text-slate-500 italic mt-0.5 line-clamp-1">
+                              {plan.targetAudience}
+                            </div>
+                          )}
                         </td>
 
                         {/* Pricing */}
@@ -466,14 +548,28 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                           </div>
                         </td>
 
-                        {/* Token Quota */}
+                        {/* Inclusions / Token Quota */}
                         <td className="py-3 px-4">
-                          <div className="font-black text-blue-600 font-mono">
-                            {(plan.tokenQuotaMonthly / 1000000).toLocaleString()}M tokens
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            {(plan.maxContextWindow / 1000).toLocaleString()}k max context
-                          </div>
+                          {plan.featuresList && plan.featuresList.length > 0 ? (
+                            <div className="space-y-0.5 max-w-[220px]">
+                              <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-indigo-500" />
+                                <span>{plan.featuresList.length} Highlights</span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 truncate" title={plan.featuresList.join(' • ')}>
+                                {plan.featuresList[0]}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="font-black text-blue-600 font-mono">
+                                {(plan.tokenQuotaMonthly / 1000000).toLocaleString()}M tokens
+                              </div>
+                              <div className="text-[10px] text-slate-400">
+                                {(plan.maxContextWindow / 1000).toLocaleString()}k max context
+                              </div>
+                            </div>
+                          )}
                         </td>
 
                         {/* Rate Limits */}
@@ -624,7 +720,7 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
           <div className="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
+                <CreditCard className="w-5 h-5 text-blue-600" />
                 <h3 className="text-base font-black text-slate-900">Simulated Stripe Checkout</h3>
               </div>
               <button onClick={() => setCheckoutModalPlan(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">

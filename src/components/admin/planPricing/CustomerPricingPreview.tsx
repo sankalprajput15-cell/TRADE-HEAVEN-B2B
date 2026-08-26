@@ -6,7 +6,6 @@ import {
 } from '../../../types/planPricingTypes';
 import { 
   Check, 
-  Sparkles, 
   Zap, 
   Cpu, 
   ShieldCheck, 
@@ -14,11 +13,11 @@ import {
   Terminal, 
   Code, 
   Brain, 
-  ArrowRight,
-  HelpCircle,
-  Clock,
-  Layers,
-  ChevronDown
+  ArrowRight, 
+  HelpCircle, 
+  Clock, 
+  Layers, 
+  ChevronDown 
 } from 'lucide-react';
 
 interface CustomerPricingPreviewProps {
@@ -50,11 +49,11 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
       {/* Header & Billing Cycle Switch */}
       <div className="text-center space-y-4 max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-black uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" />
+          <Zap className="w-3.5 h-3.5" />
           <span>Production Ready Infrastructure</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-          Flexible Pricing for Gemini AI Studio &amp; LLM Builders
+          Flexible Pricing for Enterprise SaaS &amp; API Builders
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
           Scale seamlessly from free local prototyping to high-throughput multimodal pipelines with 2,000,000 token context windows.
@@ -110,7 +109,7 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
               {/* Popular Badge */}
               {plan.isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+                  <Zap className="w-3 h-3" />
                   <span>Most Popular</span>
                 </div>
               )}
@@ -337,7 +336,7 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
                 </tr>
 
                 <tr>
-                  <td className="py-3 px-4 font-bold text-slate-900">Gemini 2.5 Pro Access</td>
+                  <td className="py-3 px-4 font-bold text-slate-900">Flagship Pro Model Access</td>
                   {activePlans.map(p => (
                     <td key={p.id} className="py-3 px-4 text-center">
                       {p.allowedModels.includes('gemini-2.5-pro') ? (
@@ -350,7 +349,7 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
                 </tr>
 
                 <tr>
-                  <td className="py-3 px-4 font-bold text-slate-900">Flash Thinking (Reasoning Engine)</td>
+                  <td className="py-3 px-4 font-bold text-slate-900">Deep Reasoning &amp; CoT Engine</td>
                   {activePlans.map(p => (
                     <td key={p.id} className="py-3 px-4 text-center">
                       {p.allowedModels.includes('gemini-2.0-flash-thinking-exp') ? (

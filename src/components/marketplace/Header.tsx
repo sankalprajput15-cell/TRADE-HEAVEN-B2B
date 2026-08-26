@@ -39,7 +39,7 @@ import {
   PhoneCall,
   Mail,
   BadgeCheck,
-  Sparkles
+  Layers
 } from 'lucide-react';
 
 interface Props {
@@ -567,11 +567,11 @@ export const Header: React.FC<Props> = ({
                       onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
                       className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
                     >
-                      <Sparkles className="w-4 h-4 text-blue-600" />
+                      <Layers className="w-4 h-4 text-blue-600" />
                       <div>
                         <div className="text-amber-900 font-bold flex items-center gap-1.5">
                           <span>Plan &amp; Pricing Engine</span>
-                          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[9px] font-black uppercase">Gemini</span>
+                          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[9px] font-black uppercase">SaaS</span>
                         </div>
                         <div className="text-[10px] text-slate-500 font-normal">Quotas, rate limits, models &amp; Stripe</div>
                       </div>
@@ -795,10 +795,10 @@ export const Header: React.FC<Props> = ({
                 className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-950 border border-blue-200 flex items-center justify-between cursor-pointer"
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <Layers className="w-3.5 h-3.5 text-blue-600" />
                   <span>Plan &amp; Pricing Engine</span>
                 </div>
-                <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">Gemini</span>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">SaaS</span>
               </button>
             )}
             {isAdmin && (
