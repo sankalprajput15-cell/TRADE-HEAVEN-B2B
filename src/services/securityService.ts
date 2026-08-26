@@ -1,4 +1,4 @@
-import { AuthUser, JWTPayload, SecurityAuditLog, UserRole, MembershipStatus, AccountStatus, CompanyProfile, RfqRequirement, SupplierTier } from '../types';
+import { AuthUser, JWTPayload, SecurityAuditLog, UserRole, MembershipStatus, AccountStatus, CompanyProfile, DetailedBuyerProfile, RfqRequirement, SupplierTier } from '../types';
 
 export const PROTECTED_SYSTEM_FIELDS = [
   'role',
@@ -352,6 +352,30 @@ class SecurityService {
       ...rfq,
       buyerEmail: rfq.buyerEmail ? this.maskEmailAddress(rfq.buyerEmail) : undefined,
       buyerPhone: rfq.buyerPhone ? this.maskPhoneNumber(rfq.buyerPhone) : undefined,
+      isContactMasked: true
+    };
+  }
+
+  public gateBuyerProfile(
+    buyer: DetailedBuyerProfile,
+    caller: AuthUser | JWTPayload | null
+  ): DetailedBuyerProfile {
+    const canView = this.isAllowedToViewContacts(caller);
+    const isOwner = caller && ('uid' in caller ? caller.uid : caller.id) === buyer.ownerUid;
+
+    if (canView || isOwner) {
+      return {
+        ...buyer,
+        isContactMasked: false
+      };
+    }
+
+    return {
+      ...buyer,
+      contactPhone: this.maskPhoneNumber(buyer.contactPhone),
+      contactEmail: this.maskEmailAddress(buyer.contactEmail),
+      whatsapp: undefined,
+      address: `${buyer.city || 'Verified Trade Center'}, ${buyer.country} [🔒 Full Corporate Address Gated - Premium Members Only]`,
       isContactMasked: true
     };
   }

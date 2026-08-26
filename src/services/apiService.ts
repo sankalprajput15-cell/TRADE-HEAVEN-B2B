@@ -1,7 +1,9 @@
 import { 
   Product, 
   RfqRequirement, 
+  SupplierQuote,
   CompanyProfile, 
+  DetailedBuyerProfile,
   BankAccountDetails, 
   AuthUser,
   CmsAuthorizedUser,
@@ -11,14 +13,16 @@ import {
   AccountStatus,
   UserRole
 } from '../types';
-import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_COMPANIES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS } from '../data/mockData';
+import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS } from '../data/mockData';
 import { securityService } from './securityService';
 import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
 
 // Storage keys for reactive state persistence
 const USERS_STORAGE_KEY = 'th_registered_users_store';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';
+const BUYERS_STORAGE_KEY = 'th_buyers_store';
 const RFQS_STORAGE_KEY = 'th_rfqs_store';
+const QUOTES_STORAGE_KEY = 'th_quotes_store';
 
 function loadStoredUsers(): Record<string, AuthUser> {
   try {
@@ -48,6 +52,20 @@ function persistStoredSuppliers(suppliers: CompanyProfile[]) {
   } catch {}
 }
 
+function loadStoredBuyers(): DetailedBuyerProfile[] {
+  try {
+    const saved = localStorage.getItem(BUYERS_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return [...MOCK_BUYER_PROFILES];
+}
+
+function persistStoredBuyers(buyers: DetailedBuyerProfile[]) {
+  try {
+    localStorage.setItem(BUYERS_STORAGE_KEY, JSON.stringify(buyers));
+  } catch {}
+}
+
 function loadStoredRfqs(): RfqRequirement[] {
   try {
     const saved = localStorage.getItem(RFQS_STORAGE_KEY);
@@ -62,9 +80,25 @@ function persistStoredRfqs(rfqs: RfqRequirement[]) {
   } catch {}
 }
 
+function loadStoredQuotes(): SupplierQuote[] {
+  try {
+    const saved = localStorage.getItem(QUOTES_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return [...MOCK_QUOTES];
+}
+
+function persistStoredQuotes(quotes: SupplierQuote[]) {
+  try {
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(quotes));
+  } catch {}
+}
+
 let activeUsersStore = loadStoredUsers();
 let activeSuppliersStore = loadStoredSuppliers();
+let activeBuyersStore = loadStoredBuyers();
 let activeRfqsStore = loadStoredRfqs();
+let activeQuotesStore = loadStoredQuotes();
 
 export interface CommodityIndex {
   symbol: string;
@@ -1054,6 +1088,104 @@ export const api = {
   },
 
   // ==========================================
+  // VERIFIED BUYERS DIRECTORY & PROFILES (SERVER-SIDE GATED)
+  // ==========================================
+  async getBuyers(callerUser?: AuthUser | null): Promise<DetailedBuyerProfile[]> {
+    return (activeBuyersStore || []).map(buyer => 
+      securityService.gateBuyerProfile(buyer, callerUser || null)
+    );
+  },
+
+  async getBuyerById(id: string, callerUser?: AuthUser | null): Promise<DetailedBuyerProfile | null> {
+    const matched = (activeBuyersStore || []).find(b => b.id === id);
+    if (!matched) return null;
+    return securityService.gateBuyerProfile(matched, callerUser || null);
+  },
+
+  async updateBuyerProfile(
+    id: string,
+    updates: Partial<DetailedBuyerProfile>,
+    callerUser?: AuthUser | null
+  ): Promise<{ success: boolean; data?: DetailedBuyerProfile; error?: string; message?: string }> {
+    const existing = (activeBuyersStore || []).find(b => b && b.id === id);
+    if (!existing) {
+      return { success: false, error: 'Buyer company profile not found' };
+    }
+
+    // Account Ownership Check (403 Forbidden on UID mismatch unless Admin)
+    const ownership = securityService.enforceOwnership(callerUser || null, existing.ownerUid || 'user-buyer-001', 'Buyer Company Profile');
+    if (!ownership.allowed) {
+      return { success: false, error: ownership.error, message: ownership.error };
+    }
+
+    // Field-Level Write Restrictions Check
+    const fieldValidation = securityService.validateFieldWriteRestrictions(callerUser || null, updates);
+    if (!fieldValidation.allowed) {
+      return { success: false, error: fieldValidation.error, message: fieldValidation.error };
+    }
+
+    const updated = { ...existing, ...fieldValidation.sanitizedData };
+    activeBuyersStore = activeBuyersStore.map(b => b.id === id ? updated : b);
+    persistStoredBuyers(activeBuyersStore);
+
+    securityService.logSecurityEvent({
+      actorUid: callerUser?.id || 'buyer',
+      actorEmail: callerUser?.email || 'buyer@tradeheaven.net',
+      actorRole: callerUser?.role || 'BUYER',
+      action: 'PROFILE_UPDATED',
+      targetResource: `/buyers/${id}`,
+      details: `Updated verified buyer profile fields: ${Object.keys(fieldValidation.sanitizedData).join(', ')}`,
+      status: 'SUCCESS'
+    });
+
+    return { success: true, data: updated, message: 'Buyer profile updated' };
+  },
+
+  async createBuyerProfile(buyer: Partial<DetailedBuyerProfile>, callerUser?: AuthUser | null): Promise<{ success: boolean; data?: DetailedBuyerProfile; message?: string }> {
+    const newBuyer: DetailedBuyerProfile = {
+      id: buyer.id || `buyer-${Date.now()}`,
+      ownerUid: callerUser?.id || 'user-buyer-001',
+      companyName: buyer.companyName || 'Verified Corporate Importer Corp',
+      legalRegistrationNumber: buyer.legalRegistrationNumber || 'US-CORP-91204',
+      dunsNumber: buyer.dunsNumber || '08-552-1190',
+      taxVatNumber: buyer.taxVatNumber || 'EIN-12-3456789',
+      country: buyer.country || callerUser?.country || 'United States',
+      city: buyer.city || 'Chicago',
+      address: buyer.address || 'Trade Center Tower, Suite 100',
+      establishedYear: buyer.establishedYear || 2012,
+      businessType: buyer.businessType || 'Corporate Importer',
+      tier: (callerUser?.role === 'ADMIN' ? buyer.tier : 'FREE') || 'FREE',
+      isVerifiedKYC: callerUser?.role === 'ADMIN' ? (buyer.isVerifiedKYC ?? true) : false,
+      trustScore: 95,
+      responseRate: '98%',
+      avgResponseTime: '< 2 hours',
+      totalEmployees: '250+',
+      annualPurchasingVolumeUsd: buyer.annualPurchasingVolumeUsd || '$25M - $50M',
+      importFrequency: buyer.importFrequency || 'Monthly FCL Shipments',
+      targetCategories: buyer.targetCategories || ['Industrial Machinery & Automation', 'Renewable Energy & Solar'],
+      preferredIncoterms: buyer.preferredIncoterms || ['FOB', 'CIF', 'DDP'],
+      preferredPaymentTerms: buyer.preferredPaymentTerms || ['Trade Assurance Escrow', '30/70 T/T'],
+      activeRfqsCount: 1,
+      completedImportsCount: 15,
+      tradeAssuranceEscrowSecuredUsd: 500000,
+      logoUrl: buyer.logoUrl || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&auto=format&fit=crop&q=80',
+      bannerUrl: buyer.bannerUrl || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80',
+      description: buyer.description || 'Verified enterprise importer and wholesale distributor.',
+      contactPerson: buyer.contactPerson || callerUser?.name || 'Director of Procurement',
+      contactDesignation: buyer.contactDesignation || 'Procurement Lead',
+      contactEmail: buyer.contactEmail || callerUser?.email || 'procure@company.com',
+      contactPhone: buyer.contactPhone || '+1 312 555 0199',
+      whatsapp: buyer.whatsapp || '+1 312 555 0199',
+      warehouses: buyer.warehouses || [],
+      complianceRequirements: buyer.complianceRequirements || ['ISO 9001:2015', 'CE Marking']
+    };
+
+    activeBuyersStore.unshift(newBuyer);
+    persistStoredBuyers(activeBuyersStore);
+    return { success: true, data: newBuyer, message: 'Verified Buyer profile registered' };
+  },
+
+  // ==========================================
   // HOMEPAGE CONFIG & STATS
   // ==========================================
   async getHomepageConfig(): Promise<HomepageConfig> {
@@ -1479,5 +1611,84 @@ export const api = {
         data: []
       };
     }
+  },
+
+  async getQuotesForRfq(rfqId: string): Promise<SupplierQuote[]> {
+    try {
+      activeQuotesStore = loadStoredQuotes();
+      return activeQuotesStore.filter(q => q.rfqId === rfqId);
+    } catch (err) {
+      return MOCK_QUOTES.filter(q => q.rfqId === rfqId);
+    }
+  },
+
+  async getAllQuotes(): Promise<SupplierQuote[]> {
+    try {
+      activeQuotesStore = loadStoredQuotes();
+      return [...activeQuotesStore];
+    } catch {
+      return [...MOCK_QUOTES];
+    }
+  },
+
+  async submitSupplierQuote(quoteData: Partial<SupplierQuote> & { rfqId: string; unitPriceUsd: number }): Promise<{
+    success: boolean;
+    quote: SupplierQuote;
+    message: string;
+  }> {
+    activeQuotesStore = loadStoredQuotes();
+    
+    // Find target RFQ
+    const targetRfq = activeRfqsStore.find(r => r.id === quoteData.rfqId);
+    const targetQty = targetRfq ? targetRfq.targetQuantity : 1000;
+    const totalCargoValue = quoteData.totalAmountUsd || (quoteData.unitPriceUsd * targetQty);
+
+    const newQuote: SupplierQuote = {
+      id: `quote-${Date.now().toString().slice(-6)}`,
+      rfqId: quoteData.rfqId,
+      supplierId: quoteData.supplierId || 'comp-verified-supplier',
+      supplierName: quoteData.supplierName || 'Verified Global Exporter',
+      supplierTier: quoteData.supplierTier || 'GOLD',
+      supplierCountry: quoteData.supplierCountry || 'United States',
+      supplierTrustScore: quoteData.supplierTrustScore || 95,
+      unitPriceUsd: Number(quoteData.unitPriceUsd),
+      totalAmountUsd: Number(totalCargoValue),
+      offeredIncoterm: quoteData.offeredIncoterm || quoteData.incoterm || 'FOB',
+      incoterm: quoteData.incoterm || quoteData.offeredIncoterm || 'FOB',
+      portOfLoading: quoteData.portOfLoading || quoteData.dispatchPort || 'Primary Export Port',
+      dispatchPort: quoteData.dispatchPort || quoteData.portOfLoading || 'Primary Export Port',
+      leadTimeDays: Number(quoteData.leadTimeDays || quoteData.productionLeadTimeDays || 14),
+      productionLeadTimeDays: Number(quoteData.productionLeadTimeDays || quoteData.leadTimeDays || 14),
+      estimatedTransitDays: Number(quoteData.estimatedTransitDays || 21),
+      shippingMethod: quoteData.shippingMethod || 'Ocean Freight (FCL Container)',
+      validityDays: Number(quoteData.validityDays || 30),
+      paymentTerms: quoteData.paymentTerms || '30% T/T Deposit, 70% against B/L copy',
+      sampleOffered: Boolean(quoteData.sampleOffered ?? true),
+      notes: quoteData.notes || quoteData.technicalNotes || 'Factory direct production quote compliant with buyer specifications.',
+      technicalNotes: quoteData.technicalNotes || quoteData.notes || 'Full ISO/CE compliance certificates and quality inspection guarantee included.',
+      submittedDate: new Date().toISOString().split('T')[0],
+      status: 'PENDING'
+    };
+
+    activeQuotesStore.unshift(newQuote);
+    persistStoredQuotes(activeQuotesStore);
+
+    // Update quotes count on the RFQ
+    const rfqIndex = activeRfqsStore.findIndex(r => r.id === quoteData.rfqId);
+    if (rfqIndex !== -1) {
+      activeRfqsStore[rfqIndex].quotesCount = (activeRfqsStore[rfqIndex].quotesCount || 0) + 1;
+      persistStoredRfqs(activeRfqsStore);
+    }
+
+    // Trigger reactive window event for listeners
+    try {
+      window.dispatchEvent(new CustomEvent('tradeheaven_quote_submitted', { detail: { quote: newQuote } }));
+    } catch {}
+
+    return {
+      success: true,
+      quote: newQuote,
+      message: 'Factory quotation successfully submitted and registered in the RFQ Matrix.'
+    };
   }
 };

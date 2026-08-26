@@ -1,6 +1,6 @@
 {
   "name": "Remix Trade Heaven - B2B Marketplace \u0026 Architecture Blueprint",
-  "description": "International B2B trade marketplace, supplier directory, RFQ matching engine, Incoterms calculator, trade tools, and enterprise architecture blueprint.",
+  "description": "International B2B trade marketplace, verified supplier and buyer directories, RFQ matching engine, Incoterms calculator, buyer/supplier subscription plans, and enterprise security architecture.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { RfqRequirement, SupplierQuote, Currency, Incoterm } from '../../types';
-import { MOCK_QUOTES, CURRENCY_RATES } from '../../data/mockData';
+import React, { useState, useEffect, useRef } from 'react';
+import { RfqRequirement, SupplierQuote, Currency, Incoterm, AuthUser } from '../../types';
+import { CURRENCY_RATES } from '../../data/mockData';
+import { api } from '../../services/apiService';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { EmptyState } from '../EmptyState';
 import { 
@@ -9,6 +10,7 @@ import {
   Award, 
   CheckCircle2, 
   Building, 
+  Building2,
   Truck, 
   Layers, 
   ArrowRight, 
@@ -19,7 +21,11 @@ import {
   DollarSign,
   Radio,
   ExternalLink,
-  MessageCircle
+  MessageCircle,
+  Clock,
+  Send,
+  Lock,
+  Crown
 } from 'lucide-react';
 
 interface Props {
@@ -29,6 +35,11 @@ interface Props {
   selectedCurrency: Currency;
   onOpenCreateRfq: () => void;
   onAcceptQuote: (quote: SupplierQuote) => void;
+  onOpenRfqModal?: (rfq: RfqRequirement) => void;
+  onOpenBuyerProfile?: (buyerId: string) => void;
+  onOpenNegotiation?: () => void;
+  currentUser?: AuthUser | null;
+  onOpenUpgradeModal?: () => void;
 }
 
 export const RfqComparisonView: React.FC<Props> = ({
@@ -37,16 +48,55 @@ export const RfqComparisonView: React.FC<Props> = ({
   onSelectRfqId,
   selectedCurrency,
   onOpenCreateRfq,
-  onAcceptQuote
+  onAcceptQuote,
+  onOpenRfqModal,
+  onOpenBuyerProfile,
+  onOpenNegotiation,
+  currentUser = null,
+  onOpenUpgradeModal
 }) => {
   const activeRfq = (rfqs || []).find(r => r.id === selectedRfqId) || (rfqs && rfqs[0]);
-  const relatedQuotes = (MOCK_QUOTES || []).filter(q => q.rfqId === activeRfq?.id);
+  const [quotes, setQuotes] = useState<SupplierQuote[]>([]);
+  const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
+  const comparisonStudioRef = useRef<HTMLDivElement>(null);
 
-  const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
     return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const loadQuotesForActiveRfq = async () => {
+    if (!activeRfq?.id) return;
+    setIsLoadingQuotes(true);
+    try {
+      const data = await api.getQuotesForRfq(activeRfq.id);
+      setQuotes(data || []);
+    } catch (err) {
+      console.error('Error loading quotes:', err);
+    } finally {
+      setIsLoadingQuotes(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQuotesForActiveRfq();
+
+    const handleQuoteSubmitted = () => {
+      loadQuotesForActiveRfq();
+    };
+    window.addEventListener('tradeheaven_quote_submitted', handleQuoteSubmitted);
+    return () => {
+      window.removeEventListener('tradeheaven_quote_submitted', handleQuoteSubmitted);
+    };
+  }, [activeRfq?.id]);
+
+  const handleSelectCard = (rfq: RfqRequirement) => {
+    onSelectRfqId(rfq.id);
+    if (window.innerWidth < 1024 && comparisonStudioRef.current) {
+      comparisonStudioRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -62,7 +112,7 @@ export const RfqComparisonView: React.FC<Props> = ({
             RFQ Sourcing Hub &amp; Quotation Matrix
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-normal">
-            Compare structured supplier bids across FOB unit rates, Incoterms, sea-freight transit times, and payment terms side-by-side.
+            Click any active sourcing tender below to inspect complete technical specifications, review verified factory bids, or submit a competitive quote directly to the buyer.
           </p>
         </div>
 
@@ -104,22 +154,22 @@ export const RfqComparisonView: React.FC<Props> = ({
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                 Active Sourcing Tenders ({rfqs.length})
               </span>
-              <span className="text-[11px] text-slate-500 font-mono">Real-time Feed</span>
+              <span className="text-[11px] text-slate-500 font-mono">Select to View</span>
             </div>
 
             <div className="space-y-2.5">
               {rfqs.map(rfq => {
                 const isSelected = rfq.id === activeRfq?.id;
-                const quotesCount = MOCK_QUOTES.filter(q => q.rfqId === rfq.id).length;
+                const quotesCount = rfq.quotesCount || (rfq.id === activeRfq?.id ? quotes.length : 2);
 
                 return (
                   <div
                     key={rfq.id}
-                    onClick={() => onSelectRfqId(rfq.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                    onClick={() => handleSelectCard(rfq)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer group ${
                       isSelected
-                        ? 'bg-blue-50/70 border-blue-500 shadow-md ring-2 ring-blue-500/20'
-                        : 'bg-white border-slate-200 hover:border-blue-300'
+                        ? 'bg-blue-50/80 border-blue-500 shadow-md ring-2 ring-blue-500/20'
+                        : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-xs'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -130,7 +180,7 @@ export const RfqComparisonView: React.FC<Props> = ({
                           </span>
                           <span className="text-xs font-bold text-slate-500 truncate">{rfq.category}</span>
                         </div>
-                        <h4 className="font-bold text-sm text-slate-900 line-clamp-1">
+                        <h4 className="font-bold text-sm text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
                           {rfq.productName}
                         </h4>
                       </div>
@@ -140,7 +190,7 @@ export const RfqComparisonView: React.FC<Props> = ({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-200 text-xs">
+                    <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-200/80 text-xs">
                       <div>
                         <span className="text-[10px] text-slate-500">Volume Target:</span>
                         <div className="font-mono font-bold text-slate-900 text-[11px]">
@@ -154,6 +204,41 @@ export const RfqComparisonView: React.FC<Props> = ({
                         </div>
                       </div>
                     </div>
+
+                    {/* Direct Action Buttons on Card */}
+                    <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onOpenRfqModal) {
+                            onOpenRfqModal(rfq);
+                          } else {
+                            handleSelectCard(rfq);
+                          }
+                        }}
+                        className="flex-1 py-1.5 px-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-3 h-3 text-blue-600" />
+                        <span>Tender Dossier</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onOpenRfqModal) {
+                            onOpenRfqModal(rfq);
+                          } else {
+                            handleSelectCard(rfq);
+                          }
+                        }}
+                        className="flex-1 py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer"
+                      >
+                        <PlusCircle className="w-3 h-3" />
+                        <span>Quote Bid</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -161,22 +246,27 @@ export const RfqComparisonView: React.FC<Props> = ({
           </div>
 
           {/* Selected RFQ & Comparison Studio Right */}
-          <div className="lg:col-span-8 space-y-6">
+          <div ref={comparisonStudioRef} className="lg:col-span-8 space-y-6">
             {activeRfq ? (
               <>
                 {/* Selected RFQ Header Card */}
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
-                    <div>
-                      <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                        Selected RFQ Tender • {activeRfq.id}
-                      </span>
-                      <h2 className="text-xl font-black text-slate-900 mt-0.5">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                          Active RFQ Tender • {activeRfq.id}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          {quotes.length} Verified Quotations
+                        </span>
+                      </div>
+                      <h2 className="text-xl font-black text-slate-900">
                         {activeRfq.productName}
                       </h2>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border font-mono">
                         Target: <strong>{formatPrice(activeRfq.targetPriceUsd)}</strong> / {activeRfq.quantityUnit}
                       </span>
@@ -192,7 +282,7 @@ export const RfqComparisonView: React.FC<Props> = ({
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <span className="text-slate-500 text-[10px]">Shipping Term:</span>
                       <div className="font-mono font-bold text-slate-900 mt-0.5">{activeRfq.preferredIncoterm}</div>
-                      <div className="text-[10px] text-slate-500">{activeRfq.destinationPort}</div>
+                      <div className="text-[10px] text-slate-500 truncate">{activeRfq.destinationPort}</div>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <span className="text-slate-500 text-[10px]">Payment Terms:</span>
@@ -200,111 +290,173 @@ export const RfqComparisonView: React.FC<Props> = ({
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <span className="text-slate-500 text-[10px]">Target Delivery:</span>
-                      <div className="font-mono font-bold text-emerald-700 mt-0.5">{activeRfq.targetDeliveryDate}</div>
+                      <div className="font-mono font-bold text-emerald-700 mt-0.5">{activeRfq.targetDeliveryDate || '30 - 45 Days'}</div>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed font-medium">
-                    <strong>Specifications Note:</strong> {activeRfq.detailedDescription}
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed font-medium">
+                    <strong>Specifications Note:</strong> {activeRfq.detailedRequirements || activeRfq.detailedDescription}
+                  </div>
+
+                  {/* Primary Action Bar for the Active RFQ */}
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      {onOpenBuyerProfile && (
+                        <button
+                          onClick={() => onOpenBuyerProfile(activeRfq.buyerId || 'buyer-001')}
+                          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Building2 className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Buyer Profile</span>
+                        </button>
+                      )}
+
+                      {onOpenNegotiation && (
+                        <button
+                          onClick={onOpenNegotiation}
+                          className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Direct Trade Chat</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {onOpenRfqModal && (
+                        <button
+                          onClick={() => onOpenRfqModal(activeRfq)}
+                          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Open Full Tender Dossier &amp; Bid</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Quotations Matrix Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                     <FileText className="w-4 h-4 text-emerald-600" />
-                    Received Factory Quotations ({relatedQuotes.length})
+                    <span>Received Factory Quotations ({quotes.length})</span>
                   </h3>
                   <span className="text-xs text-slate-500 font-medium">
-                    Sorted by ISO Compliance &amp; Unit FOB Pricing
+                    Evaluated by Unit FOB/CIF Rate &amp; Lead Time
                   </span>
                 </div>
 
                 {/* Quotes Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {relatedQuotes.map(quote => (
-                    <div
-                      key={quote.id}
-                      className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-emerald-500 hover:shadow-md transition-all space-y-4 shadow-sm flex flex-col justify-between"
-                    >
-                      <div className="space-y-3">
-                        {/* Supplier Top Header */}
-                        <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-                          <div className="space-y-0.5 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                {quote.supplierTier}
-                              </span>
-                              <span className="text-[10px] text-slate-500 font-mono">{quote.supplierCountry}</span>
-                            </div>
-                            <div className="font-bold text-sm text-slate-900 truncate">
-                              {quote.supplierName}
-                            </div>
-                          </div>
-
-                          <div className="text-right">
-                            <div className="text-xs text-slate-500 font-mono">Trust Score</div>
-                            <div className="font-black text-emerald-600 text-sm font-mono">
-                              {quote.supplierTrustScore} / 100
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Financial Bid Details */}
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                          <div className="flex justify-between items-baseline">
-                            <span className="text-xs text-slate-500">Quoted Unit Price:</span>
-                            <span className="text-base font-black text-emerald-700 font-mono">
-                              {formatPrice(quote.unitPriceUsd)} <span className="text-xs font-normal text-slate-500">({quote.incoterm})</span>
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200">
-                            <span className="text-slate-500">Total Cargo Value:</span>
-                            <span className="font-mono font-bold text-slate-900">
-                              {formatPrice(quote.totalAmountUsd)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Technical Breakdown */}
-                        <div className="space-y-1.5 text-xs">
-                          <div className="flex justify-between text-slate-600">
-                            <span>Dispatch Port:</span>
-                            <strong className="text-slate-900">{quote.dispatchPort}</strong>
-                          </div>
-                          <div className="flex justify-between text-slate-600">
-                            <span>Production Lead Time:</span>
-                            <strong className="text-slate-900">{quote.productionLeadTimeDays} Days</strong>
-                          </div>
-                          <div className="flex justify-between text-slate-600">
-                            <span>Estimated Transit:</span>
-                            <strong className="text-slate-900">{quote.estimatedTransitDays} Days ({quote.shippingMethod})</strong>
-                          </div>
-                          <div className="flex justify-between text-slate-600">
-                            <span>Payment Terms:</span>
-                            <strong className="text-slate-900 text-right truncate max-w-[170px]">{quote.paymentTerms}</strong>
-                          </div>
-                        </div>
-
-                        {/* Quotation Note */}
-                        <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-100 text-[11px] text-slate-600 italic">
-                          "{quote.technicalNotes}"
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <div className="pt-2">
-                        <button
-                          onClick={() => onAcceptQuote(quote)}
-                          className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Accept Bid &amp; Generate Proforma Invoice</span>
-                        </button>
-                      </div>
+                {isLoadingQuotes ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500">
+                    Loading factory quotations...
+                  </div>
+                ) : quotes.length === 0 ? (
+                  <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-8 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                      <FileText className="w-6 h-6" />
                     </div>
-                  ))}
-                </div>
+                    <h4 className="font-bold text-sm text-slate-800">No factory quotations registered yet</h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      Be the first verified factory to submit a quotation for this tender.
+                    </p>
+                    {onOpenRfqModal && (
+                      <button
+                        onClick={() => onOpenRfqModal(activeRfq)}
+                        className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        <span>Submit Factory Quote Now</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {quotes.map(quote => (
+                      <div
+                        key={quote.id}
+                        className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-emerald-500 hover:shadow-md transition-all space-y-4 shadow-sm flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          {/* Supplier Top Header */}
+                          <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                  {quote.supplierTier}
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-mono">{quote.supplierCountry}</span>
+                              </div>
+                              <div className="font-bold text-sm text-slate-900 truncate">
+                                {quote.supplierName}
+                              </div>
+                            </div>
+
+                            <div className="text-right">
+                              <div className="text-xs text-slate-500 font-mono">Trust Score</div>
+                              <div className="font-black text-emerald-600 text-sm font-mono">
+                                {quote.supplierTrustScore || 95} / 100
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Financial Bid Details */}
+                          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <div className="flex justify-between items-baseline">
+                              <span className="text-xs text-slate-500">Quoted Unit Price:</span>
+                              <span className="text-base font-black text-emerald-700 font-mono">
+                                {formatPrice(quote.unitPriceUsd)} <span className="text-xs font-normal text-slate-500">({quote.incoterm || quote.offeredIncoterm})</span>
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200">
+                              <span className="text-slate-500">Total Cargo Value:</span>
+                              <span className="font-mono font-bold text-slate-900">
+                                {formatPrice(quote.totalAmountUsd || quote.unitPriceUsd * activeRfq.targetQuantity)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Technical Breakdown */}
+                          <div className="space-y-1.5 text-xs">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Dispatch Port:</span>
+                              <strong className="text-slate-900">{quote.dispatchPort || quote.portOfLoading}</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Production Lead Time:</span>
+                              <strong className="text-slate-900">{quote.productionLeadTimeDays || quote.leadTimeDays} Days</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Estimated Transit:</span>
+                              <strong className="text-slate-900">{quote.estimatedTransitDays || 20} Days ({quote.shippingMethod || 'Ocean Freight'})</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Payment Terms:</span>
+                              <strong className="text-slate-900 text-right truncate max-w-[170px]">{quote.paymentTerms}</strong>
+                            </div>
+                          </div>
+
+                          {/* Quotation Note */}
+                          <div className="p-2.5 bg-blue-50/50 rounded-lg border border-blue-100 text-[11px] text-slate-600 italic">
+                            "{quote.technicalNotes || quote.notes}"
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <div className="pt-2">
+                          <button
+                            onClick={() => onAcceptQuote(quote)}
+                            className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Accept Bid &amp; Generate Proforma Invoice</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500">

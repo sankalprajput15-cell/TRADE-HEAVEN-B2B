@@ -36,15 +36,18 @@ import { PremiumServicesView } from './components/services/PremiumServicesView';
 import { PostSellOfferView } from './components/services/PostSellOfferView';
 import { BuyLeadsView } from './components/services/BuyLeadsView';
 import { SuppliersDirectoryView } from './components/services/SuppliersDirectoryView';
+import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
 import { RefundPolicyView } from './components/services/RefundPolicyView';
 import { ClientAdminView } from './components/services/ClientAdminView';
 import { SiteContentCmsEditor } from './components/cms/SiteContentCmsEditor';
 import { CmsPermissionsPanel } from './components/cms/CmsPermissionsPanel';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
+import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
 
 // Modals
 import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
+import { RfqDetailModal } from './components/marketplace/RfqDetailModal';
 import { SupplierStorefrontModal } from './components/marketplace/SupplierStorefrontModal';
 import { RfqCreationModal } from './components/marketplace/RfqCreationModal';
 import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactInquiryModal';
@@ -79,7 +82,9 @@ const MainApp: React.FC = () => {
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedRfqForModal, setSelectedRfqForModal] = useState<RfqRequirement | null>(null);
   const [storefrontCompanyId, setStorefrontCompanyId] = useState<string | null>(null);
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-001');
   const [isCreateRfqOpen, setIsCreateRfqOpen] = useState(false);
   const [contactModalConfig, setContactModalConfig] = useState<{
     isOpen: boolean;
@@ -373,6 +378,10 @@ const MainApp: React.FC = () => {
       setActiveView('SUPPLIERS_DIRECTORY');
       return;
     }
+    if (target === 'BUYERS_DIRECTORY' || target === 'BUYERS' || target === 'VERIFIED_BUYERS' || target === 'IMPORTERS') {
+      setActiveView('BUYERS_DIRECTORY');
+      return;
+    }
     if (target === 'REFUND_POLICY' || target === 'REFUND' || target === 'ESCROW_POLICY') {
       setActiveView('REFUND_POLICY');
       return;
@@ -387,6 +396,10 @@ const MainApp: React.FC = () => {
     }
     if (target === 'VENDOR_PROFILE' || target === 'VENDOR' || target === 'PROFILE' || target === 'STOREFRONT' || target === 'SUPPLIER_PROFILE' || target === 'DEMO_PROFILE') {
       setActiveView('VENDOR_PROFILE');
+      return;
+    }
+    if (target === 'BUYER_PROFILE' || target === 'BUYER' || target === 'BUYER_DEMO' || target === 'IMPORTER_PROFILE') {
+      setActiveView('BUYER_PROFILE');
       return;
     }
     if (target === 'CMS_MANAGEMENT' || target === 'CMS' || target === 'SITE_EDITOR') {
@@ -417,7 +430,7 @@ const MainApp: React.FC = () => {
         rfqs={rfqs}
         onSelectRfq={(rfq) => {
           setSelectedRfqId(rfq.id);
-          setActiveView('RFQ_HUB');
+          setSelectedRfqForModal(rfq);
         }}
       />
 
@@ -464,7 +477,7 @@ const MainApp: React.FC = () => {
                     onOpenLiveTool={handleOpenLiveTool}
                     onSelectRfq={(rfq) => {
                       setSelectedRfqId(rfq.id);
-                      setActiveView('RFQ_HUB');
+                      setSelectedRfqForModal(rfq);
                     }}
                   />
                 );
@@ -499,9 +512,17 @@ const MainApp: React.FC = () => {
                     onSelectRfqId={setSelectedRfqId}
                     selectedCurrency={selectedCurrency}
                     onOpenCreateRfq={handleOpenCreateRfq}
-                    onAcceptQuote={() => {
+                    onAcceptQuote={(quote) => {
                       setActiveView('NEGOTIATION_ROOM');
                     }}
+                    onOpenRfqModal={(rfq) => setSelectedRfqForModal(rfq)}
+                    onOpenBuyerProfile={(buyerId) => {
+                      setSelectedBuyerId(buyerId);
+                      setActiveView('BUYER_PROFILE');
+                    }}
+                    onOpenNegotiation={() => setActiveView('NEGOTIATION_ROOM')}
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
                   />
                 );
 
@@ -550,17 +571,8 @@ const MainApp: React.FC = () => {
                   <BuyLeadsView
                     selectedCurrency={selectedCurrency}
                     onSelectRfq={(rfq) => {
-                      handleOpenContactModal({
-                        targetType: 'RFQ',
-                        targetId: rfq.id,
-                        targetTitle: rfq.productName,
-                        targetSubtitle: `${rfq.targetQuantity} ${rfq.quantityUnit} to ${rfq.destinationPort}`,
-                        supplierCompany: rfq.buyerCompany,
-                        contactEmail: rfq.buyerEmail,
-                        contactPhone: rfq.buyerPhone,
-                        initialQuantity: rfq.targetQuantity,
-                        initialPrice: rfq.targetPriceUsd
-                      });
+                      setSelectedRfqId(rfq.id);
+                      setSelectedRfqForModal(rfq);
                     }}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     currentUser={currentUser}
@@ -575,6 +587,33 @@ const MainApp: React.FC = () => {
                     onOpenStorefront={handleOpenStorefront}
                     currentUser={currentUser}
                     onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                  />
+                );
+
+              case 'BUYERS_DIRECTORY':
+                return (
+                  <BuyersDirectoryView
+                    selectedCurrency={selectedCurrency}
+                    onOpenBuyerProfile={(buyerId) => {
+                      setSelectedBuyerId(buyerId);
+                      setActiveView('BUYER_PROFILE');
+                    }}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                  />
+                );
+
+              case 'BUYER_PROFILE':
+                return (
+                  <BuyerProfilePage
+                    buyerId={selectedBuyerId || 'buyer-001'}
+                    selectedCurrency={selectedCurrency}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    currentUser={currentUser}
+                    onOpenUpgradeModal={() => handleNavigate('PREMIUM_MEMBERSHIP')}
+                    onNavigate={handleNavigate}
+                    onOpenRfqModal={(rfq) => setSelectedRfqForModal(rfq)}
                   />
                 );
 
@@ -710,6 +749,32 @@ const MainApp: React.FC = () => {
           onOpenStorefront={handleOpenStorefront}
           onStartNegotiation={() => {
             setSelectedProduct(null);
+            setActiveView('NEGOTIATION_ROOM');
+          }}
+        />
+      )}
+
+      {selectedRfqForModal && (
+        <RfqDetailModal
+          rfq={selectedRfqForModal}
+          selectedCurrency={selectedCurrency}
+          onClose={() => setSelectedRfqForModal(null)}
+          currentUser={currentUser}
+          onOpenUpgradeModal={() => {
+            setSelectedRfqForModal(null);
+            setActiveView('PREMIUM_MEMBERSHIP');
+          }}
+          onOpenBuyerProfile={(buyerId) => {
+            setSelectedRfqForModal(null);
+            setSelectedBuyerId(buyerId);
+            setActiveView('BUYER_PROFILE');
+          }}
+          onOpenNegotiation={() => {
+            setSelectedRfqForModal(null);
+            setActiveView('NEGOTIATION_ROOM');
+          }}
+          onAcceptQuote={(quote) => {
+            setSelectedRfqForModal(null);
             setActiveView('NEGOTIATION_ROOM');
           }}
         />

@@ -216,6 +216,7 @@ export interface Product {
 export interface RfqRequirement {
   id: string;
   ownerUid?: string;
+  buyerId?: string;
   buyerName: string;
   buyerCompany: string;
   buyerEmail?: string;
@@ -363,11 +364,65 @@ export interface SubscriptionPlanConfig {
   features: string[];
 }
 
+export type BuyerTier = 'FREE' | 'SILVER' | 'GOLD' | 'VIP';
+
+export interface BuyerWarehouse {
+  id: string;
+  name: string;
+  location: string;
+  country: string;
+  capacitySqFt: number;
+  destinationPort: string;
+  customsBonded: boolean;
+}
+
+export interface DetailedBuyerProfile {
+  id: string;
+  ownerUid?: string;
+  companyName: string;
+  legalRegistrationNumber: string;
+  dunsNumber?: string;
+  taxVatNumber?: string;
+  country: string;
+  city: string;
+  address: string;
+  establishedYear: number;
+  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House';
+  tier: BuyerTier;
+  isVerifiedKYC: boolean;
+  kycVerificationDate?: string;
+  trustScore: number; // 0 - 100
+  responseRate?: string;
+  avgResponseTime?: string;
+  totalEmployees?: string;
+  annualPurchasingVolumeUsd: string;
+  importFrequency: string; // e.g., 'Monthly FCL Shipments'
+  targetCategories: string[];
+  preferredIncoterms: Incoterm[];
+  preferredPaymentTerms: string[];
+  activeRfqsCount: number;
+  completedImportsCount: number;
+  tradeAssuranceEscrowSecuredUsd: number;
+  logoUrl: string;
+  bannerUrl: string;
+  description: string;
+  contactPerson: string;
+  contactDesignation?: string;
+  contactEmail: string;
+  contactPhone: string;
+  whatsapp?: string;
+  isContactMasked?: boolean;
+  warehouses?: BuyerWarehouse[];
+  complianceRequirements?: string[];
+  recentRfqIds?: string[];
+}
+
 export type ActiveView = 
   | 'MARKETPLACE_HOME'
   | 'HOMEPAGE'
   | 'BUY_LEADS'
   | 'SUPPLIERS_DIRECTORY'
+  | 'BUYERS_DIRECTORY'
   | 'PRODUCT_DIRECTORY'
   | 'POST_BUY_REQUIREMENT'
   | 'POST_SELL_OFFER'
@@ -384,7 +439,8 @@ export type ActiveView =
   | 'REFUND_POLICY'
   | 'CONTACT_US'
   | 'ONBOARD_WITH_US'
-  | 'VENDOR_PROFILE';
+  | 'VENDOR_PROFILE'
+  | 'BUYER_PROFILE';
 
 export interface ComplianceCertificate {
   id: string;
