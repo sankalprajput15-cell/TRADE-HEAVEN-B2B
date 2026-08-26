@@ -868,6 +868,62 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Server-side products cache & CRUD
+let serverProductsStore: any[] = [];
+
+app.get('/api/v1/products', (req, res) => {
+  const { category, country, keyword, tier } = req.query;
+  let list = [...serverProductsStore];
+
+  if (category && category !== 'ALL') {
+    list = list.filter(p => p.category === category);
+  }
+  if (country && typeof country === 'string') {
+    list = list.filter(p => p.supplierCountry?.toLowerCase().includes(country.toLowerCase()));
+  }
+  if (keyword && typeof keyword === 'string') {
+    const q = keyword.toLowerCase();
+    list = list.filter(p => 
+      p.title?.toLowerCase().includes(q) || 
+      p.description?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q)
+    );
+  }
+  if (tier && tier !== 'ALL') {
+    list = list.filter(p => p.supplierTier === tier);
+  }
+
+  res.json({ success: true, count: list.length, data: list });
+});
+
+app.post('/api/v1/products', (req, res) => {
+  const productData = req.body;
+  const newProduct = {
+    id: productData.id || `prod-${Date.now()}`,
+    ...productData,
+    createdDate: productData.createdDate || new Date().toISOString().split('T')[0]
+  };
+  serverProductsStore.unshift(newProduct);
+  res.status(201).json({ success: true, data: newProduct, message: 'Product listed successfully' });
+});
+
+app.put('/api/v1/products/:id', (req, res) => {
+  const { id } = req.params;
+  const index = serverProductsStore.findIndex(p => p.id === id);
+  if (index !== -1) {
+    serverProductsStore[index] = { ...serverProductsStore[index], ...req.body };
+    res.json({ success: true, data: serverProductsStore[index], message: 'Product updated successfully' });
+  } else {
+    res.status(404).json({ success: false, message: 'Product not found' });
+  }
+});
+
+app.delete('/api/v1/products/:id', (req, res) => {
+  const { id } = req.params;
+  serverProductsStore = serverProductsStore.filter(p => p.id !== id);
+  res.json({ success: true, message: 'Product deleted successfully' });
+});
+
 // CMS Site Content in-memory cache on server
 let serverSiteContent: any = null;
 let serverAuthorizedUsers = [

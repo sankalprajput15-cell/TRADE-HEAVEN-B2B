@@ -45,7 +45,7 @@ export const ProductCatalog: React.FC<Props> = ({
   const [internalCategory, setInternalCategory] = useState<string>(initialCategory || propCategory || 'ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedIncoterm, setSelectedIncoterm] = useState<string>('ALL');
-  const [maxMoq, setMaxMoq] = useState<number>(5000);
+  const [maxMoq, setMaxMoq] = useState<number>(50000);
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
 
@@ -132,7 +132,7 @@ export const ProductCatalog: React.FC<Props> = ({
       
     const matchesTier = selectedTier === 'ALL' || p.supplierTier === selectedTier;
     const matchesIncoterm = selectedIncoterm === 'ALL' || p.supportedIncoterms.includes(selectedIncoterm as Incoterm);
-    const matchesMoq = p.moq <= maxMoq;
+    const matchesMoq = maxMoq >= 50000 || p.moq <= maxMoq;
     return matchesSearch && matchesCat && matchesTier && matchesIncoterm && matchesMoq;
   });
 

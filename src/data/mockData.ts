@@ -891,6 +891,416 @@ export const MOCK_PRODUCTS: Product[] = [
     supplyAbilityPerMonth: '10,000 Metric Tons / Month',
     featured: true,
     createdDate: '2025-02-20'
+  },
+  {
+    id: 'prod-fiber-laser-12kw',
+    supplierId: 'comp-hans-cnc',
+    supplierName: 'KUKA Precision Engineering GmbH',
+    supplierCountry: 'Germany',
+    supplierTier: 'VIP',
+    supplierTrustScore: 99,
+    title: '12kW Dual-Shuttle High-Speed Fiber Laser Sheet Metal Cutting Machine (CypCut CNC & Auto-Focus)',
+    category: 'Industrial Machinery & Automation',
+    subCategory: 'Laser Cutting Machines',
+    images: [
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'Industrial heavy gantry fiber laser cutting system with dual interchangeable exchange tables. Capable of slicing up to 40mm carbon steel and 30mm stainless steel with micron-level edge cleanliness.',
+    priceTiers: [
+      { minUnits: 1, maxUnits: 2, priceUsd: 58000 },
+      { minUnits: 3, maxUnits: 5, priceUsd: 52000 },
+      { minUnits: 6, priceUsd: 48500 }
+    ],
+    moq: 1,
+    moqUnit: 'Sets',
+    sampleAvailable: false,
+    samplePriceUsd: 0,
+    leadTimeDays: 25,
+    supportedIncoterms: ['FOB', 'CIF', 'EXW', 'DDP'],
+    specifications: [
+      { name: 'Laser Power', value: '12,000 Watts (12kW Raycus/IPG)' },
+      { name: 'Working Area', value: '3000 x 1500 mm (Optional 4000x2000mm)' },
+      { name: 'Cutting Thickness', value: 'Carbon Steel 0.5-45mm, SS 0.5-35mm' },
+      { name: 'Max Acceleration', value: '2.0G Gantry Servo Dynamics' },
+      { name: 'Control System', value: 'FSCUT CypCut 8000 Series Bus CNC' }
+    ],
+    packagingDetails: 'Heavy-duty seaworthy wooden box with anti-vibration rubber base and moisture seal.',
+    portOfDispatch: 'Hamburg / Qingdao Port',
+    certifications: ['CE', 'FDA CDRH', 'ISO 9001:2015'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '40 Sets / Month',
+    featured: true,
+    createdDate: '2025-02-10'
+  },
+  {
+    id: 'prod-medical-nitrile-gloves',
+    supplierId: 'comp-vietnam-agro',
+    supplierName: 'Mekong Delta Agri-Commodities Corp',
+    supplierCountry: 'Vietnam',
+    supplierTier: 'GOLD',
+    supplierTrustScore: 94,
+    title: 'Medical Grade Powder-Free Nitrile Examination Gloves (Chemo Rated, 4.0 mil, Micro-Textured)',
+    category: 'Medical, Healthcare & PPE',
+    subCategory: 'Medical PPE & Consumables',
+    images: [
+      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: '100% synthetic nitrile examination gloves free from latex proteins. Tested against chemotherapy drugs under ASTM D6978 and compliant with EN 455 Parts 1-4 and FDA 510(k).',
+    priceTiers: [
+      { minUnits: 1000, maxUnits: 9999, priceUsd: 3.20 },
+      { minUnits: 10000, maxUnits: 49999, priceUsd: 2.85 },
+      { minUnits: 50000, priceUsd: 2.45 }
+    ],
+    moq: 1000,
+    moqUnit: 'Boxes (100 pcs)',
+    sampleAvailable: true,
+    samplePriceUsd: 15,
+    leadTimeDays: 10,
+    supportedIncoterms: ['FOB', 'CIF', 'DDP'],
+    specifications: [
+      { name: 'Material', value: '100% Synthetic Nitrile Butadiene Rubber' },
+      { name: 'Thickness', value: 'Finger 4.5 mil / Palm 3.8 mil' },
+      { name: 'AQL Level', value: 'AQL 1.5 Medical Grade' },
+      { name: 'Standards', value: 'ASTM D6319, EN 455, FDA 510(k), ISO 13485' },
+      { name: 'Color', value: 'Cobalt Blue / Medical Violet' }
+    ],
+    packagingDetails: '100 pcs/dispenser box, 10 boxes/master carton (1,000 pcs/carton). 1,800 cartons per 40ft HC.',
+    portOfDispatch: 'Cat Lai Port, Ho Chi Minh City / Port Klang',
+    certifications: ['FDA 510(k)', 'CE 2797', 'ISO 13485:2016', 'EN 455'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '500,000 Boxes / Month',
+    featured: true,
+    createdDate: '2025-02-14'
+  },
+  {
+    id: 'prod-vanilla-bourbon-beans',
+    supplierId: 'comp-vietnam-agro',
+    supplierName: 'Mekong Delta Agri-Commodities Corp',
+    supplierCountry: 'Vietnam',
+    supplierTier: 'GOLD',
+    supplierTrustScore: 93,
+    title: 'Gourmet Grade-A Madagascar Bourbon Vanilla Beans (16-18cm Whole Pods, >2.2% Vanillin)',
+    category: 'Agriculture, Spices & Food Commodities',
+    subCategory: 'Gourmet Spices & Extracts',
+    images: [
+      'https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'Black whole gourmet Bourbon vanilla beans with high moisture content (30-35%) and rich oily luster. Organically hand-pollinated and traditionally sun-cured for artisan bakeries, chocolatiers, and flavor houses.',
+    priceTiers: [
+      { minUnits: 10, maxUnits: 49, priceUsd: 145 },
+      { minUnits: 50, maxUnits: 199, priceUsd: 128 },
+      { minUnits: 200, priceUsd: 115 }
+    ],
+    moq: 10,
+    moqUnit: 'Kilograms',
+    sampleAvailable: true,
+    samplePriceUsd: 40,
+    leadTimeDays: 7,
+    supportedIncoterms: ['FOB', 'CIF', 'DDP', 'EXW'],
+    specifications: [
+      { name: 'Length', value: '16 cm - 19 cm Whole Pods' },
+      { name: 'Vanillin Content', value: '2.0% - 2.4% HPLC Verified' },
+      { name: 'Moisture', value: '30% - 35% Gourmet Grade' },
+      { name: 'Appearance', value: 'Dark brown to black, oily, supple' },
+      { name: 'Origin', value: 'Sava Region, Madagascar' }
+    ],
+    packagingDetails: '1 kg or 5 kg vacuum-sealed foil pouches in food-grade insulated cartons.',
+    portOfDispatch: 'Antananarivo (Air) / Toamasina Port',
+    certifications: ['USDA Organic', 'EU Organic', 'HACCP', 'Phytosanitary'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '2,500 Kilograms / Month',
+    featured: false,
+    createdDate: '2025-02-16'
+  },
+  {
+    id: 'prod-pcb-multilayer-smt',
+    supplierId: 'comp-shenzhen-batt',
+    supplierName: 'ApexPower Energy Tech Co., Ltd.',
+    supplierCountry: 'China',
+    supplierTier: 'GOLD',
+    supplierTrustScore: 96,
+    title: 'High-Density 8-16 Layer ENIG Immersion Gold Rigid-Flex PCB Fabrication & Turnkey SMT Assembly',
+    category: 'Electronics & Component PCB',
+    subCategory: 'PCB Assembly & Components',
+    images: [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'High-speed automated SMT turn-key PCBA manufacturing utilizing Yamaha and Fuji pick-and-place lines. Supported components down to 01005 chips, BGA pitch 0.35mm with full X-Ray and 3D AOI inspection.',
+    priceTiers: [
+      { minUnits: 100, maxUnits: 499, priceUsd: 18.50 },
+      { minUnits: 500, maxUnits: 1999, priceUsd: 12.80 },
+      { minUnits: 2000, priceUsd: 9.40 }
+    ],
+    moq: 100,
+    moqUnit: 'Pieces',
+    sampleAvailable: true,
+    samplePriceUsd: 65,
+    leadTimeDays: 8,
+    supportedIncoterms: ['FOB', 'CIF', 'EXW', 'DDP'],
+    specifications: [
+      { name: 'Layer Count', value: '4 to 18 Multilayer High TG FR4 / Rogers' },
+      { name: 'Surface Finish', value: 'ENIG 2u"-3u", Immersion Silver, OSP' },
+      { name: 'Min Trace / Space', value: '3 mil / 3 mil (0.075mm)' },
+      { name: 'Testing', value: '100% Flying Probe, 3D SPI, AOI, X-Ray BGA' },
+      { name: 'SMT Accuracy', value: '±0.025mm chip mounting' }
+    ],
+    packagingDetails: 'Anti-static ESD vacuum packaging with desiccant and humidity indicator cards.',
+    portOfDispatch: 'Shenzhen / Hong Kong Airport Hub',
+    certifications: ['IPC-A-610 Class 3', 'ISO 9001', 'IATF 16949', 'UL 94V-0', 'RoHS'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '150,000 Boards / Month',
+    featured: false,
+    createdDate: '2025-02-17'
+  },
+  {
+    id: 'prod-structural-galvanized-steel',
+    supplierId: 'comp-mumbai-chem',
+    supplierName: 'Sudarshan Petrochem & Polymers Ltd.',
+    supplierCountry: 'India',
+    supplierTier: 'GOLD',
+    supplierTrustScore: 94,
+    title: 'Hot-Dipped Galvanized Structural H-Beams & Carbon Steel I-Beams (ASTM A36 / S355JR Heavy Gauge)',
+    category: 'Construction, Hardware & Building Materials',
+    subCategory: 'Structural Steel & Beams',
+    images: [
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'Heavy structural carbon steel sections for commercial warehouses, high-rise frameworks, and bridge engineering. Hot-dipped galvanized coating > 85 microns for 50+ year marine rust resistance.',
+    priceTiers: [
+      { minUnits: 20, maxUnits: 99, priceUsd: 840 },
+      { minUnits: 100, maxUnits: 499, priceUsd: 780 },
+      { minUnits: 500, priceUsd: 720 }
+    ],
+    moq: 20,
+    moqUnit: 'Metric Tons',
+    sampleAvailable: true,
+    samplePriceUsd: 50,
+    leadTimeDays: 14,
+    supportedIncoterms: ['FOB', 'CIF', 'CFR'],
+    specifications: [
+      { name: 'Steel Grade', value: 'ASTM A36 / EN 10025 S275JR & S355JR' },
+      { name: 'Zinc Coating', value: 'Hot-Dip Galvanized ≥ 610 g/m² (85 µm)' },
+      { name: 'Length', value: '6m, 9m, 12m Standard or Cut to Order' },
+      { name: 'Flange Width', value: '100mm to 400mm Standard HEA/HEB/IPE' },
+      { name: 'Yield Strength', value: '≥ 355 MPa' }
+    ],
+    packagingDetails: 'Heavy steel strap bundles with lifting slings, tagged with Mill Test Certificates (MTC EN 10204 3.1).',
+    portOfDispatch: 'JNPT Port Mumbai / Kandla Port',
+    certifications: ['ISO 9001:2015', 'CE EN 1090', 'ASTM A6/A6M', 'SGS Inspected'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '20,000 Metric Tons / Month',
+    featured: true,
+    createdDate: '2025-02-08'
+  },
+  {
+    id: 'prod-industrial-hybrid-inverter',
+    supplierId: 'comp-shenzhen-batt',
+    supplierName: 'ApexPower Energy Tech Co., Ltd.',
+    supplierCountry: 'China',
+    supplierTier: 'GOLD',
+    supplierTrustScore: 96,
+    title: '100kW Three-Phase High-Voltage Commercial Hybrid Solar Inverter (Quad MPPT & Peak Shaving)',
+    category: 'Renewable Energy & Solar',
+    subCategory: 'Commercial Solar Inverters',
+    images: [
+      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'High-voltage commercial three-phase hybrid inverter with 150-800V battery voltage window. Features integrated UPS-grade 10ms seamless transfer switch, generator support, and cloud IoT monitoring.',
+    priceTiers: [
+      { minUnits: 2, maxUnits: 9, priceUsd: 6800 },
+      { minUnits: 10, maxUnits: 49, priceUsd: 5950 },
+      { minUnits: 50, priceUsd: 5300 }
+    ],
+    moq: 2,
+    moqUnit: 'Sets',
+    sampleAvailable: true,
+    samplePriceUsd: 7400,
+    leadTimeDays: 14,
+    supportedIncoterms: ['FOB', 'CIF', 'DDP', 'EXW'],
+    specifications: [
+      { name: 'Rated AC Output', value: '100 kW / 3-Phase 400V 50/60Hz' },
+      { name: 'Max PV Input', value: '150 kW (1,100V Max DC Input)' },
+      { name: 'MPPT Trackers', value: '4 MPPTs (8 Strings Total)' },
+      { name: 'Max Efficiency', value: '98.8% (European 98.3%)' },
+      { name: 'Battery Range', value: '160V - 800V High Voltage' }
+    ],
+    packagingDetails: 'Molded foam casing with heavy-duty export pallet box and moisture desiccant.',
+    portOfDispatch: 'Shanghai / Ningbo Port',
+    certifications: ['VDE-AR-N 4105', 'EN 50549-1', 'IEC 62109-1/-2', 'CE', 'UL 1741'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '1,200 Sets / Month',
+    featured: false,
+    createdDate: '2025-02-11'
+  },
+  {
+    id: 'prod-porcelain-large-slab',
+    supplierId: 'comp-istanbul-textile',
+    supplierName: 'Anatolian Organic Yarns & Fabrics A.S.',
+    supplierCountry: 'Turkey',
+    supplierTier: 'SILVER',
+    supplierTrustScore: 91,
+    title: '1200x2400mm Large Format Sintered Stone Porcelain Slab Tiles (Calacatta Gold Bookmatched 9mm)',
+    category: 'Construction, Hardware & Building Materials',
+    subCategory: 'Porcelain & Sintered Slabs',
+    images: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'Ultra-durable sintered porcelain slabs manufactured with 30,000-ton Italian presses. Non-porous zero absorption (<0.05%), UV-resistant, scratch-proof, and suitable for kitchen countertops, facades, and luxury flooring.',
+    priceTiers: [
+      { minUnits: 150, maxUnits: 499, priceUsd: 38 },
+      { minUnits: 500, maxUnits: 1999, priceUsd: 32 },
+      { minUnits: 2000, priceUsd: 27 }
+    ],
+    moq: 150,
+    moqUnit: 'Square Meters',
+    sampleAvailable: true,
+    samplePriceUsd: 25,
+    leadTimeDays: 14,
+    supportedIncoterms: ['FOB', 'CIF', 'EXW'],
+    specifications: [
+      { name: 'Dimensions', value: '1200 x 2400 x 9 mm (48" x 96")' },
+      { name: 'Water Absorption', value: '≤ 0.05% Sintered Porcelain' },
+      { name: 'Surface Finish', value: 'Polished / Silk Satin / Bookmatched A+B' },
+      { name: 'Mohs Hardness', value: 'Grade 7 (Scratch Resistant)' },
+      { name: 'Breaking Strength', value: '≥ 2,000 N' }
+    ],
+    packagingDetails: 'A-frame steel/wooden export crates with corner protectors (20 slabs per crate).',
+    portOfDispatch: 'Izmir Port / Gemlik Port',
+    certifications: ['ISO 13006', 'CE Certified', 'GreenGuard Gold'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '60,000 Sqm / Month',
+    featured: false,
+    createdDate: '2025-02-06'
+  },
+  {
+    id: 'prod-tio2-rutile-pigment',
+    supplierId: 'comp-mumbai-chem',
+    supplierName: 'Sudarshan Petrochem & Polymers Ltd.',
+    supplierCountry: 'India',
+    supplierTier: 'GOLD',
+    supplierTrustScore: 94,
+    title: 'Titanium Dioxide (TiO2) Rutile Grade White Pigment Powder (Chloride Process High Whiteness)',
+    category: 'Chemicals, Polymers & Resins',
+    subCategory: 'Inorganic Pigments & Coatings',
+    images: [
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: 'Chloride-process high-grade rutile TiO2 surface treated with alumina, zirconia, and organic compounds. Delivers exceptional hiding power, gloss retention, and weatherability in architectural paints and masterbatches.',
+    priceTiers: [
+      { minUnits: 10, maxUnits: 49, priceUsd: 2450 },
+      { minUnits: 50, maxUnits: 199, priceUsd: 2300 },
+      { minUnits: 200, priceUsd: 2180 }
+    ],
+    moq: 10,
+    moqUnit: 'Metric Tons',
+    sampleAvailable: true,
+    samplePriceUsd: 30,
+    leadTimeDays: 10,
+    supportedIncoterms: ['FOB', 'CIF', 'CFR'],
+    specifications: [
+      { name: 'TiO2 Content', value: '≥ 94.0% Rutile' },
+      { name: 'Rutile Crystal Content', value: '≥ 98.5%' },
+      { name: 'Oil Absorption', value: '18 - 22 g/100g' },
+      { name: 'pH Value', value: '6.5 - 8.5' },
+      { name: 'Tint Reducing Power', value: '≥ 115 (Reynolds Index)' }
+    ],
+    packagingDetails: '25kg paper-plastic valve bags, 1,000kg bulk big bags on heat-treated pallets (20 MT per 20ft FCL).',
+    portOfDispatch: 'Nhava Sheva (JNPT) Port / Chennai Port',
+    certifications: ['ISO 9001', 'REACH Certified', 'RoHS', 'FDA 21 CFR 178.3297'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '8,000 Metric Tons / Month',
+    featured: false,
+    createdDate: '2025-02-09'
+  },
+  {
+    id: 'prod-c-arm-surgical-xray',
+    supplierId: 'comp-hans-cnc',
+    supplierName: 'KUKA Precision Engineering GmbH',
+    supplierCountry: 'Germany',
+    supplierTier: 'VIP',
+    supplierTrustScore: 99,
+    title: 'High-Frequency Digital Mobile C-Arm X-Ray Surgical Fluoroscopy System (Flat Panel Detector)',
+    category: 'Medical, Healthcare & PPE',
+    subCategory: 'Medical Imaging Equipment',
+    images: [
+      'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: '30x30cm dynamic flat panel detector mobile C-arm for orthopedic, trauma, and vascular surgery. Features 4K dual touch monitors, pulsed fluoroscopy for minimum radiation dosage, and full DICOM 3.0 PACS connectivity.',
+    priceTiers: [
+      { minUnits: 1, maxUnits: 2, priceUsd: 42000 },
+      { minUnits: 3, maxUnits: 5, priceUsd: 38500 },
+      { minUnits: 6, priceUsd: 35000 }
+    ],
+    moq: 1,
+    moqUnit: 'Sets',
+    sampleAvailable: false,
+    samplePriceUsd: 0,
+    leadTimeDays: 20,
+    supportedIncoterms: ['FOB', 'CIF', 'DDP', 'EXW'],
+    specifications: [
+      { name: 'X-Ray Generator', value: '5kW High Frequency Inverter 40-125kV' },
+      { name: 'Flat Panel Size', value: '30cm x 30cm Amorphous Silicon' },
+      { name: 'Display Monitors', value: 'Dual 27-inch 4K Medical DICOM Grade Displays' },
+      { name: 'Orbital Rotation', value: '135° Continuous Motorized Orbit' },
+      { name: 'Software', value: 'Advanced Vascular DSA & Bone Edge Enhancement' }
+    ],
+    packagingDetails: 'Anti-static shock-cushioned aluminum medical transport flight cases.',
+    portOfDispatch: 'Frankfurt Airport / Hamburg Port',
+    certifications: ['CE 0123 Medical', 'ISO 13485', 'FDA 510(k)', 'IEC 60601-1'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '35 Sets / Month',
+    featured: true,
+    createdDate: '2025-02-12'
+  },
+  {
+    id: 'prod-kraft-food-packaging',
+    supplierId: 'comp-istanbul-textile',
+    supplierName: 'Anatolian Organic Yarns & Fabrics A.S.',
+    supplierCountry: 'Turkey',
+    supplierTier: 'SILVER',
+    supplierTrustScore: 91,
+    title: 'Biodegradable PLA Lined Heavy Kraft Paper Food Takeaway Boxes (Grease-Resistant, Custom CMYK)',
+    category: 'Packaging, Printing & Paper',
+    subCategory: 'Eco Food Containers',
+    images: [
+      'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80'
+    ],
+    description: '100% compostable unbleached virgin kraft paper boxes lined with plant-based PLA corn-starch barrier. Leak-proof webbed corners, microwave safe, heat-resistant up to 100°C for hot takeout meals.',
+    priceTiers: [
+      { minUnits: 5000, maxUnits: 19999, priceUsd: 0.14 },
+      { minUnits: 20000, maxUnits: 99999, priceUsd: 0.10 },
+      { minUnits: 100000, priceUsd: 0.075 }
+    ],
+    moq: 5000,
+    moqUnit: 'Pieces',
+    sampleAvailable: true,
+    samplePriceUsd: 20,
+    leadTimeDays: 12,
+    supportedIncoterms: ['FOB', 'CIF', 'DDP', 'EXW'],
+    specifications: [
+      { name: 'Paper Grammage', value: '300 gsm Virgin Kraft + 18 gsm PLA Coating' },
+      { name: 'Sizes Available', value: '500ml, 750ml, 1000ml, 1500ml Bento' },
+      { name: 'Printing', value: 'Water-based soy ink flexographic 6-color printing' },
+      { name: 'Degradability', value: '100% Commercially Compostable in 90 Days' },
+      { name: 'Certification', value: 'BPI Compostable, EN 13432, FDA 21 CFR 176' }
+    ],
+    packagingDetails: '50 pcs/polybag, 500 pcs/double-wall corrugated shipping carton.',
+    portOfDispatch: 'Ambarli Port, Istanbul / Mersin Port',
+    certifications: ['FSC Certified', 'BPI Compostable', 'FDA Food Contact', 'ISO 22000'],
+    customizationAvailable: true,
+    supplyAbilityPerMonth: '3,000,000 Pieces / Month',
+    featured: false,
+    createdDate: '2025-02-15'
   }
 ];
 

@@ -12,6 +12,7 @@ import {
 } from './types';
 import { api } from './services/apiService';
 import { apiClient } from './services/apiClient';
+import { MOCK_PRODUCTS, MOCK_RFQS } from './data/mockData';
 
 // Common Components
 import { Header } from './components/marketplace/Header';
@@ -74,11 +75,11 @@ const MainApp: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('HOMEPAGE');
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
 
-  // Products and entities initialized with clean empty states
-  const [products, setProducts] = useState<Product[]>([]);
-  const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
-  const [selectedRfqId, setSelectedRfqId] = useState<string | null>(null);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(true);
+  // Products and entities initialized with default rich marketplace dataset
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
+  const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -112,7 +113,7 @@ const MainApp: React.FC = () => {
   const fetchRFQs = async () => {
     try {
       const loadedRfqs = await apiClient.getRfqs();
-      if (Array.isArray(loadedRfqs)) {
+      if (Array.isArray(loadedRfqs) && loadedRfqs.length > 0) {
         setRfqs(loadedRfqs as any);
         if (loadedRfqs.length > 0) {
           setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
@@ -127,7 +128,7 @@ const MainApp: React.FC = () => {
   const fetchProducts = async () => {
     try {
       const prods = await api.getProducts();
-      if (Array.isArray(prods)) {
+      if (Array.isArray(prods) && prods.length > 0) {
         setProducts(prods);
       }
     } catch (err) {

@@ -702,12 +702,12 @@ export const api = {
   },
 
   // ==========================================
-  // PRODUCTS & LISTINGS (BIGROCK MYSQL + REST)
+  // PRODUCTS & LISTINGS (BIGROCK MYSQL + REST + SEEDED FALLBACK)
   // ==========================================
   async getProducts(params?: { category?: string; country?: string; keyword?: string; tier?: string }): Promise<Product[]> {
-    let baseProducts: Product[] = [];
+    let baseProducts: Product[] = [...MOCK_PRODUCTS];
 
-    // Fetch dynamic listings from BigRock PHP MySQL database
+    // 1. Fetch dynamic listings from BigRock PHP MySQL database
     try {
       const dbListings = await bigrockApi.fetchListings();
       if (Array.isArray(dbListings) && dbListings.length > 0) {
@@ -748,12 +748,15 @@ export const api = {
           description: l.description || l.title
         }));
 
-        baseProducts = convertedListings;
+        const existingIds = new Set(baseProducts.map(p => p.id));
+        const newDb = convertedListings.filter(p => !existingIds.has(p.id));
+        baseProducts = [...newDb, ...baseProducts];
       }
     } catch (e) {
       console.warn('[BigRock listings fetch]:', e);
     }
 
+    // 2. Fetch from Express backend / local storage
     try {
       const searchParams = new URLSearchParams();
       if (params?.category) searchParams.append('category', params.category);
@@ -767,11 +770,12 @@ export const api = {
         if (Array.isArray(data.data) && data.data.length > 0) {
           const existingIds = new Set(baseProducts.map(p => p.id));
           const additions = (data.data as Product[]).filter(p => !existingIds.has(p.id));
-          baseProducts = [...baseProducts, ...additions];
+          baseProducts = [...additions, ...baseProducts];
         }
       }
     } catch {}
 
+    // 3. Apply filters if specified
     if (params?.category && params.category !== 'ALL') {
       baseProducts = baseProducts.filter(p => p.category === params.category);
     }
@@ -780,7 +784,15 @@ export const api = {
     }
     if (params?.keyword) {
       const q = params.keyword.toLowerCase();
-      baseProducts = baseProducts.filter(p => p.title.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
+      baseProducts = baseProducts.filter(p => 
+        p.title.toLowerCase().includes(q) || 
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.subCategory && p.subCategory.toLowerCase().includes(q))
+      );
+    }
+    if (params?.tier && params.tier !== 'ALL') {
+      baseProducts = baseProducts.filter(p => p.supplierTier === params.tier);
     }
 
     return baseProducts;
