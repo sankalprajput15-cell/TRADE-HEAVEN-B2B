@@ -71,7 +71,7 @@ export const Header: React.FC<Props> = ({
   setSelectedCurrency,
   onCurrencyChange,
   currentUser,
-  currentUserRole = currentUser?.role || 'BUYER',
+  currentUserRole = currentUser?.role || 'ADMIN',
   setCurrentUserRole,
   onOpenCreateRfq = () => {},
   onOpenBackendManager,
@@ -164,7 +164,7 @@ export const Header: React.FC<Props> = ({
     BUYER: { badge: 'bg-blue-900/60 text-blue-300 border-blue-700/60 font-bold', label: 'BUYER' },
     SUPPLIER: { badge: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 font-bold', label: 'SUPPLIER' },
     VERIFIER: { badge: 'bg-purple-900/60 text-purple-300 border-purple-700/60 font-bold', label: 'VERIFIER' },
-    ADMIN: { badge: 'bg-amber-950/90 text-amber-300 border-amber-500/90 font-black tracking-wider shadow-2xs', label: 'ADMIN' }
+    ADMIN: { badge: 'bg-amber-500/20 text-amber-300 border-amber-500/60 font-black tracking-wider shadow-2xs', label: 'ADMIN' }
   };
 
   return (

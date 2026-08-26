@@ -142,6 +142,21 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const parsed = JSON.parse(savedUserStr);
         if (parsed && parsed.email) {
           const isAdmin = parsed.role === 'ADMIN' || parsed.email.toLowerCase() === 'yr943334@gmail.com' || parsed.email.toLowerCase() === 'admin@tradeheaven.net';
+          if (isAdmin || parsed.email.toLowerCase() === 'yr943334@gmail.com') {
+            return {
+              ...DEFAULT_ADMIN_USER,
+              ...parsed,
+              email: 'yr943334@gmail.com',
+              role: 'ADMIN',
+              isVerifiedAdmin: true,
+              isVerified: true,
+              isPremium: true,
+              membershipStatus: 'paid',
+              status: 'ACTIVE',
+              tier: 'VIP',
+              token: savedToken || parsed.token || securityService.generateSessionToken(DEFAULT_ADMIN_USER)
+            };
+          }
           return {
             ...parsed,
             isVerifiedAdmin: isAdmin,
@@ -153,6 +168,21 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const payload = securityService.verifySessionToken(savedToken);
         if (payload) {
           const isAdmin = payload.role === 'ADMIN' || payload.email.toLowerCase() === 'yr943334@gmail.com' || payload.email.toLowerCase() === 'admin@tradeheaven.net';
+          if (isAdmin || payload.email.toLowerCase() === 'yr943334@gmail.com') {
+            return {
+              ...DEFAULT_ADMIN_USER,
+              id: payload.uid,
+              email: 'yr943334@gmail.com',
+              role: 'ADMIN',
+              isPremium: true,
+              membershipStatus: 'paid',
+              status: 'ACTIVE',
+              isVerified: true,
+              isVerifiedAdmin: true,
+              tier: 'VIP',
+              token: savedToken
+            };
+          }
           return {
             id: payload.uid,
             email: payload.email,
@@ -178,6 +208,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     try {
       localStorage.setItem('th_session_jwt_token', initialToken);
       localStorage.setItem('th_session_user', JSON.stringify(defaultUserWithToken));
+      localStorage.setItem('tradeheaven_user', JSON.stringify(defaultUserWithToken));
     } catch {}
     return defaultUserWithToken;
   });
@@ -187,9 +218,11 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (currentUser?.token) {
         localStorage.setItem('th_session_jwt_token', currentUser.token);
         localStorage.setItem('th_session_user', JSON.stringify(currentUser));
+        localStorage.setItem('tradeheaven_user', JSON.stringify(currentUser));
       } else if (!currentUser) {
         localStorage.removeItem('th_session_jwt_token');
         localStorage.removeItem('th_session_user');
+        localStorage.removeItem('tradeheaven_user');
       }
     } catch {}
   }, [currentUser]);
@@ -231,6 +264,18 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [authorizedUsers, setAuthorizedUsers] = useState<CmsAuthorizedUser[]>([
     {
       id: 'perm-admin-001',
+      email: 'yr943334@gmail.com',
+      name: 'Administrator (Yash)',
+      role: 'ADMIN',
+      companyName: 'Trade Heaven Global Operations & Treasury',
+      grantedBy: 'System Root',
+      grantedAt: '2025-01-01',
+      scopes: ['ALL_ADMIN', 'EDIT_CONTENT', 'EDIT_PRICING', 'EDIT_MEDIA', 'PUBLISH_PRODUCTS', 'MANAGE_PERMISSIONS'],
+      status: 'ACTIVE',
+      notes: 'Master Administrator with unconditional global rights, full CMS and RBAC matrix access'
+    },
+    {
+      id: 'perm-admin-002',
       email: 'admin@tradeheaven.net',
       name: 'Sarah Jenkins',
       role: 'ADMIN',
@@ -247,7 +292,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       name: 'Dr. Marcus Vance',
       role: 'VERIFIER',
       companyName: 'SGS / TUV Verified Trade Audit Bureau',
-      grantedBy: 'Sarah Jenkins (Super Admin)',
+      grantedBy: 'Administrator (Super Admin)',
       grantedAt: '2025-02-15',
       scopes: ['EDIT_CONTENT', 'EDIT_MEDIA', 'PUBLISH_PRODUCTS'],
       status: 'ACTIVE',
