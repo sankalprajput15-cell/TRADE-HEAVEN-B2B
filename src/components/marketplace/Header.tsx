@@ -38,7 +38,8 @@ import {
   MessageCircle,
   PhoneCall,
   Mail,
-  BadgeCheck
+  BadgeCheck,
+  Sparkles
 } from 'lucide-react';
 
 interface Props {
@@ -155,14 +156,15 @@ export const Header: React.FC<Props> = ({
 
   const isAdminActive = [
     'CLIENT_ADMIN',
-    'CMS_MANAGEMENT'
+    'CMS_MANAGEMENT',
+    'PLAN_PRICING_ADMIN'
   ].includes(activeView);
 
   const roleStyles: Record<UserRole, { badge: string; label: string }> = {
-    BUYER: { badge: 'bg-blue-900/60 text-blue-300 border-blue-700/60', label: 'Buyer' },
-    SUPPLIER: { badge: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60', label: 'Supplier' },
-    VERIFIER: { badge: 'bg-purple-900/60 text-purple-300 border-purple-700/60', label: 'Verifier' },
-    ADMIN: { badge: 'bg-amber-900/80 text-amber-300 border-amber-500/80 font-black', label: 'Admin' }
+    BUYER: { badge: 'bg-blue-900/60 text-blue-300 border-blue-700/60 font-bold', label: 'BUYER' },
+    SUPPLIER: { badge: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 font-bold', label: 'SUPPLIER' },
+    VERIFIER: { badge: 'bg-purple-900/60 text-purple-300 border-purple-700/60 font-bold', label: 'VERIFIER' },
+    ADMIN: { badge: 'bg-amber-950/90 text-amber-300 border-amber-500/90 font-black tracking-wider shadow-2xs', label: 'ADMIN' }
   };
 
   return (
@@ -248,8 +250,8 @@ export const Header: React.FC<Props> = ({
                     <span className="text-[11px] sm:text-xs font-bold text-white truncate group-hover:text-blue-300 transition-colors">
                       {currentUser.name}
                     </span>
-                    <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1 py-0.2 rounded border ${roleStyles[currentUser.role]?.badge || 'bg-slate-800 text-white'}`}>
-                      {currentUser.role}
+                    <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 py-0.5 rounded border tracking-wider ${roleStyles[currentUser.role]?.badge || 'bg-amber-950/90 text-amber-300 border-amber-500/90'}`}>
+                      [{currentUser.role}]
                     </span>
                   </div>
                 </button>
@@ -562,6 +564,19 @@ export const Header: React.FC<Props> = ({
                 {adminMenuOpen && (
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                     <button
+                      onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <div className="text-amber-900 font-bold flex items-center gap-1.5">
+                          <span>Plan &amp; Pricing Engine</span>
+                          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[9px] font-black uppercase">Gemini</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-normal">Quotas, rate limits, models &amp; Stripe</div>
+                      </div>
+                    </button>
+                    <button
                       onClick={() => handleNavClick('CLIENT_ADMIN')}
                       className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
                     >
@@ -672,7 +687,9 @@ export const Header: React.FC<Props> = ({
                 </div>
                 <div>
                   <div className="text-xs font-bold text-slate-900">{currentUser.name}</div>
-                  <div className="text-[10px] text-slate-500 font-bold uppercase">{currentUser.role}</div>
+                  <div className={`inline-block mt-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border tracking-wider ${roleStyles[currentUser.role]?.badge || 'bg-amber-950/90 text-amber-300 border-amber-500/90'}`}>
+                    [{currentUser.role}]
+                  </div>
                 </div>
               </div>
             ) : (
@@ -772,6 +789,18 @@ export const Header: React.FC<Props> = ({
             >
               Buy Leads Feed
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-950 border border-blue-200 flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Plan &amp; Pricing Engine</span>
+                </div>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">Gemini</span>
+              </button>
+            )}
             {isAdmin && (
               <button
                 onClick={() => handleNavClick('CLIENT_ADMIN')}

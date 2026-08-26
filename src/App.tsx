@@ -42,6 +42,7 @@ import { RefundPolicyView } from './components/services/RefundPolicyView';
 import { ClientAdminView } from './components/services/ClientAdminView';
 import { SiteContentCmsEditor } from './components/cms/SiteContentCmsEditor';
 import { CmsPermissionsPanel } from './components/cms/CmsPermissionsPanel';
+import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
@@ -676,8 +677,16 @@ const MainApp: React.FC = () => {
                   />
                 );
 
+              case 'PLAN_PRICING_ADMIN':
+                return (
+                  <PlanPricingAdminModule
+                    currentUserRole={currentUser?.role}
+                    onNavigateView={handleNavigate}
+                  />
+                );
+
               case 'CMS_MANAGEMENT':
-                return currentUser?.role === 'ADMIN' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net' ? (
+                return auth.isAuthorized || currentUser?.role === 'ADMIN' || currentUser?.isVerifiedAdmin || currentUser?.email?.toLowerCase() === 'yr943334@gmail.com' || currentUser?.email?.toLowerCase() === 'admin@tradeheaven.net' ? (
                   <div className="space-y-8">
                     <SiteContentCmsEditor />
                     <CmsPermissionsPanel />

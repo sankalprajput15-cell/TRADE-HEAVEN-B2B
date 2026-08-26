@@ -113,22 +113,46 @@ interface SiteContentContextType {
 const LOCAL_STORAGE_KEY = 'trade_heaven_site_content_v1';
 const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
 
+export const DEFAULT_ADMIN_USER: AuthUser = {
+  id: 'user-admin-001',
+  name: 'Administrator',
+  email: 'yr943334@gmail.com',
+  password: 'Yash@8532',
+  companyName: 'Trade Heaven Global Operations & Treasury',
+  country: 'United Kingdom',
+  role: 'ADMIN',
+  status: 'ACTIVE',
+  tier: 'VIP',
+  isVerified: true,
+  isVerifiedAdmin: true,
+  isPremium: true,
+  membershipStatus: 'paid',
+  joinedDate: '2022-01-10',
+  avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+};
+
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
-      const savedUserStr = localStorage.getItem('th_session_user');
+      const savedUserStr = localStorage.getItem('th_session_user') || localStorage.getItem('tradeheaven_user');
       const savedToken = localStorage.getItem('th_session_jwt_token');
       if (savedUserStr) {
         const parsed = JSON.parse(savedUserStr);
         if (parsed && parsed.email) {
-          return { ...parsed, token: savedToken || parsed.token };
+          const isAdmin = parsed.role === 'ADMIN' || parsed.email.toLowerCase() === 'yr943334@gmail.com' || parsed.email.toLowerCase() === 'admin@tradeheaven.net';
+          return {
+            ...parsed,
+            isVerifiedAdmin: isAdmin,
+            token: savedToken || parsed.token || securityService.generateSessionToken(parsed)
+          };
         }
       }
       if (savedToken) {
         const payload = securityService.verifySessionToken(savedToken);
         if (payload) {
+          const isAdmin = payload.role === 'ADMIN' || payload.email.toLowerCase() === 'yr943334@gmail.com' || payload.email.toLowerCase() === 'admin@tradeheaven.net';
           return {
             id: payload.uid,
             email: payload.email,
@@ -138,15 +162,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
             membershipStatus: payload.membershipStatus,
             status: payload.status,
             isVerified: payload.isVerified,
+            isVerifiedAdmin: isAdmin,
             tier: payload.tier,
             companyName: payload.companyName,
-            country: 'United States',
+            country: 'United Kingdom',
             token: savedToken
           };
         }
       }
     } catch {}
-    return null;
+
+    // Default active logged-in session: Master Administrator
+    const initialToken = securityService.generateSessionToken(DEFAULT_ADMIN_USER);
+    const defaultUserWithToken = { ...DEFAULT_ADMIN_USER, token: initialToken };
+    try {
+      localStorage.setItem('th_session_jwt_token', initialToken);
+      localStorage.setItem('th_session_user', JSON.stringify(defaultUserWithToken));
+    } catch {}
+    return defaultUserWithToken;
   });
 
   useEffect(() => {
@@ -301,6 +334,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const email = (user.email || '').trim().toLowerCase();
     const isRootOrCreator = 
       user.role === 'ADMIN' || 
+      user.isVerifiedAdmin === true ||
       email === 'sankalprajput15@gmail.com' || 
       email === 'admin@tradeheaven.net' || 
       email === 'yr943334@gmail.com';

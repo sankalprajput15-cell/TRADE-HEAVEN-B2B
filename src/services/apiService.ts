@@ -202,6 +202,7 @@ export const api = {
           country: 'United Kingdom',
           status: 'ACTIVE',
           isVerified: true,
+          isVerifiedAdmin: true,
           isPremium: true,
           membershipStatus: 'paid',
           tier: 'VIP',

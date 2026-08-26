@@ -81,6 +81,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
+  password?: string;
   companyName: string;
   country: string;
   role: UserRole;
@@ -88,6 +89,7 @@ export interface AuthUser {
   tier?: SupplierTier;
   avatarUrl?: string;
   isVerified: boolean;
+  isVerifiedAdmin?: boolean;
   isPremium?: boolean;
   membershipStatus?: MembershipStatus;
   plan?: string;
@@ -431,6 +433,7 @@ export type ActiveView =
   | 'INCOTERMS_CALCULATOR'
   | 'CMS_MANAGEMENT'
   | 'CLIENT_ADMIN'
+  | 'PLAN_PRICING_ADMIN'
   | 'RFQ_HUB'
   | 'NEGOTIATION_ROOM'
   | 'DASHBOARD'
@@ -441,6 +444,8 @@ export type ActiveView =
   | 'ONBOARD_WITH_US'
   | 'VENDOR_PROFILE'
   | 'BUYER_PROFILE';
+
+export * from './types/planPricingTypes';
 
 export interface ComplianceCertificate {
   id: string;
