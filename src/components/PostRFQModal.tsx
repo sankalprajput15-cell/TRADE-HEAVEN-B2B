@@ -19,7 +19,7 @@ import {
   ShieldCheck, 
   AlertCircle, 
   Loader2, 
-  Sparkles, 
+  FileText, 
   DollarSign, 
   Package, 
   Globe, 
@@ -242,7 +242,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
         <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-              <Sparkles className="w-5 h-5" />
+              <FileText className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-lg font-bold">Broadcast Sourcing RFQ (Buy Lead)</h2>

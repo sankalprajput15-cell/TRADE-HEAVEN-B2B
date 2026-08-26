@@ -16,7 +16,6 @@ import {
   AlertCircle,
   Package,
   Layers,
-  Sparkles,
   ExternalLink,
   MessageCircle
 } from 'lucide-react';

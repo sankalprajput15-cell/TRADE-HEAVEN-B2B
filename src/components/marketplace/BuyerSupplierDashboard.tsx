@@ -15,7 +15,6 @@ import {
   ArrowUpRight, 
   Building, 
   Layers, 
-  Sparkles,
   Download,
   ExternalLink,
   MessageCircle,

@@ -17,7 +17,6 @@ import {
   Award, 
   ArrowRight, 
   ArrowLeft,
-  Sparkles, 
   Users, 
   DollarSign, 
   Clock, 
@@ -400,7 +399,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
               onClick={() => handleFillDemoProfile(1)}
               className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-slate-950" />
+              <Award className="w-4 h-4 text-slate-950" />
               <span>Fill Demo Registration</span>
             </button>
 

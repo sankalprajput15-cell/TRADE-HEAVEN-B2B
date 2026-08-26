@@ -6,7 +6,6 @@ import {
   Award, 
   ShieldCheck, 
   CheckCircle2, 
-  Sparkles, 
   Zap, 
   Globe2, 
   CreditCard, 

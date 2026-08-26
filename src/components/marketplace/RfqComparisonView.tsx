@@ -16,7 +16,6 @@ import {
   ArrowRight, 
   PlusCircle, 
   Download, 
-  Sparkles,
   Calendar,
   DollarSign,
   Radio,
@@ -105,7 +104,7 @@ export const RfqComparisonView: React.FC<Props> = ({
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Layers className="w-3.5 h-3.5" />
             <span>Multi-Supplier Bid Evaluation &amp; Proforma Comparison Studio</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">

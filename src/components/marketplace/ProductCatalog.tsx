@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, Currency, SupplierTier, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { SafeImage } from '../common/SafeImage';
@@ -15,8 +15,7 @@ import {
   ExternalLink,
   MessageCircle,
   Package,
-  Layers,
-  Sparkles
+  Layers
 } from 'lucide-react';
 
 interface Props {
@@ -25,6 +24,10 @@ interface Props {
   onSelectProduct: (product: Product) => void;
   onOpenStorefront: (supplierId: string) => void;
   onContactSupplier: (product: Product) => void;
+  selectedCategory?: string;
+  onCategoryChange?: (cat: string) => void;
+  initialCategory?: string;
+  initialSearch?: string;
 }
 
 export const ProductCatalog: React.FC<Props> = ({
@@ -32,15 +35,44 @@ export const ProductCatalog: React.FC<Props> = ({
   selectedCurrency,
   onSelectProduct,
   onOpenStorefront,
-  onContactSupplier
+  onContactSupplier,
+  selectedCategory: propCategory,
+  onCategoryChange,
+  initialCategory,
+  initialSearch
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [searchTerm, setSearchTerm] = useState(initialSearch || '');
+  const [internalCategory, setInternalCategory] = useState<string>(initialCategory || propCategory || 'ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedIncoterm, setSelectedIncoterm] = useState<string>('ALL');
   const [maxMoq, setMaxMoq] = useState<number>(5000);
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
+
+  // Sync external category prop if provided
+  useEffect(() => {
+    if (propCategory !== undefined) {
+      setInternalCategory(propCategory || 'ALL');
+    }
+  }, [propCategory]);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setInternalCategory(initialCategory);
+    }
+    if (initialSearch !== undefined) {
+      setSearchTerm(initialSearch);
+    }
+  }, [initialCategory, initialSearch]);
+
+  const activeCategory = propCategory !== undefined ? (propCategory || 'ALL') : internalCategory;
+
+  const handleCategorySelect = (cat: string) => {
+    setInternalCategory(cat);
+    if (onCategoryChange) {
+      onCategoryChange(cat);
+    }
+  };
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -81,13 +113,23 @@ export const ProductCatalog: React.FC<Props> = ({
     }
   };
 
-  // Filter logic
+  // Available unique categories extracted from products
+  const availableCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+
+  // Filter logic (Robust matching)
   const filtered = products.filter(p => {
-    const matchesSearch = searchTerm === '' || 
-      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = selectedCategory === 'ALL' || p.category === selectedCategory;
+    const term = searchTerm.trim().toLowerCase();
+    const matchesSearch = term === '' || 
+      p.title.toLowerCase().includes(term) ||
+      p.supplierName.toLowerCase().includes(term) ||
+      p.category.toLowerCase().includes(term) ||
+      (p.description && p.description.toLowerCase().includes(term));
+      
+    const matchesCat = activeCategory === 'ALL' || 
+      p.category === activeCategory ||
+      p.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
+      activeCategory.toLowerCase().includes(p.category.toLowerCase());
+      
     const matchesTier = selectedTier === 'ALL' || p.supplierTier === selectedTier;
     const matchesIncoterm = selectedIncoterm === 'ALL' || p.supportedIncoterms.includes(selectedIncoterm as Incoterm);
     const matchesMoq = p.moq <= maxMoq;
@@ -149,7 +191,7 @@ export const ProductCatalog: React.FC<Props> = ({
             </h3>
             <button
               onClick={() => {
-                setSelectedCategory('ALL');
+                handleCategorySelect('ALL');
                 setSelectedTier('ALL');
                 setSelectedIncoterm('ALL');
                 setMaxMoq(5000);
@@ -157,8 +199,37 @@ export const ProductCatalog: React.FC<Props> = ({
               }}
               className="text-[11px] text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
             >
-              Reset
+              Reset All
             </button>
+          </div>
+
+          {/* Industry Category Sector */}
+          <div>
+            <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Industry Sector</label>
+            <div className="space-y-1 text-xs max-h-48 overflow-y-auto pr-1">
+              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                <input
+                  type="radio"
+                  name="category"
+                  checked={activeCategory === 'ALL'}
+                  onChange={() => handleCategorySelect('ALL')}
+                  className="accent-blue-600"
+                />
+                <span className={activeCategory === 'ALL' ? 'font-bold text-blue-600' : ''}>All Sectors</span>
+              </label>
+              {availableCategories.map(cat => (
+                <label key={cat} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                  <input
+                    type="radio"
+                    name="category"
+                    checked={activeCategory === cat}
+                    onChange={() => handleCategorySelect(cat)}
+                    className="accent-blue-600"
+                  />
+                  <span className={`line-clamp-1 ${activeCategory === cat ? 'font-bold text-blue-600' : ''}`}>{cat}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Supplier Membership Tier */}
@@ -230,7 +301,76 @@ export const ProductCatalog: React.FC<Props> = ({
         </div>
 
         {/* Product Results Grid/List */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 space-y-4">
+          {/* Active Filter Chips */}
+          {(activeCategory !== 'ALL' || searchTerm.trim() !== '' || selectedTier !== 'ALL' || selectedIncoterm !== 'ALL') && (
+            <div className="flex flex-wrap items-center gap-2 bg-blue-50/70 border border-blue-200/80 rounded-xl p-2.5 sm:p-3 text-xs">
+              <span className="text-slate-600 font-bold text-[11px] flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-blue-600" /> Active Filters:
+              </span>
+              {activeCategory !== 'ALL' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-xs shadow-2xs">
+                  <span>Sector: {activeCategory}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCategorySelect('ALL')}
+                    className="hover:text-blue-200 font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {searchTerm.trim() !== '' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 font-bold text-xs shadow-2xs">
+                  <span>Search: "{searchTerm}"</span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="hover:text-red-500 font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {selectedTier !== 'ALL' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs">
+                  <span>Tier: {selectedTier}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTier('ALL')}
+                    className="hover:text-amber-700 font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              {selectedIncoterm !== 'ALL' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 font-bold text-xs">
+                  <span>Incoterm: {selectedIncoterm}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIncoterm('ALL')}
+                    className="hover:text-red-500 font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  handleCategorySelect('ALL');
+                  setSearchTerm('');
+                  setSelectedTier('ALL');
+                  setSelectedIncoterm('ALL');
+                }}
+                className="ml-auto text-[11px] text-blue-700 hover:text-blue-900 font-bold underline cursor-pointer"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
           {filtered.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center space-y-2.5 shadow-2xs">
               <Package className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400 mx-auto" />

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Search, 
   ShieldCheck, 
-  Sparkles, 
   Layers, 
   Globe2, 
   CheckCircle2, 
@@ -553,7 +552,7 @@ export const HeroSection: React.FC<Props> = ({
               {/* Header with Search Query & Filter Tabs */}
               <div className="p-3.5 sm:p-4 bg-slate-900 text-white border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <Search className="w-4 h-4 text-amber-400 shrink-0" />
                   <span className="text-xs font-bold text-slate-200 truncate">
                     Search results for <span className="text-amber-400 font-black">"{searchQuery}"</span>
                   </span>

@@ -8,7 +8,6 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   DollarSign, 
-  Sparkles, 
   Landmark, 
   Building2, 
   Clock, 

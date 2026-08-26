@@ -18,7 +18,6 @@ import {
   DollarSign, 
   Send, 
   PlusCircle, 
-  Sparkles, 
   ExternalLink, 
   MessageCircle, 
   Lock, 
@@ -464,7 +463,7 @@ export const RfqDetailModal: React.FC<Props> = ({
           {activeTab === 'SUBMIT_QUOTE' && (
             <form onSubmit={handleQuoteSubmit} className="space-y-4">
               <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 text-xs text-emerald-950">
-                <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
+                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
                   <strong>Official Tender Bid Submission:</strong> Your factory quotation will be evaluated by {rfq.buyerCompany}. Provide your most competitive FOB/CIF rates.
                 </div>

@@ -5,7 +5,6 @@ import { bigrockApi } from '../../services/bigrockApi';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
 import { 
   PackagePlus, 
-  Sparkles, 
   ShieldCheck, 
   Send, 
   Layers, 
@@ -208,7 +207,7 @@ export const PostSellOfferView: React.FC<Props> = ({
           {/* Quick Fill Sample Products */}
           <div className="bg-slate-100/90 border border-slate-200 rounded-2xl p-4 space-y-2">
             <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <PackagePlus className="w-3.5 h-3.5 text-emerald-600" />
               <span>1-Click Sample Product Listings (Populate with real factory specifications):</span>
             </span>
             <div className="flex flex-wrap gap-2">

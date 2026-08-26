@@ -12,7 +12,6 @@ import {
   Award, 
   Building2, 
   ArrowRight, 
-  Sparkles, 
   Globe2, 
   Package, 
   Truck, 
@@ -38,6 +37,9 @@ interface Props {
   onNavigate: (view: ActiveView) => void;
   onOpenLiveTool: (tool: 'incoterms' | 'rfq_checker' | 'api_sandbox') => void;
   onSelectRfq?: (rfq: RfqRequirement) => void;
+  onNavigateToCategory?: (catName: string, subcategory?: string) => void;
+  onNavigateToSuppliers?: (sectorName?: string) => void;
+  onNavigateToRfqs?: (categoryName?: string) => void;
 }
 
 export const TradeWheelHomePage: React.FC<Props> = ({
@@ -50,7 +52,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onOpenCreateRfq,
   onNavigate,
   onOpenLiveTool,
-  onSelectRfq
+  onSelectRfq,
+  onNavigateToCategory,
+  onNavigateToSuppliers,
+  onNavigateToRfqs
 }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
@@ -64,6 +69,16 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const handleHeroSearch = (query: string, category: string) => {
     if (category) {
       setSelectedCategory(category);
+    }
+  };
+
+  const handleSelectCategoryFromMenu = (catName: string) => {
+    setSelectedCategory(catName || null);
+    if (catName) {
+      const catalogEl = document.getElementById('featured-products-section');
+      if (catalogEl) {
+        catalogEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
@@ -86,11 +101,19 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}
       <CategoryMegaMenu
         selectedCategory={selectedCategory}
-        onSelectCategory={catName => setSelectedCategory(catName || null)}
+        onSelectCategory={handleSelectCategoryFromMenu}
+        onNavigateToCategory={onNavigateToCategory || ((cat, sub) => {
+          setSelectedCategory(cat);
+          onNavigate('PRODUCT_DIRECTORY');
+        })}
+        onNavigateToSuppliers={onNavigateToSuppliers || (() => onNavigate('SUPPLIERS_DIRECTORY'))}
+        onNavigateToRfqs={onNavigateToRfqs || (() => onNavigate('BUY_LEADS'))}
+        onNavigate={onNavigate}
+        onOpenCreateRfq={onOpenCreateRfq}
       />
 
       {/* 3. FEATURED PRODUCTS CATALOG SECTION */}
-      <div className="space-y-4">
+      <div id="featured-products-section" className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
@@ -116,6 +139,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           onSelectProduct={onSelectProduct}
           onOpenStorefront={onOpenStorefront}
           onContactSupplier={onContactSupplier}
+          selectedCategory={selectedCategory || 'ALL'}
+          onCategoryChange={(cat) => setSelectedCategory(cat === 'ALL' ? null : cat)}
         />
       </div>
 

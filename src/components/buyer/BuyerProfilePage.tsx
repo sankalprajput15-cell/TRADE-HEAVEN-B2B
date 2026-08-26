@@ -37,7 +37,6 @@ import {
   X, 
   Paperclip, 
   ChevronRight, 
-  Sparkles,
   Layers,
   HelpCircle,
   Truck,

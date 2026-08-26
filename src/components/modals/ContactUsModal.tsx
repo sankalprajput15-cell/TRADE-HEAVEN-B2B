@@ -8,7 +8,6 @@ import {
   MessageCircle, 
   ExternalLink, 
   CheckCircle2, 
-  Sparkles,
   Building2,
   Clock,
   Headphones,

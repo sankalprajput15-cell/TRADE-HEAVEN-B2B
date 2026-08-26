@@ -86,6 +86,8 @@ const MainApp: React.FC = () => {
   const [storefrontCompanyId, setStorefrontCompanyId] = useState<string | null>(null);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-001');
   const [isCreateRfqOpen, setIsCreateRfqOpen] = useState(false);
+  const [catalogCategory, setCatalogCategory] = useState<string>('ALL');
+  const [catalogSearch, setCatalogSearch] = useState<string>('');
   const [contactModalConfig, setContactModalConfig] = useState<{
     isOpen: boolean;
     targetType: 'RFQ' | 'PRODUCT' | 'SUPPLIER' | 'GENERAL';
@@ -479,6 +481,20 @@ const MainApp: React.FC = () => {
                       setSelectedRfqId(rfq.id);
                       setSelectedRfqForModal(rfq);
                     }}
+                    onNavigateToCategory={(cat, sub) => {
+                      setCatalogCategory(cat || 'ALL');
+                      setCatalogSearch(sub || '');
+                      setActiveView('PRODUCT_DIRECTORY');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onNavigateToSuppliers={(sector) => {
+                      setActiveView('SUPPLIERS_DIRECTORY');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onNavigateToRfqs={(cat) => {
+                      setActiveView('BUY_LEADS');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   />
                 );
 
@@ -500,6 +516,9 @@ const MainApp: React.FC = () => {
                       onSelectProduct={handleSelectProduct}
                       onOpenStorefront={handleOpenStorefront}
                       onContactSupplier={handleContactSupplier}
+                      selectedCategory={catalogCategory}
+                      onCategoryChange={setCatalogCategory}
+                      initialSearch={catalogSearch}
                     />
                   </div>
                 );

@@ -4,7 +4,6 @@ import { ActiveView } from '../../types';
 import { 
   SlidersHorizontal, 
   Eye, 
-  Sparkles, 
   FileEdit, 
   Download, 
   RotateCcw, 

@@ -11,8 +11,7 @@ import {
   CheckCircle2, 
   Info,
   DollarSign,
-  ArrowRight,
-  Sparkles
+  ArrowRight
 } from 'lucide-react';
 
 interface Props {

@@ -8,7 +8,6 @@ import {
   Users, 
   CheckCircle2, 
   AlertCircle,
-  Sparkles,
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';

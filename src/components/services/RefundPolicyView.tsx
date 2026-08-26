@@ -9,7 +9,6 @@ import {
   Clock, 
   DollarSign,
   ArrowRight,
-  Sparkles,
   Lock,
   Mail,
   MessageCircle,

@@ -6,7 +6,6 @@ import {
   ChevronUp, 
   Search, 
   ShieldCheck, 
-  Sparkles, 
   MessageSquare, 
   Filter, 
   RefreshCw, 

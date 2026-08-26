@@ -14,7 +14,6 @@ import {
   Clock, 
   DollarSign, 
   Send, 
-  Sparkles, 
   Building2, 
   Lock, 
   RefreshCw, 

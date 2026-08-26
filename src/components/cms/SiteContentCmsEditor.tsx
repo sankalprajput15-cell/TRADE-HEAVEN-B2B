@@ -6,7 +6,6 @@ import {
   Save, 
   RotateCcw, 
   CheckCircle2, 
-  Sparkles, 
   Globe2, 
   Layers, 
   Layout, 

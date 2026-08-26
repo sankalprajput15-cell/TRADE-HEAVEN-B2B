@@ -9,7 +9,6 @@ import {
   CheckCircle2, 
   Trash2, 
   Server, 
-  Sparkles,
   Layers,
   FileCode,
   AlertTriangle,

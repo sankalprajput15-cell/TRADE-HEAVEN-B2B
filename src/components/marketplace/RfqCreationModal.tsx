@@ -9,7 +9,6 @@ import {
   Send, 
   FileText, 
   Globe2, 
-  Sparkles, 
   Package, 
   Anchor, 
   Calendar,
@@ -221,7 +220,7 @@ export const RfqCreationModal: React.FC<Props> = ({
         {/* Modal Header (Fixed at top of modal) */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 md:p-7 shrink-0 pr-14">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
-            <Sparkles className="w-4 h-4" /> Global Sourcing RFQ Dispatch
+            <Globe2 className="w-4 h-4" /> Global Sourcing RFQ Dispatch
           </div>
           <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
             Post Buy Requirement &amp; Request Factory Quotes
@@ -254,7 +253,7 @@ export const RfqCreationModal: React.FC<Props> = ({
             <div className="bg-slate-100/90 border border-slate-200 rounded-2xl p-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <FileText className="w-3.5 h-3.5 text-amber-600" />
                   <span>1-Click Sample Pre-fills (Test with verified real-world data):</span>
                 </span>
               </div>

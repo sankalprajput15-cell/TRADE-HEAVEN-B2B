@@ -25,8 +25,7 @@ import {
   Database,
   ArrowRight,
   Eye,
-  EyeOff,
-  Sparkles
+  EyeOff
 } from 'lucide-react';
 
 interface Props {

@@ -16,7 +16,6 @@ import {
   Anchor, 
   Building2, 
   ArrowRight,
-  Sparkles,
   MessageCircle,
   ExternalLink,
   Crown,

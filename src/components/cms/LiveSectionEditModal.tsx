@@ -5,7 +5,6 @@ import {
   Save, 
   CheckCircle2, 
   SlidersHorizontal, 
-  Sparkles, 
   Layers, 
   Image as ImageIcon,
   RotateCcw,
