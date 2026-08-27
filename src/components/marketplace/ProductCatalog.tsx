@@ -497,8 +497,8 @@ export const ProductCatalog: React.FC<Props> = ({
                         <span className="truncate max-w-[120px]">{product.supplierName}</span>
                         <span>•</span>
                         <span>MOQ: <strong>{product.moq} {product.moqUnit}</strong></span>
-                        <span className="hidden xs:inline">•</span>
-                        <span className="hidden xs:inline">{product.leadTimeDays}d lead</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline">{product.leadTimeDays}d lead</span>
                       </div>
                     </div>
                   </div>

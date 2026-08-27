@@ -170,8 +170,8 @@ export const Header: React.FC<Props> = ({
   return (
     <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
       {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
-      <div className="bg-slate-950 text-slate-300 border-b border-slate-800/80 px-3 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 w-full">
+      <div className="bg-slate-950 text-slate-300 border-b border-slate-800/80 px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-1.5 sm:gap-4 w-full">
           
           {/* Left: Security & Direct Assistance */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -618,23 +618,22 @@ export const Header: React.FC<Props> = ({
           </nav>
 
           {/* Right: Key Direct Action Cluster */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Post RFQ Button */}
             <button
               id="header-post-rfq-btn"
               onClick={onOpenCreateRfq}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
             >
               <PlusCircle className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Post Buy RFQ</span>
-              <span className="sm:hidden">RFQ</span>
             </button>
 
             {/* Messages / Negotiation Room */}
             <button
               id="header-negotiation-btn"
               onClick={() => handleNavClick('NEGOTIATION_ROOM')}
-              className={`p-2 rounded-xl border relative transition-all shrink-0 cursor-pointer ${
+              className={`p-1.5 sm:p-2 rounded-xl border relative transition-all shrink-0 cursor-pointer ${
                 activeView === 'NEGOTIATION_ROOM'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -643,7 +642,7 @@ export const Header: React.FC<Props> = ({
             >
               <MessageSquare className="w-4 h-4 shrink-0" />
               {unreadMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-rose-500 text-white text-[8px] sm:text-[9px] font-bold flex items-center justify-center">
                   {unreadMessagesCount}
                 </span>
               )}
@@ -653,7 +652,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-dashboard-btn"
               onClick={() => handleNavClick('DASHBOARD')}
-              className={`p-2 rounded-xl border transition-all shrink-0 cursor-pointer ${
+              className={`hidden sm:flex p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 cursor-pointer ${
                 activeView === 'DASHBOARD'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -667,7 +666,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>

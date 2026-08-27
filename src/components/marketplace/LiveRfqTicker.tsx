@@ -29,8 +29,8 @@ export const LiveRfqTicker: React.FC<Props> = ({ rfqs = MOCK_RFQS, onSelectRfq }
       <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold border border-rose-200 shrink-0 uppercase tracking-wider text-[9px] sm:text-[10px]">
           <Radio className="w-2.5 h-2.5 sm:w-3 sm:h-3 animate-pulse text-rose-600 shrink-0" />
-          <span className="hidden xs:inline">Live Leads</span>
-          <span className="xs:hidden">RFQ</span>
+          <span className="hidden sm:inline">Live Leads</span>
+          <span className="sm:hidden">RFQ</span>
         </div>
         <div className="flex items-center gap-1.5 overflow-hidden text-slate-700 min-w-0">
           <span className="font-bold text-slate-900 truncate text-[11px] sm:text-xs">
