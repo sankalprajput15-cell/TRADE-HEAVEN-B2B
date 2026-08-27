@@ -76,7 +76,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
   };
 
   return (
-    <footer id="trade-heaven-global-footer" className="relative mt-16 bg-slate-950 text-slate-400 text-xs border-t border-slate-800 group">
+    <footer id="trade-heaven-global-footer" className="relative mt-16 bg-slate-100 text-slate-700 text-xs border-t border-slate-200 group">
       
       {/* Live Edit Mode Trigger Button (Strictly Admin / Creator Only) */}
       {isAdmin && isLiveEditMode && (
@@ -91,21 +91,21 @@ export const TradeHeavenFooter: React.FC<Props> = ({
       )}
 
       {/* Top Banner: Corporate Guarantee & TrustScore */}
-      <div className="border-b border-slate-800/80 bg-slate-900/60 px-4 sm:px-6 lg:px-8 py-6">
+      <div className="border-b border-slate-200 bg-slate-200/60 px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 text-center md:text-left">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-xs">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 font-bold text-xs">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>100% trade protection &amp; Verified Factory Assurance</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-bold text-xs">
-              <Headphones className="w-3.5 h-3.5 text-blue-400" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-700 border border-blue-500/20 font-bold text-xs">
+              <Headphones className="w-3.5 h-3.5 text-blue-600" />
               <span>H2H Human-to-Human Dedicated Account Support</span>
             </div>
           </div>
           {/* Social Links Row */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400 mr-1">Follow {brand.siteName || 'Trade Heaven'}:</span>
+            <span className="text-[11px] font-bold text-slate-600 mr-1">Follow {brand.siteName || 'Trade Heaven'}:</span>
             {SOCIAL_LINKS.map(item => {
               const Icon = item.icon;
               return (
@@ -115,7 +115,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   title={`Trade Heaven on ${item.name}`}
-                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all group"
+                  className="w-8 h-8 rounded-xl bg-white hover:bg-blue-600 hover:text-white border border-slate-300 text-slate-700 flex items-center justify-center transition-all group shadow-xs"
                 >
                   <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 </a>
@@ -132,22 +132,22 @@ export const TradeHeavenFooter: React.FC<Props> = ({
           {/* Column 1: Brand & Mission (2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <TradeHeavenLogo size="md" variant="gold" showWordmark={true} />
+              <TradeHeavenLogo size="md" variant="dark" showWordmark={true} />
             </div>
-            <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
+            <p className="text-slate-600 text-xs leading-relaxed max-w-sm">
               {hf?.footerMission || "Trade Heaven is an international B2B marketplace and export portal connecting verified global buyers with vetted manufacturing plants across 180+ countries."}
             </p>
-            <div className="space-y-2 text-[11px] text-slate-400">
+            <div className="space-y-2 text-[11px] text-slate-600">
               <div className="flex items-center gap-2">
-                <Globe2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <Globe2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 <span>Global Sourcing in Europe, Asia, Americas &amp; Middle East</span>
               </div>
               <div className="flex items-center gap-2">
-                <HeartHandshake className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <HeartHandshake className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>IEM (International Export Manager) Strategic Services</span>
               </div>
               <div className="flex items-center gap-2">
-                <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span>Verified Supplier Audits with SGS, Bureau Veritas &amp; TÜV</span>
               </div>
             </div>
@@ -163,7 +163,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-blue-600 hover:text-white border border-slate-800 text-slate-300 text-[10px] font-bold transition-colors inline-flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-600 hover:text-white border border-slate-300 text-slate-700 text-[10px] font-bold transition-colors inline-flex items-center gap-1 shadow-xs"
                   >
                     <span>{s.name}</span>
                     <ExternalLink className="w-2.5 h-2.5 opacity-60" />
@@ -175,37 +175,37 @@ export const TradeHeavenFooter: React.FC<Props> = ({
 
           {/* Column 2: Sourcing & Buy Leads */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
               Buyer Sourcing Hub
             </h4>
-            <ul className="space-y-2 text-xs">
+            <ul className="space-y-2 text-xs text-slate-600">
               <li>
-                <button onClick={() => onNavigate('PRODUCT_DIRECTORY')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('PRODUCT_DIRECTORY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Verified Product Catalog
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('BUY_LEADS')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('BUY_LEADS')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Global Buy Leads Feed
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('POST_BUY_REQUIREMENT')} className="hover:text-amber-400 transition-colors text-left font-bold text-blue-400 cursor-pointer">
+                <button onClick={() => onNavigate('POST_BUY_REQUIREMENT')} className="hover:text-blue-600 transition-colors text-left font-bold text-blue-600 cursor-pointer">
                   Post Buy Requirement (RFQ)
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('SUPPLIERS_DIRECTORY')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('SUPPLIERS_DIRECTORY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Audited Factories Directory
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('RFQ_HUB')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('RFQ_HUB')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   RFQ Comparison Studio
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Incoterms &amp; Freight Tools
                 </button>
               </li>
@@ -214,33 +214,33 @@ export const TradeHeavenFooter: React.FC<Props> = ({
 
           {/* Column 3: Supplier & Membership */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
               Suppliers &amp; Exporters
             </h4>
-            <ul className="space-y-2 text-xs">
+            <ul className="space-y-2 text-xs text-slate-600">
               <li>
-                <button onClick={() => onNavigate('ONBOARD_WITH_US')} className="hover:text-emerald-300 transition-colors text-left font-black text-emerald-400 flex items-center gap-1.5 cursor-pointer">
+                <button onClick={() => onNavigate('ONBOARD_WITH_US')} className="hover:text-emerald-700 transition-colors text-left font-black text-emerald-700 flex items-center gap-1.5 cursor-pointer">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Work With Us (Free Vetting)</span>
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('SELLER_OFFER')} className="hover:text-amber-400 transition-colors text-left font-bold text-slate-300 cursor-pointer">
+                <button onClick={() => onNavigate('SELLER_OFFER')} className="hover:text-blue-600 transition-colors text-left font-bold text-slate-700 cursor-pointer">
                   Post Export Cargo Offer
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('PREMIUM_PLANS')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('PREMIUM_PLANS')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Gold &amp; VIP Membership Tiers
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('DASHBOARD')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('DASHBOARD')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Exporter Orders &amp; Shipments
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('TRADE_PROTECTION')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                <button onClick={() => onNavigate('TRADE_PROTECTION')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Custodial trade protection Vaults
                 </button>
               </li>
@@ -249,11 +249,11 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                   <button 
                     id="footer-cms-admin-btn"
                     onClick={handleCmsClick} 
-                    className="transition-colors text-left font-bold cursor-pointer flex items-center gap-1.5 text-amber-400 hover:text-amber-300"
+                    className="transition-colors text-left font-bold cursor-pointer flex items-center gap-1.5 text-amber-700 hover:text-amber-800"
                     title="Full-Site CMS Editor (Admin Access Granted)"
                   >
                     <span>Full-Site CMS Editor</span>
-                    <span className="text-[9px] bg-amber-400/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
+                    <span className="text-[9px] bg-amber-400/20 text-amber-800 border border-amber-400/40 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
                       Admin
                     </span>
                   </button>
@@ -264,26 +264,26 @@ export const TradeHeavenFooter: React.FC<Props> = ({
 
           {/* Column 4: Contact & WhatsApp Desk */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+            <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
               Official Help Desk &amp; Direct
             </h4>
 
             <div className="space-y-2.5">
               {/* Help Desk Email Card */}
-              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+              <div className="p-3 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1.5">
                 <div className="flex items-center justify-between gap-1">
-                  <div className="flex items-center gap-1.5 text-blue-400 font-bold text-xs">
-                    <Mail className="w-4 h-4 text-blue-400" />
+                  <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
+                    <Mail className="w-4 h-4 text-blue-600" />
                     <span>Official Help Desk</span>
                   </div>
-                  <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                  <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 border border-blue-200">
                     24/7
                   </span>
                 </div>
-                <div className="font-mono text-xs font-bold text-white tracking-wide truncate">
+                <div className="font-mono text-xs font-bold text-slate-950 tracking-wide truncate">
                   {supportEmail}
                 </div>
-                <p className="text-[10px] text-slate-300 leading-tight">
+                <p className="text-[10px] text-slate-500 leading-tight">
                   Dispatches immediately to senior trade managers &amp; trade protection team.
                 </p>
                 <button
@@ -297,17 +297,17 @@ export const TradeHeavenFooter: React.FC<Props> = ({
               </div>
 
               {/* WhatsApp Card */}
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-[#25D366]/10 to-emerald-900/20 border border-[#25D366]/30 space-y-1.5">
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-xs space-y-1.5">
                 <div className="flex items-center justify-between gap-1">
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+                  <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs">
                     <MessageCircle className="w-4 h-4 text-[#25D366]" />
                     <span>Official WhatsApp</span>
                   </div>
-                  <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30">
+                  <span className="text-[9px] uppercase font-black px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
                     Live
                   </span>
                 </div>
-                <div className="font-mono text-xs font-bold text-white tracking-wide">
+                <div className="font-mono text-xs font-bold text-slate-950 tracking-wide">
                   {whatsappPhone}
                 </div>
                 <a
@@ -326,35 +326,35 @@ export const TradeHeavenFooter: React.FC<Props> = ({
         </div>
 
         {/* Corporate Trust & Legal Strip */}
-        <div className="mt-10 pt-6 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+        <div className="mt-10 pt-6 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-            <span className="font-bold text-slate-300">{hf?.footerCopyright || '© 2025–2026 Trade Heaven Inc. All rights reserved.'}</span>
-            <span className="hidden sm:inline text-slate-700">•</span>
-            <span className="text-slate-400">{hf?.footerIsoText || 'ISO 9001 & ISO 27001 Certified Enterprise'}</span>
-            <span className="hidden sm:inline text-slate-700">•</span>
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+            <span className="font-bold text-slate-900">{hf?.footerCopyright || '© 2025–2026 Trade Heaven Inc. All rights reserved.'}</span>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <span className="text-slate-600">{hf?.footerIsoText || 'ISO 9001 & ISO 27001 Certified Enterprise'}</span>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <span className="text-emerald-700 font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
               PCI-DSS Level 1 trade protection Vault
             </span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-400">
-            <button onClick={() => onNavigate('REFUND_POLICY')} className="hover:text-white transition-colors text-slate-300 font-semibold underline decoration-slate-700 underline-offset-4 cursor-pointer">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-600">
+            <button onClick={() => onNavigate('REFUND_POLICY')} className="hover:text-slate-950 transition-colors text-slate-700 font-semibold underline decoration-slate-300 underline-offset-4 cursor-pointer">
               Return &amp; Refund Policy
             </button>
-            <span className="text-slate-700">•</span>
-            <button onClick={handleContactOpen} className="hover:text-white transition-colors cursor-pointer">
+            <span className="text-slate-300">•</span>
+            <button onClick={handleContactOpen} className="hover:text-slate-950 transition-colors cursor-pointer">
               Help Center
             </button>
-            <span className="text-slate-700">•</span>
-            <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-white transition-colors cursor-pointer">
+            <span className="text-slate-300">•</span>
+            <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-slate-950 transition-colors cursor-pointer">
               Incoterms 2020 Rules
             </button>
-            <span className="text-slate-700">•</span>
-            <button onClick={handleContactOpen} className="hover:text-white transition-colors cursor-pointer">
+            <span className="text-slate-300">•</span>
+            <button onClick={handleContactOpen} className="hover:text-slate-950 transition-colors cursor-pointer">
               Dispute Mediation
             </button>
-            <span className="text-slate-700">•</span>
-            <a href={`mailto:${supportEmail}`} className="hover:text-white font-mono transition-colors text-blue-400">
+            <span className="text-slate-300">•</span>
+            <a href={`mailto:${supportEmail}`} className="hover:text-slate-950 font-mono transition-colors text-blue-600">
               {supportEmail}
             </a>
           </div>

@@ -49,17 +49,17 @@ export const TradeHeavenLogo: React.FC<Props> = ({
     if (wordmarkTheme === 'light' || variant === 'light') {
       return {
         trade: 'text-white',
-        heaven: 'text-amber-400',
+        heaven: 'text-black',
         badge: 'bg-white/15 text-white border-white/20',
         sub: 'text-slate-300'
       };
     }
     if (variant === 'gold') {
       return {
-        trade: 'text-white',
-        heaven: 'text-amber-400',
-        badge: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
-        sub: 'text-slate-400'
+        trade: 'text-slate-900',
+        heaven: 'text-black',
+        badge: 'bg-amber-400/20 text-amber-900 border-amber-400/40',
+        sub: 'text-slate-600'
       };
     }
     if (variant === 'monochrome') {
@@ -72,7 +72,7 @@ export const TradeHeavenLogo: React.FC<Props> = ({
     }
     return {
       trade: 'text-slate-900',
-      heaven: 'text-blue-600',
+      heaven: 'text-black',
       badge: 'bg-blue-50 text-blue-700 border-blue-200',
       sub: 'text-slate-500'
     };
