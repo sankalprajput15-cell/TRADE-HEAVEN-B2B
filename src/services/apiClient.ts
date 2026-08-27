@@ -65,6 +65,50 @@ const API_BASE = './api.php';
 
 export const apiClient = {
   /**
+   * Fetch live CMS Site Content from the backend API.
+   * Uses ./api.php?action=get_site_content
+   */
+  async getSiteContent(): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}?action=get_site_content`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        },
+        cache: 'no-cache'
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return { success: json.status === 'success' || json.success === true, data: json.data || json.siteContent, message: json.message };
+    } catch (e: any) {
+      console.warn('[apiClient] getSiteContent error:', e);
+      return { success: false, message: e.message || 'Failed to fetch site content' };
+    }
+  },
+
+  /**
+   * Update live CMS Site Content via the backend API.
+   * Uses ./api.php?action=update_site_content
+   */
+  async updateSiteContent(payload: any): Promise<{ success: boolean; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}?action=update_site_content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ siteContent: payload })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return { success: json.status === 'success' || json.success === true, message: json.message || 'Updated successfully' };
+    } catch (e: any) {
+      console.error('[apiClient] updateSiteContent error:', e);
+      return { success: false, message: e.message || 'Failed to save site content' };
+    }
+  },
+  /**
    * Fetch all active RFQ buying leads from MySQL backend via ./api.php?action=get_rfqs
    * Safely unwraps res.data || [] (always returns an array, never null or string)
    */

@@ -37,12 +37,16 @@ export const LiveSectionEditModal: React.FC<Props> = ({
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    await updateSiteContent(formData, currentUser);
-    setSavedSuccess(true);
-    setTimeout(() => {
-      setSavedSuccess(false);
-      onClose();
-    }, 1200);
+    const res = await updateSiteContent(formData, currentUser);
+    if (res.success) {
+      setSavedSuccess(true);
+      setTimeout(() => {
+        setSavedSuccess(false);
+        onClose();
+      }, 1200);
+    } else {
+      alert(`Error saving section: ${res.message}`);
+    }
   };
 
   const getSectionTitle = () => {

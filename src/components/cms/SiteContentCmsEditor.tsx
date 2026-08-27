@@ -80,6 +80,8 @@ export const SiteContentCmsEditor: React.FC = () => {
     if (res.success) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
+    } else {
+      alert(`Error saving CMS: ${res.message}`);
     }
   };
 

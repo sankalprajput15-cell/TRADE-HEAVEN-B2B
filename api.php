@@ -176,6 +176,46 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
+    // CMS Operations: get_site_content, update_site_content
+    // -------------------------------------------------------------
+    case 'get_site_content':
+        $cms_file = __DIR__ . '/site_content.json';
+        if (file_exists($cms_file)) {
+            $content = file_get_contents($cms_file);
+            $parsed = json_decode($content, true);
+            if ($parsed) {
+                echo json_encode(["status" => "success", "data" => $parsed]);
+                exit;
+            }
+        }
+        echo json_encode(["status" => "error", "message" => "CMS content not found or invalid"]);
+        exit;
+
+    case 'update_site_content':
+        if ($method !== 'POST' && $method !== 'PUT') {
+            http_response_code(405);
+            echo json_encode(["status" => "error", "message" => "Method not allowed"]);
+            exit;
+        }
+        
+        $cms_payload = isset($input['siteContent']) ? $input['siteContent'] : $input;
+        if (!$cms_payload) {
+            echo json_encode(["status" => "error", "message" => "No payload provided"]);
+            exit;
+        }
+        
+        $cms_file = __DIR__ . '/site_content.json';
+        $json_str = json_encode($cms_payload, JSON_PRETTY_PRINT);
+        
+        if (file_put_contents($cms_file, $json_str) !== false) {
+            echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["status" => "error", "message" => "Failed to write to site_content.json. Check file permissions (ensure 0644 or 0666)."]);
+        }
+        exit;
+
+    // -------------------------------------------------------------
     // 2. Fetch RFQs: SELECT * FROM rfqs ORDER BY id DESC
     // Always returns {"status": "success", "data": [...]} (never null or string)
     // -------------------------------------------------------------

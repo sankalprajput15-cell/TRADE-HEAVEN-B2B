@@ -4,6 +4,7 @@ import { AuthUser, CmsAuthorizedUser, CmsAccessRequest, CmsPermissionScope, User
 import { useAuth } from './AuthContext';
 import { api } from '../services/apiService';
 import { securityService } from '../services/securityService';
+import { apiClient } from '../services/apiClient';
 
 export interface RbacRolePermissions {
   canEditCmsContent: boolean;
@@ -154,6 +155,28 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     return DEFAULT_SITE_CONTENT;
   });
+
+  // Initial Hydration from Server API
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveContent = async () => {
+      try {
+        const res = await apiClient.getSiteContent();
+        if (res.success && res.data && isMounted) {
+          // Merge with default to ensure no missing keys
+          const merged = { ...DEFAULT_SITE_CONTENT, ...res.data };
+          setSiteContent(merged);
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Failed to hydrate CMS content from server, using fallback.', err);
+      }
+    };
+    fetchLiveContent();
+    return () => { isMounted = false; };
+  }, []);
 
   const [authorizedUsers, setAuthorizedUsers] = useState<CmsAuthorizedUser[]>([
     {
@@ -312,31 +335,19 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         message: 'Permission Denied: Only administrators or users granted explicit CMS permissions can modify site content.'
       };
     }
+
     setSiteContent(newContent);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newContent));
     } catch {}
 
-    // Persist to server with user authorization headers
-    try {
-      const res = await fetch('/api/site-content', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-role': user?.role || (auth.isSuperAdmin ? 'ADMIN' : 'EDITOR'),
-          'x-user-email': user?.email || 'admin@tradeheaven.net'
-        },
-        body: JSON.stringify(newContent)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, message: data.message || 'Server rejected changes' };
-      }
-      return { success: true, message: data.message || 'Site content updated' };
-    } catch (err: any) {
+    // Persist to server API
+    const apiResult = await apiClient.updateSiteContent(newContent);
+    if (!apiResult.success) {
       console.warn('Offline persistence active for site content');
-      return { success: true, message: 'Saved locally in browser cache' };
+      return { success: false, message: apiResult.message || 'Server rejected changes. Saved locally in browser cache.' };
     }
+    return { success: true, message: apiResult.message || 'Site content updated' };
   };
 
   const updatePageContent = async <K extends keyof SiteContent>(
