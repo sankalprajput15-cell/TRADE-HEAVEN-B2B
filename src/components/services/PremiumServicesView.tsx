@@ -3,6 +3,7 @@ import { Currency, PaymentCheckoutData } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { planPricingService } from '../../services/planPricingService';
 import { SaaSPlan } from '../../types/planPricingTypes';
+import { INITIAL_SAAS_PLANS } from '../../data/planPricingMockData';
 import { 
   Crown, 
   ShieldCheck, 
@@ -29,7 +30,7 @@ export const PremiumServicesView: React.FC<Props> = ({
   onNavigateToAdmin
 }) => {
   const [activeTab, setActiveTab] = useState<'SUPPLIER' | 'BUYER'>('SUPPLIER');
-  const [plans, setPlans] = useState<SaaSPlan[]>([]);
+  const [plans, setPlans] = useState<SaaSPlan[]>(INITIAL_SAAS_PLANS);
   const [isLoading, setIsLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'ANNUAL' | 'MONTHLY'>('ANNUAL');
 
