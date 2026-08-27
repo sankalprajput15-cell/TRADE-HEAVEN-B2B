@@ -1090,7 +1090,7 @@ export const LandingPageView: React.FC<Props> = ({
           </div>
         </div>
       </section>
-
+      
       {/* ========================================================================= */}
       {/* 6. GLOBAL TRADE CORRIDORS SECTION */}
       {/* ========================================================================= */}
@@ -1174,6 +1174,7 @@ export const LandingPageView: React.FC<Props> = ({
           </div>
         </div>
       </section>
+
     </div>
   );
 };

@@ -19,6 +19,7 @@ import { MOCK_PRODUCTS, MOCK_RFQS } from './data/mockData';
 import { Header } from './components/marketplace/Header';
 import { LiveRfqTicker } from './components/marketplace/LiveRfqTicker';
 import { TradeHeavenSocialBar } from './components/common/TradeHeavenSocialBar';
+import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenFooter } from './components/common/TradeHeavenFooter';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
@@ -820,6 +821,8 @@ const MainApp: React.FC = () => {
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <TradeHeavenSocialBar onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
       </div>
+
+      <CustomerReviews />
 
       {/* 5. GLOBAL FOOTER */}
       <TradeHeavenFooter
