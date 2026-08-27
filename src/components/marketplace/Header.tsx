@@ -26,6 +26,7 @@ import {
   Crown, 
   Landmark, 
   Database,
+  FileSpreadsheet,
   LogIn,
   LogOut,
   UserCheck,
@@ -155,7 +156,8 @@ export const Header: React.FC<Props> = ({
   const isAdminActive = [
     'CLIENT_ADMIN',
     'CMS_MANAGEMENT',
-    'PLAN_PRICING_ADMIN'
+    'PLAN_PRICING_ADMIN',
+    'BULK_ENTITY_CRM'
   ].includes(activeView);
 
   const roleStyles: Record<UserRole, { badge: string; label: string }> = {
@@ -576,6 +578,16 @@ export const Header: React.FC<Props> = ({
                           <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[9px] font-black uppercase">SaaS</span>
                         </div>
                         <div className="text-[10px] text-slate-500 font-normal">Quotas, rate limits, models &amp; Stripe</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => handleNavClick('BULK_ENTITY_CRM')}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-amber-600" />
+                      <div>
+                        <div className="text-amber-900 font-bold">Bulk Lead &amp; Entity CRM</div>
+                        <div className="text-[10px] text-slate-500 font-normal">Excel/CSV uploader, validation &amp; IEM sync</div>
                       </div>
                     </button>
                     <button

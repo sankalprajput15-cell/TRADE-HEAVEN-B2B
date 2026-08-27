@@ -121,13 +121,13 @@ const SITE_TOOLS: SiteToolResult[] = [
 ];
 
 const POPULAR_SEARCH_CHIPS = [
-  '5-Axis CNC Milling',
-  'Forged Alloy Wheels',
-  'LiFePO4 Battery Cells',
-  'Solar Inverters',
-  'Virgin HDPE Polymer',
-  'Selvedge Denim',
-  'Corrugated Packaging'
+  'Active Buy Leads',
+  'High-Value RFQs',
+  'Post Factory Catalog',
+  'Verified Importers',
+  'Bulk Trade Deals',
+  'Escrow Orders',
+  'Export Financing'
 ];
 
 export const HeroSection: React.FC<Props> = ({
@@ -389,22 +389,22 @@ export const HeroSection: React.FC<Props> = ({
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">
         <div className="max-w-3xl">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30 backdrop-blur-md mb-6">
-            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">Global B2B Sourcing Platform</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 backdrop-blur-md mb-6 shadow-lg">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">🚀 For Exporters & Manufacturers • 125k+ Active Buyers</span>
           </div>
 
           {/* Main Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-6 flex flex-wrap gap-2">
-            <EditableText contentKey="homepage.heroHeadline" defaultText="Connect Directly with" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
-              <EditableText contentKey="homepage.heroHeadlineGradient" defaultText="Verified Global" />
+            <EditableText contentKey="homepage.heroHeadline" defaultText="Close Deals with" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+              <EditableText contentKey="homepage.heroHeadlineGradient" defaultText="Verified High-Intent" />
             </span>
-            Suppliers.
+            Global Buyers.
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl font-normal leading-relaxed">
-            <EditableText contentKey="homepage.heroSubheadline" defaultText="Trade Heaven connects manufacturers, exporters, and buyers globally with transparent pricing, verified credentials, and secure cross-border logistics." />
+            <EditableText contentKey="homepage.heroSubheadline" defaultText="Empower your factory export pipeline with instant access to high-value buy leads, verified RFQ broadcasts, direct buyer chats, and Swiss escrow trade protection." />
           </p>
 
         {/* ------------------------------------------------------------- */}

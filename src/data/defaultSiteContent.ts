@@ -233,9 +233,9 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   },
   homepage: {
     announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
-    heroHeadline: "Direct Global Factory Sourcing &",
-    heroHeadlineGradient: "Container Logistics Marketplace",
-    heroSubheadline: "Connect directly with verified tier-1 manufacturing plants across 180+ countries. Negotiate volume FOB/CIF pricing, verify factory audits, and dispatch cargo with full trade protection protection.",
+    heroHeadline: "Close Trade Deals With",
+    heroHeadlineGradient: "Verified Global Buyers & Bulk RFQs",
+    heroSubheadline: "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     heroTrustEyebrow: "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
     heroBgImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=85",
     searchPlaceholder: "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",

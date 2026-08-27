@@ -434,6 +434,7 @@ export type ActiveView =
   | 'CMS_MANAGEMENT'
   | 'CLIENT_ADMIN'
   | 'PLAN_PRICING_ADMIN'
+  | 'BULK_ENTITY_CRM'
   | 'RFQ_HUB'
   | 'NEGOTIATION_ROOM'
   | 'DASHBOARD'

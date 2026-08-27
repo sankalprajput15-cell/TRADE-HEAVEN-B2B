@@ -40,6 +40,7 @@ import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
 import { RefundPolicyView } from './components/services/RefundPolicyView';
 import { ClientAdminView } from './components/services/ClientAdminView';
 import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
+import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
@@ -181,7 +182,7 @@ const MainApp: React.FC = () => {
 
   // Guard against unauthenticated visitors accessing admin views directly
   useEffect(() => {
-    const adminViews: ActiveView[] = ['CLIENT_ADMIN', 'PLAN_PRICING_ADMIN', 'CMS_MANAGEMENT'];
+    const adminViews: ActiveView[] = ['CLIENT_ADMIN', 'PLAN_PRICING_ADMIN', 'CMS_MANAGEMENT', 'BULK_ENTITY_CRM'];
     if (adminViews.includes(activeView) && (!currentUser || !isAdmin)) {
       setActiveView('HOMEPAGE');
       setAuthModalMode('LOGIN');
@@ -706,6 +707,20 @@ const MainApp: React.FC = () => {
                       currentUser={currentUser}
                       onUpdateCurrentUser={setCurrentUser}
                     />
+                  </AdminRouteGuard>
+                );
+
+              case 'BULK_ENTITY_CRM':
+                return (
+                  <AdminRouteGuard
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Bulk Lead & Entity CRM Management"
+                    description="Upload, validate, edit, assign, and bulk-sync B2B buyer leads, verified suppliers, RFQs, and trade records."
+                    targetViewName="BULK_ENTITY_CRM"
+                  >
+                    <BulkEntityCrmModule />
                   </AdminRouteGuard>
                 );
 
