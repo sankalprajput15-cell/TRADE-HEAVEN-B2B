@@ -433,6 +433,19 @@ export const Header: React.FC<Props> = ({
               <span>Premium Services</span>
             </button>
 
+            {/* About Us / Value Added Services */}
+            <button
+              id="nav-link-about-us"
+              onClick={() => handleNavClick('ABOUT_US')}
+              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'ABOUT_US'
+                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              About Us
+            </button>
+
             {/* Onboard / Partner Badge */}
             <button
               id="nav-link-onboard"

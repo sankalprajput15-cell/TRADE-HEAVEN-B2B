@@ -42,6 +42,7 @@ import { ClientAdminView } from './components/services/ClientAdminView';
 import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
 import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
+import { AboutTradeHeavenView } from './components/services/AboutTradeHeavenView';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
 
@@ -672,6 +673,14 @@ const MainApp: React.FC = () => {
                   <OnboardWithUsPage
                     currentUser={currentUser}
                     onLogin={user => setCurrentUser(user)}
+                    onNavigate={handleNavigate}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                  />
+                );
+
+              case 'ABOUT_US':
+                return (
+                  <AboutTradeHeavenView
                     onNavigate={handleNavigate}
                     onOpenCreateRfq={handleOpenCreateRfq}
                   />

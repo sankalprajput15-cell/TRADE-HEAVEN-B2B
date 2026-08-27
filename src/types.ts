@@ -443,6 +443,7 @@ export type ActiveView =
   | 'REFUND_POLICY'
   | 'CONTACT_US'
   | 'ONBOARD_WITH_US'
+  | 'ABOUT_US'
   | 'VENDOR_PROFILE'
   | 'BUYER_PROFILE';
 

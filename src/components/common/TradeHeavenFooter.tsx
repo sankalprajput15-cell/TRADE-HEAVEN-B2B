@@ -240,6 +240,11 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate('ABOUT_US')} className="hover:text-blue-600 transition-colors text-left font-bold text-blue-600 cursor-pointer">
+                  Value Added Services &amp; About Us
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('TRADE_PROTECTION')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Custodial trade protection Vaults
                 </button>
