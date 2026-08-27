@@ -1,4 +1,41 @@
-- name: 🚀 Sync Files via FTP to BigRock
+name: Deploy Website to BigRock via FTP
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  web-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies & Build
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Copy Server Config Files to Dist
+        run: |
+          cp api.php dist/ 2>/dev/null || true
+          cp .htaccess dist/ 2>/dev/null || true
+
+      - name: Sanitize FTP Server Host
+        run: |
+          RAW_SERVER="${{ secrets.FTP_SERVER }}"
+          CLEAN_SERVER=$(echo "$RAW_SERVER" | sed -e 's|^[^/]*://||' -e 's|/.*$||' | tr -d '[:space:]')
+          echo "CLEAN_FTP_SERVER=$CLEAN_SERVER" >> $GITHUB_ENV
+
+      - name: Sync Files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ env.CLEAN_FTP_SERVER }}
