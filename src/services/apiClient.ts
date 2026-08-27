@@ -61,7 +61,9 @@ export interface RawListingPayload {
   status?: string;
 }
 
-const API_BASE = 'https://tradeheaven.net/api.php';
+const API_BASE = typeof window !== 'undefined' && window.location
+  ? `${window.location.origin}/api.php`
+  : 'https://tradeheaven.net/api.php';
 
 export const apiClient = {
   /**

@@ -6,9 +6,13 @@
 import { RfqRequirement, AuthUser } from '../types';
 import { MOCK_RFQS } from '../data/mockData';
 
-export const BIGROCK_API_URL = 'https://tradeheaven.net/api.php';
+export const BIGROCK_API_URL = typeof window !== 'undefined' && window.location
+  ? `${window.location.origin}/api.php`
+  : 'https://tradeheaven.net/api.php';
 
-export const DIRECT_BIGROCK_URL = 'https://tradeheaven.net/api.php';
+export const DIRECT_BIGROCK_URL = typeof window !== 'undefined' && window.location
+  ? `${window.location.origin}/api.php`
+  : 'https://tradeheaven.net/api.php';
 
 export interface BigRockRfqPayload {
   title?: string;

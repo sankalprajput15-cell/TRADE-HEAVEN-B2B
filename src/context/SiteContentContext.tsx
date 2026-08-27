@@ -592,8 +592,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     >
       {children}
       {/* Floating Status Badge & Publish Button */}
-      {(saveStatus !== 'idle' || currentUser?.email === 'yr943334@gmail.com') && currentUser?.email === 'yr943334@gmail.com' && (
-        <div className="fixed bottom-6 right-6 z-[999999] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
+      {isUserAuthorized(currentUser).isAuthorized && (
+        <div className="fixed bottom-6 left-6 z-[999999] flex flex-col items-start gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
           
           <div className="bg-slate-900 rounded-full shadow-2xl shadow-slate-900/50 border border-slate-700 px-5 py-3 flex items-center gap-3 text-sm font-semibold text-slate-100">
             {saveStatus === 'idle' && (

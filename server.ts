@@ -545,6 +545,15 @@ app.get('/api.php', (req, res) => {
     return res.json({ success: false, message: 'User not found' });
   }
 
+  if (action === 'get_content') {
+    return res.json({
+      success: true,
+      status: 'success',
+      siteContent: serverSiteContent || {},
+      data: serverSiteContent || {}
+    });
+  }
+
   if (action === 'get_settings' || action === 'site_settings') {
     return res.json(serverSiteSettingsStore);
   }
@@ -853,6 +862,16 @@ app.post('/api.php', (req, res) => {
       serverSiteSettingsStore[input.key] = input.value || '';
     }
     return res.json({ success: true });
+  }
+
+  if (action === 'save_content') {
+    const payload = input.siteContent || input || {};
+    serverSiteContent = { ...(serverSiteContent || {}), ...payload };
+    return res.json({
+      success: true,
+      status: 'success',
+      message: 'Site content updated and published successfully.'
+    });
   }
 
   if (action === 'upsert_user') {
