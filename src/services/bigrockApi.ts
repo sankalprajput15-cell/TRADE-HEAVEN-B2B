@@ -6,11 +6,9 @@
 import { RfqRequirement, AuthUser } from '../types';
 import { MOCK_RFQS } from '../data/mockData';
 
-export const BIGROCK_API_URL = typeof window !== 'undefined'
-  ? ((import.meta as any).env?.VITE_API_URL || './api.php')
-  : './api.php';
+export const BIGROCK_API_URL = 'https://tradeheaven.net/api.php';
 
-export const DIRECT_BIGROCK_URL = './api.php';
+export const DIRECT_BIGROCK_URL = 'https://tradeheaven.net/api.php';
 
 export interface BigRockRfqPayload {
   title?: string;
@@ -284,7 +282,7 @@ export const bigrockApi = {
         const json = await response.json();
         if (json.success && json.data) return json.data;
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
     return null;
   },
 
@@ -297,7 +295,7 @@ export const bigrockApi = {
       });
       return await response.json();
     } catch (err: any) {
-      return { success: true, message: 'Profile updated' };
+      return { success: false, message: err.message || 'Failed to update profile' };
     }
   },
 
@@ -309,7 +307,7 @@ export const bigrockApi = {
         const list = Array.isArray(json) ? json : (json.data || []);
         if (list.length > 0) return list;
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
 
     return [
       {
@@ -348,7 +346,7 @@ export const bigrockApi = {
         const json = await response.json();
         return { success: true, data: json.data || user };
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
     return { success: true, data: user };
   },
 
@@ -359,8 +357,8 @@ export const bigrockApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-    } catch {}
-    return { success: true };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Request failed' };
   },
 
   // ==========================================
@@ -460,13 +458,11 @@ export const bigrockApi = {
         data: json.data || postBody
       };
     } catch (err: any) {
-      console.warn('[BigRock submit_rfq handled]:', err);
+      console.error('[BigRock submit_rfq ERROR]:', err);
       return {
-        success: true,
-        status: 'success',
-        id: `rfq-${Date.now()}`,
-        message: 'RFQ successfully stored in database!',
-        data: postBody
+        success: false,
+        status: 'error',
+        message: err.message || 'Failed to submit RFQ to BigRock database',
       };
     }
   },
@@ -492,7 +488,7 @@ export const bigrockApi = {
         const list = Array.isArray(json) ? json : (json.data || []);
         if (list.length > 0) return list;
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
     return [];
   },
 
@@ -507,8 +503,8 @@ export const bigrockApi = {
         const json = await response.json();
         return { success: true, data: json.data || listing, id: json.id };
       }
-    } catch {}
-    return { success: true, data: listing };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Failed to create listing' };
   },
 
   async createListing(listing: DbListing): Promise<{ success: boolean; data?: DbListing; error?: string }> {
@@ -522,8 +518,8 @@ export const bigrockApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-    } catch {}
-    return { success: true };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Request failed' };
   },
 
   // ==========================================
@@ -537,7 +533,7 @@ export const bigrockApi = {
         const list = Array.isArray(json) ? json : (json.data || []);
         if (list.length > 0) return list;
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
 
     return [
       {
@@ -575,8 +571,8 @@ export const bigrockApi = {
         body: JSON.stringify(payload)
       });
       return await response.json();
-    } catch (err) {
-      return { success: true, message: 'Inquiry received' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to submit inquiry' };
     }
   },
 
@@ -591,9 +587,9 @@ export const bigrockApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status })
       });
-      if (response.ok) return { success: true };
-    } catch {}
-    return { success: true };
+      if (response.ok) return { success: false, error: 'Request failed' };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Request failed' };
   },
 
   // ==========================================
@@ -607,7 +603,7 @@ export const bigrockApi = {
         const list = Array.isArray(json) ? json : (json.data || []);
         if (list.length > 0) return list;
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
     return [...INITIAL_FAQS];
   },
 
@@ -622,8 +618,8 @@ export const bigrockApi = {
         const json = await response.json();
         return { success: true, data: json.data || faq };
       }
-    } catch {}
-    return { success: true, data: faq };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Failed to create FAQ' };
   },
 
   async deleteFaq(id: string | number): Promise<{ success: boolean; error?: string }> {
@@ -633,8 +629,8 @@ export const bigrockApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-    } catch {}
-    return { success: true };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Request failed' };
   },
 
   async fetchSiteSettings(): Promise<Record<string, string>> {
@@ -644,7 +640,7 @@ export const bigrockApi = {
         const json = await response.json();
         if (json && typeof json === 'object') return { ...INITIAL_SETTINGS, ...json };
       }
-    } catch {}
+    } catch (err) { console.error('BigRock API Error:', err); }
     return { ...INITIAL_SETTINGS };
   },
 
@@ -655,8 +651,8 @@ export const bigrockApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key, value })
       });
-    } catch {}
-    return { success: true };
+    } catch (err) { console.error('BigRock API Error:', err); }
+    return { success: false, error: 'Request failed' };
   },
 
   // File Upload Helper

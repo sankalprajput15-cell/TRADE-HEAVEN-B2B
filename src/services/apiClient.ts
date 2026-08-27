@@ -61,7 +61,7 @@ export interface RawListingPayload {
   status?: string;
 }
 
-const API_BASE = './api.php';
+const API_BASE = 'https://tradeheaven.net/api.php';
 
 export const apiClient = {
   /**

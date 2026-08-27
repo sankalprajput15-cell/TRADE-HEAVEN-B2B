@@ -99,7 +99,7 @@ export const RfqCreationModal: React.FC<Props> = ({
 
     try {
       // Sync to live BigRock PHP MySQL API (POST ./api.php?action=submit_rfq)
-      await bigrockApi.submitRfq({
+      const bigrockResult = await bigrockApi.submitRfq({
         buyer_name: buyerCompany || 'Procurement Officer',
         buyer_email: buyerEmail || 'buyer@tradeheaven.net',
         buyer_phone: '',
@@ -120,9 +120,12 @@ export const RfqCreationModal: React.FC<Props> = ({
         subject: `Buy Lead RFQ [${generatedId}]: ${targetQuantity} ${quantityUnit} of ${productName}`,
         message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedRequirements}`
       });
+      if (!bigrockResult.success) {
+        throw new Error(bigrockResult.message || 'Failed to sync with BigRock MySQL API');
+      }
       window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created', { detail: newRfq }));
-    } catch {
-      // graceful fallback
+    } catch (e: any) {
+      alert(e.message || 'API Error');
     }
 
     setTimeout(() => {

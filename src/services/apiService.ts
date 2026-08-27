@@ -787,7 +787,7 @@ export const api = {
   async createProduct(product: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
     try {
       // 1. Save directly to BigRock MySQL database
-      await bigrockApi.createListing({
+      const bigrockResult = await bigrockApi.createListing({
         title: product.title || 'Wholesale Product',
         description: product.description || `Factory direct wholesale supply of ${product.title || 'Product'}. MOQ: ${product.moq || 100} ${product.moqUnit || 'Units'}.`,
         category: product.category || 'General',
@@ -800,6 +800,10 @@ export const api = {
         supplier_country: product.supplierCountry || 'China',
         location: product.portOfDispatch || 'Port of Shanghai'
       });
+      
+      if (!bigrockResult.success) {
+        return { success: false, message: bigrockResult.error || 'Failed to list product in BigRock MySQL' };
+      }
 
       // 2. Also forward to Express backend
       const res = await fetch('/api/v1/products', {
@@ -810,7 +814,7 @@ export const api = {
       const data = await res.json();
       return { success: true, data: data.data || (product as Product), message: 'Product listed and stored in MySQL!' };
     } catch (e: any) {
-      return { success: true, data: product as Product, message: 'Product listing saved to database!' };
+      return { success: false, message: e.message || 'Product listing failed!' };
     }
   },
 
@@ -913,7 +917,7 @@ export const api = {
       // 1. Submit directly to BigRock PHP MySQL API (POST ./api.php?action=submit_rfq)
       const structuredMessage = `Target Quantity: ${newRfq.targetQuantity} ${newRfq.quantityUnit} | Target Price: $${newRfq.targetPriceUsd} | Incoterm: ${newRfq.preferredIncoterm} | Port: ${newRfq.destinationPort} | Terms: ${newRfq.paymentTerms} | Description: ${newRfq.detailedRequirements}`;
       
-      await bigrockApi.submitRfq({
+      const bigrockResult = await bigrockApi.submitRfq({
         buyer_name: newRfq.buyerName,
         buyer_email: newRfq.buyerEmail,
         buyer_phone: newRfq.buyerPhone,
@@ -935,8 +939,12 @@ export const api = {
         subject: `Buy Lead RFQ [${generatedId}]: ${newRfq.targetQuantity} ${newRfq.quantityUnit} of ${newRfq.productName}`,
         message: structuredMessage
       });
-    } catch (e) {
+      if (!bigrockResult.success) {
+        return { success: false, error: bigrockResult.message || 'Failed to submit RFQ to BigRock MySQL API' };
+      }
+    } catch (e: any) {
       console.warn('[BigRock RFQ sync warning]:', e);
+      return { success: false, error: e.message || 'Failed to submit RFQ to BigRock MySQL API' };
     }
 
     activeRfqsStore.unshift(newRfq);

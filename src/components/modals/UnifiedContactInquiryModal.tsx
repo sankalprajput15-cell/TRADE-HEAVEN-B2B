@@ -117,7 +117,8 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
 
     try {
       // Submit via POST ./api.php?action=submit_rfq
-      await bigrockApi.submitRfq(newInquiryPayload);
+      const res = await bigrockApi.submitRfq(newInquiryPayload);
+      if (!res.success) throw new Error(res.message || 'Failed to submit via API');
 
       setIsSuccess(true);
       if (onSuccess) {
@@ -131,13 +132,9 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
         setIsSuccess(false);
         onClose();
       }, 1600);
-    } catch (err) {
-      console.warn('[Contact submit note]:', err);
-      setIsSuccess(true);
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 1600);
+    } catch (err: any) {
+      console.error('[Contact submit error]:', err);
+      alert(err.message || 'Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
