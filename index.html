@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trade Heaven - B2B Marketplace & Architecture Blueprint</title>
+    <!-- Pre-Mount Synchronous Storage Purge -->
+    <script>
+      (function() {
+        try {
+          sessionStorage.clear();
+          localStorage.removeItem('th_session_jwt_token');
+          localStorage.removeItem('th_session_user');
+          localStorage.removeItem('tradeheaven_user');
+          localStorage.removeItem('tradeheaven_auth_user');
+          localStorage.removeItem('th_active_auth_user');
+          localStorage.removeItem('th_rbac_user');
+        } catch(e) {}
+      })();
+    </script>
     <script>
       (function() {
         try {
