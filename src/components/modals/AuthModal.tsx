@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../../types';
 import { SafeImage } from '../common/SafeImage';
-import { api } from '../../services/apiService';
 import { apiClient } from '../../services/apiClient';
 import { securityService } from '../../services/securityService';
-import { bigrockApi } from '../../services/bigrockApi';
 import { useAuth } from '../../context/AuthContext';
 import { 
   X, 
@@ -23,7 +21,6 @@ import {
   UserPlus,
   Landmark,
   SlidersHorizontal,
-  Database,
   ArrowRight,
   Eye,
   EyeOff
@@ -50,18 +47,18 @@ export const AuthModal: React.FC<Props> = ({
 }) => {
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER' | 'WORK_WITH_US'>(initialMode);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && initialMode) {
       setAuthMode(initialMode);
     }
   }, [isOpen, initialMode]);
   
-  // Login Form States (Empty by default, no prefilled credentials)
+  // Login Form States (Locally Isolated)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
-  // Registration Form States
+  // Registration Form States (Locally Isolated)
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -80,7 +77,7 @@ export const AuthModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  // Production Sign-In Form Handler (Strictly sends { email, password } to backend)
+  // Production Sign-In Form Handler
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -139,17 +136,12 @@ export const AuthModal: React.FC<Props> = ({
         password: regPassword,
         name: regName.trim(),
         company_name: regCompany.trim(),
-        companyName: regCompany.trim(),
         country: regCountry.trim(),
         role: regAccountType === 'SUPPLIER' ? 'supplier' : 'buyer',
         accountType: regAccountType
       });
 
       if (res.success && res.user) {
-        // Sync to localStorage
-        try {
-        } catch {}
-
         onLogin(res.user);
         setSuccess('Business account registered and stored in database successfully.');
         setTimeout(() => {

@@ -11,10 +11,9 @@ interface Props {
 }
 
 export const EditableImage: React.FC<Props> = ({ contentKey, defaultSrc, alt, className = '' }) => {
-  const { siteContent, updateField } = useSiteContent();
-  const { currentUser } = useAuth();
+  const { siteContent, updateField, isUserAuthorized, currentUser } = useSiteContent();
   
-  const canEdit = currentUser?.email === 'yr943334@gmail.com';
+  const canEdit = isUserAuthorized(currentUser).isAuthorized;
   const src = contentKey.split('.').reduce((o, i) => (o ? o[i] : null), siteContent) || defaultSrc;
 
   const handleClick = () => {

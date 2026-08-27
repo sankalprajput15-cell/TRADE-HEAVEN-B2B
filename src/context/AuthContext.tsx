@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthUser, UserRole } from '../types';
+import { apiClient } from '../services/apiClient';
 
 export interface AuthContextType {
   user: AuthUser | null;
@@ -17,69 +18,77 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 1. Initial user state strictly starts as null and unauthenticated (in-memory only)
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // 2. Cold-Start Reset: purge all legacy persistence keys on initial mount
   useEffect(() => {
     try {
-      localStorage.clear();
-      sessionStorage.clear();
+      const storedUser = localStorage.getItem('th_session_user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && typeof parsed === 'object') {
+          setUser(parsed);
+          setIsAuthenticated(true);
+        }
+      }
     } catch {}
-    setUser(null);
-    setIsAuthenticated(false);
-  }, []);
-
-  // 3. Auto Sign-Off on Unload / Page Leave / Refresh
-  useEffect(() => {
-    const handleSignOff = () => {
-      setUser(null);
-      setIsAuthenticated(false);
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch {}
-    };
-
-    window.addEventListener('beforeunload', handleSignOff);
-    window.addEventListener('pagehide', handleSignOff);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleSignOff);
-      window.removeEventListener('pagehide', handleSignOff);
-    };
   }, []);
 
   const login = async (email?: string, password?: string): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
     setIsLoading(true);
     
-    // Simulate network delay for security feel
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
     try {
-      if (email === 'yr943334@gmail.com' && password === 'Yash@8532') {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      
+      // 1. Check Master Admin statically
+      if (cleanEmail === 'yr943334@gmail.com' && password === 'Yash@8532') {
         const adminUser: AuthUser = {
           id: 'admin-001',
           name: 'Yash Rajput',
-          email: email,
+          email: cleanEmail,
           role: 'ADMIN',
           isVerifiedAdmin: true,
           isVerified: true,
-          companyName: 'Trade Heaven Admin',
-          country: 'Global',
+          companyName: 'Trade Heaven Global Operations & Treasury',
+          country: 'United Kingdom',
           isPremium: true,
+          membershipStatus: 'paid',
+          tier: 'VIP',
           status: 'ACTIVE',
           token: 'th-admin-ephemeral-session-token'
         };
         
         setUser(adminUser);
         setIsAuthenticated(true);
+        try {
+          localStorage.setItem('th_session_user', JSON.stringify(adminUser));
+        } catch {}
         return { success: true, user: adminUser };
       }
       
-      return { success: false, error: 'Invalid admin credentials provided.' };
+      // 2. Call backend for everyone else
+      if (!cleanEmail || !password) {
+        return { success: false, error: 'Both email and password are required.' };
+      }
+      
+      const res = await apiClient.login(cleanEmail, password);
+      
+      if (res.success && res.user) {
+        setUser(res.user);
+        setIsAuthenticated(true);
+        try {
+          localStorage.setItem('th_session_user', JSON.stringify(res.user));
+          if (res.token) {
+            localStorage.setItem('th_session_jwt_token', res.token);
+          }
+        } catch {}
+        return { success: true, user: res.user };
+      }
+      
+      return { success: false, error: res.error || res.message || 'Invalid credentials' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Network communication failure' };
     } finally {
       setIsLoading(false);
     }
@@ -101,6 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (nextUser) {
       setUser(nextUser);
       setIsAuthenticated(true);
+      try {
+        localStorage.setItem('th_session_user', JSON.stringify(nextUser));
+      } catch {}
     } else {
       logout();
     }
@@ -135,3 +147,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+

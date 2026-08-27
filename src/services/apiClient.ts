@@ -323,18 +323,19 @@ export const apiClient = {
 
       if (isSuccess && (json.user || json.data)) {
         const rawUser = json.user || json.data;
-        const isAdmin = rawUser.role === 'ADMIN';
+        const isAdmin = rawUser.role === 'ADMIN' || rawUser.isVerifiedAdmin === true || cleanEmail === 'yr943334@gmail.com';
+        const isSupplier = String(rawUser.role).toUpperCase() === 'SUPPLIER';
         const normalizedUser: AuthUser = {
           id: String(rawUser.id || `user-${Date.now()}`),
           name: rawUser.name || (isAdmin ? 'Administrator' : 'Trade Partner'),
           email: rawUser.email || cleanEmail,
-          role: (isAdmin ? 'ADMIN' : ((String(rawUser.role || 'BUYER').toUpperCase()) as any)),
-          isPremium: Boolean(isAdmin || (rawUser.isPremium ?? (rawUser.role === 'SUPPLIER'))),
-          membershipStatus: isAdmin ? 'paid' : (rawUser.membershipStatus || 'free'),
+          role: (isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER')),
+          isPremium: isAdmin,
+          membershipStatus: isAdmin ? 'paid' : 'free',
           status: rawUser.status || 'ACTIVE',
           isVerified: Boolean(rawUser.isVerified ?? true),
           isVerifiedAdmin: isAdmin,
-          tier: rawUser.tier || (isAdmin ? 'VIP' : (String(rawUser.role).toUpperCase() === 'SUPPLIER' ? 'SILVER' : 'FREE')),
+          tier: isAdmin ? 'VIP' : 'FREE',
           companyName: rawUser.companyName || rawUser.company_name || (isAdmin ? 'Trade Heaven Global Operations & Treasury' : 'Enterprise Trading Firm'),
           country: rawUser.country || (isAdmin ? 'United Kingdom' : 'United States'),
           phone: rawUser.phone || '',
@@ -414,16 +415,19 @@ export const apiClient = {
 
       if (isSuccess && (json.user || json.data)) {
         const rawUser = json.user || json.data;
+        const isAdmin = rawUser.role === 'ADMIN' || cleanEmail === 'yr943334@gmail.com';
+        const isSupplier = resolvedRole === 'supplier';
         const normalizedUser: AuthUser = {
           id: String(rawUser.id || `user-${Date.now()}`),
           name: rawUser.name || requestPayload.name,
           email: rawUser.email || cleanEmail,
-          role: (resolvedRole === 'supplier' ? 'SUPPLIER' : 'BUYER'),
-          isPremium: resolvedRole === 'supplier',
-          membershipStatus: 'free',
+          role: isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER'),
+          isPremium: isAdmin,
+          membershipStatus: isAdmin ? 'paid' : 'free',
           status: 'ACTIVE',
           isVerified: true,
-          tier: resolvedRole === 'supplier' ? 'SILVER' : 'FREE',
+          isVerifiedAdmin: isAdmin,
+          tier: isAdmin ? 'VIP' : 'FREE',
           companyName: company,
           country: requestPayload.country,
           phone: phone,
