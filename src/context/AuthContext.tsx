@@ -25,12 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 2. Cold-Start Reset: purge all legacy persistence keys on initial mount
   useEffect(() => {
     try {
-      localStorage.removeItem('th_session_jwt_token');
-      localStorage.removeItem('th_session_user');
-      localStorage.removeItem('tradeheaven_user');
-      localStorage.removeItem('tradeheaven_auth_user');
-      sessionStorage.removeItem('th_session_jwt_token');
-      sessionStorage.removeItem('th_session_user');
+      localStorage.clear();
+      sessionStorage.clear();
     } catch {}
     setUser(null);
     setIsAuthenticated(false);
@@ -42,11 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setIsAuthenticated(false);
       try {
+        localStorage.clear();
         sessionStorage.clear();
-        localStorage.removeItem('th_session_jwt_token');
-        localStorage.removeItem('th_session_user');
-        localStorage.removeItem('tradeheaven_user');
-        localStorage.removeItem('tradeheaven_auth_user');
       } catch {}
     };
 

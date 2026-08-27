@@ -69,7 +69,9 @@ interface SiteContentContextType {
   exportContentJson: () => string;
   importContentJson: (jsonString: string, user?: AuthUser | null) => Promise<boolean>;
   isLoading: boolean;
-  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+  hasUnsavedChanges: boolean;
+  publishChangesToServer: () => Promise<{ success: boolean; message?: string }>;
   forceSaveNow: (content: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
   // Visual Live Edit Mode
   isLiveEditMode: boolean;
@@ -121,7 +123,8 @@ const SiteContentContext = createContext<SiteContentContextType | undefined>(und
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user: currentUser, setUser: setCurrentUser } = useAuth();
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+  const hasUnsavedChanges = saveStatus === 'pending';
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Remove the useEffect that wrote to localStorage
@@ -331,6 +334,10 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   };
 
+  const publishChangesToServer = async (): Promise<{ success: boolean; message?: string }> => {
+    return await forceSaveNow(siteContent, currentUser);
+  };
+
   const forceSaveNow = async (content: SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
     const auth = isUserAuthorized(user ?? currentUser);
     if (!auth.isAuthorized) return { success: false, message: 'Permission Denied' };
@@ -347,7 +354,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSaveStatus('saved');
     setTimeout(() => {
       setSaveStatus(prev => prev === 'saved' ? 'idle' : prev);
-    }, 2000);
+    }, 2500);
     return { success: true, message: apiResult.message || 'Site content updated' };
   };
 
@@ -365,19 +372,9 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newContent));
     } catch {}
 
-    setSaveStatus('saving');
-    
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    // Set new debounced save (800ms)
-    saveTimeoutRef.current = setTimeout(() => {
-      forceSaveNow(newContent, user);
-    }, 800);
+    setSaveStatus('pending');
 
-    return { success: true, message: 'Changes queued for auto-save' };
+    return { success: true, message: 'Changes staged. Click Save & Publish to push live.' };
   };
 
   const updatePageContent = async <K extends keyof SiteContent>(
@@ -537,6 +534,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         importContentJson,
         isLoading,
         saveStatus,
+        hasUnsavedChanges,
+        publishChangesToServer,
         forceSaveNow,
         isLiveEditMode,
         setIsLiveEditMode,
@@ -560,27 +559,53 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }}
     >
       {children}
-      {/* Floating Status Badge */}
-      {isLiveEditMode && saveStatus !== 'idle' && (
-        <div className="fixed bottom-4 right-4 z-[9999] bg-white rounded-full shadow-lg border border-slate-200 px-4 py-2 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
-          {saveStatus === 'saving' && (
-            <>
-              <div className="w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-              <span className="text-blue-600">Saving...</span>
-            </>
+      {/* Floating Status Badge & Publish Button */}
+      {(isLiveEditMode || saveStatus !== 'idle') && isUserAuthorized(currentUser).isAuthorized && (
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
+          
+          <div className="bg-white rounded-full shadow-lg shadow-slate-200/50 border border-slate-200 px-5 py-3 flex items-center gap-3 text-sm font-semibold text-slate-700">
+            {saveStatus === 'idle' && (
+              <>
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                <span>No Pending Changes</span>
+              </>
+            )}
+            {saveStatus === 'pending' && (
+              <>
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-amber-600">Unsaved Changes Pending</span>
+              </>
+            )}
+            {saveStatus === 'saving' && (
+              <>
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                <span className="text-blue-600">Saving...</span>
+              </>
+            )}
+            {saveStatus === 'saved' && (
+              <>
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                <span className="text-emerald-600">Published to Live Server</span>
+              </>
+            )}
+            {saveStatus === 'error' && (
+              <>
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <span className="text-red-600">Save Failed</span>
+              </>
+            )}
+          </div>
+
+          {saveStatus === 'pending' && (
+            <button
+              onClick={publishChangesToServer}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-500/20 font-bold transition-all flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save & Publish Changes
+            </button>
           )}
-          {saveStatus === 'saved' && (
-            <>
-              <div className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="text-emerald-600">All Changes Saved</span>
-            </>
-          )}
-          {saveStatus === 'error' && (
-            <>
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="text-red-600">Error Saving</span>
-            </>
-          )}
+
         </div>
       )}
     </SiteContentContext.Provider>

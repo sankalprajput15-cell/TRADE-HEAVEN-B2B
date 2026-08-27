@@ -180,14 +180,18 @@ switch ($action) {
     // -------------------------------------------------------------
     case 'get_content':
         $cms_file = __DIR__ . '/site_content.json';
-        if (file_exists($cms_file)) {
-            $content = file_get_contents($cms_file);
-            $parsed = json_decode($content, true);
-            if ($parsed) {
-                echo json_encode(["status" => "success", "data" => $parsed]);
-                exit;
-            }
+        if (!file_exists($cms_file)) {
+            // Create with empty object if not exists
+            file_put_contents($cms_file, "{}");
         }
+        
+        $content = file_get_contents($cms_file);
+        $parsed = json_decode($content, true);
+        if ($parsed !== null) {
+            echo json_encode(["status" => "success", "data" => $parsed]);
+            exit;
+        }
+        
         echo json_encode(["status" => "error", "message" => "CMS content not found or invalid"]);
         exit;
 
@@ -205,7 +209,7 @@ switch ($action) {
         }
         
         $cms_file = __DIR__ . '/site_content.json';
-        $json_str = json_encode($cms_payload, JSON_PRETTY_PRINT);
+        $json_str = json_encode($cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         
         if (file_put_contents($cms_file, $json_str) !== false) {
             echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);

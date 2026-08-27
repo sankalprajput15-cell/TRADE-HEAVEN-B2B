@@ -70,7 +70,7 @@ export const apiClient = {
    */
   async getSiteContent(): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}?action=get_content`, {
+      const res = await fetch(`${API_BASE}?action=get_content&t=${Date.now()}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
