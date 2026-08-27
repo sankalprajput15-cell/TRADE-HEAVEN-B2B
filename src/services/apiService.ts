@@ -161,8 +161,6 @@ export const api = {
       if (bigrockRes && bigrockRes.success && bigrockRes.user) {
         if (bigrockRes.token) {
           try {
-            localStorage.setItem('th_session_jwt_token', bigrockRes.token);
-            localStorage.setItem('th_session_user', JSON.stringify(bigrockRes.user));
           } catch {}
         }
         return bigrockRes;
@@ -180,8 +178,6 @@ export const api = {
       }
       if (data.token) {
         try {
-          localStorage.setItem('th_session_jwt_token', data.token);
-          if (data.user) localStorage.setItem('th_session_user', JSON.stringify(data.user));
         } catch {}
       }
       return data;
@@ -211,8 +207,6 @@ export const api = {
         const token = securityService.generateSessionToken(adminUser);
         const userWithToken = { ...adminUser, token };
         try {
-          localStorage.setItem('th_session_jwt_token', token);
-          localStorage.setItem('th_session_user', JSON.stringify(userWithToken));
         } catch {}
         return {
           success: true,
@@ -229,8 +223,6 @@ export const api = {
         const token = securityService.generateSessionToken(matched);
         const userWithToken = { ...matched, token };
         try {
-          localStorage.setItem('th_session_jwt_token', token);
-          localStorage.setItem('th_session_user', JSON.stringify(userWithToken));
         } catch {}
         return {
           success: true,
@@ -261,8 +253,6 @@ export const api = {
       if (bigrockRes && bigrockRes.success && bigrockRes.user) {
         if (bigrockRes.token) {
           try {
-            localStorage.setItem('th_session_jwt_token', bigrockRes.token);
-            localStorage.setItem('th_session_user', JSON.stringify(bigrockRes.user));
           } catch {}
         }
         return bigrockRes;
@@ -280,8 +270,6 @@ export const api = {
       }
       if (data.token) {
         try {
-          localStorage.setItem('th_session_jwt_token', data.token);
-          if (data.user) localStorage.setItem('th_session_user', JSON.stringify(data.user));
         } catch {}
       }
       return data;
@@ -316,8 +304,6 @@ export const api = {
       const token = securityService.generateSessionToken(newUser);
       const userWithToken = { ...newUser, token };
       try {
-        localStorage.setItem('th_session_jwt_token', token);
-        localStorage.setItem('th_session_user', JSON.stringify(userWithToken));
       } catch {}
 
       return {
@@ -407,7 +393,6 @@ export const api = {
     const userWithToken = { ...newUser, token };
 
     try {
-      localStorage.setItem('th_session_jwt_token', token);
     } catch {}
 
     securityService.logSecurityEvent({

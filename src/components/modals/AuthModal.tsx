@@ -95,9 +95,6 @@ export const AuthModal: React.FC<Props> = ({
       if (res.success && res.user) {
         // Sync to localStorage
         try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(res.user));
-          localStorage.setItem('th_session_user', JSON.stringify(res.user));
-          if (res.token) localStorage.setItem('th_session_jwt_token', res.token);
         } catch {}
 
         onLogin(res.user);
@@ -152,9 +149,6 @@ export const AuthModal: React.FC<Props> = ({
       if (res.success && res.user) {
         // Sync to localStorage
         try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(res.user));
-          localStorage.setItem('th_session_user', JSON.stringify(res.user));
-          if (res.token) localStorage.setItem('th_session_jwt_token', res.token);
         } catch {}
 
         onLogin(res.user);

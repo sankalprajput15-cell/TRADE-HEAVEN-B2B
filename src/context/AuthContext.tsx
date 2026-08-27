@@ -5,6 +5,7 @@ export interface AuthContextType {
   user: AuthUser | null;
   currentUser: AuthUser | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   role: UserRole | null;
   isAdmin: boolean;
   setUser: (user: AuthUser | null) => void;
@@ -19,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 1. Initial user state strictly starts as null and unauthenticated (in-memory only)
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // 2. Cold-Start Reset: purge all legacy persistence keys on initial mount
   useEffect(() => {
@@ -37,6 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 3. Auto Sign-Off on Unload / Page Leave / Refresh
   useEffect(() => {
     const handleSignOff = () => {
+      setUser(null);
+      setIsAuthenticated(false);
       try {
         sessionStorage.clear();
         localStorage.removeItem('th_session_jwt_token');
@@ -92,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         currentUser: user,
         isAuthenticated,
+        isLoading,
         role: user?.role || null,
         isAdmin,
         setUser: handleSetUser,

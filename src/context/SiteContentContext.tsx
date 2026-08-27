@@ -116,63 +116,10 @@ const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
-    try {
-      const savedToken = localStorage.getItem('th_session_jwt_token');
-      if (savedToken) {
-        const payload = securityService.verifySessionToken(savedToken);
-        if (payload) {
-          return {
-            id: payload.uid,
-            email: payload.email,
-            name: payload.name,
-            role: payload.role,
-            isPremium: payload.isPremium,
-            membershipStatus: payload.membershipStatus,
-            status: payload.status,
-            isVerified: payload.isVerified,
-            isVerifiedAdmin: payload.role === 'ADMIN',
-            tier: payload.tier,
-            companyName: payload.companyName,
-            country: 'United Kingdom',
-            token: savedToken
-          };
-        } else {
-          // Token is invalid, expired or tampered: purge invalid session storage
-          localStorage.removeItem('th_session_jwt_token');
-          localStorage.removeItem('th_session_user');
-          localStorage.removeItem('tradeheaven_user');
-          localStorage.removeItem('tradeheaven_auth_user');
-        }
-      } else {
-        // No valid token: clean any stale unauthenticated session keys
-        localStorage.removeItem('th_session_user');
-        localStorage.removeItem('tradeheaven_user');
-        localStorage.removeItem('tradeheaven_auth_user');
-      }
-    } catch {
-      // Storage access exception in restricted sandboxes
-    }
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
-    // By default, visitors strictly start in a clean logged-out guest state (null)
-    return null;
-  });
-
-  useEffect(() => {
-    try {
-      if (currentUser?.token) {
-        localStorage.setItem('th_session_jwt_token', currentUser.token);
-        localStorage.setItem('th_session_user', JSON.stringify(currentUser));
-        localStorage.setItem('tradeheaven_user', JSON.stringify(currentUser));
-      } else if (!currentUser) {
-        localStorage.removeItem('th_session_jwt_token');
-        localStorage.removeItem('th_session_user');
-        localStorage.removeItem('tradeheaven_user');
-        localStorage.removeItem('tradeheaven_auth_user');
-      }
-    } catch {}
-  }, [currentUser]);
-
+  // Remove the useEffect that wrote to localStorage
+  
   const [rbacConfig, setRbacConfig] = useState<RbacMatrix>(() => {
     try {
       const cached = localStorage.getItem(RBAC_STORAGE_KEY);

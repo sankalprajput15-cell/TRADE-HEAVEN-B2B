@@ -249,9 +249,6 @@ export const apiClient = {
           const user = authJson.user;
           const token = authJson.token || user.token;
           try {
-            localStorage.setItem('tradeheaven_user', JSON.stringify(user));
-            localStorage.setItem('th_session_user', JSON.stringify(user));
-            if (token) localStorage.setItem('th_session_jwt_token', token);
           } catch {}
 
           return {
@@ -300,9 +297,6 @@ export const apiClient = {
         };
 
         try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(normalizedUser));
-          localStorage.setItem('th_session_user', JSON.stringify(normalizedUser));
-          if (json.token) localStorage.setItem('th_session_jwt_token', json.token);
         } catch {}
 
         return { 
@@ -392,9 +386,6 @@ export const apiClient = {
         };
 
         try {
-          localStorage.setItem('tradeheaven_user', JSON.stringify(normalizedUser));
-          localStorage.setItem('th_session_user', JSON.stringify(normalizedUser));
-          if (json.token) localStorage.setItem('th_session_jwt_token', json.token);
         } catch {}
 
         return { 
