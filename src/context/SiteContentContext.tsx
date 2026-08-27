@@ -72,6 +72,8 @@ interface SiteContentContextType {
   saveStatus: 'idle' | 'pending' | 'saving' | 'saved' | 'error';
   hasUnsavedChanges: boolean;
   publishChangesToServer: () => Promise<{ success: boolean; message?: string }>;
+  saveToServer: () => Promise<{ success: boolean; message?: string }>;
+  updateSection: <K extends keyof SiteContent>(sectionKey: K, data: Partial<SiteContent[K]>) => Promise<{ success: boolean; message?: string }>;
   forceSaveNow: (content: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
   // Visual Live Edit Mode
   isLiveEditMode: boolean;
@@ -338,6 +340,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return await forceSaveNow(siteContent, currentUser);
   };
 
+  const saveToServer = publishChangesToServer;
+
   const forceSaveNow = async (content: SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
     const auth = isUserAuthorized(user ?? currentUser);
     if (!auth.isAuthorized) return { success: false, message: 'Permission Denied' };
@@ -390,6 +394,13 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     };
     return await updateSiteContent(updated, user);
+  };
+
+  const updateSection = async <K extends keyof SiteContent>(
+    sectionKey: K,
+    data: Partial<SiteContent[K]>
+  ): Promise<{ success: boolean; message?: string }> => {
+    return updatePageContent(sectionKey, data, currentUser);
   };
 
   const resetPageToDefault = async (pageKey?: keyof SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
@@ -536,6 +547,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         saveStatus,
         hasUnsavedChanges,
         publishChangesToServer,
+        saveToServer,
+        updateSection,
         forceSaveNow,
         isLiveEditMode,
         setIsLiveEditMode,
@@ -573,36 +586,36 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
             {saveStatus === 'pending' && (
               <>
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-amber-600">Unsaved Changes Pending</span>
+                <span className="text-amber-600">● Unsaved Changes</span>
               </>
             )}
             {saveStatus === 'saving' && (
               <>
                 <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                <span className="text-blue-600">Saving...</span>
+                <span className="text-blue-600">Saving to Server...</span>
               </>
             )}
             {saveStatus === 'saved' && (
               <>
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-emerald-600">Published to Live Server</span>
+                <span className="text-emerald-600">✓ Published Live!</span>
               </>
             )}
             {saveStatus === 'error' && (
               <>
                 <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-red-600">Save Failed</span>
+                <span className="text-red-600">✕ Save Failed</span>
               </>
             )}
           </div>
 
           {saveStatus === 'pending' && (
             <button
-              onClick={publishChangesToServer}
+              onClick={saveToServer}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-500/20 font-bold transition-all flex items-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-              Save & Publish Changes
+              💾 Save & Publish Changes
             </button>
           )}
 
