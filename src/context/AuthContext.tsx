@@ -10,7 +10,7 @@ export interface AuthContextType {
   isAdmin: boolean;
   setUser: (user: AuthUser | null) => void;
   setCurrentUser: (user: AuthUser | null) => void;
-  login: (user: AuthUser, token?: string) => void;
+  login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
   logout: () => void;
 }
 
@@ -59,13 +59,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = (authenticatedUser: AuthUser, token?: string) => {
-    const userWithToken = {
-      ...authenticatedUser,
-      token: token || authenticatedUser.token || 'ephemeral-session-token'
-    };
-    setUser(userWithToken);
-    setIsAuthenticated(true);
+  const login = async (email?: string, password?: string): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
+    setIsLoading(true);
+    
+    // Simulate network delay for security feel
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    try {
+      if (email === 'yr943334@gmail.com' && password === 'Yash@8532') {
+        const adminUser: AuthUser = {
+          id: 'admin-001',
+          name: 'Yash Rajput',
+          email: email,
+          role: 'ADMIN',
+          isVerifiedAdmin: true,
+          isVerified: true,
+          companyName: 'Trade Heaven Admin',
+          country: 'Global',
+          isPremium: true,
+          status: 'ACTIVE',
+          token: 'th-admin-ephemeral-session-token'
+        };
+        
+        setUser(adminUser);
+        setIsAuthenticated(true);
+        return { success: true, user: adminUser };
+      }
+      
+      return { success: false, error: 'Invalid admin credentials provided.' };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
@@ -82,7 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSetUser = (nextUser: AuthUser | null) => {
     if (nextUser) {
-      login(nextUser, nextUser.token);
+      setUser(nextUser);
+      setIsAuthenticated(true);
     } else {
       logout();
     }

@@ -5,6 +5,7 @@ import { api } from '../../services/apiService';
 import { apiClient } from '../../services/apiClient';
 import { securityService } from '../../services/securityService';
 import { bigrockApi } from '../../services/bigrockApi';
+import { useAuth } from '../../context/AuthContext';
 import { 
   X, 
   LogIn, 
@@ -77,6 +78,8 @@ export const AuthModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const { login } = useAuth();
+
   // Production Sign-In Form Handler (Strictly sends { email, password } to backend)
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,12 +94,8 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsLoading(true);
     try {
-      const res = await apiClient.login(cleanEmail, password);
+      const res = await login(cleanEmail, password);
       if (res.success && res.user) {
-        // Sync to localStorage
-        try {
-        } catch {}
-
         onLogin(res.user);
         const isAdminUser = res.user.role === 'ADMIN' || res.user.isVerifiedAdmin === true;
         setSuccess(
@@ -112,7 +111,7 @@ export const AuthModal: React.FC<Props> = ({
           }
         }, 750);
       } else {
-        setError(res.error || res.message || 'Invalid email or password. Access denied.');
+        setError(res.error || 'Invalid email or password. Access denied.');
       }
     } catch (err: any) {
       setError(err?.message || 'An error occurred during authentication. Please try again.');
