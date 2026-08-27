@@ -168,7 +168,7 @@ export const Header: React.FC<Props> = ({
   };
 
   return (
-    <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/98 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
+    <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
       {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
       <div className="bg-slate-950 text-slate-300 border-b border-slate-800/80 px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-1.5 sm:gap-4 w-full">
@@ -309,7 +309,7 @@ export const Header: React.FC<Props> = ({
           </div>
 
           {/* Center: Desktop Nav Links (Streamlined & Grouped) */}
-          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 flex-wrap xl:flex-nowrap justify-center">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 flex-wrap justify-center">
             <button
               id="nav-link-homepage"
               onClick={() => handleNavClick('HOMEPAGE')}
