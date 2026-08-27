@@ -146,8 +146,6 @@ export const Header: React.FC<Props> = ({
 
   const isServicesActive = [
     'POST_SELL_OFFER',
-    'PREMIUM_SERVICES',
-    'PREMIUM_MEMBERSHIP',
     'TRADE_TOOLS',
     'INCOTERMS_CALCULATOR',
     'REFUND_POLICY',
@@ -419,6 +417,20 @@ export const Header: React.FC<Props> = ({
               Buy Leads
             </button>
 
+            {/* Premium Services (Top Header Nav Button) */}
+            <button
+              id="nav-link-premium-services"
+              onClick={() => handleNavClick('PREMIUM_SERVICES')}
+              className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
+                activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
+                  ? 'bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-sm'
+                  : 'bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-500/30'
+              }`}
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Premium Services</span>
+            </button>
+
             {/* Onboard / Partner Badge */}
             <button
               id="nav-link-onboard"
@@ -481,16 +493,6 @@ export const Header: React.FC<Props> = ({
                     <div>
                       <div>Post Product / Sell Offer</div>
                       <div className="text-[10px] text-slate-400 font-normal">Direct Factory Listing</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('PREMIUM_SERVICES')}
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <Crown className="w-4 h-4 text-amber-500" />
-                    <div>
-                      <div>Supplier &amp; Buyer Memberships</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Gold Exporter &amp; VIP Buyer Tiers</div>
                     </div>
                   </button>
                   <button
@@ -819,9 +821,17 @@ export const Header: React.FC<Props> = ({
             )}
             <button
               onClick={() => handleNavClick('PREMIUM_SERVICES')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              className={`p-2.5 rounded-xl text-left text-xs font-black flex items-center justify-between col-span-2 cursor-pointer ${
+                activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
+                  ? 'bg-amber-400 text-slate-950 shadow-xs'
+                  : 'bg-amber-500/10 text-amber-900 border border-amber-500/30'
+              }`}
             >
-              Gold Membership
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-600" />
+                <span>Premium Services &amp; Memberships</span>
+              </div>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-950">Plans</span>
             </button>
             <button
               onClick={() => handleNavClick('TRADE_TOOLS')}
