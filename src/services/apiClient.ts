@@ -389,6 +389,7 @@ export const apiClient = {
       const resolvedRole = (payload.accountType === 'SUPPLIER' || payload.role === 'supplier' || payload.role === 'SUPPLIER') ? 'supplier' : 'buyer';
 
       const requestPayload = {
+        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
         name: (payload.name || 'Trade Partner').trim(),
         email: cleanEmail,
         password: payload.password || '',
