@@ -42,11 +42,13 @@ import { RefundPolicyView } from './components/services/RefundPolicyView';
 import { ClientAdminView } from './components/services/ClientAdminView';
 import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
 import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
 import { AboutTradeHeavenView } from './components/services/AboutTradeHeavenView';
 import { LandingPageView } from './components/marketplace/LandingPageView';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
+import { CountryTradeHubView } from './components/marketplace/CountryTradeHubView';
 
 // Modals
 import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
@@ -713,6 +715,31 @@ const MainApp: React.FC = () => {
                   />
                 );
 
+              case 'COUNTRY_HUB':
+                return (
+                  <CountryTradeHubView
+                    initialCountryId="uk"
+                    onOpenProductModal={(title) => {
+                      const prod = products.find(p => p.title.toLowerCase().includes(title.toLowerCase()));
+                      if (prod) setSelectedProduct(prod);
+                      else handleOpenContactModal({ targetType: 'GENERAL', targetTitle: `Inquiry: ${title}` });
+                    }}
+                    onOpenRfqModal={(title) => {
+                      handleOpenCreateRfq();
+                    }}
+                    onOpenContactModal={(supName, cName) => {
+                      handleOpenContactModal({
+                        targetType: 'SUPPLIER',
+                        supplierCompany: cName,
+                        targetTitle: `Inquiry for ${supName} (${cName})`
+                      });
+                    }}
+                    onPostRfqForCountry={(req) => {
+                      handleOpenCreateRfq();
+                    }}
+                  />
+                );
+
               case 'CLIENT_ADMIN':
                 return (
                   <AdminRouteGuard
@@ -723,10 +750,12 @@ const MainApp: React.FC = () => {
                     description="Access to custodial trade protection releases, user management, and database orchestration requires authenticated administrator credentials."
                     targetViewName="CLIENT_ADMIN"
                   >
-                    <ClientAdminView
+                    <AdminDashboard
+                      initialTab="DATABASE"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
                       selectedCurrency={selectedCurrency}
                       onOpenPaymentCheckout={handleOpenPaymentCheckout}
-                      currentUser={currentUser}
                       onUpdateCurrentUser={setCurrentUser}
                     />
                   </AdminRouteGuard>
@@ -742,7 +771,14 @@ const MainApp: React.FC = () => {
                     description="Upload, validate, edit, assign, and bulk-sync B2B buyer leads, verified suppliers, RFQs, and trade records."
                     targetViewName="BULK_ENTITY_CRM"
                   >
-                    <BulkEntityCrmModule />
+                    <AdminDashboard
+                      initialTab="CRM"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      onUpdateCurrentUser={setCurrentUser}
+                    />
                   </AdminRouteGuard>
                 );
 
@@ -756,9 +792,13 @@ const MainApp: React.FC = () => {
                     description="Configure SaaS membership tiers, Gemini context rate limits, and Stripe synchronization with verified administrator credentials."
                     targetViewName="PLAN_PRICING_ADMIN"
                   >
-                    <PlanPricingAdminModule
-                      currentUserRole={currentUser?.role}
-                      onNavigateView={handleNavigate}
+                    <AdminDashboard
+                      initialTab="PRICING"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      onUpdateCurrentUser={setCurrentUser}
                     />
                   </AdminRouteGuard>
                 );
@@ -773,10 +813,14 @@ const MainApp: React.FC = () => {
                     description="The Full-Site CMS Editor and RBAC Governance Matrix are restricted to verified System Administrators."
                     targetViewName="CMS_MANAGEMENT"
                   >
-                    <div className="space-y-8">
-                      
-                      
-                    </div>
+                    <AdminDashboard
+                      initialTab="CMS"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      onUpdateCurrentUser={setCurrentUser}
+                    />
                   </AdminRouteGuard>
                 );
 

@@ -446,7 +446,8 @@ export type ActiveView =
   | 'ABOUT_US'
   | 'LANDING_PAGE'
   | 'VENDOR_PROFILE'
-  | 'BUYER_PROFILE';
+  | 'BUYER_PROFILE'
+  | 'COUNTRY_HUB';
 
 export * from './types/planPricingTypes';
 

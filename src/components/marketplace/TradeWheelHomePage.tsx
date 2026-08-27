@@ -9,6 +9,7 @@ import { CategoryMegaMenu } from './CategoryMegaMenu';
 import { ProductCatalog } from './ProductCatalog';
 import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
+import { SuppliersByRegionBar } from './SuppliersByRegionBar';
 import { 
   ShieldCheck, 
   Award, 
@@ -417,6 +418,18 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </a>
         </div>
       </div>
+
+      {/* 8. SUPPLIERS BY REGION FOOTER BAR (TradeWheel Directory Ecosystem) */}
+      <SuppliersByRegionBar
+        onSelectCountry={(countryId) => {
+          onNavigate('COUNTRY_HUB');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onKeywordClick={() => {
+          onNavigate('COUNTRY_HUB');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 };

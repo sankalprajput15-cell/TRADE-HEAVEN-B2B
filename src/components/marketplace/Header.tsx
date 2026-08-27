@@ -365,6 +365,24 @@ export const Header: React.FC<Props> = ({
               Suppliers
             </button>
 
+            {/* Country Hub Nav Button */}
+            <button
+              id="nav-link-country-hub"
+              onClick={() => handleNavClick('COUNTRY_HUB')}
+              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'COUNTRY_HUB'
+                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
+                  : 'text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80'
+              }`}
+              title="Explore country-specific B2B trade hubs, regional suppliers & RFQs"
+            >
+              <Landmark className="w-3.5 h-3.5 text-amber-600" />
+              <span>Country Portals</span>
+              <span className="px-1 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[8px] font-black uppercase">
+                34
+              </span>
+            </button>
+
             {/* Direct Vendor Profile Demo */}
             <button
               id="nav-link-vendor-profile"
