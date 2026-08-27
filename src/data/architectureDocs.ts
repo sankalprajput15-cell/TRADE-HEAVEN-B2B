@@ -58,7 +58,7 @@ export const SYSTEM_TOPOLOGY = {
     searchService: { runtime: 'Go 1.23', port: 4003, responsibilities: ['OpenSearch Proxy', 'Faceted Aggregation'] },
     rfqMatchEngine: { runtime: 'Go 1.23 (gRPC)', port: 4004, responsibilities: ['Automated Supplier Scoring & Distribution'] },
     chatNegotiation: { runtime: 'Node.js (Socket.io)', port: 4005, responsibilities: ['Negotiation Threads', 'Proforma Generator'] },
-    billingService: { runtime: 'Node.js', port: 4006, responsibilities: ['Stripe / PayPal / Escrow / Tier Upgrades'] }
+    billingService: { runtime: 'Node.js', port: 4006, responsibilities: ['Stripe / PayPal / trade protection / Tier Upgrades'] }
   },
   databases: {
     primaryRelational: 'PostgreSQL 16 (Patroni HA with async multi-region streaming replication)',

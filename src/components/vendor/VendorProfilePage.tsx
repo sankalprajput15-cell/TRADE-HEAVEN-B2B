@@ -270,10 +270,10 @@ export const VendorProfilePage: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Escrow Guarantee Box */}
+            {/* Trade Protection Guarantee Box */}
             <div className="bg-slate-900/80 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 text-right shrink-0 shadow-xl hidden lg:block">
               <div className="text-[10px] text-slate-300 uppercase font-bold tracking-wider">
-                Trade Assurance Escrow Protected
+                Trade Protection Certificate Protected
               </div>
               <div className="text-lg font-black text-emerald-400 font-mono">
                 ${profile.tradeAssuranceLimitUsd.toLocaleString()} USD
@@ -482,7 +482,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                     </label>
                     <div className="space-y-1.5">
                       {(profile.acceptedPaymentTerms || [
-                        'Trade Assurance Escrow (Zero-Risk Protection)',
+                        'Trade Protection Certificate (Zero-Risk Protection)',
                         '100% Irrevocable Confirmed L/C at Sight',
                         '30% T/T Advance + 70% against B/L Copy',
                         'D/P (Documents Against Payment)'

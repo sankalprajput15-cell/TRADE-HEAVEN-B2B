@@ -71,7 +71,7 @@ export const DynamicFaqSection: React.FC<Props> = ({ onOpenContactModal, classNa
             Frequently Asked Questions &amp; Trade Assurance Guide
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 font-normal">
-            Everything you need to know about international wholesale sourcing, Swiss escrow release protocols, and verified factory compliance.
+            Everything you need to know about international wholesale sourcing, Swiss trade protection release protocols, and verified factory compliance.
           </p>
         </div>
 

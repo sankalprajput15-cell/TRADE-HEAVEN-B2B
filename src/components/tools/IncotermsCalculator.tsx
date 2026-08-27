@@ -234,7 +234,7 @@ export const IncotermsCalculator: React.FC<Props> = ({ selectedCurrency }) => {
               Recommendation for International Importers
             </div>
             <p className="text-[11px] leading-relaxed text-blue-800 font-medium">
-              Standard commercial practice for container ocean freight is <strong>FOB</strong> or <strong>CIF</strong>. For first-time shipments, Trade Heaven Escrow covers 100% of CIF value until Bill of Lading verification.
+              Standard commercial practice for container ocean freight is <strong>FOB</strong> or <strong>CIF</strong>. For first-time shipments, Trade Heaven Trade Protection covers 100% of CIF value until Bill of Lading verification.
             </p>
           </div>
         </div>

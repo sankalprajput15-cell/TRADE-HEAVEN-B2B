@@ -74,7 +74,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Swiss Vault Escrow Protection</span>
+          <span>Swiss Trade Protection Protection</span>
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full">
           <ShieldCheck className="w-3.5 h-3.5" />

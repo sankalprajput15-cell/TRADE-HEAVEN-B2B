@@ -104,10 +104,10 @@ export const TradeNegotiationChat: React.FC<Props> = ({
             <span>Encrypted B2B Contract Negotiation &amp; Proforma Room</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-            Trade Negotiation Desk &amp; Escrow Dispatch
+            Trade Negotiation Desk &amp; trade protection Dispatch
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-normal">
-            Direct real-time communication channel with factory sales directors. Finalize FOB/CIF terms, production schedules, and dispatch binding Proforma Invoices into neutral Swiss escrow.
+            Direct real-time communication channel with factory sales directors. Finalize FOB/CIF terms, production schedules, and dispatch binding Proforma Invoices into neutral Swiss tp.
           </p>
         </div>
 
@@ -312,7 +312,7 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                   </button>
                 </form>
 
-                {/* Final Escrow Action Button */}
+                {/* Final trade protection Action Button */}
                 <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -324,7 +324,7 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                     className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Lock Terms &amp; Open Escrow Checkout</span>
+                    <span>Lock Terms &amp; Open trade protection Checkout</span>
                   </button>
                 </div>
               </div>

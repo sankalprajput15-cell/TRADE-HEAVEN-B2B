@@ -222,20 +222,20 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     siteName: "Trade Heaven",
     siteTagline: "Global B2B Marketplace & Verified Exporters Network",
     logoBadge: "VERIFIED TRADE",
-    topBarAnnouncement: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Escrow fee for first $50,000 container orders",
+    topBarAnnouncement: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
     supportEmail: "support@tradeheaven.net",
     supportPhone: "+1 (800) 555-TRADE / +91 85329 34479",
     whatsappNumber: "+91 85329 34479",
     whatsappUrl: "https://wa.me/918532934479?text=Hello%20Trade%20Heaven,%20I%20am%20inquiring%20about%20verified%20suppliers,%20RFQs,%20and%20B2B%20trade.",
     officeAddress: "Trade Heaven Global HQ, 140 Fenchurch St, London EC3M 6BL, UK & Operations Hub in Mumbai, India",
-    escrowBadgeNotice: "100% Escrow & Trade Assurance Protected",
+    escrowBadgeNotice: "100% trade protection & Trade Assurance Protected",
     countriesNotice: "180+ Countries Sourcing"
   },
   homepage: {
-    announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Escrow fee for first $50,000 container orders",
+    announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
     heroHeadline: "Direct Global Factory Sourcing &",
     heroHeadlineGradient: "Container Logistics Marketplace",
-    heroSubheadline: "Connect directly with verified tier-1 manufacturing plants across 180+ countries. Negotiate volume FOB/CIF pricing, verify factory audits, and dispatch cargo with full escrow protection.",
+    heroSubheadline: "Connect directly with verified tier-1 manufacturing plants across 180+ countries. Negotiate volume FOB/CIF pricing, verify factory audits, and dispatch cargo with full trade protection protection.",
     heroTrustEyebrow: "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
     heroBgImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=85",
     searchPlaceholder: "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
@@ -263,7 +263,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     supportedCountriesCount: "184+",
     supportedCountriesLabel: "Active Maritime Export Corridors",
     tradeVolumeGmv: "$142,850,000+",
-    tradeVolumeGmvLabel: "Escrow-Protected Container Orders (2025-26)",
+    tradeVolumeGmvLabel: "trade protection-Protected Container Orders (2025-26)",
     h2hHeadline: "Personalized International Export Management & Matchmaking",
     h2hSubheadline: "Unlike generic directory listings, Trade Heaven provides every enterprise exporter and high-volume buyer with a dedicated International Export Manager (IEM) to coordinate communication, verify contracts, and ensure smooth delivery.",
     h2hPillBadge: "Trade Heaven H2H (Human-to-Human) & IEM Advantage",
@@ -289,7 +289,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       },
       {
         number: "04",
-        title: "Verified Inspection & Escrow",
+        title: "Verified Inspection & trade protection",
         description: "On-site factory audits by SGS/TÜV and secure bank wire custody until verified Bill of Lading (B/L) release.",
         color: "bg-purple-600"
       }
@@ -392,7 +392,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         country: "Sweden",
         countryFlag: "🇸🇪",
         avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-        quote: "We sourced thirty 40HQ containers of high-purity industrial chemicals through Trade Heaven. The escrow custody and third-party TÜV pre-shipment inspection gave our board 100% peace of mind.",
+        quote: "We sourced thirty 40HQ containers of high-purity industrial chemicals through Trade Heaven. The trade protection custody and third-party TÜV pre-shipment inspection gave our board 100% peace of mind.",
         rating: 5,
         verifiedDealSize: "$420,000 CIF Gothenburg",
         category: "Industrial Chemicals"
@@ -480,8 +480,8 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         a: "Gold Verified Suppliers receive a verified audit badge, 30 daily high-priority quotes (compared to 3), instant WhatsApp buy lead notifications, top category rankings, and a dedicated bilingual Key Account Manager."
       },
       {
-        q: "How does the Trade Heaven Trade Assurance Escrow work?",
-        a: "The buyer deposits invoice funds directly into a secure custodial escrow account. The funds are only released to the supplier once SGS/Bureau Veritas inspects the cargo and verifies the ocean Bill of Lading (B/L)."
+        q: "How does the Trade Heaven Trade Protection Certificate work?",
+        a: "The buyer deposits invoice funds directly into a secure custodial trade protection account. The funds are only released to the supplier once SGS/Bureau Veritas inspects the cargo and verifies the ocean Bill of Lading (B/L)."
       },
       {
         q: "Can I pay via international bank wire (T/T)?",
@@ -493,15 +493,15 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     vipConsultingButtonText: "Schedule VIP Consultation"
   },
   escrowPolicy: {
-    title: "100% Trade Assurance & Custodial Escrow Protection",
+    title: "100% Trade Assurance & Custodial trade protection Protection",
     subtitle: "Every cross-border transaction is safeguarded by strict multi-stage custodial protocols, third-party SGS factory inspections, and ocean Bill of Lading verification.",
     bankRailNotice: "Funds deposited in segregated institutional custodial vaults cleared by Standard Chartered, Barclays, and Citibank.",
     guaranteeNotice: "100% Refund Guarantee if products fail verified third-party laboratory specifications or if shipping containers fail to dispatch by agreed contractual deadline.",
     milestones: [
       {
         step: "01",
-        title: "Proforma Invoice & Escrow Deposit",
-        description: "Buyer and supplier finalize Incoterms FOB/CIF contract. Buyer locks deposit in Trade Heaven custodial escrow.",
+        title: "Proforma Invoice & Trade Protection Deposit",
+        description: "Buyer and supplier finalize Incoterms FOB/CIF contract. Buyer locks deposit in Trade Heaven custodial trade protection",
         tag: "Funds Safeguarded"
       },
       {
@@ -519,16 +519,16 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       {
         step: "04",
         title: "Customs Clearance & Funds Release",
-        description: "Buyer confirms container arrival and receipt of commercial documents. Escrow automatically releases balance to supplier.",
+        description: "Buyer confirms container arrival and receipt of commercial documents. trade protection automatically releases balance to supplier.",
         tag: "Final Settlement"
       }
     ],
-    refundTermsSnippet: "In the event of contractual non-performance or shipment cancellation before container lading, 100% of escrow principal is remitted back to buyer within 48 banking hours."
+    refundTermsSnippet: "In the event of contractual non-performance or shipment cancellation before container lading, 100% of trade protection principal is remitted back to buyer within 48 banking hours."
   },
   clientAdminPage: {
     title: "Client Billing & Treasury Operations",
     subtitle: "Manage platform subscription tiers, review wire transfer payments, download official tax invoices, and configure banking details.",
-    wireInstructionsNotice: "All wire transfers (T/T) are credited to Trade Heaven Custodial Escrow within 1-3 business days upon receipt of the bank MT103 wire receipt.",
+    wireInstructionsNotice: "All wire transfers (T/T) are credited to Trade Heaven Custodial trade protection within 1-3 business days upon receipt of the bank MT103 wire receipt.",
     treasuryGuarantee: "Enterprise Banking Rail protected by Standard Chartered, Barclays, and Citibank international clearing systems."
   },
   tradeToolsPage: {
@@ -539,10 +539,10 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     piGeneratorDesc: "Generate export-ready proforma invoices compliant with international trade law."
   },
   headerAndFooter: {
-    headerEscrowNotice: "100% Escrow & Trade Assurance Protected",
+    headerEscrowNotice: "100% trade protection & Trade Assurance Protected",
     headerCountriesNotice: "180+ Countries Sourcing",
     footerTagline: "Trade Heaven is an international B2B marketplace and export portal connecting verified global buyers with vetted manufacturing plants across 180+ countries.",
-    footerMission: "Empowering transparent global trade through verified manufacturer audits, dedicated Key Account Managers, and bank escrow protections.",
+    footerMission: "Empowering transparent global trade through verified manufacturer audits, dedicated Key Account Managers, and bank trade protection protections.",
     footerCopyright: "© 2025–2026 Trade Heaven Inc. All rights reserved.",
     footerIsoText: "ISO 27001 & GDPR Compliant Enterprise",
     footerSupportEmail: "support@tradeheaven.net",

@@ -47,7 +47,7 @@ const QUICK_PROMPTS = [
   "Submit ticket to help@tradeheaven.net",
   "Connect with trade specialist on WhatsApp (+91 8532934479)",
   "How do I submit an RFQ to get factory quotes?",
-  "How does Trade Assurance Escrow protect my deposit?",
+  "How does Trade Protection Certificate protect my deposit?",
   "What is the difference between FOB and CIF shipping?"
 ];
 
@@ -72,7 +72,7 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
       id: 'welcome-1',
       sender: 'ai',
       senderName: 'Trade Heaven Concierge',
-      text: `👋 **Welcome to Trade Heaven Global Trade Desk!**\n\nI am your 24/7 **Trade Concierge & Sourcing Specialist**.\n\nYou can ask about products, check verified factory suppliers, calculate shipping, or get assistance anytime without logging in.\n\n• **Direct Factory Sourcing:** 480,000+ audited manufacturers\n• **Instant RFQs:** Post buying requirements for free quotes\n• **Trade Assurance Escrow:** 100% capital protection\n• **Official WhatsApp Desk:** Connect directly at **+91 8532934479**`,
+      text: `👋 **Welcome to Trade Heaven Global Trade Desk!**\n\nI am your 24/7 **Trade Concierge & Sourcing Specialist**.\n\nYou can ask about products, check verified factory suppliers, calculate shipping, or get assistance anytime without logging in.\n\n• **Direct Factory Sourcing:** 480,000+ audited manufacturers\n• **Instant RFQs:** Post buying requirements for free quotes\n• **Trade Protection Certificate:** 100% capital protection\n• **Official WhatsApp Desk:** Connect directly at **+91 8532934479**`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);

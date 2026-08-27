@@ -1,5 +1,5 @@
 export type UserRole = 'BUYER' | 'SUPPLIER' | 'ADMIN' | 'VERIFIER';
-export type PaymentTerms = 'ESCROW' | 'LC_AT_SIGHT' | 'TT_30_70' | 'DP_DA' | string;
+export type PaymentTerms = 'trade protection' | 'LC_AT_SIGHT' | 'TT_30_70' | 'DP_DA' | string;
 
 export interface PaymentCheckoutData {
   planId: string;
@@ -234,7 +234,7 @@ export interface RfqRequirement {
   targetDeliveryDate?: string;
   preferredIncoterm: Incoterm;
   destinationPort: string;
-  paymentTerms: string; // e.g. 'L/C at sight', '30% T/T Deposit + 70% B/L', 'Trade Assurance Escrow'
+  paymentTerms: string; // e.g. 'L/C at sight', '30% T/T Deposit + 70% B/L', 'Trade Protection Certificate'
   detailedRequirements: string;
   detailedDescription?: string;
   shippingMethod?: string;

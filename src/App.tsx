@@ -247,7 +247,7 @@ const MainApp: React.FC = () => {
           targetPriceUsd: newRfq.targetPriceUsd || 100,
           preferredIncoterm: newRfq.preferredIncoterm || 'FOB',
           destinationPort: newRfq.destinationPort || 'Port of Hamburg',
-          paymentTerms: newRfq.paymentTerms || 'Trade Assurance Escrow (Swiss Vault)',
+          paymentTerms: newRfq.paymentTerms || 'Trade Protection Certificate (Swiss Vault)',
           detailedRequirements: newRfq.detailedRequirements || newRfq.detailedDescription || '',
           urgency: 'STANDARD',
           quotesCount: 0,
@@ -279,7 +279,7 @@ const MainApp: React.FC = () => {
   const handleInitiateEscrow = (thread: NegotiationThread) => {
     setCheckoutData({
       planId: thread.id,
-      title: `Escrow Deposit: ${thread.productTitle}`,
+      title: `Trade Protection Deposit: ${thread.productTitle}`,
       description: `${thread.orderQuantity} units @ $${thread.currentPriceUsd}/unit (${thread.currentIncoterm}) to ${thread.destinationPort}`,
       amountUsd: thread.currentPriceUsd * thread.orderQuantity,
       type: 'ESCROW_DEPOSIT',
@@ -382,7 +382,7 @@ const MainApp: React.FC = () => {
       setActiveView('PLAN_PRICING_ADMIN');
       return;
     }
-    if (target === 'TRADE_ESCROW' || target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
+    if (target === 'TRADE_PROTECTION' || target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
       setActiveView('DASHBOARD');
       return;
     }
@@ -402,7 +402,7 @@ const MainApp: React.FC = () => {
       setActiveView('BUYERS_DIRECTORY');
       return;
     }
-    if (target === 'REFUND_POLICY' || target === 'REFUND' || target === 'ESCROW_POLICY') {
+    if (target === 'REFUND_POLICY' || target === 'REFUND' || target === 'TRADE_PROTECTION_POLICY') {
       setActiveView('REFUND_POLICY');
       return;
     }
@@ -697,7 +697,7 @@ const MainApp: React.FC = () => {
                     onOpenAuthModal={() => setIsAuthModalOpen(true)}
                     onNavigate={handleNavigate}
                     title="Treasury & Administrative Control Center"
-                    description="Access to custodial escrow releases, user management, and database orchestration requires authenticated administrator credentials."
+                    description="Access to custodial trade protection releases, user management, and database orchestration requires authenticated administrator credentials."
                     targetViewName="CLIENT_ADMIN"
                   >
                     <ClientAdminView

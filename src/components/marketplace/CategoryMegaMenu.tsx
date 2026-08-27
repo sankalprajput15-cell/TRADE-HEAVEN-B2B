@@ -326,7 +326,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
               <span>Looking for custom OEM/ODM production across these industrial sectors?</span>
             </div>
             <p className="text-[11px] text-slate-300 mt-0.5">
-              Submit your detailed specification once to receive direct factory quotations, MOQ terms, and escrow-backed lead times.
+              Submit your detailed specification once to receive direct factory quotations, MOQ terms, and trade protection-backed lead times.
             </p>
           </div>
         </div>

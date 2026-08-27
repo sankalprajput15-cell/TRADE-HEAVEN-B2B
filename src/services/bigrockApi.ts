@@ -120,15 +120,15 @@ export interface DbSiteSetting {
 export const INITIAL_FAQS: DbFaq[] = [
   {
     id: 'faq-1',
-    question: 'How does Trade Heaven Escrow & Trade Assurance protect buyers?',
-    answer: 'Buyer deposit funds are held in secure, neutral Swiss escrow accounts. Payment is only released to the supplier once verified shipping documents (Bill of Lading) and independent SGS/TÜV quality inspection reports are confirmed.',
-    category: 'Escrow & Payments',
+    question: 'How does Trade Heaven Trade Protection & Trade Assurance protect buyers?',
+    answer: 'Buyer deposit funds are held in secure, neutral Swiss trade protection accounts. Payment is only released to the supplier once verified shipping documents (Bill of Lading) and independent SGS/TÜV quality inspection reports are confirmed.',
+    category: 'Trade Protection & Payments',
     display_order: 1
   },
   {
     id: 'faq-2',
     question: 'What is the difference between Gold and Silver verified factories?',
-    answer: 'Gold suppliers have undergone comprehensive on-site physical factory audits, verified business licenses, environmental compliance, and carry an escrow guarantee of up to $1,000,000 USD. Silver suppliers have completed standard legal KYC and tax verification.',
+    answer: 'Gold suppliers have undergone comprehensive on-site physical factory audits, verified business licenses, environmental compliance, and carry an trade protection guarantee of up to $1,000,000 USD. Silver suppliers have completed standard legal KYC and tax verification.',
     category: 'Factory Verification',
     display_order: 2
   },
@@ -156,13 +156,13 @@ export const INITIAL_FAQS: DbFaq[] = [
 ];
 
 export const INITIAL_SETTINGS: Record<string, string> = {
-  site_title: 'Trade Heaven - Global B2B Marketplace & Escrow Hub',
-  announcement_banner: '⚡ Live Global B2B Trading Hub: $480M+ Active Wholesale RFQs • 100% Swiss Escrow Guaranteed • 0% Platform Fees for Free Registered Accounts',
+  site_title: 'Trade Heaven - Global B2B Marketplace & trade protection Hub',
+  announcement_banner: '⚡ Live Global B2B Trading Hub: $480M+ Active Wholesale RFQs • 100% Swiss Trade Protection Guaranteed • 0% Platform Fees for Free Registered Accounts',
   support_phone: '+91 8532934479',
   support_email: 'help@tradeheaven.net',
   whatsapp_number: '+91 8532934479',
   headquarters_address: 'Trade Heaven Global Operations & Treasury, Zurich, Switzerland & London, UK',
-  escrow_protection_limit: '$1,000,000 USD'
+  trade_protection_limit: '$1,000,000 USD'
 };
 
 /**
@@ -208,7 +208,7 @@ export function mapInquiryToRfq(raw: any, index: number = 0): RfqRequirement {
     targetDeliveryDate: raw.targetDeliveryDate || '2026-10-31',
     preferredIncoterm,
     destinationPort,
-    paymentTerms: raw.payment_terms || 'Trade Assurance Escrow (Swiss Vault)',
+    paymentTerms: raw.payment_terms || 'Trade Protection Certificate (Swiss Vault)',
     detailedRequirements: raw.requirements || raw.detailed_requirements || raw.message || `Procurement inquiry for ${raw.product_name || raw.subject || 'wholesale products'}. Factory compliance audit and commercial invoice required.`,
     detailedDescription: raw.requirements || raw.detailed_requirements || raw.message || 'Commercial quotation requested for volume container delivery.',
     urgency: 'STANDARD',
@@ -413,7 +413,7 @@ export const bigrockApi = {
       incoterm: payload.incoterm || payload.incoterms || payload.preferred_incoterm || 'FOB',
       incoterms: payload.incoterms || payload.incoterm || payload.preferred_incoterm || 'FOB',
       destination_port: payload.destination_port || 'Port of Hamburg',
-      payment_terms: payload.payment_terms || 'Trade Assurance Escrow (Swiss Vault)',
+      payment_terms: payload.payment_terms || 'Trade Protection Certificate (Swiss Vault)',
       requirements: payload.requirements || payload.detailed_requirements || payload.message || 'Standard export quality specification required.',
       status: payload.status || 'OPEN',
       name: payload.name || payload.buyer_name || 'Procurement Officer',

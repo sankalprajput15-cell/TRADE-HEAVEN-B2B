@@ -376,7 +376,7 @@ export const api = {
         productionLines: 6,
         logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&auto=format&fit=crop&q=80',
         bannerUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200&auto=format&fit=crop&q=80',
-        description: `Verified manufacturer & exporter specializing in ${(application.primaryCategories || []).join(', ') || 'industrial manufacturing'}. Audited facility with guaranteed compliance and Swiss escrow backing.`,
+        description: `Verified manufacturer & exporter specializing in ${(application.primaryCategories || []).join(', ') || 'industrial manufacturing'}. Audited facility with guaranteed compliance and Swiss trade protection backing.`,
         contactPerson: application.fullName,
         contactEmail: application.corporateEmail,
         contactPhone: application.phoneOrWhatsapp,
@@ -901,7 +901,7 @@ export const api = {
       targetDeliveryDate: rfq.targetDeliveryDate || '2026-10-31',
       preferredIncoterm: rfq.preferredIncoterm || 'FOB',
       destinationPort: rfq.destinationPort || 'Port of Hamburg / Los Angeles',
-      paymentTerms: 'Trade Assurance Escrow (Swiss Vault)',
+      paymentTerms: 'Trade Protection Certificate (Swiss Vault)',
       detailedRequirements: rfq.detailedRequirements || rfq.detailedDescription || 'Standard export quality specification required.',
       detailedDescription: rfq.detailedDescription || rfq.detailedRequirements || 'Standard export quality specification required.',
       urgency: rfq.urgency || 'STANDARD',
@@ -1170,7 +1170,7 @@ export const api = {
       importFrequency: buyer.importFrequency || 'Monthly FCL Shipments',
       targetCategories: buyer.targetCategories || ['Industrial Machinery & Automation', 'Renewable Energy & Solar'],
       preferredIncoterms: buyer.preferredIncoterms || ['FOB', 'CIF', 'DDP'],
-      preferredPaymentTerms: buyer.preferredPaymentTerms || ['Trade Assurance Escrow', '30/70 T/T'],
+      preferredPaymentTerms: buyer.preferredPaymentTerms || ['Trade Protection Certificate', '30/70 T/T'],
       activeRfqsCount: 1,
       completedImportsCount: 15,
       tradeAssuranceEscrowSecuredUsd: 500000,
@@ -1201,9 +1201,9 @@ export const api = {
       return data.data;
     } catch {
       return {
-        announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Escrow fee for first $50,000 container orders",
+        announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
         heroHeadline: "Connect with 5M+ Verified Global Buyers & Manufacturers",
-        heroSubheadline: "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Assurance Escrow payment protection.",
+        heroSubheadline: "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Protection Certificate payment protection.",
         verifiedBuyersCount: "5,200,000+",
         activeSuppliersCount: "480,000+",
         supportedCountriesCount: 184,
@@ -1596,7 +1596,7 @@ export const api = {
       success: true,
       orderId: generatedId,
       invoiceRef: `INV-TH-${Date.now().toString().slice(-6)}`,
-      message: 'Order created successfully and placed in escrow vault'
+      message: 'Order created successfully and placed in trade protection vault'
     };
   },
 

@@ -75,12 +75,12 @@ const SITE_TOOLS: SiteToolResult[] = [
   },
   {
     id: 'tool-negotiation',
-    name: 'Direct Trade Negotiation Room & Escrow',
-    category: 'Escrow Services',
-    description: 'Chat directly with factory export directors, draft digital sales contracts & lock Swiss escrow funds.',
+    name: 'Direct Trade Negotiation Room & trade protection',
+    category: 'trade protection Services',
+    description: 'Chat directly with factory export directors, draft digital sales contracts & lock Swiss trade protection funds.',
     actionType: 'view',
     viewTarget: 'NEGOTIATION_ROOM',
-    badge: 'Escrow Safe'
+    badge: 'trade protection Safe'
   },
   {
     id: 'tool-suppliers',
@@ -113,7 +113,7 @@ const SITE_TOOLS: SiteToolResult[] = [
     id: 'tool-premium',
     name: 'Trade Heaven VIP Membership & Verified Audits',
     category: 'Membership',
-    description: 'Unlock direct unmasked supplier contact details, verified factory audits, and priority escrow lines.',
+    description: 'Unlock direct unmasked supplier contact details, verified factory audits, and priority trade protection lines.',
     actionType: 'view',
     viewTarget: 'PREMIUM_MEMBERSHIP',
     badge: 'VIP Service'
@@ -859,7 +859,7 @@ export const HeroSection: React.FC<Props> = ({
             </span>
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-              Secure Cross-Border Escrow
+              Secure Cross-Border trade protection
             </span>
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>

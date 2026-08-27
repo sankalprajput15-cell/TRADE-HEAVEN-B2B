@@ -18,7 +18,7 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
   onOpenAuthModal,
   onNavigate,
   title = 'Administrator Control Panel',
-  description = 'This administrative hub, escrow release portal, and system settings are strictly restricted to verified administrators.',
+  description = 'This administrative hub, trade protection release portal, and system settings are strictly restricted to verified administrators.',
   targetViewName
 }) => {
   // 1. Unauthenticated Visitor State (401 Unauthorized)

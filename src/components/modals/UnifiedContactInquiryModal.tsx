@@ -73,7 +73,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
     } else if (targetType === 'SUPPLIER') {
       setMessage(`We would like to connect with ${supplierCompany || 'your export desk'} regarding wholesale manufacturing capabilities and catalog pricing.`);
     } else {
-      setMessage(`General trade and escrow inquiry regarding sourcing on Trade Heaven.`);
+      setMessage(`General trade and trade protection inquiry regarding sourcing on Trade Heaven.`);
     }
   }, [targetType, targetTitle, supplierCompany]);
 
@@ -105,7 +105,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
       target_price: Number(quotedPrice) || 0,
       incoterm: incoterm || 'FOB',
       destination_port: 'Port of Dispatch',
-      payment_terms: 'Trade Assurance Escrow (Swiss Vault)',
+      payment_terms: 'Trade Protection Certificate (Swiss Vault)',
       requirements: structuredMsg,
       status: 'pending',
       name: name || 'Trade Heaven Buyer / Supplier',
@@ -338,7 +338,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Protected by Trade Heaven Escrow Assurance</span>
+                <span>Protected by Trade Heaven Trade Protection Assurance</span>
               </div>
               <span className="font-mono text-[11px] text-slate-400">Live BigRock PHP API</span>
             </div>

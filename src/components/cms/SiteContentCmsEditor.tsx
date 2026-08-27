@@ -167,7 +167,7 @@ export const SiteContentCmsEditor: React.FC = () => {
       country: 'United States',
       countryFlag: '🇺🇸',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      quote: 'Seamless FOB cargo dispatch with reliable escrow release. Trade Heaven solved our tier-1 supplier discovery bottleneck.',
+      quote: 'Seamless FOB cargo dispatch with reliable trade protection release. Trade Heaven solved our tier-1 supplier discovery bottleneck.',
       rating: 5,
       verifiedDealSize: '$550,000 CIF Long Beach',
       category: 'Electronics OEM'
@@ -314,7 +314,7 @@ export const SiteContentCmsEditor: React.FC = () => {
           { id: 'STATS_METRICS', label: '📊 Key Trade Metrics', icon: DollarSign },
           { id: 'CATEGORIES', label: '🏭 Industrial Sectors', icon: Package },
           { id: 'H2H_ADVANTAGE', label: '🤝 H2H & IEM Advantage', icon: Briefcase },
-          { id: 'ESCROW_SECURITY', label: '🛡️ Trade Assurance & Escrow', icon: ShieldCheck },
+          { id: 'ESCROW_SECURITY', label: '🛡️ Trade Assurance & trade protection', icon: ShieldCheck },
           { id: 'MEMBERSHIP_PLANS', label: '💎 Pricing & Plans', icon: Award },
           { id: 'TESTIMONIALS', label: '⭐ Buyer Reviews', icon: Star },
           { id: 'CONTACT_WHATSAPP', label: '📞 WhatsApp & Support', icon: Phone },
@@ -870,18 +870,18 @@ export const SiteContentCmsEditor: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 5: ESCROW & SECURITY */}
+        {/* TAB 5: trade protection & SECURITY */}
         {activeTab === 'ESCROW_SECURITY' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
               <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                Trade Assurance &amp; Custodial Escrow Guarantee
+                Trade Assurance &amp; Custodial Trade Protection Guarantee
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Escrow Section Title</label>
+                  <label className="block font-bold text-slate-700 mb-1">trade protection Section Title</label>
                   <input
                     type="text"
                     value={formData.escrowPolicy.title}
@@ -901,7 +901,7 @@ export const SiteContentCmsEditor: React.FC = () => {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Escrow Subtitle / Description</label>
+                  <label className="block font-bold text-slate-700 mb-1">trade protection Subtitle / Description</label>
                   <textarea
                     rows={2}
                     value={formData.escrowPolicy.subtitle}
@@ -921,7 +921,7 @@ export const SiteContentCmsEditor: React.FC = () => {
                 </div>
               </div>
 
-              {/* 4 Escrow Milestones */}
+              {/* 4 trade protection Milestones */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 {formData.escrowPolicy.milestones.map((m, idx) => (
                   <div key={idx} className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">

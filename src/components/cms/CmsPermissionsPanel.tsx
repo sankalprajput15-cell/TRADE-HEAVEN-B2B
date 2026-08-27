@@ -29,7 +29,7 @@ export const CmsPermissionsPanel: React.FC = () => {
             Platform Roles &amp; Dynamic Security Permissions
           </h2>
           <p className="text-xs text-slate-500 font-normal">
-            Configure which user roles have rights to edit CMS site copy, release escrow funds, audit factories, or manage data entities.
+            Configure which user roles have rights to edit CMS site copy, release trade protection funds, audit factories, or manage data entities.
           </p>
         </div>
 
@@ -84,9 +84,9 @@ export const CmsPermissionsPanel: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Escrow Release */}
+                {/* trade protection Release */}
                 <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
-                  <span className="font-semibold text-slate-700">Can Release Escrow</span>
+                  <span className="font-semibold text-slate-700">Can Release trade protection</span>
                   <button
                     type="button"
                     onClick={() => updateRbacRole(role, { canReleaseEscrow: !config.canReleaseEscrow })}

@@ -213,7 +213,7 @@ export const AuthModal: React.FC<Props> = ({
                   ? '100% Free Forever • Zero Subscription Fee • Connect with Real Buyers & Suppliers.'
                   : (authMode === 'WORK_WITH_US' 
                       ? 'Enterprise KYC & Verification Onboarding to trade with real, genuine global partners.'
-                      : 'Sign in to access corporate RFQs, wholesale supplier catalogs, and escrow services.'))}
+                      : 'Sign in to access corporate RFQs, wholesale supplier catalogs, and trade protection services.'))}
           </p>
         </div>
 
@@ -335,7 +335,7 @@ export const AuthModal: React.FC<Props> = ({
                       <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">
-                      Manage RBAC users, custodial escrow vaults, and data gating.
+                      Manage RBAC users, custodial trade protection vaults, and data gating.
                     </p>
                   </button>
 
@@ -438,7 +438,7 @@ export const AuthModal: React.FC<Props> = ({
                   <span>Trade With Real &amp; Genuine Businesses</span>
                 </div>
                 <p className="text-[11px] text-emerald-900/90 leading-relaxed">
-                  Looking to onboard as an audited factory or corporate importer with tax verification &amp; escrow assurance?
+                  Looking to onboard as an audited factory or corporate importer with tax verification &amp; trade protection assurance?
                 </p>
                 <button
                   type="button"

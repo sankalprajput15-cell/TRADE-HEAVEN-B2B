@@ -167,7 +167,7 @@ export const RfqCreationModal: React.FC<Props> = ({
       setPreferredIncoterm('CIF');
       setDestinationPort('Port of Los Angeles, USA');
       setShippingMethod('SEA_FCL');
-      setPaymentTerms('Trade Assurance Escrow');
+      setPaymentTerms('Trade Protection Certificate');
       setDescription('Seeking 2 sets of 5-axis vertical machining centers for aerospace titanium components. 24,000 RPM spindle, 40-tool ATC, linear scales on all axes.');
       setBuyerCompany('Aerospace Tech Dynamics Corp');
       setBuyerCountry('United States');
@@ -550,13 +550,13 @@ export const RfqCreationModal: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Escrow Guarantee Disclaimer */}
+            {/* Trade Protection Guarantee Disclaimer */}
             <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
               <div className="text-xs text-emerald-950 space-y-0.5">
-                <div className="font-bold">Trade Heaven Escrow Protection Included</div>
+                <div className="font-bold">Trade Heaven Trade Protection Protection Included</div>
                 <p className="text-emerald-800 text-[11px] leading-relaxed">
-                  Supplier quotations are verified for ISO/CE compliance. Deposit funds remain in neutral Swiss escrow until pre-shipment SGS inspection sign-off.
+                  Supplier quotations are verified for ISO/CE compliance. Deposit funds remain in neutral Swiss trade protection until pre-shipment SGS inspection sign-off.
                 </p>
               </div>
             </div>

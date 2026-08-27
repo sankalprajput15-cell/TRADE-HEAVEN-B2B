@@ -27,13 +27,13 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-9 lg:p-12 shadow-xl space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Global Commercial Escrow &amp; Dispute Mediation Standard</span>
+          <span>Global Commercial trade protection &amp; Dispute Mediation Standard</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-white">
           Trade Heaven Return &amp; Refund Policy
         </h1>
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-          Comprehensive terms governing capital protection, pre-shipment SGS inspection triggers, escrow release conditions, and 30-day dispute resolution under ICC arbitration rules.
+          Comprehensive terms governing capital protection, pre-shipment SGS inspection triggers, trade protection release conditions, and 30-day dispute resolution under ICC arbitration rules.
         </p>
       </div>
 
@@ -44,10 +44,10 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
         <section className="space-y-2.5">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <Scale className="w-5 h-5 text-blue-600" />
-            1. Trade Assurance Escrow Guarantee
+            1. Trade Protection Certificate Guarantee
           </h2>
           <p className="text-slate-600 font-medium">
-            All commercial transactions conducted on Trade Heaven with the <strong>Trade Assurance Escrow</strong> badge hold 100% of buyer deposit funds in segregated client escrow vaults (governed under Swiss FINMA / EU PSD2 compliance). Funds are never disbursed directly to suppliers prior to milestone fulfillment.
+            All commercial transactions conducted on Trade Heaven with the <strong>Trade Protection Certificate</strong> badge hold 100% of buyer deposit funds in segregated client trade protection vaults (governed under Swiss FINMA / EU PSD2 compliance). Funds are never disbursed directly to suppliers prior to milestone fulfillment.
           </p>
         </section>
 
@@ -97,7 +97,7 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
             Submit Formal Dispute or Claim
           </h3>
           <p className="text-xs text-slate-300">
-            For urgent mediation or claim submissions, reach out directly to our escrow compliance officers:
+            For urgent mediation or claim submissions, reach out directly to our trade protection compliance officers:
           </p>
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <span className="font-mono text-blue-300">help@tradeheaven.net</span>

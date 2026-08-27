@@ -220,7 +220,7 @@ export const BuyerProfilePage: React.FC<Props> = ({
           {/* Quick Stats Overlay */}
           <div className="absolute bottom-4 right-4 hidden sm:flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white text-xs font-mono border border-white/10">
-              <span className="text-slate-400">Escrow Capacity:</span>{' '}
+              <span className="text-slate-400">Trade Protection Capacity:</span>{' '}
               <strong className="text-emerald-400">
                 ${(profile.tradeAssuranceEscrowSecuredUsd / 1000).toLocaleString()}k
               </strong>
@@ -397,7 +397,7 @@ export const BuyerProfilePage: React.FC<Props> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3 bg-slate-50 rounded-xl">
                     <span className="text-[10px] text-slate-400 block">Payment Terms:</span>
-                    <strong className="text-slate-900">{profile.preferredPaymentTerms?.join(', ') || 'Trade Assurance Escrow'}</strong>
+                    <strong className="text-slate-900">{profile.preferredPaymentTerms?.join(', ') || 'Trade Protection Certificate'}</strong>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl">
                     <span className="text-[10px] text-slate-400 block">Incoterms:</span>
@@ -704,7 +704,7 @@ export const BuyerProfilePage: React.FC<Props> = ({
                   <span>TradeHeaven Verified Importer Seal</span>
                 </div>
                 <p className="text-xs text-emerald-800">
-                  This enterprise has passed third-party identity and corporate registry audits. Trade Assurance Escrow payment capacity is secured up to ${(profile.tradeAssuranceEscrowSecuredUsd / 1000).toLocaleString()}k.
+                  This enterprise has passed third-party identity and corporate registry audits. Trade Protection Certificate payment capacity is secured up to ${(profile.tradeAssuranceEscrowSecuredUsd / 1000).toLocaleString()}k.
                 </p>
                 <div className="text-xs text-emerald-700 font-mono">
                   Audit Status: <strong>PASS (Level 3 Verification)</strong>

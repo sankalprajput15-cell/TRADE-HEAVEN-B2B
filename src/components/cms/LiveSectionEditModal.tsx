@@ -56,7 +56,7 @@ export const LiveSectionEditModal: React.FC<Props> = ({
       case 'STATS': return '📊 Edit Key Trade Metrics & Volume Stats';
       case 'CATEGORIES': return '🏭 Edit Industrial Sourcing Categories';
       case 'H2H': return '🤝 Edit H2H (Human-to-Human) & IEM Advantage';
-      case 'ESCROW': return '🛡️ Edit Trade Assurance Escrow & Guarantees';
+      case 'trade protection': return '🛡️ Edit Trade Protection Certificate & Guarantees';
       case 'TESTIMONIALS': return '⭐ Edit Buyer Testimonials & Reviews';
       case 'CONTACT': return '📞 Edit WhatsApp Desk & Support Information';
       case 'FOOTER': return '📑 Edit Footer Taglines, Mission & Legal';
@@ -403,11 +403,11 @@ export const LiveSectionEditModal: React.FC<Props> = ({
             </div>
           )}
 
-          {/* Section 7: ESCROW */}
-          {sectionKey === 'ESCROW' && (
+          {/* Section 7: trade protection */}
+          {sectionKey === 'trade protection' && (
             <div className="space-y-4">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Escrow Title</label>
+                <label className="block font-bold text-slate-700 mb-1">trade protection Title</label>
                 <input
                   type="text"
                   value={formData.escrowPolicy.title}
@@ -417,7 +417,7 @@ export const LiveSectionEditModal: React.FC<Props> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Escrow Subtitle</label>
+                <label className="block font-bold text-slate-700 mb-1">trade protection Subtitle</label>
                 <textarea
                   rows={2}
                   value={formData.escrowPolicy.subtitle}

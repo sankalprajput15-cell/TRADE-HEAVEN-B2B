@@ -203,7 +203,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                     <div className="font-bold text-slate-900">{company.factorySizeSqM.toLocaleString()} m²</div>
                   </div>
                   <div className="p-2 bg-slate-50 rounded-xl">
-                    <span className="text-[10px] text-slate-400">Escrow Limit:</span>
+                    <span className="text-[10px] text-slate-400">trade protection Limit:</span>
                     <div className="font-mono font-bold text-emerald-600">${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k</div>
                   </div>
                 </div>

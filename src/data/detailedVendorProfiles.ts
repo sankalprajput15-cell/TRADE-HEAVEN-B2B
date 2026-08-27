@@ -32,7 +32,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     tagline: 'Aerospace-Grade Precision Forged Alloy Wheels, Turbochargers & Monobloc Braking Hardware',
     description: 'Apex Dynamics is an IATF 16949-certified tier-1 manufacturer specializing in aerospace-grade forged 6061-T6 aluminum alloy wheels, CNC billet turbocharger systems, and monobloc racing brake assemblies. Serving professional motorsport series, supercar tuners, and wholesale distributors in over 45 countries with full custom engineering and OEM private label support.',
     acceptedPaymentTerms: [
-      'Trade Assurance Escrow (Zero-Risk)',
+      'Trade Protection Certificate (Zero-Risk)',
       'L/C at Sight (Irrevocable Confirmed)',
       '30% T/T Advance + 70% against B/L',
       'D/P (Documents Against Payment)'
@@ -215,7 +215,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     tagline: 'Grade-A LiFePO4 Battery Cells, 48V Rack Storage & Commercial Solar Energy Systems',
     description: 'ApexPower is a tier-1 energy storage manufacturer operating 80,000 m² of automated cleanroom facilities in Shenzhen. Specializing in high-cycle LiFePO4 cells (6000+ cycles), residential solar storage batteries, server-rack UPS systems, and smart cloud-monitored battery management systems (BMS).',
     acceptedPaymentTerms: [
-      'Trade Assurance Escrow',
+      'Trade Protection Certificate',
       'L/C at Sight (Irrevocable Confirmed)',
       '30% T/T Advance + 70% B/L',
       'CAD (Cash Against Documents)'
@@ -368,7 +368,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     tagline: 'Industrial Petrochemicals, Virgin HDPE Resins & Specialty Titanium Dioxide (TiO2)',
     description: 'Sudarshan Petrochem is an ISO 9001 and REACH-certified producer of chemical commodities, titanium dioxide pigment, polymer resins, industrial solvents, and water treatment compounds. Supplying international packaging converters, paint manufacturers, and industrial compounders across Europe, Middle East, and the Americas.',
     acceptedPaymentTerms: [
-      'Trade Assurance Escrow',
+      'Trade Protection Certificate',
       '100% Irrevocable Confirmed L/C at Sight',
       '30% Advance + 70% against BL Copy',
       'CAD (Cash Against Documents)'
@@ -447,7 +447,7 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
     bannerUrl: base.bannerUrl || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1600&auto=format&fit=crop&q=80',
     tagline: 'Certified International Manufacturer & Direct Exporter',
     description: base.description || 'Verified manufacturer offering bulk wholesale manufacturing, OEM/ODM private labeling, and global logistics support with full trade assurance protection.',
-    acceptedPaymentTerms: ['Trade Assurance Escrow', 'L/C at Sight', '30% T/T + 70% B/L', 'D/P'],
+    acceptedPaymentTerms: ['Trade Protection Certificate', 'L/C at Sight', '30% T/T + 70% B/L', 'D/P'],
     supportedIncotermsList: ['FOB', 'CIF', 'CFR', 'EXW', 'DDP'],
     portsOfDispatch: ['Primary International Container Port'],
     marketDistribution: [

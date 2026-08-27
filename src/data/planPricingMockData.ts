@@ -238,7 +238,49 @@ export const FEATURE_DEFINITIONS_CATALOG: FeatureFlagDefinition[] = [
   }
 ];
 
-export const INITIAL_SAAS_PLANS: SaaSPlan[] = [];
+export const INITIAL_SAAS_PLANS: SaaSPlan[] = [
+  {
+    id: 'plan-basic-business',
+    name: 'Basic Business Plan',
+    slug: 'basic-business-plan',
+    description: 'High-converting starter package for emerging exporters entering global trade.',
+    status: 'ACTIVE',
+    tierBadge: 'Most Popular for New Exporters',
+    isPopular: true,
+    displayOrder: 1,
+    category: 'SUPPLIER_MEMBERSHIP',
+    targetAudience: 'Emerging Exporters & Suppliers',
+    featuresList: [
+      '**Product & Catalog Management:**',
+      'Up to 50 Product Listings',
+      '10 Featured Showcase Slots',
+      'Dedicated Trade Heaven Company Profile Page',
+      '**Buyer Matching & Lead Generation:**',
+      '20 Verified & Filtered International Buyer Leads / Month',
+      '15 Bulk RFQ (Request for Quote) Postings / Month',
+      'Real-time Inquiry & Lead Management Dashboard',
+      '**Digital Presence & Integration:**',
+      '1-Page Dedicated Business Microsite',
+      'Direct WhatsApp Lead Chat Integration',
+      'Search Engine & Category Visibility',
+      '**Account Management & Support:**',
+      'Dedicated Export Account Manager / CSR',
+      '24/7 Priority Support & Expert Trade Guidance'
+    ],
+    monthlyPriceUsd: 110,
+    annualPriceUsd: 1100,
+    discountPercentage: 16,
+    currency: 'USD',
+    tokenQuotaMonthly: 100000,
+    rpm: 60,
+    rpd: 1000,
+    tpm: 100000,
+    maxContextWindow: 128000,
+    maxOutputTokens: 2048,
+    maxConcurrentRequests: 2,
+    allowedModels: ['gemini-1.5-flash']
+  }
+];
 
 export const INITIAL_MODEL_RATE_LIMITS: ModelRateLimitRule[] = [
   // Free Developer

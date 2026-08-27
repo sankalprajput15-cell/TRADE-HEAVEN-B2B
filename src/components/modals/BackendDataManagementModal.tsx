@@ -252,7 +252,7 @@ export const BackendDataManagementModal: React.FC<Props> = ({
           {activeTab === 'EXPORT' && (
             <div className="space-y-4">
               <p className="text-slate-600">
-                Generate an all-in-one JSON snapshot containing all CMS content overrides, registered products, active RFQ tenders, escrow transactions, and support tickets.
+                Generate an all-in-one JSON snapshot containing all CMS content overrides, registered products, active RFQ tenders, trade protection transactions, and support tickets.
               </p>
 
               <button
@@ -319,7 +319,7 @@ export const BackendDataManagementModal: React.FC<Props> = ({
                 </div>
 
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-semibold">Swiss Escrow Rail:</span>
+                  <span className="text-[10px] text-slate-500 font-semibold">Swiss Trade Protection Rail:</span>
                   <div className="font-bold text-slate-900 text-sm mt-0.5 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Connected (FINMA PSD2)
                   </div>

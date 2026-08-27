@@ -240,7 +240,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                     <div className="font-bold text-slate-900">{buyer.annualPurchasingVolumeUsd}</div>
                   </div>
                   <div className="p-2 bg-slate-50 rounded-xl">
-                    <span className="text-[10px] text-slate-400">Escrow Capacity:</span>
+                    <span className="text-[10px] text-slate-400">Trade Protection Capacity:</span>
                     <div className="font-mono font-bold text-emerald-600">
                       ${(buyer.tradeAssuranceEscrowSecuredUsd / 1000).toFixed(0)}k
                     </div>

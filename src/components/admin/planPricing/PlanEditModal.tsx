@@ -145,7 +145,7 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
       setFeaturesList([
         'Verified Member Badge',
         'Direct RFQ Matching',
-        'Standard Escrow Support'
+        'Standard trade protection Support'
       ]);
 
       setTokenQuotaMonthly(50000000);

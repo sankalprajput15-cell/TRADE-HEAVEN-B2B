@@ -96,7 +96,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
           <div className="flex flex-wrap items-center gap-3 text-center md:text-left">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-xs">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>100% Escrow &amp; Verified Factory Assurance</span>
+              <span>100% trade protection &amp; Verified Factory Assurance</span>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-bold text-xs">
               <Headphones className="w-3.5 h-3.5 text-blue-400" />
@@ -240,8 +240,8 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('TRADE_ESCROW')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
-                  Custodial Escrow Vaults
+                <button onClick={() => onNavigate('TRADE_PROTECTION')} className="hover:text-amber-400 transition-colors text-left cursor-pointer">
+                  Custodial trade protection Vaults
                 </button>
               </li>
               {isAdmin && (
@@ -284,7 +284,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                   {supportEmail}
                 </div>
                 <p className="text-[10px] text-slate-300 leading-tight">
-                  Dispatches immediately to senior trade managers &amp; escrow team.
+                  Dispatches immediately to senior trade managers &amp; trade protection team.
                 </p>
                 <button
                   id="footer-open-contact-form-btn"
@@ -334,7 +334,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
             <span className="hidden sm:inline text-slate-700">•</span>
             <span className="text-emerald-400 font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              PCI-DSS Level 1 Escrow Vault
+              PCI-DSS Level 1 trade protection Vault
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-400">

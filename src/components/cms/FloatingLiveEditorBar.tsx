@@ -164,7 +164,7 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({
                         Admin Control &amp; Treasury
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        Zero-trust roles, escrow vault releases, client tiers
+                        Zero-trust roles, trade protection vault releases, client tiers
                       </div>
                     </div>
                   </div>
@@ -220,7 +220,7 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({
                         Exporter &amp; Buyer Workspace
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        Live milestones, factory orders, escrow tracking
+                        Live milestones, factory orders, trade protection tracking
                       </div>
                     </div>
                   </div>
@@ -371,13 +371,13 @@ export const FloatingLiveEditorBar: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      openQuickEdit('ESCROW');
+                      openQuickEdit('trade protection');
                       setIsExpanded(false);
                     }}
                     className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer text-left"
                   >
                     <ShieldCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                    <span className="truncate">Escrow Security</span>
+                    <span className="truncate">trade protection Security</span>
                   </button>
 
                   <button

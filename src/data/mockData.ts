@@ -371,7 +371,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     importFrequency: 'Weekly FCL Containers (40ft HC)',
     targetCategories: ['Renewable Energy & Solar', 'Electronics & Component PCB', 'Industrial Machinery & Automation'],
     preferredIncoterms: ['FOB', 'CIF', 'DDP'],
-    preferredPaymentTerms: ['Trade Assurance Escrow', 'L/C at Sight', '30/70 T/T'],
+    preferredPaymentTerms: ['Trade Protection Certificate', 'L/C at Sight', '30/70 T/T'],
     activeRfqsCount: 5,
     completedImportsCount: 340,
     tradeAssuranceEscrowSecuredUsd: 3500000,
@@ -413,7 +413,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     importFrequency: 'Bi-Weekly FCL Shipments',
     targetCategories: ['Renewable Energy & Solar', 'Electronics & Component PCB'],
     preferredIncoterms: ['CIF', 'FOB', 'DDP'],
-    preferredPaymentTerms: ['30% T/T Deposit + 70% B/L', 'Escrow Rail'],
+    preferredPaymentTerms: ['30% T/T Deposit + 70% B/L', 'trade protection Rail'],
     activeRfqsCount: 3,
     completedImportsCount: 195,
     tradeAssuranceEscrowSecuredUsd: 2200000,
@@ -454,7 +454,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     importFrequency: 'Weekly Bulk & FCL Consignments',
     targetCategories: ['Industrial Machinery & Automation', 'Automotive Parts & Transportation', 'Chemicals, Polymers & Resins'],
     preferredIncoterms: ['CIF', 'FOB', 'CFR'],
-    preferredPaymentTerms: ['Confirmed Irrevocable L/C at Sight', 'Escrow Rail'],
+    preferredPaymentTerms: ['Confirmed Irrevocable L/C at Sight', 'trade protection Rail'],
     activeRfqsCount: 6,
     completedImportsCount: 580,
     tradeAssuranceEscrowSecuredUsd: 4800000,
@@ -495,7 +495,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     importFrequency: 'Bi-Weekly FCL Shipments',
     targetCategories: ['Automotive Parts & Transportation', 'Industrial Machinery & Automation'],
     preferredIncoterms: ['FOB', 'CIF', 'DDP'],
-    preferredPaymentTerms: ['30% T/T + 70% B/L', 'Escrow Rail'],
+    preferredPaymentTerms: ['30% T/T + 70% B/L', 'trade protection Rail'],
     activeRfqsCount: 3,
     completedImportsCount: 290,
     tradeAssuranceEscrowSecuredUsd: 2100000,
@@ -536,7 +536,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     importFrequency: 'Monthly 40ft High Cube Containers',
     targetCategories: ['Textiles, Fabrics & Apparel', 'Packaging, Paper & Logistics'],
     preferredIncoterms: ['DDP', 'FOB', 'CIF'],
-    preferredPaymentTerms: ['30% T/T Deposit + 70% B/L', 'Escrow Milestones'],
+    preferredPaymentTerms: ['30% T/T Deposit + 70% B/L', 'trade protection Milestones'],
     activeRfqsCount: 4,
     completedImportsCount: 160,
     tradeAssuranceEscrowSecuredUsd: 1400000,
@@ -1366,7 +1366,7 @@ export const MOCK_RFQS: RfqRequirement[] = [
     targetPriceUsd: 4.10,
     preferredIncoterm: 'DDP',
     destinationPort: 'Le Havre / Warehouse Paris, France',
-    paymentTerms: 'Trade Assurance Escrow (50% upfront, 50% upon SGS inspection)',
+    paymentTerms: 'Trade Protection Certificate (50% upfront, 50% upon SGS inspection)',
     detailedRequirements: 'Sourcing 15,000 meters of 100% organic cotton raw selvedge/ring denim for Spring 2027 collection. Must provide GOTS TC (Transaction Certificate) issued to our company name. Need lab dips and 5m sample roll within 7 days.',
     urgency: 'STANDARD',
     quotesCount: 5,
@@ -1455,7 +1455,7 @@ export const MOCK_QUOTES: SupplierQuote[] = [
     portOfLoading: 'Rotterdam Warehouse',
     leadTimeDays: 7,
     validityDays: 20,
-    paymentTerms: 'Trade Assurance Escrow / Net 30 for EU buyers',
+    paymentTerms: 'Trade Protection Certificate / Net 30 for EU buyers',
     sampleOffered: true,
     notes: 'Stock readily available in our European distribution center in Rotterdam. Next-week delivery with zero import clearance hassle for Sweden.',
     submittedDate: '2026-08-20',
@@ -1532,11 +1532,11 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
         senderName: 'Elena Zhao (ApexPower)',
         senderRole: 'SUPPLIER',
         timestamp: '2026-08-21T10:05:00Z',
-        message: 'Wonderful! Here is the signed Proforma Invoice PI-2026-8891. Trade Assurance escrow deposit link is attached below.',
+        message: 'Wonderful! Here is the signed Proforma Invoice PI-2026-8891. Trade Assurance trade protection deposit link is attached below.',
         attachment: {
           type: 'PROFORMA_INVOICE',
           title: 'Proforma Invoice PI-2026-8891.pdf',
-          valueSummary: 'Deposit Due: $100,500.00 USD (30%) | Escrow Protected'
+          valueSummary: 'Deposit Due: $100,500.00 USD (30%) | trade protection Protected'
         }
       }
     ]
@@ -1642,7 +1642,7 @@ export const MOCK_BANK_ACCOUNTS: BankAccountDetails[] = [
   },
   {
     id: 'bank-asia-pac',
-    label: 'Asia-Pacific Multi-Currency Settlement & Escrow Vault',
+    label: 'Asia-Pacific Multi-Currency Settlement & trade protection Vault',
     currency: 'CNY',
     bankName: 'HSBC Hong Kong (The Hongkong and Shanghai Banking Corporation)',
     swiftBic: 'HSBCHKHHXXX',
@@ -1697,7 +1697,7 @@ export const MOCK_PLAN_CONFIGS: SubscriptionPlanConfig[] = [
       'Dedicated Key Account Manager & Buyer Matchmaker',
       'Verified SGS / TÜV On-Site Factory Audit Included',
       'Custom Subdomain (company.tradeheaven.com)',
-      '1.5% Escrow Fee Discount on Trade Assurance'
+      '1.5% trade protection Fee Discount on Trade Assurance'
     ]
   },
   {
@@ -1718,7 +1718,7 @@ export const MOCK_PLAN_CONFIGS: SubscriptionPlanConfig[] = [
       'Guaranteed #1 Top-Ranked Category Sponsorship',
       'Bespoke Buyer Sourcing Delegation & Virtual Trade Mission',
       '5 Sub-Accounts for Corporate Sales Teams',
-      'Zero Transaction Fees on Escrow up to $500,000',
+      'Zero Transaction Fees on trade protection up to $500,000',
       'Custom REST API & ERP Catalog Auto-Sync',
       '24/7 Dedicated VIP Concierge & Customs Legal Counsel'
     ]

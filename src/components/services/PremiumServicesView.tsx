@@ -121,31 +121,7 @@ export const PremiumServicesView: React.FC<Props> = ({
               </button>
             </div>
 
-            {/* Annual vs Monthly toggle */}
-            <div className="inline-flex items-center p-1 rounded-xl bg-slate-800/80 border border-slate-700/80">
-              <button
-                type="button"
-                onClick={() => setBillingCycle('ANNUAL')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  billingCycle === 'ANNUAL'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <span>Annual (Save up to 20%)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingCycle('MONTHLY')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  billingCycle === 'MONTHLY'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <span>Monthly</span>
-              </button>
-            </div>
+
           </div>
         </div>
       </div>
@@ -252,14 +228,25 @@ export const PremiumServicesView: React.FC<Props> = ({
                             'Unlimited Direct Buy Lead Unlocks',
                             'On-Site Factory Video Audit Verification',
                             'Guaranteed RFQ Introductions',
-                            '$2,000,000 Escrow Vault Capacity'
+                            '$2,000,000 trade protection Vault Capacity'
                           ]
-                      ).map((feat, fIdx) => (
-                        <div key={fIdx} className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <span className={fIdx === 0 ? 'font-bold text-amber-300' : ''}>{feat}</span>
+                      ).map((feat, fIdx) => {
+                      const isHeader = feat.startsWith('**') && feat.endsWith('**');
+                      const cleanText = isHeader ? feat.slice(2, -2) : feat;
+                      if (isHeader) {
+                        return (
+                          <div key={fIdx} className="pt-3 pb-1">
+                            <span className="font-bold text-[13px]">{cleanText}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={fIdx} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{cleanText}</span>
                         </div>
-                      ))}
+                      );
+                    })}
                     </div>
                   </div>
 
@@ -268,7 +255,7 @@ export const PremiumServicesView: React.FC<Props> = ({
                     onClick={() => handleSelectPackage(plan)}
                     className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    <span>Upgrade to {plan.name}</span>
+                    <span>Get Started with Trade Heaven</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -345,12 +332,23 @@ export const PremiumServicesView: React.FC<Props> = ({
                             'Top Search Placement Priority',
                             'Factory Video Tour Integration'
                           ]
-                      ).map((feat, fIdx) => (
-                        <div key={fIdx} className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span className={fIdx === 0 ? 'font-bold' : ''}>{feat}</span>
+                      ).map((feat, fIdx) => {
+                      const isHeader = feat.startsWith('**') && feat.endsWith('**');
+                      const cleanText = isHeader ? feat.slice(2, -2) : feat;
+                      if (isHeader) {
+                        return (
+                          <div key={fIdx} className="pt-3 pb-1">
+                            <span className="font-bold text-[13px]">{cleanText}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={fIdx} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{cleanText}</span>
                         </div>
-                      ))}
+                      );
+                    })}
                     </div>
                   </div>
 
@@ -363,7 +361,7 @@ export const PremiumServicesView: React.FC<Props> = ({
                         : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'
                     } font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5`}
                   >
-                    <span>Upgrade to {plan.name}</span>
+                    <span>Get Started with Trade Heaven</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -407,12 +405,23 @@ export const PremiumServicesView: React.FC<Props> = ({
                           '20 Buy Lead Credits / month',
                           'Standard Trade Protection'
                         ]
-                    ).map((feat, fIdx) => (
-                      <div key={fIdx} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{feat}</span>
-                      </div>
-                    ))}
+                    ).map((feat, fIdx) => {
+                      const isHeader = feat.startsWith('**') && feat.endsWith('**');
+                      const cleanText = isHeader ? feat.slice(2, -2) : feat;
+                      if (isHeader) {
+                        return (
+                          <div key={fIdx} className="pt-3 pb-1">
+                            <span className="font-bold text-[13px]">{cleanText}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={fIdx} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span className="leading-snug">{cleanText}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

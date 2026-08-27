@@ -177,8 +177,8 @@ export const Header: React.FC<Props> = ({
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px] sm:text-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden sm:inline">100% Escrow &amp; Trade Assurance</span>
-              <span className="sm:hidden">Escrow Protected</span>
+              <span className="hidden sm:inline">100% trade protection &amp; Trade Assurance</span>
+              <span className="sm:hidden">trade protection Protected</span>
             </span>
 
             <span className="hidden md:inline-block text-slate-700">|</span>
@@ -304,7 +304,7 @@ export const Header: React.FC<Props> = ({
               onClick={() => handleNavClick('HOMEPAGE')}
               className="text-left focus:outline-none cursor-pointer"
             >
-              <TradeHeavenLogo size="md" subtitle="Global B2B Marketplace &amp; Escrow Rail" />
+              <TradeHeavenLogo size="md" subtitle="Global B2B Marketplace &amp; trade protection Rail" />
             </button>
           </div>
 
@@ -520,7 +520,7 @@ export const Header: React.FC<Props> = ({
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
                     <div>
                       <div>Return &amp; Refund Policy</div>
-                      <div className="text-[10px] text-slate-400 font-normal">30-Day Escrow Terms &amp; Compliance</div>
+                      <div className="text-[10px] text-slate-400 font-normal">30-Day trade protection Terms &amp; Compliance</div>
                     </div>
                   </button>
                 </div>
@@ -583,7 +583,7 @@ export const Header: React.FC<Props> = ({
                       <Landmark className="w-4 h-4 text-amber-600" />
                       <div>
                         <div className="text-amber-900 font-bold">Admin &amp; Treasury Portal</div>
-                        <div className="text-[10px] text-slate-500 font-normal">Escrow releases &amp; user control</div>
+                        <div className="text-[10px] text-slate-500 font-normal">trade protection releases &amp; user control</div>
                       </div>
                     </button>
                     <button

@@ -291,7 +291,7 @@ export const ProductCatalog: React.FC<Props> = ({
           <div className="pt-2.5 sm:pt-3 border-t border-slate-200 space-y-1.5 text-[10px] sm:text-[11px] text-slate-600">
             <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Trade Assurance Escrow</span>
+              <span>Trade Protection Certificate</span>
             </div>
             <div className="flex items-center gap-1.5 text-blue-800 font-medium">
               <Award className="w-3.5 h-3.5 text-blue-600 shrink-0" />

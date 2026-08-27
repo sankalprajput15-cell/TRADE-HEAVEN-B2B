@@ -84,7 +84,7 @@ export const ProductDetailModal: React.FC<Props> = ({
         target_price: matchedTier.priceUsd,
         incoterm: selectedIncoterm,
         destination_port: product.portOfDispatch || 'Port of Hamburg',
-        payment_terms: 'Trade Assurance Escrow (Swiss Vault)',
+        payment_terms: 'Trade Protection Certificate (Swiss Vault)',
         requirements: `Product ID: ${product.id} | Supplier: ${product.supplierName} (${product.supplierCountry}) | Incoterm: ${selectedIncoterm} | Target Unit Rate: $${matchedTier.priceUsd} | Buyer Note: ${customInquiryNote || 'Seeking FOB/CIF commercial quotation and lead times.'}`,
         name: 'Procurement Buyer',
         email: 'buyer@tradeheaven.net',
@@ -272,7 +272,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                   </div>
                   <div className="text-right text-[11px] text-emerald-700 font-bold">
                     <ShieldCheck className="w-4 h-4 inline mr-1 text-emerald-600" />
-                    Trade Assurance Escrow Included
+                    Trade Protection Certificate Included
                   </div>
                 </div>
 

@@ -95,7 +95,7 @@ export const ClientAdminView: React.FC<Props> = ({
   const [showAddFaqModal, setShowAddFaqModal] = useState(false);
   const [newFaqQuestion, setNewFaqQuestion] = useState('');
   const [newFaqAnswer, setNewFaqAnswer] = useState('');
-  const [newFaqCategory, setNewFaqCategory] = useState('Escrow & Payments');
+  const [newFaqCategory, setNewFaqCategory] = useState('Trade Protection & Payments');
 
   // 5. Site Settings State (BigRock MySQL)
   const [siteSettings, setSiteSettings] = useState<Record<string, string>>({});
@@ -106,7 +106,7 @@ export const ClientAdminView: React.FC<Props> = ({
   const [wireReference, setWireReference] = useState('');
   const [senderBank, setSenderBank] = useState('Deutsche Bank Frankfurt');
   const [transferAmount, setTransferAmount] = useState(25000);
-  const [purpose, setPurpose] = useState('Escrow Deposit for RFQ #RFQ-2025-8901');
+  const [purpose, setPurpose] = useState('Trade Protection Deposit for RFQ #RFQ-2025-8901');
   const [isSubmittingWire, setIsSubmittingWire] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
 
@@ -196,7 +196,7 @@ export const ClientAdminView: React.FC<Props> = ({
     setIsLoading(true);
     const res = await bigrockApi.createListing({
       title: newListingTitle.trim(),
-      description: newListingDesc.trim() || `Factory direct supply of ${newListingTitle}. Direct export with Swiss Escrow guarantee.`,
+      description: newListingDesc.trim() || `Factory direct supply of ${newListingTitle}. Direct export with Swiss Trade Protection guarantee.`,
       category: newListingCategory,
       price: parseFloat(newListingPrice) || 0,
       image_url: newListingImageUrl,
@@ -1301,7 +1301,7 @@ export const ClientAdminView: React.FC<Props> = ({
               <input
                 type="text"
                 required
-                placeholder="e.g. How does escrow inspection work?"
+                placeholder="e.g. How does trade protection inspection work?"
                 value={newFaqQuestion}
                 onChange={e => setNewFaqQuestion(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
@@ -1315,7 +1315,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 onChange={e => setNewFaqCategory(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:outline-none focus:border-blue-500"
               >
-                <option value="Escrow & Payments">Escrow & Payments</option>
+                <option value="Trade Protection & Payments">Trade Protection & Payments</option>
                 <option value="Factory Verification">Factory Verification</option>
                 <option value="Buying & RFQs">Buying & RFQs</option>
                 <option value="Shipping & Logistics">Shipping & Logistics</option>
@@ -1461,7 +1461,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 <Landmark className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900">Direct Custodial Escrow Vault Settlement</h3>
+                <h3 className="text-base font-black text-slate-900">Direct Custodial trade protection Vault Settlement</h3>
                 <p className="text-xs text-slate-500">Record international SWIFT/SEPA transfers directly to Trade Heaven neutral Swiss vaults.</p>
               </div>
             </div>
@@ -1471,7 +1471,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
                 <h4 className="text-base font-black text-emerald-950">Wire Transfer Settlement Confirmed</h4>
                 <p className="text-xs text-emerald-800 max-w-md mx-auto">
-                  Transfer reference registered. Escrow vault custody funds allocated to verified transaction.
+                  Transfer reference registered. trade protection vault custody funds allocated to verified transaction.
                 </p>
                 <button
                   onClick={() => setSubmissionSuccess(false)}

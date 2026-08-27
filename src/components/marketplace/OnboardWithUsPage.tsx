@@ -257,7 +257,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
             <div className="space-y-4 max-w-2xl text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>100% Free Registration • Zero Middlemen • Swiss Escrow Protected</span>
+                <span>100% Free Registration • Zero Middlemen • Swiss Trade Protection Protected</span>
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
                 Work &amp; Trade with <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-emerald-400 to-blue-400">Real, Genuine</span> Buyers &amp; Suppliers
@@ -274,7 +274,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
                 </div>
                 <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span className="font-semibold text-slate-200">100% Escrow Guarantee</span>
+                  <span className="font-semibold text-slate-200">100% Trade Protection Guarantee</span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 col-span-2 sm:col-span-1">
                   <Award className="w-4 h-4 text-blue-400 shrink-0" />
@@ -469,7 +469,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Direct Factory Pricing (Zero Markup)
                   </li>
                   <li className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> 100% Escrow Milestone Protection
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> 100% trade protection Milestone Protection
                   </li>
                   <li className="flex items-center gap-1.5 text-emerald-700 font-medium">
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Post Free Targeted Buy RFQs
@@ -1053,7 +1053,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
                   className="mt-0.5 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
                 />
                 <span className="text-xs text-slate-700 leading-relaxed">
-                  I confirm that all business information provided is true and accurate. I agree to trade with verified partners under TradeHeaven's <strong>Trade Assurance Escrow</strong> rules and zero-scam compliance policy.
+                  I confirm that all business information provided is true and accurate. I agree to trade with verified partners under TradeHeaven's <strong>Trade Protection Certificate</strong> rules and zero-scam compliance policy.
                 </span>
               </label>
             </div>
@@ -1149,7 +1149,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
               <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Escrow &amp; Inspection Eligible</span>
+                  <span>trade protection &amp; Inspection Eligible</span>
                 </div>
                 <span className="font-mono text-[10px] text-slate-400">UID: {registeredUser?.id || 'th-verified-user'}</span>
               </div>
@@ -1245,7 +1245,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
           <div className="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200 space-y-4">
             <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>TradeHeaven Verified &amp; Escrow Backed</span>
+              <span>TradeHeaven Verified &amp; trade protection Backed</span>
             </div>
             <ul className="space-y-2.5 text-slate-800 font-medium">
               <li className="flex items-start gap-2">
@@ -1258,7 +1258,7 @@ export const OnboardWithUsPage: React.FC<Props> = ({
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>Funds locked in Swiss Trade Assurance Escrow until pre-shipment sign-off.</span>
+                <span>Funds locked in Swiss Trade Protection Certificate until pre-shipment sign-off.</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />

@@ -67,7 +67,7 @@ export const ContactUsModal: React.FC<Props> = ({
         target_price: 0,
         incoterm: 'FOB',
         destination_port: 'Port of Dispatch',
-        payment_terms: 'Trade Assurance Escrow',
+        payment_terms: 'Trade Protection Certificate',
         requirements: `${subject}\n\n${message}${attachedFiles.length > 0 ? `\n[Attachments: ${attachedFiles.map(a => a.name).join(', ')}]` : ''}`,
         name,
         email,
@@ -133,7 +133,7 @@ export const ContactUsModal: React.FC<Props> = ({
             Contact Trade Heaven Support &amp; Sourcing Desk
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl font-normal">
-            Directly dispatches your inquiry to our senior trade managers, factory verification team, and escrow compliance officers.
+            Directly dispatches your inquiry to our senior trade managers, factory verification team, and trade protection compliance officers.
           </p>
         </div>
 
@@ -182,7 +182,7 @@ export const ContactUsModal: React.FC<Props> = ({
                 {[
                   { id: 'BUYER', label: 'Buyer Sourcing' },
                   { id: 'SUPPLIER', label: 'Supplier Upgrade' },
-                  { id: 'ESCROW_DISPUTE', label: 'Escrow / Dispute' },
+                  { id: 'ESCROW_DISPUTE', label: 'trade protection / Dispute' },
                   { id: 'IEM_SERVICES', label: 'IEM Manager' }
                 ].map(item => (
                   <button
@@ -358,10 +358,10 @@ export const ContactUsModal: React.FC<Props> = ({
               )}
             </div>
 
-            {/* Escrow & Privacy Guarantee */}
+            {/* trade protection & Privacy Guarantee */}
             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2 text-[11px] text-emerald-900">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>All communications are protected under Trade Heaven enterprise NDA &amp; escrow privacy protocols.</span>
+              <span>All communications are protected under Trade Heaven enterprise NDA &amp; trade protection privacy protocols.</span>
             </div>
 
             {/* Submit Button */}

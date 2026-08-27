@@ -108,13 +108,13 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 shrink-0 pr-14">
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">
-            <Lock className="w-3.5 h-3.5" /> 256-Bit SSL Encrypted Escrow Rail
+            <Lock className="w-3.5 h-3.5" /> 256-Bit SSL Encrypted trade protection Rail
           </div>
           <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-            Secure Escrow Checkout &amp; Settlement
+            Secure trade protection Checkout &amp; Settlement
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
-            Capital is protected in neutral Swiss escrow vaults under FINMA compliance rules.
+            Capital is protected in neutral Swiss trade protection vaults under FINMA compliance rules.
           </p>
         </div>
 
@@ -142,9 +142,9 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
             <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-black text-slate-900">Escrow Payment Confirmed!</h3>
+            <h3 className="text-lg font-black text-slate-900">trade protection Payment Confirmed!</h3>
             <p className="text-xs text-slate-600 max-w-sm mx-auto">
-              Your funds are held securely in Swiss Escrow. A verified Proforma Invoice &amp; receipt have been dispatched to your email.
+              Your funds are held securely in Swiss Trade Protection. A verified Proforma Invoice &amp; receipt have been dispatched to your email.
             </p>
             <button
               type="button"
@@ -196,7 +196,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                   }`}
                 >
                   <DollarSign className="w-4 h-4" />
-                  <span className="text-[11px]">USDT / USDC Escrow</span>
+                  <span className="text-[11px]">USDT / USDC trade protection</span>
                 </button>
               </div>
             </div>
@@ -258,12 +258,12 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                   <div><strong>Bank:</strong> UBS Switzerland AG, Zurich</div>
                   <div><strong>IBAN:</strong> CH93 0023 0230 4910 9481 0</div>
                   <div><strong>BIC / SWIFT:</strong> UBSWCHZH80A</div>
-                  <div><strong>Reference:</strong> ESCROW-TH-{checkoutData.planId || 'DIRECT'}</div>
+                  <div><strong>Reference:</strong> trade protection-TH-{checkoutData.planId || 'DIRECT'}</div>
                 </div>
               </div>
             )}
 
-            {/* Escrow Guarantee Pill */}
+            {/* Trade Protection Guarantee Pill */}
             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Funds are protected under 100% money-back guarantee if pre-shipment inspection fails.</span>
@@ -276,7 +276,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
               className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
             >
               <Lock className="w-4 h-4" />
-              <span>{isProcessing ? 'Authorizing Swiss Escrow Vault...' : `Pay ${formatPrice(convertedPrice)} into Escrow`}</span>
+              <span>{isProcessing ? 'Authorizing Swiss Trade Protection Vault...' : `Pay ${formatPrice(convertedPrice)} into trade protection`}</span>
             </button>
           </form>
         )}

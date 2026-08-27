@@ -158,7 +158,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               Featured Verified Supplier Storefronts
             </h3>
             <p className="text-xs text-slate-600 mt-1 max-w-xl">
-              Inspect on-site factory audit certificates, production line capacity, and escrow limits of premier export partners.
+              Inspect on-site factory audit certificates, production line capacity, and trade protection limits of premier export partners.
             </p>
           </div>
 
@@ -204,7 +204,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-500">Escrow Limit:</span>
+                    <span className="text-[10px] text-slate-500">trade protection Limit:</span>
                     <div className="font-mono font-bold text-emerald-600">
                       ${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k USD
                     </div>
@@ -322,7 +322,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               <span>100% Free Registration • Verified Partner Vetting</span>
             </div>
             <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight"><EditableText contentKey="homepage.onboardingBannerTitle" defaultText="Ready to Board with Us? Connect with" /> <span className="text-blue-600"><EditableText contentKey="homepage.onboardingBannerHighlight" defaultText="Audited Factories & Verified Buyers" /></span></h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"><EditableText contentKey="homepage.onboardingBannerDesc" defaultText="Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss escrow protection, and direct wholesale pricing." /></p>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"><EditableText contentKey="homepage.onboardingBannerDesc" defaultText="Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss trade protection protection, and direct wholesale pricing." /></p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full lg:w-auto">
@@ -347,18 +347,18 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       {/* 6. DYNAMIC FAQS ACCORDION */}
       <DynamicFaqSection onOpenContactModal={onOpenCreateRfq} />
 
-      {/* 7. TRADE HEAVEN TRUST & ESCROW RAIL INFRASTRUCTURE */}
+      {/* 7. TRADE HEAVEN TRUST & trade protection RAIL INFRASTRUCTURE */}
       <div className="bg-gradient-to-b from-slate-50 via-slate-50/80 to-blue-50/30 text-slate-900 rounded-3xl p-6 sm:p-9 lg:p-12 space-y-8 shadow-sm border border-slate-200 relative overflow-hidden">
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Escrow &amp; Compliance Guarantee</span>
+            <span>trade protection &amp; Compliance Guarantee</span>
           </div>
           <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
             Why Enterprise Importers &amp; Factories Choose Trade Heaven
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-            Eliminating international trade risk through certified multi-currency escrow vaults, third-party SGS factory inspections, and automated Proforma Invoice (P/I) reconciliation.
+            Eliminating international trade risk through certified multi-currency trade protection vaults, third-party SGS factory inspections, and automated Proforma Invoice (P/I) reconciliation.
           </p>
         </div>
 
@@ -367,9 +367,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h4 className="font-bold text-base text-slate-900">100% Escrow Protection</h4>
+            <h4 className="font-bold text-base text-slate-900">100% trade protection Protection</h4>
             <p className="text-xs text-slate-600 leading-relaxed font-normal">
-              Buyer deposits are held in neutral Swiss escrow vaults and only released upon certified Bill of Lading (B/L) and SGS pre-shipment sign-off.
+              Buyer deposits are held in neutral Swiss trade protection vaults and only released upon certified Bill of Lading (B/L) and SGS pre-shipment sign-off.
             </p>
           </div>
 

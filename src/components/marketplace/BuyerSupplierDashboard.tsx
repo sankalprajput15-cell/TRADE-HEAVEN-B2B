@@ -37,7 +37,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenCreateRfq,
   onOpenStorefront
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'ESCROW' | 'RFQS' | 'ORDERS'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'trade protection' | 'RFQS' | 'ORDERS'>('OVERVIEW');
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (usd: number) => {
@@ -52,13 +52,13 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Enterprise B2B Trade &amp; Escrow Center</span>
+            <span>Enterprise B2B Trade &amp; trade protection Center</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
             {currentUserRole === 'SUPPLIER' ? 'Manufacturer & Exporter Console' : 'Global Procurement & Sourcing Dashboard'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-normal">
-            Track live Swiss escrow milestones, active RFQ bids, factory production progress, and commercial Proforma Invoices (P/I).
+            Track live Swiss trade protection milestones, active RFQ bids, factory production progress, and commercial Proforma Invoices (P/I).
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-            <span>Total Escrow Value</span>
+            <span>Total trade protection Value</span>
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-black text-slate-900 font-mono">
@@ -147,7 +147,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          Active Escrow Contracts ({MOCK_ESCROWS.length})
+          Active trade protection Contracts ({MOCK_ESCROWS.length})
         </button>
         <button
           onClick={() => setActiveTab('RFQS')}
@@ -165,27 +165,27 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {MOCK_ESCROWS.map(escrow => (
+            {MOCK_ESCROWS.map(tp => (
               <div
-                key={escrow.id}
+                key={tp.id}
                 className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-blue-400 transition-all"
               >
                 <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800">
-                        {escrow.id}
+                        {tp.id}
                       </span>
-                      <span className="text-xs text-slate-500 font-mono">{escrow.incoterm} • {escrow.portOfDestination}</span>
+                      <span className="text-xs text-slate-500 font-mono">{tp.incoterm} • {tp.portOfDestination}</span>
                     </div>
                     <h3 className="font-bold text-sm text-slate-900 mt-1">
-                      {escrow.productTitle}
+                      {tp.productTitle}
                     </h3>
                   </div>
 
                   <div className="text-right">
                     <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      {escrow.status.replace('_', ' ')}
+                      {tp.status.replace('_', ' ')}
                     </span>
                   </div>
                 </div>
@@ -194,13 +194,13 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                     <span className="text-[10px] text-slate-500">Total Contract Value:</span>
                     <div className="font-mono font-bold text-slate-900 text-sm mt-0.5">
-                      {formatPrice(escrow.totalAmountUsd)}
+                      {formatPrice(tp.totalAmountUsd)}
                     </div>
                   </div>
                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-[10px] text-slate-500">Escrow Deposit (Held):</span>
+                    <span className="text-[10px] text-slate-500">Trade Protection Deposit (Held):</span>
                     <div className="font-mono font-bold text-emerald-600 text-sm mt-0.5">
-                      {formatPrice(escrow.depositAmountUsd)}
+                      {formatPrice(tp.depositAmountUsd)}
                     </div>
                   </div>
                 </div>
@@ -211,7 +211,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                     Release Milestones
                   </div>
                   <div className="space-y-1.5">
-                    {escrow.milestones.map((m, idx) => (
+                    {tp.milestones.map((m, idx) => (
                       <div
                         key={idx}
                         className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
@@ -235,7 +235,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>Supplier: <strong>{escrow.supplierCompany}</strong></span>
+                  <span>Supplier: <strong>{tp.supplierCompany}</strong></span>
                   <button className="text-blue-600 hover:underline font-bold flex items-center gap-1 cursor-pointer">
                     <span>View Proforma P/I</span>
                     <ArrowUpRight className="w-3 h-3" />

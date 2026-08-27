@@ -277,7 +277,7 @@ export const RfqDetailModal: React.FC<Props> = ({
                   </div>
                   <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                     <span className="text-slate-500">Payment Term Preference:</span>
-                    <strong className="text-slate-900 font-semibold">{rfq.paymentTerms || '30% T/T Deposit, 70% against B/L or Escrow'}</strong>
+                    <strong className="text-slate-900 font-semibold">{rfq.paymentTerms || '30% T/T Deposit, 70% against B/L or trade protection'}</strong>
                   </div>
                   <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                     <span className="text-slate-500">Tender Expiry:</span>
@@ -605,7 +605,7 @@ export const RfqDetailModal: React.FC<Props> = ({
         <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>All bids protected by TradeHeaven Escrow &amp; Proforma Verification</span>
+            <span>All bids protected by TradeHeaven trade protection &amp; Proforma Verification</span>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-end">
