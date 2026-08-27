@@ -1,55 +1,10 @@
-name: Auto Deploy to BigRock cPanel
-
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
-jobs:
-  web-deploy:
-    name: Deploy React SPA & PHP API to BigRock cPanel
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🚚 Get latest code
-        uses: actions/checkout@v4
-
-      - name: ⚙️ Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: 📦 Install dependencies & Build
-        run: |
-          npm ci || npm install
-          npm run build
-
-      - name: 📄 Copy api.php & .htaccess into dist
-        run: |
-          cp api.php dist/ 2>/dev/null || true
-          cp .htaccess dist/ 2>/dev/null || true
-
-      - name: 🧹 Sanitize FTP Server Hostname
-        run: |
-          RAW_SERVER="${{ secrets.FTP_SERVER }}"
-          # Trim leading/trailing whitespace
-          CLEAN_SERVER="$(echo -n "$RAW_SERVER" | xargs)"
-          # Remove protocol prefixes
-          CLEAN_SERVER="${CLEAN_SERVER#ftp://}"
-          CLEAN_SERVER="${CLEAN_SERVER#ftps://}"
-          CLEAN_SERVER="${CLEAN_SERVER#https://}"
-          CLEAN_SERVER="${CLEAN_SERVER#http://}"
-          # Remove trailing slashes and any path segments
-          CLEAN_SERVER="${CLEAN_SERVER%%/*}"
-          echo "CLEAN_FTP_SERVER=$CLEAN_SERVER" >> $GITHUB_ENV
-
-      - name: 🚀 Sync Files via FTP to BigRock
+- name: 🚀 Sync Files via FTP to BigRock
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ env.CLEAN_FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: public_html/
+          server-dir: ./
           local-dir: ./dist/
           protocol: ftp
           port: 21
