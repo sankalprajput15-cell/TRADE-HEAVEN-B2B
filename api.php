@@ -176,9 +176,9 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
-    // CMS Operations: get_site_content, update_site_content
+    // CMS Operations: get_content, save_content
     // -------------------------------------------------------------
-    case 'get_site_content':
+    case 'get_content':
         $cms_file = __DIR__ . '/site_content.json';
         if (file_exists($cms_file)) {
             $content = file_get_contents($cms_file);
@@ -191,7 +191,7 @@ switch ($action) {
         echo json_encode(["status" => "error", "message" => "CMS content not found or invalid"]);
         exit;
 
-    case 'update_site_content':
+    case 'save_content':
         if ($method !== 'POST' && $method !== 'PUT') {
             http_response_code(405);
             echo json_encode(["status" => "error", "message" => "Method not allowed"]);

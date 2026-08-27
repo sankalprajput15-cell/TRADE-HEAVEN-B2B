@@ -66,11 +66,11 @@ const API_BASE = './api.php';
 export const apiClient = {
   /**
    * Fetch live CMS Site Content from the backend API.
-   * Uses ./api.php?action=get_site_content
+   * Uses ./api.php?action=get_content
    */
   async getSiteContent(): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}?action=get_site_content`, {
+      const res = await fetch(`${API_BASE}?action=get_content`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -88,11 +88,11 @@ export const apiClient = {
 
   /**
    * Update live CMS Site Content via the backend API.
-   * Uses ./api.php?action=update_site_content
+   * Uses ./api.php?action=save_content
    */
-  async updateSiteContent(payload: any): Promise<{ success: boolean; message?: string }> {
+  async saveSiteContent(payload: any): Promise<{ success: boolean; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}?action=update_site_content`, {
+      const res = await fetch(`${API_BASE}?action=save_content`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export const apiClient = {
       const json = await res.json();
       return { success: json.status === 'success' || json.success === true, message: json.message || 'Updated successfully' };
     } catch (e: any) {
-      console.error('[apiClient] updateSiteContent error:', e);
+      console.error('[apiClient] saveSiteContent error:', e);
       return { success: false, message: e.message || 'Failed to save site content' };
     }
   },

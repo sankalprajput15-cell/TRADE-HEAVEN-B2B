@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { SiteContent, DEFAULT_SITE_CONTENT } from '../data/defaultSiteContent';
 import { AuthUser, CmsAuthorizedUser, CmsAccessRequest, CmsPermissionScope, UserRole } from '../types';
 import { useAuth } from './AuthContext';
@@ -69,6 +69,8 @@ interface SiteContentContextType {
   exportContentJson: () => string;
   importContentJson: (jsonString: string, user?: AuthUser | null) => Promise<boolean>;
   isLoading: boolean;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  forceSaveNow: (content: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
   // Visual Live Edit Mode
   isLiveEditMode: boolean;
   setIsLiveEditMode: (val: boolean) => void;
@@ -119,6 +121,8 @@ const SiteContentContext = createContext<SiteContentContextType | undefined>(und
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user: currentUser, setUser: setCurrentUser } = useAuth();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Remove the useEffect that wrote to localStorage
   
@@ -283,7 +287,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   // Helper to check if a specific user is authorized to edit CMS or access admin areas
-  const isUserAuthorized = (user: AuthUser | null): UserAuthorizationResult => {
+  const isUserAuthorized = (user: AuthUser | null = currentUser): UserAuthorizationResult => {
     if (!user) {
       return {
         isAuthorized: false,
@@ -327,8 +331,28 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   };
 
+  const forceSaveNow = async (content: SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
+    const auth = isUserAuthorized(user ?? currentUser);
+    if (!auth.isAuthorized) return { success: false, message: 'Permission Denied' };
+    
+    setSaveStatus('saving');
+    const apiResult = await apiClient.saveSiteContent(content);
+    
+    if (!apiResult.success) {
+      console.warn('Offline persistence active for site content');
+      setSaveStatus('error');
+      return { success: false, message: apiResult.message || 'Server rejected changes. Saved locally in browser cache.' };
+    }
+    
+    setSaveStatus('saved');
+    setTimeout(() => {
+      setSaveStatus(prev => prev === 'saved' ? 'idle' : prev);
+    }, 2000);
+    return { success: true, message: apiResult.message || 'Site content updated' };
+  };
+
   const updateSiteContent = async (newContent: SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
-    const auth = isUserAuthorized(user ?? null);
+    const auth = isUserAuthorized(user ?? currentUser);
     if (!auth.isAuthorized) {
       return {
         success: false,
@@ -341,13 +365,19 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newContent));
     } catch {}
 
-    // Persist to server API
-    const apiResult = await apiClient.updateSiteContent(newContent);
-    if (!apiResult.success) {
-      console.warn('Offline persistence active for site content');
-      return { success: false, message: apiResult.message || 'Server rejected changes. Saved locally in browser cache.' };
+    setSaveStatus('saving');
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-    return { success: true, message: apiResult.message || 'Site content updated' };
+    
+    // Set new debounced save (800ms)
+    saveTimeoutRef.current = setTimeout(() => {
+      forceSaveNow(newContent, user);
+    }, 800);
+
+    return { success: true, message: 'Changes queued for auto-save' };
   };
 
   const updatePageContent = async <K extends keyof SiteContent>(
@@ -506,6 +536,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         exportContentJson,
         importContentJson,
         isLoading,
+        saveStatus,
+        forceSaveNow,
         isLiveEditMode,
         setIsLiveEditMode,
         toggleLiveEditMode,
@@ -528,6 +560,29 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }}
     >
       {children}
+      {/* Floating Status Badge */}
+      {isLiveEditMode && saveStatus !== 'idle' && (
+        <div className="fixed bottom-4 right-4 z-[9999] bg-white rounded-full shadow-lg border border-slate-200 px-4 py-2 flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {saveStatus === 'saving' && (
+            <>
+              <div className="w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+              <span className="text-blue-600">Saving...</span>
+            </>
+          )}
+          {saveStatus === 'saved' && (
+            <>
+              <div className="w-3 h-3 rounded-full bg-emerald-500" />
+              <span className="text-emerald-600">All Changes Saved</span>
+            </>
+          )}
+          {saveStatus === 'error' && (
+            <>
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-red-600">Error Saving</span>
+            </>
+          )}
+        </div>
+      )}
     </SiteContentContext.Provider>
   );
 };
