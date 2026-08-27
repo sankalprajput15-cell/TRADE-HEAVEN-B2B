@@ -21,8 +21,6 @@ import { LiveRfqTicker } from './components/marketplace/LiveRfqTicker';
 import { TradeHeavenSocialBar } from './components/common/TradeHeavenSocialBar';
 import { TradeHeavenFooter } from './components/common/TradeHeavenFooter';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
-import { FloatingLiveEditorBar } from './components/cms/FloatingLiveEditorBar';
-import { LiveSectionEditModal } from './components/cms/LiveSectionEditModal';
 import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { NotFoundView } from './components/common/NotFoundView';
@@ -41,8 +39,6 @@ import { SuppliersDirectoryView } from './components/services/SuppliersDirectory
 import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
 import { RefundPolicyView } from './components/services/RefundPolicyView';
 import { ClientAdminView } from './components/services/ClientAdminView';
-import { SiteContentCmsEditor } from './components/cms/SiteContentCmsEditor';
-import { CmsPermissionsPanel } from './components/cms/CmsPermissionsPanel';
 import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
@@ -61,6 +57,8 @@ import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
 import { Loader2 } from 'lucide-react';
+import { EditableText } from './components/EditableText';
+import { EditableImage } from './components/EditableImage';
 
 const MainApp: React.FC = () => {
   const { 
@@ -739,8 +737,8 @@ const MainApp: React.FC = () => {
                     targetViewName="CMS_MANAGEMENT"
                   >
                     <div className="space-y-8">
-                      <SiteContentCmsEditor />
-                      <CmsPermissionsPanel />
+                      
+                      
                     </div>
                   </AdminRouteGuard>
                 );
@@ -803,23 +801,10 @@ const MainApp: React.FC = () => {
         onOpenStorefront={handleOpenStorefront}
       />
 
-      {/* 7. LIVE VISUAL ON-SCREEN SITE EDITOR & ADMIN WORKSPACE BAR (Strictly Creator & Admin Only) */}
-      {isAdmin && (
-        <FloatingLiveEditorBar 
-          onNavigate={handleNavigate} 
-          currentView={activeView}
-          onOpenBackendManager={() => setIsDbModalOpen(true)}
-        />
-      )}
+      
 
       {/* 8. QUICK SECTION LIVE EDIT MODAL (Strictly Creator & Admin Only) */}
-      {isAdmin && (
-        <LiveSectionEditModal
-          isOpen={Boolean(activeQuickEditSection)}
-          onClose={closeQuickEdit}
-          sectionKey={activeQuickEditSection}
-        />
-      )}
+      
 
       {/* 9. ALL MODALS */}
       {selectedProduct && (

@@ -74,6 +74,7 @@ interface SiteContentContextType {
   publishChangesToServer: () => Promise<{ success: boolean; message?: string }>;
   saveToServer: () => Promise<{ success: boolean; message?: string }>;
   updateSection: <K extends keyof SiteContent>(sectionKey: K, data: Partial<SiteContent[K]>) => Promise<{ success: boolean; message?: string }>;
+  updateField: (path: string, value: any) => void;
   forceSaveNow: (content: SiteContent, user?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
   // Visual Live Edit Mode
   isLiveEditMode: boolean;
@@ -336,7 +337,24 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   };
 
+
+  const updateField = (path: string, value: any) => {
+    setSiteContent(prev => {
+      const clone = JSON.parse(JSON.stringify(prev));
+      const parts = path.split('.');
+      let current = clone;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) current[parts[i]] = {};
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = value;
+      return clone;
+    });
+    setSaveStatus('pending');
+  };
+
   const publishChangesToServer = async (): Promise<{ success: boolean; message?: string }> => {
+
     return await forceSaveNow(siteContent, currentUser);
   };
 
@@ -549,6 +567,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         publishChangesToServer,
         saveToServer,
         updateSection,
+        updateField,
         forceSaveNow,
         isLiveEditMode,
         setIsLiveEditMode,
@@ -573,38 +592,38 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     >
       {children}
       {/* Floating Status Badge & Publish Button */}
-      {(isLiveEditMode || saveStatus !== 'idle') && isUserAuthorized(currentUser).isAuthorized && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
+      {(saveStatus !== 'idle' || currentUser?.email === 'yr943334@gmail.com') && currentUser?.email === 'yr943334@gmail.com' && (
+        <div className="fixed bottom-6 right-6 z-[999999] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
           
-          <div className="bg-white rounded-full shadow-lg shadow-slate-200/50 border border-slate-200 px-5 py-3 flex items-center gap-3 text-sm font-semibold text-slate-700">
+          <div className="bg-slate-900 rounded-full shadow-2xl shadow-slate-900/50 border border-slate-700 px-5 py-3 flex items-center gap-3 text-sm font-semibold text-slate-100">
             {saveStatus === 'idle' && (
               <>
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-500" />
                 <span>No Pending Changes</span>
               </>
             )}
             {saveStatus === 'pending' && (
               <>
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-amber-600">● Unsaved Changes</span>
+                <span className="text-amber-400">Unsaved Changes</span>
               </>
             )}
             {saveStatus === 'saving' && (
               <>
                 <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                <span className="text-blue-600">Saving to Server...</span>
+                <span className="text-blue-400">Saving to Server...</span>
               </>
             )}
             {saveStatus === 'saved' && (
               <>
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-emerald-600">✓ Published Live!</span>
+                <span className="text-emerald-400">Saved</span>
               </>
             )}
             {saveStatus === 'error' && (
               <>
                 <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-red-600">✕ Save Failed</span>
+                <span className="text-red-400">Save Failed</span>
               </>
             )}
           </div>
@@ -612,9 +631,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           {saveStatus === 'pending' && (
             <button
               onClick={saveToServer}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl shadow-blue-500/20 font-bold transition-all flex items-center gap-2"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-xl shadow-blue-500/30 font-bold transition-all flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
               💾 Save & Publish Changes
             </button>
           )}

@@ -2,6 +2,8 @@ import React from 'react';
 import { Product, Currency, CompanyProfile, RfqRequirement, ActiveView } from '../../types';
 import { CURRENCY_RATES, MOCK_COMPANIES, MOCK_RFQS } from '../../data/mockData';
 import { SafeImage } from '../common/SafeImage';
+import { EditableText } from '../EditableText';
+import { EditableImage } from '../EditableImage';
 import { HeroSection } from './HeroSection';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
 import { ProductCatalog } from './ProductCatalog';
@@ -319,12 +321,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>100% Free Registration • Verified Partner Vetting</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
-              Ready to Board with Us? Connect with <span className="text-blue-600">Audited Factories &amp; Verified Buyers</span>
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-              Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss escrow protection, and direct wholesale pricing.
-            </p>
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight"><EditableText contentKey="homepage.onboardingBannerTitle" defaultText="Ready to Board with Us? Connect with" /> <span className="text-blue-600"><EditableText contentKey="homepage.onboardingBannerHighlight" defaultText="Audited Factories & Verified Buyers" /></span></h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"><EditableText contentKey="homepage.onboardingBannerDesc" defaultText="Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss escrow protection, and direct wholesale pricing." /></p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full lg:w-auto">
@@ -333,14 +331,14 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>Onboard / Work With Us</span>
+              <span><EditableText contentKey="homepage.btnOnboard" defaultText="Onboard / Work With Us" /></span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => onNavigate('POST_BUY_REQUIREMENT')}
               className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-300 shadow-xs transition-all cursor-pointer"
             >
-              <span>Post Free Buy RFQ</span>
+              <span><EditableText contentKey="homepage.btnPostRfq" defaultText="Post Free Buy RFQ" /></span>
             </button>
           </div>
         </div>

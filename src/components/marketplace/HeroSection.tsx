@@ -26,6 +26,8 @@ import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES } from '../.
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { SafeImage } from '../common/SafeImage';
+import { EditableText } from '../EditableText';
+import { EditableImage } from '../EditableImage';
 
 interface Props {
   onSearch: (query: string, category: string) => void;
@@ -393,12 +395,16 @@ export const HeroSection: React.FC<Props> = ({
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-6">
-            Connect Directly with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">Verified Global</span> Suppliers.
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-6 flex flex-wrap gap-2">
+            <EditableText contentKey="homepage.heroHeadline" defaultText="Connect Directly with" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
+              <EditableText contentKey="homepage.heroHeadlineGradient" defaultText="Verified Global" />
+            </span>
+            Suppliers.
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl font-normal leading-relaxed">
-            Trade Heaven connects manufacturers, exporters, and buyers globally with transparent pricing, verified credentials, and secure cross-border logistics.
+            <EditableText contentKey="homepage.heroSubheadline" defaultText="Trade Heaven connects manufacturers, exporters, and buyers globally with transparent pricing, verified credentials, and secure cross-border logistics." />
           </p>
 
         {/* ------------------------------------------------------------- */}
