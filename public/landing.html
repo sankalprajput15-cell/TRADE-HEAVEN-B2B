@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trade Heaven | Next-Generation Global B2B Marketplace &amp; Sourcing Platform</title>
+  <meta name="description" content="Trade Heaven connects verified manufacturers, exporters, and global wholesale buyers across 180+ countries with secure cross-border trade assurance and RFQ matchmaking." />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#0f172a',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <style>
+    /* Custom subtle glassmorphism and animations */
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 30%, rgba(37, 99, 235, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white flex flex-col min-h-screen">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP ANNOUNCEMENT TICKER & UTILITIES -->
+  <!-- ========================================================================= -->
+  <aside aria-label="Global Trade Ticker" class="bg-slate-950 text-slate-300 text-xs py-2 px-4 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-[11px] uppercase tracking-wider">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Live Corridors
+        </span>
+        <span class="text-slate-300 text-xs">
+          Active high-volume deals across USA, UAE, India, Singapore &amp; Europe &bull; 0% Platform Escrow Fee for first $50k orders
+        </span>
+      </div>
+      
+      <!-- Region & Language Selector -->
+      <div class="flex items-center gap-4 text-slate-400 shrink-0">
+        <div class="relative inline-block text-left" id="lang-dropdown-wrapper">
+          <button type="button" id="lang-btn" aria-haspopup="true" aria-expanded="false" class="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer text-xs font-medium focus:outline-none">
+            <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span id="current-lang">Global (EN - USD $)</span>
+            <i data-lucide="chevron-down" class="w-3 h-3"></i>
+          </button>
+          <!-- Language dropdown menu -->
+          <div id="lang-menu" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-white text-slate-800 shadow-xl border border-slate-200 py-2 z-50 text-xs">
+            <button onclick="setLanguage('Global (EN - USD $)')" class="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-600 font-medium">Global (EN - USD $)</button>
+            <button onclick="setLanguage('Middle East (AR - AED د.إ)')" class="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-600 font-medium">Middle East (AR - AED)</button>
+            <button onclick="setLanguage('India &amp; South Asia (INR ₹)')" class="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-600 font-medium">India (EN - INR ₹)</button>
+            <button onclick="setLanguage('Europe (EUR €)')" class="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-600 font-medium">Europe (DE/FR - EUR €)</button>
+            <button onclick="setLanguage('Southeast Asia (SGD $)')" class="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-600 font-medium">Southeast Asia (SGD $)</button>
+          </div>
+        </div>
+        <span class="text-slate-700">|</span>
+        <a href="#contact" class="hover:text-white transition-colors">24/7 Trade Desk</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- 1. NAVIGATION BAR -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-40 glass-nav border-b border-slate-200/80 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20 gap-4">
+        
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-6 shrink-0">
+          <a href="#" class="flex items-center gap-3 group focus:outline-none" aria-label="Trade Heaven Home">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
+              <i data-lucide="boxes" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-1">
+                TRADE<span class="text-blue-600">HEAVEN</span>
+              </span>
+              <span class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 -mt-1">
+                Global B2B Marketplace
+              </span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Central Search Bar with Category Filter -->
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+          <form onsubmit="handleSearch(event)" class="w-full flex items-center bg-white rounded-2xl border border-slate-300 shadow-sm focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden">
+            <!-- Category Dropdown Select -->
+            <div class="relative shrink-0 border-r border-slate-200 bg-slate-50/70">
+              <select id="search-category" aria-label="Select Category" class="appearance-none bg-transparent pl-3.5 pr-8 py-2.5 text-xs font-semibold text-slate-700 cursor-pointer focus:outline-none">
+                <option value="all">All Sectors</option>
+                <option value="agri">Agriculture &amp; Food</option>
+                <option value="textiles">Apparel &amp; Fabrics</option>
+                <option value="safety">Safety, PPE &amp; Medical</option>
+                <option value="machinery">Machinery &amp; Industrial</option>
+                <option value="furniture">Furniture &amp; Decor</option>
+                <option value="chemicals">Chemicals &amp; Oils</option>
+              </select>
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-3.5 pointer-events-none"></i>
+            </div>
+
+            <!-- Text Input -->
+            <div class="flex-1 flex items-center px-3.5">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 mr-2 shrink-0"></i>
+              <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Search products, verified factories, HS codes, or commodities..." 
+                class="w-full text-xs sm:text-sm text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none py-2" 
+                aria-label="Search Trade Heaven"
+              />
+            </div>
+
+            <!-- Search Action Button -->
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0">
+              <span>Find Deals</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Navigation Action CTA Buttons -->
+        <div class="hidden lg:flex items-center gap-3 shrink-0">
+          <a href="#hubs" class="text-xs font-bold text-slate-600 hover:text-blue-600 px-3 py-2 transition-colors">
+            Industry Hubs
+          </a>
+          <a href="#corridors" class="text-xs font-bold text-slate-600 hover:text-blue-600 px-3 py-2 transition-colors">
+            Trade Corridors
+          </a>
+          
+          <!-- Post RFQ Modal Trigger -->
+          <button 
+            type="button" 
+            onclick="openRfqModal()" 
+            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-200 cursor-pointer shadow-xs"
+          >
+            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
+            <span>Post RFQ</span>
+          </button>
+
+          <!-- Join as Supplier CTA -->
+          <a 
+            href="#rfq-section" 
+            class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-blue-500/20 cursor-pointer"
+          >
+            <i data-lucide="store" class="w-4 h-4"></i>
+            <span>Join as Supplier</span>
+          </a>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <div class="flex lg:hidden items-center gap-2">
+          <button 
+            type="button" 
+            id="mobile-menu-btn" 
+            onclick="toggleMobileMenu()" 
+            aria-label="Open Navigation Menu" 
+            class="p-2.5 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Mobile Search Field (Small screens) -->
+      <div class="block md:hidden pb-4">
+        <form onsubmit="handleSearch(event)" class="w-full flex items-center bg-white rounded-xl border border-slate-300 shadow-sm px-3 py-1.5">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 mr-2 shrink-0"></i>
+          <input 
+            type="text" 
+            id="mobile-search-input" 
+            placeholder="Search products or factories..." 
+            class="w-full text-xs text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none"
+          />
+          <button type="submit" class="text-blue-600 text-xs font-bold pl-2 shrink-0">Search</button>
+        </form>
+      </div>
+
+      <!-- Mobile Navigation Drawer -->
+      <nav id="mobile-nav" class="hidden lg:hidden border-t border-slate-200 py-4 space-y-3">
+        <a href="#hubs" onclick="toggleMobileMenu()" class="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100">Industry Hubs</a>
+        <a href="#advantages" onclick="toggleMobileMenu()" class="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100">Core Advantages</a>
+        <a href="#rfq-section" onclick="toggleMobileMenu()" class="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100">Instant RFQ Generator</a>
+        <a href="#corridors" onclick="toggleMobileMenu()" class="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100">Trade Corridors</a>
+        <div class="pt-3 border-t border-slate-200 flex flex-col gap-2">
+          <button onclick="openRfqModal(); toggleMobileMenu();" class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-800 font-bold text-xs text-center border border-slate-300">
+            Post Request for Quote (RFQ)
+          </button>
+          <a href="#rfq-section" onclick="toggleMobileMenu()" class="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs text-center shadow-md">
+            Join as Verified Supplier
+          </a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 2. HERO SECTION -->
+  <!-- ========================================================================= -->
+  <main class="flex-grow">
+    <section class="relative bg-gradient-to-b from-slate-950 via-slate-900 to-blue-950 text-white pt-16 pb-24 overflow-hidden" aria-label="Hero Section">
+      <!-- Background Ambient Glow & Grid -->
+      <div class="absolute inset-0 hero-glow pointer-events-none"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none"></div>
+
+      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          <!-- Left Column: Value Messaging & CTAs -->
+          <div class="lg:col-span-7 space-y-6 text-left">
+            <!-- Super-tag / Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30 text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-inner">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>180+ Global Ports &bull; 125k+ Active Wholesale Buyers</span>
+            </div>
+
+            <!-- Main Heading -->
+            <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1] text-white">
+              The Next-Generation <br class="hidden sm:inline" />
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-300">
+                Global B2B Marketplace
+              </span> <br />
+              &amp; Cross-Border Sourcing Platform.
+            </h1>
+
+            <!-- Sub-headline -->
+            <p class="text-base sm:text-lg text-slate-300 max-w-2xl font-normal leading-relaxed">
+              Empowering manufacturers, exporters, and wholesale buyers with verified direct matchmaking, real-time RFQ broadcasting, transparent FOB/CIF pricing, and custodial trade protection.
+            </p>
+
+            <!-- Dual Core CTAs -->
+            <div class="flex flex-wrap items-center gap-4 pt-2">
+              <a 
+                href="#hubs" 
+                class="px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm flex items-center gap-2.5 transition-all shadow-lg shadow-blue-600/30 hover:translate-y-[-1px]"
+              >
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                <span>Source Products (Buyer)</span>
+              </a>
+              <a 
+                href="#rfq-section" 
+                class="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-sm backdrop-blur-md flex items-center gap-2.5 transition-all hover:translate-y-[-1px]"
+              >
+                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i>
+                <span>Sell Globally (Supplier)</span>
+              </a>
+            </div>
+
+            <!-- Quick Commodity Search Chips -->
+            <div class="pt-4 space-y-2">
+              <div class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                <span>Trending Commodities:</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button onclick="quickFilterSearch('Basmati Rice')" class="px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-blue-900/60 border border-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer">
+                  🍚 Basmati Rice
+                </button>
+                <button onclick="quickFilterSearch('PPE Gear')" class="px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-blue-900/60 border border-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer">
+                  🦺 PPE Gear &amp; Nitrile Gloves
+                </button>
+                <button onclick="quickFilterSearch('Industrial Pumps')" class="px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-blue-900/60 border border-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer">
+                  ⚙️ Industrial Pumps
+                </button>
+                <button onclick="quickFilterSearch('Organic Cotton Apparel')" class="px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-blue-900/60 border border-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer">
+                  👕 Organic Cotton Apparel
+                </button>
+                <button onclick="quickFilterSearch('Agarwood Oil')" class="px-3 py-1 rounded-lg bg-slate-800/80 hover:bg-blue-900/60 border border-slate-700 text-slate-200 text-xs font-medium transition-colors cursor-pointer">
+                  🌿 Pure Agarwood Extract
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Live Sourcing Highlights Card -->
+          <div class="lg:col-span-5">
+            <div class="relative bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-6">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Global Trade Exchange</span>
+                </div>
+                <span class="text-[11px] font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-md border border-blue-400/20">
+                  REAL-TIME MATCH
+                </span>
+              </div>
+
+              <!-- Stream of Live Inquiries -->
+              <div class="space-y-3.5 text-xs">
+                <!-- Deal 1 -->
+                <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start justify-between gap-3 hover:border-blue-500/40 transition-all">
+                  <div class="space-y-1">
+                    <div class="font-bold text-white flex items-center gap-1.5">
+                      <span>1121 Steam Basmati Rice</span>
+                      <span class="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono text-[10px]">FOB</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px]">Destination: Jebel Ali Port, UAE &bull; 500 MT</p>
+                    <div class="text-[10px] text-blue-400 font-medium">Buyer: Al-Mansoor Foodstuff Trading LLC</div>
+                  </div>
+                  <span class="text-emerald-400 font-mono font-bold shrink-0">$840/MT</span>
+                </div>
+
+                <!-- Deal 2 -->
+                <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start justify-between gap-3 hover:border-blue-500/40 transition-all">
+                  <div class="space-y-1">
+                    <div class="font-bold text-white flex items-center gap-1.5">
+                      <span>Industrial Nitrile Gloves (Box of 100)</span>
+                      <span class="px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 font-mono text-[10px]">CIF</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px]">Destination: Port of Los Angeles, USA &bull; 20,000 Boxes</p>
+                    <div class="text-[10px] text-blue-400 font-medium">Buyer: MedShield Logistics Inc.</div>
+                  </div>
+                  <span class="text-emerald-400 font-mono font-bold shrink-0">$4.15/Box</span>
+                </div>
+
+                <!-- Deal 3 -->
+                <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start justify-between gap-3 hover:border-blue-500/40 transition-all">
+                  <div class="space-y-1">
+                    <div class="font-bold text-white flex items-center gap-1.5">
+                      <span>Stainless Steel Submersible Pumps 50HP</span>
+                      <span class="px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 font-mono text-[10px]">EXW</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px]">Destination: Santos Port, Brazil &bull; 120 Units</p>
+                    <div class="text-[10px] text-blue-400 font-medium">Buyer: Agrotech Equipamentos S.A.</div>
+                  </div>
+                  <span class="text-emerald-400 font-mono font-bold shrink-0">$1,250/Unit</span>
+                </div>
+              </div>
+
+              <!-- Quick Action inside Box -->
+              <button onclick="openRfqModal()" class="w-full py-2.5 rounded-xl bg-blue-600/30 hover:bg-blue-600 border border-blue-500/40 text-blue-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <span>View 1,840+ Active Sourcing Leads</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Trust Badges Bar (Full-width grid) -->
+        <div class="mt-16 pt-10 border-t border-slate-800 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div class="flex items-center justify-center gap-3 p-3 rounded-2xl bg-slate-900/50 border border-slate-800">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-xs font-bold text-white">100% Verified Suppliers</div>
+              <div class="text-[11px] text-slate-400">KYC &amp; Factory Audits</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center gap-3 p-3 rounded-2xl bg-slate-900/50 border border-slate-800">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+              <i data-lucide="lock" class="w-5 h-5"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-xs font-bold text-white">Secure Cross-Border Escrow</div>
+              <div class="text-[11px] text-slate-400">Milestone Trade Protection</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center gap-3 p-3 rounded-2xl bg-slate-900/50 border border-slate-800">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+              <i data-lucide="container" class="w-5 h-5"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-xs font-bold text-white">Global Logistics Support</div>
+              <div class="text-[11px] text-slate-400">Customs, Freight &amp; Inspection</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center gap-3 p-3 rounded-2xl bg-slate-900/50 border border-slate-800">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
+              <i data-lucide="badge-check" class="w-5 h-5"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-xs font-bold text-white">Direct Factory Access</div>
+              <div class="text-[11px] text-slate-400">Zero Middleman Markup</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 3. VALUE PROPOSITION / CORE ADVANTAGES (4 INTERACTIVE CARDS) -->
+    <!-- ========================================================================= -->
+    <section id="advantages" class="py-20 bg-white border-b border-slate-200" aria-label="Core Advantages">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
+            <i data-lucide="award" class="w-3.5 h-3.5"></i>
+            <span>Enterprise B2B Infrastructure</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Engineered for High-Stakes International Commerce
+          </h2>
+          <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+            Trade Heaven breaks traditional export barriers through algorithmic buyer matching, audited supply chains, and frictionless cross-border escrow payment rails.
+          </p>
+        </div>
+
+        <!-- 4 Interactive Advantage Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          
+          <!-- Card 1: Global Reach -->
+          <div class="group relative bg-slate-50 hover:bg-white rounded-3xl p-8 border border-slate-200 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <i data-lucide="globe-2" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Unmatched Global Reach
+              </h3>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                Active trade coverage across USA, UAE, India, Singapore, Brazil, Australia, Saudi Arabia, and Europe with real-time localized currency settlement and trade law compliance.
+              </p>
+            </div>
+            <div class="pt-6 border-t border-slate-200/80 mt-6 flex items-center justify-between text-xs font-bold text-blue-600">
+              <span>180+ Active Markets</span>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+            </div>
+          </div>
+
+          <!-- Card 2: Trade Enablement Suite -->
+          <div class="group relative bg-slate-50 hover:bg-white rounded-3xl p-8 border border-slate-200 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                <i data-lucide="cpu" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                Trade Enablement Suite
+              </h3>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                Empower your factory with automated SEO digital storefronts, AI-driven RFQ matchmaking, WhatsApp chat integrations, and dedicated International Export Manager (IEM) desks.
+              </p>
+            </div>
+            <div class="pt-6 border-t border-slate-200/80 mt-6 flex items-center justify-between text-xs font-bold text-emerald-600">
+              <span>Smart Match Engine</span>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+            </div>
+          </div>
+
+          <!-- Card 3: Flexible Subscription Tiers -->
+          <div class="group relative bg-slate-50 hover:bg-white rounded-3xl p-8 border border-slate-200 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                <i data-lucide="crown" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-amber-600 transition-colors">
+                Tailored Growth Tiers
+              </h3>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                From starter SME tiers to Gold &amp; VIP Business memberships, scale at your budget with guaranteed verified buyer leads, product showcase banners, and flipbook catalogs.
+              </p>
+            </div>
+            <div class="pt-6 border-t border-slate-200/80 mt-6 flex items-center justify-between text-xs font-bold text-amber-600">
+              <span>Transparent Pricing</span>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+            </div>
+          </div>
+
+          <!-- Card 4: Trade Protection & Assurance -->
+          <div class="group relative bg-slate-50 hover:bg-white rounded-3xl p-8 border border-slate-200 hover:border-blue-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                <i data-lucide="shield-alert" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                Trade Assurance Escrow
+              </h3>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                Protect 100% of your capital. Buyer funds are securely escrowed and released to suppliers only upon bill of lading verification, lab testing, and pre-shipment quality release.
+              </p>
+            </div>
+            <div class="pt-6 border-t border-slate-200/80 mt-6 flex items-center justify-between text-xs font-bold text-indigo-600">
+              <span>0% Default Guarantee</span>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 4. SPECIALIZED INDUSTRY HUBS (CATEGORY GRID) -->
+    <!-- ========================================================================= -->
+    <section id="hubs" class="py-20 bg-slate-50" aria-label="Specialized Industry Hubs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+          <div class="space-y-3 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold uppercase tracking-wider">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-600"></i>
+              <span>High-Liquidity Sectors</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Explore Specialized Industry Hubs
+            </h2>
+            <p class="text-slate-600 text-sm">
+              Discover verified wholesale catalogs, factory certifications, and live tender requirements by industrial sector.
+            </p>
+          </div>
+
+          <a href="#rfq-section" class="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors">
+            <span>View all 48+ sub-sectors</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </a>
+        </div>
+
+        <!-- 6 Specialized Category Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          
+          <!-- Hub 1: Agriculture & Commodities -->
+          <div class="group bg-white rounded-3xl p-7 border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center font-bold">
+                  <i data-lucide="wheat" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">2,480+ Suppliers</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Agriculture &amp; Commodities
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Premium 1121 &amp; Traditional Basmati Rice, milling wheat, yellow maize, organic pulses, spices, edible oils, and high-efficiency harvesting machinery.
+              </p>
+              <div class="flex flex-wrap gap-1.5 pt-2">
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Basmati Rice</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Spices &amp; Herbs</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Agro Machinery</span>
+              </div>
+            </div>
+            <button onclick="openCategoryRfq('Agriculture & Food')" class="mt-6 w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span>Source Agriculture</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Hub 2: Textiles & Apparel -->
+          <div class="group bg-white rounded-3xl p-7 border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 flex items-center justify-center font-bold">
+                  <i data-lucide="shirt" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">3,120+ Suppliers</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Textiles &amp; Apparel
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Ready-to-wear garments, organic cotton fabrics, raw combed yarn, denim textiles, technical workwear, and traditional handcrafted apparel.
+              </p>
+              <div class="flex flex-wrap gap-1.5 pt-2">
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Raw Cotton Yarn</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">OEM Garments</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Home Textiles</span>
+              </div>
+            </div>
+            <button onclick="openCategoryRfq('Textiles & Apparel')" class="mt-6 w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span>Source Textiles</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Hub 3: Safety, PPE & Medical Supplies -->
+          <div class="group bg-white rounded-3xl p-7 border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                  <i data-lucide="shield-plus" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">1,940+ Suppliers</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Safety, PPE &amp; Medical Supplies
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                CE &amp; FDA certified PPE gear, industrial helmets, chemical-resistant gloves, surgical consumables, hospital disposables, and diagnostic devices.
+              </p>
+              <div class="flex flex-wrap gap-1.5 pt-2">
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Nitrile Gloves</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Safety Helmets</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Hospital Gowns</span>
+              </div>
+            </div>
+            <button onclick="openCategoryRfq('Safety & Medical')" class="mt-6 w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span>Source PPE &amp; Medical</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Hub 4: Furniture & Interiors -->
+          <div class="group bg-white rounded-3xl p-7 border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 border border-teal-200 flex items-center justify-center font-bold">
+                  <i data-lucide="armchair" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">1,450+ Suppliers</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Furniture &amp; Interiors
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Solid wood commercial fittings, ergonomic corporate workstations, luxury hospitality furniture, outdoor patio sets, and modular home decor.
+              </p>
+              <div class="flex flex-wrap gap-1.5 pt-2">
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Office Desks</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Hotel Furnishing</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Teak Wood Sets</span>
+              </div>
+            </div>
+            <button onclick="openCategoryRfq('Furniture & Decor')" class="mt-6 w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span>Source Furniture</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Hub 5: Industrial Tools & Machinery -->
+          <div class="group bg-white rounded-3xl p-7 border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center font-bold">
+                  <i data-lucide="cog" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">2,890+ Suppliers</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Industrial Tools &amp; Machinery
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Automated packaging machinery, CNC milling units, heavy centrifugal pumps, hydraulic presses, diesel generators, and construction tools.
+              </p>
+              <div class="flex flex-wrap gap-1.5 pt-2">
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">CNC Lathes</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Packaging Machines</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Slurry Pumps</span>
+              </div>
+            </div>
+            <button onclick="openCategoryRfq('Machinery & Industrial')" class="mt-6 w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span>Source Machinery</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Hub 6: Chemicals & Natural Extracts -->
+          <div class="group bg-white rounded-3xl p-7 border border-slate-200 hover:border-blue-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center font-bold">
+                  <i data-lucide="flask-conical" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">1,210+ Suppliers</span>
+              </div>
+              <h3 class="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                Chemicals &amp; Natural Extracts
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Pure Agarwood/Oud extract oils, pure cosmetic Argan oil, active industrial solvents, virgin polymers, natural oleoresins, and specialty chemicals.
+              </p>
+              <div class="flex flex-wrap gap-1.5 pt-2">
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Agarwood Extract</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Virgin HDPE</span>
+                <span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md font-medium">Essential Oils</span>
+              </div>
+            </div>
+            <button onclick="openCategoryRfq('Chemicals & Oils')" class="mt-6 w-full py-2.5 rounded-xl bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <span>Source Chemicals</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 5. INTERACTIVE RFQ (REQUEST FOR QUOTE) 3-STEP SECTION -->
+    <!-- ========================================================================= -->
+    <section id="rfq-section" class="py-20 bg-gradient-to-b from-slate-900 to-slate-950 text-white relative overflow-hidden" aria-label="Request For Quote Form">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          <!-- Left Info Column -->
+          <div class="lg:col-span-5 space-y-6">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Instant Buyer Match Engine</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black leading-tight tracking-tight">
+              Post Your Buy Requirement in 60 Seconds
+            </h2>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Broadcast your purchasing tenders to over 50,000+ audited manufacturers. Receive competitive FOB/CIF quotation breakdowns, lab test reports, and sample commitments within 24 hours.
+            </p>
+
+            <div class="space-y-4 pt-2">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 font-bold text-xs border border-blue-400/20">1</div>
+                <div>
+                  <h4 class="text-sm font-bold text-white">Direct Factory Quotations</h4>
+                  <p class="text-xs text-slate-400">No intermediary commissions or undisclosed trading spreads.</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs border border-emerald-400/20">2</div>
+                <div>
+                  <h4 class="text-sm font-bold text-white">Full Trade Assurance Protected</h4>
+                  <p class="text-xs text-slate-400">Escrow vault holding your funds until physical port discharge.</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold text-xs border border-amber-400/20">3</div>
+                <div>
+                  <h4 class="text-sm font-bold text-white">Dedicated International Export Manager (IEM)</h4>
+                  <p class="text-xs text-slate-400">Assisted translation, document verification, and shipment tracking.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Interactive 3-Step RFQ Component -->
+          <div class="lg:col-span-7">
+            <div class="bg-white text-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-200">
+              
+              <!-- Stepper Header -->
+              <div class="flex items-center justify-between border-b border-slate-200 pb-6 mb-6">
+                <div class="flex items-center gap-3">
+                  <div id="step-indicator-1" class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">1</div>
+                  <div class="text-xs">
+                    <span class="block font-bold text-slate-900">Step 1</span>
+                    <span class="text-slate-500">Product &amp; Volume</span>
+                  </div>
+                </div>
+                <div class="h-0.5 w-12 bg-slate-200" id="step-line-1"></div>
+                <div class="flex items-center gap-3">
+                  <div id="step-indicator-2" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center">2</div>
+                  <div class="text-xs">
+                    <span class="block font-bold text-slate-900">Step 2</span>
+                    <span class="text-slate-500">Port &amp; Terms</span>
+                  </div>
+                </div>
+                <div class="h-0.5 w-12 bg-slate-200" id="step-line-2"></div>
+                <div class="flex items-center gap-3">
+                  <div id="step-indicator-3" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center">3</div>
+                  <div class="text-xs">
+                    <span class="block font-bold text-slate-900">Step 3</span>
+                    <span class="text-slate-500">Contact &amp; Submit</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form Body -->
+              <form id="interactive-rfq-form" onsubmit="handleRfqSubmit(event)">
+                
+                <!-- STEP 1 CONTAINER -->
+                <div id="rfq-step-1" class="space-y-4">
+                  <div>
+                    <label for="rfq-product-name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Product Name or Required Commodity <span class="text-rose-500">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="rfq-product-name" 
+                      required 
+                      placeholder="e.g., 1121 Sella Basmati Rice / Nitrile Exam Gloves" 
+                      class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                    />
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label for="rfq-category" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Industry Category <span class="text-rose-500">*</span>
+                      </label>
+                      <select id="rfq-category" required class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none bg-white">
+                        <option value="Agriculture & Food">Agriculture &amp; Food</option>
+                        <option value="Textiles & Apparel">Textiles &amp; Apparel</option>
+                        <option value="Safety & Medical">Safety, PPE &amp; Medical</option>
+                        <option value="Machinery & Industrial">Machinery &amp; Industrial</option>
+                        <option value="Furniture & Decor">Furniture &amp; Decor</option>
+                        <option value="Chemicals & Oils">Chemicals &amp; Oils</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label for="rfq-quantity" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Quantity &amp; Unit <span class="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        id="rfq-quantity" 
+                        required 
+                        placeholder="e.g., 500 Metric Tons / 10,000 Pieces" 
+                        class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="pt-4 flex justify-end">
+                    <button 
+                      type="button" 
+                      onclick="goToRfqStep(2)" 
+                      class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <span>Proceed to Delivery &amp; Terms</span>
+                      <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- STEP 2 CONTAINER -->
+                <div id="rfq-step-2" class="space-y-4 hidden">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label for="rfq-incoterm" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Preferred Incoterm
+                      </label>
+                      <select id="rfq-incoterm" class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none bg-white">
+                        <option value="FOB">FOB (Free on Board)</option>
+                        <option value="CIF">CIF (Cost, Insurance &amp; Freight)</option>
+                        <option value="CFR">CFR (Cost and Freight)</option>
+                        <option value="EXW">EXW (Ex Works)</option>
+                        <option value="DDP">DDP (Delivered Duty Paid)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label for="rfq-destination" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Port of Discharge / Destination <span class="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        id="rfq-destination" 
+                        required 
+                        placeholder="e.g., Jebel Ali, Port of Houston, Rotterdam" 
+                        class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="rfq-specifications" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Technical Specs &amp; Certification Requirements
+                    </label>
+                    <textarea 
+                      id="rfq-specifications" 
+                      rows="3" 
+                      placeholder="Specify packaging (e.g. 50kg PP bags), moisture content, lab testing certificates (SGS/FDA), target price..." 
+                      class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                    ></textarea>
+                  </div>
+
+                  <div class="pt-4 flex items-center justify-between">
+                    <button 
+                      type="button" 
+                      onclick="goToRfqStep(1)" 
+                      class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="button" 
+                      onclick="goToRfqStep(3)" 
+                      class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <span>Proceed to Contact Info</span>
+                      <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- STEP 3 CONTAINER -->
+                <div id="rfq-step-3" class="space-y-4 hidden">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label for="rfq-company" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Company Name <span class="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        id="rfq-company" 
+                        required 
+                        placeholder="e.g., Al-Maha General Trading Co." 
+                        class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label for="rfq-name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Contact Person <span class="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        id="rfq-name" 
+                        required 
+                        placeholder="e.g., Tariq Al-Mansoor" 
+                        class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label for="rfq-email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Corporate Email <span class="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="email" 
+                        id="rfq-email" 
+                        required 
+                        placeholder="purchasing@company.com" 
+                        class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label for="rfq-phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Phone / WhatsApp <span class="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="tel" 
+                        id="rfq-phone" 
+                        required 
+                        placeholder="+971 50 123 4567" 
+                        class="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="p-3 bg-blue-50 rounded-xl text-[11px] text-blue-900 border border-blue-100 flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-blue-600 shrink-0 mt-0.5"></i>
+                    <span>Your request will be cryptographically broadcasted to vetted tier-1 factories. Privacy and NDA protection guaranteed.</span>
+                  </div>
+
+                  <div class="pt-4 flex items-center justify-between">
+                    <button 
+                      type="button" 
+                      onclick="goToRfqStep(2)" 
+                      class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="submit" 
+                      id="rfq-submit-btn" 
+                      class="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+                    >
+                      <i data-lucide="send" class="w-4 h-4"></i>
+                      <span>Broadcast RFQ Now</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- SUCCESS STATE -->
+                <div id="rfq-success" class="py-8 text-center space-y-4 hidden">
+                  <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
+                    <i data-lucide="check-circle" class="w-8 h-8"></i>
+                  </div>
+                  <h3 class="text-2xl font-black text-slate-900">RFQ Broadcast Successfully!</h3>
+                  <p class="text-sm text-slate-600 max-w-md mx-auto">
+                    Your sourcing request has been assigned Reference <strong class="text-blue-600" id="rfq-ref-code">#TH-94821</strong> and routed to our verified international exporters network.
+                  </p>
+                  <button 
+                    type="button" 
+                    onclick="resetRfqForm()" 
+                    class="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
+                  >
+                    Post Another Requirement
+                  </button>
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 6. GLOBAL TRADE CORRIDORS SECTION -->
+    <!-- ========================================================================= -->
+    <section id="corridors" class="py-20 bg-white border-b border-slate-200" aria-label="Active Global Trade Corridors">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-12 space-y-3">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider">
+            <i data-lucide="navigation" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>Active Bilateral Trade Corridors</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            High-Volume Cross-Border Trade Lanes
+          </h2>
+          <p class="text-slate-600 text-sm sm:text-base">
+            Trade Heaven operates direct custom-cleared freight lanes, verified buyer networks, and banking escrow across key world trade centers.
+          </p>
+        </div>
+
+        <!-- Interactive Corridor Country Pills -->
+        <div class="flex items-center justify-center flex-wrap gap-2.5 mb-10" id="corridor-pills">
+          <button onclick="selectCorridor('usa')" class="corridor-tab active-corridor px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-blue-600 text-white border-blue-600 shadow-sm" data-corridor="usa">
+            🇺🇸 United States &bull; North America
+          </button>
+          <button onclick="selectCorridor('uae')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="uae">
+            🇦🇪 United Arab Emirates &bull; MENA Hub
+          </button>
+          <button onclick="selectCorridor('india')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="india">
+            🇮🇳 India &bull; South Asia Manufacturing
+          </button>
+          <button onclick="selectCorridor('singapore')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="singapore">
+            🇸🇬 Singapore &bull; ASEAN Logistics
+          </button>
+          <button onclick="selectCorridor('saudi')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="saudi">
+            🇸🇦 Saudi Arabia &bull; GCC Trade
+          </button>
+          <button onclick="selectCorridor('brazil')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="brazil">
+            🇧🇷 Brazil &bull; LATAM Agro &amp; Minerals
+          </button>
+          <button onclick="selectCorridor('uk')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="uk">
+            🇬🇧 United Kingdom &bull; Europe Gate
+          </button>
+          <button onclick="selectCorridor('australia')" class="corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200" data-corridor="australia">
+            🇦🇺 Australia &bull; Oceania Bulk Trade
+          </button>
+        </div>
+
+        <!-- Dynamic Corridor Content Display Box -->
+        <div id="corridor-detail-card" class="bg-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-800">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            
+            <div class="space-y-3">
+              <div class="text-xs font-bold uppercase tracking-wider text-blue-400" id="corr-region">North American Trade Lane</div>
+              <h3 class="text-2xl sm:text-3xl font-black text-white" id="corr-title">USA - Global Freight &amp; Sourcing Corridor</h3>
+              <p class="text-xs sm:text-sm text-slate-300 leading-relaxed" id="corr-desc">
+                Direct oceanic logistics to Port of Los Angeles, New York/New Jersey, Houston, and Savannah with automated FDA, USDA, and customs tariff management.
+              </p>
+            </div>
+
+            <div class="space-y-4 bg-slate-800/60 p-6 rounded-2xl border border-slate-700/60">
+              <div class="text-xs font-bold text-slate-400 uppercase">Top Inbound / Outbound Commodities</div>
+              <div class="space-y-2 text-xs" id="corr-commodities">
+                <div class="flex justify-between py-1 border-b border-slate-700">
+                  <span class="text-slate-300">PPE &amp; Medical Disposables</span>
+                  <span class="font-bold text-emerald-400">$185M Monthly</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-700">
+                  <span class="text-slate-300">Organic Cotton Textiles</span>
+                  <span class="font-bold text-emerald-400">$120M Monthly</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-slate-300">Industrial Pumps &amp; CNC Spares</span>
+                  <span class="font-bold text-emerald-400">$94M Monthly</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-4 bg-blue-950/60 p-6 rounded-2xl border border-blue-800/50 flex flex-col justify-between">
+              <div>
+                <div class="text-xs font-bold text-blue-300 uppercase">Customs &amp; Trade Assurance</div>
+                <div class="text-xl font-bold text-white mt-1" id="corr-stat">4-7 Days Port Turnaround</div>
+                <p class="text-xs text-slate-300 mt-1">Escrow supported in USD ($) via SWIFT, Fedwire &amp; ACH.</p>
+              </div>
+              <button onclick="openRfqModal()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <span>Post Corridor Tender</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 7. FOOTER SECTION -->
+  <!-- ========================================================================= -->
+  <footer id="contact" class="bg-slate-950 text-slate-400 text-xs border-t border-slate-800" aria-label="Site Footer">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+        
+        <!-- Column 1: Brand & Contact Info -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+              <i data-lucide="boxes" class="w-5 h-5"></i>
+            </div>
+            <span class="text-xl font-black tracking-tight text-white">
+              TRADE<span class="text-blue-500">HEAVEN</span>
+            </span>
+          </div>
+          
+          <p class="text-slate-400 text-xs leading-relaxed max-w-sm">
+            Trade Heaven is a next-generation global B2B eCommerce marketplace connecting verified manufacturing factories, exporters, and wholesale importers across 180+ countries.
+          </p>
+
+          <div class="space-y-2 pt-2 text-slate-300">
+            <div class="flex items-center gap-2">
+              <i data-lucide="phone" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>WhatsApp / Desk: +91 8532934479</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i data-lucide="mail" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Desk: trade@tradeheaven.com</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Global Operations: Dubai (UAE) &bull; New Delhi (IN) &bull; Singapore</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: For Buyers -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white">For Buyers</h4>
+          <ul class="space-y-2">
+            <li><a href="#rfq-section" class="hover:text-blue-400 transition-colors">Post Buy Requirement (RFQ)</a></li>
+            <li><a href="#hubs" class="hover:text-blue-400 transition-colors">Search Verified Suppliers</a></li>
+            <li><a href="#corridors" class="hover:text-blue-400 transition-colors">Global Trade Corridors</a></li>
+            <li><a href="#advantages" class="hover:text-blue-400 transition-colors">Escrow Trade Assurance</a></li>
+            <li><a href="#hubs" class="hover:text-blue-400 transition-colors">Product Catalogs &amp; Stocks</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 3: For Sellers & Exporters -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white">For Sellers &amp; Exporters</h4>
+          <ul class="space-y-2">
+            <li><a href="#rfq-section" class="hover:text-blue-400 transition-colors">Join as Verified Supplier</a></li>
+            <li><a href="#advantages" class="hover:text-blue-400 transition-colors">Membership &amp; VIP Plans</a></li>
+            <li><a href="#advantages" class="hover:text-blue-400 transition-colors">Dedicated Export Manager</a></li>
+            <li><a href="#hubs" class="hover:text-blue-400 transition-colors">SEO Digital Storefronts</a></li>
+            <li><a href="#rfq-section" class="hover:text-blue-400 transition-colors">High-Value Sourcing Leads</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 4: Platform Policies -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white">Platform &amp; Legal</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Trade Protection Protocol</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Terms of International Service</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Privacy &amp; Data Security</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Refund &amp; Escrow Release</a></li>
+            <li><a href="#" class="hover:text-blue-400 transition-colors">Dispute Resolution Desk</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="mt-12 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
+        <div>
+          &copy; 2026 Trade Heaven Global B2B Marketplace. All Rights Reserved.
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="flex items-center gap-1">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+            256-Bit SSL Encrypted Enterprise Exchange
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: QUICK RFQ POPUP MODAL -->
+  <!-- ========================================================================= -->
+  <div id="rfq-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative border border-slate-200">
+      <button onclick="closeRfqModal()" class="absolute right-5 top-5 text-slate-400 hover:text-slate-700 p-1.5 rounded-full hover:bg-slate-100 transition-colors">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="space-y-4">
+        <div class="flex items-center gap-2 text-blue-600 text-xs font-bold uppercase">
+          <i data-lucide="file-plus" class="w-4 h-4"></i>
+          <span>Instant Tender Placement</span>
+        </div>
+        <h3 class="text-xl font-black text-slate-900">Post a Request for Quote (RFQ)</h3>
+        <p class="text-xs text-slate-600">Tell us what you want to import and receive verified supplier offers directly.</p>
+
+        <form onsubmit="handleModalRfqSubmit(event)" class="space-y-3 pt-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Product Name</label>
+            <input type="text" id="modal-product" required placeholder="e.g. 1121 Sella Basmati Rice" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:border-blue-600 outline-none" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Quantity</label>
+              <input type="text" id="modal-quantity" required placeholder="e.g. 500 Tons" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:border-blue-600 outline-none" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Destination Port</label>
+              <input type="text" id="modal-port" required placeholder="e.g. Jebel Ali / Los Angeles" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:border-blue-600 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Email / WhatsApp</label>
+            <input type="text" id="modal-contact" required placeholder="name@company.com or +971..." class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:border-blue-600 outline-none" />
+          </div>
+          <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs mt-2 transition-all shadow-md">
+            Broadcast RFQ to Suppliers
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC -->
+  <!-- ========================================================================= -->
+  <script>
+    // Initialize Lucide Icons
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+
+    // Language Dropdown Toggle
+    const langBtn = document.getElementById('lang-btn');
+    const langMenu = document.getElementById('lang-menu');
+    if (langBtn && langMenu) {
+      langBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        langMenu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', () => {
+        langMenu.classList.add('hidden');
+      });
+    }
+
+    function setLanguage(val) {
+      document.getElementById('current-lang').innerText = val;
+      langMenu.classList.add('hidden');
+    }
+
+    // Mobile Navigation Drawer Toggle
+    function toggleMobileMenu() {
+      const nav = document.getElementById('mobile-nav');
+      if (nav) {
+        nav.classList.toggle('hidden');
+      }
+    }
+
+    // Quick Search & Filter Handler
+    function handleSearch(e) {
+      e.preventDefault();
+      const input = document.getElementById('search-input') || document.getElementById('mobile-search-input');
+      const term = input ? input.value.trim() : '';
+      if (!term) return;
+      alert(`Searching Trade Heaven marketplace for verified deals on: "${term}"`);
+    }
+
+    function quickFilterSearch(term) {
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.value = term;
+        document.querySelector('header').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // 3-Step RFQ Stepper
+    let currentRfqStep = 1;
+    function goToRfqStep(step) {
+      // Validate Step 1 before advancing
+      if (step === 2 && currentRfqStep === 1) {
+        const prod = document.getElementById('rfq-product-name').value.trim();
+        const qty = document.getElementById('rfq-quantity').value.trim();
+        if (!prod || !qty) {
+          alert('Please provide both the Product Name and Quantity.');
+          return;
+        }
+      }
+      // Validate Step 2 before advancing
+      if (step === 3 && currentRfqStep === 2) {
+        const dest = document.getElementById('rfq-destination').value.trim();
+        if (!dest) {
+          alert('Please specify your target Port of Discharge / Destination.');
+          return;
+        }
+      }
+
+      // Hide all steps
+      document.getElementById('rfq-step-1').classList.add('hidden');
+      document.getElementById('rfq-step-2').classList.add('hidden');
+      document.getElementById('rfq-step-3').classList.add('hidden');
+
+      // Show targeted step
+      document.getElementById(`rfq-step-${step}`).classList.remove('hidden');
+
+      // Update indicator visuals
+      for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById(`step-indicator-${i}`);
+        if (i === step) {
+          ind.className = 'w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center';
+        } else if (i < step) {
+          ind.className = 'w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center';
+          ind.innerHTML = '✓';
+        } else {
+          ind.className = 'w-8 h-8 rounded-full bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center';
+          ind.innerText = i;
+        }
+      }
+
+      currentRfqStep = step;
+    }
+
+    function handleRfqSubmit(e) {
+      e.preventDefault();
+      const randomCode = '#TH-' + Math.floor(10000 + Math.random() * 90000);
+      document.getElementById('rfq-ref-code').innerText = randomCode;
+
+      document.getElementById('rfq-step-1').classList.add('hidden');
+      document.getElementById('rfq-step-2').classList.add('hidden');
+      document.getElementById('rfq-step-3').classList.add('hidden');
+      document.getElementById('rfq-success').classList.remove('hidden');
+      
+      // Update step indicator
+      document.getElementById('step-indicator-3').className = 'w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center';
+      document.getElementById('step-indicator-3').innerHTML = '✓';
+    }
+
+    function resetRfqForm() {
+      document.getElementById('interactive-rfq-form').reset();
+      document.getElementById('rfq-success').classList.add('hidden');
+      goToRfqStep(1);
+    }
+
+    function openCategoryRfq(categoryName) {
+      document.getElementById('rfq-category').value = categoryName;
+      const rfqSec = document.getElementById('rfq-section');
+      if (rfqSec) {
+        rfqSec.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Modal Control
+    function openRfqModal() {
+      const modal = document.getElementById('rfq-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeRfqModal() {
+      const modal = document.getElementById('rfq-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function handleModalRfqSubmit(e) {
+      e.preventDefault();
+      alert('Thank you! Your RFQ has been broadcasted to verified suppliers.');
+      closeRfqModal();
+    }
+
+    // Trade Corridor Data & Switcher
+    const corridorData = {
+      usa: {
+        region: 'North American Trade Lane',
+        title: 'USA - Global Freight & Sourcing Corridor',
+        desc: 'Direct oceanic logistics to Port of Los Angeles, New York/New Jersey, Houston, and Savannah with automated FDA, USDA, and customs tariff management.',
+        stat: '4-7 Days Port Turnaround',
+        commodities: [
+          { name: 'PPE & Medical Disposables', val: '$185M Monthly' },
+          { name: 'Organic Cotton Textiles', val: '$120M Monthly' },
+          { name: 'Industrial Pumps & CNC Spares', val: '$94M Monthly' }
+        ]
+      },
+      uae: {
+        region: 'Middle East & GCC Logistics Hub',
+        title: 'UAE (Jebel Ali) - Global Re-Export Hub',
+        desc: 'Zero-duty freezone transshipment via Jebel Ali Port and Dubai World Central connecting GCC, East Africa, and Central Asia.',
+        stat: '24-48h Clearance in Freezones',
+        commodities: [
+          { name: '1121 Sella Basmati Rice', val: '$240M Monthly' },
+          { name: 'Agarwood & Natural Extracts', val: '$68M Monthly' },
+          { name: 'Building & Construction Hardware', val: '$110M Monthly' }
+        ]
+      },
+      india: {
+        region: 'South Asian Manufacturing Powerhouse',
+        title: 'India - Global Export & Manufacturing Hub',
+        desc: 'Direct factory dispatch from Nhava Sheva (JNPT), Mundra, and Chennai ports with verified IEC registration and APEDA certifications.',
+        stat: 'Export to 180+ Countries',
+        commodities: [
+          { name: 'Basmati & Non-Basmati Grains', val: '$320M Monthly' },
+          { name: 'Apparel & Handcrafted Textiles', val: '$195M Monthly' },
+          { name: 'Specialty Chemicals & Agro Solutions', val: '$140M Monthly' }
+        ]
+      },
+      singapore: {
+        region: 'Southeast Asia Trade Gateway',
+        title: 'Singapore - ASEAN Transshipment Hub',
+        desc: 'Premier financial and maritime junction handling bulk container distribution, Letter of Credit negotiation, and ASEAN trade agreements.',
+        stat: 'Top Global Maritime Hub',
+        commodities: [
+          { name: 'Industrial Electronics & Chips', val: '$280M Monthly' },
+          { name: 'Machinery & Automation Modules', val: '$160M Monthly' },
+          { name: 'Petrochemicals & Virgin Resins', val: '$190M Monthly' }
+        ]
+      },
+      saudi: {
+        region: 'Kingdom of Saudi Arabia Vision 2030',
+        title: 'Saudi Arabia - Industrial & Sourcing Lane',
+        desc: 'Expedited customs clearance through Jeddah Islamic Port and King Abdulaziz Port Dammam with SASO/SABER compliance integration.',
+        stat: 'Vision 2030 Priority Fast-Track',
+        commodities: [
+          { name: 'Heavy Industrial Machinery', val: '$210M Monthly' },
+          { name: 'Foodstuff & Agribusiness', val: '$175M Monthly' },
+          { name: 'Safety Equipment & Protective Gear', val: '$85M Monthly' }
+        ]
+      },
+      brazil: {
+        region: 'Latin America Agro & Minerals',
+        title: 'Brazil - Santos Port Agricultural Corridor',
+        desc: 'Connecting Mercosur buyers with global tier-1 machinery, packaging tools, and chemical suppliers via Santos and Paranaguá ports.',
+        stat: 'Direct Southern Hemisphere Route',
+        commodities: [
+          { name: 'Agrochemicals & Fertilizers', val: '$150M Monthly' },
+          { name: 'Centrifugal Slurry Pumps', val: '$72M Monthly' },
+          { name: 'Commercial Furniture Fittings', val: '$45M Monthly' }
+        ]
+      },
+      uk: {
+        region: 'UK & Western Europe Corridor',
+        title: 'United Kingdom - Felixstowe & London Gateway',
+        desc: 'Frictionless customs handling via Felixstowe and Southampton with CE/UKCA regulatory compliance and Sterling escrow support.',
+        stat: 'Next-Day Express Customs',
+        commodities: [
+          { name: 'Organic Apparel & Home Linen', val: '$115M Monthly' },
+          { name: 'Specialty Gourmet Grains', val: '$65M Monthly' },
+          { name: 'Hospital Consumables & PPE', val: '$80M Monthly' }
+        ]
+      },
+      australia: {
+        region: 'Oceania & Pacific Trade Lane',
+        title: 'Australia - Port Botany & Melbourne Gateway',
+        desc: 'Biosecurity (BICON) pre-screened shipments, quarantine-cleared agro goods, and heavy industrial machinery via Sydney and Melbourne.',
+        stat: 'Full BICON Pre-cleared',
+        commodities: [
+          { name: 'Mining Machinery & Pumps', val: '$135M Monthly' },
+          { name: 'Engineered Wood Furniture', val: '$55M Monthly' },
+          { name: 'Premium Long-Grain Rice', val: '$48M Monthly' }
+        ]
+      }
+    };
+
+    function selectCorridor(key) {
+      const data = corridorData[key];
+      if (!data) return;
+
+      // Update button styling
+      document.querySelectorAll('.corridor-tab').forEach(tab => {
+        if (tab.getAttribute('data-corridor') === key) {
+          tab.className = 'corridor-tab active-corridor px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-blue-600 text-white border-blue-600 shadow-sm';
+        } else {
+          tab.className = 'corridor-tab px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+        }
+      });
+
+      // Update detail card
+      document.getElementById('corr-region').innerText = data.region;
+      document.getElementById('corr-title').innerText = data.title;
+      document.getElementById('corr-desc').innerText = data.desc;
+      document.getElementById('corr-stat').innerText = data.stat;
+
+      // Render commodities
+      const commContainer = document.getElementById('corr-commodities');
+      commContainer.innerHTML = data.commodities.map((item, idx) => `
+        <div class="flex justify-between py-1 ${idx < data.commodities.length - 1 ? 'border-b border-slate-700' : ''}">
+          <span class="text-slate-300">${item.name}</span>
+          <span class="font-bold text-emerald-400">${item.val}</span>
+        </div>
+      `).join('');
+    }
+  </script>
+
+</body>
+</html>

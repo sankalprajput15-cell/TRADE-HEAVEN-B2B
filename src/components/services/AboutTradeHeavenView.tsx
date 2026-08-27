@@ -9,7 +9,6 @@ import {
   Truck, 
   CheckCircle2, 
   ArrowRight, 
-  Sparkles, 
   BookOpen, 
   Users, 
   Layers, 
@@ -35,7 +34,6 @@ export const AboutTradeHeavenView: React.FC<Props> = ({ onNavigate, onOpenCreate
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.3),transparent_50%)] pointer-events-none"></div>
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-amber-400" />
             <span>Value Added Services &amp; About Trade Heaven</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">

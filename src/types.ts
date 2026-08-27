@@ -444,6 +444,7 @@ export type ActiveView =
   | 'CONTACT_US'
   | 'ONBOARD_WITH_US'
   | 'ABOUT_US'
+  | 'LANDING_PAGE'
   | 'VENDOR_PROFILE'
   | 'BUYER_PROFILE';
 

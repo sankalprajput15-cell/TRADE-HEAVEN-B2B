@@ -146,6 +146,7 @@ export const Header: React.FC<Props> = ({
   };
 
   const isServicesActive = [
+    'LANDING_PAGE',
     'POST_SELL_OFFER',
     'TRADE_TOOLS',
     'INCOTERMS_CALCULATOR',
@@ -322,6 +323,24 @@ export const Header: React.FC<Props> = ({
               Home
             </button>
 
+            {/* Direct Global Trade Landing Page & Corridors Link */}
+            <button
+              id="nav-link-landing-page"
+              onClick={() => handleNavClick('LANDING_PAGE')}
+              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'LANDING_PAGE'
+                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
+                  : 'text-slate-700 bg-blue-50/60 hover:bg-blue-100 hover:text-blue-900 border border-blue-200/60'
+              }`}
+              title="Global B2B Sourcing Hub, Corridors & 3-Step Instant RFQ"
+            >
+              <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Global Hub</span>
+              <span className="px-1 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase">
+                NEW
+              </span>
+            </button>
+
             <button
               id="nav-link-products"
               onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
@@ -479,7 +498,22 @@ export const Header: React.FC<Props> = ({
               </button>
 
               {servicesMenuOpen && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <button
+                    onClick={() => handleNavClick('LANDING_PAGE')}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-blue-50/80 flex items-center gap-2.5 text-slate-900 border-b border-slate-100 cursor-pointer"
+                  >
+                    <Globe2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-1.5 font-bold text-blue-700">
+                        <span>Global Trade Landing Page</span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase">
+                          NEW
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">Corridors, Sectors, Live Tickers &amp; 3-Step RFQ</div>
+                    </div>
+                  </button>
                   <button
                     onClick={() => handleNavClick('VENDOR_PROFILE')}
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
@@ -762,6 +796,16 @@ export const Header: React.FC<Props> = ({
               className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
             >
               Home Marketplace
+            </button>
+            <button
+              onClick={() => handleNavClick('LANDING_PAGE')}
+              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5">
+                <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Global Hub</span>
+              </div>
+              <span className="text-[9px] font-black uppercase px-1 py-0.2 rounded bg-blue-600 text-white">NEW</span>
             </button>
             <button
               onClick={() => handleNavClick('ONBOARD_WITH_US')}

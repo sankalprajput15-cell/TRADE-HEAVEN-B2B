@@ -245,6 +245,11 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate('LANDING_PAGE')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
+                  Global Trade Landing Page &amp; Corridors
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('TRADE_PROTECTION')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Custodial trade protection Vaults
                 </button>

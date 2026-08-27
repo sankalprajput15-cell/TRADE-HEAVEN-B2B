@@ -1201,7 +1201,7 @@ export const api = {
       return data.data;
     } catch {
       return {
-        announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
+        announcementTicker: "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
         heroHeadline: "Connect with 5M+ Verified Global Buyers & Manufacturers",
         heroSubheadline: "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Protection Certificate payment protection.",
         verifiedBuyersCount: "5,200,000+",

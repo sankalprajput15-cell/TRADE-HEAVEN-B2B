@@ -32,8 +32,7 @@ import {
   Trash2,
   ListCheck,
   Factory,
-  ShoppingBag,
-  Sparkles
+  ShoppingBag
 } from 'lucide-react';
 
 interface PlanEditModalProps {

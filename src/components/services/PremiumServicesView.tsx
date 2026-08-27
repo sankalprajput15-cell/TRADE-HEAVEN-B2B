@@ -12,7 +12,6 @@ import {
   ShoppingBag, 
   Factory, 
   BadgeCheck,
-  Sparkles,
   ArrowRight,
   RefreshCw,
   Sliders

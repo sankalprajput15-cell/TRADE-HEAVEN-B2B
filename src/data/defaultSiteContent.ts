@@ -222,7 +222,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     siteName: "Trade Heaven",
     siteTagline: "Global B2B Marketplace & Verified Exporters Network",
     logoBadge: "VERIFIED TRADE",
-    topBarAnnouncement: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
+    topBarAnnouncement: "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
     supportEmail: "support@tradeheaven.net",
     supportPhone: "+1 (800) 555-TRADE / +91 85329 34479",
     whatsappNumber: "+91 85329 34479",
@@ -232,7 +232,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     countriesNotice: "180+ Countries Sourcing"
   },
   homepage: {
-    announcementTicker: "✨ Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
+    announcementTicker: "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
     heroHeadline: "Close Trade Deals With",
     heroHeadlineGradient: "Verified Global Buyers & Bulk RFQs",
     heroSubheadline: "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
@@ -471,7 +471,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     title: "Trade Heaven Exporter Membership & Growth Plans",
     subtitle: "Accelerate your international trade revenue with high-priority buy lead quotes, dedicated Account Managers, and premier catalog positioning.",
     bannerImageUrl: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1200&auto=format&fit=crop&q=80",
-    annualDiscountBadge: "✨ Save 20% with Annual B2B Exporter Billing",
+    annualDiscountBadge: "Save 20% with Annual B2B Exporter Billing",
     tiers: [],
     creditPacks: [],
     faqs: [

@@ -42,8 +42,7 @@ import {
   CreditCard,
   Factory,
   ShoppingBag,
-  Terminal,
-  Sparkles
+  Terminal
 } from 'lucide-react';
 
 interface PlanPricingAdminModuleProps {

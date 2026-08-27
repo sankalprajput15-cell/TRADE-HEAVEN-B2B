@@ -43,6 +43,7 @@ import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModul
 import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
 import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
 import { AboutTradeHeavenView } from './components/services/AboutTradeHeavenView';
+import { LandingPageView } from './components/marketplace/LandingPageView';
 import { VendorProfilePage } from './components/vendor/VendorProfilePage';
 import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
 
@@ -683,6 +684,17 @@ const MainApp: React.FC = () => {
                   <AboutTradeHeavenView
                     onNavigate={handleNavigate}
                     onOpenCreateRfq={handleOpenCreateRfq}
+                  />
+                );
+
+              case 'LANDING_PAGE':
+                return (
+                  <LandingPageView
+                    onNavigate={handleNavigate}
+                    onOpenCreateRfq={handleOpenCreateRfq}
+                    onCategorySelect={() => {
+                      handleNavigate('PRODUCT_DIRECTORY');
+                    }}
                   />
                 );
 
