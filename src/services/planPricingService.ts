@@ -30,6 +30,10 @@ class PlanPricingService {
 
   constructor() {
     this.plans = this.loadStored(PLANS_STORAGE_KEY, INITIAL_SAAS_PLANS);
+    if (INITIAL_SAAS_PLANS.length === 0) {
+      this.plans = [];
+      localStorage.removeItem(PLANS_STORAGE_KEY);
+    }
     this.rateLimits = this.loadStored(RATE_LIMITS_STORAGE_KEY, INITIAL_MODEL_RATE_LIMITS);
     this.subscriptions = this.loadStored(SUBSCRIPTIONS_STORAGE_KEY, INITIAL_USER_SUBSCRIPTIONS);
     this.stripeLogs = this.loadStored(STRIPE_LOGS_STORAGE_KEY, INITIAL_STRIPE_SYNC_EVENTS);
