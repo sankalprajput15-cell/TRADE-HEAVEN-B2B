@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SiteContent, DEFAULT_SITE_CONTENT } from '../data/defaultSiteContent';
 import { AuthUser, CmsAuthorizedUser, CmsAccessRequest, CmsPermissionScope, UserRole } from '../types';
+import { useAuth } from './AuthContext';
 import { api } from '../services/apiService';
 import { securityService } from '../services/securityService';
 
@@ -116,7 +117,7 @@ const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
 
 export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const { user: currentUser, setUser: setCurrentUser } = useAuth();
 
   // Remove the useEffect that wrote to localStorage
   

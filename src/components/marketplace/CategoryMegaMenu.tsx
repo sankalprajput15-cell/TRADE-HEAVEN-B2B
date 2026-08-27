@@ -331,22 +331,21 @@ export const CategoryMegaMenu: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0 sm:justify-end">
           <button
             id="category-menu-post-rfq-btn"
             type="button"
             onClick={() => onOpenCreateRfq ? onOpenCreateRfq() : (onNavigate ? onNavigate('RFQ_HUB') : null)}
-            className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition-all shadow-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Post Free Sourcing RFQ</span>
           </button>
-
           <button
             id="category-menu-view-suppliers-btn"
             type="button"
             onClick={() => onNavigate ? onNavigate('SUPPLIERS_DIRECTORY') : null}
-            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            className="w-full sm:w-auto justify-center px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <Building2 className="w-3.5 h-3.5" />
             <span>Verified Factories</span>

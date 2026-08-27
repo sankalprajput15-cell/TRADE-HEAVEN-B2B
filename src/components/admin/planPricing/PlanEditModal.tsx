@@ -621,7 +621,7 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
           {activeTab === 'MEMBERSHIP_FEATURES' && (
             <div className="space-y-6 animate-in fade-in duration-150">
               <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200/80 text-indigo-950 flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                <ListCheck className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1">
                   <div className="font-black">Customer-Facing Plan Highlights &amp; Inclusions</div>
                   <p className="text-indigo-800 text-[11px] leading-relaxed">

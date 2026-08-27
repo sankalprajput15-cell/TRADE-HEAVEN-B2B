@@ -76,9 +76,9 @@ export const AuthModal: React.FC<Props> = ({
   const [copiedToken, setCopiedToken] = useState(false);
   const [showToken, setShowToken] = useState(false);
 
-  if (!isOpen) return null;
-
   const { login } = useAuth();
+
+  if (!isOpen) return null;
 
   // Production Sign-In Form Handler (Strictly sends { email, password } to backend)
   const handleSignIn = async (e: React.FormEvent) => {

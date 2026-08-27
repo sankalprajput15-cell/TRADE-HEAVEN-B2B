@@ -553,7 +553,7 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                           {plan.featuresList && plan.featuresList.length > 0 ? (
                             <div className="space-y-0.5 max-w-[220px]">
                               <div className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-indigo-500" />
+                                <CheckCircle2 className="w-3 h-3 text-indigo-500" />
                                 <span>{plan.featuresList.length} Highlights</span>
                               </div>
                               <div className="text-[10px] text-slate-500 truncate" title={plan.featuresList.join(' • ')}>
