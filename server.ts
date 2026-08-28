@@ -735,6 +735,59 @@ app.post('/api.php', (req, res) => {
     });
   }
 
+  if (action === 'forgot_password') {
+    const { email } = input;
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, message: 'Valid email address is required.' });
+    }
+    const cleanEmail = email.toLowerCase().trim();
+    const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+    
+    if (!user) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'If an account with that email exists, password reset instructions have been sent.' 
+      });
+    }
+
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenExpiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');
+    user.reset_token = verificationCode;
+    user.reset_token_expiry = tokenExpiry;
+
+    console.log(`[PASSWORD RESET] 6-Digit Verification Code sent to ${cleanEmail}: ${verificationCode}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'A 6-digit verification code has been sent to your email.'
+    });
+  }
+
+  if (action === 'reset_password') {
+    const { email, code, new_password } = input;
+    if (!email || !code || !new_password) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+    if (new_password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+    const cleanEmail = email.toLowerCase().trim();
+    const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+
+    if (!user || user.reset_token !== code) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired password reset token.' });
+    }
+    if (user.reset_token_expiry && new Date() > new Date(user.reset_token_expiry)) {
+      return res.status(400).json({ success: false, message: 'Password reset token has expired. Please request a new one.' });
+    }
+
+    user.passwordHash = new_password;
+    user.reset_token = null;
+    user.reset_token_expiry = null;
+
+    return res.status(200).json({ success: true, message: 'Password successfully reset. You can now log in with your new credentials.' });
+  }
+
   // User Login
   if (action === 'login') {
     const { email, password } = input;

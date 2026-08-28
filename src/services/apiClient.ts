@@ -454,5 +454,51 @@ export const apiClient = {
       const errMsg = e.message || 'Registration connection error';
       return { success: false, error: errMsg, message: errMsg };
     }
+  },
+
+  /**
+   * Request a 6-digit password reset code
+   */
+  async sendResetCode(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE}?action=forgot_password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && (json.success || json.status === 'success')) {
+        return { success: true, message: json.message || 'Verification code sent.' };
+      }
+      return { success: false, message: json.message || json.error || 'Failed to send reset code.' };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Network communication failure.' };
+    }
+  },
+
+  /**
+   * Reset password with the 6-digit code
+   */
+  async resetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE}?action=reset_password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email, code, new_password: newPassword })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && (json.success || json.status === 'success')) {
+        return { success: true, message: json.message || 'Password successfully reset.' };
+      }
+      return { success: false, message: json.message || json.error || 'Failed to reset password.' };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Network communication failure.' };
+    }
   }
 };
