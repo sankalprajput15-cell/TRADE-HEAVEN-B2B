@@ -77,6 +77,35 @@ class SecurityService {
     return [...this.auditLogs];
   }
 
+  public async fetchBackendAuditLogs(): Promise<SecurityAuditLog[]> {
+    try {
+      const response = await fetch('/api/v1/admin/audit-logs');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.logs)) {
+          const normalized: SecurityAuditLog[] = data.logs.map((log: any) => ({
+            id: log.id,
+            timestamp: log.timestamp,
+            actorUid: log.actorUid || 'unknown',
+            actorEmail: log.actorEmail,
+            actorRole: log.actorRole,
+            action: log.action,
+            targetResource: log.targetResource,
+            details: log.details,
+            status: log.status,
+            ipAddress: log.ipAddress
+          }));
+          this.auditLogs = normalized;
+          this.persistLogs();
+          return normalized;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch backend audit logs:', err);
+    }
+    return this.getAuditLogs();
+  }
+
   public logSecurityEvent(event: Omit<SecurityAuditLog, 'id' | 'timestamp'>) {
     const log: SecurityAuditLog = {
       ...event,
@@ -88,7 +117,30 @@ class SecurityService {
       this.auditLogs = this.auditLogs.slice(0, 200);
     }
     this.persistLogs();
+
+    // Fire and forget server sync to persist into backend database
+    fetch('/api/v1/admin/audit-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event)
+    }).catch(err => console.warn('Could not sync audit log to backend:', err));
+
     return log;
+  }
+
+  public async clearBackendAuditLogs(): Promise<boolean> {
+    try {
+      const response = await fetch('/api/v1/admin/audit-logs/clear', {
+        method: 'POST'
+      });
+      if (response.ok) {
+        this.clearAuditLogs();
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to clear backend audit logs:', err);
+    }
+    return false;
   }
 
   // =========================================================================

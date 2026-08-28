@@ -11,6 +11,7 @@ import {
   saveCountriesToStorage,
   loadCountriesFromStorage
 } from '../../data/countriesData';
+import { ActivityLogAdminModule } from './ActivityLogAdminModule';
 import { 
   Layout, 
   Database, 
@@ -28,11 +29,12 @@ import {
   ChevronRight,
   Info,
   CheckCircle2,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react';
 
 interface AdminDashboardProps {
-  initialTab?: 'CMS' | 'DATABASE' | 'COUNTRIES' | 'CRM' | 'PRICING';
+  initialTab?: 'CMS' | 'DATABASE' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS';
   currentUser: AuthUser | null;
   onNavigate: (view: any) => void;
   selectedCurrency: Currency;
@@ -48,7 +50,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenPaymentCheckout,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'COUNTRIES' | 'CRM' | 'PRICING'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS'>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Sync tab if initialTab prop changes
@@ -264,7 +266,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'DATABASE', label: '🗄️ MySQL Database', icon: Database },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
-    { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard }
+    { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
+    { id: 'ACTIVITY_LOGS', label: '🛡️ Backend Activity Logs', icon: Activity }
   ] as const;
 
   return (
@@ -411,6 +414,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               currentUserRole={currentUser?.role}
               onNavigateView={onNavigate}
             />
+          </div>
+        )}
+
+        {activeTab === 'ACTIVITY_LOGS' && (
+          <div className="space-y-4">
+            <ActivityLogAdminModule />
           </div>
         )}
 

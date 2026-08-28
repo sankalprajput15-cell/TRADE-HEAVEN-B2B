@@ -82,6 +82,77 @@ async function sendLoginAlert(userEmail: string, userName: string, userRole: str
   }
 }
 
+// Helper to send general system activity alerts safely to solutionthe87@gmail.com
+async function sendActivityAlert(activityType: string, actorEmail: string, description: string, metadata: Record<string, any> = {}) {
+  const alertRecipient = (process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
+  const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+
+  console.log(`[ACTIVITY ALERT TRIGGERED] Action ${activityType} performed. Dispatched alert email to ${alertRecipient}...`);
+
+  // Format metadata into HTML table rows
+  let metadataRows = '';
+  for (const [key, val] of Object.entries(metadata)) {
+    const formattedVal = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+    metadataRows += `
+      <tr>
+        <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">${key}:</td>
+        <td style="padding: 6px 0; color: #1e293b; font-size: 13px; font-family: monospace; word-break: break-all; border-bottom: 1px solid #f1f5f9;">${formattedVal}</td>
+      </tr>
+    `;
+  }
+
+  const mailOptions = {
+    from: `"Trade Heaven Monitor" <no-reply@tradeheaven.net>`,
+    to: alertRecipient,
+    subject: `🔔 Activity Notification: ${activityType} - ${actorEmail}`,
+    html: `
+      <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
+        <h2 style="color: #2563eb; margin-top: 0; font-size: 20px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">🔔 Platform Activity Alert</h2>
+        <p style="font-size: 14px; line-height: 1.5; color: #334155;"><strong>Activity Type:</strong> <span style="background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold;">${activityType}</span></p>
+        <p style="font-size: 14px; line-height: 1.5; color: #334155;"><strong>Description:</strong> ${description}</p>
+        <p style="font-size: 14px; line-height: 1.5; color: #334155;"><strong>Initiated By:</strong> <span style="font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${actorEmail}</span></p>
+        <p style="font-size: 14px; line-height: 1.5; color: #334155; margin-bottom: 4px;"><strong>Activity Details:</strong></p>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+          ${metadataRows || '<tr><td style="padding: 8px 0; color: #94a3b8; font-style: italic;">No metadata properties reported.</td></tr>'}
+          <tr>
+            <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Logged At:</td>
+            <td style="padding: 6px 0; color: #1e293b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${timestamp} (EST)</td>
+          </tr>
+        </table>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 0;">This email is an automated system notification for real-time monitoring of Trade Heaven events.</p>
+      </div>
+    `
+  };
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: Number(process.env.SMTP_PORT) === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass
+        }
+      });
+      await transporter.sendMail(mailOptions);
+      console.log(`[ACTIVITY ALERT SUCCESS] Email sent to ${alertRecipient} successfully for ${activityType}!`);
+    } catch (err: any) {
+      console.error(`[ACTIVITY ALERT ERROR] SMTP transmission failed:`, err?.message || err);
+    }
+  } else {
+    console.log(`[ACTIVITY ALERT SIMULATION] SMTP not fully configured. Displaying email payload below for developer review:`);
+    console.log(`To: ${alertRecipient}`);
+    console.log(`Subject: ${mailOptions.subject}`);
+    console.log(`Content:\n`, mailOptions.html);
+  }
+}
+
 const app = express();
 const PORT = 3000;
 
@@ -109,6 +180,83 @@ interface ServerUserRecord {
   avatarUrl?: string;
   reset_token?: string | null;
   reset_token_expiry?: string | null;
+}
+
+// Centralized Backend Activity & Security Audit Log Database Table (In-Memory Server-Side Store)
+interface ServerAuditLogRecord {
+  id: string;
+  timestamp: string;
+  actorUid: string;
+  actorEmail: string;
+  actorRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST';
+  action: string;
+  targetResource: string;
+  details: string;
+  status: 'SUCCESS' | 'FORBIDDEN_403' | 'UNAUTHORIZED_401' | 'DENIED' | 'FAILED';
+  ipAddress?: string;
+}
+
+let serverAuditLogsStore: ServerAuditLogRecord[] = [
+  {
+    id: 'srv-audit-init',
+    timestamp: new Date().toISOString(),
+    actorUid: 'system',
+    actorEmail: 'security-daemon@tradeheaven.net',
+    actorRole: 'SYSTEM',
+    action: 'SECURITY_RULE_EVAL',
+    targetResource: 'DATABASE_BOOTSTRAP',
+    details: 'Centralized backend security & activity audit trail system compiled and fully loaded.',
+    status: 'SUCCESS',
+    ipAddress: '127.0.0.1'
+  }
+];
+
+// Centralized backend logger utility
+function logServerActivity(
+  req: express.Request | null,
+  action: string,
+  actorEmail: string,
+  actorRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST',
+  targetResource: string,
+  details: string,
+  status: 'SUCCESS' | 'FORBIDDEN_403' | 'UNAUTHORIZED_401' | 'DENIED' | 'FAILED' = 'SUCCESS',
+  actorUid: string = 'unknown'
+) {
+  const ip = req ? (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1') : '127.0.0.1';
+  const cleanIp = Array.isArray(ip) ? ip[0] : String(ip).split(',')[0].trim();
+
+  const logEntry: ServerAuditLogRecord = {
+    id: `srv-audit-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    timestamp: new Date().toISOString(),
+    actorUid,
+    actorEmail: actorEmail || 'anonymous',
+    actorRole,
+    action,
+    targetResource,
+    details,
+    status,
+    ipAddress: cleanIp
+  };
+
+  serverAuditLogsStore.unshift(logEntry);
+  if (serverAuditLogsStore.length > 500) {
+    serverAuditLogsStore = serverAuditLogsStore.slice(0, 500);
+  }
+
+  // Console output
+  console.log(`[AUDIT LOG] ${action} by ${actorEmail} [${actorRole}] on ${targetResource} - Status: ${status} - Details: ${details}`);
+
+  // Automatically dispatch email alert alert via nodemailer/simulator helper
+  sendActivityAlert(action, actorEmail || 'anonymous', `${details} (Status: ${status}, Source IP: ${cleanIp})`, {
+    action,
+    actorRole,
+    targetResource,
+    status,
+    ipAddress: cleanIp,
+    details
+  });
+
+  return logEntry;
 }
 
 const serverUsersStore: ServerUserRecord[] = [
@@ -198,6 +346,7 @@ app.post('/api/v1/auth/login', (req, res) => {
   const { email, password } = req.body;
 
   if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+    logServerActivity(req, 'AUTH_LOGIN', email || 'anonymous', 'GUEST', '/api/v1/auth/login', 'Login failed: missing email or password.', 'UNAUTHORIZED_401');
     return res.status(400).json({
       success: false,
       message: 'Please provide both corporate email and password.'
@@ -226,6 +375,7 @@ app.post('/api/v1/auth/login', (req, res) => {
 
     const token = generateServerJwt(adminRecord);
     sendLoginAlert(adminRecord.email, adminRecord.name, 'ADMIN', adminRecord.companyName, adminRecord.country);
+    logServerActivity(req, 'AUTH_LOGIN', adminRecord.email, 'ADMIN', '/api/v1/auth/login', 'Master Admin Sarah Jenkins successfully logged in via credentials.', 'SUCCESS', adminRecord.id);
     return res.json({
       success: true,
       token,
@@ -255,6 +405,7 @@ app.post('/api/v1/auth/login', (req, res) => {
     const token = generateServerJwt(matchedUser);
     const isAdmin = matchedUser.role === 'ADMIN' || matchedUser.email.toLowerCase().trim() === ADMIN_EMAIL;
     sendLoginAlert(matchedUser.email, matchedUser.name, matchedUser.role, matchedUser.companyName, matchedUser.country);
+    logServerActivity(req, 'AUTH_LOGIN', matchedUser.email, matchedUser.role, '/api/v1/auth/login', `User ${matchedUser.name} successfully authenticated. Role: ${matchedUser.role}`, 'SUCCESS', matchedUser.id);
     return res.json({
       success: true,
       token,
@@ -279,10 +430,75 @@ app.post('/api/v1/auth/login', (req, res) => {
   }
 
   // 3. Invalid credentials - strictly reject
+  logServerActivity(req, 'AUTH_LOGIN', cleanEmail, 'GUEST', '/api/v1/auth/login', `Unsuccessful login attempt for corporate email: ${cleanEmail}`, 'UNAUTHORIZED_401');
   return res.status(401).json({
     success: false,
     message: 'Invalid corporate email or password. Access denied.'
   });
+});
+
+// POST /api/v1/auth/test-email - Trigger manual test email alert via SMTP
+app.post('/api/v1/auth/test-email', async (req, res) => {
+  const { customTargetEmail, testSmtpHost, testSmtpPort, testSmtpUser, testSmtpPass } = req.body;
+  const target = (customTargetEmail || process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
+  const host = testSmtpHost || process.env.SMTP_HOST;
+  const port = Number(testSmtpPort || process.env.SMTP_PORT || 587);
+  const user = testSmtpUser || process.env.SMTP_USER;
+  const pass = testSmtpPass || process.env.SMTP_PASS;
+
+  const mailOptions = {
+    from: `"Trade Heaven Test Alert" <no-reply@tradeheaven.net>`,
+    to: target,
+    subject: `🧪 Trade Heaven SMTP Test Email Successful!`,
+    html: `
+      <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #3b82f6; border-radius: 12px; background: #fff;">
+        <h2 style="color: #3b82f6; margin-top: 0; font-size: 20px;">🧪 Test Email Connection Status: SUCCESS</h2>
+        <p>This is a manual verification email requested by the user from the Master Platform Administration panel.</p>
+        <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin: 16px 0; border: 1px solid #e2e8f0;">
+          <h4 style="margin: 0 0 8px 0; font-size: 13px; color: #475569;">Connection Parameters:</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #64748b; line-height: 1.6;">
+            <li><strong>SMTP Server Host:</strong> ${host || 'Not Set (Simulation Mode)'}</li>
+            <li><strong>SMTP Port:</strong> ${port}</li>
+            <li><strong>Authentication Account:</strong> ${user || 'Not Set'}</li>
+            <li><strong>Recipient:</strong> ${target}</li>
+          </ul>
+        </div>
+        <p style="font-size: 13px; color: #334155;">Your B2B Portal backend is fully functional and ready to dispatch real-time alerts upon user authorization!</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 0;">Trade Heaven Global Security Center.</p>
+      </div>
+    `
+  };
+
+  if (host && user && pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass }
+      });
+      await transporter.sendMail(mailOptions);
+      return res.json({
+        success: true,
+        mode: 'SMTP',
+        message: `Successfully transmitted test email to ${target} via your secure SMTP host (${host}). Check your inbox/spam folder!`
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        mode: 'SMTP',
+        message: `SMTP transmission failed: ${err?.message || err}`
+      });
+    }
+  } else {
+    console.log(`[TEST EMAIL SIMULATION] SMTP not configured. Logged to console:\nTo: ${target}\nContent:\n`, mailOptions.html);
+    return res.json({
+      success: true,
+      mode: 'SIMULATION',
+      message: `Running in simulator mode because SMTP variables are not configured in your environment. The complete HTML email template was successfully printed to the server terminal logs for validation!`
+    });
+  }
 });
 
 // POST /api/v1/auth/register - Self-service business registration (defaults strictly to BUYER or SUPPLIER with pending verification)
@@ -290,6 +506,7 @@ app.post('/api/v1/auth/register', (req, res) => {
   const { email, password, name, companyName, country, accountType } = req.body;
 
   if (!email || !password || !name) {
+    logServerActivity(req, 'UNAUTHORIZED_ACCESS_BLOCKED', email || 'anonymous', 'GUEST', '/api/v1/auth/register', 'Registration failed: missing required user credentials.', 'DENIED');
     return res.status(400).json({
       success: false,
       message: 'Please provide full name, work email, and password.'
@@ -300,6 +517,7 @@ app.post('/api/v1/auth/register', (req, res) => {
 
   // Prevent duplicate registration
   if (serverUsersStore.some(u => u.email.toLowerCase().trim() === cleanEmail)) {
+    logServerActivity(req, 'USER_REGISTRATION', cleanEmail, 'GUEST', '/api/v1/auth/register', `Registration rejected: duplicate work email ${cleanEmail} already registered in database.`, 'DENIED');
     return res.status(409).json({
       success: false,
       message: 'An account with this corporate email already exists. Please sign in.'
@@ -327,6 +545,8 @@ app.post('/api/v1/auth/register', (req, res) => {
 
   serverUsersStore.push(newRecord);
   const token = generateServerJwt(newRecord);
+
+  logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api/v1/auth/register', `User ${name} registered successfully as ${resolvedRole} for company ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
 
   return res.status(201).json({
     success: true,
@@ -749,10 +969,12 @@ app.post('/api.php', (req, res) => {
   if (action === 'register') {
     const { email, password, name, companyName, company, country, accountType, role } = input;
     if (!email) {
+      logServerActivity(req, 'UNAUTHORIZED_ACCESS_BLOCKED', 'anonymous', 'GUEST', '/api.php?action=register', 'Registration failed: missing email.', 'DENIED');
       return res.status(400).json({ success: false, message: 'Email address is required.' });
     }
     const cleanEmail = email.toLowerCase().trim();
     if (serverUsersStore.some(u => u.email.toLowerCase().trim() === cleanEmail)) {
+      logServerActivity(req, 'USER_REGISTRATION', cleanEmail, 'GUEST', '/api.php?action=register', `Registration rejected: duplicate work email ${cleanEmail} already exists.`, 'DENIED');
       return res.status(409).json({ success: false, message: 'An account with this email address already exists. Please log in.' });
     }
 
@@ -775,6 +997,17 @@ app.post('/api.php', (req, res) => {
 
     serverUsersStore.push(newRecord);
     const token = generateServerJwt(newRecord);
+
+    logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api.php?action=register', `User ${newRecord.name} successfully registered a corporate account for ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
+
+    sendActivityAlert('USER_REGISTERED', cleanEmail, `A new user registered a corporate account on Trade Heaven. Name: ${newRecord.name}. Company: ${newRecord.companyName}`, {
+      userId: newRecord.id,
+      name: newRecord.name,
+      email: newRecord.email,
+      company: newRecord.companyName,
+      country: newRecord.country,
+      role: newRecord.role
+    });
 
     return res.status(201).json({
       status: 'success',
@@ -875,6 +1108,7 @@ app.post('/api.php', (req, res) => {
       const adminRecord = serverUsersStore.find(u => u.email === ADMIN_EMAIL) || serverUsersStore[0];
       const token = generateServerJwt(adminRecord);
       sendLoginAlert(adminRecord.email, adminRecord.name, 'ADMIN', adminRecord.companyName, adminRecord.country);
+      logServerActivity(req, 'AUTH_LOGIN', adminRecord.email, 'ADMIN', '/api.php?action=login', 'Master Admin Sarah Jenkins successfully logged in via PHP gateway.', 'SUCCESS', adminRecord.id);
       return res.json({
         status: 'success',
         success: true,
@@ -909,6 +1143,7 @@ app.post('/api.php', (req, res) => {
     if (matched) {
       const token = generateServerJwt(matched);
       sendLoginAlert(matched.email, matched.name, matched.role, matched.companyName, matched.country);
+      logServerActivity(req, 'AUTH_LOGIN', matched.email, matched.role, '/api.php?action=login', `User ${matched.name} logged in successfully via PHP gateway.`, 'SUCCESS', matched.id);
       return res.json({
         status: 'success',
         success: true,
@@ -939,6 +1174,7 @@ app.post('/api.php', (req, res) => {
       });
     }
 
+    logServerActivity(req, 'AUTH_LOGIN', cleanEmail, 'GUEST', '/api.php?action=login', `Failed login attempt for corporate email: ${cleanEmail} via PHP gateway`, 'UNAUTHORIZED_401');
     return res.status(401).json({ status: 'error', success: false, message: 'Invalid corporate email or password. Access denied.' });
   }
 
@@ -951,6 +1187,10 @@ app.post('/api.php', (req, res) => {
       if (companyName || company) matched.companyName = companyName || company;
       if (country) matched.country = country;
       if (avatarUrl) matched.avatarUrl = avatarUrl;
+      
+      logServerActivity(req, 'PROFILE_UPDATED', matched.email, matched.role, `/api.php?action=update_profile`, `User ${matched.name} updated corporate profile details.`, 'SUCCESS', matched.id);
+    } else {
+      logServerActivity(req, 'PROFILE_UPDATED', input.email || 'unknown', 'GUEST', `/api.php?action=update_profile`, `Profile update failed: user ${id || input.email} not found.`, 'DENIED');
     }
     return res.json({ success: true, message: 'Profile updated in MySQL' });
   }
@@ -1012,6 +1252,23 @@ app.post('/api.php', (req, res) => {
 
     serverRfqsStore.unshift(formattedRfq);
 
+    logServerActivity(req, 'CONTACT_REVEALED', buyerEmail, 'BUYER', `/api.php?action=submit_rfq`, `New B2B RFQ listed for: "${productName}" - Vol: ${quantity} ${unit}.`, 'SUCCESS');
+
+    sendActivityAlert('RFQ_SUBMISSION', buyerEmail, `A new RFQ was submitted: "${productName}". Target Quantity: ${quantity} ${unit}. Company: ${buyerCompany}`, {
+      rfqId: formattedRfq.id,
+      buyerName,
+      buyerEmail,
+      buyerCompany,
+      buyerCountry,
+      productName,
+      category,
+      quantity,
+      unit,
+      targetPrice,
+      incoterms,
+      specifications
+    });
+
     return res.json({
       success: true,
       status: 'success',
@@ -1038,6 +1295,19 @@ app.post('/api.php', (req, res) => {
       created_at: new Date().toISOString()
     };
     serverRfqsStore.unshift(formattedInquiry);
+
+    sendActivityAlert('INQUIRY_RECEIVED', formattedInquiry.email, `A buyer lead/inquiry was received. Buyer: "${formattedInquiry.name}". Subject: "${formattedInquiry.subject}"`, {
+      inquiryId: formattedInquiry.id,
+      name: formattedInquiry.name,
+      email: formattedInquiry.email,
+      phone: formattedInquiry.phone,
+      company: formattedInquiry.company_name,
+      subject: formattedInquiry.subject,
+      product: formattedInquiry.product_name,
+      quantity: formattedInquiry.target_quantity,
+      message: formattedInquiry.message
+    });
+
     return res.json({ success: true, id: newId, message: 'Inquiry received and recorded in database!' });
   }
 
@@ -1060,12 +1330,33 @@ app.post('/api.php', (req, res) => {
     };
 
     serverListingsStore.unshift(newListing);
+
+    sendActivityAlert('LISTING_CREATED', newListing.owner_email || 'Supplier Account', `A product listing was posted in the catalog: "${newListing.title}"`, {
+      listingId: newListing.id,
+      title: newListing.title,
+      category: newListing.category,
+      price: newListing.price,
+      moq: newListing.moq,
+      moq_unit: newListing.moq_unit,
+      supplier_name: newListing.supplier_name,
+      supplier_country: newListing.supplier_country,
+      owner_email: newListing.owner_email
+    });
+
     return res.json({ success: true, data: newListing });
   }
 
   if (action === 'delete_listing') {
     const delId = Number(input.id);
+    const targetListing = serverListingsStore.find(l => l.id === delId);
     serverListingsStore = serverListingsStore.filter(l => l.id !== delId);
+
+    sendActivityAlert('LISTING_DELETED', targetListing?.owner_email || 'Verified User', `A product listing was removed from the database: "${targetListing?.title || delId}"`, {
+      listingId: delId,
+      listingTitle: targetListing?.title || 'Unknown',
+      category: targetListing?.category || 'Unknown'
+    });
+
     return res.json({ success: true });
   }
 
@@ -1079,18 +1370,38 @@ app.post('/api.php', (req, res) => {
       created_at: new Date().toISOString()
     };
     serverFaqsStore.push(newFaq);
+
+    sendActivityAlert('FAQ_CREATED', 'Admin Console', `A new FAQ item was published: "${newFaq.question}"`, {
+      faqId: newFaq.id,
+      question: newFaq.question,
+      answer: newFaq.answer,
+      category: newFaq.category
+    });
+
     return res.json({ success: true, data: newFaq });
   }
 
   if (action === 'delete_faq') {
     const delId = Number(input.id);
+    const targetFaq = serverFaqsStore.find(f => f.id === delId);
     serverFaqsStore = serverFaqsStore.filter(f => f.id !== delId);
+
+    sendActivityAlert('FAQ_DELETED', 'Admin Console', `An FAQ item was deleted: "${targetFaq?.question || delId}"`, {
+      faqId: delId,
+      question: targetFaq?.question || 'Unknown'
+    });
+
     return res.json({ success: true });
   }
 
   if (action === 'update_setting' || action === 'site_settings') {
     if (input.key) {
       serverSiteSettingsStore[input.key] = input.value || '';
+
+      sendActivityAlert('SITE_SETTING_UPDATED', 'Admin Console', `A site setting was modified: "${input.key}"`, {
+        settingKey: input.key,
+        newValue: input.value
+      });
     }
     return res.json({ success: true });
   }
@@ -1098,6 +1409,11 @@ app.post('/api.php', (req, res) => {
   if (action === 'save_content') {
     const payload = input.siteContent || input || {};
     serverSiteContent = { ...(serverSiteContent || {}), ...payload };
+
+    sendActivityAlert('SITE_CONTENT_PUBLISHED', 'Live Editor', `Site text and media content has been updated and published.`, {
+      updatedKeys: Object.keys(payload)
+    });
+
     return res.json({
       success: true,
       status: 'success',
@@ -1157,6 +1473,16 @@ app.post('/api/v1/products', (req, res) => {
     createdDate: productData.createdDate || new Date().toISOString().split('T')[0]
   };
   serverProductsStore.unshift(newProduct);
+
+  sendActivityAlert('CATALOG_PRODUCT_CREATED', newProduct.supplierEmail || 'Merchant Profile', `A catalog product was listed: "${newProduct.title}"`, {
+    productId: newProduct.id,
+    title: newProduct.title,
+    category: newProduct.category,
+    price: newProduct.priceUsd || newProduct.price,
+    supplier: newProduct.supplierName,
+    country: newProduct.supplierCountry
+  });
+
   res.status(201).json({ success: true, data: newProduct, message: 'Product listed successfully' });
 });
 
@@ -1164,7 +1490,16 @@ app.put('/api/v1/products/:id', (req, res) => {
   const { id } = req.params;
   const index = serverProductsStore.findIndex(p => p.id === id);
   if (index !== -1) {
+    const oldProduct = serverProductsStore[index];
     serverProductsStore[index] = { ...serverProductsStore[index], ...req.body };
+    const updatedProduct = serverProductsStore[index];
+
+    sendActivityAlert('CATALOG_PRODUCT_UPDATED', updatedProduct.supplierEmail || 'Merchant Profile', `A catalog product was updated: "${updatedProduct.title}"`, {
+      productId: id,
+      title: updatedProduct.title,
+      changes: req.body
+    });
+
     res.json({ success: true, data: serverProductsStore[index], message: 'Product updated successfully' });
   } else {
     res.status(404).json({ success: false, message: 'Product not found' });
@@ -1173,7 +1508,14 @@ app.put('/api/v1/products/:id', (req, res) => {
 
 app.delete('/api/v1/products/:id', (req, res) => {
   const { id } = req.params;
+  const targetProduct = serverProductsStore.find(p => p.id === id);
   serverProductsStore = serverProductsStore.filter(p => p.id !== id);
+
+  sendActivityAlert('CATALOG_PRODUCT_DELETED', targetProduct?.supplierEmail || 'Merchant Profile', `A catalog product was deleted: "${targetProduct?.title || id}"`, {
+    productId: id,
+    title: targetProduct?.title || 'Unknown'
+  });
+
   res.json({ success: true, message: 'Product deleted successfully' });
 });
 
@@ -1907,6 +2249,47 @@ app.post('/api/v1/webhooks/stripe', (req, res) => {
     received: true,
     event: eventType,
     processedAt: timestamp
+  });
+});
+
+// -------------------------------------------------------------
+// CENTRALIZED BACKEND ACTIVITY & SECURITY LOGGER ENDPOINTS
+// -------------------------------------------------------------
+
+// GET /api/v1/admin/audit-logs - Get backend activity & security audit logs
+app.get('/api/v1/admin/audit-logs', (req, res) => {
+  res.json({
+    success: true,
+    logs: serverAuditLogsStore
+  });
+});
+
+// POST /api/v1/admin/audit-logs - Record client event to the centralized backend logger
+app.post('/api/v1/admin/audit-logs', (req, res) => {
+  const { action, actorEmail, actorRole, targetResource, details, status, actorUid } = req.body;
+  const logEntry = logServerActivity(
+    req,
+    action || 'CLIENT_EVENT',
+    actorEmail || 'anonymous',
+    actorRole || 'GUEST',
+    targetResource || '/client-ui',
+    details || 'Client-side UI action occurred.',
+    status || 'SUCCESS',
+    actorUid || 'unknown'
+  );
+  res.json({
+    success: true,
+    log: logEntry
+  });
+});
+
+// POST /api/v1/admin/audit-logs/clear - Clear backend audit logs (Admin only)
+app.post('/api/v1/admin/audit-logs/clear', (req, res) => {
+  serverAuditLogsStore = [];
+  logServerActivity(req, 'SECURITY_RULE_EVAL', 'system-daemon@tradeheaven.net', 'SYSTEM', '/api/v1/admin/audit-logs/clear', 'Audit trail database cleared by operator.', 'SUCCESS');
+  res.json({
+    success: true,
+    message: 'Audit logs cleared successfully.'
   });
 });
 

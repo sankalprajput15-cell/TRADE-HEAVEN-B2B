@@ -95,6 +95,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Log logout activity
+    fetch('/api/v1/admin/audit-logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'AUTH_LOGOUT',
+        actorEmail: user?.email || 'anonymous',
+        actorRole: user?.role || 'GUEST',
+        targetResource: '/logout',
+        details: 'User logged out.',
+        status: 'SUCCESS',
+        actorUid: user?.id || 'unknown'
+      })
+    }).catch(console.warn);
+
     setUser(null);
     setIsAuthenticated(false);
     try {

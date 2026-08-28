@@ -63,7 +63,7 @@ const BackendDataManagementModal = React.lazy(() => import('./components/modals/
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, AlertCircle, Send, Sparkles } from 'lucide-react';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
 
@@ -1187,6 +1187,8 @@ const MainApp: React.FC = () => {
             setIsAuthModalOpen(true);
           }}
         />
+
+        {/* Floating SMTP Test Sandbox Widget (Publicly Accessible) - REMOVED */}
       </React.Suspense>
     </div>
   );

@@ -110,6 +110,11 @@ export const ClientAdminView: React.FC<Props> = ({
   const [isSubmittingWire, setIsSubmittingWire] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
 
+  // SMTP Live Mail Test States
+  const [testEmailTarget, setTestEmailTarget] = useState('solutionthe87@gmail.com');
+  const [testEmailLoading, setTestEmailLoading] = useState(false);
+  const [testEmailResult, setTestEmailResult] = useState<{ success: boolean; message: string; mode?: string } | null>(null);
+
   // Self Profile Edit
   const [editName, setEditName] = useState(currentUser?.name || 'Sarah Jenkins');
   const [editCompany, setEditCompany] = useState(currentUser?.companyName || 'Trade Heaven Global Operations & Treasury');
@@ -149,7 +154,9 @@ export const ClientAdminView: React.FC<Props> = ({
       setListings(listingsData);
       setFaqs(faqsData);
       setSiteSettings(settingsData);
-      setAuditLogs(securityService.getAuditLogs());
+      
+      const backendLogs = await securityService.fetchBackendAuditLogs();
+      setAuditLogs(backendLogs);
 
       showToast('success', '✓ Real-time database records refreshed from BigRock MySQL API');
     } catch (err: any) {
@@ -283,6 +290,47 @@ export const ClientAdminView: React.FC<Props> = ({
       showToast('success', `Setting "${key}" updated in BigRock database.`);
     } else {
       showToast('error', 'Failed to save setting: ' + res.error);
+    }
+  };
+
+  // TRIGGER MANUAL SMTP EMAIL TEST
+  const handleSendTestEmail = async () => {
+    if (!testEmailTarget.trim()) {
+      showToast('error', 'Please provide a valid target email address.');
+      return;
+    }
+    setTestEmailLoading(true);
+    setTestEmailResult(null);
+    try {
+      const response = await fetch('/api/v1/auth/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customTargetEmail: testEmailTarget })
+      });
+      const data = await response.json();
+      setTestEmailLoading(false);
+      if (response.ok && data.success) {
+        setTestEmailResult({
+          success: true,
+          mode: data.mode,
+          message: data.message
+        });
+        showToast('success', '✓ Test email trigger processed successfully.');
+      } else {
+        setTestEmailResult({
+          success: false,
+          mode: data.mode || 'ERROR',
+          message: data.message || 'Transmission failed. Verify SMTP parameters.'
+        });
+        showToast('error', 'Test email failed: ' + (data.message || 'unknown error'));
+      }
+    } catch (err: any) {
+      setTestEmailLoading(false);
+      setTestEmailResult({
+        success: false,
+        message: err?.message || 'Failed to communicate with authorization server.'
+      });
+      showToast('error', 'Connection failed: ' + (err?.message || 'server offline'));
     }
   };
 
@@ -1447,6 +1495,7 @@ export const ClientAdminView: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
         </div>
       )}
 
@@ -1455,7 +1504,7 @@ export const ClientAdminView: React.FC<Props> = ({
       {/* ========================================================================= */}
       {activeTab === 'TREASURY' && (
         <div className="space-y-5">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
               <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold">
                 <Landmark className="w-6 h-6" />
