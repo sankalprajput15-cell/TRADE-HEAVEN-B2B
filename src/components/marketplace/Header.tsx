@@ -309,12 +309,12 @@ export const Header: React.FC<Props> = ({
             </button>
           </div>
 
-          {/* Center: Desktop Nav Links (Streamlined & Grouped) */}
-          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 flex-wrap justify-center">
+          {/* Center: Desktop Nav Links (Streamlined) */}
+          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 min-w-0 flex-wrap justify-center">
             <button
               id="nav-link-homepage"
               onClick={() => handleNavClick('HOMEPAGE')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -323,144 +323,11 @@ export const Header: React.FC<Props> = ({
               Home
             </button>
 
-            {/* Direct Global Trade Landing Page & Corridors Link */}
-            <button
-              id="nav-link-landing-page"
-              onClick={() => handleNavClick('LANDING_PAGE')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'LANDING_PAGE'
-                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
-                  : 'text-slate-700 bg-blue-50/60 hover:bg-blue-100 hover:text-blue-900 border border-blue-200/60'
-              }`}
-              title="Global B2B Sourcing Hub, Corridors & 3-Step Instant RFQ"
-            >
-              <Globe2 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Global Hub</span>
-              <span className="px-1 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase">
-                NEW
-              </span>
-            </button>
-
-            <button
-              id="nav-link-products"
-              onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'PRODUCT_DIRECTORY'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              Products
-            </button>
-
-            <button
-              id="nav-link-suppliers"
-              onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'SUPPLIERS_DIRECTORY'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              Suppliers
-            </button>
-
-            {/* Country Hub Nav Button */}
-            <button
-              id="nav-link-country-hub"
-              onClick={() => handleNavClick('COUNTRY_HUB')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'COUNTRY_HUB'
-                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
-                  : 'text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80'
-              }`}
-              title="Explore country-specific B2B trade hubs, regional suppliers & RFQs"
-            >
-              <Landmark className="w-3.5 h-3.5 text-amber-600" />
-              <span>Country Portals</span>
-              <span className="px-1 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[8px] font-black uppercase">
-                34
-              </span>
-            </button>
-
-            {/* Direct Vendor Profile Demo */}
-            <button
-              id="nav-link-vendor-profile"
-              onClick={() => handleNavClick('VENDOR_PROFILE')}
-              className={`hidden xl:flex px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'VENDOR_PROFILE'
-                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
-                  : 'text-blue-700 bg-blue-50/70 hover:bg-blue-100 hover:text-blue-900 border border-blue-200/60'
-              }`}
-              title="View full verified vendor profile with 16:9 banner, ISO certs, factory tour and RFQ form"
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Vendor Profile</span>
-              <span className="px-1 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black uppercase">
-                Demo
-              </span>
-            </button>
-
-            {/* Verified Buyers Directory */}
-            <button
-              id="nav-link-buyers"
-              onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'BUYERS_DIRECTORY'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              Buyers
-            </button>
-
-            {/* Direct Buyer Profile Demo */}
-            <button
-              id="nav-link-buyer-profile"
-              onClick={() => handleNavClick('BUYER_PROFILE')}
-              className={`hidden 2xl:flex px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'BUYER_PROFILE'
-                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
-                  : 'text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/60'
-              }`}
-              title="View verified corporate buyer profile with D&B audit, sourcing demands, and logistics hubs"
-            >
-              <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Buyer Profile</span>
-              <span className="px-1 py-0.2 rounded-full bg-blue-100 text-blue-800 text-[9px] font-black uppercase">
-                Demo
-              </span>
-            </button>
-
-            <button
-              id="nav-link-rfqs"
-              onClick={() => handleNavClick('RFQ_HUB')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'RFQ_HUB'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              RFQs
-            </button>
-
-            <button
-              id="nav-link-buy-leads"
-              onClick={() => handleNavClick('BUY_LEADS')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'BUY_LEADS'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              Buy Leads
-            </button>
-
-            {/* Premium Services (Top Header Nav Button) */}
+            {/* Premium Services (Top Nav Button) */}
             <button
               id="nav-link-premium-services"
               onClick={() => handleNavClick('PREMIUM_SERVICES')}
-              className={`px-2.5 xl:px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
                 activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
                   ? 'bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-sm'
                   : 'bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-500/30'
@@ -470,34 +337,31 @@ export const Header: React.FC<Props> = ({
               <span>Premium Services</span>
             </button>
 
-            {/* About Us / Value Added Services */}
             <button
-              id="nav-link-about-us"
-              onClick={() => handleNavClick('ABOUT_US')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'ABOUT_US'
-                  ? 'bg-blue-600 text-white font-extrabold shadow-xs'
+              id="nav-link-buyers"
+              onClick={() => handleNavClick('BUYERS_DIRECTORY')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'BUYERS_DIRECTORY'
+                  ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              About Us
+              Buyers
             </button>
 
-            {/* Onboard / Partner Badge */}
             <button
-              id="nav-link-onboard"
-              onClick={() => handleNavClick('ONBOARD_WITH_US')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'ONBOARD_WITH_US'
-                  ? 'bg-emerald-600 text-white font-extrabold shadow-xs'
-                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/80'
+              id="nav-link-suppliers"
+              onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'SUPPLIERS_DIRECTORY'
+                  ? 'bg-blue-50 text-blue-600 font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Work With Us</span>
+              Suppliers
             </button>
 
-            {/* Dropdown: Trade Services & Tools */}
+            {/* Dropdown: Menu (Contains all other options) */}
             <div className="relative shrink-0">
               <button
                 id="nav-link-services-dropdown"
@@ -505,13 +369,14 @@ export const Header: React.FC<Props> = ({
                   setServicesMenuOpen(!servicesMenuOpen);
                   setAdminMenuOpen(false);
                 }}
-                className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   isServicesActive
                     ? 'bg-blue-50 text-blue-600 font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                <span>Services &amp; Tools</span>
+                <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Menu</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </button>
 
@@ -524,7 +389,7 @@ export const Header: React.FC<Props> = ({
                     <Globe2 className="w-4 h-4 text-blue-600 shrink-0" />
                     <div>
                       <div className="flex items-center gap-1.5 font-bold text-blue-700">
-                        <span>Global Trade Landing Page</span>
+                        <span>Global Trade Hub</span>
                         <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase">
                           NEW
                         </span>
@@ -533,13 +398,53 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </button>
                   <button
-                    onClick={() => handleNavClick('VENDOR_PROFILE')}
+                    onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div>Products Catalog</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Browse verified export inventory</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('COUNTRY_HUB')}
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <Landmark className="w-4 h-4 text-amber-600" />
+                    <div>
+                      <div>Country Hub Portals</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Explore 34 regional trade hubs</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('RFQ_HUB')}
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <div>RFQ Marketplace</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Live buyer quote requests</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('BUY_LEADS')}
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <Workflow className="w-4 h-4 text-indigo-600" />
+                    <div>
+                      <div>Buy Leads &amp; Inquiries</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Verified international trade leads</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('VENDOR_PROFILE')}
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
                   >
                     <Building2 className="w-4 h-4 text-blue-600" />
                     <div>
                       <div>Verified Vendor Profile</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Factory dossier, ISO certifications &amp; tours</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Factory dossier &amp; ISO certs</div>
                     </div>
                   </button>
                   <button
@@ -549,7 +454,7 @@ export const Header: React.FC<Props> = ({
                     <BadgeCheck className="w-4 h-4 text-emerald-600" />
                     <div>
                       <div>Corporate Buyer Profile</div>
-                      <div className="text-[10px] text-slate-400 font-normal">D&amp;B audited dossier &amp; sourcing requests</div>
+                      <div className="text-[10px] text-slate-400 font-normal">D&amp;B audited dossier</div>
                     </div>
                   </button>
                   <button
@@ -563,16 +468,6 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </button>
                   <button
-                    onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <BadgeCheck className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>Verified Buyers Directory</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Corporate Importers &amp; Procurement Desks</div>
-                    </div>
-                  </button>
-                  <button
                     onClick={() => handleNavClick('TRADE_TOOLS')}
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
@@ -583,32 +478,40 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </button>
                   <button
-                    onClick={() => handleNavClick('REFUND_POLICY')}
+                    onClick={() => handleNavClick('ABOUT_US')}
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
                   >
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
                     <div>
-                      <div>Return &amp; Refund Policy</div>
-                      <div className="text-[10px] text-slate-400 font-normal">30-Day trade protection Terms &amp; Compliance</div>
+                      <div>About Trade Heaven</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Company mission &amp; guarantees</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('ONBOARD_WITH_US')}
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 text-emerald-600" />
+                    <div>
+                      <div>Work With Us / Onboard</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Partner program &amp; verification</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('CONTACT_US')}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
+                  >
+                    <Mail className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div>Contact Assistance Desk</div>
+                      <div className="text-[10px] text-slate-400 font-normal">24/7 Global Support</div>
                     </div>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Contact Us */}
-            <button
-              id="nav-link-contact"
-              onClick={() => handleNavClick('CONTACT_US')}
-              className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'CONTACT_US'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>Contact</span>
-            </button>
+
 
             {/* Admin Management Dropdown (Visible for Admins / Authenticated Staff) */}
             {isAdmin ? (

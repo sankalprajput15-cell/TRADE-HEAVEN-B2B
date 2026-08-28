@@ -620,20 +620,14 @@ export const AuthModal: React.FC<Props> = ({
                 {forgotSuccess ? (
                   <div className="space-y-3">
                     <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
-                      {forgotSuccess}
+                      {forgotSuccess} Check your email (or server console) for your 6-digit verification code.
                     </div>
-                    {resetTokenInput && (
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                        <span className="font-bold text-slate-700 block text-[10px]">Dev / Test Reset Token Generated:</span>
-                        <code className="text-[10px] font-mono bg-white p-1 rounded border border-slate-200 block break-all text-blue-600">{resetTokenInput}</code>
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={() => setAuthMode('RESET_PASSWORD')}
                       className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"
                     >
-                      Proceed to Reset Password Page
+                      Enter Verification Code &amp; Reset Password
                     </button>
                   </div>
                 ) : (
@@ -690,14 +684,15 @@ export const AuthModal: React.FC<Props> = ({
                 ) : (
                   <>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Reset Token</label>
+                      <label className="block font-bold text-slate-700 mb-1">6-Digit Verification Code</label>
                       <input
                         type="text"
                         required
-                        placeholder="Paste reset token here"
+                        maxLength={6}
+                        placeholder="123456"
                         value={resetTokenInput}
                         onChange={e => setResetTokenInput(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px] focus:outline-none focus:border-blue-500 focus:bg-white"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm tracking-widest focus:outline-none focus:border-blue-500 focus:bg-white"
                       />
                     </div>
 
