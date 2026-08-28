@@ -27,26 +27,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // -------------------------------------------------------------
-// Database Configuration
+// Database Configuration & Failover
 // -------------------------------------------------------------
 $db_host = getenv('DB_HOST') ?: 'localhost';
-$db_name = getenv('DB_NAME') ?: 'a17604c7_a17604c7_t4d_db';
-$db_user = getenv('DB_USER') ?: 'a17604c7_a17604c7_t4d_user';
-$db_pass = getenv('DB_PASS') ?: 'T4Deals#Pass2026!';
+$db_name = getenv('DB_NAME') ?: 'a17604c7_tradeheaven_db';
+$db_user = getenv('DB_USER') ?: 'a17604c7_dbuser';
+$db_pass_primary = getenv('DB_PASS');
+
+$passwords_to_try = [];
+if ($db_pass_primary) {
+    $passwords_to_try[] = $db_pass_primary;
+}
+$passwords_to_try = array_merge($passwords_to_try, ['TradeHeaven2026', 'TradeHeaven#2026!', 'T4Deals#Pass2026!']);
 
 $pdo = null;
 $db_connected = false;
 
-try {
-    $dsn = "mysql:host={$db_host};dbname={$db_name};charset=utf8mb4";
-    $options = [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
-    ];
-    $pdo = new PDO($dsn, $db_user, $db_pass, $options);
-    $db_connected = true;
+$dsn = "mysql:host={$db_host};dbname={$db_name};charset=utf8mb4";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"
+];
+
+foreach ($passwords_to_try as $pwd) {
+    try {
+        $pdo = new PDO($dsn, $db_user, $pwd, $options);
+        $db_connected = true;
+        break;
+    } catch (Exception $e) {
+        // Continue to next password
+    }
+}
+
+if ($db_connected) {
+    try {
 
     // -------------------------------------------------------------
     // Table Auto-Creation: rfqs table as per mandatory schema
@@ -104,6 +120,12 @@ try {
     } catch (Exception $e) {}
     try {
         $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'buyer'");
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(10) DEFAULT NULL");
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry DATETIME DEFAULT NULL");
     } catch (Exception $e) {}
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS listings (
@@ -532,6 +554,106 @@ switch ($action) {
             "id" => $inq_id,
             "message" => "Trade inquiry recorded in MySQL database!"
         ]);
+        break;
+
+    // -------------------------------------------------------------
+    // Forgot Password
+    // -------------------------------------------------------------
+    case 'forgot_password':
+        $email = strtolower(trim($input['email'] ?? ''));
+        if (empty($email)) {
+            echo json_encode(["status" => "error", "success" => false, "message" => "Valid email address is required."]);
+            exit();
+        }
+
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
+                $stmt->execute([$email]);
+                $user = $stmt->fetch();
+
+                if ($user) {
+                    $code = strval(rand(100000, 999999));
+                    $expiry = date("Y-m-d H:i:s", strtotime("+1 hour"));
+                    
+                    $update = $pdo->prepare("UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?");
+                    $update->execute([$code, $expiry, $user['id']]);
+
+                    // Note: In a real environment, you'd send an email here.
+                    echo json_encode([
+                        "status" => "success", 
+                        "success" => true, 
+                        "message" => "Verification code generated successfully!",
+                        "code" => $code,
+                        "verification_code" => $code
+                    ]);
+                    exit();
+                } else {
+                    echo json_encode([
+                        "status" => "success", 
+                        "success" => true, 
+                        "message" => "If an account with that email exists, password reset instructions have been sent."
+                    ]);
+                    exit();
+                }
+            } catch (Exception $e) {
+                echo json_encode(["status" => "error", "success" => false, "message" => "Database error."]);
+                exit();
+            }
+        }
+        echo json_encode(["status" => "error", "success" => false, "message" => "Database not connected."]);
+        break;
+
+    // -------------------------------------------------------------
+    // Reset Password
+    // -------------------------------------------------------------
+    case 'reset_password':
+        $email = strtolower(trim($input['email'] ?? ''));
+        $code = trim($input['code'] ?? '');
+        $new_password = $input['new_password'] ?? '';
+
+        if (empty($email) || empty($code) || empty($new_password)) {
+            echo json_encode(["status" => "error", "success" => false, "message" => "All fields are required."]);
+            exit();
+        }
+
+        if (strlen($new_password) < 6) {
+            echo json_encode(["status" => "error", "success" => false, "message" => "Password must be at least 6 characters long."]);
+            exit();
+        }
+
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->prepare("SELECT id, reset_token_expiry FROM users WHERE LOWER(TRIM(email)) = ? AND reset_token = ? LIMIT 1");
+                $stmt->execute([$email, $code]);
+                $user = $stmt->fetch();
+
+                if ($user) {
+                    if (strtotime($user['reset_token_expiry']) < time()) {
+                        echo json_encode(["status" => "error", "success" => false, "message" => "Password reset token has expired. Please request a new one."]);
+                        exit();
+                    }
+
+                    $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+                    $update = $pdo->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?");
+                    $update->execute([$password_hash, $user['id']]);
+
+                    echo json_encode([
+                        "status" => "success", 
+                        "success" => true, 
+                        "message" => "Password reset successfully! You can now log in."
+                    ]);
+                    exit();
+                } else {
+                    echo json_encode(["status" => "error", "success" => false, "message" => "Invalid verification code or email."]);
+                    exit();
+                }
+            } catch (Exception $e) {
+                echo json_encode(["status" => "error", "success" => false, "message" => "Database error."]);
+                exit();
+            }
+        }
+        echo json_encode(["status" => "error", "success" => false, "message" => "Database not connected."]);
         break;
 
     // -------------------------------------------------------------

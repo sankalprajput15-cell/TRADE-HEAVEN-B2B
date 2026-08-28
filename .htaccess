@@ -1,17 +1,11 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  
-  # Allow direct access to api.php without rewriting to index.html
-  RewriteRule ^api\.php$ - [L]
-
-  # Allow direct access to existing files, folders, or assets
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteCond %{REQUEST_URI} ^/api\.php [NC]
   RewriteRule ^ - [L]
-
-  # Fallback all client routes to index.html for React SPA Routing
-  RewriteRule ^ index.html [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
 </IfModule>
 
 <IfModule mod_deflate.c>

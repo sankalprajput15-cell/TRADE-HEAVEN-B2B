@@ -47,3 +47,9 @@ jobs:
           port: 21
           dangerous-clean-slate: false
           security: loose
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            site_content.json
+            error_log

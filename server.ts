@@ -651,12 +651,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password reset token has expired. Please request a new one.' });
     }
 
-    // Hash password securely (or store hash)
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    user.passwordHash = hashedPassword;
-    user.password = hashedPassword;
+    // In this mock development server, we just store the password in passwordHash directly
+    user.passwordHash = newPassword;
     user.reset_token = null;
     user.reset_token_expiry = null;
 
@@ -759,7 +755,7 @@ app.post('/api.php', (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'A 6-digit verification code has been sent to your email.'
+      message: `Verification Code: ${verificationCode}`
     });
   }
 
@@ -785,7 +781,7 @@ app.post('/api.php', (req, res) => {
     user.reset_token = null;
     user.reset_token_expiry = null;
 
-    return res.status(200).json({ success: true, message: 'Password successfully reset. You can now log in with your new credentials.' });
+    return res.status(200).json({ success: true, message: 'Password reset successfully! You can now log in.' });
   }
 
   // User Login

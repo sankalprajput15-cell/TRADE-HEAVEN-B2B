@@ -110,7 +110,7 @@ export const AuthModal: React.FC<Props> = ({
     try {
       const res = await apiClient.resetPassword(forgotEmail, resetTokenInput, resetNewPassword);
       if (res.success) {
-        setResetSuccess('Password successfully reset! You can now log in.');
+        setResetSuccess(res.message);
         setTimeout(() => {
           setAuthMode('LOGIN');
           setEmail(forgotEmail);
@@ -646,8 +646,14 @@ export const AuthModal: React.FC<Props> = ({
               <form onSubmit={handleResetPasswordSubmit} className="space-y-4 text-xs">
                 <div className="text-center pb-2">
                   <h3 className="text-base font-black text-slate-900">Choose New Password</h3>
-                  <p className="text-slate-500 text-[11px]">Enter your token and set a secure new password (min 6 chars).</p>
+                  <p className="text-slate-500 text-[11px]">Enter your verification code and set a secure new password (min 6 chars).</p>
                 </div>
+
+                {forgotSuccess && (
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
+                    {forgotSuccess}
+                  </div>
+                )}
 
                 {resetSuccess ? (
                   <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
