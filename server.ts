@@ -374,7 +374,6 @@ app.post('/api/v1/auth/login', (req, res) => {
     };
 
     const token = generateServerJwt(adminRecord);
-    sendLoginAlert(adminRecord.email, adminRecord.name, 'ADMIN', adminRecord.companyName, adminRecord.country);
     logServerActivity(req, 'AUTH_LOGIN', adminRecord.email, 'ADMIN', '/api/v1/auth/login', 'Master Admin Sarah Jenkins successfully logged in via credentials.', 'SUCCESS', adminRecord.id);
     return res.json({
       success: true,
@@ -404,7 +403,6 @@ app.post('/api/v1/auth/login', (req, res) => {
   if (matchedUser && matchedUser.passwordHash === password) {
     const token = generateServerJwt(matchedUser);
     const isAdmin = matchedUser.role === 'ADMIN' || matchedUser.email.toLowerCase().trim() === ADMIN_EMAIL;
-    sendLoginAlert(matchedUser.email, matchedUser.name, matchedUser.role, matchedUser.companyName, matchedUser.country);
     logServerActivity(req, 'AUTH_LOGIN', matchedUser.email, matchedUser.role, '/api/v1/auth/login', `User ${matchedUser.name} successfully authenticated. Role: ${matchedUser.role}`, 'SUCCESS', matchedUser.id);
     return res.json({
       success: true,
