@@ -592,16 +592,10 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     >
       {children}
       {/* Floating Status Badge & Publish Button */}
-      {isUserAuthorized(currentUser).isAuthorized && (
+      {isUserAuthorized(currentUser).isAuthorized && saveStatus !== 'idle' && (
         <div className="fixed bottom-6 right-6 z-[999999] flex flex-col items-end gap-3 animate-in fade-in slide-in-from-bottom-8 duration-300">
           
           <div className="bg-slate-900 rounded-full shadow-2xl shadow-slate-900/50 border border-slate-700 px-5 py-3 flex items-center gap-3 text-sm font-semibold text-slate-100">
-            {saveStatus === 'idle' && (
-              <>
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-500" />
-                <span>No Pending Changes</span>
-              </>
-            )}
             {saveStatus === 'pending' && (
               <>
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
