@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'AUTH_LOGIN',
+            action: 'SECURITY_LOGIN_EVENT',
             actorEmail: res.user.email,
             actorRole: res.user.role,
             targetResource: '/login',
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'AUTH_LOGIN',
+          action: 'SECURITY_LOGIN_EVENT',
           actorEmail: cleanEmail,
           actorRole: 'GUEST',
           targetResource: '/login',

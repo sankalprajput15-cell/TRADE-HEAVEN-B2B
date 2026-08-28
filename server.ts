@@ -346,7 +346,7 @@ app.post('/api/v1/auth/login', (req, res) => {
   const { email, password } = req.body;
 
   if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-    logServerActivity(req, 'AUTH_LOGIN', email || 'anonymous', 'GUEST', '/api/v1/auth/login', 'Login failed: missing email or password.', 'UNAUTHORIZED_401');
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', email || 'anonymous', 'GUEST', '/api/v1/auth/login', 'Login failed: missing email or password.', 'UNAUTHORIZED_401');
     return res.status(400).json({
       success: false,
       message: 'Please provide both corporate email and password.'
@@ -374,7 +374,8 @@ app.post('/api/v1/auth/login', (req, res) => {
     };
 
     const token = generateServerJwt(adminRecord);
-    logServerActivity(req, 'AUTH_LOGIN', adminRecord.email, 'ADMIN', '/api/v1/auth/login', 'Master Admin Sarah Jenkins successfully logged in via credentials.', 'SUCCESS', adminRecord.id);
+    sendLoginAlert(adminRecord.email, adminRecord.name, 'ADMIN', adminRecord.companyName, adminRecord.country);
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', adminRecord.email, 'ADMIN', '/api/v1/auth/login', 'Master Admin Sarah Jenkins successfully logged in via credentials.', 'SUCCESS', adminRecord.id);
     return res.json({
       success: true,
       token,
@@ -403,7 +404,8 @@ app.post('/api/v1/auth/login', (req, res) => {
   if (matchedUser && matchedUser.passwordHash === password) {
     const token = generateServerJwt(matchedUser);
     const isAdmin = matchedUser.role === 'ADMIN' || matchedUser.email.toLowerCase().trim() === ADMIN_EMAIL;
-    logServerActivity(req, 'AUTH_LOGIN', matchedUser.email, matchedUser.role, '/api/v1/auth/login', `User ${matchedUser.name} successfully authenticated. Role: ${matchedUser.role}`, 'SUCCESS', matchedUser.id);
+    sendLoginAlert(matchedUser.email, matchedUser.name, matchedUser.role, matchedUser.companyName, matchedUser.country);
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', matchedUser.email, matchedUser.role, '/api/v1/auth/login', `User ${matchedUser.name} successfully authenticated. Role: ${matchedUser.role}`, 'SUCCESS', matchedUser.id);
     return res.json({
       success: true,
       token,
@@ -428,7 +430,7 @@ app.post('/api/v1/auth/login', (req, res) => {
   }
 
   // 3. Invalid credentials - strictly reject
-  logServerActivity(req, 'AUTH_LOGIN', cleanEmail, 'GUEST', '/api/v1/auth/login', `Unsuccessful login attempt for corporate email: ${cleanEmail}`, 'UNAUTHORIZED_401');
+  logServerActivity(req, 'SECURITY_LOGIN_EVENT', cleanEmail, 'GUEST', '/api/v1/auth/login', `Unsuccessful login attempt for corporate email: ${cleanEmail}`, 'UNAUTHORIZED_401');
   return res.status(401).json({
     success: false,
     message: 'Invalid corporate email or password. Access denied.'
@@ -1433,6 +1435,15 @@ app.post('/api.php', (req, res) => {
 // API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/debug-login-alert', async (req, res) => {
+  try {
+    await sendActivityAlert('AUTH_LOGIN', 'test@example.com', 'Debug test login alert', { detail: 'test' });
+    res.json({ success: true, message: 'Login alert triggered' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // Server-side products cache & CRUD
