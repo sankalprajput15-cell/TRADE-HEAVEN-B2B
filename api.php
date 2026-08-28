@@ -171,6 +171,7 @@ if ($db_connected) {
 } catch (Exception $e) {
     $db_connected = false;
 }
+}
 
 // Parse request action & payload
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
