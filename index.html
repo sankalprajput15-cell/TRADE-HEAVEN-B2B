@@ -4,11 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trade Heaven - B2B Marketplace</title>
-    <!-- Pre-Mount Synchronous Storage Purge -->
+    <!-- Preconnect resource hints for extreme image loading performance (LCP) -->
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    <!-- Safe Client-Side Session Recovery Support -->
     <script>
       try {
-        sessionStorage.clear();
-        localStorage.clear();
+        // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
+        const keys = Object.keys(localStorage);
+        for (const key of keys) {
+          if (key.includes('corrupted') || key.includes('stale_temp_')) {
+            localStorage.removeItem(key);
+          }
+        }
       } catch(e) {}
     </script>
     <script>

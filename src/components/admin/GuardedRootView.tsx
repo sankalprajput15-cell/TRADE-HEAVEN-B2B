@@ -15,16 +15,9 @@ export const GuardedRootView: React.FC<GuardedRootViewProps> = ({ children }) =>
     // Synchronous storage sanitization on module execution
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.removeItem('th_session_jwt_token');
-        window.localStorage.removeItem('th_session_user');
-        window.localStorage.removeItem('tradeheaven_user');
-        window.localStorage.removeItem('tradeheaven_auth_user');
-        window.localStorage.removeItem('th_active_auth_user');
-        window.localStorage.removeItem('th_rbac_user');
-      }
-      if (typeof window !== 'undefined' && window.sessionStorage) {
-        window.sessionStorage.removeItem('th_session_jwt_token');
-        window.sessionStorage.removeItem('th_session_user');
+        // Clear only actual orphaned and corrupted temporary keys, preserving th_session_user
+        const badKeys = ['stale_temp_token', 'corrupted_state_hash'];
+        badKeys.forEach(k => window.localStorage.removeItem(k));
       }
     } catch {
       // Storage access blocked/restricted in sandboxed environment
@@ -33,14 +26,22 @@ export const GuardedRootView: React.FC<GuardedRootViewProps> = ({ children }) =>
   });
 
   useEffect(() => {
-    // Secondary lifecycle sanitization to ensure complete cold-start boundary
+    // Secondary lifecycle sanitization to ensure complete validation boundary
     try {
-      localStorage.removeItem('th_session_jwt_token');
-      localStorage.removeItem('th_session_user');
-      localStorage.removeItem('tradeheaven_user');
-      localStorage.removeItem('tradeheaven_auth_user');
-      localStorage.removeItem('th_active_auth_user');
-      localStorage.removeItem('th_rbac_user');
+      // Safely check if stored session user is malformed before accepting
+      const userStr = localStorage.getItem('th_session_user');
+      if (userStr) {
+        try {
+          const parsed = JSON.parse(userStr);
+          if (!parsed || typeof parsed !== 'object' || !parsed.email) {
+            localStorage.removeItem('th_session_user');
+            localStorage.removeItem('th_session_jwt_token');
+          }
+        } catch {
+          localStorage.removeItem('th_session_user');
+          localStorage.removeItem('th_session_jwt_token');
+        }
+      }
     } catch {}
     setIsPreMountSanitized(true);
   }, []);

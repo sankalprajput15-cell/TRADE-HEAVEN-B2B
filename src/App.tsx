@@ -27,38 +27,39 @@ import { ScrollToTop } from './components/common/ScrollToTop';
 import { NotFoundView } from './components/common/NotFoundView';
 
 // Views
-import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
-import { ProductCatalog } from './components/marketplace/ProductCatalog';
-import { RfqComparisonView } from './components/marketplace/RfqComparisonView';
-import { TradeNegotiationChat } from './components/marketplace/TradeNegotiationChat';
-import { BuyerSupplierDashboard } from './components/marketplace/BuyerSupplierDashboard';
-import { IncotermsCalculator } from './components/tools/IncotermsCalculator';
-import { PremiumServicesView } from './components/services/PremiumServicesView';
-import { PostSellOfferView } from './components/services/PostSellOfferView';
-import { BuyLeadsView } from './components/services/BuyLeadsView';
-import { SuppliersDirectoryView } from './components/services/SuppliersDirectoryView';
-import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
-import { RefundPolicyView } from './components/services/RefundPolicyView';
-import { ClientAdminView } from './components/services/ClientAdminView';
-import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
-import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { OnboardWithUsPage } from './components/marketplace/OnboardWithUsPage';
-import { AboutTradeHeavenView } from './components/services/AboutTradeHeavenView';
-import { LandingPageView } from './components/marketplace/LandingPageView';
-import { VendorProfilePage } from './components/vendor/VendorProfilePage';
-import { BuyerProfilePage } from './components/buyer/BuyerProfilePage';
-import { CountryTradeHubView } from './components/marketplace/CountryTradeHubView';
+const TradeWheelHomePage = React.lazy(() => import('./components/marketplace/TradeWheelHomePage').then(m => ({ default: m.TradeWheelHomePage })));
+const ProductCatalog = React.lazy(() => import('./components/marketplace/ProductCatalog').then(m => ({ default: m.ProductCatalog })));
+const RfqComparisonView = React.lazy(() => import('./components/marketplace/RfqComparisonView').then(m => ({ default: m.RfqComparisonView })));
+const TradeNegotiationChat = React.lazy(() => import('./components/marketplace/TradeNegotiationChat').then(m => ({ default: m.TradeNegotiationChat })));
+const BuyerSupplierDashboard = React.lazy(() => import('./components/marketplace/BuyerSupplierDashboard').then(m => ({ default: m.BuyerSupplierDashboard })));
+const IncotermsCalculator = React.lazy(() => import('./components/tools/IncotermsCalculator').then(m => ({ default: m.IncotermsCalculator })));
+const PremiumServicesView = React.lazy(() => import('./components/services/PremiumServicesView').then(m => ({ default: m.PremiumServicesView })));
+const PostSellOfferView = React.lazy(() => import('./components/services/PostSellOfferView').then(m => ({ default: m.PostSellOfferView })));
+const BuyLeadsView = React.lazy(() => import('./components/services/BuyLeadsView').then(m => ({ default: m.BuyLeadsView })));
+const SuppliersDirectoryView = React.lazy(() => import('./components/services/SuppliersDirectoryView').then(m => ({ default: m.SuppliersDirectoryView })));
+const BuyersDirectoryView = React.lazy(() => import('./components/services/BuyersDirectoryView').then(m => ({ default: m.BuyersDirectoryView })));
+const RefundPolicyView = React.lazy(() => import('./components/services/RefundPolicyView').then(m => ({ default: m.RefundPolicyView })));
+const ClientAdminView = React.lazy(() => import('./components/services/ClientAdminView').then(m => ({ default: m.ClientAdminView })));
+const PlanPricingAdminModule = React.lazy(() => import('./components/admin/PlanPricingAdminModule').then(m => ({ default: m.PlanPricingAdminModule })));
+const BulkEntityCrmModule = React.lazy(() => import('./components/admin/BulkEntityCrmModule').then(m => ({ default: m.BulkEntityCrmModule })));
+const AdminDashboard = React.lazy(() => import('./components/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const OnboardWithUsPage = React.lazy(() => import('./components/marketplace/OnboardWithUsPage').then(m => ({ default: m.OnboardWithUsPage })));
+const AboutTradeHeavenView = React.lazy(() => import('./components/services/AboutTradeHeavenView').then(m => ({ default: m.AboutTradeHeavenView })));
+const LandingPageView = React.lazy(() => import('./components/marketplace/LandingPageView').then(m => ({ default: m.LandingPageView })));
+const VendorProfilePage = React.lazy(() => import('./components/vendor/VendorProfilePage').then(m => ({ default: m.VendorProfilePage })));
+const BuyerProfilePage = React.lazy(() => import('./components/buyer/BuyerProfilePage').then(m => ({ default: m.BuyerProfilePage })));
+const CountryTradeHubView = React.lazy(() => import('./components/marketplace/CountryTradeHubView').then(m => ({ default: m.CountryTradeHubView })));
 
 // Modals
-import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
-import { RfqDetailModal } from './components/marketplace/RfqDetailModal';
-import { SupplierStorefrontModal } from './components/marketplace/SupplierStorefrontModal';
-import { RfqCreationModal } from './components/marketplace/RfqCreationModal';
-import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactInquiryModal';
-import { AuthModal } from './components/modals/AuthModal';
-import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
-import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
+const ProductDetailModal = React.lazy(() => import('./components/marketplace/ProductDetailModal').then(m => ({ default: m.ProductDetailModal })));
+const RfqDetailModal = React.lazy(() => import('./components/marketplace/RfqDetailModal').then(m => ({ default: m.RfqDetailModal })));
+const SupplierStorefrontModal = React.lazy(() => import('./components/marketplace/SupplierStorefrontModal').then(m => ({ default: m.SupplierStorefrontModal })));
+const RfqCreationModal = React.lazy(() => import('./components/marketplace/RfqCreationModal').then(m => ({ default: m.RfqCreationModal })));
+const UnifiedContactInquiryModal = React.lazy(() => import('./components/modals/UnifiedContactInquiryModal').then(m => ({ default: m.UnifiedContactInquiryModal })));
+const AuthModal = React.lazy(() => import('./components/modals/AuthModal').then(m => ({ default: m.AuthModal })));
+const PaymentCheckoutModal = React.lazy(() => import('./components/modals/PaymentCheckoutModal').then(m => ({ default: m.PaymentCheckoutModal })));
+const BackendDataManagementModal = React.lazy(() => import('./components/modals/BackendDataManagementModal').then(m => ({ default: m.BackendDataManagementModal })));
+
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
@@ -66,9 +67,9 @@ import { Loader2 } from 'lucide-react';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
 
-import { AboutUs } from './components/marketplace/AboutUs';
-import { TrustAndSafety } from './components/marketplace/TrustAndSafety';
-import { InsightsBlog } from './components/marketplace/InsightsBlog';
+const AboutUs = React.lazy(() => import('./components/marketplace/AboutUs').then(m => ({ default: m.AboutUs })));
+const TrustAndSafety = React.lazy(() => import('./components/marketplace/TrustAndSafety').then(m => ({ default: m.TrustAndSafety })));
+const InsightsBlog = React.lazy(() => import('./components/marketplace/InsightsBlog').then(m => ({ default: m.InsightsBlog })));
 
 const MainApp: React.FC = () => {
   const { 
@@ -669,8 +670,14 @@ const MainApp: React.FC = () => {
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <GlobalErrorBoundary fallbackTitle="TradeHeaven Section View Recovery" onReset={() => setActiveView('HOMEPAGE')}>
-          {(() => {
-            switch (activeView) {
+          <React.Suspense fallback={
+            <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              <p className="text-xs text-slate-500 font-medium animate-pulse">Loading dynamic view...</p>
+            </div>
+          }>
+            {(() => {
+              switch (activeView) {
               case 'HOMEPAGE':
                 return (
                   <TradeWheelHomePage
@@ -1033,6 +1040,7 @@ const MainApp: React.FC = () => {
                 );
             }
           })()}
+          </React.Suspense>
         </GlobalErrorBoundary>
       </main>
 
@@ -1065,119 +1073,121 @@ const MainApp: React.FC = () => {
       
 
       {/* 9. ALL MODALS */}
-      {selectedProduct && (
-        <ProductDetailModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
+      <React.Suspense fallback={null}>
+        {selectedProduct && (
+          <ProductDetailModal
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            selectedCurrency={selectedCurrency}
+            onOpenStorefront={handleOpenStorefront}
+            onStartNegotiation={() => {
+              setSelectedProduct(null);
+              setActiveView('NEGOTIATION_ROOM');
+            }}
+          />
+        )}
+
+        {selectedRfqForModal && (
+          <RfqDetailModal
+            rfq={selectedRfqForModal}
+            selectedCurrency={selectedCurrency}
+            onClose={() => setSelectedRfqForModal(null)}
+            currentUser={currentUser}
+            onOpenUpgradeModal={() => {
+              setSelectedRfqForModal(null);
+              setActiveView('PREMIUM_MEMBERSHIP');
+            }}
+            onOpenBuyerProfile={(buyerId) => {
+              setSelectedRfqForModal(null);
+              setSelectedBuyerId(buyerId);
+              setActiveView('BUYER_PROFILE');
+            }}
+            onOpenNegotiation={() => {
+              setSelectedRfqForModal(null);
+              setActiveView('NEGOTIATION_ROOM');
+            }}
+            onAcceptQuote={(quote) => {
+              setSelectedRfqForModal(null);
+              setActiveView('NEGOTIATION_ROOM');
+            }}
+          />
+        )}
+
+        {storefrontCompanyId && (
+          <SupplierStorefrontModal
+            companyId={storefrontCompanyId}
+            isOpen={Boolean(storefrontCompanyId)}
+            onClose={() => setStorefrontCompanyId(null)}
+            selectedCurrency={selectedCurrency}
+            onSelectProduct={handleSelectProduct}
+            onOpenCreateRfq={handleOpenCreateRfq}
+            currentUser={currentUser}
+            onOpenUpgradeModal={() => {
+              setStorefrontCompanyId(null);
+              handleNavigate('PREMIUM_MEMBERSHIP');
+            }}
+          />
+        )}
+
+        <RfqCreationModal
+          isOpen={isCreateRfqOpen}
+          onClose={() => setIsCreateRfqOpen(false)}
           selectedCurrency={selectedCurrency}
-          onOpenStorefront={handleOpenStorefront}
-          onStartNegotiation={() => {
-            setSelectedProduct(null);
-            setActiveView('NEGOTIATION_ROOM');
+          onSubmitRfq={handleRfqCreated}
+          onRfqCreated={handleRfqCreated}
+        />
+
+        <UnifiedContactInquiryModal
+          isOpen={contactModalConfig.isOpen}
+          onClose={handleCloseContactModal}
+          targetType={contactModalConfig.targetType}
+          targetId={contactModalConfig.targetId}
+          targetTitle={contactModalConfig.targetTitle}
+          targetSubtitle={contactModalConfig.targetSubtitle}
+          contactEmail={contactModalConfig.contactEmail}
+          contactPhone={contactModalConfig.contactPhone}
+          supplierCompany={contactModalConfig.supplierCompany}
+          initialQuantity={contactModalConfig.initialQuantity}
+          initialPrice={contactModalConfig.initialPrice}
+          onSuccess={() => {
+            fetchRFQs();
           }}
         />
-      )}
 
-      {selectedRfqForModal && (
-        <RfqDetailModal
-          rfq={selectedRfqForModal}
-          selectedCurrency={selectedCurrency}
-          onClose={() => setSelectedRfqForModal(null)}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
           currentUser={currentUser}
-          onOpenUpgradeModal={() => {
-            setSelectedRfqForModal(null);
-            setActiveView('PREMIUM_MEMBERSHIP');
+          initialMode={authModalMode}
+          onNavigate={handleNavigate}
+          onLogin={user => {
+            setCurrentUser(user);
           }}
-          onOpenBuyerProfile={(buyerId) => {
-            setSelectedRfqForModal(null);
-            setSelectedBuyerId(buyerId);
-            setActiveView('BUYER_PROFILE');
-          }}
-          onOpenNegotiation={() => {
-            setSelectedRfqForModal(null);
-            setActiveView('NEGOTIATION_ROOM');
-          }}
-          onAcceptQuote={(quote) => {
-            setSelectedRfqForModal(null);
-            setActiveView('NEGOTIATION_ROOM');
+          onLogout={() => {
+            logout();
           }}
         />
-      )}
 
-      {storefrontCompanyId && (
-        <SupplierStorefrontModal
-          companyId={storefrontCompanyId}
-          isOpen={Boolean(storefrontCompanyId)}
-          onClose={() => setStorefrontCompanyId(null)}
+        <PaymentCheckoutModal
+          isOpen={Boolean(checkoutData)}
+          onClose={() => setCheckoutData(null)}
+          checkoutData={checkoutData}
           selectedCurrency={selectedCurrency}
-          onSelectProduct={handleSelectProduct}
-          onOpenCreateRfq={handleOpenCreateRfq}
-          currentUser={currentUser}
-          onOpenUpgradeModal={() => {
-            setStorefrontCompanyId(null);
-            handleNavigate('PREMIUM_MEMBERSHIP');
+          onPaymentSuccess={orderId => {
+            // Success
           }}
         />
-      )}
 
-      <RfqCreationModal
-        isOpen={isCreateRfqOpen}
-        onClose={() => setIsCreateRfqOpen(false)}
-        selectedCurrency={selectedCurrency}
-        onSubmitRfq={handleRfqCreated}
-        onRfqCreated={handleRfqCreated}
-      />
-
-      <UnifiedContactInquiryModal
-        isOpen={contactModalConfig.isOpen}
-        onClose={handleCloseContactModal}
-        targetType={contactModalConfig.targetType}
-        targetId={contactModalConfig.targetId}
-        targetTitle={contactModalConfig.targetTitle}
-        targetSubtitle={contactModalConfig.targetSubtitle}
-        contactEmail={contactModalConfig.contactEmail}
-        contactPhone={contactModalConfig.contactPhone}
-        supplierCompany={contactModalConfig.supplierCompany}
-        initialQuantity={contactModalConfig.initialQuantity}
-        initialPrice={contactModalConfig.initialPrice}
-        onSuccess={() => {
-          fetchRFQs();
-        }}
-      />
-
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        currentUser={currentUser}
-        initialMode={authModalMode}
-        onNavigate={handleNavigate}
-        onLogin={user => {
-          setCurrentUser(user);
-        }}
-        onLogout={() => {
-          logout();
-        }}
-      />
-
-      <PaymentCheckoutModal
-        isOpen={Boolean(checkoutData)}
-        onClose={() => setCheckoutData(null)}
-        checkoutData={checkoutData}
-        selectedCurrency={selectedCurrency}
-        onPaymentSuccess={orderId => {
-          // Success
-        }}
-      />
-
-      <BackendDataManagementModal
-        isOpen={isDbModalOpen}
-        onClose={() => setIsDbModalOpen(false)}
-        currentUser={currentUser}
-        onOpenAuthModal={() => {
-          setAuthModalMode('LOGIN');
-          setIsAuthModalOpen(true);
-        }}
-      />
+        <BackendDataManagementModal
+          isOpen={isDbModalOpen}
+          onClose={() => setIsDbModalOpen(false)}
+          currentUser={currentUser}
+          onOpenAuthModal={() => {
+            setAuthModalMode('LOGIN');
+            setIsAuthModalOpen(true);
+          }}
+        />
+      </React.Suspense>
     </div>
   );
 };
