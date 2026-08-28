@@ -45,7 +45,7 @@ export const AuthModal: React.FC<Props> = ({
   initialMode = 'LOGIN',
   onNavigate
 }) => {
-  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER' | 'WORK_WITH_US'>(initialMode);
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER' | 'WORK_WITH_US' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD'>(initialMode);
 
   useEffect(() => {
     if (isOpen && initialMode) {
@@ -57,6 +57,13 @@ export const AuthModal: React.FC<Props> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Forgot / Reset Password States
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [resetTokenInput, setResetTokenInput] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
   
   // Registration Form States (Locally Isolated)
   const [regName, setRegName] = useState('');
@@ -74,6 +81,61 @@ export const AuthModal: React.FC<Props> = ({
   const [showToken, setShowToken] = useState(false);
 
   const { login } = useAuth();
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setForgotSuccess(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setForgotSuccess(data.message || 'Password reset instructions sent.');
+        if (data.reset_token) {
+          setResetTokenInput(data.reset_token);
+        }
+      } else {
+        setError(data.message || 'Failed to send reset email.');
+      }
+    } catch (err) {
+      setError('Network communication failure.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setResetSuccess(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, token: resetTokenInput, newPassword: resetNewPassword })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResetSuccess(data.message || 'Password successfully reset.');
+        setTimeout(() => {
+          setAuthMode('LOGIN');
+          setEmail(forgotEmail);
+        }, 2000);
+      } else {
+        setError(data.message || 'Failed to reset password.');
+      }
+    } catch (err) {
+      setError('Network communication failure.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -521,6 +583,21 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 </div>
 
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('FORGOT_PASSWORD');
+                      setError(null);
+                      setSuccess(null);
+                      setForgotSuccess(null);
+                    }}
+                    className="text-blue-600 hover:text-blue-700 font-bold text-[11px] cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -529,6 +606,133 @@ export const AuthModal: React.FC<Props> = ({
                   <LogIn className="w-4 h-4" />
                   <span>{isLoading ? 'Verifying Credentials...' : 'Sign In'}</span>
                 </button>
+              </form>
+            )}
+
+            {/* FORGOT PASSWORD VIEW */}
+            {authMode === 'FORGOT_PASSWORD' && (
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 text-xs">
+                <div className="text-center pb-2">
+                  <h3 className="text-base font-black text-slate-900">Reset Your Password</h3>
+                  <p className="text-slate-500 text-[11px]">Enter your work email to receive a secure recovery token.</p>
+                </div>
+
+                {forgotSuccess ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
+                      {forgotSuccess}
+                    </div>
+                    {resetTokenInput && (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                        <span className="font-bold text-slate-700 block text-[10px]">Dev / Test Reset Token Generated:</span>
+                        <code className="text-[10px] font-mono bg-white p-1 rounded border border-slate-200 block break-all text-blue-600">{resetTokenInput}</code>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('RESET_PASSWORD')}
+                      className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs cursor-pointer"
+                    >
+                      Proceed to Reset Password Page
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Corporate Work Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                        <input
+                          type="email"
+                          required
+                          placeholder="name@company.com"
+                          value={forgotEmail}
+                          onChange={e => setForgotEmail(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      <span>{isLoading ? 'Sending Link...' : 'Send Recovery Link'}</span>
+                    </button>
+                  </>
+                )}
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('LOGIN')}
+                    className="text-slate-600 hover:text-slate-900 font-bold text-xs cursor-pointer"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* RESET PASSWORD VIEW */}
+            {authMode === 'RESET_PASSWORD' && (
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4 text-xs">
+                <div className="text-center pb-2">
+                  <h3 className="text-base font-black text-slate-900">Choose New Password</h3>
+                  <p className="text-slate-500 text-[11px]">Enter your token and set a secure new password (min 6 chars).</p>
+                </div>
+
+                {resetSuccess ? (
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
+                    {resetSuccess} Redirecting to sign in...
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Reset Token</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Paste reset token here"
+                        value={resetTokenInput}
+                        onChange={e => setResetTokenInput(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px] focus:outline-none focus:border-blue-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">New Password *</label>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        placeholder="••••••••••••"
+                        value={resetNewPassword}
+                        onChange={e => setResetNewPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      <span>{isLoading ? 'Resetting Password...' : 'Update Password & Sign In'}</span>
+                    </button>
+                  </>
+                )}
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('LOGIN')}
+                    className="text-slate-600 hover:text-slate-900 font-bold text-xs cursor-pointer"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
               </form>
             )}
 

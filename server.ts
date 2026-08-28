@@ -30,6 +30,8 @@ interface ServerUserRecord {
   membershipStatus: 'free' | 'paid';
   tier?: string;
   avatarUrl?: string;
+  reset_token?: string | null;
+  reset_token_expiry?: string | null;
 }
 
 const serverUsersStore: ServerUserRecord[] = [
@@ -565,6 +567,57 @@ app.get('/api.php', (req, res) => {
     db_name: 'a17604c7_tradeheaven_db',
     timestamp: new Date().toISOString()
   });
+});
+
+// Dedicated Forgot Password & Reset Password REST Endpoints
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email address is required.' });
+  }
+  const cleanEmail = email.toLowerCase().trim();
+  const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+  if (!user) {
+    return res.json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
+  }
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const tokenExpiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');
+  user.reset_token = resetToken;
+  user.reset_token_expiry = tokenExpiry;
+
+  const resetLink = `${req.protocol}://${req.get('host')}?reset_token=${resetToken}&email=${encodeURIComponent(cleanEmail)}`;
+  console.log(`[PASSWORD RESET] Token generated for ${cleanEmail}: ${resetLink}`);
+
+  return res.json({
+    success: true,
+    message: 'Password reset instructions sent to your email.',
+    reset_token: resetToken
+  });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { email, token, newPassword } = req.body;
+  if (!email || !token || !newPassword) {
+    return res.status(400).json({ success: false, message: 'All fields are required.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+  }
+  const cleanEmail = email.toLowerCase().trim();
+  const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+
+  if (!user || user.reset_token !== token) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired password reset token.' });
+  }
+  if (user.reset_token_expiry && new Date() > new Date(user.reset_token_expiry)) {
+    return res.status(400).json({ success: false, message: 'Password reset token has expired.' });
+  }
+
+  user.passwordHash = newPassword;
+  user.reset_token = null;
+  user.reset_token_expiry = null;
+
+  return res.json({ success: true, message: 'Password successfully reset. You can now log in.' });
 });
 
 app.post('/api.php', (req, res) => {
