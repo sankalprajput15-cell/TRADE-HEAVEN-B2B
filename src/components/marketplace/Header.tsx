@@ -341,6 +341,16 @@ export const Header: React.FC<Props> = ({
             >
               Trust & Safety
             </button>
+            <button
+              onClick={() => handleNavClick('INSIGHTS')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'INSIGHTS'
+                  ? 'bg-amber-50 text-amber-600 font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              News & Insights
+            </button>
 
             {/* Premium Services (Top Nav Button) */}
             <button
@@ -748,6 +758,12 @@ export const Header: React.FC<Props> = ({
               className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-700 cursor-pointer col-span-2 text-center"
             >
               Security & Trust Center
+            </button>
+            <button
+              onClick={() => handleNavClick('INSIGHTS')}
+              className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-700 cursor-pointer col-span-2 text-center"
+            >
+              News & Insights
             </button>
             <button
               onClick={() => handleNavClick('LANDING_PAGE')}

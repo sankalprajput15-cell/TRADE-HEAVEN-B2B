@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { ShieldCheck, Lock, Verified, Search, FileText, Anchor } from 'lucide-react';
-import { SectionHeading } from '../common/SectionHeading';
 
 export const TrustAndSafety: React.FC = () => {
   useEffect(() => {

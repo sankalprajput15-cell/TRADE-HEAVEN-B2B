@@ -68,6 +68,7 @@ import { EditableImage } from './components/EditableImage';
 
 import { AboutUs } from './components/marketplace/AboutUs';
 import { TrustAndSafety } from './components/marketplace/TrustAndSafety';
+import { InsightsBlog } from './components/marketplace/InsightsBlog';
 
 const MainApp: React.FC = () => {
   const { 
@@ -84,9 +85,46 @@ const MainApp: React.FC = () => {
     closeQuickEdit
   } = useSiteContent();
 
-  // Navigation & Currency State - Strictly defaults to public marketplace landing
-  const [activeView, setActiveView] = useState<ActiveView>('HOMEPAGE');
+  // Navigation & Currency State - Initialize from URL if present
+  const getInitialView = (): ActiveView => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      if (view) return view as ActiveView;
+    }
+    return 'HOMEPAGE';
+  };
+
+  const [activeView, setActiveView] = useState<ActiveView>(getInitialView());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  // Listen for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      if (view) setActiveView(view as ActiveView);
+      else setActiveView('HOMEPAGE');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Update URL when activeView changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (activeView === 'HOMEPAGE') {
+        url.searchParams.delete('view');
+      } else {
+        url.searchParams.set('view', activeView);
+      }
+      // Only push if the URL actually changed to prevent infinite loops with popstate
+      if (url.toString() !== window.location.href) {
+        window.history.pushState({}, '', url.toString());
+      }
+    }
+  }, [activeView]);
 
   // Products and entities initialized with default rich marketplace dataset
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
@@ -197,6 +235,141 @@ const MainApp: React.FC = () => {
       setIsAuthModalOpen(true);
     }
   }, [activeView, currentUser, isAdmin]);
+
+  // Dynamic SEO & Meta Tags based on active view
+  useEffect(() => {
+    let title = 'Trade Heaven | Global B2B Wholesale Marketplace';
+    let description = 'Connect with verified global suppliers, compare live RFQs, and secure wholesale deals with Trade Heaven\'s secure B2B platform.';
+    let canonical = 'https://tradeheaven.com';
+    let ogImage = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200'; // Global premium B2B hero image
+
+    switch (activeView) {
+      case 'HOMEPAGE':
+      case 'LANDING_PAGE':
+        title = 'Trade Heaven | Secure Global B2B Wholesale Marketplace';
+        description = 'Discover verified factory inventory, connect with global suppliers, and trade securely with Trade Heaven.';
+        canonical = 'https://tradeheaven.com';
+        ogImage = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'PRODUCT_DIRECTORY':
+        title = 'Global Product Catalog & Wholesale Directory | Trade Heaven';
+        description = 'Browse verified factory inventory across industrial sectors. Compare tiered volume pricing and source high-quality products.';
+        canonical = 'https://tradeheaven.com/?view=PRODUCT_DIRECTORY';
+        ogImage = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'RFQ_HUB':
+        title = 'Live B2B RFQs & Tenders | Trade Heaven';
+        description = 'View live Requests for Quotation (RFQs), submit wholesale quotes, and connect with verified buyers worldwide.';
+        canonical = 'https://tradeheaven.com/?view=RFQ_HUB';
+        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'SUPPLIERS_DIRECTORY':
+        title = 'Verified Global Suppliers & Exporters | Trade Heaven';
+        description = 'Find and partner with verified manufacturers, exporters, and wholesale suppliers from around the globe.';
+        canonical = 'https://tradeheaven.com/?view=SUPPLIERS_DIRECTORY';
+        ogImage = 'https://images.unsplash.com/photo-1565891741441-64926e441838?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'BUYERS_DIRECTORY':
+        title = 'Verified Global Buyers & Importers | Trade Heaven';
+        description = 'Connect with verified international buyers and importers actively seeking wholesale product sourcing.';
+        canonical = 'https://tradeheaven.com/?view=BUYERS_DIRECTORY';
+        ogImage = 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'BUY_LEADS':
+        title = 'Active Wholesale Buy Leads | Trade Heaven';
+        description = 'Access active buy leads from verified global importers. Quote on RFQs and grow your export business.';
+        canonical = 'https://tradeheaven.com/?view=BUY_LEADS';
+        ogImage = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'TRUST_SAFETY':
+        title = 'Trust & Safety Center | Trade Heaven';
+        description = 'Learn how Trade Heaven ensures secure international B2B transactions through supplier verification and escrow protection.';
+        canonical = 'https://tradeheaven.com/?view=TRUST_SAFETY';
+        ogImage = 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'INSIGHTS':
+        title = 'B2B Trade Insights & Industry News | Trade Heaven';
+        description = 'Expert insights on global B2B trade, physical commodity trading, supply chain due diligence, and verified sourcing.';
+        canonical = 'https://tradeheaven.com/?view=INSIGHTS';
+        ogImage = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'PREMIUM_MEMBERSHIP':
+        title = 'Premium B2B Supplier Membership | Trade Heaven';
+        description = 'Upgrade your supplier profile to access priority RFQs, verified buyer data, and enhanced storefront visibility.';
+        canonical = 'https://tradeheaven.com/?view=PREMIUM_MEMBERSHIP';
+        ogImage = 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'INCOTERMS_CALCULATOR':
+        title = 'Incoterms Cost & Risk Calculator | Trade Heaven';
+        description = 'Calculate shipping costs and understand risk transfers for global trade using our interactive Incoterms tool.';
+        canonical = 'https://tradeheaven.com/?view=INCOTERMS_CALCULATOR';
+        ogImage = 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'ABOUT_US':
+        title = 'About Trade Heaven | Verified B2B Marketplace';
+        description = 'Learn about Trade Heaven\'s mission to connect global wholesale buyers and verified suppliers safely.';
+        canonical = 'https://tradeheaven.com/?view=ABOUT_US';
+        ogImage = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'VENDOR_PROFILE':
+        title = 'Verified Supplier Storefront | Trade Heaven';
+        description = 'View verified supplier profiles, browse product catalogs, and review manufacturing certifications on Trade Heaven.';
+        canonical = 'https://tradeheaven.com/?view=VENDOR_PROFILE';
+        ogImage = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200';
+        break;
+    }
+
+    // 1. Update document title
+    document.title = title;
+    
+    // Helper function to create or update meta tags
+    const setMetaTag = (attributeName: string, attributeValue: string, content: string, isProperty: boolean = false) => {
+      const selector = isProperty 
+        ? `meta[property="${attributeValue}"]` 
+        : `meta[name="${attributeValue}"]`;
+      
+      let metaElement = document.querySelector(selector);
+      if (metaElement) {
+        metaElement.setAttribute('content', content);
+      } else {
+        metaElement = document.createElement('meta');
+        if (isProperty) {
+          metaElement.setAttribute('property', attributeValue);
+        } else {
+          metaElement.setAttribute('name', attributeValue);
+        }
+        metaElement.setAttribute('content', content);
+        document.head.appendChild(metaElement);
+      }
+    };
+
+    // 2. Set description meta tags
+    setMetaTag('name', 'description', description);
+    setMetaTag('property', 'og:description', description, true);
+    setMetaTag('name', 'twitter:description', description);
+
+    // 3. Set OpenGraph & Twitter title & metadata
+    setMetaTag('property', 'og:title', title, true);
+    setMetaTag('name', 'twitter:title', title);
+    setMetaTag('property', 'og:url', canonical, true);
+    setMetaTag('property', 'og:type', 'website', true);
+    setMetaTag('name', 'twitter:card', 'summary_large_image');
+
+    // 4. Set OpenGraph & Twitter image tags
+    setMetaTag('property', 'og:image', ogImage, true);
+    setMetaTag('name', 'twitter:image', ogImage);
+
+    // 5. Update or create canonical link tag
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) {
+      canonicalLink.setAttribute('href', canonical);
+    } else {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      canonicalLink.setAttribute('href', canonical);
+      document.head.appendChild(canonicalLink);
+    }
+  }, [activeView]);
 
   // Handlers
   const handleSelectProduct = (product: Product) => {
@@ -535,6 +708,8 @@ const MainApp: React.FC = () => {
                 return <AboutUs onNavigate={handleNavigate} />;
               case 'TRUST_SAFETY':
                 return <TrustAndSafety />;
+              case 'INSIGHTS':
+                return <InsightsBlog onNavigate={handleNavigate} />;
               case 'PRODUCT_DIRECTORY':
                 return (
                   <div className="space-y-6">
@@ -593,6 +768,7 @@ const MainApp: React.FC = () => {
               case 'DASHBOARD':
                 return (
                   <BuyerSupplierDashboard
+                    currentUser={currentUser}
                     currentUserRole={currentUser?.role || 'BUYER'}
                     selectedCurrency={selectedCurrency}
                     rfqs={rfqs}

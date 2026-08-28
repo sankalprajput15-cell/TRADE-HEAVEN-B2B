@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Building2, Globe2, Target, Award, ArrowRight } from 'lucide-react';
-import { SectionHeading } from '../common/SectionHeading';
 
 export const AboutUs: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   useEffect(() => {
