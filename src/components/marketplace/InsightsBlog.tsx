@@ -56,7 +56,7 @@ export const InsightsBlog: React.FC<{ onNavigate?: (view: string) => void }> = (
               {/* Replace 'aqz-KE-bpKQ' in the src URL with your actual YouTube video ID! */}
               <iframe 
                 className="w-full h-full"
-                src="https://www.youtube.com/embed/aqz-KE-bpKQ?rel=0" 
+                src="https://www.youtube.com/embed/fhi-Ui34u6c?rel=0" 
                 title="No End Buyer, No Deal" 
                 frameBorder="0" 
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
