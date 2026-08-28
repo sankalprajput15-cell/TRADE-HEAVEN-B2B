@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, Currency, SupplierTier, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { SafeImage } from '../common/SafeImage';
+import { useAuth } from '../../context/AuthContext';
 import { 
   Search, 
   Filter, 
@@ -41,6 +42,7 @@ export const ProductCatalog: React.FC<Props> = ({
   initialCategory,
   initialSearch
 }) => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [internalCategory, setInternalCategory] = useState<string>(initialCategory || propCategory || 'ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
@@ -48,6 +50,7 @@ export const ProductCatalog: React.FC<Props> = ({
   const [maxMoq, setMaxMoq] = useState<number>(50000);
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
+  const [ownershipFilter, setOwnershipFilter] = useState<'ALL' | 'MINE' | 'OTHERS'>('ALL');
 
   // Sync external category prop if provided
   useEffect(() => {
@@ -133,7 +136,12 @@ export const ProductCatalog: React.FC<Props> = ({
     const matchesTier = selectedTier === 'ALL' || p.supplierTier === selectedTier;
     const matchesIncoterm = selectedIncoterm === 'ALL' || p.supportedIncoterms.includes(selectedIncoterm as Incoterm);
     const matchesMoq = maxMoq >= 50000 || p.moq <= maxMoq;
-    return matchesSearch && matchesCat && matchesTier && matchesIncoterm && matchesMoq;
+
+    const matchesOwnership = ownershipFilter === 'ALL' ||
+      (ownershipFilter === 'MINE' && user && (p.ownerEmail === user.email || p.ownerId === user.id)) ||
+      (ownershipFilter === 'OTHERS' && (!user || (p.ownerEmail !== user.email && p.ownerId !== user.id)));
+
+    return matchesSearch && matchesCat && matchesTier && matchesIncoterm && matchesMoq && matchesOwnership;
   });
 
   return (
@@ -196,6 +204,7 @@ export const ProductCatalog: React.FC<Props> = ({
                 setSelectedIncoterm('ALL');
                 setMaxMoq(5000);
                 setSearchTerm('');
+                setOwnershipFilter('ALL');
               }}
               className="text-[11px] text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
             >
@@ -229,6 +238,50 @@ export const ProductCatalog: React.FC<Props> = ({
                   <span className={`line-clamp-1 ${activeCategory === cat ? 'font-bold text-blue-600' : ''}`}>{cat}</span>
                 </label>
               ))}
+            </div>
+          </div>
+
+          {/* Data Separation / Listing Ownership */}
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+            <label className="block text-xs font-bold text-slate-800 mb-1.5 uppercase tracking-wide">
+              🌐 Listing Source
+            </label>
+            <div className="space-y-2 text-xs">
+              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                <input
+                  type="radio"
+                  name="ownership"
+                  checked={ownershipFilter === 'ALL'}
+                  onChange={() => setOwnershipFilter('ALL')}
+                  className="accent-blue-600"
+                />
+                <span className={ownershipFilter === 'ALL' ? 'font-bold text-slate-900' : ''}>All Users' Listings</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                <input
+                  type="radio"
+                  name="ownership"
+                  checked={ownershipFilter === 'MINE'}
+                  onChange={() => setOwnershipFilter('MINE')}
+                  className="accent-blue-600"
+                  disabled={!user}
+                />
+                <span className={`${ownershipFilter === 'MINE' ? 'font-bold text-slate-900' : ''} ${!user ? 'text-slate-400 cursor-not-allowed' : ''}`}>
+                  My Listings Only {!user && <span className="text-[9px] text-amber-600 font-semibold">(Sign in required)</span>}
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                <input
+                  type="radio"
+                  name="ownership"
+                  checked={ownershipFilter === 'OTHERS'}
+                  onChange={() => setOwnershipFilter('OTHERS')}
+                  className="accent-blue-600"
+                />
+                <span className={ownershipFilter === 'OTHERS' ? 'font-bold text-slate-900' : ''}>Exclude My Listings</span>
+              </label>
             </div>
           </div>
 

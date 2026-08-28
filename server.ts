@@ -3,8 +3,84 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
+
+// Helper to send login email alerts safely to solutionthe87@gmail.com
+async function sendLoginAlert(userEmail: string, userName: string, userRole: string, companyName: string, country: string) {
+  const alertRecipient = (process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
+  const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+
+  console.log(`[LOGIN ALERT TRIGGERED] User ${userEmail} logged in. Dispatched security alert email task to ${alertRecipient}...`);
+
+  const mailOptions = {
+    from: `"Trade Heaven Security" <no-reply@tradeheaven.net>`,
+    to: alertRecipient,
+    subject: `⚠️ Security Alert: User Login - ${userEmail}`,
+    html: `
+      <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
+        <h2 style="color: #dc2626; margin-top: 0; font-size: 20px;">⚠️ Secure Log Alert</h2>
+        <p>A user has successfully logged into the Trade Heaven B2B Portal:</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; width: 120px; color: #64748b;">User Name:</td>
+            <td style="padding: 8px 0; color: #1e293b;">${userName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">User Email:</td>
+            <td style="padding: 8px 0; color: #1e293b; font-family: monospace;">${userEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">User Role:</td>
+            <td style="padding: 8px 0; color: #1e293b;"><span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${userRole}</span></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Company:</td>
+            <td style="padding: 8px 0; color: #1e293b;">${companyName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Country:</td>
+            <td style="padding: 8px 0; color: #1e293b;">${country}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Login Time:</td>
+            <td style="padding: 8px 0; color: #1e293b;">${timestamp} (EST)</td>
+          </tr>
+        </table>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">This email is an automated system notification for solutions-monitoring regarding Trade Heaven active sessions.</p>
+      </div>
+    `
+  };
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: Number(process.env.SMTP_PORT) === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass
+        }
+      });
+      await transporter.sendMail(mailOptions);
+      console.log(`[LOGIN ALERT SUCCESS] Email sent to ${alertRecipient} successfully!`);
+    } catch (err: any) {
+      console.error(`[LOGIN ALERT ERROR] SMTP transmission failed:`, err?.message || err);
+    }
+  } else {
+    console.log(`[LOGIN ALERT SIMULATION] SMTP configuration not fully configured in environment. Displaying email payload below for developer review:`);
+    console.log(`To: ${alertRecipient}`);
+    console.log(`Subject: ${mailOptions.subject}`);
+    console.log(`Content:\n`, mailOptions.html);
+  }
+}
 
 const app = express();
 const PORT = 3000;
@@ -149,6 +225,7 @@ app.post('/api/v1/auth/login', (req, res) => {
     };
 
     const token = generateServerJwt(adminRecord);
+    sendLoginAlert(adminRecord.email, adminRecord.name, 'ADMIN', adminRecord.companyName, adminRecord.country);
     return res.json({
       success: true,
       token,
@@ -177,6 +254,7 @@ app.post('/api/v1/auth/login', (req, res) => {
   if (matchedUser && matchedUser.passwordHash === password) {
     const token = generateServerJwt(matchedUser);
     const isAdmin = matchedUser.role === 'ADMIN' || matchedUser.email.toLowerCase().trim() === ADMIN_EMAIL;
+    sendLoginAlert(matchedUser.email, matchedUser.name, matchedUser.role, matchedUser.companyName, matchedUser.country);
     return res.json({
       success: true,
       token,
@@ -796,6 +874,7 @@ app.post('/api.php', (req, res) => {
     if (cleanEmail === ADMIN_EMAIL && (password === ADMIN_PASSWORD || password === 'Admin@2026!' || password === 'admin123')) {
       const adminRecord = serverUsersStore.find(u => u.email === ADMIN_EMAIL) || serverUsersStore[0];
       const token = generateServerJwt(adminRecord);
+      sendLoginAlert(adminRecord.email, adminRecord.name, 'ADMIN', adminRecord.companyName, adminRecord.country);
       return res.json({
         status: 'success',
         success: true,
@@ -829,6 +908,7 @@ app.post('/api.php', (req, res) => {
     const matched = serverUsersStore.find(u => u.email === cleanEmail && (!u.passwordHash || u.passwordHash === password));
     if (matched) {
       const token = generateServerJwt(matched);
+      sendLoginAlert(matched.email, matched.name, matched.role, matched.companyName, matched.country);
       return res.json({
         status: 'success',
         success: true,
@@ -974,6 +1054,8 @@ app.post('/api.php', (req, res) => {
       supplier_name: input.supplier_name || 'Verified Exporter Ltd',
       supplier_country: input.supplier_country || 'Global',
       image_url: input.image_url || '',
+      owner_email: input.owner_email || '',
+      owner_id: input.owner_id || '',
       created_at: new Date().toISOString()
     };
 

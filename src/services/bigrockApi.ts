@@ -101,6 +101,8 @@ export interface DbListing {
   supplier_country?: string;
   location?: string;
   status?: string;
+  owner_email?: string;
+  owner_id?: string;
   created_at?: string;
 }
 
@@ -498,10 +500,32 @@ export const bigrockApi = {
 
   async submitListing(listing: DbListing): Promise<{ success: boolean; data?: DbListing; error?: string; id?: any }> {
     try {
+      const richListing = { ...listing };
+      if (!richListing.owner_email || !richListing.owner_id) {
+        try {
+          const userStr = localStorage.getItem('th_session_user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && user.email) {
+              richListing.owner_email = user.email;
+              richListing.owner_id = user.id;
+              if (!richListing.supplier_name || richListing.supplier_name === 'Verified Exporter' || richListing.supplier_name === 'Verified Exporter Ltd') {
+                richListing.supplier_name = user.companyName || user.name;
+              }
+              if (!richListing.supplier_country) {
+                richListing.supplier_country = user.country || 'Global';
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Could not enrich listing with session user:', e);
+        }
+      }
+
       const response = await fetch(`${BIGROCK_API_URL}?action=submit_listing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(listing)
+        body: JSON.stringify(richListing)
       });
       if (response.ok) {
         const json = await response.json();

@@ -724,6 +724,8 @@ export const api = {
           customizationAvailable: true,
           featured: true,
           createdDate: new Date().toISOString().split('T')[0],
+          ownerEmail: l.owner_email || '',
+          ownerId: l.owner_id || '',
           hsCode: '8457.10.00',
           warrantyMonths: 24,
           isFeatured: true,

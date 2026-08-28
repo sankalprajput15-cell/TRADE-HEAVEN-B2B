@@ -213,6 +213,8 @@ export interface Product {
   supplyAbilityPerMonth: string;
   featured: boolean;
   createdDate: string;
+  ownerEmail?: string;
+  ownerId?: string;
 }
 
 export interface RfqRequirement {
