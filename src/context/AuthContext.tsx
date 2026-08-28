@@ -83,9 +83,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('th_session_jwt_token', res.token);
           }
         } catch {}
+
+        // Log login success
+        fetch('/api/v1/admin/audit-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'AUTH_LOGIN',
+            actorEmail: res.user.email,
+            actorRole: res.user.role,
+            targetResource: '/login',
+            details: `User ${res.user.name} successfully authenticated.`,
+            status: 'SUCCESS',
+            actorUid: res.user.id
+          })
+        }).catch(console.warn);
+
         return { success: true, user: res.user };
       }
       
+      // Log login failure
+      fetch('/api/v1/admin/audit-logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'AUTH_LOGIN',
+          actorEmail: cleanEmail,
+          actorRole: 'GUEST',
+          targetResource: '/login',
+          details: `Login failed: ${res.error || res.message || 'Invalid credentials'}`,
+          status: 'UNAUTHORIZED_401'
+        })
+      }).catch(console.warn);
+
       return { success: false, error: res.error || res.message || 'Invalid credentials' };
     } catch (e: any) {
       return { success: false, error: e.message || 'Network communication failure' };
