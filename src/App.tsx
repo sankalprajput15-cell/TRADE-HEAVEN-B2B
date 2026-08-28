@@ -66,6 +66,9 @@ import { Loader2 } from 'lucide-react';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
 
+import { AboutUs } from './components/marketplace/AboutUs';
+import { TrustAndSafety } from './components/marketplace/TrustAndSafety';
+
 const MainApp: React.FC = () => {
   const { 
     currentUser, 
@@ -528,6 +531,10 @@ const MainApp: React.FC = () => {
                   />
                 );
 
+              case 'ABOUT_US':
+                return <AboutUs onNavigate={handleNavigate} />;
+              case 'TRUST_SAFETY':
+                return <TrustAndSafety />;
               case 'PRODUCT_DIRECTORY':
                 return (
                   <div className="space-y-6">
@@ -677,14 +684,6 @@ const MainApp: React.FC = () => {
                   <OnboardWithUsPage
                     currentUser={currentUser}
                     onLogin={user => setCurrentUser(user)}
-                    onNavigate={handleNavigate}
-                    onOpenCreateRfq={handleOpenCreateRfq}
-                  />
-                );
-
-              case 'ABOUT_US':
-                return (
-                  <AboutTradeHeavenView
                     onNavigate={handleNavigate}
                     onOpenCreateRfq={handleOpenCreateRfq}
                   />

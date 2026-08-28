@@ -312,7 +312,6 @@ export const Header: React.FC<Props> = ({
           {/* Center: Desktop Nav Links (Streamlined) */}
           <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 min-w-0 flex-wrap justify-center">
             <button
-              id="nav-link-homepage"
               onClick={() => handleNavClick('HOMEPAGE')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
@@ -321,6 +320,26 @@ export const Header: React.FC<Props> = ({
               }`}
             >
               Home
+            </button>
+            <button
+              onClick={() => handleNavClick('ABOUT_US')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'ABOUT_US'
+                  ? 'bg-blue-50 text-blue-600 font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              About Us
+            </button>
+            <button
+              onClick={() => handleNavClick('TRUST_SAFETY')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'TRUST_SAFETY'
+                  ? 'bg-emerald-50 text-emerald-600 font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              Trust & Safety
             </button>
 
             {/* Premium Services (Top Nav Button) */}
@@ -717,6 +736,18 @@ export const Header: React.FC<Props> = ({
               className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
             >
               Home Marketplace
+            </button>
+            <button
+              onClick={() => handleNavClick('ABOUT_US')}
+              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+            >
+              About Us
+            </button>
+            <button
+              onClick={() => handleNavClick('TRUST_SAFETY')}
+              className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-700 cursor-pointer col-span-2 text-center"
+            >
+              Security & Trust Center
             </button>
             <button
               onClick={() => handleNavClick('LANDING_PAGE')}
