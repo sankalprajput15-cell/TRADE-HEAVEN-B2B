@@ -43,11 +43,24 @@ function persistStoredUsers(users: Record<string, AuthUser>) {
 }
 
 function loadStoredSuppliers(): CompanyProfile[] {
+  let stored: CompanyProfile[] = [];
   try {
     const saved = localStorage.getItem(SUPPLIERS_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      stored = JSON.parse(saved);
+    }
   } catch {}
-  return [...MOCK_COMPANIES];
+  
+  const existingIds = new Set(stored.map(s => s.id));
+  const missingMockSuppliers = MOCK_COMPANIES.filter(s => !existingIds.has(s.id));
+  
+  if (missingMockSuppliers.length > 0) {
+    const combined = [...stored, ...missingMockSuppliers];
+    persistStoredSuppliers(combined);
+    return combined;
+  }
+  
+  return stored.length > 0 ? stored : [...MOCK_COMPANIES];
 }
 
 function persistStoredSuppliers(suppliers: CompanyProfile[]) {
@@ -71,11 +84,24 @@ function persistStoredBuyers(buyers: DetailedBuyerProfile[]) {
 }
 
 function loadStoredRfqs(): RfqRequirement[] {
+  let stored: RfqRequirement[] = [];
   try {
     const saved = localStorage.getItem(RFQS_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      stored = JSON.parse(saved);
+    }
   } catch {}
-  return [...MOCK_RFQS];
+  
+  const existingIds = new Set(stored.map(r => r.id));
+  const missingMockRfqs = MOCK_RFQS.filter(r => !existingIds.has(r.id));
+  
+  if (missingMockRfqs.length > 0) {
+    const combined = [...stored, ...missingMockRfqs];
+    persistStoredRfqs(combined);
+    return combined;
+  }
+  
+  return stored.length > 0 ? stored : [...MOCK_RFQS];
 }
 
 function persistStoredRfqs(rfqs: RfqRequirement[]) {
@@ -862,17 +888,28 @@ export const api = {
   // RFQS / BUY LEADS (BIGROCK PHP + MYSQL PERSISTENCE)
   // ==========================================
   async getRfqs(
-    params?: { category?: string; urgency?: string; status?: string; country?: string },
+    paramsOrUser?: { category?: string; urgency?: string; status?: string; country?: string } | AuthUser | null,
     callerUser?: AuthUser | null
   ): Promise<RfqRequirement[]> {
+    let queryParams: { category?: string; urgency?: string; status?: string; country?: string } | undefined;
+    let actualUser: AuthUser | null = callerUser || null;
+
+    if (paramsOrUser && ('role' in paramsOrUser || 'uid' in paramsOrUser || 'email' in paramsOrUser)) {
+      actualUser = paramsOrUser as AuthUser;
+      queryParams = undefined;
+    } else if (paramsOrUser && typeof paramsOrUser === 'object') {
+      queryParams = paramsOrUser as { category?: string; urgency?: string; status?: string; country?: string };
+    }
+
     try {
       // 1. Fetch live inquiries directly from BigRock PHP API (GET /api.php?action=get_rfqs)
       const liveRfqs = await bigrockApi.fetchRfqs();
       const rawList = Array.isArray(liveRfqs) && liveRfqs.length > 0 ? liveRfqs : [];
+      const stored = loadStoredRfqs();
       
-      // Merge live RFQs and MOCK_RFQS avoiding duplicates
+      // Merge live RFQs, stored local RFQs, and MOCK_RFQS avoiding duplicates
       const map = new Map<string, RfqRequirement>();
-      [...MOCK_RFQS, ...rawList].forEach(rfq => {
+      [...MOCK_RFQS, ...stored, ...rawList].forEach(rfq => {
         if (rfq && rfq.id) {
           map.set(rfq.id, rfq);
         }
@@ -880,17 +917,17 @@ export const api = {
 
       let list = Array.from(map.values());
 
-      if (params?.category && params.category !== 'ALL') {
-        list = list.filter(r => r.category === params.category);
+      if (queryParams?.category && queryParams.category !== 'ALL') {
+        list = list.filter(r => (r.category || '').toLowerCase() === queryParams!.category!.toLowerCase());
       }
-      if (params?.urgency) {
-        list = list.filter(r => r.urgency === params.urgency);
+      if (queryParams?.urgency && queryParams.urgency !== 'ALL') {
+        list = list.filter(r => r.urgency === queryParams!.urgency);
       }
-      if (params?.status) {
-        list = list.filter(r => r.status === params.status);
+      if (queryParams?.status && queryParams.status !== 'ALL') {
+        list = list.filter(r => r.status === queryParams!.status);
       }
-      if (params?.country) {
-        list = list.filter(r => r.buyerCountry.toLowerCase().includes(params.country!.toLowerCase()));
+      if (queryParams?.country) {
+        list = list.filter(r => (r.buyerCountry || '').toLowerCase().includes(queryParams!.country!.toLowerCase()));
       }
 
       // Update in-memory cache
@@ -898,10 +935,10 @@ export const api = {
       persistStoredRfqs(list);
 
       // SERVER-SIDE CONTACT DATA GATING
-      return list.map(rfq => securityService.gateRfqRequirement(rfq, callerUser || null));
+      return list.map(rfq => securityService.gateRfqRequirement(rfq, actualUser || null));
     } catch (err) {
       console.warn('[api.getRfqs fetch]:', err);
-      return MOCK_RFQS.map(rfq => securityService.gateRfqRequirement(rfq, callerUser || null));
+      return MOCK_RFQS.map(rfq => securityService.gateRfqRequirement(rfq, actualUser || null));
     }
   },
 

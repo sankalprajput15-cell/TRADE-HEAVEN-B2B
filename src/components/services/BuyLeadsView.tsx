@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RfqRequirement, Currency, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
@@ -23,7 +23,12 @@ import {
   Mail,
   Phone,
   RefreshCw,
-  Loader2
+  Loader2,
+  ArrowUpDown,
+  Zap,
+  SlidersHorizontal,
+  Tag,
+  X
 } from 'lucide-react';
 
 interface Props {
@@ -34,6 +39,17 @@ interface Props {
   onOpenUpgradeModal?: () => void;
 }
 
+const QUICK_SEARCH_CHIPS = [
+  'Rice',
+  'Solar Inverter',
+  'Lithium Battery',
+  'Copper Cathode',
+  'RAM Memory',
+  'Crude Oil',
+  'Cotton Fabric',
+  'Medical Mask'
+];
+
 export const BuyLeadsView: React.FC<Props> = ({
   selectedCurrency,
   onSelectRfq,
@@ -43,6 +59,8 @@ export const BuyLeadsView: React.FC<Props> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [sortBy, setSortBy] = useState<'newest' | 'bids' | 'volume' | 'price-high' | 'price-low'>('newest');
+  const [urgentOnly, setUrgentOnly] = useState(false);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,8 +74,8 @@ export const BuyLeadsView: React.FC<Props> = ({
   const loadLiveRfqs = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getRfqs(currentUser);
-      if (data) {
+      const data = await api.getRfqs(undefined, currentUser);
+      if (data && Array.isArray(data)) {
         setRfqs(data);
       }
     } catch (err) {
@@ -80,27 +98,88 @@ export const BuyLeadsView: React.FC<Props> = ({
     };
   }, [currentUser]);
 
-  const filtered = rfqs.filter(r => {
-    const q = searchTerm.toLowerCase().trim();
-    const matchesSearch = q === '' ||
-      (r.productName || '').toLowerCase().includes(q) ||
-      (r.buyerCompany || '').toLowerCase().includes(q) ||
-      (r.buyerName || '').toLowerCase().includes(q) ||
-      (r.buyerCountry || '').toLowerCase().includes(q) ||
-      (r.category || '').toLowerCase().includes(q) ||
-      (r.detailedRequirements || r.detailedDescription || '').toLowerCase().includes(q) ||
-      (r.destinationPort || '').toLowerCase().includes(q) ||
-      (r.preferredIncoterm || '').toLowerCase().includes(q) ||
-      (r.paymentTerms || '').toLowerCase().includes(q) ||
-      (r.targetPriceUsd ? String(r.targetPriceUsd) : '').toLowerCase().includes(q) ||
-      (r.id || '').toLowerCase().includes(q);
-    const matchesCat = selectedCategory === 'ALL' || r.category === selectedCategory;
-    return matchesSearch && matchesCat;
-  });
+  // Dynamic Category Counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: rfqs.length };
+    rfqs.forEach(r => {
+      if (r.category) {
+        counts[r.category] = (counts[r.category] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [rfqs]);
 
-  const categories = ['ALL', ...Array.from(new Set(rfqs.map(r => r.category)))];
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    rfqs.forEach(r => {
+      if (r.category) set.add(r.category);
+    });
+    return ['ALL', ...Array.from(set)];
+  }, [rfqs]);
+
+  // Robust multi-token filtering & sorting
+  const filtered = useMemo(() => {
+    let list = [...rfqs];
+
+    const q = searchTerm.toLowerCase().trim();
+    if (q) {
+      const tokens = q.split(/\s+/).filter(Boolean);
+      list = list.filter(r => {
+        const searchableText = [
+          r.productName,
+          r.category,
+          r.detailedDescription,
+          r.detailedRequirements,
+          r.buyerCompany,
+          r.buyerName,
+          r.buyerCountry,
+          r.destinationPort,
+          r.preferredIncoterm,
+          r.paymentTerms,
+          r.urgency,
+          r.targetQuantity ? `${r.targetQuantity} ${r.quantityUnit}` : '',
+          r.targetPriceUsd ? `${r.targetPriceUsd} ${formatPrice(r.targetPriceUsd)}` : '',
+          r.id
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return tokens.every(token => searchableText.includes(token));
+      });
+    }
+
+    if (selectedCategory !== 'ALL') {
+      list = list.filter(r => (r.category || '').toLowerCase() === selectedCategory.toLowerCase());
+    }
+
+    if (urgentOnly) {
+      list = list.filter(r => r.urgency === 'URGENT');
+    }
+
+    if (sortBy === 'bids') {
+      list.sort((a, b) => (b.quotesCount || 0) - (a.quotesCount || 0));
+    } else if (sortBy === 'volume') {
+      list.sort((a, b) => (b.targetQuantity || 0) - (a.targetQuantity || 0));
+    } else if (sortBy === 'price-high') {
+      list.sort((a, b) => (b.targetPriceUsd || 0) - (a.targetPriceUsd || 0));
+    } else if (sortBy === 'price-low') {
+      list.sort((a, b) => (a.targetPriceUsd || 0) - (b.targetPriceUsd || 0));
+    } else {
+      // Default: newest by ID / creation
+      list.sort((a, b) => (b.postedDate || b.id || '').localeCompare(a.postedDate || a.id || ''));
+    }
+
+    return list;
+  }, [rfqs, searchTerm, selectedCategory, urgentOnly, sortBy, curr]);
 
   const isUserPremium = currentUser?.role === 'ADMIN' || currentUser?.isPremium === true;
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('ALL');
+    setUrgentOnly(false);
+    setSortBy('newest');
+  };
+
+  const hasActiveFilters = searchTerm.trim() !== '' || selectedCategory !== 'ALL' || urgentOnly || sortBy !== 'newest';
 
   return (
     <div id="buy-leads-view-root" className="space-y-6">
@@ -160,46 +239,144 @@ export const BuyLeadsView: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by product, buyer company, or port..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
-          />
-        </div>
+      {/* Filter and Search Bar Container */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-xs space-y-4">
+        {/* Tier 1: Search Input, Sorting, Urgent Toggle, and Refresh Feed */}
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+          {/* Main Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-600 pointer-events-none" />
+            <input
+              id="buy-leads-search-input"
+              type="text"
+              placeholder="Search product name, specifications, material, destination port, or buyer country..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50/90 hover:bg-white focus:bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-2xl pl-10 pr-10 py-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200/70 hover:bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
+                title="Clear search text"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          {categories.map(cat => (
+          {/* Controls Cluster: Sort, Urgency Toggle, Refresh Feed */}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            {/* Sort Selector */}
+            <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+              <span className="text-slate-400 mr-1 text-[11px]">Sort:</span>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as any)}
+                aria-label="Sort RFQ leads"
+                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="newest">Latest RFQs</option>
+                <option value="bids">Most Factory Bids</option>
+                <option value="volume">Highest Target Volume</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="price-low">Price: Low to High</option>
+              </select>
+            </div>
+
+            {/* Urgent Leads Filter Toggle */}
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              onClick={() => setUrgentOnly(!urgentOnly)}
+              className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer shrink-0 ${
+                urgentOnly 
+                  ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-xs' 
+                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
               }`}
+              title="Toggle Urgent / Fast Procurement Only"
             >
-              {cat}
+              <Zap className={`w-3.5 h-3.5 ${urgentOnly ? 'text-rose-600 fill-rose-600' : 'text-slate-400'}`} />
+              <span>Urgent Tenders</span>
             </button>
-          ))}
+
+            {/* Refresh Feed Button */}
+            <button
+              onClick={loadLiveRfqs}
+              disabled={isLoading}
+              className="px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+              title="Refresh Live RFQ Feed from Database"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={loadLiveRfqs}
-            disabled={isLoading}
-            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
-            title="Refresh Live RFQ Feed from Database"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
-          </button>
-          <div className="text-xs text-slate-500 font-mono">
-            <strong>{filtered.length}</strong> Live Leads
+        {/* Tier 2: Category Filter Horizontal Scrolling Pills */}
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            <SlidersHorizontal className="w-3 h-3 text-slate-400" />
+            <span>Category:</span>
+          </span>
+          {categories.map(cat => {
+            const count = categoryCounts[cat] || 0;
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                  isSelected
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                }`}
+              >
+                <span>{cat === 'ALL' ? 'All Categories' : cat}</span>
+                <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-mono ${
+                  isSelected ? 'bg-slate-700 text-slate-200' : 'bg-slate-200/80 text-slate-600'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tier 3: Quick Product Keyword Chips & Status Indicator */}
+        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mr-1">
+              <Tag className="w-3 h-3 text-blue-500" />
+              <span>Suggested searches:</span>
+            </span>
+            {QUICK_SEARCH_CHIPS.map(chip => (
+              <button
+                key={chip}
+                onClick={() => setSearchTerm(chip)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all cursor-pointer ${
+                  searchTerm.toLowerCase() === chip.toLowerCase()
+                    ? 'bg-blue-50 border-blue-300 text-blue-700 font-bold'
+                    : 'bg-white border-slate-200/80 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer mr-1"
+              >
+                <X className="w-3 h-3" />
+                <span>Reset filters</span>
+              </button>
+            )}
+            <div className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/60 text-blue-800 text-[11px] font-mono font-bold">
+              <strong>{filtered.length}</strong> {filtered.length === 1 ? 'tender match' : 'tenders matching'}
+            </div>
           </div>
         </div>
       </div>
@@ -215,9 +392,9 @@ export const BuyLeadsView: React.FC<Props> = ({
         <EmptyState
           type="rfqs"
           title="No Active Buying Leads Found"
-          description={searchTerm || selectedCategory !== 'ALL' ? "No live buyer inquiries match your current category or keyword filters. Try clearing your search parameters." : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."}
-          actionLabel="Post a Buy Requirement (RFQ)"
-          onAction={onOpenCreateRfq}
+          description={hasActiveFilters ? `No live buyer inquiries match "${searchTerm || selectedCategory}". Try clearing your search parameters or selecting "All Categories".` : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."}
+          actionLabel="Clear All Search Filters"
+          onAction={handleClearFilters}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -236,9 +413,17 @@ export const BuyLeadsView: React.FC<Props> = ({
                     <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
                   </div>
 
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                    {rfq.quotesCount} Factory Bids
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {rfq.urgency === 'URGENT' ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 shrink-0 flex items-center gap-0.5">
+                        <Zap className="w-2.5 h-2.5 fill-rose-600 text-rose-600" />
+                        <span>Urgent</span>
+                      </span>
+                    ) : null}
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                      {rfq.quotesCount} Factory Bids
+                    </span>
+                  </div>
                 </div>
 
                 {/* Title */}
@@ -251,7 +436,7 @@ export const BuyLeadsView: React.FC<Props> = ({
                   <div className="flex justify-between">
                     <span className="text-slate-500">Target Volume:</span>
                     <span className="font-mono font-bold text-slate-900">
-                      {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
+                      {rfq.targetQuantity?.toLocaleString()} {rfq.quantityUnit}
                     </span>
                   </div>
                   <div className="flex justify-between">

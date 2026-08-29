@@ -92,6 +92,30 @@ export const CURRENCY_RATES: CurrencyRate[] = [
 
 export const CATEGORIES_TREE = [
   {
+    id: 'cat-computer-software',
+    name: 'Computer Software & Hardware',
+    icon: 'Laptop',
+    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Accounting Financial & Banking Software', 'Anti Virus Software', 'CAD CAM Software', 'CD Drives', 'CD-ROM Writer', 'CD-ROMs', 'Call Centre Software', 'Communication Software', 'Computer - Motherboards', 'Computer - RAM & ROM'],
+    count: '3,820+ Verified Suppliers | 2,430+ RFQs'
+  },
+  {
+    id: 'cat-electrical-components',
+    name: 'Electrical Household & Other Goods, Components',
+    icon: 'Zap',
+    image: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Adaptors', 'Batteries & Chargers', 'CVT', 'Cable Assemblies', 'Cable Glands & Reels', 'Capacitors', 'Coaxial Cables', 'Coffee & Tea Makers', 'DC AC Inverters & Converters', 'Diesel Generators'],
+    count: '7,740+ Verified Suppliers | 4,320+ RFQs'
+  },
+  {
+    id: 'cat-electronics-comm',
+    name: 'Electronics & Communications',
+    icon: 'Radio',
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['ATM - Automated Teller Machines', 'Amplifiers', 'Audio & Video Broadcasting Equipments', 'Audio Amplifier & Mixer', 'Audio Cassette Parts', 'Banking Equipments', 'Bluetooth & Related Items', 'CD Players', 'CDs & Cassettes', 'CDs & DVDs Cases'],
+    count: '3,950+ Verified Suppliers | 2,120+ RFQs'
+  },
+  {
     id: 'cat-machinery',
     name: 'Industrial Machinery & Automation',
     icon: 'Cpu',

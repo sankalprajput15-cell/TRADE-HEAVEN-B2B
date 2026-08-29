@@ -609,6 +609,216 @@ export const GLOBAL_B2B_TRADE_METRICS: B2BTradeMetric[] = [
     "total_verified_suppliers": 880,
     "total_buying_leads_rfqs": 550,
     "growth_trend": "+21% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "Accounting Financial & Banking Software",
+    "total_verified_suppliers": 180,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "Anti Virus Software",
+    "total_verified_suppliers": 650,
+    "total_buying_leads_rfqs": 380,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "CAD CAM Software",
+    "total_verified_suppliers": 220,
+    "total_buying_leads_rfqs": 110,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "CD Drives",
+    "total_verified_suppliers": 85,
+    "total_buying_leads_rfqs": 35,
+    "growth_trend": "-3% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "CD-ROM Writer",
+    "total_verified_suppliers": 60,
+    "total_buying_leads_rfqs": 25,
+    "growth_trend": "-5% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "CD-ROMs",
+    "total_verified_suppliers": 45,
+    "total_buying_leads_rfqs": 18,
+    "growth_trend": "-8% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "Call Centre Software",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "Communication Software",
+    "total_verified_suppliers": 420,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+22% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "Computer - Motherboards",
+    "total_verified_suppliers": 1250,
+    "total_buying_leads_rfqs": 720,
+    "growth_trend": "+25% this month"
+  },
+  {
+    "main_category": "Computer Software & Hardware",
+    "subcategory": "Computer - RAM & ROM",
+    "total_verified_suppliers": 1100,
+    "total_buying_leads_rfqs": 650,
+    "growth_trend": "+20% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Adaptors",
+    "total_verified_suppliers": 890,
+    "total_buying_leads_rfqs": 480,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Batteries & Chargers",
+    "total_verified_suppliers": 1420,
+    "total_buying_leads_rfqs": 790,
+    "growth_trend": "+24% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "CVT",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 115,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Cable Assemblies",
+    "total_verified_suppliers": 750,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Cable Glands & Reels",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Capacitors",
+    "total_verified_suppliers": 980,
+    "total_buying_leads_rfqs": 520,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Coaxial Cables",
+    "total_verified_suppliers": 620,
+    "total_buying_leads_rfqs": 340,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Coffee & Tea Makers",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "DC AC Inverters & Converters",
+    "total_verified_suppliers": 1350,
+    "total_buying_leads_rfqs": 780,
+    "growth_trend": "+28% this month"
+  },
+  {
+    "main_category": "Electrical Household & Other Goods, Components",
+    "subcategory": "Diesel Generators",
+    "total_verified_suppliers": 910,
+    "total_buying_leads_rfqs": 510,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "ATM - Automated Teller Machines",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 75,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "Amplifiers",
+    "total_verified_suppliers": 780,
+    "total_buying_leads_rfqs": 420,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "Audio & Video Broadcasting Equipments",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 155,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "Audio Amplifier & Mixer",
+    "total_verified_suppliers": 610,
+    "total_buying_leads_rfqs": 330,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "Audio Cassette Parts",
+    "total_verified_suppliers": 30,
+    "total_buying_leads_rfqs": 12,
+    "growth_trend": "-10% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "Banking Equipments",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 110,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "Bluetooth & Related Items",
+    "total_verified_suppliers": 1150,
+    "total_buying_leads_rfqs": 680,
+    "growth_trend": "+23% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "CD Players",
+    "total_verified_suppliers": 120,
+    "total_buying_leads_rfqs": 50,
+    "growth_trend": "-4% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "CDs & Cassettes",
+    "total_verified_suppliers": 40,
+    "total_buying_leads_rfqs": 15,
+    "growth_trend": "-7% this month"
+  },
+  {
+    "main_category": "Electronics & Communications",
+    "subcategory": "CDs & DVDs Cases",
+    "total_verified_suppliers": 55,
+    "total_buying_leads_rfqs": 22,
+    "growth_trend": "-6% this month"
   }
 ];
 
@@ -651,9 +861,10 @@ export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.f
   const inco2 = INCOTERMS[(idx + 2) % INCOTERMS.length];
 
   const slug = m.subcategory.toLowerCase().replace(/[^a-z0-0]+/g, '-');
-  const unit = m.main_category.includes('Machinery') || m.subcategory.includes('Tractor') || m.subcategory.includes('Pump') ? 'Units' 
+  const unit = m.main_category.includes('Software') ? 'Licenses'
+             : m.main_category.includes('Machinery') || m.subcategory.includes('Tractor') || m.subcategory.includes('Pump') || m.subcategory.includes('Machines') || m.subcategory.includes('Generators') ? 'Units' 
              : m.main_category.includes('Beverage') || m.subcategory.includes('Juice') || m.subcategory.includes('Vinegar') ? 'Liters'
-             : 'Metric Tons';
+             : 'Pieces';
 
   const baseQty = Math.round(m.total_buying_leads_rfqs * 12 + 150);
   const basePrice = Math.round((m.total_verified_suppliers % 80) * 15 + 45);
