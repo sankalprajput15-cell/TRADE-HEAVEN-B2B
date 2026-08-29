@@ -2254,6 +2254,839 @@ export const GLOBAL_B2B_TRADE_METRICS: B2BTradeMetric[] = [
     "total_verified_suppliers": 540,
     "total_buying_leads_rfqs": 290,
     "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "Activated Carbon from Charcoal",
+    "total_verified_suppliers": 412,
+    "total_buying_leads_rfqs": 238,
+    "growth_trend": "+12.4% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "Activated Charcoal",
+    "total_verified_suppliers": 528,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+15.1% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "Agricultural Diesel",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 425,
+    "growth_trend": "+18.3% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "Anthracite Coal",
+    "total_verified_suppliers": 1140,
+    "total_buying_leads_rfqs": 690,
+    "growth_trend": "+22.7% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "Automotive Diesel Fuel",
+    "total_verified_suppliers": 1650,
+    "total_buying_leads_rfqs": 915,
+    "growth_trend": "+26.8% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "B100 Biodiesel",
+    "total_verified_suppliers": 395,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+19.5% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "BBQ Charcoal",
+    "total_verified_suppliers": 485,
+    "total_buying_leads_rfqs": 275,
+    "growth_trend": "+8.2% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "BS IV Diesel",
+    "total_verified_suppliers": 720,
+    "total_buying_leads_rfqs": 380,
+    "growth_trend": "+5.4% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "BS VI Diesel",
+    "total_verified_suppliers": 1420,
+    "total_buying_leads_rfqs": 840,
+    "growth_trend": "+31.2% this month"
+  },
+  {
+    "main_category": "Fuel & Energy Resources",
+    "subcategory": "Bamboo Charcoal",
+    "total_verified_suppliers": 365,
+    "total_buying_leads_rfqs": 195,
+    "growth_trend": "+11.0% this month"
+  },
+  {
+    "main_category": "Hotel & Restaurant - Equipments & Products",
+    "subcategory": "Catering Equipments",
+    "total_verified_suppliers": 285,
+    "total_buying_leads_rfqs": 148,
+    "growth_trend": "+14.3% this month"
+  },
+  {
+    "main_category": "Information Databases",
+    "subcategory": "Venture Capital Directories",
+    "total_verified_suppliers": 42,
+    "total_buying_leads_rfqs": 28,
+    "growth_trend": "+7.5% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "1 Ply Face Mask",
+    "total_verified_suppliers": 180,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+3.2% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "2 Ply Face Mask",
+    "total_verified_suppliers": 240,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+4.8% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "3 Ply Face Mask",
+    "total_verified_suppliers": 790,
+    "total_buying_leads_rfqs": 460,
+    "growth_trend": "+17.6% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "4 Ply Face Mask",
+    "total_verified_suppliers": 360,
+    "total_buying_leads_rfqs": 210,
+    "growth_trend": "+12.1% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "5 Ply Face Mask",
+    "total_verified_suppliers": 510,
+    "total_buying_leads_rfqs": 325,
+    "growth_trend": "+16.4% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "Acupuncture Products",
+    "total_verified_suppliers": 88,
+    "total_buying_leads_rfqs": 45,
+    "growth_trend": "+9.0% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "Anti Virus Face Mask",
+    "total_verified_suppliers": 640,
+    "total_buying_leads_rfqs": 390,
+    "growth_trend": "+21.3% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "Arm Pads",
+    "total_verified_suppliers": 115,
+    "total_buying_leads_rfqs": 58,
+    "growth_trend": "+6.2% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "Aromatherapy Products",
+    "total_verified_suppliers": 195,
+    "total_buying_leads_rfqs": 112,
+    "growth_trend": "+13.7% this month"
+  },
+  {
+    "main_category": "Medical & HealthCare",
+    "subcategory": "Autoclaves",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 125,
+    "growth_trend": "+18.9% this month"
+  },
+  {
+    "main_category": "Office Equipment, Stationery & Supplies",
+    "subcategory": "Paper Shredder Paper Trimmers",
+    "total_verified_suppliers": 110,
+    "total_buying_leads_rfqs": 62,
+    "growth_trend": "+5.9% this month"
+  },
+  {
+    "main_category": "Office Equipment, Stationery & Supplies",
+    "subcategory": "Stationery",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 165,
+    "growth_trend": "+10.4% this month"
+  },
+  {
+    "main_category": "Pollution Control Equipments",
+    "subcategory": "Air Filters",
+    "total_verified_suppliers": 275,
+    "total_buying_leads_rfqs": 155,
+    "growth_trend": "+20.1% this month"
+  },
+  {
+    "main_category": "Pollution Control Equipments",
+    "subcategory": "Air Fresheners",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 85,
+    "growth_trend": "+8.7% this month"
+  },
+  {
+    "main_category": "Safety & Security Equipment",
+    "subcategory": "Army & Police Equipment",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+14.8% this month"
+  },
+  {
+    "main_category": "Safety & Security Equipment",
+    "subcategory": "CCTV & Accessories",
+    "total_verified_suppliers": 820,
+    "total_buying_leads_rfqs": 475,
+    "growth_trend": "+24.6% this month"
+  },
+  {
+    "main_category": "Safety & Security Equipment",
+    "subcategory": "Fire Extinguishers & Products",
+    "total_verified_suppliers": 560,
+    "total_buying_leads_rfqs": 340,
+    "growth_trend": "+16.2% this month"
+  },
+  {
+    "main_category": "Safety & Security Equipment",
+    "subcategory": "Safes & Lockers",
+    "total_verified_suppliers": 190,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+11.5% this month"
+  },
+  {
+    "main_category": "Safety & Security Equipment",
+    "subcategory": "Surveillance Equipments",
+    "total_verified_suppliers": 740,
+    "total_buying_leads_rfqs": 430,
+    "growth_trend": "+23.1% this month"
+  },
+  {
+    "main_category": "Arts & Antiques",
+    "subcategory": "Old Coin",
+    "total_verified_suppliers": 85,
+    "total_buying_leads_rfqs": 48,
+    "growth_trend": "+6.8% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Accordion",
+    "total_verified_suppliers": 64,
+    "total_buying_leads_rfqs": 32,
+    "growth_trend": "+5.1% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Acoustic Guitar",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 185,
+    "growth_trend": "+14.2% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Books, Textbooks & Magazines",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 260,
+    "growth_trend": "+11.8% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Clarinet",
+    "total_verified_suppliers": 78,
+    "total_buying_leads_rfqs": 42,
+    "growth_trend": "+7.0% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Dholak",
+    "total_verified_suppliers": 95,
+    "total_buying_leads_rfqs": 52,
+    "growth_trend": "+8.3% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Drum",
+    "total_verified_suppliers": 245,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+12.6% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Educational Material & Equipments",
+    "total_verified_suppliers": 510,
+    "total_buying_leads_rfqs": 295,
+    "growth_trend": "+16.5% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Electric Guitar",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 215,
+    "growth_trend": "+15.4% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Flute",
+    "total_verified_suppliers": 110,
+    "total_buying_leads_rfqs": 60,
+    "growth_trend": "+6.2% this month"
+  },
+  {
+    "main_category": "Books, Magazines, Music & Entertainment",
+    "subcategory": "Harmonica",
+    "total_verified_suppliers": 85,
+    "total_buying_leads_rfqs": 45,
+    "growth_trend": "+4.9% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Aftershave Lotions",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 195,
+    "growth_trend": "+10.5% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Agarwood Oil (Oud Oil)",
+    "total_verified_suppliers": 410,
+    "total_buying_leads_rfqs": 280,
+    "growth_trend": "+24.3% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Alcohol Based Hand Sanitizer",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 390,
+    "growth_trend": "+18.2% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Alcohol Disinfectant Wipes",
+    "total_verified_suppliers": 590,
+    "total_buying_leads_rfqs": 340,
+    "growth_trend": "+17.1% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Anti Aging Creams",
+    "total_verified_suppliers": 760,
+    "total_buying_leads_rfqs": 460,
+    "growth_trend": "+22.5% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Antibacterial Hand Wash",
+    "total_verified_suppliers": 520,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+14.8% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Antibacterial Wipes",
+    "total_verified_suppliers": 610,
+    "total_buying_leads_rfqs": 355,
+    "growth_trend": "+19.0% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Antiseptic Wipes",
+    "total_verified_suppliers": 470,
+    "total_buying_leads_rfqs": 280,
+    "growth_trend": "+15.6% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Argan Oil",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 325,
+    "growth_trend": "+20.8% this month"
+  },
+  {
+    "main_category": "Cosmetics, Toiletries & Hygiene Products",
+    "subcategory": "Artificial Nails",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+13.4% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Acupressure And Massage Balls",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 120,
+    "growth_trend": "+9.7% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Acupressure Rollers",
+    "total_verified_suppliers": 185,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+8.4% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Archery Bows",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 92,
+    "growth_trend": "+11.2% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Archery Accessories",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 80,
+    "growth_trend": "+10.0% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Archery Arrows",
+    "total_verified_suppliers": 175,
+    "total_buying_leads_rfqs": 98,
+    "growth_trend": "+12.1% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Badminton Accessories",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 175,
+    "growth_trend": "+14.5% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Badminton Net",
+    "total_verified_suppliers": 240,
+    "total_buying_leads_rfqs": 135,
+    "growth_trend": "+9.8% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Badminton Rackets",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 285,
+    "growth_trend": "+18.6% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Badminton Shuttlecock",
+    "total_verified_suppliers": 530,
+    "total_buying_leads_rfqs": 320,
+    "growth_trend": "+21.4% this month"
+  },
+  {
+    "main_category": "Fitness Equipment & Sports Goods",
+    "subcategory": "Baseball Accessories",
+    "total_verified_suppliers": 220,
+    "total_buying_leads_rfqs": 125,
+    "growth_trend": "+11.0% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Agate Stones",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 170,
+    "growth_trend": "+13.2% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Amber Gemstones",
+    "total_verified_suppliers": 260,
+    "total_buying_leads_rfqs": 145,
+    "growth_trend": "+15.0% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Amethyst Stones",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 195,
+    "growth_trend": "+16.8% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Anklets",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+11.4% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Aquamarine Gemstones",
+    "total_verified_suppliers": 280,
+    "total_buying_leads_rfqs": 165,
+    "growth_trend": "+17.2% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Aquamarine Stones",
+    "total_verified_suppliers": 250,
+    "total_buying_leads_rfqs": 140,
+    "growth_trend": "+14.6% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Artificial Anklets",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+12.0% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Artificial Bangles",
+    "total_verified_suppliers": 430,
+    "total_buying_leads_rfqs": 250,
+    "growth_trend": "+15.8% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Artificial Bracelets",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+18.5% this month"
+  },
+  {
+    "main_category": "Gems & Jewellery",
+    "subcategory": "Artificial Brooches",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 115,
+    "growth_trend": "+8.9% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Aluminum Handicrafts",
+    "total_verified_suppliers": 360,
+    "total_buying_leads_rfqs": 205,
+    "growth_trend": "+13.5% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Artificial Flower",
+    "total_verified_suppliers": 620,
+    "total_buying_leads_rfqs": 370,
+    "growth_trend": "+20.2% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Bamboo Handicrafts",
+    "total_verified_suppliers": 410,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+17.6% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Bone Handicrafts",
+    "total_verified_suppliers": 130,
+    "total_buying_leads_rfqs": 72,
+    "growth_trend": "+6.4% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Brass Handicrafts",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 285,
+    "growth_trend": "+16.9% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Candle Holder",
+    "total_verified_suppliers": 390,
+    "total_buying_leads_rfqs": 225,
+    "growth_trend": "+14.1% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Candles",
+    "total_verified_suppliers": 560,
+    "total_buying_leads_rfqs": 330,
+    "growth_trend": "+18.3% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Cane Handicrafts",
+    "total_verified_suppliers": 270,
+    "total_buying_leads_rfqs": 155,
+    "growth_trend": "+11.8% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Christmas Tree & Decoratives",
+    "total_verified_suppliers": 690,
+    "total_buying_leads_rfqs": 420,
+    "growth_trend": "+25.4% this month"
+  },
+  {
+    "main_category": "Handicrafts, Gifts & Decorative",
+    "subcategory": "Clay Handicrafts",
+    "total_verified_suppliers": 240,
+    "total_buying_leads_rfqs": 135,
+    "growth_trend": "+10.2% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Animal Leather",
+    "total_verified_suppliers": 520,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+15.7% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Bonded Leather",
+    "total_verified_suppliers": 430,
+    "total_buying_leads_rfqs": 255,
+    "growth_trend": "+13.1% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Buffalo Leather",
+    "total_verified_suppliers": 610,
+    "total_buying_leads_rfqs": 370,
+    "growth_trend": "+19.4% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Chamois Leather",
+    "total_verified_suppliers": 180,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+8.0% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Cow Leather",
+    "total_verified_suppliers": 890,
+    "total_buying_leads_rfqs": 540,
+    "growth_trend": "+23.8% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Crocodile Leather",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 82,
+    "growth_trend": "+12.5% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Emu Leather",
+    "total_verified_suppliers": 45,
+    "total_buying_leads_rfqs": 24,
+    "growth_trend": "+4.2% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Finished Leather",
+    "total_verified_suppliers": 780,
+    "total_buying_leads_rfqs": 470,
+    "growth_trend": "+21.0% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Foam Leather",
+    "total_verified_suppliers": 350,
+    "total_buying_leads_rfqs": 195,
+    "growth_trend": "+11.6% this month"
+  },
+  {
+    "main_category": "Leather & Leather Products",
+    "subcategory": "Goat Leather",
+    "total_verified_suppliers": 670,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+18.9% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Animal Food",
+    "total_verified_suppliers": 730,
+    "total_buying_leads_rfqs": 440,
+    "growth_trend": "+22.1% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Aquariums & Equipments",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 215,
+    "growth_trend": "+14.7% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Dog Clothing & Strapping",
+    "total_verified_suppliers": 460,
+    "total_buying_leads_rfqs": 275,
+    "growth_trend": "+19.3% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Horse Equipments, Saddles & Tacks",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 120,
+    "growth_trend": "+10.5% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Pet Cages",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+13.8% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Pet Clothings",
+    "total_verified_suppliers": 510,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+20.4% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Pet Feeders",
+    "total_verified_suppliers": 390,
+    "total_buying_leads_rfqs": 230,
+    "growth_trend": "+16.2% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Pet Homes",
+    "total_verified_suppliers": 280,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+12.9% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Pet Straps",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 185,
+    "growth_trend": "+14.0% this month"
+  },
+  {
+    "main_category": "Pets & Pet Supplies",
+    "subcategory": "Pet Toys",
+    "total_verified_suppliers": 580,
+    "total_buying_leads_rfqs": 360,
+    "growth_trend": "+24.0% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Optical Brightening Agent",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 165,
+    "growth_trend": "+13.6% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Optical Lenses",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 320,
+    "growth_trend": "+19.8% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Optical Machinery & Equipment",
+    "total_verified_suppliers": 220,
+    "total_buying_leads_rfqs": 125,
+    "growth_trend": "+15.2% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Photo Film Roll",
+    "total_verified_suppliers": 95,
+    "total_buying_leads_rfqs": 50,
+    "growth_trend": "+6.1% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Photographic Equipment",
+    "total_verified_suppliers": 460,
+    "total_buying_leads_rfqs": 270,
+    "growth_trend": "+17.4% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Spectacle Frames",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+21.7% this month"
+  },
+  {
+    "main_category": "Photographic & Optical Equipment",
+    "subcategory": "Spectacles, Sunglasses & Accessories",
+    "total_verified_suppliers": 810,
+    "total_buying_leads_rfqs": 495,
+    "growth_trend": "+25.1% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Abaya",
+    "total_verified_suppliers": 520,
+    "total_buying_leads_rfqs": 340,
+    "growth_trend": "+23.5% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Acrylic Fiber",
+    "total_verified_suppliers": 430,
+    "total_buying_leads_rfqs": 260,
+    "growth_trend": "+14.8% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Acrylic Yarn",
+    "total_verified_suppliers": 560,
+    "total_buying_leads_rfqs": 345,
+    "growth_trend": "+18.2% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Activewear",
+    "total_verified_suppliers": 920,
+    "total_buying_leads_rfqs": 580,
+    "growth_trend": "+27.4% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Air Bags",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+16.0% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Apparel, Clothing & Garments",
+    "total_verified_suppliers": 1450,
+    "total_buying_leads_rfqs": 890,
+    "growth_trend": "+29.0% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Aprons",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 215,
+    "growth_trend": "+12.3% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Artificial Jewelry",
+    "total_verified_suppliers": 840,
+    "total_buying_leads_rfqs": 510,
+    "growth_trend": "+24.6% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Asbestos Fiber",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 85,
+    "growth_trend": "+5.0% this month"
+  },
+  {
+    "main_category": "Textiles, Garment, Fashion Accessories & Footwear",
+    "subcategory": "Baby Accessories",
+    "total_verified_suppliers": 670,
+    "total_buying_leads_rfqs": 415,
+    "growth_trend": "+21.2% this month"
   }
 ];
 

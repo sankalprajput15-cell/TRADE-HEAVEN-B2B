@@ -458,6 +458,142 @@ export const CATEGORIES_TREE = [
     image: 'https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Aeroplane Models', 'Aerospace - Commercial & Military', 'Aircraft', 'Aircraft & Aerospace', 'Aircraft Engines & Spares', 'Ambulances Special Purpose Vehicles', 'Auto Rickshaw & Spare Parts', 'Automobile Body Parts', 'Automobile Bolts Nuts Springs & Bearings', 'Automobile Brakes & Spare Parts'],
     count: '2,745+ Verified Suppliers | 1,465+ RFQs'
+  },
+  {
+    id: 'cat-fuel-energy-resources',
+    name: 'Fuel & Energy Resources',
+    icon: 'Fuel',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Activated Carbon from Charcoal', 'Activated Charcoal', 'Agricultural Diesel', 'Anthracite Coal', 'Automotive Diesel Fuel', 'B100 Biodiesel', 'BBQ Charcoal', 'BS IV Diesel', 'BS VI Diesel', 'Bamboo Charcoal'],
+    count: '8,045+ Verified Suppliers | 4,683+ RFQs'
+  },
+  {
+    id: 'cat-hotel-restaurant',
+    name: 'Hotel & Restaurant - Equipments & Products',
+    icon: 'UtensilsCrossed',
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Catering Equipments'],
+    count: '285+ Verified Suppliers | 148+ RFQs'
+  },
+  {
+    id: 'cat-information-databases',
+    name: 'Information Databases',
+    icon: 'FileText',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Venture Capital Directories'],
+    count: '42+ Verified Suppliers | 28+ RFQs'
+  },
+  {
+    id: 'cat-medical-healthcare',
+    name: 'Medical & HealthCare',
+    icon: 'Stethoscope',
+    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['1 Ply Face Mask', '2 Ply Face Mask', '3 Ply Face Mask', '4 Ply Face Mask', '5 Ply Face Mask', 'Acupuncture Products', 'Anti Virus Face Mask', 'Arm Pads', 'Aromatherapy Products', 'Autoclaves'],
+    count: '3,248+ Verified Suppliers | 1,845+ RFQs'
+  },
+  {
+    id: 'cat-office-stationery',
+    name: 'Office Equipment, Stationery & Supplies',
+    icon: 'Printer',
+    image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Paper Shredder Paper Trimmers', 'Stationery'],
+    count: '420+ Verified Suppliers | 227+ RFQs'
+  },
+  {
+    id: 'cat-pollution-control',
+    name: 'Pollution Control Equipments',
+    icon: 'Wind',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Air Filters', 'Air Fresheners'],
+    count: '435+ Verified Suppliers | 240+ RFQs'
+  },
+  {
+    id: 'cat-safety-security-equipment',
+    name: 'Safety & Security Equipment',
+    icon: 'Shield',
+    image: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Army & Police Equipment', 'CCTV & Accessories', 'Fire Extinguishers & Products', 'Safes & Lockers', 'Surveillance Equipments'],
+    count: '2,650+ Verified Suppliers | 1,540+ RFQs'
+  },
+  {
+    id: 'cat-arts-antiques',
+    name: 'Arts & Antiques',
+    icon: 'Coins',
+    image: 'https://images.unsplash.com/photo-1582555172866-f73bb12a2ab3?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Old Coin'],
+    count: '85+ Verified Suppliers | 48+ RFQs'
+  },
+  {
+    id: 'cat-books-music-entertainment',
+    name: 'Books, Magazines, Music & Entertainment',
+    icon: 'Music',
+    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Accordion', 'Acoustic Guitar', 'Books, Textbooks & Magazines', 'Clarinet', 'Dholak', 'Drum', 'Educational Material & Equipments', 'Electric Guitar', 'Flute', 'Harmonica'],
+    count: '2,367+ Verified Suppliers | 1,316+ RFQs'
+  },
+  {
+    id: 'cat-cosmetics-toiletries',
+    name: 'Cosmetics, Toiletries & Hygiene Products',
+    icon: 'Sparkles',
+    image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Aftershave Lotions', 'Agarwood Oil (Oud Oil)', 'Alcohol Based Hand Sanitizer', 'Alcohol Disinfectant Wipes', 'Anti Aging Creams', 'Antibacterial Hand Wash', 'Antibacterial Wipes', 'Antiseptic Wipes', 'Argan Oil', 'Artificial Nails'],
+    count: '5,300+ Verified Suppliers | 3,170+ RFQs'
+  },
+  {
+    id: 'cat-fitness-sports',
+    name: 'Fitness Equipment & Sports Goods',
+    icon: 'Dumbbell',
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Acupressure And Massage Balls', 'Acupressure Rollers', 'Archery Bows', 'Archery Accessories', 'Archery Arrows', 'Badminton Accessories', 'Badminton Net', 'Badminton Rackets', 'Badminton Shuttlecock', 'Baseball Accessories'],
+    count: '2,660+ Verified Suppliers | 1,540+ RFQs'
+  },
+  {
+    id: 'cat-gems-jewellery',
+    name: 'Gems & Jewellery',
+    icon: 'Gem',
+    image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Agate Stones', 'Amber Gemstones', 'Amethyst Stones', 'Anklets', 'Aquamarine Gemstones', 'Aquamarine Stones', 'Artificial Anklets', 'Artificial Bangles', 'Artificial Bracelets', 'Artificial Brooches'],
+    count: '3,270+ Verified Suppliers | 1,890+ RFQs'
+  },
+  {
+    id: 'cat-handicrafts-decorative',
+    name: 'Handicrafts, Gifts & Decorative',
+    icon: 'Gift',
+    image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Aluminum Handicrafts', 'Artificial Flower', 'Bamboo Handicrafts', 'Bone Handicrafts', 'Brass Handicrafts', 'Candle Holder', 'Candles', 'Cane Handicrafts', 'Christmas Tree & Decoratives', 'Clay Handicrafts'],
+    count: '4,150+ Verified Suppliers | 2,437+ RFQs'
+  },
+  {
+    id: 'cat-leather-products',
+    name: 'Leather & Leather Products',
+    icon: 'Briefcase',
+    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Animal Leather', 'Bonded Leather', 'Buffalo Leather', 'Chamois Leather', 'Cow Leather', 'Crocodile Leather', 'Emu Leather', 'Finished Leather', 'Foam Leather', 'Goat Leather'],
+    count: '4,615+ Verified Suppliers | 2,756+ RFQs'
+  },
+  {
+    id: 'cat-pets-supplies',
+    name: 'Pets & Pet Supplies',
+    icon: 'Dog',
+    image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Animal Food', 'Aquariums & Equipments', 'Dog Clothing & Strapping', 'Horse Equipments, Saddles & Tacks', 'Pet Cages', 'Pet Clothings', 'Pet Feeders', 'Pet Homes', 'Pet Straps', 'Pet Toys'],
+    count: '3,990+ Verified Suppliers | 2,440+ RFQs'
+  },
+  {
+    id: 'cat-photographic-optical',
+    name: 'Photographic & Optical Equipment',
+    icon: 'Camera',
+    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Optical Brightening Agent', 'Optical Lenses', 'Optical Machinery & Equipment', 'Photo Film Roll', 'Photographic Equipment', 'Spectacle Frames', 'Spectacles, Sunglasses & Accessories'],
+    count: '3,095+ Verified Suppliers | 1,835+ RFQs'
+  },
+  {
+    id: 'cat-textiles-apparel-footwear',
+    name: 'Textiles, Garment, Fashion Accessories & Footwear',
+    icon: 'Shirt',
+    image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Abaya', 'Acrylic Fiber', 'Acrylic Yarn', 'Activewear', 'Air Bags', 'Apparel, Clothing & Garments', 'Aprons', 'Artificial Jewelry', 'Asbestos Fiber', 'Baby Accessories'],
+    count: '5,680+ Verified Suppliers | 3,425+ RFQs'
   }
 ];
 

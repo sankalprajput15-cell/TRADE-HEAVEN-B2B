@@ -47,7 +47,16 @@ import {
   Snowflake,
   CircleDot,
   Hammer,
-  Plane
+  Plane,
+  Coins,
+  Music,
+  Dumbbell,
+  Gem,
+  Gift,
+  Briefcase,
+  Dog,
+  Camera,
+  Shirt
 } from 'lucide-react';
 
 interface Props {
@@ -113,6 +122,15 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       case 'CircleDot': return <CircleDot className="w-4 h-4 text-rose-600" />;
       case 'Hammer': return <Hammer className="w-4 h-4 text-amber-800" />;
       case 'Plane': return <Plane className="w-4 h-4 text-blue-600" />;
+      case 'Coins': return <Coins className="w-4 h-4 text-amber-600" />;
+      case 'Music': return <Music className="w-4 h-4 text-indigo-600" />;
+      case 'Dumbbell': return <Dumbbell className="w-4 h-4 text-emerald-600" />;
+      case 'Gem': return <Gem className="w-4 h-4 text-rose-500" />;
+      case 'Gift': return <Gift className="w-4 h-4 text-pink-600" />;
+      case 'Briefcase': return <Briefcase className="w-4 h-4 text-amber-800" />;
+      case 'Dog': return <Dog className="w-4 h-4 text-orange-600" />;
+      case 'Camera': return <Camera className="w-4 h-4 text-cyan-600" />;
+      case 'Shirt': return <Shirt className="w-4 h-4 text-violet-600" />;
       default: return <Box className="w-4 h-4 text-blue-600" />;
     }
   };
