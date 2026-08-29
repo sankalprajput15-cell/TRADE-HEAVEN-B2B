@@ -381,6 +381,8 @@ export const HeroSection: React.FC<Props> = ({
           src={hp.heroBgImage || "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80"} 
           alt="Global B2B Logistics and Trade Shipping Port" 
           className="w-full h-full object-cover object-center"
+          loading="eager"
+          fetchPriority="high"
         />
         {/* Balanced gradient overlay ensuring high text readability while keeping port colors luminous */}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-slate-900/25"></div>

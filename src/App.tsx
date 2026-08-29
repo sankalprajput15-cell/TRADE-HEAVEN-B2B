@@ -179,30 +179,51 @@ const MainApp: React.FC = () => {
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<PaymentCheckoutData | null>(null);
 
-  // Fetch live RFQs from BigRock PHP API (GET /api.php?action=get_rfqs)
-  const fetchRFQs = async () => {
+  // Exponential backoff helper to prevent application crashes when backend/database is slow to respond
+  const fetchWithRetry = async <T,>(
+    fn: () => Promise<T>,
+    retries: number = 3,
+    delay: number = 1000,
+    backoffFactor: number = 2
+  ): Promise<T> => {
     try {
-      const loadedRfqs = await apiClient.getRfqs();
-      if (Array.isArray(loadedRfqs) && loadedRfqs.length > 0) {
-        setRfqs(loadedRfqs as any);
-        if (loadedRfqs.length > 0) {
-          setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
-        }
+      const result = await fn();
+      if (!result || (Array.isArray(result) && result.length === 0)) {
+        throw new Error('Empty response or empty dataset returned.');
       }
-    } catch (err) {
-      console.error('[Failed to load BigRock rfqs]:', err);
+      return result;
+    } catch (error) {
+      if (retries <= 0) {
+        throw error;
+      }
+      console.warn(`[API Failsafe] Request failed. Retrying in ${delay}ms... (Remaining attempts: ${retries})`, error);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithRetry(fn, retries - 1, delay * backoffFactor, backoffFactor);
     }
   };
 
-  // Fetch live Products/Listings
+  // Fetch live RFQs from BigRock PHP API (GET /api.php?action=get_rfqs) with exponential backoff failsafes
+  const fetchRFQs = async () => {
+    try {
+      const loadedRfqs = await fetchWithRetry(() => apiClient.getRfqs(), 3, 1000, 2);
+      if (Array.isArray(loadedRfqs) && loadedRfqs.length > 0) {
+        setRfqs(loadedRfqs as any);
+        setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
+      }
+    } catch (err) {
+      console.error('[Failed to load BigRock rfqs after retries]:', err);
+    }
+  };
+
+  // Fetch live Products/Listings with exponential backoff failsafes
   const fetchProducts = async () => {
     try {
-      const prods = await api.getProducts();
+      const prods = await fetchWithRetry(() => api.getProducts(), 3, 1000, 2);
       if (Array.isArray(prods) && prods.length > 0) {
         setProducts(prods);
       }
     } catch (err) {
-      console.error('[Failed to load products]:', err);
+      console.error('[Failed to load products after retries]:', err);
     }
   };
 
@@ -216,9 +237,12 @@ const MainApp: React.FC = () => {
     setIsLoadingInitialData(false);
   };
 
-  // Async Initialization on Mount
+  // Async Initialization on Mount with Deferred Data Hydration strategy
   useEffect(() => {
-    initializeData();
+    // Defer the hydration process to allow initial UI mounting instantly and smoothly
+    const deferTimer = setTimeout(() => {
+      initializeData();
+    }, 400);
 
     // 2. Listen for custom RFQ creation / refresh triggers
     const handleRfqRefresh = () => {
@@ -227,6 +251,7 @@ const MainApp: React.FC = () => {
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
 
     return () => {
+      clearTimeout(deferTimer);
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     };
   }, []);

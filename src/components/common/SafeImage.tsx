@@ -90,7 +90,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           src={currentUrl}
           alt={alt || 'Industrial product or sector'}
           referrerPolicy="no-referrer"
-          loading="lazy"
+          loading={props.loading || (props.fetchPriority === 'high' ? 'eager' : 'lazy')}
           onLoad={handleLoad}
           onError={handleError}
           className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${imgClassName}`}

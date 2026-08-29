@@ -62,174 +62,180 @@ foreach ($passwords_to_try as $pwd) {
 }
 
 if ($db_connected) {
-    try {
-
-    // -------------------------------------------------------------
-    // Table Auto-Creation: rfqs table as per mandatory schema
-    // -------------------------------------------------------------
-    $pdo->exec("CREATE TABLE IF NOT EXISTS rfqs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        category VARCHAR(100),
-        quantity VARCHAR(100),
-        unit VARCHAR(50),
-        targetPrice VARCHAR(100),
-        incoterms VARCHAR(50),
-        destinationPort VARCHAR(255),
-        specifications TEXT,
-        buyer_name VARCHAR(150),
-        buyer_country VARCHAR(100),
-        buyer_email VARCHAR(255) DEFAULT '',
-        buyer_company VARCHAR(255) DEFAULT '',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-    // -------------------------------------------------------------
-    // Table Auto-Creation: users table with Self-Healing Logic
-    // -------------------------------------------------------------
-    // If the users table already exists but lacks the password column, and has no registered users,
-    // safely drop it so it can be cleanly recreated with the proper schema and fields.
-    $recreate_users_table = false;
-    try {
-        $check_pwd = $pdo->query("SELECT `password` FROM users LIMIT 1");
-    } catch (Exception $e) {
-        // password column doesn't exist, check row count of users table
+    $marker_file = __DIR__ . '/.db_schema_initialized';
+    if (!file_exists($marker_file)) {
         try {
-            $count_q = $pdo->query("SELECT COUNT(*) as cnt FROM users");
-            $count_row = $count_q->fetch();
-            if ($count_row && intval($count_row['cnt']) === 0) {
-                $recreate_users_table = true;
+
+        // -------------------------------------------------------------
+        // Table Auto-Creation: rfqs table as per mandatory schema
+        // -------------------------------------------------------------
+        $pdo->exec("CREATE TABLE IF NOT EXISTS rfqs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            category VARCHAR(100),
+            quantity VARCHAR(100),
+            unit VARCHAR(50),
+            targetPrice VARCHAR(100),
+            incoterms VARCHAR(50),
+            destinationPort VARCHAR(255),
+            specifications TEXT,
+            buyer_name VARCHAR(150),
+            buyer_country VARCHAR(100),
+            buyer_email VARCHAR(255) DEFAULT '',
+            buyer_company VARCHAR(255) DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // -------------------------------------------------------------
+        // Table Auto-Creation: users table with Self-Healing Logic
+        // -------------------------------------------------------------
+        // If the users table already exists but lacks the password column, and has no registered users,
+        // safely drop it so it can be cleanly recreated with the proper schema and fields.
+        $recreate_users_table = false;
+        try {
+            $check_pwd = $pdo->query("SELECT `password` FROM users LIMIT 1");
+        } catch (Exception $e) {
+            // password column doesn't exist, check row count of users table
+            try {
+                $count_q = $pdo->query("SELECT COUNT(*) as cnt FROM users");
+                $count_row = $count_q->fetch();
+                if ($count_row && intval($count_row['cnt']) === 0) {
+                    $recreate_users_table = true;
+                }
+            } catch (Exception $ex) {
+                // Table might not exist at all, which is fine
             }
-        } catch (Exception $ex) {
-            // Table might not exist at all, which is fine
-        }
-    }
-
-    if ($recreate_users_table) {
-        try {
-            $pdo->exec("DROP TABLE IF EXISTS users");
-        } catch (Exception $e) {
-            file_put_contents(__DIR__ . '/db_error.log', "DROP users table failed: " . $e->getMessage() . "\n", FILE_APPEND);
-        }
-    }
-
-    // Now cleanly run CREATE TABLE IF NOT EXISTS
-    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(150) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        company_name VARCHAR(255) DEFAULT '',
-        phone VARCHAR(50) DEFAULT '',
-        country VARCHAR(100) DEFAULT 'United States',
-        role VARCHAR(50) DEFAULT 'buyer',
-        avatar_url TEXT,
-        status VARCHAR(50) DEFAULT 'ACTIVE',
-        is_verified TINYINT(1) DEFAULT 1,
-        is_premium TINYINT(1) DEFAULT 0,
-        membership_status VARCHAR(50) DEFAULT 'free',
-        tier VARCHAR(50) DEFAULT 'FREE',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-    // Dynamic schema column adder helper
-    $add_column_if_missing = function($pdo, $table, $column, $definition) {
-        $exists = false;
-        try {
-            $pdo->query("SELECT `$column` FROM `$table` LIMIT 1");
-            $exists = true;
-        } catch (Exception $e) {
-            $exists = false;
         }
 
-        if (!$exists) {
-            // 1. Try ALTER TABLE with COLUMN keyword
+        if ($recreate_users_table) {
             try {
-                $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
-                return true;
-            } catch (Exception $e) {}
-
-            // 2. Try ALTER TABLE without COLUMN keyword
-            try {
-                $pdo->exec("ALTER TABLE `$table` ADD `$column` $definition");
-                return true;
-            } catch (Exception $e) {}
-
-            // 3. Relax strictness: Try without NOT NULL constraint if it failed
-            $simple_def = preg_replace('/NOT NULL/i', '', $definition);
-            try {
-                $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $simple_def");
-                return true;
-            } catch (Exception $e) {}
-
-            try {
-                $pdo->exec("ALTER TABLE `$table` ADD `$column` $simple_def");
-                return true;
+                $pdo->exec("DROP TABLE IF EXISTS users");
             } catch (Exception $e) {
-                file_put_contents(__DIR__ . '/db_error.log', "ALTER table $table ADD column $column completely failed: " . $e->getMessage() . "\n", FILE_APPEND);
+                file_put_contents(__DIR__ . '/db_error.log', "DROP users table failed: " . $e->getMessage() . "\n", FILE_APPEND);
             }
         }
-        return false;
-    };
 
-    // Apply migrations with the self-healing adder helper and direct failsafe queries
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT ''");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL");
-    } catch (Exception $e) {}
-    
-    $add_column_if_missing($pdo, 'users', 'company_name', "VARCHAR(255) DEFAULT ''");
-    $add_column_if_missing($pdo, 'users', 'phone', "VARCHAR(50) DEFAULT ''");
-    $add_column_if_missing($pdo, 'users', 'country', "VARCHAR(100) DEFAULT 'United States'");
-    $add_column_if_missing($pdo, 'users', 'role', "VARCHAR(50) DEFAULT 'buyer'");
-    $add_column_if_missing($pdo, 'users', 'reset_token', "VARCHAR(10) DEFAULT NULL");
-    $add_column_if_missing($pdo, 'users', 'reset_token_expiry', "DATETIME DEFAULT NULL");
+        // Now cleanly run CREATE TABLE IF NOT EXISTS
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            company_name VARCHAR(255) DEFAULT '',
+            phone VARCHAR(50) DEFAULT '',
+            country VARCHAR(100) DEFAULT 'United States',
+            role VARCHAR(50) DEFAULT 'buyer',
+            avatar_url TEXT,
+            status VARCHAR(50) DEFAULT 'ACTIVE',
+            is_verified TINYINT(1) DEFAULT 1,
+            is_premium TINYINT(1) DEFAULT 0,
+            membership_status VARCHAR(50) DEFAULT 'free',
+            tier VARCHAR(50) DEFAULT 'FREE',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    $pdo->exec("CREATE TABLE IF NOT EXISTS listings (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        category VARCHAR(150) DEFAULT 'General',
-        sub_category VARCHAR(150) DEFAULT '',
-        price VARCHAR(100) DEFAULT '0',
-        moq INT DEFAULT 1,
-        moq_unit VARCHAR(50) DEFAULT 'Pieces',
-        supplier_name VARCHAR(255) DEFAULT '',
-        supplier_email VARCHAR(255) DEFAULT '',
-        supplier_phone VARCHAR(100) DEFAULT '',
-        supplier_country VARCHAR(100) DEFAULT 'China',
-        location VARCHAR(255) DEFAULT '',
-        description TEXT,
-        images TEXT,
-        image_url TEXT,
-        status VARCHAR(50) DEFAULT 'ACTIVE',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // Dynamic schema column adder helper
+        $add_column_if_missing = function($pdo, $table, $column, $definition) {
+            $exists = false;
+            try {
+                $pdo->query("SELECT `$column` FROM `$table` LIMIT 1");
+                $exists = true;
+            } catch (Exception $e) {
+                $exists = false;
+            }
 
-    $pdo->exec("CREATE TABLE IF NOT EXISTS inquiries (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        rfq_id INT DEFAULT NULL,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        phone VARCHAR(100) DEFAULT '',
-        company VARCHAR(255) DEFAULT '',
-        product VARCHAR(255) DEFAULT '',
-        product_name VARCHAR(255) DEFAULT '',
-        quantity INT DEFAULT 1,
-        target_quantity INT DEFAULT 0,
-        target_price DECIMAL(12,2) DEFAULT 0.00,
-        incoterm VARCHAR(50) DEFAULT 'FOB',
-        destination_port VARCHAR(150) DEFAULT '',
-        subject VARCHAR(255) DEFAULT '',
-        message TEXT,
-        status VARCHAR(50) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            if (!$exists) {
+                // 1. Try ALTER TABLE with COLUMN keyword
+                try {
+                    $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+                    return true;
+                } catch (Exception $e) {}
 
-} catch (Exception $e) {
-    $db_connected = false;
-}
+                // 2. Try ALTER TABLE without COLUMN keyword
+                try {
+                    $pdo->exec("ALTER TABLE `$table` ADD `$column` $definition");
+                    return true;
+                } catch (Exception $e) {}
+
+                // 3. Relax strictness: Try without NOT NULL constraint if it failed
+                $simple_def = preg_replace('/NOT NULL/i', '', $definition);
+                try {
+                    $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $simple_def");
+                    return true;
+                } catch (Exception $e) {}
+
+                try {
+                    $pdo->exec("ALTER TABLE `$table` ADD `$column` $simple_def");
+                    return true;
+                } catch (Exception $e) {
+                    file_put_contents(__DIR__ . '/db_error.log', "ALTER table $table ADD column $column completely failed: " . $e->getMessage() . "\n", FILE_APPEND);
+                }
+            }
+            return false;
+        };
+
+        // Apply migrations with the self-healing adder helper and direct failsafe queries
+        try {
+            $pdo->exec("ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT ''");
+        } catch (Exception $e) {}
+        try {
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL");
+        } catch (Exception $e) {}
+        
+        $add_column_if_missing($pdo, 'users', 'company_name', "VARCHAR(255) DEFAULT ''");
+        $add_column_if_missing($pdo, 'users', 'phone', "VARCHAR(50) DEFAULT ''");
+        $add_column_if_missing($pdo, 'users', 'country', "VARCHAR(100) DEFAULT 'United States'");
+        $add_column_if_missing($pdo, 'users', 'role', "VARCHAR(50) DEFAULT 'buyer'");
+        $add_column_if_missing($pdo, 'users', 'reset_token', "VARCHAR(10) DEFAULT NULL");
+        $add_column_if_missing($pdo, 'users', 'reset_token_expiry', "DATETIME DEFAULT NULL");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS listings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            category VARCHAR(150) DEFAULT 'General',
+            sub_category VARCHAR(150) DEFAULT '',
+            price VARCHAR(100) DEFAULT '0',
+            moq INT DEFAULT 1,
+            moq_unit VARCHAR(50) DEFAULT 'Pieces',
+            supplier_name VARCHAR(255) DEFAULT '',
+            supplier_email VARCHAR(255) DEFAULT '',
+            supplier_phone VARCHAR(100) DEFAULT '',
+            supplier_country VARCHAR(100) DEFAULT 'China',
+            location VARCHAR(255) DEFAULT '',
+            description TEXT,
+            images TEXT,
+            image_url TEXT,
+            status VARCHAR(50) DEFAULT 'ACTIVE',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS inquiries (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            rfq_id INT DEFAULT NULL,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(100) DEFAULT '',
+            company VARCHAR(255) DEFAULT '',
+            product VARCHAR(255) DEFAULT '',
+            product_name VARCHAR(255) DEFAULT '',
+            quantity INT DEFAULT 1,
+            target_quantity INT DEFAULT 0,
+            target_price DECIMAL(12,2) DEFAULT 0.00,
+            incoterm VARCHAR(50) DEFAULT 'FOB',
+            destination_port VARCHAR(150) DEFAULT '',
+            subject VARCHAR(255) DEFAULT '',
+            message TEXT,
+            status VARCHAR(50) DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // Cache the successful schema checks
+        file_put_contents($marker_file, '1');
+
+        } catch (Exception $e) {
+            $db_connected = false;
+        }
+    }
 }
 
 // Parse request action & payload

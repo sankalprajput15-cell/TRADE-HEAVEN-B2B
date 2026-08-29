@@ -14,7 +14,13 @@ import {
   BadgeCheck,
   ArrowRight,
   RefreshCw,
-  Sliders
+  Sliders,
+  Mail,
+  MessageSquare,
+  PhoneCall,
+  CreditCard,
+  Send,
+  Check
 } from 'lucide-react';
 
 interface Props {
@@ -32,6 +38,17 @@ export const PremiumServicesView: React.FC<Props> = ({
   const [plans, setPlans] = useState<SaaSPlan[]>(INITIAL_SAAS_PLANS);
   const [isLoading, setIsLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'ANNUAL' | 'MONTHLY'>('ANNUAL');
+
+  // Support request form states
+  const [supportName, setSupportName] = useState('');
+  const [supportCompany, setSupportCompany] = useState('');
+  const [supportEmail, setSupportEmail] = useState('');
+  const [supportPhone, setSupportPhone] = useState('');
+  const [supportType, setSupportType] = useState('Card Payment Link Request');
+  const [customAmount, setCustomAmount] = useState(2500);
+  const [supportNotes, setSupportNotes] = useState('');
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+  const [supportSuccess, setSupportSuccess] = useState(false);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -68,6 +85,20 @@ export const PremiumServicesView: React.FC<Props> = ({
       amountUsd,
       type: 'MEMBERSHIP'
     });
+  };
+
+  const handleSubmitSupport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportName || !supportEmail) return;
+    setIsSubmittingSupport(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      setSupportSuccess(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmittingSupport(false);
+    }
   };
 
   // Filter plans based on activeTab category
@@ -438,6 +469,249 @@ export const PremiumServicesView: React.FC<Props> = ({
           })}
         </div>
       )}
+
+      {/* CARD PAYMENT & CUSTOMIZED AMOUNT SUPPORT PORTAL */}
+      <div id="card-payment-support-portal" className="bg-slate-50 rounded-3xl border border-slate-200 p-6 sm:p-10 lg:p-12 space-y-8 mt-12 text-slate-900">
+        <div className="max-w-3xl space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-black tracking-wide border border-indigo-200">
+            <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+            <span>CUSTOM SETTLEMENTS &amp; ENTERPRISE SUPPORT</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 leading-tight">
+            Customized Pricing &amp; Direct Card Payments
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Need customized token thresholds, corporate API volume discounts, customized duration options, or looking to execute a direct credit/debit card secure checkout? Fill out the details below, or initiate an instant chat with our senior treasury team.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Column 1: Direct Contact Cards (5 cols) */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                Direct Global Sourcing Desks
+              </h3>
+              
+              {/* WhatsApp Support Card */}
+              <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200/60 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-emerald-500 rounded-lg text-white">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900">Official WhatsApp</h4>
+                      <p className="text-[10px] text-emerald-700 font-bold">Average response: 3 mins</p>
+                    </div>
+                  </div>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                
+                <div className="text-[13px] font-bold text-slate-800 font-mono">
+                  +91 85329 34479
+                </div>
+
+                <a
+                  href="https://wa.me/918532934479?text=Hello%20Trade%20Heaven%20Treasury,%20I%20would%20like%20to%20inquire%20about%20Customized%20Pricing%20and%20Card%20Payments%20options."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+              </div>
+
+              {/* Email Support Card */}
+              <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/60 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-600 rounded-lg text-white">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-slate-900">Treasury Email Support</h4>
+                    <p className="text-[10px] text-blue-700 font-bold">Official Proforma requests</p>
+                  </div>
+                </div>
+
+                <div className="text-[13px] font-bold text-slate-800 font-mono">
+                  support@tradeheaven.net
+                </div>
+
+                <a
+                  href="mailto:support@tradeheaven.net?subject=Inquiry%20-%20Custom%20Pricing%20and%20Card%20Payment%20Trade%20Heaven&body=Hello%20Treasury%20Operations,%0D%0A%0D%0AI%20would%20like%20to%20request%20information%20on%20Card%20Payment%20Link%20Generation%20or%20Custom%20Corporate%20Pricing."
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Request Proforma Link</span>
+                </a>
+              </div>
+
+              {/* Secure Checkout Note */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
+                <strong>🔒 Dynamic Token Safeguard:</strong> All Visa, Mastercard, and American Express transactions are protected by strict 3D Secure 2.0 authentication and end-to-end tokenized clearing protocols.
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Inquiry Form (7 cols) */}
+          <div className="lg:col-span-7">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-sm">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-2">
+                Draft Customized Plan &amp; Request Card Link
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={supportName}
+                    onChange={e => setSupportName(e.target.value)}
+                    placeholder="e.g. Elena Rostova"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-950 font-medium bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    value={supportCompany}
+                    onChange={e => setSupportCompany(e.target.value)}
+                    placeholder="e.g. Vostok Sourcing Group"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-950 font-medium bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+                    Corporate Email
+                  </label>
+                  <input
+                    type="email"
+                    value={supportEmail}
+                    onChange={e => setSupportEmail(e.target.value)}
+                    placeholder="e.g. elena@vostoksourcing.com"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-950 font-medium bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+                    WhatsApp / Direct Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={supportPhone}
+                    onChange={e => setSupportPhone(e.target.value)}
+                    placeholder="e.g. +91 99201 88392"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-950 font-medium bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+                  What can we help you with?
+                </label>
+                <select
+                  value={supportType}
+                  onChange={e => setSupportType(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-950 font-medium"
+                >
+                  <option value="Card Payment Link Request">Visa / Mastercard Secure Link Generation</option>
+                  <option value="Customized Membership Price Request">Customized Corporate Membership Tier</option>
+                  <option value="Custom Token/API Quota Request">Custom Token Quota / API Rate Limits</option>
+                  <option value="Custom Sourcing Escrow Setup">Custom Sourcing Escrow Setup &amp; Contract Auditing</option>
+                </select>
+              </div>
+
+              {/* Interactive Slider for Customized Amount */}
+              <div className="space-y-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-600">Customized Plan Target Budget:</span>
+                  <span className="font-mono text-indigo-600 font-black">
+                    ${customAmount.toLocaleString()} USD / year
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="500"
+                  max="15000"
+                  step="250"
+                  value={customAmount}
+                  onChange={e => setCustomAmount(Number(e.target.value))}
+                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>$500</span>
+                  <span>$5,000</span>
+                  <span>$10,000</span>
+                  <span>$15,000+</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black text-slate-600 uppercase tracking-wider mb-1">
+                  Requirement Specifications or Special Requests
+                </label>
+                <textarea
+                  rows={3}
+                  value={supportNotes}
+                  onChange={e => setSupportNotes(e.target.value)}
+                  placeholder="Describe your customized requirements (e.g. customized target markets, number of licenses needed, preference for card payments, target deployment timeline)..."
+                  className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-950 font-medium bg-white"
+                />
+              </div>
+
+              {/* High-visibility Action Callout Card asking them to submit by mail */}
+              <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-200 space-y-3.5">
+                <div className="flex gap-2.5 items-start">
+                  <div className="p-2 bg-indigo-600 rounded-xl text-white shrink-0 mt-0.5">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-black text-indigo-950">Confirm via Official Sourcing Mail</h4>
+                    <p className="text-[11px] text-indigo-800 leading-relaxed">
+                      To complete secure verification, please submit these customized requirements as a formal confirmation email directly to the Trade Heaven Treasury at <strong className="font-mono">support@tradeheaven.net</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={`mailto:support@tradeheaven.net?subject=${encodeURIComponent(
+                    `Custom Pricing Confirmation - ${supportType} - ${supportCompany || supportName || 'Enterprise Client'}`
+                  )}&body=${encodeURIComponent(
+                    `Dear Trade Heaven Treasury Ops,\n\nI am submitting a confirmation for a custom pricing plan & card payment link setup:\n\n` +
+                    `• Name: ${supportName || 'Client'}\n` +
+                    `• Company: ${supportCompany || 'Not Specified'}\n` +
+                    `• Corporate Email: ${supportEmail || 'Not Specified'}\n` +
+                    `• Contact Phone/WhatsApp: ${supportPhone || 'Not Specified'}\n` +
+                    `• Selected Request: ${supportType}\n` +
+                    `• Target Plan Budget: $${customAmount.toLocaleString()} USD/year\n\n` +
+                    `Requirement Specifications:\n${supportNotes || 'None'}\n\n` +
+                    `Please generate the corresponding secure payment link and confirm our account upgrades.\n\n` +
+                    `Best regards,\n${supportName || 'Trade Heaven Member'}`
+                  )}`}
+                  className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] duration-150"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Confirmation Email to Trade Heaven</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -7,18 +7,9 @@
     <!-- Preconnect resource hints for extreme image loading performance (LCP) -->
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <!-- Safe Client-Side Session Recovery Support -->
-    <script>
-      try {
-        // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
-        const keys = Object.keys(localStorage);
-        for (const key of keys) {
-          if (key.includes('corrupted') || key.includes('stale_temp_')) {
-            localStorage.removeItem(key);
-          }
-        }
-      } catch(e) {}
-    </script>
+    <!-- Preload critical Largest Contentful Paint (LCP) assets -->
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80" fetchpriority="high" />
+    <!-- Failsafe fetch interceptor shim to prevent browser environment getter/setter conflicts on window.fetch -->
     <script>
       (function() {
         try {
@@ -43,6 +34,18 @@
           // Fallback gracefully
         }
       })();
+    </script>
+    <!-- Safe Client-Side Session Recovery Support -->
+    <script>
+      try {
+        // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
+        const keys = Object.keys(localStorage);
+        for (const key of keys) {
+          if (key.includes('corrupted') || key.includes('stale_temp_')) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch(e) {}
     </script>
     <link rel="icon" type="image/png" sizes="256x256" href="/icon.png" />
     <link rel="apple-touch-icon" href="/icon.png" />

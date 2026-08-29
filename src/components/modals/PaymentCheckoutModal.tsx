@@ -253,12 +253,18 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
 
             {paymentMethod === 'SWIFT' && (
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                <div className="font-bold text-slate-800">SWIFT Wire Vault Details:</div>
-                <div className="p-2.5 bg-white rounded-xl border border-slate-200 font-mono text-[11px] space-y-1">
-                  <div><strong>Bank:</strong> UBS Switzerland AG, Zurich</div>
-                  <div><strong>IBAN:</strong> CH93 0023 0230 4910 9481 0</div>
-                  <div><strong>BIC / SWIFT:</strong> UBSWCHZH80A</div>
-                  <div><strong>Reference:</strong> trade protection-TH-{checkoutData.planId || 'DIRECT'}</div>
+                <div className="font-bold text-slate-800">Bank Transfer Instructions:</div>
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 font-sans text-[12px] space-y-2 leading-relaxed">
+                  <div><strong>Beneficiary Account Name:</strong> TRADEHEAVEN ECOM SOLUTION LLP</div>
+                  <div><strong>Account Number (A/c No):</strong> 44153189222</div>
+                  <div><strong>Account Type:</strong> Current account Bank Account</div>
+                  <div><strong>Bank Name:</strong> State Bank Of India</div>
+                  <div><strong>Branch Name & Address:</strong> State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244</div>
+                  <div><strong>SWIFT CODE:</strong> SBININBB124</div>
+                  <div><strong>IFSC Code:</strong> SBIN0010346</div>
+                  <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-mono">
+                    <strong>Reference Code:</strong> TH-{checkoutData.planId || 'DIRECT'}-{Date.now().toString().slice(-4)}
+                  </div>
                 </div>
               </div>
             )}

@@ -495,7 +495,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   escrowPolicy: {
     title: "100% Trade Assurance & Custodial trade protection Protection",
     subtitle: "Every cross-border transaction is safeguarded by strict multi-stage custodial protocols, third-party SGS factory inspections, and ocean Bill of Lading verification.",
-    bankRailNotice: "Funds deposited in segregated institutional custodial vaults cleared by Standard Chartered, Barclays, and Citibank.",
+    bankRailNotice: "Funds deposited in segregated institutional custodial bank accounts cleared by State Bank Of India.",
     guaranteeNotice: "100% Refund Guarantee if products fail verified third-party laboratory specifications or if shipping containers fail to dispatch by agreed contractual deadline.",
     milestones: [
       {
@@ -528,8 +528,8 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   clientAdminPage: {
     title: "Client Billing & Treasury Operations",
     subtitle: "Manage platform subscription tiers, review wire transfer payments, download official tax invoices, and configure banking details.",
-    wireInstructionsNotice: "All wire transfers (T/T) are credited to Trade Heaven Custodial trade protection within 1-3 business days upon receipt of the bank MT103 wire receipt.",
-    treasuryGuarantee: "Enterprise Banking Rail protected by Standard Chartered, Barclays, and Citibank international clearing systems."
+    wireInstructionsNotice: "The Bank Transfer Instructions are as follows: Beneficiary Account Name - TRADEHEAVEN ECOM SOLUTION LLP | A/c No: 44153189222 | A/c type: Current account Bank Account | Bank Name - State Bank Of India | Branch Name & Address - State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244 | SWIFT CODE: SBININBB124 | IFSC Code: SBIN0010346",
+    treasuryGuarantee: "Enterprise Banking Rail protected by State Bank Of India."
   },
   tradeToolsPage: {
     title: "Global Trade Intelligence & Calculation Tools",

@@ -185,6 +185,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                     src={company.logoUrl}
                     alt={company.companyName}
                     className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-50 shrink-0"
+                    fetchPriority="high"
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
