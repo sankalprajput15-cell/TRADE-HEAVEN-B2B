@@ -21,7 +21,23 @@ import {
   Building2,
   FileText,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUpDown,
+  Armchair,
+  Sparkles,
+  Wind,
+  Home,
+  Trees,
+  Laptop,
+  Zap,
+  Wrench,
+  Sprout,
+  UtensilsCrossed,
+  Beef,
+  Fish,
+  Wine,
+  GlassWater,
+  Flower2
 } from 'lucide-react';
 
 interface Props {
@@ -58,6 +74,25 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       case 'Stethoscope': return <Stethoscope className="w-4 h-4 text-teal-600" />;
       case 'Sun': return <Sun className="w-4 h-4 text-amber-500" />;
       case 'Box': return <Box className="w-4 h-4 text-indigo-600" />;
+      case 'Building2': return <Building2 className="w-4 h-4 text-amber-700" />;
+      case 'Layers': return <Layers className="w-4 h-4 text-cyan-600" />;
+      case 'ArrowUpDown': return <ArrowUpDown className="w-4 h-4 text-sky-600" />;
+      case 'Armchair': return <Armchair className="w-4 h-4 text-rose-700" />;
+      case 'Sparkles': return <Sparkles className="w-4 h-4 text-violet-600" />;
+      case 'Wind': return <Wind className="w-4 h-4 text-blue-500" />;
+      case 'Home': return <Home className="w-4 h-4 text-teal-700" />;
+      case 'Package': return <Package className="w-4 h-4 text-amber-800" />;
+      case 'Trees': return <Trees className="w-4 h-4 text-emerald-700" />;
+      case 'Laptop': return <Laptop className="w-4 h-4 text-slate-700" />;
+      case 'Zap': return <Zap className="w-4 h-4 text-yellow-500" />;
+      case 'Wrench': return <Wrench className="w-4 h-4 text-stone-600" />;
+      case 'Sprout': return <Sprout className="w-4 h-4 text-lime-600" />;
+      case 'UtensilsCrossed': return <UtensilsCrossed className="w-4 h-4 text-orange-600" />;
+      case 'Beef': return <Beef className="w-4 h-4 text-red-600" />;
+      case 'Fish': return <Fish className="w-4 h-4 text-cyan-500" />;
+      case 'Wine': return <Wine className="w-4 h-4 text-red-700" />;
+      case 'GlassWater': return <GlassWater className="w-4 h-4 text-blue-400" />;
+      case 'Flower2': return <Flower2 className="w-4 h-4 text-pink-600" />;
       default: return <Box className="w-4 h-4 text-blue-600" />;
     }
   };

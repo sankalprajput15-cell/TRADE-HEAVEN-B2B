@@ -819,6 +819,503 @@ export const GLOBAL_B2B_TRADE_METRICS: B2BTradeMetric[] = [
     "total_verified_suppliers": 55,
     "total_buying_leads_rfqs": 22,
     "growth_trend": "-6% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Aggregates",
+    "total_verified_suppliers": 840,
+    "total_buying_leads_rfqs": 490,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Angles Frames",
+    "total_verified_suppliers": 620,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Bathroom Accessories",
+    "total_verified_suppliers": 520,
+    "total_buying_leads_rfqs": 280,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Bathtubs",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 175,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Blocks Tiles & Slabs",
+    "total_verified_suppliers": 1150,
+    "total_buying_leads_rfqs": 620,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Bricks",
+    "total_verified_suppliers": 980,
+    "total_buying_leads_rfqs": 540,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Building Construction Machineries and Equipments",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Building Fittings",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 260,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Buildings Sheds & Garages",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Builders Hardware, Construction Material & Equipment",
+    "subcategory": "Cement",
+    "total_verified_suppliers": 1520,
+    "total_buying_leads_rfqs": 830,
+    "growth_trend": "+22% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Acrylic Carpet",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 140,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Area Rugs",
+    "total_verified_suppliers": 580,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Art Rugs",
+    "total_verified_suppliers": 190,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Artificial Grass Mats",
+    "total_verified_suppliers": 460,
+    "total_buying_leads_rfqs": 230,
+    "growth_trend": "+21% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Bath Mats",
+    "total_verified_suppliers": 410,
+    "total_buying_leads_rfqs": 210,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Bath Rugs",
+    "total_verified_suppliers": 360,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Car Mats",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 250,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Carpet Tack Strip",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 70,
+    "growth_trend": "+4% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Carpet Tiles",
+    "total_verified_suppliers": 530,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Carpets, Mats, Rugs, Floorings",
+    "subcategory": "Carpets",
+    "total_verified_suppliers": 600,
+    "total_buying_leads_rfqs": 320,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Elevators & Escalators",
+    "subcategory": "Elevator Parts",
+    "total_verified_suppliers": 185,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Accent Chairs",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 260,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Acrylic Podiums",
+    "total_verified_suppliers": 95,
+    "total_buying_leads_rfqs": 45,
+    "growth_trend": "+5% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Adjustable Height Tables",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 210,
+    "growth_trend": "+24% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Adjustable Racks",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Advertising Equipments & Materials",
+    "total_verified_suppliers": 260,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Aluminum Furnitures",
+    "total_verified_suppliers": 350,
+    "total_buying_leads_rfqs": 175,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Antique Furniture",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 80,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Antique Furnitures",
+    "total_verified_suppliers": 145,
+    "total_buying_leads_rfqs": 75,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Armrest Chairs",
+    "total_verified_suppliers": 420,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Furniture, Interior Decoration & Furnishings",
+    "subcategory": "Auditorium Chairs",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Bent Glass",
+    "total_verified_suppliers": 190,
+    "total_buying_leads_rfqs": 90,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Cartridge",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 85,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Coasters",
+    "total_verified_suppliers": 220,
+    "total_buying_leads_rfqs": 110,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Colors",
+    "total_verified_suppliers": 175,
+    "total_buying_leads_rfqs": 80,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Fiber",
+    "total_verified_suppliers": 195,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Filters",
+    "total_verified_suppliers": 130,
+    "total_buying_leads_rfqs": 65,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Handicrafts",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Kitchenware",
+    "total_verified_suppliers": 510,
+    "total_buying_leads_rfqs": 280,
+    "growth_trend": "+20% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Knobs",
+    "total_verified_suppliers": 240,
+    "total_buying_leads_rfqs": 115,
+    "growth_trend": "+5% this month"
+  },
+  {
+    "main_category": "Glass & Ceramics",
+    "subcategory": "Ceramic Lamps",
+    "total_verified_suppliers": 270,
+    "total_buying_leads_rfqs": 135,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Heating, Air Conditioner & Ventilation",
+    "subcategory": "Air Conditioner Parts",
+    "total_verified_suppliers": 215,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Air Freshners",
+    "total_verified_suppliers": 450,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bags",
+    "total_verified_suppliers": 390,
+    "total_buying_leads_rfqs": 195,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Baskets",
+    "total_verified_suppliers": 280,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bassinet",
+    "total_verified_suppliers": 220,
+    "total_buying_leads_rfqs": 115,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bath Tub",
+    "total_verified_suppliers": 260,
+    "total_buying_leads_rfqs": 135,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bathrobes",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 150,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bibs",
+    "total_verified_suppliers": 430,
+    "total_buying_leads_rfqs": 230,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Booties",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 140,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bottle Accessories",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 170,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Household & General Merchandise",
+    "subcategory": "Baby Bottle Brush",
+    "total_verified_suppliers": 280,
+    "total_buying_leads_rfqs": 135,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Coir Fibers",
+    "total_verified_suppliers": 640,
+    "total_buying_leads_rfqs": 330,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Coir Mat",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Jute Boards",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Jute Machinery",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 65,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Jute Machinery Spare Parts",
+    "total_verified_suppliers": 115,
+    "total_buying_leads_rfqs": 55,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Jute Products",
+    "total_verified_suppliers": 820,
+    "total_buying_leads_rfqs": 450,
+    "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Jute Yarn & Fabric",
+    "total_verified_suppliers": 760,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Other Coir Products",
+    "total_verified_suppliers": 370,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Jute - Raw Material, Processed & Related Machinery",
+    "subcategory": "Raw Jute",
+    "total_verified_suppliers": 920,
+    "total_buying_leads_rfqs": 510,
+    "growth_trend": "+21% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Anti Termite Wood Products",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 170,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Ash Wood",
+    "total_verified_suppliers": 580,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Bamboo",
+    "total_verified_suppliers": 1250,
+    "total_buying_leads_rfqs": 690,
+    "growth_trend": "+25% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Bamboo Products",
+    "total_verified_suppliers": 980,
+    "total_buying_leads_rfqs": 520,
+    "growth_trend": "+22% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Beach Wood",
+    "total_verified_suppliers": 430,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Cedar Wood",
+    "total_verified_suppliers": 510,
+    "total_buying_leads_rfqs": 270,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Chopsticks",
+    "total_verified_suppliers": 390,
+    "total_buying_leads_rfqs": 210,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Cork Wood",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Ebony Wood",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Raw wood and wood related products",
+    "subcategory": "Eucalyptus Wood",
+    "total_verified_suppliers": 670,
+    "total_buying_leads_rfqs": 360,
+    "growth_trend": "+18% this month"
   }
 ];
 
@@ -860,10 +1357,17 @@ export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.f
   const inco1 = INCOTERMS[idx % INCOTERMS.length];
   const inco2 = INCOTERMS[(idx + 2) % INCOTERMS.length];
 
-  const slug = m.subcategory.toLowerCase().replace(/[^a-z0-0]+/g, '-');
-  const unit = m.main_category.includes('Software') ? 'Licenses'
-             : m.main_category.includes('Machinery') || m.subcategory.includes('Tractor') || m.subcategory.includes('Pump') || m.subcategory.includes('Machines') || m.subcategory.includes('Generators') ? 'Units' 
-             : m.main_category.includes('Beverage') || m.subcategory.includes('Juice') || m.subcategory.includes('Vinegar') ? 'Liters'
+  const slug = m.subcategory.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const sub = m.subcategory.toLowerCase();
+  const main = m.main_category.toLowerCase();
+
+  const unit = main.includes('software') ? 'Licenses'
+             : main.includes('machinery') || sub.includes('tractor') || sub.includes('pump') || sub.includes('machines') || sub.includes('generators') || sub.includes('parts') || sub.includes('elevator') || sub.includes('chair') || sub.includes('table') || sub.includes('rack') || sub.includes('podium') ? 'Units' 
+             : main.includes('beverage') || sub.includes('juice') || sub.includes('vinegar') || sub.includes('ale') || sub.includes('cider') || sub.includes('freshners') ? 'Liters'
+             : sub.includes('cement') || sub.includes('aggregates') || sub.includes('brick') || sub.includes('sand') || sub.includes('raw jute') || sub.includes('coir fibers') || sub.includes('wood') || sub.includes('bamboo') || sub.includes('grain') || sub.includes('rice') || sub.includes('wheat') || sub.includes('flour') ? 'Metric Tons'
+             : sub.includes('carpet') || sub.includes('mat') || sub.includes('rug') || sub.includes('tiles') || sub.includes('slabs') || sub.includes('glass') ? 'Sq. Meters'
+             : sub.includes('yarn') || sub.includes('fabric') || sub.includes('cloth') ? 'Rolls'
+             : sub.includes('set') || sub.includes('accessories') || sub.includes('fittings') || sub.includes('kitchenware') || sub.includes('knobs') || sub.includes('lamps') || sub.includes('cartridge') || sub.includes('coasters') ? 'Sets'
              : 'Pieces';
 
   const baseQty = Math.round(m.total_buying_leads_rfqs * 12 + 150);

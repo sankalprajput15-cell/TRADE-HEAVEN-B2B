@@ -40,14 +40,19 @@ interface Props {
 }
 
 const QUICK_SEARCH_CHIPS = [
+  'Cement',
+  'Blocks & Tiles',
+  'Area Rugs',
+  'Bamboo Wood',
+  'Raw Jute',
+  'Ceramic Kitchenware',
+  'Elevator Parts',
   'Rice',
   'Solar Inverter',
   'Lithium Battery',
   'Copper Cathode',
   'RAM Memory',
-  'Crude Oil',
-  'Cotton Fabric',
-  'Medical Mask'
+  'Cotton Fabric'
 ];
 
 export const BuyLeadsView: React.FC<Props> = ({

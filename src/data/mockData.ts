@@ -250,6 +250,78 @@ export const CATEGORIES_TREE = [
     image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Corrugated Shipping Cartons', 'Biodegradable Mailers', 'Glass Cosmetic Bottles', 'Aluminum Can Packaging', 'Custom Printed Stand-Up Pouches', 'Stretch Film Rolls'],
     count: '14,200+ Products'
+  },
+  {
+    id: 'cat-builders-hardware',
+    name: 'Builders Hardware, Construction Material & Equipment',
+    icon: 'Building2',
+    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Aggregates', 'Angles Frames', 'Bathroom Accessories', 'Bathtubs', 'Blocks Tiles & Slabs', 'Bricks', 'Building Construction Machineries and Equipments', 'Building Fittings', 'Buildings Sheds & Garages', 'Cement'],
+    count: '7,000+ Verified Suppliers | 3,760+ RFQs'
+  },
+  {
+    id: 'cat-carpets-floorings',
+    name: 'Carpets, Mats, Rugs, Floorings',
+    icon: 'Layers',
+    image: 'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Acrylic Carpet', 'Area Rugs', 'Art Rugs', 'Artificial Grass Mats', 'Bath Mats', 'Bath Rugs', 'Car Mats', 'Carpet Tack Strip', 'Carpet Tiles', 'Carpets'],
+    count: '4,040+ Verified Suppliers | 2,095+ RFQs'
+  },
+  {
+    id: 'cat-elevators-escalators',
+    name: 'Elevators & Escalators',
+    icon: 'ArrowUpDown',
+    image: 'https://images.unsplash.com/photo-1546768292-fb12f6c92568?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Elevator Parts'],
+    count: '185+ Verified Suppliers | 95+ RFQs'
+  },
+  {
+    id: 'cat-furniture-interior',
+    name: 'Furniture, Interior Decoration & Furnishings',
+    icon: 'Armchair',
+    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Accent Chairs', 'Acrylic Podiums', 'Adjustable Height Tables', 'Adjustable Racks', 'Advertising Equipments & Materials', 'Aluminum Furnitures', 'Antique Furniture', 'Antique Furnitures', 'Armrest Chairs', 'Auditorium Chairs'],
+    count: '2,810+ Verified Suppliers | 1,465+ RFQs'
+  },
+  {
+    id: 'cat-glass-ceramics',
+    name: 'Glass & Ceramics',
+    icon: 'Sparkles',
+    image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Bent Glass', 'Ceramic Cartridge', 'Ceramic Coasters', 'Ceramic Colors', 'Ceramic Fiber', 'Ceramic Filters', 'Ceramic Handicrafts', 'Ceramic Kitchenware', 'Ceramic Knobs', 'Ceramic Lamps'],
+    count: '2,435+ Verified Suppliers | 1,245+ RFQs'
+  },
+  {
+    id: 'cat-hvac',
+    name: 'Heating, Air Conditioner & Ventilation',
+    icon: 'Wind',
+    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Air Conditioner Parts'],
+    count: '215+ Verified Suppliers | 105+ RFQs'
+  },
+  {
+    id: 'cat-household-merchandise',
+    name: 'Household & General Merchandise',
+    icon: 'Home',
+    image: 'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Air Freshners', 'Baby Bags', 'Baby Baskets', 'Baby Bassinet', 'Baby Bath Tub', 'Baby Bathrobes', 'Baby Bibs', 'Baby Booties', 'Baby Bottle Accessories', 'Baby Bottle Brush'],
+    count: '3,350+ Verified Suppliers | 1,675+ RFQs'
+  },
+  {
+    id: 'cat-jute-machinery',
+    name: 'Jute - Raw Material, Processed & Related Machinery',
+    icon: 'Package',
+    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Coir Fibers', 'Coir Mat', 'Jute Boards', 'Jute Machinery', 'Jute Machinery Spare Parts', 'Jute Products', 'Jute Yarn & Fabric', 'Other Coir Products', 'Raw Jute'],
+    count: '4,635+ Verified Suppliers | 2,435+ RFQs'
+  },
+  {
+    id: 'cat-raw-wood',
+    name: 'Raw wood and wood related products',
+    icon: 'Trees',
+    image: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Anti Termite Wood Products', 'Ash Wood', 'Bamboo', 'Bamboo Products', 'Beach Wood', 'Cedar Wood', 'Chopsticks', 'Cork Wood', 'Ebony Wood', 'Eucalyptus Wood'],
+    count: '5,740+ Verified Suppliers | 3,045+ RFQs'
   }
 ];
 
