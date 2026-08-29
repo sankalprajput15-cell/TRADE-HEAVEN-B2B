@@ -1316,6 +1316,944 @@ export const GLOBAL_B2B_TRADE_METRICS: B2BTradeMetric[] = [
     "total_verified_suppliers": 670,
     "total_buying_leads_rfqs": 360,
     "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Acetic Acid",
+    "total_verified_suppliers": 780,
+    "total_buying_leads_rfqs": 420,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Acetic Acid (Vinegar)",
+    "total_verified_suppliers": 450,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Acetone",
+    "total_verified_suppliers": 890,
+    "total_buying_leads_rfqs": 480,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Acids",
+    "total_verified_suppliers": 1150,
+    "total_buying_leads_rfqs": 620,
+    "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Adhesive Sealants & Lubricants",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 360,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Agricultural Chemicals",
+    "total_verified_suppliers": 920,
+    "total_buying_leads_rfqs": 510,
+    "growth_trend": "+21% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Aldehyde",
+    "total_verified_suppliers": 410,
+    "total_buying_leads_rfqs": 210,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Alum",
+    "total_verified_suppliers": 560,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Aluminum Oxide",
+    "total_verified_suppliers": 740,
+    "total_buying_leads_rfqs": 390,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Chemicals & Allied Products",
+    "subcategory": "Aluminum Sulfate",
+    "total_verified_suppliers": 630,
+    "total_buying_leads_rfqs": 330,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Acrylic Boxes",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Air Bubble Bags",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 260,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Aluminium Containers",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Aluminium Drum & Barrel",
+    "total_verified_suppliers": 360,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Aluminium Foil Tape",
+    "total_verified_suppliers": 420,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Aluminum Foil",
+    "total_verified_suppliers": 710,
+    "total_buying_leads_rfqs": 380,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "BOPP Tape",
+    "total_verified_suppliers": 650,
+    "total_buying_leads_rfqs": 350,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Baffle Bags",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 210,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Bakery Bags",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 150,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Display, Printing & Packaging Products",
+    "subcategory": "Blister Foil",
+    "total_verified_suppliers": 440,
+    "total_buying_leads_rfqs": 230,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Abrasives",
+    "total_verified_suppliers": 580,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Anchors",
+    "total_verified_suppliers": 390,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Battery Scraps",
+    "total_verified_suppliers": 840,
+    "total_buying_leads_rfqs": 460,
+    "growth_trend": "+22% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Bearing",
+    "total_verified_suppliers": 760,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Bolts",
+    "total_verified_suppliers": 720,
+    "total_buying_leads_rfqs": 390,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Cement Bags",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 270,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Clamps",
+    "total_verified_suppliers": 530,
+    "total_buying_leads_rfqs": 280,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Clips",
+    "total_verified_suppliers": 360,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Dies & Mouldings",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Industrial Goods & Supplies",
+    "subcategory": "Fasteners",
+    "total_verified_suppliers": 750,
+    "total_buying_leads_rfqs": 420,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Automobile Machinery",
+    "total_verified_suppliers": 280,
+    "total_buying_leads_rfqs": 140,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Bag Machinery",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Beverages Machinery",
+    "total_verified_suppliers": 260,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Breweries & Distillery Machinery",
+    "total_verified_suppliers": 175,
+    "total_buying_leads_rfqs": 85,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "CNC Machines & Spare Parts",
+    "total_verified_suppliers": 620,
+    "total_buying_leads_rfqs": 340,
+    "growth_trend": "+24% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Ceramic Machine",
+    "total_verified_suppliers": 190,
+    "total_buying_leads_rfqs": 90,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Charcoal/Briquette Making Machinery",
+    "total_verified_suppliers": 230,
+    "total_buying_leads_rfqs": 115,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Cigarette Making Machine/Tobacco Processing Machine",
+    "total_verified_suppliers": 85,
+    "total_buying_leads_rfqs": 40,
+    "growth_trend": "+4% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Coir Machinery",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 65,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Industrial Machinery & Plants",
+    "subcategory": "Dairy & Poultry Equipment",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 170,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Boats & Vessels",
+    "total_verified_suppliers": 110,
+    "total_buying_leads_rfqs": 55,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Chemicals",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 145,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Engines",
+    "total_verified_suppliers": 165,
+    "total_buying_leads_rfqs": 80,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Equipments & Spare Parts",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 160,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Oil",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 250,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Propellers",
+    "total_verified_suppliers": 95,
+    "total_buying_leads_rfqs": 45,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Safety Products",
+    "total_verified_suppliers": 270,
+    "total_buying_leads_rfqs": 135,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Marine Valves",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 155,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Nautical Items",
+    "total_verified_suppliers": 130,
+    "total_buying_leads_rfqs": 60,
+    "growth_trend": "+5% this month"
+  },
+  {
+    "main_category": "Marine Equipment & Machinery",
+    "subcategory": "Shipping Machinery Equipment & Spare Parts",
+    "total_verified_suppliers": 240,
+    "total_buying_leads_rfqs": 120,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Alloy",
+    "total_verified_suppliers": 1120,
+    "total_buying_leads_rfqs": 610,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Ash",
+    "total_verified_suppliers": 380,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Balls",
+    "total_verified_suppliers": 260,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Billets",
+    "total_verified_suppliers": 980,
+    "total_buying_leads_rfqs": 530,
+    "growth_trend": "+22% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Boring Scrap",
+    "total_verified_suppliers": 670,
+    "total_buying_leads_rfqs": 360,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Bronze Scrap",
+    "total_verified_suppliers": 520,
+    "total_buying_leads_rfqs": 280,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Cable Scrap",
+    "total_verified_suppliers": 1180,
+    "total_buying_leads_rfqs": 640,
+    "growth_trend": "+25% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Can Scrap",
+    "total_verified_suppliers": 1350,
+    "total_buying_leads_rfqs": 740,
+    "growth_trend": "+28% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Casting Scrap",
+    "total_verified_suppliers": 890,
+    "total_buying_leads_rfqs": 470,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Metal & Metal Products",
+    "subcategory": "Aluminium Coil Scrap",
+    "total_verified_suppliers": 760,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Metallic Elements",
+    "subcategory": "Mercury",
+    "total_verified_suppliers": 65,
+    "total_buying_leads_rfqs": 30,
+    "growth_trend": "+5% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Antimony Ore",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 170,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Asbestos",
+    "total_verified_suppliers": 120,
+    "total_buying_leads_rfqs": 50,
+    "growth_trend": "-4% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Barite Ore",
+    "total_verified_suppliers": 580,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Bauxite & Aluminium Ore",
+    "total_verified_suppliers": 1280,
+    "total_buying_leads_rfqs": 690,
+    "growth_trend": "+23% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Bentonite",
+    "total_verified_suppliers": 740,
+    "total_buying_leads_rfqs": 390,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Chrome Ore",
+    "total_verified_suppliers": 1450,
+    "total_buying_leads_rfqs": 780,
+    "growth_trend": "+26% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Clay",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 250,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Coltan Tantalite Ore",
+    "total_verified_suppliers": 410,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+20% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Copper Ore",
+    "total_verified_suppliers": 1850,
+    "total_buying_leads_rfqs": 1020,
+    "growth_trend": "+31% this month"
+  },
+  {
+    "main_category": "Mining & Metallurgy",
+    "subcategory": "Dolomite",
+    "total_verified_suppliers": 620,
+    "total_buying_leads_rfqs": 330,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Silicon",
+    "total_verified_suppliers": 980,
+    "total_buying_leads_rfqs": 530,
+    "growth_trend": "+24% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Silicon Plates",
+    "total_verified_suppliers": 420,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Silicon Sealants",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 360,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Silicon Sheets",
+    "total_verified_suppliers": 390,
+    "total_buying_leads_rfqs": 200,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Silicon Tubes",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 175,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Silicon Wafer",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+28% this month"
+  },
+  {
+    "main_category": "Non Metallic Elements",
+    "subcategory": "Sulphur",
+    "total_verified_suppliers": 1420,
+    "total_buying_leads_rfqs": 760,
+    "growth_trend": "+21% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "ATM Paper Rolls",
+    "total_verified_suppliers": 450,
+    "total_buying_leads_rfqs": 240,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Absorbent Paper",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 165,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Adhesive Paper",
+    "total_verified_suppliers": 480,
+    "total_buying_leads_rfqs": 250,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Air Filter Paper",
+    "total_verified_suppliers": 370,
+    "total_buying_leads_rfqs": 190,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Anti Rust Paper",
+    "total_verified_suppliers": 260,
+    "total_buying_leads_rfqs": 130,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Art Paper",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Backing Paper",
+    "total_verified_suppliers": 310,
+    "total_buying_leads_rfqs": 155,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Billing Paper Rolls",
+    "total_verified_suppliers": 490,
+    "total_buying_leads_rfqs": 260,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Bituminised Waterproof Paper",
+    "total_verified_suppliers": 280,
+    "total_buying_leads_rfqs": 140,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Paper & Paper Products",
+    "subcategory": "Bleached Paper",
+    "total_verified_suppliers": 610,
+    "total_buying_leads_rfqs": 320,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "A1 Jet Fuel",
+    "total_verified_suppliers": 1650,
+    "total_buying_leads_rfqs": 920,
+    "growth_trend": "+33% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Asphalt",
+    "total_verified_suppliers": 1150,
+    "total_buying_leads_rfqs": 620,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Automotive Diesel",
+    "total_verified_suppliers": 1980,
+    "total_buying_leads_rfqs": 1120,
+    "growth_trend": "+35% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Automotive Diesel EN590",
+    "total_verified_suppliers": 2150,
+    "total_buying_leads_rfqs": 1190,
+    "growth_trend": "+38% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Aviation Fuel Oil",
+    "total_verified_suppliers": 1420,
+    "total_buying_leads_rfqs": 790,
+    "growth_trend": "+29% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Base Oil",
+    "total_verified_suppliers": 1380,
+    "total_buying_leads_rfqs": 750,
+    "growth_trend": "+24% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Biodiesel",
+    "total_verified_suppliers": 920,
+    "total_buying_leads_rfqs": 510,
+    "growth_trend": "+27% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Biodiesel EN590",
+    "total_verified_suppliers": 860,
+    "total_buying_leads_rfqs": 470,
+    "growth_trend": "+26% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Bitumen",
+    "total_verified_suppliers": 1540,
+    "total_buying_leads_rfqs": 840,
+    "growth_trend": "+21% this month"
+  },
+  {
+    "main_category": "Petroleum, Oil & Related Products",
+    "subcategory": "Bitumen Asphalt",
+    "total_verified_suppliers": 1280,
+    "total_buying_leads_rfqs": 690,
+    "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Bio-Degradable Plastic Product",
+    "total_verified_suppliers": 620,
+    "total_buying_leads_rfqs": 340,
+    "growth_trend": "+29% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Injection Moulded Products",
+    "total_verified_suppliers": 740,
+    "total_buying_leads_rfqs": 410,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Plastic Items",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 370,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Plastic Moulds",
+    "total_verified_suppliers": 410,
+    "total_buying_leads_rfqs": 220,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Plastic Raw Materials",
+    "total_verified_suppliers": 1180,
+    "total_buying_leads_rfqs": 650,
+    "growth_trend": "+22% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Plastic Scrap",
+    "total_verified_suppliers": 950,
+    "total_buying_leads_rfqs": 520,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Plastic Sheets Laminates",
+    "total_verified_suppliers": 560,
+    "total_buying_leads_rfqs": 300,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Plastic Products",
+    "subcategory": "Recycled Plastic",
+    "total_verified_suppliers": 890,
+    "total_buying_leads_rfqs": 490,
+    "growth_trend": "+26% this month"
+  },
+  {
+    "main_category": "Power Plants",
+    "subcategory": "Power Plant Spares",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 80,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Refrigeration, Cold Storage",
+    "subcategory": "Compressors",
+    "total_verified_suppliers": 580,
+    "total_buying_leads_rfqs": 310,
+    "growth_trend": "+17% this month"
+  },
+  {
+    "main_category": "Refrigeration, Cold Storage",
+    "subcategory": "Refrigerator Tubes",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 165,
+    "growth_trend": "+10% this month"
+  },
+  {
+    "main_category": "Rubber & Related Items",
+    "subcategory": "Raw Rubber",
+    "total_verified_suppliers": 780,
+    "total_buying_leads_rfqs": 420,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Rubber & Related Items",
+    "subcategory": "Rubber Items",
+    "total_verified_suppliers": 640,
+    "total_buying_leads_rfqs": 350,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Rubber & Related Items",
+    "subcategory": "Rubber Machinery",
+    "total_verified_suppliers": 190,
+    "total_buying_leads_rfqs": 95,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Rubber & Related Items",
+    "subcategory": "Rubber Scrap",
+    "total_verified_suppliers": 710,
+    "total_buying_leads_rfqs": 380,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Rubber & Related Items",
+    "subcategory": "Synthetic Rubber",
+    "total_verified_suppliers": 860,
+    "total_buying_leads_rfqs": 460,
+    "growth_trend": "+18% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Axe",
+    "total_verified_suppliers": 210,
+    "total_buying_leads_rfqs": 105,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Dutch Hoe",
+    "total_verified_suppliers": 140,
+    "total_buying_leads_rfqs": 70,
+    "growth_trend": "+5% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Farmer Tools",
+    "total_verified_suppliers": 320,
+    "total_buying_leads_rfqs": 165,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Fork Jembe",
+    "total_verified_suppliers": 160,
+    "total_buying_leads_rfqs": 80,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Garden Hose",
+    "total_verified_suppliers": 350,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Garden Tools",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 175,
+    "growth_trend": "+13% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Hand Trowel",
+    "total_verified_suppliers": 180,
+    "total_buying_leads_rfqs": 90,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Hoe",
+    "total_verified_suppliers": 220,
+    "total_buying_leads_rfqs": 110,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Knapsack Sprayer",
+    "total_verified_suppliers": 290,
+    "total_buying_leads_rfqs": 150,
+    "growth_trend": "+16% this month"
+  },
+  {
+    "main_category": "Tools & Instruments",
+    "subcategory": "Lawn Mower",
+    "total_verified_suppliers": 250,
+    "total_buying_leads_rfqs": 125,
+    "growth_trend": "+11% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Aeroplane Models",
+    "total_verified_suppliers": 90,
+    "total_buying_leads_rfqs": 40,
+    "growth_trend": "+4% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Aerospace - Commercial & Military",
+    "total_verified_suppliers": 75,
+    "total_buying_leads_rfqs": 35,
+    "growth_trend": "+8% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Aircraft",
+    "total_verified_suppliers": 50,
+    "total_buying_leads_rfqs": 25,
+    "growth_trend": "+6% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Aircraft & Aerospace",
+    "total_verified_suppliers": 65,
+    "total_buying_leads_rfqs": 30,
+    "growth_trend": "+7% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Aircraft Engines & Spares",
+    "total_verified_suppliers": 85,
+    "total_buying_leads_rfqs": 40,
+    "growth_trend": "+12% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Ambulances Special Purpose Vehicles",
+    "total_verified_suppliers": 110,
+    "total_buying_leads_rfqs": 55,
+    "growth_trend": "+9% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Auto Rickshaw & Spare Parts",
+    "total_verified_suppliers": 340,
+    "total_buying_leads_rfqs": 180,
+    "growth_trend": "+14% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Automobile Body Parts",
+    "total_verified_suppliers": 680,
+    "total_buying_leads_rfqs": 370,
+    "growth_trend": "+19% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Automobile Bolts Nuts Springs & Bearings",
+    "total_verified_suppliers": 610,
+    "total_buying_leads_rfqs": 330,
+    "growth_trend": "+15% this month"
+  },
+  {
+    "main_category": "Transportation - Air, Rail, Auto Components",
+    "subcategory": "Automobile Brakes & Spare Parts",
+    "total_verified_suppliers": 540,
+    "total_buying_leads_rfqs": 290,
+    "growth_trend": "+17% this month"
   }
 ];
 
@@ -1362,11 +2300,12 @@ export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.f
   const main = m.main_category.toLowerCase();
 
   const unit = main.includes('software') ? 'Licenses'
-             : main.includes('machinery') || sub.includes('tractor') || sub.includes('pump') || sub.includes('machines') || sub.includes('generators') || sub.includes('parts') || sub.includes('elevator') || sub.includes('chair') || sub.includes('table') || sub.includes('rack') || sub.includes('podium') ? 'Units' 
-             : main.includes('beverage') || sub.includes('juice') || sub.includes('vinegar') || sub.includes('ale') || sub.includes('cider') || sub.includes('freshners') ? 'Liters'
-             : sub.includes('cement') || sub.includes('aggregates') || sub.includes('brick') || sub.includes('sand') || sub.includes('raw jute') || sub.includes('coir fibers') || sub.includes('wood') || sub.includes('bamboo') || sub.includes('grain') || sub.includes('rice') || sub.includes('wheat') || sub.includes('flour') ? 'Metric Tons'
-             : sub.includes('carpet') || sub.includes('mat') || sub.includes('rug') || sub.includes('tiles') || sub.includes('slabs') || sub.includes('glass') ? 'Sq. Meters'
-             : sub.includes('yarn') || sub.includes('fabric') || sub.includes('cloth') ? 'Rolls'
+             : sub.includes('fuel') || sub.includes('diesel') || sub.includes('base oil') || sub.includes('biodiesel') || sub.includes('marine oil') ? 'Barrels'
+             : main.includes('machinery') || main.includes('transportation') || main.includes('marine') || sub.includes('aircraft') || sub.includes('engine') || sub.includes('boat') || sub.includes('tractor') || sub.includes('pump') || sub.includes('machines') || sub.includes('generators') || sub.includes('parts') || sub.includes('elevator') || sub.includes('chair') || sub.includes('table') || sub.includes('rack') || sub.includes('podium') || sub.includes('compressor') || sub.includes('mower') ? 'Units' 
+             : main.includes('beverage') || sub.includes('juice') || sub.includes('vinegar') || sub.includes('ale') || sub.includes('cider') || sub.includes('freshners') || sub.includes('acid') || sub.includes('acetone') || sub.includes('liquid') ? 'Liters'
+             : main.includes('mining') || main.includes('metal') || main.includes('petroleum') || sub.includes('ore') || sub.includes('scrap') || sub.includes('billet') || sub.includes('alloy') || sub.includes('asphalt') || sub.includes('bitumen') || sub.includes('sulphur') || sub.includes('silicon') || sub.includes('raw rubber') || sub.includes('cement') || sub.includes('aggregates') || sub.includes('brick') || sub.includes('sand') || sub.includes('raw jute') || sub.includes('coir fibers') || sub.includes('wood') || sub.includes('bamboo') || sub.includes('grain') || sub.includes('rice') || sub.includes('wheat') || sub.includes('flour') ? 'Metric Tons'
+             : sub.includes('carpet') || sub.includes('mat') || sub.includes('rug') || sub.includes('tiles') || sub.includes('slabs') || sub.includes('glass') || sub.includes('sheets') || sub.includes('wafer') ? 'Sq. Meters'
+             : sub.includes('tape') || sub.includes('rolls') || sub.includes('foil') || sub.includes('yarn') || sub.includes('fabric') || sub.includes('cloth') ? 'Rolls'
              : sub.includes('set') || sub.includes('accessories') || sub.includes('fittings') || sub.includes('kitchenware') || sub.includes('knobs') || sub.includes('lamps') || sub.includes('cartridge') || sub.includes('coasters') ? 'Sets'
              : 'Pieces';
 

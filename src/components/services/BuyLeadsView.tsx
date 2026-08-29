@@ -40,19 +40,19 @@ interface Props {
 }
 
 const QUICK_SEARCH_CHIPS = [
+  'Automotive Diesel EN590',
+  'A1 Jet Fuel',
+  'Copper Ore',
+  'Aluminium Billets',
+  'Sulphur',
+  'Acetic Acid',
+  'CNC Machines',
   'Cement',
-  'Blocks & Tiles',
-  'Area Rugs',
   'Bamboo Wood',
   'Raw Jute',
-  'Ceramic Kitchenware',
   'Elevator Parts',
-  'Rice',
   'Solar Inverter',
-  'Lithium Battery',
-  'Copper Cathode',
-  'RAM Memory',
-  'Cotton Fabric'
+  'Lithium Battery'
 ];
 
 export const BuyLeadsView: React.FC<Props> = ({

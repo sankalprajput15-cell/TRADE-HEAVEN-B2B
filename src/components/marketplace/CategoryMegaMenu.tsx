@@ -37,7 +37,17 @@ import {
   Fish,
   Wine,
   GlassWater,
-  Flower2
+  Flower2,
+  Printer,
+  Cog,
+  Anchor,
+  Shield,
+  Pickaxe,
+  Fuel,
+  Snowflake,
+  CircleDot,
+  Hammer,
+  Plane
 } from 'lucide-react';
 
 interface Props {
@@ -93,6 +103,16 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       case 'Wine': return <Wine className="w-4 h-4 text-red-700" />;
       case 'GlassWater': return <GlassWater className="w-4 h-4 text-blue-400" />;
       case 'Flower2': return <Flower2 className="w-4 h-4 text-pink-600" />;
+      case 'Printer': return <Printer className="w-4 h-4 text-indigo-600" />;
+      case 'Cog': return <Cog className="w-4 h-4 text-slate-600" />;
+      case 'Anchor': return <Anchor className="w-4 h-4 text-cyan-700" />;
+      case 'Shield': return <Shield className="w-4 h-4 text-blue-700" />;
+      case 'Pickaxe': return <Pickaxe className="w-4 h-4 text-amber-700" />;
+      case 'Fuel': return <Fuel className="w-4 h-4 text-orange-600" />;
+      case 'Snowflake': return <Snowflake className="w-4 h-4 text-sky-500" />;
+      case 'CircleDot': return <CircleDot className="w-4 h-4 text-rose-600" />;
+      case 'Hammer': return <Hammer className="w-4 h-4 text-amber-800" />;
+      case 'Plane': return <Plane className="w-4 h-4 text-blue-600" />;
       default: return <Box className="w-4 h-4 text-blue-600" />;
     }
   };

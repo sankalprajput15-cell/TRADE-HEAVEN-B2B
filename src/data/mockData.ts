@@ -322,6 +322,142 @@ export const CATEGORIES_TREE = [
     image: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Anti Termite Wood Products', 'Ash Wood', 'Bamboo', 'Bamboo Products', 'Beach Wood', 'Cedar Wood', 'Chopsticks', 'Cork Wood', 'Ebony Wood', 'Eucalyptus Wood'],
     count: '5,740+ Verified Suppliers | 3,045+ RFQs'
+  },
+  {
+    id: 'cat-chemicals-allied',
+    name: 'Chemicals & Allied Products',
+    icon: 'FlaskConical',
+    image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Acetic Acid', 'Acetic Acid (Vinegar)', 'Acetone', 'Acids', 'Adhesive Sealants & Lubricants', 'Agricultural Chemicals', 'Aldehyde', 'Alum', 'Aluminum Oxide', 'Aluminum Sulfate'],
+    count: '7,210+ Verified Suppliers | 3,850+ RFQs'
+  },
+  {
+    id: 'cat-display-packaging',
+    name: 'Display, Printing & Packaging Products',
+    icon: 'Printer',
+    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Acrylic Boxes', 'Air Bubble Bags', 'Aluminium Containers', 'Aluminium Drum & Barrel', 'Aluminium Foil Tape', 'Aluminum Foil', 'BOPP Tape', 'Baffle Bags', 'Bakery Bags', 'Blister Foil'],
+    count: '4,550+ Verified Suppliers | 2,390+ RFQs'
+  },
+  {
+    id: 'cat-industrial-goods',
+    name: 'Industrial Goods & Supplies',
+    icon: 'Wrench',
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Abrasives', 'Anchors', 'Battery Scraps', 'Bearing', 'Bolts', 'Cement Bags', 'Clamps', 'Clips', 'Dies & Mouldings', 'Fasteners'],
+    count: '5,730+ Verified Suppliers | 3,090+ RFQs'
+  },
+  {
+    id: 'cat-industrial-machinery',
+    name: 'Industrial Machinery & Plants',
+    icon: 'Cog',
+    image: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Automobile Machinery', 'Bag Machinery', 'Beverages Machinery', 'Breweries & Distillery Machinery', 'CNC Machines & Spare Parts', 'Ceramic Machine', 'Charcoal/Briquette Making Machinery', 'Cigarette Making Machine/Tobacco Processing Machine', 'Coir Machinery', 'Dairy & Poultry Equipment'],
+    count: '2,570+ Verified Suppliers | 1,280+ RFQs'
+  },
+  {
+    id: 'cat-marine-equipment',
+    name: 'Marine Equipment & Machinery',
+    icon: 'Anchor',
+    image: 'https://images.unsplash.com/photo-1505705694340-019e1e335916?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Boats & Vessels', 'Marine Chemicals', 'Marine Engines', 'Marine Equipments & Spare Parts', 'Marine Oil', 'Marine Propellers', 'Marine Safety Products', 'Marine Valves', 'Nautical Items', 'Shipping Machinery Equipment & Spare Parts'],
+    count: '2,350+ Verified Suppliers | 1,175+ RFQs'
+  },
+  {
+    id: 'cat-metal-products',
+    name: 'Metal & Metal Products',
+    icon: 'Shield',
+    image: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Aluminium Alloy', 'Aluminium Ash', 'Aluminium Balls', 'Aluminium Billets', 'Aluminium Boring Scrap', 'Aluminium Bronze Scrap', 'Aluminium Cable Scrap', 'Aluminium Can Scrap', 'Aluminium Casting Scrap', 'Aluminium Coil Scrap'],
+    count: '9,120+ Verified Suppliers | 4,960+ RFQs'
+  },
+  {
+    id: 'cat-metallic-elements',
+    name: 'Metallic Elements',
+    icon: 'Sparkles',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Mercury'],
+    count: '65+ Verified Suppliers | 30+ RFQs'
+  },
+  {
+    id: 'cat-mining-metallurgy',
+    name: 'Mining & Metallurgy',
+    icon: 'Pickaxe',
+    image: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Antimony Ore', 'Asbestos', 'Barite Ore', 'Bauxite & Aluminium Ore', 'Bentonite', 'Chrome Ore', 'Clay', 'Coltan Tantalite Ore', 'Copper Ore', 'Dolomite'],
+    count: '8,880+ Verified Suppliers | 4,820+ RFQs'
+  },
+  {
+    id: 'cat-non-metallic',
+    name: 'Non Metallic Elements',
+    icon: 'Layers',
+    image: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Silicon', 'Silicon Plates', 'Silicon Sealants', 'Silicon Sheets', 'Silicon Tubes', 'Silicon Wafer', 'Sulphur'],
+    count: '4,770+ Verified Suppliers | 2,540+ RFQs'
+  },
+  {
+    id: 'cat-paper-products',
+    name: 'Paper & Paper Products',
+    icon: 'FileText',
+    image: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['ATM Paper Rolls', 'Absorbent Paper', 'Adhesive Paper', 'Air Filter Paper', 'Anti Rust Paper', 'Art Paper', 'Backing Paper', 'Billing Paper Rolls', 'Bituminised Waterproof Paper', 'Bleached Paper'],
+    count: '4,110+ Verified Suppliers | 2,160+ RFQs'
+  },
+  {
+    id: 'cat-petroleum-oil',
+    name: 'Petroleum, Oil & Related Products',
+    icon: 'Fuel',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['A1 Jet Fuel', 'Asphalt', 'Automotive Diesel', 'Automotive Diesel EN590', 'Aviation Fuel Oil', 'Base Oil', 'Biodiesel', 'Biodiesel EN590', 'Bitumen', 'Bitumen Asphalt'],
+    count: '14,340+ Verified Suppliers | 8,000+ RFQs'
+  },
+  {
+    id: 'cat-plastic-products',
+    name: 'Plastic Products',
+    icon: 'Box',
+    image: 'https://images.unsplash.com/photo-1591871937573-74dbba515c4c?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Bio-Degradable Plastic Product', 'Injection Moulded Products', 'Plastic Items', 'Plastic Moulds', 'Plastic Raw Materials', 'Plastic Scrap', 'Plastic Sheets Laminates', 'Recycled Plastic'],
+    count: '6,030+ Verified Suppliers | 3,300+ RFQs'
+  },
+  {
+    id: 'cat-power-plants',
+    name: 'Power Plants',
+    icon: 'Zap',
+    image: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Power Plant Spares'],
+    count: '160+ Verified Suppliers | 80+ RFQs'
+  },
+  {
+    id: 'cat-refrigeration-storage',
+    name: 'Refrigeration, Cold Storage',
+    icon: 'Snowflake',
+    image: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Compressors', 'Refrigerator Tubes'],
+    count: '900+ Verified Suppliers | 475+ RFQs'
+  },
+  {
+    id: 'cat-rubber-items',
+    name: 'Rubber & Related Items',
+    icon: 'CircleDot',
+    image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Raw Rubber', 'Rubber Items', 'Rubber Machinery', 'Rubber Scrap', 'Synthetic Rubber'],
+    count: '3,180+ Verified Suppliers | 1,705+ RFQs'
+  },
+  {
+    id: 'cat-tools-instruments',
+    name: 'Tools & Instruments',
+    icon: 'Hammer',
+    image: 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Axe', 'Dutch Hoe', 'Farmer Tools', 'Fork Jembe', 'Garden Hose', 'Garden Tools', 'Hand Trowel', 'Hoe', 'Knapsack Sprayer', 'Lawn Mower'],
+    count: '2,460+ Verified Suppliers | 1,280+ RFQs'
+  },
+  {
+    id: 'cat-transportation-components',
+    name: 'Transportation - Air, Rail, Auto Components',
+    icon: 'Plane',
+    image: 'https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Aeroplane Models', 'Aerospace - Commercial & Military', 'Aircraft', 'Aircraft & Aerospace', 'Aircraft Engines & Spares', 'Ambulances Special Purpose Vehicles', 'Auto Rickshaw & Spare Parts', 'Automobile Body Parts', 'Automobile Bolts Nuts Springs & Bearings', 'Automobile Brakes & Spare Parts'],
+    count: '2,745+ Verified Suppliers | 1,465+ RFQs'
   }
 ];
 
