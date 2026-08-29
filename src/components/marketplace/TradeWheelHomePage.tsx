@@ -6,6 +6,7 @@ import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
 import { HeroSection } from './HeroSection';
 import { CategoryMegaMenu } from './CategoryMegaMenu';
+import { LiveGlobalTradeFeed } from './LiveGlobalTradeFeed';
 import { ProductCatalog } from './ProductCatalog';
 import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
@@ -118,6 +119,19 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onNavigate={onNavigate}
         onOpenCreateRfq={onOpenCreateRfq}
       />
+
+      {/* 2.5 LIVE GLOBAL TRADE FEED */}
+      <div className="pt-1 pb-2">
+        <LiveGlobalTradeFeed 
+          onSelectLead={(lead) => {
+            if (onNavigateToRfqs) {
+              onNavigateToRfqs(lead.product);
+            } else {
+              onNavigate('BUY_LEADS');
+            }
+          }}
+        />
+      </div>
 
       {/* 3. FEATURED PRODUCTS CATALOG SECTION */}
       <div id="featured-products-section" className="space-y-4">

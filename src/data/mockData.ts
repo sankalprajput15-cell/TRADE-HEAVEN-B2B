@@ -1,4 +1,5 @@
 import { METRICS_DERIVED_RFQS } from './b2bTradeMetrics';
+import { MAPPED_CATALOG_DERIVED_RFQS, MAPPED_CATALOG_DERIVED_PRODUCTS, MAPPED_CATALOG_DATABASE } from './mappedCatalogDatabase';
 import { 
   CompanyProfile, 
   DetailedBuyerProfile,
@@ -2160,7 +2161,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   }
 ];
 
-export const MOCK_PRODUCTS: Product[] = [
+const BASE_MOCK_PRODUCTS: Product[] = [
   {
     id: 'prod-en590-petromunai',
     supplierId: 'comp-petro-munai-too',
@@ -3350,6 +3351,8 @@ export const MOCK_PRODUCTS: Product[] = [
   }
 ];
 
+export const MOCK_PRODUCTS: Product[] = [...MAPPED_CATALOG_DERIVED_PRODUCTS, ...BASE_MOCK_PRODUCTS];
+
 const BASE_MOCK_RFQS: RfqRequirement[] = [
   {
     id: 'RFQ-2026-0801',
@@ -4388,7 +4391,8 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
   }
 ];
 
-export const MOCK_RFQS: RfqRequirement[] = [...BASE_MOCK_RFQS, ...METRICS_DERIVED_RFQS];
+export const MOCK_RFQS: RfqRequirement[] = [...MAPPED_CATALOG_DERIVED_RFQS, ...BASE_MOCK_RFQS, ...METRICS_DERIVED_RFQS];
+export { MAPPED_CATALOG_DATABASE };
 
 export const MOCK_QUOTES: SupplierQuote[] = [
   {

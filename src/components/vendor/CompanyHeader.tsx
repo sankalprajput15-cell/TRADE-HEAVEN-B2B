@@ -39,15 +39,6 @@ export const CompanyHeader: React.FC<Props> = ({
               <span className="hidden sm:inline">Manage Media Studio</span>
             </button>
           )}
-
-          {isModalView && onCloseModal && (
-            <button
-              onClick={onCloseModal}
-              className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
         </div>
 
         <div className="absolute bottom-5 left-5 right-5 flex flex-col md:flex-row md:items-end justify-between gap-4">

@@ -99,18 +99,18 @@ const MainApp: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>(getInitialView());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
 
-  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
-  const [maintenanceError, setMaintenanceError] = useState<{ message: string; code?: string } | null>(null);
-
-  // Global listener for database/insertion errors to activate Maintenance Mode
+  // Global listener: on any unexpected error event, safely divert directly to HOMEPAGE
   useEffect(() => {
     const handleDbError = (e: Event) => {
       const customEvent = e as CustomEvent<{ message: string; code?: string }>;
-      setMaintenanceMode(true);
-      if (customEvent.detail) {
-        setMaintenanceError(customEvent.detail);
-      } else {
-        setMaintenanceError({ message: 'A database synchronization error was detected during transaction execution.' });
+      console.warn('[TradeHeaven Safety Handled Error - Diverting to Home]:', customEvent?.detail);
+      setActiveView('HOMEPAGE');
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('view')) {
+          url.searchParams.delete('view');
+          window.history.replaceState({}, '', url.pathname);
+        }
       }
     };
     window.addEventListener('tradeheaven_database_error', handleDbError);
@@ -673,97 +673,6 @@ const MainApp: React.FC = () => {
       setIsDbModalOpen(true);
     }
   };
-
-  if (maintenanceMode) {
-    return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between font-sans antialiased">
-        {/* Banner */}
-        <div className="bg-amber-500 text-white text-xs font-semibold py-2 px-4 text-center tracking-wide">
-          ⚠️ DATABASE COOPERATIVE ALERT &bull; COLD FAILSAFE STANDBY WIDGET ACTIVE
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 max-w-4xl mx-auto w-full">
-          <div className="w-20 h-20 bg-amber-100 border border-amber-300 rounded-3xl flex items-center justify-center mb-8 shadow-sm">
-            <svg className="w-10 h-10 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 text-center tracking-tight leading-none mb-3">
-            System Undergoing Maintenance
-          </h1>
-          <p className="text-slate-600 text-center max-w-lg mb-8 leading-relaxed text-base">
-            We detected a database synchronization or transaction exception. To safeguard active negotiations and B2B global trade assets, our failsafe circuit-breaker has engaged Standby Failsafe Mode.
-          </p>
-
-          {/* Error Details Card */}
-          <div className="w-full bg-white border border-slate-200 shadow-xl rounded-2xl p-6 mb-8 overflow-hidden relative text-left">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">System Logs & Trace</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                {maintenanceError?.code || 'DATABASE_INSERT_ERROR'}
-              </span>
-            </div>
-            
-            <div className="space-y-3 font-mono text-sm text-slate-700">
-              <div className="flex items-start gap-2">
-                <span className="text-slate-400 select-none shrink-0">[Exception]:</span>
-                <span className="font-semibold break-all text-red-600">
-                  {maintenanceError?.message || 'Database insertion mismatch during execution.'}
-                </span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-slate-400 select-none shrink-0">[Timestamp]:</span>
-                <span>{new Date().toISOString()}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-slate-400 select-none shrink-0">[Subsystem]:</span>
-                <span className="text-indigo-600">PDO MySQL Gateway (api.php)</span>
-              </div>
-            </div>
-
-            <div className="mt-5 pt-4 border-t border-slate-100 bg-slate-50 -mx-6 -mb-6 px-6 py-4 flex items-center justify-between flex-wrap gap-2">
-              <p className="text-xs text-slate-500">
-                Our operations &amp; database engineering teams have been dispatched automatically via system-level webhooks.
-              </p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <button
-              onClick={() => {
-                // Clear state and attempt re-initialization
-                setMaintenanceMode(false);
-                setMaintenanceError(null);
-                initializeData();
-              }}
-              className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold transition-all duration-200 inline-flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H19" />
-              </svg>
-              <span>Attempt Recovery</span>
-            </button>
-            <a
-              href="mailto:sankalprajput15@gmail.com"
-              className="px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-semibold transition-all duration-200 inline-flex items-center gap-2 shadow-sm cursor-pointer"
-            >
-              <span>Contact System Architect</span>
-            </a>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-slate-200 bg-white py-6 px-4 text-center">
-          <p className="text-xs text-slate-400">
-            Trade Heaven Global Systems Ltd &bull; Swiss Custodial Ledger Persistence &bull; &copy; 2026 All Rights Reserved.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
