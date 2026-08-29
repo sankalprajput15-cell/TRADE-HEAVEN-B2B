@@ -166,6 +166,36 @@ export const CATEGORIES_TREE = [
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
   {
+    id: 'comp-astra-commodities',
+    companyName: 'Astra Commodities Llc',
+    legalRegistrationNumber: 'N/A',
+    country: 'United States',
+    city: 'Houston',
+    address: '12333 SOWDEN RD STE B PMB 479436, HOUSTON, Texas, United States',
+    establishedYear: 2026,
+    businessType: 'Exporter',
+    tier: 'FREE',
+    isVerifiedKYC: false,
+    kycVerificationDate: '',
+    trustScore: 70,
+    responseRate: '95%',
+    avgResponseTime: '< 4 hours',
+    totalEmployees: '10-50',
+    annualRevenueUsd: '$5M - $10M',
+    mainMarkets: ['Global'],
+    certifications: [],
+    factorySizeSqM: 0,
+    productionLines: 0,
+    logoUrl: 'https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: '',
+    description: 'Astra Commodities Llc is a bulk exporter specializing in commodities including diesel fuel, metals, and industrial materials.',
+    contactPerson: 'Fred Bernard Zaziski',
+    contactEmail: 'contact@astracomodities.com',
+    contactPhone: '+1 939-214-3022',
+    tradeAssuranceLimitUsd: 500000,
+    completedOrdersCount: 0
+  },
+  {
     id: 'comp-hans-cnc',
     companyName: 'KUKA Precision Engineering GmbH',
     legalRegistrationNumber: 'DE-HRB-984210',
@@ -557,6 +587,25 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  {
+    id: 'prod-en590-diesel',
+    supplierId: 'comp-astra-commodities',
+    supplierName: 'Astra Commodities Llc',
+    supplierCountry: 'United States',
+    supplierTier: 'SILVER',
+    supplierTrustScore: 90,
+    title: 'EN590 10ppm Diesel Fuel Bulk Exporter',
+    category: 'Fuel',
+    subCategory: 'Diesel',
+    images: [],
+    description: 'Automotive Gas Oil AGO EN590 for Sale',
+    fobPriceUsd: 520,
+    moq: 10000,
+    moqUnit: 'Metric Ton',
+    leadTimeDays: 30,
+    supportedIncoterms: ['FOB'],
+    createdDate: '2026-08-28'
+  },
   {
     id: 'prod-forged-racing-wheels',
     supplierId: 'comp-apex-motorsport',
