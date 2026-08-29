@@ -20,7 +20,8 @@ import {
   Download,
   AlertCircle,
   MessageCircle,
-  ExternalLink
+  ExternalLink,
+  Lock
 } from 'lucide-react';
 
 interface Props {
@@ -200,7 +201,13 @@ export const ProductDetailModal: React.FC<Props> = ({
               {/* Volume FOB Pricing Matrix Table */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
                 <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-                  <span>Tiered Volume FOB Pricing Matrix</span>
+                  <div className="flex items-center gap-1.5">
+                    <span>Tiered Volume FOB Pricing Matrix</span>
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                      <Lock className="w-2.5 h-2.5 text-amber-600" />
+                      <span>Protected Commercial Rates</span>
+                    </span>
+                  </div>
                   <span className="text-[10px] text-slate-500 font-mono font-bold">Currency: {curr.code}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-1">

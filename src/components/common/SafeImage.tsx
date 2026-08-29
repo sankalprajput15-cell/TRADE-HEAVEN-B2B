@@ -13,7 +13,19 @@ const FALLBACK_SEEDS: string[] = [
   'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
   'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+  'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'
 ];
 
 export const SafeImage: React.FC<SafeImageProps> = ({
@@ -28,7 +40,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
 
-  // Build candidate URL list
+  // Build candidate URL list with deterministic seed offset based on alt text
   const candidates = React.useMemo(() => {
     const list: string[] = [];
     if (src && typeof src === 'string' && src.trim()) {
@@ -37,13 +49,18 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim() && !list.includes(fallbackSrc.trim())) {
       list.push(fallbackSrc.trim());
     }
-    for (const seed of FALLBACK_SEEDS) {
+    
+    // Deterministic offset based on alt string hash
+    const hash = (alt || 'product').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const offset = hash % FALLBACK_SEEDS.length;
+    for (let i = 0; i < FALLBACK_SEEDS.length; i++) {
+      const seed = FALLBACK_SEEDS[(offset + i) % FALLBACK_SEEDS.length];
       if (!list.includes(seed)) {
         list.push(seed);
       }
     }
     return list;
-  }, [src, fallbackSrc]);
+  }, [src, fallbackSrc, alt]);
 
   useEffect(() => {
     setAttemptIndex(0);

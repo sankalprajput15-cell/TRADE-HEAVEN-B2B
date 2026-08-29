@@ -1,8 +1,7 @@
 import React from 'react';
 import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
-import { MessageCircle, Building, Clock, Maximize2, Send } from 'lucide-react';
-import { Award, ShieldCheck } from 'lucide-react';
+import { MessageCircle, Building, Lock, ShieldCheck, Award } from 'lucide-react';
 
 interface Props {
   products: Product[];
@@ -24,7 +23,7 @@ export const ProductCatalogGrid: React.FC<Props> = ({
   getTierBadge,
 }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
       {products.map(product => (
         <div
           key={product.id}
@@ -44,6 +43,12 @@ export const ProductCatalogGrid: React.FC<Props> = ({
               <div className="absolute top-2.5 left-2.5">
                 {getTierBadge(product.supplierTier)}
               </div>
+              <div className="absolute bottom-2.5 right-2.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
+                  <Lock className="w-2.5 h-2.5 text-amber-400" />
+                  <span>Protected Rate</span>
+                </span>
+              </div>
             </div>
 
             {/* Content Body */}
@@ -55,22 +60,18 @@ export const ProductCatalogGrid: React.FC<Props> = ({
                 {product.title}
               </div>
 
-              {/* Tiered FOB Price range */}
+              {/* Tiered FOB Price range with Confidential / Inquire Protection */}
               <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-200">
-                <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">FOB Volume Price</div>
-                <div className="text-sm sm:text-base font-black text-emerald-700 font-mono mt-0.5">
-                  {product.priceTiers && product.priceTiers.length > 0 ? (
-                    product.priceTiers.length > 1 ? (
-                      `${formatPrice(product.priceTiers[product.priceTiers.length - 1].priceUsd)} - ${formatPrice(product.priceTiers[0].priceUsd)}`
-                    ) : (
-                      formatPrice(product.priceTiers[0].priceUsd)
-                    )
-                  ) : product.fobPriceUsd && product.fobPriceUsd > 0 ? (
-                    formatPrice(product.fobPriceUsd)
-                  ) : (
-                    formatPrice((Math.abs((product.id || 'prod').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % 450) + 120)
-                  )}
-                  <span className="text-[11px] sm:text-xs font-normal text-slate-600"> / {product.moqUnit || 'Unit'}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">FOB Volume Price</span>
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                    <Lock className="w-2.5 h-2.5 text-amber-600" />
+                    <span>Protected Rate</span>
+                  </span>
+                </div>
+                <div className="text-sm sm:text-base font-black text-slate-800 font-mono mt-0.5 flex items-baseline gap-1">
+                  <span>Inquire for Price</span>
+                  <span className="text-[11px] sm:text-xs font-normal text-slate-500"> / {product.moqUnit || 'Unit'}</span>
                 </div>
                 <div className="text-[10px] sm:text-[11px] text-slate-600 mt-1.5 flex items-center justify-between font-medium pt-1.5 border-t border-slate-200/60">
                   <span>MOQ: <strong className="text-slate-900 font-bold">{(product.moq && product.moq > 0 ? product.moq : 100).toLocaleString()} {product.moqUnit || 'Units'}</strong></span>

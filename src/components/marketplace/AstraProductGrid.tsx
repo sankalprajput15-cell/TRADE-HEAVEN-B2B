@@ -1,7 +1,7 @@
 import React from 'react';
 import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Lock } from 'lucide-react';
 
 interface Props {
   products: Product[];
@@ -28,13 +28,19 @@ export const AstraProductGrid: React.FC<Props> = ({
         >
           <div 
             onClick={() => onSelectProduct(product)}
-            className="h-44 w-full bg-slate-100 overflow-hidden cursor-pointer"
+            className="h-44 w-full bg-slate-100 overflow-hidden cursor-pointer relative"
           >
             <SafeImage
               src={product.images[0] || 'https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=400'}
               alt={product.title}
               className="w-full h-full object-cover hover:scale-105 transition-transform"
             />
+            <div className="absolute bottom-2.5 right-2.5">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
+                <Lock className="w-2.5 h-2.5 text-amber-400" />
+                <span>Protected Rate</span>
+              </span>
+            </div>
           </div>
           <div className="p-4 space-y-2">
             <h4 
@@ -43,8 +49,14 @@ export const AstraProductGrid: React.FC<Props> = ({
             >
               {product.title}
             </h4>
-            <div className="text-sm font-black text-emerald-700 font-mono">
-              ${product.fobPriceUsd.toLocaleString()} / {product.moqUnit}
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-black text-slate-800 font-mono">
+                Inquire for Price / {product.moqUnit}
+              </div>
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                <Lock className="w-2.5 h-2.5 text-amber-600" />
+                <span>Inquire</span>
+              </span>
             </div>
             <p className="text-xs text-slate-600 line-clamp-2">{product.description}</p>
           </div>

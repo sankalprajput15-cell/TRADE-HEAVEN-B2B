@@ -16,7 +16,8 @@ import {
   ExternalLink,
   MessageCircle,
   Package,
-  Layers
+  Layers,
+  Lock
 } from 'lucide-react';
 import { ProductCatalogGrid } from './ProductCatalogGrid';
 
@@ -195,21 +196,17 @@ export const ProductCatalog: React.FC<Props> = ({
     return matchesSearch && matchesCat && matchesTier && matchesIncoterm && matchesMoq && matchesOwnership;
   });
 
-  const highlightText = (text: string, highlight: string) => {
-    if (!highlight.trim()) return text;
-    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
-    return (
-      <>
-        {parts.map((part, index) =>
-          part.toLowerCase() === highlight.toLowerCase() ? (
-            <mark key={index} className="bg-yellow-200 text-slate-900 rounded-sm px-0.5">{part}</mark>
-          ) : (
-            part
-          )
-        )}
-      </>
-    );
-  };
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 12; // 3x4 / 4x3 product grid (12 items per page)
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeCategory, selectedTier, selectedIncoterm, maxMoq, ownershipFilter]);
+
+  // Paginated subset
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div id="product-catalog-section" className="space-y-4 sm:space-y-6">
@@ -515,86 +512,149 @@ export const ProductCatalog: React.FC<Props> = ({
               <div className="text-sm sm:text-base font-bold text-slate-900">No products match your criteria</div>
               <p className="text-xs text-slate-500">Try broadening your MOQ range or clearing specific filter tags.</p>
             </div>
-          ) : viewMode === 'GRID' ? (
-            <ProductCatalogGrid
-              products={filtered}
-              selectedCurrency={selectedCurrency}
-              onSelectProduct={onSelectProduct}
-              onOpenStorefront={onOpenStorefront}
-              onContactSupplier={onContactSupplier}
-              formatPrice={formatPrice}
-              getTierBadge={getTierBadge}
-            />
           ) : (
-            /* List View */
-            <div className="space-y-2.5 sm:space-y-3">
-              {filtered.map(product => (
-                <div
-                  key={product.id}
-                  className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-blue-400 hover:shadow-md transition-all shadow-2xs"
-                >
-                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                    <div 
-                      className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg sm:rounded-xl overflow-hidden shrink-0 cursor-pointer border border-slate-200"
-                      onClick={() => onSelectProduct(product)}
+            <div className="space-y-4">
+              {viewMode === 'GRID' ? (
+                <ProductCatalogGrid
+                  products={paginatedProducts}
+                  selectedCurrency={selectedCurrency}
+                  onSelectProduct={onSelectProduct}
+                  onOpenStorefront={onOpenStorefront}
+                  onContactSupplier={onContactSupplier}
+                  formatPrice={formatPrice}
+                  getTierBadge={getTierBadge}
+                />
+              ) : (
+                /* List View */
+                <div className="space-y-2.5 sm:space-y-3">
+                  {paginatedProducts.map(product => (
+                    <div
+                      key={product.id}
+                      className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-blue-400 hover:shadow-md transition-all shadow-2xs"
                     >
-                      <SafeImage
-                        src={product.images[0]}
-                        alt={product.title}
-                        className="w-full h-full"
-                      />
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div 
+                          className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg sm:rounded-xl overflow-hidden shrink-0 cursor-pointer border border-slate-200"
+                          onClick={() => onSelectProduct(product)}
+                        >
+                          <SafeImage
+                            src={product.images[0]}
+                            alt={product.title}
+                            className="w-full h-full"
+                          />
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            {getTierBadge(product.supplierTier)}
+                            <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{product.supplierCountry}</span>
+                          </div>
+                          <div 
+                            onClick={() => onSelectProduct(product)}
+                            className="font-bold text-xs sm:text-sm text-slate-900 hover:text-blue-600 transition-colors cursor-pointer truncate"
+                          >
+                            {product.title}
+                          </div>
+                          <div className="text-[10px] sm:text-xs text-slate-600 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="truncate max-w-[120px]">{product.supplierName}</span>
+                            <span>•</span>
+                            <span>MOQ: <strong>{product.moq} {product.moqUnit}</strong></span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">{product.leadTimeDays}d lead</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                        <div className="text-left sm:text-right">
+                          <div className="flex items-center sm:justify-end gap-1 mb-0.5">
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              <Lock className="w-2.5 h-2.5 text-amber-600" />
+                              <span>Protected FOB Rate</span>
+                            </span>
+                          </div>
+                          <div className="text-xs sm:text-base font-extrabold text-slate-800 font-mono">
+                            Inquire for Price
+                          </div>
+                          <div className="text-[9px] sm:text-[10px] text-slate-500">per {product.moqUnit || 'Unit'} (FOB)</div>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <button
+                            onClick={() => onContactSupplier(product)}
+                            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] sm:text-xs font-semibold transition-colors border border-slate-200 cursor-pointer"
+                          >
+                            Inquire
+                          </button>
+                          <button
+                            onClick={() => onSelectProduct(product)}
+                            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                          >
+                            Details
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        {getTierBadge(product.supplierTier)}
-                        <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{product.supplierCountry}</span>
-                      </div>
-                      <div 
-                        onClick={() => onSelectProduct(product)}
-                        className="font-bold text-xs sm:text-sm text-slate-900 hover:text-blue-600 transition-colors cursor-pointer truncate"
-                      >
-                        {highlightText(product.title, searchTerm)}
-                      </div>
-                      <div className="text-[10px] sm:text-xs text-slate-600 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="truncate max-w-[120px]">{product.supplierName}</span>
-                        <span>•</span>
-                        <span>MOQ: <strong>{product.moq} {product.moqUnit}</strong></span>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="hidden sm:inline">{product.leadTimeDays}d lead</span>
-                      </div>
-                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Bottom Pagination Bar for 3x4 / 4x3 Grid */}
+              {totalPages > 1 && (
+                <div className="pt-5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs w-full">
+                  <div className="text-slate-600 font-medium text-center sm:text-left">
+                    Showing <strong className="text-slate-900 font-bold">{(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filtered.length)}</strong> of{' '}
+                    <strong className="text-slate-900 font-bold">{filtered.length}</strong> products
                   </div>
 
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                    <div className="text-left sm:text-right">
-                      <div className="text-xs sm:text-base font-extrabold text-emerald-700 font-mono">
-                        {product.priceTiers && product.priceTiers.length > 0 ? (
-                          <>
-                            {formatPrice(product.priceTiers[product.priceTiers.length - 1]?.priceUsd || 150)} - {formatPrice(product.priceTiers[0]?.priceUsd || 250)}
-                          </>
-                        ) : (
-                          formatPrice(product.fobPriceUsd || (Math.abs((product.id || 'prod').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % 400) + 120)
-                        )}
-                      </div>
-                      <div className="text-[9px] sm:text-[10px] text-slate-500">per {product.moqUnit || 'Unit'} (FOB)</div>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1}
+                      onClick={() => {
+                        setCurrentPage(prev => Math.max(1, prev - 1));
+                        const el = document.getElementById('featured-products-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none text-slate-700 font-semibold cursor-pointer transition-colors whitespace-nowrap shadow-2xs"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => {
+                            setCurrentPage(pageNum);
+                            const el = document.getElementById('featured-products-section');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className={`w-8 h-8 min-w-[32px] flex items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-600/30'
+                              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <button
-                        onClick={() => onContactSupplier(product)}
-                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] sm:text-xs font-semibold transition-colors border border-slate-200 cursor-pointer"
-                      >
-                        Inquire
-                      </button>
-                      <button
-                        onClick={() => onSelectProduct(product)}
-                        className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold transition-colors shadow-2xs cursor-pointer"
-                      >
-                        Details
-                      </button>
-                    </div>
+
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => {
+                        setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                        const el = document.getElementById('featured-products-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none text-slate-700 font-semibold cursor-pointer transition-colors whitespace-nowrap shadow-2xs"
+                    >
+                      Next
+                    </button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
