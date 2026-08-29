@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CompanyProfile, Currency, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
+import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { 
   Building2, 
@@ -217,8 +218,8 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                     resourceTitle="Factory Export Desk Contact"
                   >
                     <div className="space-y-1 text-xs text-slate-700">
-                      <div><strong>Email:</strong> {company.contactEmail || 'export@factory.cn'}</div>
-                      <div><strong>Phone:</strong> {company.contactPhone || '+86 755 8320 9811'}</div>
+                      <div><strong>Email:</strong> {securityService.maskEmailAddress(company.contactEmail || 'export@factory.cn')}</div>
+                      <div><strong>Phone:</strong> {securityService.maskPhoneNumber(company.contactPhone || '+86 755 8320 9811')}</div>
                     </div>
                   </PremiumContactGate>
                 </div>

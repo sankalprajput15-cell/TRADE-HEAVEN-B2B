@@ -8,6 +8,7 @@ import {
 } from '../../types';
 import { CURRENCY_RATES, MOCK_BUYER_PROFILES, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
+import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { 
   ShieldCheck, 
@@ -481,15 +482,15 @@ export const BuyerProfilePage: React.FC<Props> = ({
                   <div className="space-y-2.5 pt-2 text-xs text-slate-700">
                     <div className="flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">{profile.contactEmail}</span>
+                      <span className="font-mono">{securityService.maskEmailAddress(profile.contactEmail)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">{profile.contactPhone}</span>
+                      <span className="font-mono">{securityService.maskPhoneNumber(profile.contactPhone)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MessageCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span className="font-mono">{profile.whatsapp || profile.contactPhone}</span>
+                      <span className="font-mono">{securityService.maskPhoneNumber(profile.whatsapp || profile.contactPhone)}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />

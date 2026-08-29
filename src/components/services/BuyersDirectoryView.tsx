@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DetailedBuyerProfile, Currency, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
+import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { 
   Building2, 
@@ -269,8 +270,8 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                   >
                     <div className="space-y-1 text-xs text-slate-700">
                       <div><strong>Lead:</strong> {buyer.contactPerson} ({buyer.contactDesignation})</div>
-                      <div><strong>Email:</strong> {buyer.contactEmail}</div>
-                      <div><strong>Phone:</strong> {buyer.contactPhone}</div>
+                      <div><strong>Email:</strong> {securityService.maskEmailAddress(buyer.contactEmail)}</div>
+                      <div><strong>Phone:</strong> {securityService.maskPhoneNumber(buyer.contactPhone)}</div>
                     </div>
                   </PremiumContactGate>
                 </div>

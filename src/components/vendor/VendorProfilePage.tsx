@@ -13,6 +13,7 @@ import { DETAILED_VENDOR_PROFILES, getDetailedVendorProfile } from '../../data/d
 import { loadCustomVendorProfile } from '../../utils/mediaUploadUtils';
 import { MediaManagementStudio } from './MediaManagementStudio';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { securityService } from '../../services/securityService';
 import { 
   ShieldCheck, 
   Award, 
@@ -929,11 +930,11 @@ export const VendorProfilePage: React.FC<Props> = ({
                 <div className="space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                   <div className="flex items-center gap-2">
                     <Mail className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{profile.contactEmail}</span>
+                    <span>{securityService.maskEmailAddress(profile.contactEmail)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{profile.contactPhone}</span>
+                    <span>{securityService.maskPhoneNumber(profile.contactPhone)}</span>
                   </div>
                   {profile.whatsapp && (
                     <a
