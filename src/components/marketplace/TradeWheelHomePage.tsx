@@ -99,7 +99,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenCreateRfq={onOpenCreateRfq}
         onOpenLiveTool={onOpenLiveTool}
         products={products}
-        rfqs={rfqs}
+        rfqs={activeRfqsPool}
         selectedCurrency={selectedCurrency}
         onSelectProduct={onSelectProduct}
         onOpenStorefront={onOpenStorefront}
@@ -267,7 +267,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200 mb-1.5">
               <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
-              <span>Live Global Sourcing Tenders &amp; RFQ Feed</span>
+              <span>Live Global Sourcing Tenders &amp; RFQ Feed ({activeRfqsPool.length} Active Leads)</span>
             </div>
             <h3 className="text-xl font-black text-slate-900">
               Recent Buying Requirements from International Importers
@@ -281,7 +281,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             onClick={() => onNavigate('BUY_LEADS')}
             className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 transition-colors shrink-0 cursor-pointer"
           >
-            <span>View All Global Buy Leads</span>
+            <span>View All Global Buy Leads ({activeRfqsPool.length})</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

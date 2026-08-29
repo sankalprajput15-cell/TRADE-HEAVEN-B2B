@@ -673,3 +673,11 @@ export interface NormalizedB2BDatabase {
   service_providers: NormalizedServiceProvider[];
 }
 
+export interface B2BTradeMetric {
+  main_category: string;
+  subcategory: string;
+  total_verified_suppliers: number;
+  total_buying_leads_rfqs: number;
+  growth_trend: string;
+}
+

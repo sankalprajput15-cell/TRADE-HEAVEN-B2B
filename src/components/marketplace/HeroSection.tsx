@@ -21,9 +21,10 @@ import {
   SlidersHorizontal,
   ChevronRight,
   Filter,
-  Lock
+  Lock,
+  LayoutGrid
 } from 'lucide-react';
-import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES } from '../../data/mockData';
+import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { SafeImage } from '../common/SafeImage';
@@ -180,23 +181,25 @@ export const HeroSection: React.FC<Props> = ({
     return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const activeRfqPool = useMemo(() => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS), [rfqs]);
+
   // Full-Site Multi-Index Search Query Matcher
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    const activeRfqPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
 
     if (!q) {
       const defaultRfqs = activeRfqPool.slice(0, 40);
       const defaultProducts = products.slice(0, 16);
       const defaultSuppliers = MOCK_COMPANIES.slice(0, 16);
       const defaultTools = SITE_TOOLS.slice(0, 6);
+      const defaultTradeMetrics = (GLOBAL_B2B_TRADE_METRICS || []).slice(0, 8);
       return {
         products: defaultProducts,
         suppliers: defaultSuppliers,
         rfqs: defaultRfqs,
-        categories: [],
+        categories: defaultTradeMetrics,
         tools: defaultTools,
-        totalCount: defaultProducts.length + defaultSuppliers.length + defaultRfqs.length + defaultTools.length
+        totalCount: defaultProducts.length + defaultSuppliers.length + defaultRfqs.length + defaultTools.length + defaultTradeMetrics.length
       };
     }
 
@@ -257,18 +260,13 @@ export const HeroSection: React.FC<Props> = ({
       );
     }).slice(0, 30);
 
-    // 4. Match Categories & Subcategories
-    const matchedCategories: { name: string; icon: string; count: string; subcategory?: string }[] = [];
-    CATEGORIES_TREE.forEach(cat => {
-      if (cat.name.toLowerCase().includes(q)) {
-        matchedCategories.push({ name: cat.name, icon: cat.icon, count: cat.count });
-      }
-      cat.subcategories.forEach(sub => {
-        if (sub.toLowerCase().includes(q) && !matchedCategories.some(mc => mc.subcategory === sub)) {
-          matchedCategories.push({ name: cat.name, icon: cat.icon, count: cat.count, subcategory: sub });
-        }
-      });
-    });
+    // 4. Match Categories & Subcategories Trade Metrics
+    const matchedTradeMetrics = (GLOBAL_B2B_TRADE_METRICS || []).filter(m => {
+      return (
+        m.main_category.toLowerCase().includes(q) ||
+        m.subcategory.toLowerCase().includes(q)
+      );
+    }).slice(0, 16);
 
     // 5. Match Site Tools & Services
     const matchedTools = SITE_TOOLS.filter(t => {
@@ -283,14 +281,14 @@ export const HeroSection: React.FC<Props> = ({
       matchedProducts.length + 
       matchedSuppliers.length + 
       matchedRfqs.length + 
-      matchedCategories.length + 
+      matchedTradeMetrics.length + 
       matchedTools.length;
 
     return {
       products: matchedProducts,
       suppliers: matchedSuppliers,
       rfqs: matchedRfqs,
-      categories: matchedCategories.slice(0, 4),
+      categories: matchedTradeMetrics,
       tools: matchedTools,
       totalCount
     };
@@ -670,27 +668,28 @@ export const HeroSection: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => setActiveFilter('ALL')}
-                    className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                       activeFilter === 'ALL'
-                        ? 'bg-amber-400 text-slate-950 shadow-xs'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                        ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
                     }`}
                   >
-                    All ({searchResults.totalCount})
+                    <LayoutGrid className="w-3 h-3 text-amber-500 shrink-0" />
+                    <span>All</span>
                   </button>
 
                   {searchResults.rfqs.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setActiveFilter('RFQS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1 ${
+                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                         activeFilter === 'RFQS'
                           ? 'bg-emerald-400 text-slate-950 font-black shadow-xs'
-                          : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60'
+                          : 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/60'
                       }`}
                     >
-                      <FileText className="w-3 h-3" />
-                      <span>RFQs ({searchResults.rfqs.length})</span>
+                      <FileText className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span>RFQs</span>
                     </button>
                   )}
 
@@ -698,13 +697,14 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('PRODUCTS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                         activeFilter === 'PRODUCTS'
-                          ? 'bg-amber-400 text-slate-950 shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                          ? 'bg-sky-400 text-slate-950 font-black shadow-xs'
+                          : 'bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700/60'
                       }`}
                     >
-                      Products ({searchResults.products.length})
+                      <Package className="w-3 h-3 text-sky-400 shrink-0" />
+                      <span>Products</span>
                     </button>
                   )}
 
@@ -712,13 +712,14 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('SUPPLIERS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                         activeFilter === 'SUPPLIERS'
-                          ? 'bg-amber-400 text-slate-950 shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                          ? 'bg-purple-400 text-slate-950 font-black shadow-xs'
+                          : 'bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700/60'
                       }`}
                     >
-                      Suppliers ({searchResults.suppliers.length})
+                      <Building2 className="w-3 h-3 text-purple-400 shrink-0" />
+                      <span>Suppliers</span>
                     </button>
                   )}
 
@@ -726,13 +727,29 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('TOOLS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer ${
+                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                         activeFilter === 'TOOLS'
-                          ? 'bg-amber-400 text-slate-950 shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                          ? 'bg-indigo-400 text-slate-950 font-black shadow-xs'
+                          : 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/60'
                       }`}
                     >
-                      Tools ({searchResults.tools.length})
+                      <Wrench className="w-3 h-3 text-indigo-400 shrink-0" />
+                      <span>Tools</span>
+                    </button>
+                  )}
+
+                  {searchResults.categories.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveFilter('CATEGORIES')}
+                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                        activeFilter === 'CATEGORIES'
+                          ? 'bg-blue-400 text-slate-950 font-black shadow-xs'
+                          : 'bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700/60'
+                      }`}
+                    >
+                      <Layers className="w-3 h-3 text-blue-400 shrink-0" />
+                      <span>Trade Metrics</span>
                     </button>
                   )}
                 </div>
@@ -979,6 +996,69 @@ export const HeroSection: React.FC<Props> = ({
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 shrink-0">
                                 {tool.badge}
                               </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 5: MATCHED B2B TRADE METRICS & CATEGORIES */}
+                    {(activeFilter === 'ALL' || activeFilter === 'CATEGORIES') && searchResults.categories.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
+                          <span className="flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-blue-600" />
+                            Verified B2B Trade Metrics &amp; Categories ({searchResults.categories.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSearchPopoverOpen(false);
+                              if (onNavigate) onNavigate('PRODUCT_DIRECTORY');
+                            }}
+                            className="text-[11px] text-blue-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>Browse categories</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {searchResults.categories.map((metric, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                setIsSearchPopoverOpen(false);
+                                onSearch(metric.subcategory, metric.main_category);
+                                if (onNavigate) onNavigate('PRODUCT_DIRECTORY');
+                              }}
+                              className="p-3 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[180px]">
+                                  {metric.main_category}
+                                </span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                                  {metric.growth_trend}
+                                </span>
+                              </div>
+
+                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-700 transition-colors">
+                                {metric.subcategory}
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-1.5 text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="w-3 h-3 text-amber-600 shrink-0" />
+                                  <span className="text-slate-500">Suppliers:</span>{' '}
+                                  <strong className="text-slate-900 font-mono">{metric.total_verified_suppliers.toLocaleString()}</strong>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <FileText className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  <span className="text-slate-500">Buy Leads:</span>{' '}
+                                  <strong className="text-slate-900 font-mono">{metric.total_buying_leads_rfqs.toLocaleString()}</strong>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>

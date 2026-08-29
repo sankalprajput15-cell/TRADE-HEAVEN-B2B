@@ -1,3 +1,4 @@
+import { METRICS_DERIVED_RFQS } from './b2bTradeMetrics';
 import { 
   CompanyProfile, 
   DetailedBuyerProfile,
@@ -99,6 +100,78 @@ export const CATEGORIES_TREE = [
     count: '24,800+ Products'
   },
   {
+    id: 'cat-agri-machinery',
+    name: 'Agri & Food Processing Machinery & Equipment',
+    icon: 'Wrench',
+    image: 'https://images.unsplash.com/photo-1595246140625-573b715d11dc?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Agriculture Bags', 'Agriculture Choppers Shredders & Cutters', 'Agriculture Farm Tractors', 'Agriculture Grinders Multures', 'Agriculture Harvesters', 'Agriculture Nets', 'Agriculture Pumps', 'Agriculture Sheller', 'Agriculture Sprayers', 'Agriculture Thresher'],
+    count: '3,840+ Verified Suppliers | 2,470+ RFQs'
+  },
+  {
+    id: 'cat-farm-products',
+    name: 'Farm Products - Grains, Fruits etc',
+    icon: 'Wheat',
+    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['1121 Basmati Rice', 'Alfalfa Hay', 'Apples', 'Arabica Coffee', 'Avocados', 'Bananas', 'Barley', 'Basmati Rice', 'Black Pepper', 'Cashew Nuts'],
+    count: '5,290+ Verified Suppliers | 3,820+ RFQs'
+  },
+  {
+    id: 'cat-farm-inputs',
+    name: 'Farm Inputs - Fertilizers, Pesticides & Seeds',
+    icon: 'Sprout',
+    image: 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Agricultural Seeds', 'Ammonium Nitrate', 'Ammonium Sulfate', 'Bio Fertilizers', 'Compost', 'Insecticides', 'Organic Fertilizers', 'NPK Fertilizers', 'Pesticides', 'Potash'],
+    count: '2,980+ Verified Suppliers | 1,840+ RFQs'
+  },
+  {
+    id: 'cat-processed-food',
+    name: 'Processed Food & Beverages Products & By Products',
+    icon: 'UtensilsCrossed',
+    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Almond Milk', 'Apple Cider Vinegar', 'Apple Juice', 'Apple Powder', 'Arabic Gum', 'Arabica Coffee', 'Bakery Ingredients', 'Canned Vegetables', 'Chocolate Products', 'Olive Oil'],
+    count: '4,150+ Verified Suppliers | 2,930+ RFQs'
+  },
+  {
+    id: 'cat-livestock',
+    name: 'Livestock, Poultry, Meat & Animal Products',
+    icon: 'Beef',
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Beef Meat', 'Chicken Eggs', 'Day-Old Chicks', 'Frozen Chicken', 'Frozen Pork', 'Halal Beef', 'Honey', 'Live Cattle', 'Live Sheep', 'Milk Powder'],
+    count: '3,420+ Verified Suppliers | 2,160+ RFQs'
+  },
+  {
+    id: 'cat-fish',
+    name: 'Fish & Fish Products',
+    icon: 'Fish',
+    image: 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Anchovies', 'Canned Fish', 'Canned Tuna', 'Caviar', 'Cod Fish', 'Crab', 'Frozen Fish', 'Frozen Shrimp', 'Mackerel', 'Salmon'],
+    count: '2,810+ Verified Suppliers | 1,790+ RFQs'
+  },
+  {
+    id: 'cat-beverages-tobacco',
+    name: 'Alcoholic Beverages Tobacco & Related Products',
+    icon: 'Wine',
+    image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Absinthe', 'Alcoholic Beverages', 'Ale', 'Anisette', 'Beer', 'Brandy', 'Cachaça', 'Calvados', 'Champagne', 'Cider'],
+    count: '1,950+ Verified Suppliers | 1,120+ RFQs'
+  },
+  {
+    id: 'cat-bar-accessories',
+    name: 'Bar Accessories and Related Products',
+    icon: 'GlassWater',
+    image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Alcohol Meter', 'Bar Accessories', 'Bar Sets', 'Beer Chillers', 'Beer Dispensers', 'Beer Glasses', 'Beer Kegs', 'Beer Towers', 'Beverage Dispensers'],
+    count: '1,420+ Verified Suppliers | 890+ RFQs'
+  },
+  {
+    id: 'cat-horticulture',
+    name: 'Horticulture - Flowers, Plants & Related Products',
+    icon: 'Flower2',
+    image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Artificial Grass', 'Artificial Plants', 'Bonsai Plants', 'Cut Flowers', 'Fresh Roses', 'Greenhouses', 'Hydroponics Systems', 'Plant Nursery Pots', 'Seedling Trays', 'Succulents'],
+    count: '2,130+ Verified Suppliers | 1,350+ RFQs'
+  },
+  {
     id: 'cat-automotive',
     name: 'Automotive Parts & Transportation',
     icon: 'Car',
@@ -129,14 +202,6 @@ export const CATEGORIES_TREE = [
     image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Organic Cotton Fabrics', 'Raw Selvedge Denim', 'Technical Workwear', 'Polyester Filament Yarn', 'Non-Woven Geotextiles', 'Home Textile Linens'],
     count: '31,500+ Products'
-  },
-  {
-    id: 'cat-agriculture',
-    name: 'Agriculture, Spices & Food Commodities',
-    icon: 'Wheat',
-    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80',
-    subcategories: ['Basmati & Jasmine Rice', 'Refined Sunflower Oil', 'Raw Cashew Nuts & Spices', 'Green Coffee Beans', 'Frozen Seafood', 'Organic Fertilizer'],
-    count: '15,900+ Products'
   },
   {
     id: 'cat-medical',
@@ -2857,7 +2922,7 @@ export const MOCK_PRODUCTS: Product[] = [
   }
 ];
 
-export const MOCK_RFQS: RfqRequirement[] = [
+const BASE_MOCK_RFQS: RfqRequirement[] = [
   {
     id: 'RFQ-2026-0801',
     buyerName: 'BRENDA BLANCHE HAMEL',
@@ -3895,6 +3960,8 @@ export const MOCK_RFQS: RfqRequirement[] = [
   }
 ];
 
+export const MOCK_RFQS: RfqRequirement[] = [...BASE_MOCK_RFQS, ...METRICS_DERIVED_RFQS];
+
 export const MOCK_QUOTES: SupplierQuote[] = [
   {
     id: 'quote-8801',
@@ -4309,5 +4376,6 @@ export const MOCK_ESCROWS: EscrowTransaction[] = [
 ];
 
 export { NORMALIZED_B2B_DATABASE } from './normalizedDatabase';
+export { GLOBAL_B2B_TRADE_METRICS } from './b2bTradeMetrics';
 
 

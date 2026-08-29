@@ -1,5 +1,5 @@
 import React from 'react';
-import { CATEGORIES_TREE } from '../../data/mockData';
+import { CATEGORIES_TREE, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { SafeImage } from '../common/SafeImage';
 import { ActiveView } from '../../types';
@@ -249,22 +249,33 @@ export const CategoryMegaMenu: React.FC<Props> = ({
                 {/* Clickable Subcategory Tags / Links */}
                 {subcategoriesList.length > 0 && (
                   <div className="mt-3 pt-2.5 border-t border-slate-100">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                       <span>Top Subcategories:</span>
+                      <span className="text-[9px] text-emerald-600 font-bold lowercase">verified metrics</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {subcategoriesList.map((sub, idx) => (
-                        <button
-                          key={idx}
-                          id={`subcat-btn-${cat.id}-${idx}`}
-                          type="button"
-                          onClick={(e) => handleSubcategoryClick(cat.name, sub, e)}
-                          className="px-2 py-0.5 rounded-lg bg-slate-50 hover:bg-blue-100 hover:text-blue-800 text-[10px] font-medium text-slate-700 border border-slate-200/70 hover:border-blue-300 transition-all cursor-pointer truncate max-w-full"
-                          title={`Search ${sub} products`}
-                        >
-                          {sub}
-                        </button>
-                      ))}
+                      {subcategoriesList.map((sub, idx) => {
+                        const m = (GLOBAL_B2B_TRADE_METRICS || []).find(
+                          item => item.subcategory.toLowerCase() === sub.toLowerCase() || item.main_category.toLowerCase() === cat.name.toLowerCase()
+                        );
+                        return (
+                          <button
+                            key={idx}
+                            id={`subcat-btn-${cat.id}-${idx}`}
+                            type="button"
+                            onClick={(e) => handleSubcategoryClick(cat.name, sub, e)}
+                            className="px-2 py-0.5 rounded-lg bg-slate-50 hover:bg-blue-100 hover:text-blue-800 text-[10px] font-medium text-slate-700 border border-slate-200/70 hover:border-blue-300 transition-all cursor-pointer flex items-center gap-1 max-w-full truncate"
+                            title={m ? `${m.total_verified_suppliers} Verified Suppliers | ${m.total_buying_leads_rfqs} Live RFQs | ${m.growth_trend}` : `Search ${sub} products`}
+                          >
+                            <span className="truncate">{sub}</span>
+                            {m && (
+                              <span className="text-[9px] font-mono text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded shrink-0">
+                                {m.total_verified_suppliers}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
