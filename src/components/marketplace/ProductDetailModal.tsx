@@ -126,7 +126,7 @@ export const ProductDetailModal: React.FC<Props> = ({
             <div className="lg:col-span-5 space-y-3">
               <div className="h-64 w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 relative">
                 <SafeImage
-                  src={product?.images?.[activeImageIdx] || product?.images?.[0] || ''}
+                  src={product?.images?.[activeImageIdx] || product?.images?.[0] || undefined}
                   alt={product?.title || 'Product Image'}
                   className="w-full h-full"
                 />
