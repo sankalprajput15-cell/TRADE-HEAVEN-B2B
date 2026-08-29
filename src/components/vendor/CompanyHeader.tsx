@@ -22,7 +22,7 @@ export const CompanyHeader: React.FC<Props> = ({
       {/* Panoramic 16:9 Cover Banner */}
       <div className="relative h-56 sm:h-72 md:h-80 w-full bg-slate-900">
         <img
-          src={profile.bannerUrl}
+          src={profile.bannerUrl || undefined}
           alt={`${profile.companyName} Factory Banner`}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover"
@@ -54,7 +54,7 @@ export const CompanyHeader: React.FC<Props> = ({
           <div className="flex items-start sm:items-end gap-4">
             <div className="relative shrink-0">
               <img
-                src={profile.logoUrl}
+                src={profile.logoUrl || undefined}
                 alt={`${profile.companyName} Logo`}
                 referrerPolicy="no-referrer"
                 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white object-cover shadow-2xl"

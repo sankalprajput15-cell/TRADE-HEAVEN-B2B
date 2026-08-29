@@ -173,9 +173,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         </div>
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {MOCK_COMPANIES.map(company => (
+          {MOCK_COMPANIES.map((company, index) => (
             <div
-              key={company.id}
+              key={company.id || index}
               onClick={() => onOpenStorefront(company.id)}
               className="bg-white hover:bg-white border border-slate-200 hover:border-blue-500 rounded-2xl p-5 transition-all cursor-pointer group flex flex-col justify-between shadow-xs hover:shadow-md"
             >

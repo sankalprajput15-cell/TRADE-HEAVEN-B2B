@@ -782,11 +782,11 @@ export const VendorProfilePage: React.FC<Props> = ({
                 <div className="space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                   <div className="flex items-center gap-2">
                     <Mail className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{securityService.maskEmailAddress(profile.contactEmail)}</span>
+                    <span>{profile.contactEmail ? securityService.maskEmailAddress(profile.contactEmail) : 'Contact via Inquiry'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{securityService.maskPhoneNumber(profile.contactPhone)}</span>
+                    <span>{profile.contactPhone ? securityService.maskPhoneNumber(profile.contactPhone) : 'Contact via Inquiry'}</span>
                   </div>
                   {profile.whatsapp && (
                     <a

@@ -345,11 +345,39 @@ class SecurityService {
   }
 
   public maskPhoneNumber(phone?: string): string {
-    return '••••••••••';
+    if (!phone) return '••••••••••';
+    
+    // Simple approach: Keep first part (dial code) and last 4 digits, mask middle
+    const parts = phone.split(' ');
+    if (parts.length < 2) return '••••••••••';
+    
+    const dialCode = parts[0];
+    const number = parts.slice(1).join('').replace(/[-]/g, '');
+    
+    if (number.length <= 4) return `${dialCode} ••••`;
+    
+    const masked = number.substring(0, number.length - 4).replace(/./g, '•');
+    const lastDigits = number.substring(number.length - 4);
+    
+    return `${dialCode} ${masked} ${lastDigits}`;
   }
 
   public maskEmailAddress(email?: string): string {
-    return '••••••••••••••';
+    if (!email) return '••••••••••••••';
+    
+    const [username, domain] = email.split('@');
+    if (!username || !domain) return '••••••••••••••';
+    
+    const maskedUsername = username.length > 3 
+      ? username.substring(0, 3) + '*****' 
+      : username + '*****';
+      
+    const [domainName, tld] = domain.split('.');
+    const maskedDomain = domainName.length > 0 
+      ? '******' 
+      : '******';
+      
+    return `${maskedUsername}@${maskedDomain}.${tld || 'com'}`;
   }
 
   public gateCompanyProfile(

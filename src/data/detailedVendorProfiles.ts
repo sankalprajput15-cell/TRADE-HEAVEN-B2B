@@ -455,6 +455,52 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       phone: '+1 939-214-3022',
       isVerified: true
     }
+  },
+  'comp-netgas-energy': {
+    id: 'comp-netgas-energy',
+    companyName: 'NetGas Energy Services',
+    tradeName: 'NetGas Energy Services',
+    legalRegistrationNumber: 'N/A',
+    country: 'Canada',
+    city: 'Edmonton',
+    address: '10423 101 St NW, Edmonton, Alberta, Canada',
+    establishedYear: 2007,
+    yearsInBusiness: 15,
+    businessType: 'Brokerage',
+    origin: 'Kazakhstan',
+    tier: 'FREE',
+    memberTierLabel: 'Free Member',
+    isVerifiedKYC: false,
+    kycVerificationDate: '',
+    trustScore: 70,
+    responseRate: '90%',
+    avgResponseTime: '< 6 hours',
+    totalEmployees: '50-100 Staff',
+    annualRevenueUsd: '$10M - $20M USD',
+    tradeAssuranceLimitUsd: 100000,
+    completedOrdersCount: 0,
+    factorySizeSqM: 0,
+    productionLines: 0,
+    logoUrl: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&auto=format&fit=crop&q=80',
+    bannerUrl: '',
+    tagline: 'Largest Independent Inter-Dealer Broker',
+    description: 'NetGas Energy is the largest independent inter-dealer broker of commodities, focusing on global commodity markets with high-quality execution and technological innovation.',
+    acceptedPaymentTerms: ['Wire Transfer', 'L/C'],
+    supportedIncotermsList: ['FOB', 'CIF'],
+    portsOfDispatch: ['Global'],
+    marketDistribution: [
+      { market: 'Global', percentage: 100, topCountries: ['Global'] }
+    ],
+    contactPerson: 'BRENDA BLANCHE HAMEL',
+    contactEmail: 'contact@netgas.ca',
+    contactPhone: '+1 825-255-7022',
+    contactPersonDetails: {
+      name: 'BRENDA BLANCHE HAMEL',
+      designation: 'Business Manager',
+      email: 'contact@netgas.ca',
+      phone: '+1 825-255-7022',
+      isVerified: false
+    }
   }
 };
 

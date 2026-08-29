@@ -52,6 +52,25 @@ export const ProductCatalog: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
   const [ownershipFilter, setOwnershipFilter] = useState<'ALL' | 'MINE' | 'OTHERS'>('ALL');
+  const [cachedProducts, setCachedProducts] = useState<Product[]>(products);
+
+  // Cache products to localStorage when they update
+  useEffect(() => {
+    if (products.length > 0) {
+      localStorage.setItem('cached_products', JSON.stringify(products));
+      setCachedProducts(products);
+    }
+  }, [products]);
+
+  // Load from cache on mount
+  useEffect(() => {
+    if (products.length === 0) {
+      const cached = localStorage.getItem('cached_products');
+      if (cached) {
+        setCachedProducts(JSON.parse(cached));
+      }
+    }
+  }, [products.length]);
 
   // Sync external category prop if provided
   useEffect(() => {
@@ -121,7 +140,7 @@ export const ProductCatalog: React.FC<Props> = ({
   const availableCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
   // Filter logic (Robust matching)
-  const filtered = products.filter(p => {
+  const filtered = cachedProducts.filter(p => {
     const term = searchTerm.trim().toLowerCase();
     const matchesSearch = term === '' || 
       p.title.toLowerCase().includes(term) ||
@@ -144,6 +163,22 @@ export const ProductCatalog: React.FC<Props> = ({
 
     return matchesSearch && matchesCat && matchesTier && matchesIncoterm && matchesMoq && matchesOwnership;
   });
+
+  const highlightText = (text: string, highlight: string) => {
+    if (!highlight.trim()) return text;
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, index) =>
+          part.toLowerCase() === highlight.toLowerCase() ? (
+            <mark key={index} className="bg-yellow-200 text-slate-900 rounded-sm px-0.5">{part}</mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  };
 
   return (
     <div id="product-catalog-section" className="space-y-4 sm:space-y-6">
@@ -469,7 +504,7 @@ export const ProductCatalog: React.FC<Props> = ({
                         onClick={() => onSelectProduct(product)}
                         className="font-bold text-xs sm:text-sm text-slate-900 hover:text-blue-600 transition-colors cursor-pointer truncate"
                       >
-                        {product.title}
+                        {highlightText(product.title, searchTerm)}
                       </div>
                       <div className="text-[10px] sm:text-xs text-slate-600 flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <span className="truncate max-w-[120px]">{product.supplierName}</span>
