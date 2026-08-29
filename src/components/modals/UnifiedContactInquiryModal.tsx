@@ -201,16 +201,10 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
             </button>
           </div>
 
-          <a
-            href={OFFICIAL_WHATSAPP_DATA.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-[11px] transition-colors shadow-2xs"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            <span>Fast WhatsApp Connect</span>
-            <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-          </a>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] border border-emerald-300">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Submit Confirmation Enabled</span>
+          </div>
         </div>
 
         {/* Revealed Contact Details Drawer */}

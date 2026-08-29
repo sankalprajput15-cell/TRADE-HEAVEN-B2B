@@ -307,23 +307,22 @@ export const ProductDetailModal: React.FC<Props> = ({
                       </>
                     ) : (
                       <>
-                        <Send className="w-4 h-4" />
-                        <span>Start Direct Trade Negotiation / Request Proforma Invoice</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                        <span>Submit Confirmation</span>
                       </>
                     )}
                   </button>
 
-                  {/* Direct WhatsApp Instant Quote Button */}
-                  <a
-                    href={`https://wa.me/918532934479?text=${encodeURIComponent(`Hello Trade Heaven, I am interested in sourcing ${orderQuantity} ${product.moqUnit} of "${product.title}" with ${selectedIncoterm} shipping.`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white transition-all shadow-xs cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Inquire Instant MOQ &amp; Price on WhatsApp (+91 8532934479)</span>
-                    <ExternalLink className="w-3 h-3 opacity-70" />
-                  </a>
+                  {/* Submit Confirmation Notice */}
+                  <div className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900 shadow-2xs">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Submit Confirmation: Sourcing inquiry will be logged &amp; live trade negotiation room initialized.</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded shrink-0">
+                      Confirmed
+                    </span>
+                  </div>
                 </div>
               </form>
             </div>

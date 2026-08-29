@@ -3,12 +3,12 @@ import { PaymentCheckoutData, Currency } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { 
   X, 
-  CreditCard, 
+  Link,
   Lock, 
   ShieldCheck, 
   CheckCircle2, 
-  DollarSign, 
   Landmark, 
+  HelpCircle,
   Building2, 
   Clock, 
   AlertCircle
@@ -30,11 +30,11 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
   selectedCurrency,
   onPaymentSuccess
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'SWIFT' | 'CRYPTO'>('CARD');
-  const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [cardCvc, setCardCvc] = useState('888');
+  const [paymentMethod, setPaymentMethod] = useState<'REQUEST_LINK' | 'SWIFT' | 'REQUEST_INFO'>('REQUEST_LINK');
+  const [clientEmail, setClientEmail] = useState('elena@vostoksourcing.com');
+  const [clientPhone, setClientPhone] = useState('+91 8532934479');
   const [billingName, setBillingName] = useState('Elena Rostova');
+  const [paymentNotes, setPaymentNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -63,7 +63,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
         totalAmountUsd: checkoutData.amountUsd,
         currency: selectedCurrency,
         incoterm: 'FOB',
-        status: 'PAID',
+        status: paymentMethod === 'REQUEST_LINK' ? 'PENDING' : 'PAID',
         paymentMethod,
         createdAt: new Date().toISOString()
       });
@@ -75,13 +75,13 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 2000);
+      }, 3000);
     } catch (err) {
       setIsSuccess(true);
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
-      }, 2000);
+      }, 3000);
     } finally {
       setIsProcessing(false);
     }
@@ -111,7 +111,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
             <Lock className="w-3.5 h-3.5" /> 256-Bit SSL Encrypted trade protection Rail
           </div>
           <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-            Secure trade protection Checkout &amp; Settlement
+            Secure Trade Protection Checkout &amp; Settlement
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
             Capital is protected in neutral Swiss trade protection vaults under FINMA compliance rules.
@@ -142,9 +142,19 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
             <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-black text-slate-900">trade protection Payment Confirmed!</h3>
-            <p className="text-xs text-slate-600 max-w-sm mx-auto">
-              Your funds are held securely in Swiss Trade Protection. A verified Proforma Invoice &amp; receipt have been dispatched to your email.
+            <h3 className="text-lg font-black text-slate-900">
+              {paymentMethod === 'REQUEST_LINK' 
+                ? 'Payment Link Request Submitted!' 
+                : paymentMethod === 'REQUEST_INFO' 
+                ? 'Information Request Submitted!' 
+                : 'Trade Protection Settlement Logged!'}
+            </h3>
+            <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+              {paymentMethod === 'REQUEST_LINK' 
+                ? `Your request for ${checkoutData.title} (${formatPrice(convertedPrice)}) has been sent to Treasury. Check your email (${clientEmail}) for your custom secure payment link.`
+                : paymentMethod === 'REQUEST_INFO'
+                ? `Your inquiry regarding ${checkoutData.title} (${formatPrice(convertedPrice)}) has been logged. Our Treasury Operations team will contact you at ${clientEmail} with complete payment information.`
+                : 'Your funds are held securely in Swiss Trade Protection. A verified Proforma Invoice & receipt have been dispatched to your email.'}
             </p>
             <button
               type="button"
@@ -162,91 +172,113 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('CARD')}
-                  className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                    paymentMethod === 'CARD'
-                      ? 'bg-blue-50 border-blue-600 text-blue-900 font-bold ring-2 ring-blue-500/20'
+                  onClick={() => setPaymentMethod('REQUEST_LINK')}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
+                    paymentMethod === 'REQUEST_LINK'
+                      ? 'bg-emerald-50 border-emerald-600 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  <CreditCard className="w-4 h-4" />
-                  <span className="text-[11px]">Credit / Debit Card</span>
+                  <Link className="w-4 h-4 text-emerald-600" />
+                  <span className="text-[11px]">Request Payment Link</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('SWIFT')}
-                  className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
                     paymentMethod === 'SWIFT'
                       ? 'bg-blue-50 border-blue-600 text-blue-900 font-bold ring-2 ring-blue-500/20'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  <Landmark className="w-4 h-4" />
+                  <Landmark className="w-4 h-4 text-blue-600" />
                   <span className="text-[11px]">SWIFT Wire / TT</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('CRYPTO')}
-                  className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                    paymentMethod === 'CRYPTO'
-                      ? 'bg-blue-50 border-blue-600 text-blue-900 font-bold ring-2 ring-blue-500/20'
+                  onClick={() => setPaymentMethod('REQUEST_INFO')}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
+                    paymentMethod === 'REQUEST_INFO'
+                      ? 'bg-amber-50 border-amber-600 text-amber-900 font-bold ring-2 ring-amber-500/20'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  <DollarSign className="w-4 h-4" />
-                  <span className="text-[11px]">USDT / USDC trade protection</span>
+                  <HelpCircle className="w-4 h-4 text-amber-600" />
+                  <span className="text-[11px]">Request Information</span>
                 </button>
               </div>
             </div>
 
-            {/* Card Inputs */}
-            {paymentMethod === 'CARD' && (
+            {/* Request Payment Link View */}
+            {paymentMethod === 'REQUEST_LINK' && (
               <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Direct Payment Link Delivery</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800 leading-relaxed">
+                    Card details are not processed directly on the site. Treasury Ops will issue an encrypted custom payment link (supporting local &amp; international cards/wallets) and Proforma Invoice directly to your email.
+                  </p>
+                </div>
+
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Cardholder Corporate Name</label>
+                  <label className="block font-bold text-slate-700 mb-1">Corporate / Contact Name *</label>
                   <input
                     type="text"
                     required
                     value={billingName}
                     onChange={e => setBillingName(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500"
+                    placeholder="e.g. Elena Rostova"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Card Number (Protected Token)</label>
+                  <label className="block font-bold text-slate-700 mb-1">Email Address for Payment Link *</label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={cardNumber}
-                    onChange={e => setCardNumber(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono font-medium focus:outline-none focus:border-blue-500"
+                    value={clientEmail}
+                    onChange={e => setClientEmail(e.target.value)}
+                    placeholder="e.g. elena@vostoksourcing.com"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Expiry Date</label>
+                    <label className="block font-bold text-slate-700 mb-1">WhatsApp / Phone</label>
                     <input
                       type="text"
-                      required
-                      value={cardExpiry}
-                      onChange={e => setCardExpiry(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-blue-500"
+                      value={clientPhone}
+                      onChange={e => setClientPhone(e.target.value)}
+                      placeholder="+91..."
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">CVC / CVV</label>
+                    <label className="block font-bold text-slate-700 mb-1">Preferred Currency</label>
                     <input
                       type="text"
-                      required
-                      value={cardCvc}
-                      onChange={e => setCardCvc(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-blue-500"
+                      disabled
+                      value={selectedCurrency}
+                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-slate-600 font-mono font-bold"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Optional Notes / Requirements</label>
+                  <input
+                    type="text"
+                    value={paymentNotes}
+                    onChange={e => setPaymentNotes(e.target.value)}
+                    placeholder="e.g. Prefer Stripe/Razorpay link or specific invoice notes..."
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-500"
+                  />
                 </div>
               </div>
             )}
@@ -259,12 +291,73 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                   <div><strong>Account Number (A/c No):</strong> 44153189222</div>
                   <div><strong>Account Type:</strong> Current account Bank Account</div>
                   <div><strong>Bank Name:</strong> State Bank Of India</div>
-                  <div><strong>Branch Name & Address:</strong> State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244</div>
+                  <div><strong>Branch Name &amp; Address:</strong> State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244</div>
                   <div><strong>SWIFT CODE:</strong> SBININBB124</div>
                   <div><strong>IFSC Code:</strong> SBIN0010346</div>
                   <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-mono">
                     <strong>Reference Code:</strong> TH-{checkoutData.planId || 'DIRECT'}-{Date.now().toString().slice(-4)}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'REQUEST_INFO' && (
+              <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Payment &amp; Settlement Information Request</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Request custom settlement terms, alternate bank routing details, LC/Escrow agreements, or direct assistance from Trade Heaven Treasury Operations.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Corporate / Contact Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={billingName}
+                    onChange={e => setBillingName(e.target.value)}
+                    placeholder="e.g. Elena Rostova"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={clientEmail}
+                      onChange={e => setClientEmail(e.target.value)}
+                      placeholder="e.g. elena@vostoksourcing.com"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">WhatsApp / Phone</label>
+                    <input
+                      type="text"
+                      value={clientPhone}
+                      onChange={e => setClientPhone(e.target.value)}
+                      placeholder="+91..."
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Information Needed / Special Questions</label>
+                  <input
+                    type="text"
+                    value={paymentNotes}
+                    onChange={e => setPaymentNotes(e.target.value)}
+                    placeholder="e.g. Need Letter of Credit info, proforma invoice draft, local currency options..."
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500"
+                  />
                 </div>
               </div>
             )}
@@ -281,8 +374,22 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
               disabled={isProcessing}
               className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
             >
-              <Lock className="w-4 h-4" />
-              <span>{isProcessing ? 'Authorizing Swiss Trade Protection Vault...' : `Pay ${formatPrice(convertedPrice)} into trade protection`}</span>
+              {paymentMethod === 'REQUEST_LINK' ? (
+                <>
+                  <Link className="w-4 h-4" />
+                  <span>{isProcessing ? 'Dispatching Payment Link Request...' : `Request Payment Link for ${formatPrice(convertedPrice)}`}</span>
+                </>
+              ) : paymentMethod === 'REQUEST_INFO' ? (
+                <>
+                  <HelpCircle className="w-4 h-4" />
+                  <span>{isProcessing ? 'Submitting Information Request...' : `Request Information for ${formatPrice(convertedPrice)}`}</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>{isProcessing ? 'Authorizing Swiss Trade Protection Vault...' : `Confirm SWIFT Wire Settlement (${formatPrice(convertedPrice)})`}</span>
+                </>
+              )}
             </button>
           </form>
         )}

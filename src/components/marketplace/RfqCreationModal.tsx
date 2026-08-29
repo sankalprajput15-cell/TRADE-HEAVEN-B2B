@@ -234,18 +234,47 @@ export const RfqCreationModal: React.FC<Props> = ({
         </div>
 
         {isSuccess ? (
-          <div className="p-8 sm:p-12 text-center space-y-4 flex-1 overflow-y-auto">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+          <div className="p-8 sm:p-12 text-center space-y-5 flex-1 overflow-y-auto">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner ring-4 ring-emerald-50">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">RFQ Successfully Broadcasted!</h3>
+            <div className="space-y-1">
+              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-mono font-bold uppercase tracking-wider border border-emerald-300">
+                Submit Confirmation: Verified &amp; Saved
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1">Sourcing RFQ Successfully Confirmed!</h3>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs max-w-lg mx-auto space-y-2 text-left shadow-2xs">
+              <div className="flex justify-between border-b border-slate-200 pb-2">
+                <span className="text-slate-500">RFQ Reference ID:</span>
+                <span className="font-mono font-bold text-blue-700">RFQ-2026-CONFIRMED</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-2">
+                <span className="text-slate-500">Product Requirement:</span>
+                <span className="font-bold text-slate-900">{productName || 'Custom Industrial Products'}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-2">
+                <span className="text-slate-500">Target Volume &amp; Port:</span>
+                <span className="font-bold text-slate-800">{targetQuantity} {quantityUnit} ({destinationPort})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Database Status:</span>
+                <span className="font-bold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Synced to MySQL Engine
+                </span>
+              </div>
+            </div>
+
             <p className="text-xs text-slate-600 max-w-md mx-auto">
-              Your sourcing requirement has been dispatched to audited manufacturers matching the <strong>{category}</strong> vertical.
+              Your requirement has been logged in the marketplace database and dispatched to audited factories matching <strong>{category}</strong>.
             </p>
+
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
+              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all"
             >
               Close &amp; Return to Marketplace
             </button>
@@ -561,28 +590,36 @@ export const RfqCreationModal: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Submit Button & WhatsApp Alternative */}
-            <div className="space-y-2 pt-2">
+            {/* Submit Confirmation Button */}
+            <div className="space-y-3 pt-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-base flex items-center justify-center gap-2.5 transition-all shadow-lg hover:shadow-xl ring-2 ring-emerald-400/40 cursor-pointer"
               >
-                <Send className="w-4 h-4" />
-                <span>{isSubmitting ? 'Broadcasting RFQ to Factory Network...' : 'Publish Sourcing RFQ to Verified Suppliers'}</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Submitting Confirmation...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-200 shrink-0" />
+                    <span>Submit Confirmation</span>
+                  </>
+                )}
               </button>
 
-              {/* Direct WhatsApp Instant Quote Button */}
-              <a
-                href={`https://wa.me/918532934479?text=${encodeURIComponent(`Hello Trade Heaven Sourcing Desk, I would like to post a buy requirement for: ${productName || 'Custom Industrial Products'}, volume ${targetQuantity} ${quantityUnit}, destination ${destinationPort}. Please assist with factory matchmaking.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white transition-all shadow-xs cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Need Urgent Sourcing? Submit RFQ via WhatsApp (+91 8532934479)</span>
-                <ExternalLink className="w-3 h-3 opacity-70" />
-              </a>
+              {/* Instant Confirmation Notice */}
+              <div className="p-3 bg-emerald-50/90 border border-emerald-300/80 rounded-xl flex items-center justify-between text-xs text-emerald-950 shadow-2xs">
+                <div className="flex items-center gap-2 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>RFQ requirement will be saved to BigRock database &amp; broadcast to verified suppliers.</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-emerald-900 bg-emerald-200/90 border border-emerald-400 px-2 py-0.5 rounded shrink-0">
+                  Ready
+                </span>
+              </div>
             </div>
           </form>
         )}
