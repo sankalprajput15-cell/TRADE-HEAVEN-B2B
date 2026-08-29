@@ -26,7 +26,7 @@ export const EditableImage: React.FC<Props> = ({ contentKey, defaultSrc, alt, cl
 
   return (
     <div className={`relative ${canEdit ? 'group cursor-pointer' : ''} ${className}`} onClick={(e) => { if (canEdit) { e.preventDefault(); e.stopPropagation(); handleClick(); } }}>
-      <img src={src} alt={alt} className="w-full h-full object-cover rounded-inherit" />
+      <img src={src || undefined} alt={alt} className="w-full h-full object-cover rounded-inherit" />
       {canEdit && (
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-inherit">
           <div className="bg-white/90 text-slate-900 px-4 py-2 rounded-full font-semibold text-sm shadow-xl flex items-center gap-2">

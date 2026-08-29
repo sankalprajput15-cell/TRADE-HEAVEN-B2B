@@ -159,7 +159,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                 className="relative h-36 w-full bg-slate-100 overflow-hidden cursor-pointer group"
               >
                 <img
-                  src={company.bannerUrl}
+                  src={company.bannerUrl || undefined}
                   alt={company.companyName}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -178,7 +178,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                   className="flex items-center gap-3 cursor-pointer"
                 >
                   <img
-                    src={company.logoUrl}
+                    src={company.logoUrl || undefined}
                     alt={company.companyName}
                     referrerPolicy="no-referrer"
                     className="w-12 h-12 rounded-xl object-cover border-2 border-white bg-white -mt-10 shadow-md relative z-10"
@@ -228,7 +228,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Verified Certifications:</div>
                   <div className="flex flex-wrap gap-1">
                     {(company.certifications || []).slice(0, 3).map((cert, idx) => (
-                      <span key={idx} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
+                      <span key={`${company.id}-${cert || 'no-cert'}-${idx}`} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
                         {cert}
                       </span>
                     ))}
