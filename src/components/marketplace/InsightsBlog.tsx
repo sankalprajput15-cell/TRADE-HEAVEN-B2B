@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Calendar, User, Tag, ArrowRight, PlayCircle, Share2, TrendingUp } from 'lucide-react';
 import blogImage from '../../assets/images/regenerated_image_1787916463995.jpg';
+import buyerNoMoneyImage from '../../assets/images/regenerated_image_1787986452542.jpg';
 
 export const InsightsBlog: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   useEffect(() => {
@@ -66,9 +67,10 @@ export const InsightsBlog: React.FC<{ onNavigate?: (view: string) => void }> = (
             {/* Image */}
             <div className="rounded-xl overflow-hidden shadow-md bg-white border border-slate-200">
               <img 
-                src="/src/assets/images/regenerated_image_1787986452542.jpg" 
+                src={buyerNoMoneyImage} 
                 alt="When the Buyer Has No Money" 
                 className="w-full h-auto object-contain"
+                referrerPolicy="no-referrer"
               />
             </div>
           </div>
@@ -179,6 +181,7 @@ export const InsightsBlog: React.FC<{ onNavigate?: (view: string) => void }> = (
                 src={blogImage} 
                 alt="No End Buyer, No Deal Cartoon" 
                 className="w-full h-auto object-cover"
+                referrerPolicy="no-referrer"
               />
             </div>
           </div>
