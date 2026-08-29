@@ -171,7 +171,7 @@ export const Header: React.FC<Props> = ({
   return (
     <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
       {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
-      <div className="bg-slate-950 text-slate-300 border-b border-slate-800/80 px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-slate-200 border-b border-indigo-900/60 shadow-xs px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-1.5 sm:gap-4 w-full">
           
           {/* Left: Security & Direct Assistance */}
@@ -197,17 +197,6 @@ export const Header: React.FC<Props> = ({
               <MessageCircle className="w-3 h-3 text-[#25D366] group-hover:text-white shrink-0" />
               <span>WhatsApp Desk</span>
             </a>
-
-            <span className="hidden lg:inline-block text-slate-700">|</span>
-
-            {/* Quick Email link */}
-            <button
-              onClick={() => handleNavClick('CONTACT_US')}
-              className="hidden lg:flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <Mail className="w-3 h-3 text-blue-400 shrink-0" />
-              <span>help@tradeheaven.net</span>
-            </button>
           </div>
 
           {/* Right: FX Selector + Mode Switcher + Authentication State */}
