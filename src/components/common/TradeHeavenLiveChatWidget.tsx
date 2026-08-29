@@ -521,16 +521,6 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
                     </button>
                   )}
                 </div>
-
-                {/* Send Button */}
-                <button
-                  type="submit"
-                  disabled={!inputMessage.trim() || isLoading}
-                  className="w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 text-white flex items-center justify-center shrink-0 transition-all shadow-sm cursor-pointer"
-                  title="Send Message"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
               </form>
 
               {/* FOOTER NOTICE */}
