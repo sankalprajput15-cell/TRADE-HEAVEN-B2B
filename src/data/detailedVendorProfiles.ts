@@ -58,14 +58,14 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       reverseEngineering: true
     },
     contactPerson: 'Brett Vance',
-    contactEmail: 'b.vance@apexdynamics-racing.com',
+    contactEmail: 'contact@apexdynamics.mock',
     contactPhone: '+1 (317) 890-4420',
     whatsapp: '+13178904420',
     contactPersonDetails: {
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
       name: 'Brett Vance',
       designation: 'Director of International Trade & Motorsport OEM Relations',
-      email: 'b.vance@apexdynamics-racing.com',
+      email: 'contact@apexdynamics.mock',
       phone: '+1 (317) 890-4420',
       whatsapp: '+13178904420',
       languages: ['English', 'German', 'Spanish'],
@@ -240,14 +240,14 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       prototype3DModeling: true
     },
     contactPerson: 'Elena Zhao',
-    contactEmail: 'sales@apexpower-energy.com',
+    contactEmail: 'contact@apexpower.mock',
     contactPhone: '+86 755 8392 4110',
     whatsapp: '+8613800138000',
     contactPersonDetails: {
       avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80',
       name: 'Elena Zhao',
       designation: 'Senior International Sales Director & Energy Storage Specialist',
-      email: 'sales@apexpower-energy.com',
+      email: 'contact@apexpower.mock',
       phone: '+86 755 8392 4110',
       whatsapp: '+8613800138000',
       languages: ['English', 'Mandarin', 'Cantonese'],
@@ -385,7 +385,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       { market: 'South America', percentage: 15, topCountries: ['Brazil', 'Chile', 'Colombia'] }
     ],
     contactPerson: 'Rajesh Singhania',
-    contactEmail: 'export@sudarshanpetro.in',
+    contactEmail: 'contact@sudarshanpetro.in',
     contactPhone: '+91 22 6789 5400',
     whatsapp: '+912267895400',
     complianceCertificates: [
@@ -456,14 +456,14 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
       { market: 'Middle East & Asia', percentage: 25 }
     ],
     contactPerson: base.contactPerson || 'Export Liaison Officer',
-    contactEmail: base.contactEmail || 'export@company-trade.com',
+    contactEmail: base.contactEmail || 'contact@companytrade.mock',
     contactPhone: base.contactPhone || '+1 (800) 555-0199',
     whatsapp: base.whatsapp || '+18005550199',
     contactPersonDetails: {
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
       name: base.contactPerson || 'Export Liaison Officer',
       designation: 'Director of International Trade Relations',
-      email: base.contactEmail || 'export@company-trade.com',
+      email: base.contactEmail || 'contact@companytrade.mock',
       phone: base.contactPhone || '+1 (800) 555-0199',
       whatsapp: base.whatsapp || '+18005550199',
       languages: ['English'],

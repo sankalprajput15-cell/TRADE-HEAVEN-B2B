@@ -190,7 +190,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     bannerUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200&auto=format&fit=crop&q=80',
     description: 'Premier European manufacturer of 5-Axis CNC milling machines, precision laser cutting centers, and robotic assembly cells with over 30 years of industrial export excellence.',
     contactPerson: 'Dr. Klaus Becker (VP International Sales)',
-    contactEmail: 'export@kuka-precision.de',
+    contactEmail: 'contact@kuka.in',
     contactPhone: '+49 711 9842 100',
     tradeAssuranceLimitUsd: 1500000,
     completedOrdersCount: 412
@@ -220,7 +220,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     bannerUrl: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1200&auto=format&fit=crop&q=80',
     description: 'Specialist OEM manufacturer of forged 6061-T6 aerospace-grade racing alloy wheels, high-flow billet turbochargers, monobloc brake kits, and high-performance automotive motorsport components.',
     contactPerson: 'Brett Vance (Director of Global Racing Sales)',
-    contactEmail: 'export@apexdynamics-racing.com',
+    contactEmail: 'contact@apexdynamics.in',
     contactPhone: '+1 317 890 4420',
     tradeAssuranceLimitUsd: 1800000,
     completedOrdersCount: 520
@@ -250,7 +250,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     bannerUrl: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1200&auto=format&fit=crop&q=80',
     description: 'Tier-1 manufacturer of Grade-A LiFePO4 battery cells, 48V rack-mounted server rack batteries, commercial energy storage systems (BESS), and solar inverters.',
     contactPerson: 'Elena Zhao (Senior Export Director)',
-    contactEmail: 'sales@apexpower-energy.com',
+    contactEmail: 'contact@apexpower.in',
     contactPhone: '+86 755 8392 4110',
     tradeAssuranceLimitUsd: 2000000,
     completedOrdersCount: 680
@@ -280,7 +280,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     bannerUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80',
     description: 'Leading producer of virgin HDPE resin, specialty masterbatches, titanium dioxide (TiO2), industrial solvents, and water purification polymers.',
     contactPerson: 'Rajesh Singhania (Head of Global Trading)',
-    contactEmail: 'export@sudarshanpetro.in',
+    contactEmail: 'contact@sudarshanpetro.in',
     contactPhone: '+91 22 6789 5400',
     tradeAssuranceLimitUsd: 1200000,
     completedOrdersCount: 390
@@ -310,7 +310,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     bannerUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=1200&auto=format&fit=crop&q=80',
     description: 'Certified manufacturer of 100% GOTS organic cotton yarn, luxury denim fabrics, non-woven geotextiles, and heavy-duty technical workwear fabrics.',
     contactPerson: 'Merve Yilmaz (Export Coordinator)',
-    contactEmail: 'trade@anatolianyarns.com.tr',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+90 224 441 8900',
     tradeAssuranceLimitUsd: 800000,
     completedOrdersCount: 245
@@ -340,7 +340,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     bannerUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1200&auto=format&fit=crop&q=80',
     description: 'Premier exporter of Premium Jasmine & ST25 Fragrant Rice, W320/W240 Raw & Roasted Cashew Nuts, Robusta Green Coffee, and Black Pepper.',
     contactPerson: 'Nguyen Van Minh (Managing Director)',
-    contactEmail: 'sales@mekongagricom.vn',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+84 28 3822 9100',
     tradeAssuranceLimitUsd: 1000000,
     completedOrdersCount: 310
@@ -380,7 +380,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     description: 'Fortune 500 supply chain procurement group managing high-volume international sourcing contracts for clean energy infrastructure, server rack batteries, and precision automation lines across North America.',
     contactPerson: 'David Sterling',
     contactDesignation: 'Chief Procurement Officer & Head of Global Sourcing',
-    contactEmail: 'david.sterling@sterlingprocure.com',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+1 312 849 5500',
     whatsapp: '+1 312 849 5500',
     warehouses: [
@@ -422,7 +422,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     description: 'Leading Scandinavian renewable energy EPC contractor and grid-scale storage distributor sourcing solar PV panels, hybrid inverters, and battery management systems.',
     contactPerson: 'Marcus Vance',
     contactDesignation: 'VP of International Procurement',
-    contactEmail: 'marcus.vance@nordiccleanenergy.se',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+46 8 505 23 800',
     whatsapp: '+46 8 505 23 800',
     warehouses: [
@@ -463,7 +463,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     description: 'Major Middle East distribution conglomerate supplying national infrastructure projects, industrial manufacturing plants, and heavy equipment fleets across GCC.',
     contactPerson: 'Tariq Al-Mansoor',
     contactDesignation: 'General Manager - Strategic Procurement & Import',
-    contactEmail: 'procurement@alfuttaim-heavy.ae',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+971 4 881 9900',
     whatsapp: '+971 4 881 9900',
     warehouses: [
@@ -504,7 +504,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     description: 'Direct Tier-1 aftermarket automotive parts supplier and distributor supplying European racing teams, OEM replacement networks, and tuning facilities.',
     contactPerson: 'Stefan Huber',
     contactDesignation: 'Procurement Director & QA Engineer',
-    contactEmail: 'procurement@bavarian-parts.de',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+49 911 892 440',
     whatsapp: '+49 911 892 440',
     warehouses: [
@@ -545,7 +545,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     description: 'High-end European apparel group and sustainable fashion network sourcing organic Aegean cotton fabrics, selvedge denim rolls, and luxury packaging.',
     contactPerson: 'Camille Laurent',
     contactDesignation: 'Head of Sustainable Fabric Sourcing',
-    contactEmail: 'sourcing@ateliermodeparis.fr',
+    contactEmail: 'contact@mockcompany.com',
     contactPhone: '+33 1 42 68 55 10',
     whatsapp: '+33 1 42 68 55 10',
     warehouses: [
@@ -1739,7 +1739,7 @@ export const MOCK_PAID_CLIENTS: PaidClientRecord[] = [
     quoteCreditsRemaining: 680,
     paymentMethod: 'WIRE_TRANSFER',
     contactPerson: 'Klaus Reinhardt (VP Export Operations)',
-    contactEmail: 'klaus.reinhardt@kuka-precision-export.de',
+    contactEmail: 'contact@mockcompany.com',
     country: 'Germany',
     autoRenew: true,
     lastInvoiceRef: 'INV-TH-2026-8942',
@@ -1758,7 +1758,7 @@ export const MOCK_PAID_CLIENTS: PaidClientRecord[] = [
     quoteCreditsRemaining: 245,
     paymentMethod: 'WIRE_TRANSFER',
     contactPerson: 'David Chen (International Sourcing Director)',
-    contactEmail: 'david.chen@apexpower-energy.com',
+    contactEmail: 'contact@mockcompany.com',
     country: 'China',
     autoRenew: true,
     lastInvoiceRef: 'INV-TH-2026-7811',
@@ -1777,7 +1777,7 @@ export const MOCK_PAID_CLIENTS: PaidClientRecord[] = [
     quoteCreditsRemaining: 180,
     paymentMethod: 'STRIPE_CC',
     contactPerson: 'Kenji Takahashi (Head of Global OEM)',
-    contactEmail: 'export@apexforged-wheels.jp',
+    contactEmail: 'contact@mockcompany.com',
     country: 'Japan',
     autoRenew: true,
     lastInvoiceRef: 'INV-TH-2026-6420',
