@@ -24,7 +24,6 @@ import {
   Mail,
   Bell,
   Check,
-  Sparkles,
   RefreshCw,
   Eye,
   X,
@@ -732,7 +731,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+                      <Activity className="w-4 h-4 text-blue-500 animate-pulse" />
                       <span>Simulate Live RFQ Trigger</span>
                     </>
                   )}

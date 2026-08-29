@@ -218,8 +218,8 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                     resourceTitle="Factory Export Desk Contact"
                   >
                     <div className="space-y-1 text-xs text-slate-700">
-                      <div><strong>Email:</strong> {securityService.maskEmailAddress(company.contactEmail || 'export@factory.cn')}</div>
-                      <div><strong>Phone:</strong> {securityService.maskPhoneNumber(company.contactPhone || '+86 755 8320 9811')}</div>
+                      <div><strong>Email:</strong> {company.contactEmail ? securityService.maskEmailAddress(company.contactEmail) : 'Contact via Inquiry Form'}</div>
+                      <div><strong>Phone:</strong> {company.contactPhone ? securityService.maskPhoneNumber(company.contactPhone) : 'Contact via Inquiry Form'}</div>
                     </div>
                   </PremiumContactGate>
                 </div>

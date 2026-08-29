@@ -270,8 +270,8 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                   >
                     <div className="space-y-1 text-xs text-slate-700">
                       <div><strong>Lead:</strong> {buyer.contactPerson} ({buyer.contactDesignation})</div>
-                      <div><strong>Email:</strong> {securityService.maskEmailAddress(buyer.contactEmail)}</div>
-                      <div><strong>Phone:</strong> {securityService.maskPhoneNumber(buyer.contactPhone)}</div>
+                      <div><strong>Email:</strong> {buyer.contactEmail ? securityService.maskEmailAddress(buyer.contactEmail) : 'Contact via Inquiry Form'}</div>
+                      <div><strong>Phone:</strong> {buyer.contactPhone ? securityService.maskPhoneNumber(buyer.contactPhone) : 'Contact via Inquiry Form'}</div>
                     </div>
                   </PremiumContactGate>
                 </div>

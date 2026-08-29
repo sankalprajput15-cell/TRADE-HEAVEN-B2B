@@ -53,24 +53,50 @@ export const ProductCatalog: React.FC<Props> = ({
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
   const [ownershipFilter, setOwnershipFilter] = useState<'ALL' | 'MINE' | 'OTHERS'>('ALL');
   const [cachedProducts, setCachedProducts] = useState<Product[]>(products);
+  const [isOffline, setIsOffline] = useState<boolean>(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  const [isUsingCache, setIsUsingCache] = useState<boolean>(false);
+
+  // Connection monitoring
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => {
+      setIsOffline(false);
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Cache products to localStorage when they update
   useEffect(() => {
     if (products.length > 0) {
       localStorage.setItem('cached_products', JSON.stringify(products));
       setCachedProducts(products);
+      setIsUsingCache(false);
     }
   }, [products]);
 
-  // Load from cache on mount
+  // Load from cache on mount or if offline/missing products prop
   useEffect(() => {
-    if (products.length === 0) {
+    if (products.length === 0 || isOffline) {
       const cached = localStorage.getItem('cached_products');
       if (cached) {
         setCachedProducts(JSON.parse(cached));
+        setIsUsingCache(true);
       }
+    } else if (products.length > 0) {
+      setCachedProducts(products);
+      setIsUsingCache(false);
     }
-  }, [products.length]);
+  }, [products, isOffline]);
 
   // Sync external category prop if provided
   useEffect(() => {
@@ -182,6 +208,24 @@ export const ProductCatalog: React.FC<Props> = ({
 
   return (
     <div id="product-catalog-section" className="space-y-4 sm:space-y-6">
+      {/* Offline/Cached Connection Banner */}
+      {(isOffline || isUsingCache) && (
+        <div className="flex items-center justify-between gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <span>
+              {isOffline 
+                ? "Intermittent connectivity detected — You are currently offline." 
+                : "Using offline backup — Displaying recently loaded product data."}
+            </span>
+          </div>
+          <span className="text-[10px] bg-amber-100 px-2 py-0.5 rounded font-mono font-bold shrink-0">CACHED MODE</span>
+        </div>
+      )}
+
       {/* Search & Top Controls */}
       <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 shadow-2xs">
         <div className="relative flex-1 w-full">

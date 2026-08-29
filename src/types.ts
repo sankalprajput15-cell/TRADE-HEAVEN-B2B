@@ -148,7 +148,7 @@ export interface CompanyProfile {
   city: string;
   address: string;
   establishedYear: number;
-  businessType: 'Manufacturer' | 'Trading Company' | 'Wholesaler' | 'Exporter';
+  businessType: 'Manufacturer' | 'Trading Company' | 'Wholesaler' | 'Exporter' | 'Brokerage';
   tier: SupplierTier;
   status?: 'ACTIVE' | 'PENDING_REVIEW' | 'SUSPENDED';
   isVerifiedKYC: boolean;
@@ -197,21 +197,21 @@ export interface Product {
   subCategory: string;
   images: string[];
   description: string;
-  priceTiers: VolumePriceTier[];
+  priceTiers?: VolumePriceTier[];
   fobPriceUsd?: number;
   moq: number;
   moqUnit: string; // 'Pieces', 'Metric Tons', 'Cartons', 'Sets', 'Kg'
-  sampleAvailable: boolean;
-  samplePriceUsd: number;
+  sampleAvailable?: boolean;
+  samplePriceUsd?: number;
   leadTimeDays: number;
   supportedIncoterms: Incoterm[];
-  specifications: ProductSpecification[];
-  packagingDetails: string;
-  portOfDispatch: string;
-  certifications: string[];
-  customizationAvailable: boolean;
-  supplyAbilityPerMonth: string;
-  featured: boolean;
+  specifications?: ProductSpecification[];
+  packagingDetails?: string;
+  portOfDispatch?: string;
+  certifications?: string[];
+  customizationAvailable?: boolean;
+  supplyAbilityPerMonth?: string;
+  featured?: boolean;
   createdDate: string;
   ownerEmail?: string;
   ownerId?: string;
@@ -516,6 +516,7 @@ export interface DetailedVendorProfile extends CompanyProfile {
   taxVatNumber?: string;
   dunsNumber?: string;
   memberTierLabel?: string;
+  origin?: string;
   yearsInBusiness?: number;
   tagline?: string;
   acceptedPaymentTerms?: string[];

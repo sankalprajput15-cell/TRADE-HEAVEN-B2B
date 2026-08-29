@@ -226,6 +226,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 0
   },
   {
+    id: 'comp-kuka-precision',
     companyName: 'KUKA Precision Engineering GmbH',
     legalRegistrationNumber: 'DE-HRB-984210',
     country: 'Germany',

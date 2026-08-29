@@ -482,15 +482,15 @@ export const BuyerProfilePage: React.FC<Props> = ({
                   <div className="space-y-2.5 pt-2 text-xs text-slate-700">
                     <div className="flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">{securityService.maskEmailAddress(profile.contactEmail)}</span>
+                      <span className="font-mono">{profile.contactEmail ? securityService.maskEmailAddress(profile.contactEmail) : 'Contact via Inquiry Form'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">{securityService.maskPhoneNumber(profile.contactPhone)}</span>
+                      <span className="font-mono">{profile.contactPhone ? securityService.maskPhoneNumber(profile.contactPhone) : 'Contact via Inquiry Form'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MessageCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span className="font-mono">{securityService.maskPhoneNumber(profile.whatsapp || profile.contactPhone)}</span>
+                      <span className="font-mono">{profile.whatsapp || profile.contactPhone ? securityService.maskPhoneNumber(profile.whatsapp || profile.contactPhone) : 'Contact via Inquiry Form'}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />

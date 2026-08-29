@@ -1,6 +1,6 @@
 import { CompanyProfile } from '../types';
 
-export const ASTRA_COMMODITIES_PROFILE: CompanyProfile = {
+export const ASTRA_COMMODITIES_PROFILE: any = {
   id: 'astra-commodities-llc',
   name: 'Astra Commodities Llc',
   contactPerson: 'Fred Bernard Zaziski',

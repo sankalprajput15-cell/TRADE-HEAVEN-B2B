@@ -15,6 +15,7 @@ import { MediaManagementStudio } from './MediaManagementStudio';
 import { CompanyHeader } from './CompanyHeader';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { securityService } from '../../services/securityService';
+import { UnifiedContactInquiryModal } from '../modals/UnifiedContactInquiryModal';
 import { 
   ShieldCheck, 
   Award, 
@@ -92,6 +93,7 @@ export const VendorProfilePage: React.FC<Props> = ({
 
   // Media Management Studio state
   const [isMediaStudioOpen, setIsMediaStudioOpen] = useState(false);
+  const [isContactInquiryModalOpen, setIsContactInquiryModalOpen] = useState(false);
 
   const isAuthorizedToEdit = Boolean(
     currentUser?.role === 'ADMIN' ||
@@ -782,11 +784,11 @@ export const VendorProfilePage: React.FC<Props> = ({
                 <div className="space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                   <div className="flex items-center gap-2">
                     <Mail className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{profile.contactEmail ? securityService.maskEmailAddress(profile.contactEmail) : 'Contact via Inquiry'}</span>
+                    <span>{profile.contactEmail ? securityService.maskEmailAddress(profile.contactEmail) : 'Contact via Inquiry Form'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{profile.contactPhone ? securityService.maskPhoneNumber(profile.contactPhone) : 'Contact via Inquiry'}</span>
+                    <span>{profile.contactPhone ? securityService.maskPhoneNumber(profile.contactPhone) : 'Contact via Inquiry Form'}</span>
                   </div>
                   {profile.whatsapp && (
                     <a
@@ -799,6 +801,15 @@ export const VendorProfilePage: React.FC<Props> = ({
                       <span>Chat on WhatsApp</span>
                     </a>
                   )}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setIsContactInquiryModalOpen(true)}
+                    className="w-full mt-3.5 py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5 shrink-0" />
+                    <span>View Full Contact</span>
+                  </button>
                 </div>
               </PremiumContactGate>
             </div>
@@ -998,6 +1009,18 @@ export const VendorProfilePage: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* 6. UNIFIED CONTACT INQUIRY MODAL */}
+      <UnifiedContactInquiryModal
+        isOpen={isContactInquiryModalOpen}
+        onClose={() => setIsContactInquiryModalOpen(false)}
+        targetType="SUPPLIER"
+        targetId={profile.id}
+        targetTitle={profile.companyName}
+        supplierCompany={profile.companyName}
+        contactEmail={profile.contactEmail}
+        contactPhone={profile.contactPhone}
+      />
     </div>
   );
 };
