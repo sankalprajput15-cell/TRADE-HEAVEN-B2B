@@ -24,7 +24,7 @@ export const ProductCatalogGrid: React.FC<Props> = ({
   getTierBadge,
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 sm:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4 sm:gap-6">
       {products.map(product => (
         <div
           key={product.id}

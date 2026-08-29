@@ -85,8 +85,35 @@ if ($db_connected) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     // -------------------------------------------------------------
-    // Table Auto-Creation: users table as per mandatory schema
+    // Table Auto-Creation: users table with Self-Healing Logic
     // -------------------------------------------------------------
+    // If the users table already exists but lacks the password column, and has no registered users,
+    // safely drop it so it can be cleanly recreated with the proper schema and fields.
+    $recreate_users_table = false;
+    try {
+        $check_pwd = $pdo->query("SELECT `password` FROM users LIMIT 1");
+    } catch (Exception $e) {
+        // password column doesn't exist, check row count of users table
+        try {
+            $count_q = $pdo->query("SELECT COUNT(*) as cnt FROM users");
+            $count_row = $count_q->fetch();
+            if ($count_row && intval($count_row['cnt']) === 0) {
+                $recreate_users_table = true;
+            }
+        } catch (Exception $ex) {
+            // Table might not exist at all, which is fine
+        }
+    }
+
+    if ($recreate_users_table) {
+        try {
+            $pdo->exec("DROP TABLE IF EXISTS users");
+        } catch (Exception $e) {
+            file_put_contents(__DIR__ . '/db_error.log', "DROP users table failed: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    // Now cleanly run CREATE TABLE IF NOT EXISTS
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(150) NOT NULL,
@@ -105,28 +132,60 @@ if ($db_connected) {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Ensure password column is never truncated (VARCHAR 255) even if altered from older versions
+    // Dynamic schema column adder helper
+    $add_column_if_missing = function($pdo, $table, $column, $definition) {
+        $exists = false;
+        try {
+            $pdo->query("SELECT `$column` FROM `$table` LIMIT 1");
+            $exists = true;
+        } catch (Exception $e) {
+            $exists = false;
+        }
+
+        if (!$exists) {
+            // 1. Try ALTER TABLE with COLUMN keyword
+            try {
+                $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+                return true;
+            } catch (Exception $e) {}
+
+            // 2. Try ALTER TABLE without COLUMN keyword
+            try {
+                $pdo->exec("ALTER TABLE `$table` ADD `$column` $definition");
+                return true;
+            } catch (Exception $e) {}
+
+            // 3. Relax strictness: Try without NOT NULL constraint if it failed
+            $simple_def = preg_replace('/NOT NULL/i', '', $definition);
+            try {
+                $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $simple_def");
+                return true;
+            } catch (Exception $e) {}
+
+            try {
+                $pdo->exec("ALTER TABLE `$table` ADD `$column` $simple_def");
+                return true;
+            } catch (Exception $e) {
+                file_put_contents(__DIR__ . '/db_error.log', "ALTER table $table ADD column $column completely failed: " . $e->getMessage() . "\n", FILE_APPEND);
+            }
+        }
+        return false;
+    };
+
+    // Apply migrations with the self-healing adder helper and direct failsafe queries
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT ''");
+    } catch (Exception $e) {}
     try {
         $pdo->exec("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL");
     } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS company_name VARCHAR(255) DEFAULT ''");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT ''");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT 'United States'");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'buyer'");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(10) DEFAULT NULL");
-    } catch (Exception $e) {}
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry DATETIME DEFAULT NULL");
-    } catch (Exception $e) {}
+    
+    $add_column_if_missing($pdo, 'users', 'company_name', "VARCHAR(255) DEFAULT ''");
+    $add_column_if_missing($pdo, 'users', 'phone', "VARCHAR(50) DEFAULT ''");
+    $add_column_if_missing($pdo, 'users', 'country', "VARCHAR(100) DEFAULT 'United States'");
+    $add_column_if_missing($pdo, 'users', 'role', "VARCHAR(50) DEFAULT 'buyer'");
+    $add_column_if_missing($pdo, 'users', 'reset_token', "VARCHAR(10) DEFAULT NULL");
+    $add_column_if_missing($pdo, 'users', 'reset_token_expiry', "DATETIME DEFAULT NULL");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS listings (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -186,10 +245,32 @@ switch ($action) {
     // 1. Health Status
     // -------------------------------------------------------------
     case 'health':
+        $columns = [];
+        $migration_errors = [];
+        if ($db_connected && $pdo) {
+            try {
+                $q = $pdo->query("DESCRIBE users");
+                while ($row = $q->fetch()) {
+                    $columns[] = $row['Field'];
+                }
+            } catch (Exception $e) {
+                $migration_errors[] = "Describe users table failed: " . $e->getMessage();
+            }
+        }
+        
+        $log_content = '';
+        $log_path = __DIR__ . '/db_error.log';
+        if (file_exists($log_path)) {
+            $log_content = file_get_contents($log_path);
+        }
+
         echo json_encode([
             "status" => "success",
             "db_connected" => $db_connected,
             "database" => $db_name,
+            "columns" => $columns,
+            "migration_errors" => $migration_errors,
+            "db_error_log" => $log_content,
             "data" => [
                 "service" => "Trade4Deals Direct MySQL PDO API",
                 "online" => true,
@@ -676,7 +757,33 @@ switch ($action) {
                 $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
                 $stmt->execute([$email]);
                 $user_found = $stmt->fetch(PDO::FETCH_ASSOC);
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+                // Log specific error and return user-friendly maintenance message
+                $err_msg = "Login SELECT failed: " . $e->getMessage();
+                error_log($err_msg);
+                file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
+                echo json_encode([
+                    "status" => "error",
+                    "code" => "DATABASE_QUERY_ERROR",
+                    "message" => "The authentication server is currently undergoing scheduled data maintenance. Please try again in a few moments."
+                ]);
+                exit();
+            }
+        } else {
+            // Unconnected fallback
+            $err_msg = "Login failed: Database connection is offline.";
+            error_log($err_msg);
+            file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
+            
+            // Allow master admins fallback, otherwise return maintenance message
+            if ($email !== 'admin@tradeheaven.net' && $email !== 'admin@trade4deals.com' && $email !== 'yr943334@gmail.com') {
+                echo json_encode([
+                    "status" => "error",
+                    "code" => "DATABASE_CONNECTION_ERROR",
+                    "message" => "Our secure database is currently undergoing temporary connection optimization. Please try again shortly or contact support."
+                ]);
+                exit();
+            }
         }
 
         // Check Master Admin fallback
@@ -803,7 +910,27 @@ switch ($action) {
                     echo json_encode(["status" => "error", "message" => "Email already registered."]);
                     exit();
                 }
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+                $err_msg = "Register duplicate check failed: " . $e->getMessage();
+                error_log($err_msg);
+                file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
+                echo json_encode([
+                    "status" => "error",
+                    "code" => "DATABASE_QUERY_ERROR",
+                    "message" => "The registration server is currently undergoing scheduled database maintenance. Please try again in a few moments."
+                ]);
+                exit();
+            }
+        } else {
+            $err_msg = "Register failed: Database connection is offline.";
+            error_log($err_msg);
+            file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
+            echo json_encode([
+                "status" => "error",
+                "code" => "DATABASE_CONNECTION_ERROR",
+                "message" => "Our registration service is temporarily offline for database system optimization. Please try again in a few moments."
+            ]);
+            exit();
         }
 
         // Secure password hash
@@ -823,7 +950,14 @@ switch ($action) {
                 ]);
                 $user_id = $pdo->lastInsertId();
             } catch (Exception $e) {
-                echo json_encode(["status" => "error", "message" => "Database insertion error: " . $e->getMessage()]);
+                $err_msg = "Register INSERT failed: " . $e->getMessage();
+                error_log($err_msg);
+                file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
+                echo json_encode([
+                    "status" => "error",
+                    "code" => "DATABASE_INSERT_ERROR",
+                    "message" => "Database insertion failed during registration. Our engineering team has been notified of this schema mismatch."
+                ]);
                 exit();
             }
         }

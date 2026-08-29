@@ -158,12 +158,18 @@ export const api = {
     try {
       // 1. Try BigRock PHP MySQL authentication first
       const bigrockRes = await bigrockApi.login(email, password);
-      if (bigrockRes && bigrockRes.success && bigrockRes.user) {
-        if (bigrockRes.token) {
-          try {
-          } catch {}
+      if (bigrockRes) {
+        if (bigrockRes.success && bigrockRes.user) {
+          if (bigrockRes.token) {
+            try {
+            } catch {}
+          }
+          return bigrockRes;
         }
-        return bigrockRes;
+        // If it is a structural database/connection failure, return it directly so the user sees the friendly maintenance message
+        if (bigrockRes.message && (bigrockRes.message.includes('optimization') || bigrockRes.message.includes('connection issues') || bigrockRes.message.includes('maintenance'))) {
+          return bigrockRes;
+        }
       }
       
       // 2. Fallback to Express backend endpoint
@@ -250,12 +256,18 @@ export const api = {
     try {
       // 1. Try BigRock PHP MySQL registration
       const bigrockRes = await bigrockApi.register(payload);
-      if (bigrockRes && bigrockRes.success && bigrockRes.user) {
-        if (bigrockRes.token) {
-          try {
-          } catch {}
+      if (bigrockRes) {
+        if (bigrockRes.success && bigrockRes.user) {
+          if (bigrockRes.token) {
+            try {
+            } catch {}
+          }
+          return bigrockRes;
         }
-        return bigrockRes;
+        // If it is a structural database/connection failure, return it directly so the user sees the friendly maintenance message
+        if (bigrockRes.message && (bigrockRes.message.includes('optimization') || bigrockRes.message.includes('connection issues') || bigrockRes.message.includes('maintenance'))) {
+          return bigrockRes;
+        }
       }
 
       // 2. Fallback to Express backend endpoint

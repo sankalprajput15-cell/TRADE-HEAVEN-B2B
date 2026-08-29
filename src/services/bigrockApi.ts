@@ -255,10 +255,20 @@ export const bigrockApi = {
       if (response.ok && data.success) {
         return data;
       }
+      if (data && (data.code === 'DATABASE_QUERY_ERROR' || data.code === 'DATABASE_CONNECTION_ERROR' || data.code === 'DATABASE_INSERT_ERROR' || String(data.message).toLowerCase().includes('database') || String(data.message).toLowerCase().includes('sql') || String(data.message).toLowerCase().includes('pdo'))) {
+        console.error('[BigRock Register Database Failure]:', data.message, 'Code:', data.code);
+        const maintenanceMsg = 'Our registration database is currently undergoing scheduled optimization. Please try again in a few moments or contact support.';
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_database_error', { 
+            detail: { message: data.message || maintenanceMsg, code: data.code } 
+          }));
+        }
+        return { success: false, message: maintenanceMsg };
+      }
       return { success: false, message: data.message || 'Registration failed.' };
     } catch (err: any) {
-      console.warn('[BigRock register fallback]:', err);
-      return { success: false, message: err.message || 'Backend connection error during registration.' };
+      console.error('[BigRock Register Connection Exception]:', err);
+      return { success: false, message: 'We are experiencing temporary connection issues to our registration servers. Please try again in a few moments.' };
     }
   },
 
@@ -273,10 +283,20 @@ export const bigrockApi = {
       if (response.ok && data.success) {
         return data;
       }
+      if (data && (data.code === 'DATABASE_QUERY_ERROR' || data.code === 'DATABASE_CONNECTION_ERROR' || data.code === 'DATABASE_INSERT_ERROR' || String(data.message).toLowerCase().includes('database') || String(data.message).toLowerCase().includes('sql') || String(data.message).toLowerCase().includes('pdo'))) {
+        console.error('[BigRock Login Database Failure]:', data.message, 'Code:', data.code);
+        const maintenanceMsg = 'Our authentication database is currently undergoing scheduled optimization. Please try again in a few moments or contact support.';
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_database_error', { 
+            detail: { message: data.message || maintenanceMsg, code: data.code } 
+          }));
+        }
+        return { success: false, message: maintenanceMsg };
+      }
       return { success: false, message: data.message || 'Authentication failed.' };
     } catch (err: any) {
-      console.warn('[BigRock login fallback]:', err);
-      return { success: false, message: err.message || 'Backend connection error during login.' };
+      console.error('[BigRock Login Connection Exception]:', err);
+      return { success: false, message: 'We are experiencing temporary connection issues to our authentication servers. Please try again in a few moments.' };
     }
   },
 

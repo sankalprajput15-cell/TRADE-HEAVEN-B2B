@@ -52,8 +52,6 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
   initialPrice,
   onSuccess
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -139,6 +137,8 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div 

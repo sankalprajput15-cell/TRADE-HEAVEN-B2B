@@ -53,12 +53,13 @@ export const ProductCatalog: React.FC<Props> = ({
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
   const [ownershipFilter, setOwnershipFilter] = useState<'ALL' | 'MINE' | 'OTHERS'>('ALL');
   const [cachedProducts, setCachedProducts] = useState<Product[]>(products);
-  const [isOffline, setIsOffline] = useState<boolean>(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isUsingCache, setIsUsingCache] = useState<boolean>(false);
 
   // Connection monitoring
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    setIsOffline(!navigator.onLine);
     const handleOnline = () => {
       setIsOffline(false);
     };

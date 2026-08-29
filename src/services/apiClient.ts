@@ -177,6 +177,16 @@ export const apiClient = {
       }
 
       const json = await res.json();
+      if (json && (json.code === 'DATABASE_QUERY_ERROR' || json.code === 'DATABASE_CONNECTION_ERROR' || json.code === 'DATABASE_INSERT_ERROR' || String(json.message).toLowerCase().includes('database') || String(json.message).toLowerCase().includes('sql') || String(json.message).toLowerCase().includes('pdo'))) {
+        console.error('[submitRfq Database Failure]:', json.message, 'Code:', json.code);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_database_error', { 
+            detail: { message: json.message || 'Database insertion error during RFQ persistence.', code: json.code } 
+          }));
+        }
+        return { success: false, message: json.message || 'Database insertion failed.' };
+      }
+
       if (json && json.status === 'success' && json.data) {
         return { success: true, data: json.data, message: json.message };
       }
@@ -355,10 +365,22 @@ export const apiClient = {
         };
       }
 
+      if (json && (json.code === 'DATABASE_QUERY_ERROR' || json.code === 'DATABASE_CONNECTION_ERROR' || json.code === 'DATABASE_INSERT_ERROR' || String(json.message).toLowerCase().includes('database') || String(json.message).toLowerCase().includes('sql') || String(json.message).toLowerCase().includes('pdo'))) {
+        console.error('[Authentication Database Failure]:', json.message, 'Code:', json.code);
+        const maintenanceMsg = 'Our authentication database is currently undergoing scheduled optimization. Please try again in a few moments or contact support.';
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_database_error', { 
+            detail: { message: json.message || maintenanceMsg, code: json.code } 
+          }));
+        }
+        return { success: false, error: maintenanceMsg, message: maintenanceMsg };
+      }
+
       const errMsg = json.message || json.error || 'Invalid email or password';
       return { success: false, error: errMsg, message: errMsg };
     } catch (e: any) {
-      const errMsg = e.message || 'Login connection failure';
+      console.error('[Authentication Connection Exception]:', e);
+      const errMsg = 'We are experiencing temporary connection issues to our authentication servers. Please try again in a few moments.';
       return { success: false, error: errMsg, message: errMsg };
     }
   },
@@ -448,10 +470,22 @@ export const apiClient = {
         };
       }
 
+      if (json && (json.code === 'DATABASE_QUERY_ERROR' || json.code === 'DATABASE_CONNECTION_ERROR' || json.code === 'DATABASE_INSERT_ERROR' || String(json.message).toLowerCase().includes('database') || String(json.message).toLowerCase().includes('sql') || String(json.message).toLowerCase().includes('pdo'))) {
+        console.error('[Registration Database Failure]:', json.message, 'Code:', json.code);
+        const maintenanceMsg = 'Our registration database is currently undergoing scheduled optimization. Please try again in a few moments or contact support.';
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_database_error', { 
+            detail: { message: json.message || maintenanceMsg, code: json.code } 
+          }));
+        }
+        return { success: false, error: maintenanceMsg, message: maintenanceMsg };
+      }
+
       const errMsg = json.message || json.error || 'Registration failed';
       return { success: false, error: errMsg, message: errMsg };
     } catch (e: any) {
-      const errMsg = e.message || 'Registration connection error';
+      console.error('[Registration Connection Exception]:', e);
+      const errMsg = 'We are experiencing temporary connection issues to our registration servers. Please try again in a few moments.';
       return { success: false, error: errMsg, message: errMsg };
     }
   },

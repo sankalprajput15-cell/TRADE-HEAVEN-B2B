@@ -40,8 +40,6 @@ export const RfqCreationModal: React.FC<Props> = ({
   onSubmitRfq,
   onRfqCreated
 }) => {
-  if (!isOpen) return null;
-
   const [productName, setProductName] = useState('');
   const [category, setCategory] = useState(CATEGORIES_TREE[0]?.name || 'Industrial Machinery');
   const [targetQuantity, setTargetQuantity] = useState(1000);
@@ -202,6 +200,8 @@ export const RfqCreationModal: React.FC<Props> = ({
       setBuyerEmail('marcus.vance@nordicenergy.se');
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div 
