@@ -86,9 +86,13 @@ export const BuyLeadsView: React.FC<Props> = ({
       (r.productName || '').toLowerCase().includes(q) ||
       (r.buyerCompany || '').toLowerCase().includes(q) ||
       (r.buyerName || '').toLowerCase().includes(q) ||
+      (r.buyerCountry || '').toLowerCase().includes(q) ||
+      (r.category || '').toLowerCase().includes(q) ||
       (r.detailedRequirements || r.detailedDescription || '').toLowerCase().includes(q) ||
       (r.destinationPort || '').toLowerCase().includes(q) ||
       (r.preferredIncoterm || '').toLowerCase().includes(q) ||
+      (r.paymentTerms || '').toLowerCase().includes(q) ||
+      (r.targetPriceUsd ? String(r.targetPriceUsd) : '').toLowerCase().includes(q) ||
       (r.id || '').toLowerCase().includes(q);
     const matchesCat = selectedCategory === 'ALL' || r.category === selectedCategory;
     return matchesSearch && matchesCat;

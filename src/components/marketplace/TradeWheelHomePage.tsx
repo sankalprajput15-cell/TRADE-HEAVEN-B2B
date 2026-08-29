@@ -61,6 +61,12 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onNavigateToRfqs
 }) => {
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+  const [showAllRfqs, setShowAllRfqs] = React.useState(true);
+  const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
+
+  const activeRfqsPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
+  const displayedRfqs = showAllRfqs ? activeRfqsPool : activeRfqsPool.slice(0, 6);
+  const displayedCompanies = showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -173,7 +179,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         </div>
 
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {MOCK_COMPANIES.map((company, index) => (
+          {displayedCompanies.map((company, index) => (
             <div
               key={company.id || index}
               onClick={() => onOpenStorefront(company.id)}
@@ -214,7 +220,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                   <div>
                     <span className="text-[10px] text-slate-500">Factory Size:</span>
                     <div className="font-bold text-slate-800">
-                      {company.factorySizeSqM.toLocaleString()} m²
+                      {company.factorySizeSqM && company.factorySizeSqM > 0 
+                        ? `${company.factorySizeSqM.toLocaleString()} m²` 
+                        : 'Trading/Desk'}
                     </div>
                   </div>
                 </div>
@@ -226,6 +234,30 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Section 4 Footer Toggle */}
+        <div className="relative z-10 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500 text-xs">
+            Showing <strong className="text-slate-900 font-bold">{displayedCompanies.length}</strong> of <strong className="text-slate-900 font-bold">{MOCK_COMPANIES.length}</strong> audited supplier profiles
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowAllSuppliers(!showAllSuppliers)}
+              className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            >
+              {showAllSuppliers ? 'Show Top 6 Featured Suppliers' : `Show All ${MOCK_COMPANIES.length} Suppliers`}
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Full Supplier Directory</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -254,49 +286,87 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </button>
         </div>
 
-        {rfqs && rfqs.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rfqs.slice(0, 3).map(rfq => (
-              <div
-                key={rfq.id}
-                onClick={() => onNavigate('RFQ_HUB')}
-                className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-3"
+        {displayedRfqs && displayedRfqs.length > 0 ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {displayedRfqs.map(rfq => (
+                <div
+                  key={rfq.id}
+                  onClick={() => onSelectRfq ? onSelectRfq(rfq) : onNavigate('BUY_LEADS')}
+                  className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                          {rfq.id}
+                        </span>
+                        <h4 className="font-bold text-sm text-slate-900 mt-1.5 line-clamp-1">
+                          {rfq.productName}
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                        {rfq.quotesCount} Bids
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs p-2.5 bg-white rounded-xl border border-slate-200">
+                      <div>
+                        <span className="text-[10px] text-slate-500">Target Volume:</span>
+                        <div className="font-mono font-bold text-slate-900">
+                          {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500">Destination Port:</span>
+                        <div className="font-bold text-slate-800 truncate">
+                          {rfq.destinationPort}
+                        </div>
+                      </div>
+                      <div className="col-span-2 pt-1 border-t border-slate-100 flex justify-between">
+                        <span className="text-slate-500">Target Price / Terms:</span>
+                        <span className="font-mono font-bold text-emerald-700">
+                          {rfq.preferredIncoterm} • {rfq.targetPriceUsd ? formatPrice(rfq.targetPriceUsd) : 'Market Quote'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                    <div className="text-[11px] text-slate-600 flex items-center justify-between">
+                      <span className="truncate">Buyer: <strong className="text-slate-900">{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
+                      <span className="text-blue-600 font-bold shrink-0 text-xs flex items-center gap-1">
+                        <span>Quote</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
+
+                    {/* Hidden Contact Details Bar */}
+                    <div className="p-2 rounded-xl bg-slate-100/80 border border-slate-200 flex items-center justify-between gap-2 text-[11px]">
+                      <div className="truncate text-slate-600 font-mono">
+                        <span className="font-semibold text-slate-700">Contact: </span>
+                        <span>{rfq.buyerPhone || '+1-825-***-****'}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 font-bold text-[10px] border border-amber-200/80 shrink-0">
+                        <Lock className="w-3 h-3 text-amber-600" />
+                        <span>Hidden Contact</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Toggle Show All 20 Tenders Button */}
+            <div className="pt-2 flex justify-center">
+              <button
+                onClick={() => setShowAllRfqs(!showAllRfqs)}
+                className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs inline-flex items-center gap-2 transition-all border border-slate-300 cursor-pointer shadow-xs"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-                      {rfq.id}
-                    </span>
-                    <h4 className="font-bold text-sm text-slate-900 mt-1.5 line-clamp-1">
-                      {rfq.productName}
-                    </h4>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                    {rfq.quotesCount} Bids
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-200/80">
-                  <div>
-                    <span className="text-[10px] text-slate-500">Target Quantity:</span>
-                    <div className="font-mono font-bold text-slate-900">
-                      {rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500">Destination:</span>
-                    <div className="font-bold text-slate-800 truncate">
-                      {rfq.destinationPort}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                  <span>By: <strong>{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
-                  <span className="text-blue-600 font-bold">Submit Quote &rarr;</span>
-                </div>
-              </div>
-            ))}
+                <FileText className="w-4 h-4 text-blue-600" />
+                <span>{showAllRfqs ? 'Show Top 6 Tenders' : `Show All ${activeRfqsPool.length} International RFQ Tenders`}</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-center space-y-3">

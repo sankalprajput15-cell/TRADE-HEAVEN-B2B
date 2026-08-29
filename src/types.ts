@@ -129,7 +129,7 @@ export interface SecurityAuditLog {
 }
 
 export type SupplierTier = 'FREE' | 'SILVER' | 'GOLD' | 'VIP';
-export type Incoterm = 'EXW' | 'FOB' | 'CIF' | 'CFR' | 'DDP' | 'FCA' | 'CIP';
+export type Incoterm = 'EXW' | 'FOB' | 'CIF' | 'CFR' | 'DDP' | 'FCA' | 'CIP' | 'TTO';
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY' | 'INR' | 'AED' | 'JPY';
 
 export interface CurrencyRate {
@@ -160,8 +160,8 @@ export interface CompanyProfile {
   annualRevenueUsd: string;
   mainMarkets?: string[];
   certifications?: string[]; // e.g., ['ISO 9001:2015', 'CE', 'RoHS', 'FDA', 'SGS Audited']
-  factorySizeSqM: number;
-  productionLines: number;
+  factorySizeSqM?: number;
+  productionLines?: number;
   logoUrl: string;
   bannerUrl: string;
   description: string;
@@ -391,7 +391,7 @@ export interface DetailedBuyerProfile {
   city: string;
   address: string;
   establishedYear: number;
-  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House';
+  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House' | 'Supplier' | 'Exporter' | 'Manufacturer' | 'Service Provider';
   tier: BuyerTier;
   isVerifiedKYC: boolean;
   kycVerificationDate?: string;
@@ -399,14 +399,21 @@ export interface DetailedBuyerProfile {
   responseRate?: string;
   avgResponseTime?: string;
   totalEmployees?: string;
-  annualPurchasingVolumeUsd: string;
-  importFrequency: string; // e.g., 'Monthly FCL Shipments'
-  targetCategories: string[];
-  preferredIncoterms: Incoterm[];
-  preferredPaymentTerms: string[];
-  activeRfqsCount: number;
-  completedImportsCount: number;
-  tradeAssuranceEscrowSecuredUsd: number;
+  annualPurchasingVolumeUsd?: string;
+  annualRevenueUsd?: string;
+  importFrequency?: string; // e.g., 'Monthly FCL Shipments'
+  targetCategories?: string[];
+  preferredIncoterms?: Incoterm[];
+  preferredPaymentTerms?: string[];
+  activeRfqsCount?: number;
+  completedImportsCount?: number;
+  tradeAssuranceEscrowSecuredUsd?: number;
+  mainMarkets?: string[];
+  certifications?: string[];
+  factorySizeSqM?: number;
+  productionLines?: number;
+  tradeAssuranceLimitUsd?: number;
+  completedOrdersCount?: number;
   logoUrl: string;
   bannerUrl: string;
   description: string;
@@ -622,3 +629,47 @@ export interface CmsAccessRequest {
   reviewedBy?: string;
   reviewedAt?: string;
 }
+
+export interface NormalizedSupplier {
+  company_name: string;
+  business_type: 'Supplier' | 'Manufacturer';
+  contact_person: string;
+  email: string | null;
+  phone: string | null;
+  location: string;
+  products_offered: string[];
+  year_established: number | null;
+  employee_count: string | null;
+}
+
+export interface NormalizedBuyerRfq {
+  rfq_id: string;
+  buyer_company: string;
+  contact_person: string;
+  email: string | null;
+  phone: string | null;
+  location: string;
+  product_requested: string;
+  quantity_required: string;
+  incoterm: 'CIF' | 'FOB' | 'TTO' | 'other' | string;
+  destination_port: string;
+  target_price: string | null;
+  status: 'Active' | 'Under Review' | 'Pending';
+}
+
+export interface NormalizedServiceProvider {
+  company_name: string;
+  service_type: 'Tank Storage' | 'Logistics' | 'Inspection' | string;
+  contact_person: string;
+  email: string | null;
+  phone: string | null;
+  location: string;
+  supported_locations: string[];
+}
+
+export interface NormalizedB2BDatabase {
+  suppliers: NormalizedSupplier[];
+  buyers_rfqs: NormalizedBuyerRfq[];
+  service_providers: NormalizedServiceProvider[];
+}
+

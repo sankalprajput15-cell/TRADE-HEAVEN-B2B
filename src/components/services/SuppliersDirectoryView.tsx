@@ -201,7 +201,11 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                   <div className="p-2 bg-slate-50 rounded-xl">
                     <span className="text-[10px] text-slate-400">Factory Area:</span>
-                    <div className="font-bold text-slate-900">{company.factorySizeSqM.toLocaleString()} m²</div>
+                    <div className="font-bold text-slate-900">
+                      {company.factorySizeSqM && company.factorySizeSqM > 0 
+                        ? `${company.factorySizeSqM.toLocaleString()} m²` 
+                        : 'Trading/Desk'}
+                    </div>
                   </div>
                   <div className="p-2 bg-slate-50 rounded-xl">
                     <span className="text-[10px] text-slate-400">trade protection Limit:</span>

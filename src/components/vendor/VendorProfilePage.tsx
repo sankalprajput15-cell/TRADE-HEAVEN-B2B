@@ -279,7 +279,9 @@ export const VendorProfilePage: React.FC<Props> = ({
                     <Factory className="w-3.5 h-3.5 text-blue-600" /> Factory Scale
                   </div>
                   <div className="text-base font-black text-slate-900 mt-1">
-                    {profile.factorySizeSqM.toLocaleString()} m² ({profile.productionLines} Lines)
+                    {profile.factorySizeSqM && profile.factorySizeSqM > 0 
+                      ? `${profile.factorySizeSqM.toLocaleString()} m² (${profile.productionLines || 0} Lines)` 
+                      : 'Trading / Brokerage Desk'}
                   </div>
                 </div>
 

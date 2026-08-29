@@ -207,8 +207,10 @@ const MainApp: React.FC = () => {
     try {
       const loadedRfqs = await fetchWithRetry(() => apiClient.getRfqs(), 3, 1000, 2);
       if (Array.isArray(loadedRfqs) && loadedRfqs.length > 0) {
-        setRfqs(loadedRfqs as any);
-        setSelectedRfqId(prev => (prev && loadedRfqs.some(r => r.id === prev)) ? prev : loadedRfqs[0].id);
+        const existingIds = new Set(loadedRfqs.map(r => r.id));
+        const mergedRfqs = [...loadedRfqs, ...MOCK_RFQS.filter(r => !existingIds.has(r.id))];
+        setRfqs(mergedRfqs as any);
+        setSelectedRfqId(prev => (prev && mergedRfqs.some(r => r.id === prev)) ? prev : mergedRfqs[0].id);
       }
     } catch (err) {
       console.error('[Failed to load BigRock rfqs after retries]:', err);

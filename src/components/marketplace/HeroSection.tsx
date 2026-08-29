@@ -20,7 +20,8 @@ import {
   ExternalLink,
   SlidersHorizontal,
   ChevronRight,
-  Filter
+  Filter,
+  Lock
 } from 'lucide-react';
 import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES } from '../../data/mockData';
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
@@ -147,6 +148,7 @@ export const HeroSection: React.FC<Props> = ({
   const isAdmin = auth.isAuthorized;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCat, setSelectedCat] = useState('All Categories');
+  const [searchTargetMode, setSearchTargetMode] = useState<'PRODUCTS' | 'RFQS' | 'SUPPLIERS'>('PRODUCTS');
   
   // Downward dropdown states
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -181,14 +183,20 @@ export const HeroSection: React.FC<Props> = ({
   // Full-Site Multi-Index Search Query Matcher
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const activeRfqPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
+
     if (!q) {
+      const defaultRfqs = activeRfqPool.slice(0, 40);
+      const defaultProducts = products.slice(0, 16);
+      const defaultSuppliers = MOCK_COMPANIES.slice(0, 16);
+      const defaultTools = SITE_TOOLS.slice(0, 6);
       return {
-        products: [],
-        suppliers: [],
-        rfqs: [],
+        products: defaultProducts,
+        suppliers: defaultSuppliers,
+        rfqs: defaultRfqs,
         categories: [],
-        tools: [],
-        totalCount: 0
+        tools: defaultTools,
+        totalCount: defaultProducts.length + defaultSuppliers.length + defaultRfqs.length + defaultTools.length
       };
     }
 
@@ -204,41 +212,50 @@ export const HeroSection: React.FC<Props> = ({
         (p.description && p.description.toLowerCase().includes(q)) ||
         (p.specifications && p.specifications.some(s => s.name.toLowerCase().includes(q) || s.value.toLowerCase().includes(q)))
       );
-    }).slice(0, 6);
+    }).slice(0, 16);
 
     // 2. Match Verified Suppliers & Manufacturers
     const matchedSuppliers = MOCK_COMPANIES.filter(c => {
       return (
-        c.companyName.toLowerCase().includes(q) ||
-        c.country.toLowerCase().includes(q) ||
-        c.city.toLowerCase().includes(q) ||
-        c.businessType.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q) ||
-        c.certifications.some(cert => cert.toLowerCase().includes(q))
+        (c.companyName && c.companyName.toLowerCase().includes(q)) ||
+        (c.country && c.country.toLowerCase().includes(q)) ||
+        (c.city && c.city.toLowerCase().includes(q)) ||
+        (c.businessType && c.businessType.toLowerCase().includes(q)) ||
+        (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
+        (c.contactPhone && c.contactPhone.toLowerCase().includes(q)) ||
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        ((c.certifications || []).some(cert => cert && cert.toLowerCase().includes(q)))
       );
-    }).slice(0, 4);
+    }).slice(0, 16);
 
     // 3. Match RFQs & Buy Leads (Searches live database feed)
-    const activeRfqPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
     const matchedRfqs = activeRfqPool.filter(r => {
       const pName = (r.productName || '').toLowerCase();
       const bCompany = (r.buyerCompany || '').toLowerCase();
       const bName = (r.buyerName || '').toLowerCase();
+      const bCountry = (r.buyerCountry || '').toLowerCase();
       const desc = (r.detailedRequirements || r.detailedDescription || '').toLowerCase();
       const cat = (r.category || '').toLowerCase();
       const port = (r.destinationPort || '').toLowerCase();
+      const inco = (r.preferredIncoterm || '').toLowerCase();
+      const pay = (r.paymentTerms || '').toLowerCase();
+      const targetPrice = (r.targetPriceUsd ? String(r.targetPriceUsd) : '').toLowerCase();
       const rfqId = (r.id || '').toLowerCase();
 
       return (
         pName.includes(q) ||
         bCompany.includes(q) ||
         bName.includes(q) ||
+        bCountry.includes(q) ||
         desc.includes(q) ||
         cat.includes(q) ||
         port.includes(q) ||
+        inco.includes(q) ||
+        pay.includes(q) ||
+        targetPrice.includes(q) ||
         rfqId.includes(q)
       );
-    }).slice(0, 6);
+    }).slice(0, 30);
 
     // 4. Match Categories & Subcategories
     const matchedCategories: { name: string; icon: string; count: string; subcategory?: string }[] = [];
@@ -260,7 +277,7 @@ export const HeroSection: React.FC<Props> = ({
         t.description.toLowerCase().includes(q) ||
         t.category.toLowerCase().includes(q)
       );
-    }).slice(0, 4);
+    }).slice(0, 6);
 
     const totalCount = 
       matchedProducts.length + 
@@ -285,7 +302,13 @@ export const HeroSection: React.FC<Props> = ({
     setIsCategoryMenuOpen(false);
     onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat);
     if (onNavigate) {
-      onNavigate('PRODUCT_DIRECTORY');
+      if (searchTargetMode === 'RFQS') {
+        onNavigate('BUY_LEADS');
+      } else if (searchTargetMode === 'SUPPLIERS') {
+        onNavigate('SUPPLIERS_DIRECTORY');
+      } else {
+        onNavigate('PRODUCT_DIRECTORY');
+      }
     }
   };
 
@@ -413,6 +436,62 @@ export const HeroSection: React.FC<Props> = ({
         {/* ENHANCED PROFESSIONAL OMNIBAR SEARCH & DOWNWARD MENUS */}
         {/* ------------------------------------------------------------- */}
         <div ref={containerRef} className="relative max-w-4xl">
+
+          {/* Search Target Mode Switcher Pills */}
+          <div className="flex items-center gap-2 mb-2.5 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTargetMode('PRODUCTS');
+                setActiveFilter('PRODUCTS');
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                searchTargetMode === 'PRODUCTS'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 border border-slate-700/80'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Products</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTargetMode('RFQS');
+                setActiveFilter('RFQS');
+                setIsSearchPopoverOpen(true);
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                searchTargetMode === 'RFQS'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-md ring-2 ring-emerald-400/50'
+                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-emerald-300 border border-emerald-500/50'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Live RFQs &amp; Buy Leads</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black uppercase tracking-wider animate-pulse">
+                LIVE
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTargetMode('SUPPLIERS');
+                setActiveFilter('SUPPLIERS');
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                searchTargetMode === 'SUPPLIERS'
+                  ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 border border-slate-700/80'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>Audited Suppliers</span>
+            </button>
+          </div>
+
           <form onSubmit={handleSearchSubmit} className="relative z-30">
             <div className="bg-white p-2 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col sm:flex-row items-center gap-2 transition-all ring-4 ring-black/10">
               
@@ -509,20 +588,20 @@ export const HeroSection: React.FC<Props> = ({
                   value={searchQuery}
                   onFocus={() => {
                     setIsCategoryMenuOpen(false);
-                    if (searchQuery.trim().length > 0) {
-                      setIsSearchPopoverOpen(true);
-                    }
+                    setIsSearchPopoverOpen(true);
                   }}
                   onChange={e => {
                     const val = e.target.value;
                     setSearchQuery(val);
-                    if (val.trim().length > 0) {
-                      setIsSearchPopoverOpen(true);
-                    } else {
-                      setIsSearchPopoverOpen(false);
-                    }
+                    setIsSearchPopoverOpen(true);
                   }}
-                  placeholder={hp.searchPlaceholder || "Search products, materials, factories, RFQs, or Incoterms tools..."}
+                  placeholder={
+                    searchTargetMode === 'RFQS'
+                      ? "Search 1,200+ active RFQs by product, port, Incoterms, buyer country, or ID..."
+                      : searchTargetMode === 'SUPPLIERS'
+                      ? "Search verified factories, suppliers, certifications, and countries..."
+                      : hp.searchPlaceholder || "Search products, materials, factories, RFQs, or Incoterms tools..."
+                  }
                   className="w-full bg-transparent pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 font-medium placeholder-slate-400 focus:outline-none"
                   autoComplete="off"
                 />
@@ -539,12 +618,25 @@ export const HeroSection: React.FC<Props> = ({
                 )}
               </div>
 
-      {/* 3. Search Submit Button */}
+              {/* 3. Search Submit Button */}
               <button
                 type="submit"
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg text-sm shrink-0 cursor-pointer"
+                className={`w-full sm:w-auto font-bold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg text-sm shrink-0 cursor-pointer flex items-center justify-center gap-2 ${
+                  searchTargetMode === 'RFQS'
+                    ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black ring-2 ring-emerald-400/50'
+                    : searchTargetMode === 'SUPPLIERS'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
               >
-                Source Products
+                <Search className="w-4 h-4" />
+                <span>
+                  {searchTargetMode === 'RFQS'
+                    ? 'Search Live RFQs'
+                    : searchTargetMode === 'SUPPLIERS'
+                    ? 'Search Suppliers'
+                    : 'Source Products'}
+                </span>
               </button>
             </div>
           </form>
@@ -552,7 +644,7 @@ export const HeroSection: React.FC<Props> = ({
           {/* ------------------------------------------------------------- */}
           {/* FULL-SITE LIVE SEARCH RESULTS POPOVER (OPENS DOWNWARDS) */}
           {/* ------------------------------------------------------------- */}
-          {isSearchPopoverOpen && searchQuery.trim().length > 0 && (
+          {isSearchPopoverOpen && (
             <div 
               id="hero-omnibar-results-popover"
               className="absolute top-full left-0 right-0 mt-2.5 z-40 bg-white text-slate-900 border border-slate-200 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
@@ -562,7 +654,11 @@ export const HeroSection: React.FC<Props> = ({
                 <div className="flex items-center gap-2 min-w-0">
                   <Search className="w-4 h-4 text-amber-400 shrink-0" />
                   <span className="text-xs font-bold text-slate-200 truncate">
-                    Search results for <span className="text-amber-400 font-black">"{searchQuery}"</span>
+                    {searchQuery.trim() ? (
+                      <>Search results for <span className="text-amber-400 font-black">"{searchQuery}"</span></>
+                    ) : (
+                      <>Live RFQs &amp; International Sourcing Directory</>
+                    )}
                   </span>
                   <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 font-semibold shrink-0">
                     {searchResults.totalCount} matches
@@ -582,6 +678,21 @@ export const HeroSection: React.FC<Props> = ({
                   >
                     All ({searchResults.totalCount})
                   </button>
+
+                  {searchResults.rfqs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveFilter('RFQS')}
+                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1 ${
+                        activeFilter === 'RFQS'
+                          ? 'bg-emerald-400 text-slate-950 font-black shadow-xs'
+                          : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/60'
+                      }`}
+                    >
+                      <FileText className="w-3 h-3" />
+                      <span>RFQs ({searchResults.rfqs.length})</span>
+                    </button>
+                  )}
 
                   {searchResults.products.length > 0 && (
                     <button
@@ -611,20 +722,6 @@ export const HeroSection: React.FC<Props> = ({
                     </button>
                   )}
 
-                  {searchResults.rfqs.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveFilter('RFQS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer ${
-                        activeFilter === 'RFQS'
-                          ? 'bg-amber-400 text-slate-950 shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
-                      }`}
-                    >
-                      RFQs ({searchResults.rfqs.length})
-                    </button>
-                  )}
-
                   {searchResults.tools.length > 0 && (
                     <button
                       type="button"
@@ -642,7 +739,7 @@ export const HeroSection: React.FC<Props> = ({
               </div>
 
               {/* Scrollable Results Feed */}
-              <div className="max-h-96 overflow-y-auto p-4 space-y-5">
+              <div className="max-h-[500px] sm:max-h-[560px] overflow-y-auto p-4 space-y-5">
                 {searchResults.totalCount === 0 ? (
                   <div className="py-8 text-center space-y-3">
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
@@ -670,7 +767,76 @@ export const HeroSection: React.FC<Props> = ({
                   </div>
                 ) : (
                   <>
-                    {/* SECTION 1: MATCHED PRODUCTS */}
+                    {/* SECTION 1: MATCHED BUY LEADS & RFQS */}
+                    {(activeFilter === 'ALL' || activeFilter === 'RFQS') && searchResults.rfqs.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
+                          <span className="flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                            Active RFQs &amp; Buy Leads ({searchResults.rfqs.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSearchPopoverOpen(false);
+                              onNavigate('BUY_LEADS');
+                            }}
+                            className="text-[11px] text-emerald-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>View all buy leads</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {(activeFilter === 'ALL' ? searchResults.rfqs.slice(0, 6) : searchResults.rfqs).map(rfq => (
+                            <div
+                              key={rfq.id}
+                              onClick={() => handleRfqClick(rfq)}
+                              className="p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
+                                    {rfq.id}
+                                  </span>
+                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1">
+                                    {rfq.productName}
+                                  </div>
+                                </div>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                                  {rfq.quotesCount} Bids
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-1.5 text-[10px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                                <div>
+                                  <span className="text-slate-400">Target Vol:</span>{' '}
+                                  <strong className="text-slate-900">{rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}</strong>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400">Port:</span>{' '}
+                                  <strong className="text-slate-800 truncate">{rfq.destinationPort}</strong>
+                                </div>
+                                <div className="col-span-2 text-emerald-700 font-bold font-mono pt-0.5 border-t border-slate-100">
+                                  {rfq.preferredIncoterm} • {rfq.targetPriceUsd ? formatPrice(rfq.targetPriceUsd) : 'Market Quote'}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between text-[10px] text-slate-600 pt-1 border-t border-slate-100 gap-1">
+                                <span className="truncate">Buyer: <strong className="text-slate-800">{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
+                                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 font-bold text-[9px] border border-amber-200 shrink-0">
+                                  <Lock className="w-2.5 h-2.5 text-amber-600" />
+                                  <span>Hidden Contact</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 2: MATCHED PRODUCTS */}
                     {(activeFilter === 'ALL' || activeFilter === 'PRODUCTS') && searchResults.products.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
@@ -689,7 +855,7 @@ export const HeroSection: React.FC<Props> = ({
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {searchResults.products.map(prod => {
+                          {(activeFilter === 'ALL' ? searchResults.products.slice(0, 4) : searchResults.products).map(prod => {
                             const unitPrice = prod.priceTiers && prod.priceTiers[0] ? prod.priceTiers[0].priceUsd : 0;
                             const imgUrl = prod.images && prod.images[0] ? prod.images[0] : '';
                             const unitLabel = prod.moqUnit || 'Units';
@@ -722,7 +888,7 @@ export const HeroSection: React.FC<Props> = ({
                       </div>
                     )}
 
-                    {/* SECTION 2: MATCHED SUPPLIERS & FACTORIES */}
+                    {/* SECTION 3: MATCHED SUPPLIERS & FACTORIES */}
                     {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS') && searchResults.suppliers.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
@@ -730,10 +896,21 @@ export const HeroSection: React.FC<Props> = ({
                             <Building2 className="w-3.5 h-3.5 text-amber-600" />
                             Audited Manufacturers ({searchResults.suppliers.length})
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSearchPopoverOpen(false);
+                              onNavigate('SUPPLIERS_DIRECTORY');
+                            }}
+                            className="text-[11px] text-amber-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>View all suppliers</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {searchResults.suppliers.map(supp => (
+                          {(activeFilter === 'ALL' ? searchResults.suppliers.slice(0, 4) : searchResults.suppliers).map(supp => (
                             <div
                               key={supp.id}
                               onClick={() => handleSupplierClick(supp.id)}
@@ -763,41 +940,6 @@ export const HeroSection: React.FC<Props> = ({
                       </div>
                     )}
 
-                    {/* SECTION 3: MATCHED BUY LEADS & RFQS */}
-                    {(activeFilter === 'ALL' || activeFilter === 'RFQS') && searchResults.rfqs.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                          <span className="flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                            Active RFQs &amp; Buy Leads ({searchResults.rfqs.length})
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {searchResults.rfqs.map(rfq => (
-                            <div
-                              key={rfq.id}
-                              onClick={() => handleRfqClick(rfq)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-all cursor-pointer space-y-1 group/item bg-white"
-                            >
-                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1">
-                                {rfq.productName}
-                              </div>
-                              <div className="flex items-center justify-between text-[10px] text-slate-500">
-                                <span>Vol: {rfq.targetQuantity} {rfq.quantityUnit}</span>
-                                <span className="font-mono font-bold text-slate-900">
-                                  {rfq.targetPriceUsd ? `Target: ${formatPrice(rfq.targetPriceUsd)}` : 'Competitive Quote'}
-                                </span>
-                              </div>
-                              <div className="text-[10px] text-slate-400 truncate">
-                                Dest: {rfq.destinationPort} • {rfq.preferredIncoterm}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {/* SECTION 4: MATCHED TOOLS & SERVICES */}
                     {(activeFilter === 'ALL' || activeFilter === 'TOOLS') && searchResults.tools.length > 0 && (
                       <div className="space-y-2">
@@ -806,6 +948,17 @@ export const HeroSection: React.FC<Props> = ({
                             <Wrench className="w-3.5 h-3.5 text-indigo-600" />
                             Platform Tools &amp; Services ({searchResults.tools.length})
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSearchPopoverOpen(false);
+                              onNavigate('INCOTERMS_CALCULATOR');
+                            }}
+                            className="text-[11px] text-indigo-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>Explore tools</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -836,16 +989,17 @@ export const HeroSection: React.FC<Props> = ({
               </div>
 
               {/* Popover Footer Action */}
-              <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
-                <span className="text-slate-500 text-[11px]">
-                  Press <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-mono text-[10px] shadow-2xs">Enter</kbd> to search full catalog
+              <div className="p-3 bg-slate-900 text-white border-t border-slate-800 flex items-center justify-between text-xs">
+                <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-amber-400 font-bold">Enter</kbd>
+                  <span>Press Enter to explore full catalog</span>
                 </span>
                 <button
                   type="button"
                   onClick={handleSearchSubmit}
-                  className="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer text-xs"
+                  className="font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer text-xs shadow-sm"
                 >
-                  <span>Explore all "{searchQuery}" items</span>
+                  <span>View All {searchResults.totalCount} Results</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

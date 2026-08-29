@@ -11,9 +11,13 @@ import {
   CmsPermissionScope,
   MembershipStatus,
   AccountStatus,
-  UserRole
+  UserRole,
+  NormalizedB2BDatabase,
+  NormalizedSupplier,
+  NormalizedBuyerRfq,
+  NormalizedServiceProvider
 } from '../types';
-import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS } from '../data/mockData';
+import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS, NORMALIZED_B2B_DATABASE } from '../data/mockData';
 import { securityService } from './securityService';
 import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
 
@@ -864,7 +868,17 @@ export const api = {
     try {
       // 1. Fetch live inquiries directly from BigRock PHP API (GET /api.php?action=get_rfqs)
       const liveRfqs = await bigrockApi.fetchRfqs();
-      let list = Array.isArray(liveRfqs) ? liveRfqs : [];
+      const rawList = Array.isArray(liveRfqs) && liveRfqs.length > 0 ? liveRfqs : [];
+      
+      // Merge live RFQs and MOCK_RFQS avoiding duplicates
+      const map = new Map<string, RfqRequirement>();
+      [...MOCK_RFQS, ...rawList].forEach(rfq => {
+        if (rfq && rfq.id) {
+          map.set(rfq.id, rfq);
+        }
+      });
+
+      let list = Array.from(map.values());
 
       if (params?.category && params.category !== 'ALL') {
         list = list.filter(r => r.category === params.category);
@@ -887,7 +901,7 @@ export const api = {
       return list.map(rfq => securityService.gateRfqRequirement(rfq, callerUser || null));
     } catch (err) {
       console.warn('[api.getRfqs fetch]:', err);
-      return [];
+      return MOCK_RFQS.map(rfq => securityService.gateRfqRequirement(rfq, callerUser || null));
     }
   },
 
@@ -1710,5 +1724,25 @@ export const api = {
       quote: newQuote,
       message: 'Factory quotation successfully submitted and registered in the RFQ Matrix.'
     };
+  },
+
+  // --------------------------------------------------------------------------
+  // NORMALIZED B2B DATABASE SERVICES
+  // --------------------------------------------------------------------------
+  getNormalizedB2BDatabase: async (): Promise<NormalizedB2BDatabase> => {
+    return NORMALIZED_B2B_DATABASE;
+  },
+
+  getNormalizedSuppliers: async (): Promise<NormalizedSupplier[]> => {
+    return NORMALIZED_B2B_DATABASE.suppliers;
+  },
+
+  getNormalizedBuyersRfqs: async (): Promise<NormalizedBuyerRfq[]> => {
+    return NORMALIZED_B2B_DATABASE.buyers_rfqs;
+  },
+
+  getNormalizedServiceProviders: async (): Promise<NormalizedServiceProvider[]> => {
+    return NORMALIZED_B2B_DATABASE.service_providers;
   }
 };
+

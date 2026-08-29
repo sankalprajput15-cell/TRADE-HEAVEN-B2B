@@ -24,7 +24,9 @@ import {
   Clock,
   Send,
   Lock,
-  Crown
+  Crown,
+  Search,
+  X
 } from 'lucide-react';
 
 interface Props {
@@ -54,7 +56,27 @@ export const RfqComparisonView: React.FC<Props> = ({
   currentUser = null,
   onOpenUpgradeModal
 }) => {
-  const activeRfq = (rfqs || []).find(r => r.id === selectedRfqId) || (rfqs && rfqs[0]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredRfqs = (rfqs || []).filter(r => {
+    const q = searchTerm.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (r.id || '').toLowerCase().includes(q) ||
+      (r.productName || '').toLowerCase().includes(q) ||
+      (r.buyerCompany || '').toLowerCase().includes(q) ||
+      (r.buyerName || '').toLowerCase().includes(q) ||
+      (r.buyerCountry || '').toLowerCase().includes(q) ||
+      (r.category || '').toLowerCase().includes(q) ||
+      (r.destinationPort || '').toLowerCase().includes(q) ||
+      (r.preferredIncoterm || '').toLowerCase().includes(q) ||
+      (r.paymentTerms || '').toLowerCase().includes(q) ||
+      (r.targetPriceUsd ? String(r.targetPriceUsd) : '').toLowerCase().includes(q) ||
+      (r.detailedRequirements || r.detailedDescription || '').toLowerCase().includes(q)
+    );
+  });
+
+  const activeRfq = (filteredRfqs || []).find(r => r.id === selectedRfqId) || (rfqs || []).find(r => r.id === selectedRfqId) || (filteredRfqs && filteredRfqs[0]) || (rfqs && rfqs[0]);
   const [quotes, setQuotes] = useState<SupplierQuote[]>([]);
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
   const comparisonStudioRef = useRef<HTMLDivElement>(null);
@@ -149,15 +171,41 @@ export const RfqComparisonView: React.FC<Props> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Active RFQs List Left */}
           <div className="lg:col-span-4 space-y-3">
+            {/* Search Bar for Live RFQs */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search RFQs by keyword, company, port, ID..."
+                className="w-full pl-9 pr-9 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded-full cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
             <div className="flex items-center justify-between px-2">
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Active Sourcing Tenders ({rfqs.length})
+                Active Sourcing Tenders ({filteredRfqs.length})
               </span>
               <span className="text-[11px] text-slate-500 font-mono">Select to View</span>
             </div>
 
-            <div className="space-y-2.5">
-              {rfqs.map(rfq => {
+            <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+              {filteredRfqs.length === 0 ? (
+                <div className="p-6 text-center bg-white rounded-2xl border border-slate-200 space-y-2">
+                  <p className="text-xs font-bold text-slate-700">No matching RFQs found</p>
+                  <p className="text-[11px] text-slate-500">Try searching for "EN590", "Jet A1", "Global Fuel Oil", "Rotterdam", or "0821".</p>
+                </div>
+              ) : (
+                filteredRfqs.map(rfq => {
                 const isSelected = rfq.id === activeRfq?.id;
                 const quotesCount = rfq.quotesCount || (rfq.id === activeRfq?.id ? quotes.length : 2);
 
@@ -240,7 +288,7 @@ export const RfqComparisonView: React.FC<Props> = ({
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
 

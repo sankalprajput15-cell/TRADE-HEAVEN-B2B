@@ -267,7 +267,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                   <div>
                     <div className="text-[10px] text-slate-500 font-medium">Estimated Cargo Value ({orderQuantity} {product.moqUnit || 'Units'})</div>
                     <div className="text-lg font-black text-slate-900 font-mono">
-                      {formatPrice((matchedTier?.priceUsd ?? product.fobPriceUsd ?? 0) * orderQuantity)}
+                      {formatPrice((matchedTier?.priceUsd || product.fobPriceUsd || (product.priceTiers && product.priceTiers[0]?.priceUsd) || 350) * orderQuantity)}
                     </div>
                   </div>
                   <div className="text-right text-[11px] text-emerald-700 font-bold">
