@@ -61,6 +61,22 @@ export interface RawListingPayload {
   status?: string;
 }
 
+// Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
+const originalFetch = window.fetch;
+const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
+  const timeout = 5000; // 5 seconds timeout
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await originalFetch(resource, {
+      ...options,
+      signal: options.signal || controller.signal
+    });
+  } finally {
+    clearTimeout(id);
+  }
+};
+
 const API_BASE = typeof window !== 'undefined' && window.location
   ? `${window.location.origin}/api.php`
   : 'https://tradeheaven.net/api.php';

@@ -21,6 +21,22 @@ import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFI
 import { securityService } from './securityService';
 import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
 
+// Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
+const originalFetch = window.fetch;
+const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
+  const timeout = 5000; // 5 seconds timeout
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await originalFetch(resource, {
+      ...options,
+      signal: options.signal || controller.signal
+    });
+  } finally {
+    clearTimeout(id);
+  }
+};
+
 // Storage keys for reactive state persistence
 const USERS_STORAGE_KEY = 'th_registered_users_store';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';

@@ -10,6 +10,22 @@ export const BIGROCK_API_URL = '/api.php';
 
 export const DIRECT_BIGROCK_URL = '/api.php';
 
+// Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
+const originalFetch = window.fetch;
+const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
+  const timeout = 5000; // 5 seconds timeout
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await originalFetch(resource, {
+      ...options,
+      signal: options.signal || controller.signal
+    });
+  } finally {
+    clearTimeout(id);
+  }
+};
+
 export interface BigRockRfqPayload {
   title?: string;
   name?: string;
