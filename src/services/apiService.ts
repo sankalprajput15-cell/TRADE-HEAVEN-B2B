@@ -846,7 +846,7 @@ export const api = {
       });
       
       if (!bigrockResult.success) {
-        return { success: false, message: bigrockResult.error || 'Failed to list product in BigRock MySQL' };
+        return { success: false, message: bigrockResult.error || 'Failed to list product' };
       }
 
       // 2. Also forward to Express backend
@@ -856,7 +856,7 @@ export const api = {
         body: JSON.stringify(product)
       });
       const data = await res.json();
-      return { success: true, data: data.data || (product as Product), message: 'Product listed and stored in MySQL!' };
+      return { success: true, data: data.data || (product as Product), message: 'Product listed successfully!' };
     } catch (e: any) {
       return { success: false, message: e.message || 'Product listing failed!' };
     }
@@ -1005,11 +1005,11 @@ export const api = {
         message: structuredMessage
       });
       if (!bigrockResult.success) {
-        return { success: false, error: bigrockResult.message || 'Failed to submit RFQ to BigRock MySQL API' };
+        return { success: false, error: bigrockResult.message || 'Failed to submit RFQ' };
       }
     } catch (e: any) {
       console.warn('[BigRock RFQ sync warning]:', e);
-      return { success: false, error: e.message || 'Failed to submit RFQ to BigRock MySQL API' };
+      return { success: false, error: e.message || 'Failed to submit RFQ' };
     }
 
     activeRfqsStore.unshift(newRfq);
@@ -1028,7 +1028,7 @@ export const api = {
     return {
       success: true,
       data: newRfq,
-      message: 'RFQ broadcast successfully across verified international supplier network and stored in BigRock MySQL backend!'
+      message: 'RFQ broadcast successfully across verified international supplier network '
     };
   },
 

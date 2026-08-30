@@ -62,6 +62,8 @@ export const BuyLeadsView: React.FC<Props> = ({
   currentUser = null,
   onOpenUpgradeModal
 }) => {
+  const ITEMS_PER_PAGE = 18;
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [sortBy, setSortBy] = useState<'newest' | 'bids' | 'volume' | 'price-high' | 'price-low'>('newest');
@@ -175,9 +177,15 @@ export const BuyLeadsView: React.FC<Props> = ({
     return list;
   }, [rfqs, searchTerm, selectedCategory, urgentOnly, sortBy, curr]);
 
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, urgentOnly, sortBy]);
+  
   const isUserPremium = currentUser?.role === 'ADMIN' || currentUser?.isPremium === true;
 
   const handleClearFilters = () => {
+    setCurrentPage(1);
     setSearchTerm('');
     setSelectedCategory('ALL');
     setUrgentOnly(false);
@@ -186,6 +194,10 @@ export const BuyLeadsView: React.FC<Props> = ({
 
   const hasActiveFilters = searchTerm.trim() !== '' || selectedCategory !== 'ALL' || urgentOnly || sortBy !== 'newest';
 
+  
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const currentItems = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  
   return (
     <div id="buy-leads-view-root" className="space-y-6">
       {/* Top Header */}
@@ -390,7 +402,7 @@ export const BuyLeadsView: React.FC<Props> = ({
       {isLoading ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 shadow-sm">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto" />
-          <div className="text-base font-bold text-slate-800">Fetching live procurement buy leads from database...</div>
+          <div className="text-base font-bold text-slate-800">Fetching live procurement buy leads...</div>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">Connecting to MySQL backend on BigRock to retrieve verified international importer tenders.</p>
         </div>
       ) : filtered.length === 0 ? (
@@ -402,8 +414,9 @@ export const BuyLeadsView: React.FC<Props> = ({
           onAction={handleClearFilters}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(rfq => (
+                <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {currentItems.map(rfq => (
             <div
               key={rfq.id}
               className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between space-y-4 shadow-sm"
@@ -411,14 +424,14 @@ export const BuyLeadsView: React.FC<Props> = ({
               <div className="space-y-3">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-                  <div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block max-w-full truncate">
                       {rfq.id}
                     </span>
                     <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap justify-end items-center gap-1.5 shrink-0 ml-1">
                     {rfq.urgency === 'URGENT' ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 shrink-0 flex items-center gap-0.5">
                         <Zap className="w-2.5 h-2.5 fill-rose-600 text-rose-600" />
@@ -438,19 +451,19 @@ export const BuyLeadsView: React.FC<Props> = ({
 
                 {/* Volume & Destination Matrix */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Target Volume:</span>
-                    <span className="font-mono font-bold text-slate-900">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 shrink-0">Target Volume:</span>
+                    <span className="font-mono font-bold text-slate-900 text-right truncate">
                       {rfq.targetQuantity?.toLocaleString()} {rfq.quantityUnit}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Destination Port:</span>
-                    <span className="font-semibold text-slate-800 truncate max-w-[170px]">{rfq.destinationPort}</span>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 shrink-0">Destination Port:</span>
+                    <span className="font-semibold text-slate-800 text-right truncate">{rfq.destinationPort}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Incoterms / Target:</span>
-                    <span className="font-mono font-bold text-emerald-700">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-slate-500 shrink-0">Incoterms / Target:</span>
+                    <span className="font-mono font-bold text-emerald-700 text-right truncate">
                       {rfq.preferredIncoterm} • {formatPrice(rfq.targetPriceUsd)}/unit
                     </span>
                   </div>
@@ -518,6 +531,51 @@ export const BuyLeadsView: React.FC<Props> = ({
               </div>
             </div>
           ))}
+        </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-200 gap-4">
+              <span className="text-sm text-slate-600 font-medium">
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} Leads
+              </span>
+              <div className="flex items-center gap-2 flex-wrap justify-center">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <div className="flex items-center gap-1 hidden sm:flex">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1).map((p, i, arr) => (
+                    <React.Fragment key={p}>
+                      {i > 0 && arr[i - 1] !== p - 1 && (
+                        <span className="px-2 text-slate-400">...</span>
+                      )}
+                      <button
+                        onClick={() => setCurrentPage(p)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors ${
+                          currentPage === p
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

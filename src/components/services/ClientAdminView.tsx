@@ -63,13 +63,13 @@ export const ClientAdminView: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 1. Inquiries & Leads State (BigRock MySQL)
+  // 1. Inquiries & Leads State (Secure Database)
   const [inquiries, setInquiries] = useState<DbInquiry[]>([]);
   const [inquirySearch, setInquirySearch] = useState('');
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState<'ALL' | 'pending' | 'resolved'>('ALL');
   const [selectedInquiry, setSelectedInquiry] = useState<DbInquiry | null>(null);
 
-  // 2. Users State (BigRock MySQL & Local Store)
+  // 2. Users State (Secure Database & Local Store)
   const [usersList, setUsersList] = useState<AuthUser[]>([]);
   const [dbUsers, setDbUsers] = useState<DbUser[]>([]);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -78,7 +78,7 @@ export const ClientAdminView: React.FC<Props> = ({
   const [newUserRole, setNewUserRole] = useState<UserRole>('BUYER');
   const [newUserCompany, setNewUserCompany] = useState('');
 
-  // 3. Listings State (BigRock MySQL)
+  // 3. Listings State (Secure Database)
   const [listings, setListings] = useState<DbListing[]>([]);
   const [showAddListingModal, setShowAddListingModal] = useState(false);
   const [newListingTitle, setNewListingTitle] = useState('');
@@ -90,14 +90,14 @@ export const ClientAdminView: React.FC<Props> = ({
   const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
   const [isUploadingListingImage, setIsUploadingListingImage] = useState(false);
 
-  // 4. FAQs State (BigRock MySQL)
+  // 4. FAQs State (Secure Database)
   const [faqs, setFaqs] = useState<DbFaq[]>([]);
   const [showAddFaqModal, setShowAddFaqModal] = useState(false);
   const [newFaqQuestion, setNewFaqQuestion] = useState('');
   const [newFaqAnswer, setNewFaqAnswer] = useState('');
   const [newFaqCategory, setNewFaqCategory] = useState('Trade Protection & Payments');
 
-  // 5. Site Settings State (BigRock MySQL)
+  // 5. Site Settings State (Secure Database)
   const [siteSettings, setSiteSettings] = useState<Record<string, string>>({});
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -128,7 +128,7 @@ export const ClientAdminView: React.FC<Props> = ({
     setTimeout(() => setActionMessage(null), 4000);
   };
 
-  // Central Load Data Function (Fetches directly from BigRock PHP MySQL API & Backend Services)
+  // Central Load Data Function (Fetches directly from Secure API & Backend Services)
   const loadAllData = async () => {
     setIsLoading(true);
     try {
@@ -158,9 +158,9 @@ export const ClientAdminView: React.FC<Props> = ({
       const backendLogs = await securityService.fetchBackendAuditLogs();
       setAuditLogs(backendLogs);
 
-      showToast('success', '✓ Real-time database records refreshed from BigRock MySQL API');
+      showToast('success', '✓ Real-time database records refreshed from Secure Database API');
     } catch (err: any) {
-      showToast('error', 'Error refreshing BigRock data: ' + (err?.message || 'Check network'));
+      showToast('error', 'Error refreshing Secure data: ' + (err?.message || 'Check network'));
     } finally {
       setIsLoading(false);
     }
@@ -188,7 +188,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
     const res = await bigrockApi.updateInquiryStatus(inquiry.id, newStatus);
     if (res.success) {
-      showToast('success', `Inquiry #${String(inquiry.id).slice(0, 8)} status marked as "${newStatus}" in MySQL.`);
+      showToast('success', `Inquiry #${String(inquiry.id).slice(0, 8)} status marked as "${newStatus}" in Database.`);
     } else {
       showToast('error', 'Failed to update status: ' + res.error);
       loadAllData();
@@ -215,7 +215,7 @@ export const ClientAdminView: React.FC<Props> = ({
 
     setIsLoading(false);
     if (res.success) {
-      showToast('success', '✓ New Product/Service listing published to BigRock MySQL database.');
+      showToast('success', '✓ New Product/Service listing published to Secure Database database.');
       setShowAddListingModal(false);
       setNewListingTitle('');
       setNewListingDesc('');
@@ -233,7 +233,7 @@ export const ClientAdminView: React.FC<Props> = ({
     setListings(prev => prev.filter(l => l.id !== id));
     const res = await bigrockApi.deleteListing(id);
     if (res.success) {
-      showToast('success', 'Listing deleted from BigRock database.');
+      showToast('success', 'Listing deleted from Secure database.');
     } else {
       showToast('error', 'Failed to delete: ' + res.error);
       loadAllData();
@@ -287,7 +287,7 @@ export const ClientAdminView: React.FC<Props> = ({
     setIsSavingSettings(false);
     if (res.success) {
       setSiteSettings(prev => ({ ...prev, [key]: value }));
-      showToast('success', `Setting "${key}" updated in BigRock database.`);
+      showToast('success', `Setting "${key}" updated in Secure database.`);
     } else {
       showToast('error', 'Failed to save setting: ' + res.error);
     }
@@ -426,10 +426,10 @@ export const ClientAdminView: React.FC<Props> = ({
               <span>Admin Authentication Required</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-              BigRock MySQL Admin Control Panel
+              Secure Database Admin Control Panel
             </h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              This portal manages live BigRock MySQL database tables (<code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">inquiries</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">users</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">listings</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">faqs</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">site_settings</code>). Please sign in as an administrator.
+              This portal manages live Secure Database database tables (<code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">inquiries</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">users</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">listings</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">faqs</code>, <code className="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">site_settings</code>). Please sign in as an administrator.
             </p>
           </div>
 
@@ -465,13 +465,13 @@ export const ClientAdminView: React.FC<Props> = ({
           <div className="space-y-2.5 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Live BigRock MySQL Database &amp; Swiss Treasury Console</span>
+              <span>Live Secure Database Database &amp; Swiss Treasury Console</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight">
               Administrator Database &amp; Operations Center
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-              Connected to BigRock PHP MySQL API (<code className="font-mono bg-black/40 px-1.5 py-0.5 rounded text-amber-300 text-xs">tradeheaven.net/api.php</code>). View real-time RFQ inquiries, manage user roles, publish listings, and configure dynamic site settings.
+              Connected to Secure API (<code className="font-mono bg-black/40 px-1.5 py-0.5 rounded text-amber-300 text-xs">tradeheaven.net/api.php</code>). View real-time RFQ inquiries, manage user roles, publish listings, and configure dynamic site settings.
             </p>
           </div>
 
@@ -483,11 +483,11 @@ export const ClientAdminView: React.FC<Props> = ({
               className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>{isLoading ? 'Fetching MySQL...' : 'Refresh Live Data'}</span>
+              <span>{isLoading ? 'Syncing Data...' : 'Refresh Live Data'}</span>
             </button>
             <div className="text-[11px] text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-500/30 px-3 py-2.5 rounded-2xl flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>BigRock MySQL Sync Active</span>
+              <span>Secure Database Sync Active</span>
             </div>
           </div>
         </div>
@@ -867,7 +867,7 @@ export const ClientAdminView: React.FC<Props> = ({
                   Registered Accounts (<code className="font-mono text-xs text-blue-600">users</code> table)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Synchronized with BigRock MySQL database. Toggle user verification, VIP access, and administrative role privileges.
+                  Synchronized with Secure Database database. Toggle user verification, VIP access, and administrative role privileges.
                 </p>
               </div>
 
@@ -1074,7 +1074,7 @@ export const ClientAdminView: React.FC<Props> = ({
                   Product &amp; Service Listings (<code className="font-mono text-xs text-blue-600">listings</code> table)
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Live products hosted on BigRock MySQL database and indexed in the global B2B catalog.
+                  Live products hosted on Secure Database database and indexed in the global B2B catalog.
                 </p>
               </div>
 
@@ -1414,7 +1414,7 @@ export const ClientAdminView: React.FC<Props> = ({
                 Dynamic Site Settings (<code className="font-mono text-xs text-blue-600">site_settings</code> table)
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Manage global banner announcements, contact details, and platform configuration persisted in BigRock MySQL database.
+                Manage global banner announcements, contact details, and platform configuration persisted in Secure Database database.
               </p>
             </div>
 

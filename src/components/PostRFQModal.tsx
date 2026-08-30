@@ -226,7 +226,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
           onClose();
         }, 1500);
       } else {
-        setErrorMessage(result.message || 'Failed to persist RFQ to MySQL database.');
+        setErrorMessage(result.message || 'Failed to persist RFQ to secure database.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Network communication error. Please try again.');
@@ -246,7 +246,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold">Broadcast Sourcing RFQ (Buy Lead)</h2>
-              <p className="text-xs text-slate-400">Direct persistence to MySQL via api.php • Verified B2B Suppliers</p>
+              <p className="text-xs text-slate-400">Direct persistence to Database via secure API • Verified B2B Suppliers</p>
             </div>
           </div>
           <button
@@ -277,7 +277,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
             <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900">RFQ Saved to MySQL Database!</h3>
+            <h3 className="text-2xl font-bold text-slate-900">RFQ Saved to secure database!</h3>
             <p className="text-sm text-slate-600 mt-2 max-w-md">
               Your sourcing requirement is permanently saved and will remain visible across page reloads.
             </p>
@@ -436,7 +436,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                 <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl flex items-start gap-3">
                   <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-xs text-blue-900">
-                    <span className="font-bold">MySQL Cloud Persistence:</span> All posted requirements are committed via prepared PDO statements directly to the central B2B marketplace database.
+                    <span className="font-bold">Cloud Persistence:</span> All posted requirements are committed via prepared PDO statements directly to the central B2B marketplace database.
                   </div>
                 </div>
               </div>
@@ -560,7 +560,7 @@ export const PostRFQModal: React.FC<PostRFQModalProps> = ({
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Saving to MySQL...</span>
+                      <span>Saving to Database...</span>
                     </>
                   ) : (
                     <>

@@ -153,7 +153,7 @@ export const PostSellOfferView: React.FC<Props> = ({
     };
 
     try {
-      // Save directly to BigRock listings database
+      // Save directly to Secure listings database
       await bigrockApi.createListing({
         title,
         description: description || `Factory direct supply of ${title}. MOQ: ${moq} ${moqUnit}, Port: ${portOfDispatch}.`,

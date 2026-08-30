@@ -186,7 +186,7 @@ export const apiClient = {
         return { success: true, data: json.data, message: json.message };
       }
 
-      return { success: false, message: json.message || 'Failed to record RFQ into MySQL database.' };
+      return { success: false, message: json.message || 'Failed to record RFQ.' };
     } catch (e: any) {
       console.error('[apiClient] submitRfq error:', e);
       return { success: false, message: e.message || 'Network communication failure with database.' };

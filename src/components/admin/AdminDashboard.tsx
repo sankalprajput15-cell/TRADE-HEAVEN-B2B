@@ -263,11 +263,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const navigationItems = [
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
-    { id: 'DATABASE', label: '🗄️ MySQL Database', icon: Database },
+    { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
-    { id: 'ACTIVITY_LOGS', label: '🛡️ Backend Activity Logs', icon: Activity }
+    { id: 'ACTIVITY_LOGS', label: '🛡️ System Activity Logs', icon: Activity }
   ] as const;
 
   return (

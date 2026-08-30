@@ -536,7 +536,7 @@ export const bigrockApi = {
         success: true,
         status: 'success',
         id: json.id,
-        message: json.message || 'RFQ successfully submitted to BigRock MySQL database!',
+        message: json.message || 'RFQ successfully submitted!',
         data: json.data || postBody
       };
     } catch (err: any) {
@@ -544,7 +544,7 @@ export const bigrockApi = {
       return {
         success: false,
         status: 'error',
-        message: err.message || 'Failed to submit RFQ to BigRock database',
+        message: err.message || 'Failed to submit RFQ',
       };
     }
   },

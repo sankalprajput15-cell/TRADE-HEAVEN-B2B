@@ -19,7 +19,7 @@ export const ActivityLogAdminModule: React.FC = () => {
   }, []);
 
   const handleClear = async () => {
-    if (!confirm('Are you sure you want to clear all backend activity audit logs? This action is permanent.')) return;
+    if (!confirm('Are you sure you want to clear all system activity audit logs? This action is permanent.')) return;
     await securityService.clearBackendAuditLogs();
     fetchLogs();
   };
@@ -40,7 +40,7 @@ export const ActivityLogAdminModule: React.FC = () => {
         <div>
           <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
             <Shield className="w-5 h-5 text-blue-600" />
-            Backend Activity Audit Logs
+            system activity Audit Logs
           </h2>
           <p className="text-xs text-slate-500 font-medium">Real-time monitoring of user actions and security events.</p>
         </div>
