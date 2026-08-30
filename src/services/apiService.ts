@@ -24,7 +24,7 @@ import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
 // Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
 const originalFetch = window.fetch;
 const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
-  const timeout = 5000; // 5 seconds timeout
+  const timeout = 25000; // 25 seconds timeout to prevent premature aborts on slow environments or cold starts
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
