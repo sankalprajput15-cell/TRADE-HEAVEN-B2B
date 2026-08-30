@@ -391,7 +391,7 @@ export interface DetailedBuyerProfile {
   city: string;
   address: string;
   establishedYear: number;
-  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House' | 'Supplier' | 'Exporter' | 'Manufacturer' | 'Service Provider';
+  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House' | 'Trading Company' | 'Supplier' | 'Exporter' | 'Manufacturer' | 'Service Provider';
   tier: BuyerTier;
   isVerifiedKYC: boolean;
   kycVerificationDate?: string;
@@ -671,6 +671,7 @@ export interface NormalizedB2BDatabase {
   suppliers: NormalizedSupplier[];
   buyers_rfqs: NormalizedBuyerRfq[];
   service_providers: NormalizedServiceProvider[];
+  extracted_document_suppliers?: any[];
 }
 
 export interface B2BTradeMetric {

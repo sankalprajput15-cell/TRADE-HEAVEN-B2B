@@ -36,7 +36,7 @@ export const ProductCatalogGrid: React.FC<Props> = ({
               className="relative h-44 sm:h-48 w-full bg-slate-100 overflow-hidden cursor-pointer"
             >
               <SafeImage
-                src={product.images[0]}
+                src={product.images?.[0]}
                 alt={product.title}
                 className="w-full h-full group-hover:scale-105 transition-transform duration-300"
               />

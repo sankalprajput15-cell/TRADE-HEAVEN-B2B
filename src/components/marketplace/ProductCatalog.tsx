@@ -209,7 +209,7 @@ export const ProductCatalog: React.FC<Props> = ({
   const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div id="product-catalog-section" className="space-y-4 sm:space-y-6">
+    <div id="product-catalog-section" className="space-y-4 sm:space-y-6 bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm">
       {/* Offline/Cached Connection Banner */}
       {(isOffline || isUsingCache) && (
         <div className="flex items-center justify-between gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs animate-in fade-in slide-in-from-top-1">
@@ -507,11 +507,46 @@ export const ProductCatalog: React.FC<Props> = ({
           )}
 
           {filtered.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center space-y-2.5 shadow-2xs">
-              <Package className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400 mx-auto" />
-              <div className="text-sm sm:text-base font-bold text-slate-900">No products match your criteria</div>
-              <p className="text-xs text-slate-500">Try broadening your MOQ range or clearing specific filter tags.</p>
+            <>
+            <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center space-y-3 shadow-2xs flex flex-col items-center">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Search className="w-8 h-8" />
+              </div>
+              <div className="text-lg sm:text-xl font-black text-slate-900">No matching products found</div>
+              <p className="text-sm text-slate-500 max-w-md mx-auto">
+                We couldn't find any products matching your current filters in this category. 
+                Our sourcing network can still help you find exactly what you need.
+              </p>
+              <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center w-full max-w-md">
+                <button 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedTier('ALL');
+                    setSelectedIncoterm('ALL');
+                    setOwnershipFilter('ALL');
+                    setMaxMoq(50000);
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors w-full"
+                >
+                  Clear All Filters
+                </button>
+              </div>
             </div>
+            
+            {/* Recommendations when empty */}
+            <div className="mt-8">
+              <h3 className="text-lg font-bold text-slate-900 mb-4 px-2">Recommended Products</h3>
+              <ProductCatalogGrid
+                products={products.slice(0, 8).sort(() => Math.random() - 0.5)}
+                selectedCurrency={selectedCurrency}
+                onSelectProduct={onSelectProduct}
+                onOpenStorefront={onOpenStorefront}
+                onContactSupplier={onContactSupplier}
+                formatPrice={formatPrice}
+                getTierBadge={getTierBadge}
+              />
+            </div>
+            </>
           ) : (
             <div className="space-y-4">
               {viewMode === 'GRID' ? (
@@ -538,7 +573,7 @@ export const ProductCatalog: React.FC<Props> = ({
                           onClick={() => onSelectProduct(product)}
                         >
                           <SafeImage
-                            src={product.images[0]}
+                            src={product.images?.[0]}
                             alt={product.title}
                             className="w-full h-full"
                           />

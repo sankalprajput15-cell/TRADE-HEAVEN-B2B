@@ -466,7 +466,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                       {/* Image Thumbnail with Lightbox */}
                       <div className="relative h-44 rounded-2xl overflow-hidden bg-slate-100">
                         <img
-                          src={prod.images[0]}
+                          src={prod.images?.[0]}
                           alt={prod.title}
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -477,7 +477,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setLightboxImage({ url: prod.images[0], title: prod.title, subtitle: `${formatPrice(prod.priceTiers[0].priceUsd)} / ${prod.moqUnit}` });
+                            setLightboxImage({ url: prod.images?.[0] || '', title: prod.title, subtitle: `${formatPrice(prod.priceTiers[0].priceUsd)} / ${prod.moqUnit}` });
                           }}
                           className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-slate-900/70 hover:bg-slate-900 text-white text-xs shadow-md cursor-pointer"
                           title="Zoom image"

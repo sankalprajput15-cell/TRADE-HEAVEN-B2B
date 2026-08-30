@@ -765,7 +765,7 @@ const MainApp: React.FC = () => {
                 return <InsightsBlog onNavigate={handleNavigate} />;
               case 'PRODUCT_DIRECTORY':
                 return (
-                  <div className="space-y-6">
+                  <div id="product-catalog-section" className="space-y-6">
                     <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
                       <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
                         Global Product Catalog &amp; Wholesale Directory

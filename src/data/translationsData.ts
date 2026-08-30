@@ -1,6 +1,26 @@
 import { LanguageCode } from '../context/LanguageContext';
 
 export interface Translations {
+  buyerSourcingHub: string;
+  buyLeadsNav: string;
+  postBuyRequirement: string;
+  fullSupplierDirectory: string;
+  rfqHubNav: string;
+  incotermsNav: string;
+  suppliersExportersHub: string;
+  workWithUsNav: string;
+  postCargoOffer: string;
+  membershipPlans: string;
+  exporterDashboard: string;
+  landingPageNav: string;
+  helpDeskHeading: string;
+  featuredProducts: string;
+  auditedSuppliersHeading: string;
+  exploreAllSuppliers: string;
+  factorySize: string;
+  viewFactoryAudit: string;
+  recentBuyLeads: string;
+  viewAllRfqs: string;
   // Navigation & General
   brandTagline: string;
   sourceProducts: string;
@@ -153,6 +173,46 @@ export interface Translations {
 
 export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   en: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     brandTagline: 'Global B2B Wholesale Marketplace & Trade Escrow',
     sourceProducts: 'Source Products (Buyer)',
     sellGlobally: 'Sell Globally (Supplier)',
@@ -292,6 +352,46 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   zh: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     brandTagline: '全球B2B跨境批发贸易平台与托管结算中心',
     sourceProducts: '采购货源 (买家通道)',
     sellGlobally: '全球出海 (供应商入驻)',
@@ -431,6 +531,46 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   es: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     brandTagline: 'Mercado Mayorista Global B2B y Custodia Comercial',
     sourceProducts: 'Buscar Productos (Comprador)',
     sellGlobally: 'Vender Globalmente (Proveedor)',
@@ -570,6 +710,46 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   ar: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     brandTagline: 'سوق الجملة العالمي B2B وخدمات الضمان والوساطة المالية',
     sourceProducts: 'شراء المنتجات (بوابة المشتري)',
     sellGlobally: 'البيع عالمياً (انضمام الموردين)',
@@ -709,6 +889,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   de: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'Globaler B2B-Großhandelsmarktplatz & Treuhandservice',
     sourceProducts: 'Produkte beschaffen (Einkäufer)',
     sellGlobally: 'Weltweit verkaufen (Lieferant)',
@@ -848,6 +1048,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   fr: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'Place de Marché B2B Mondiale & Séquestre Commercial',
     sourceProducts: 'Acheter des Produits (Acheteur)',
     sellGlobally: 'Vendre dans le Monde (Fournisseur)',
@@ -987,6 +1207,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   pt: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'Mercado Atacadista Global B2B e Custódia Comercial',
     sourceProducts: 'Comprar Produtos (Comprador)',
     sellGlobally: 'Vender Globalmente (Fornecedor)',
@@ -1126,6 +1366,46 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   ru: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     brandTagline: 'Международная оптовая B2B-платформа и торговый эскроу-сервис',
     sourceProducts: 'Закупка товаров (Покупателям)',
     sellGlobally: 'Экспорт товаров (Поставщикам)',
@@ -1265,6 +1545,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   ja: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'グローバルB2B卸売マーケットプレイス＆貿易エスクロー決済',
     sourceProducts: '商品を調達する（バイヤー）',
     sellGlobally: '世界へ輸出する（サプライヤー）',
@@ -1404,6 +1704,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   hi: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'ग्लोबल B2B थोक व्यापार बाज़ार और ट्रेड एस्क्रो भुगतान सुरक्षा',
     sourceProducts: 'उत्पाद सोर्स करें (खरीदार)',
     sellGlobally: 'वैश्विक स्तर पर बेचें (आपूर्तिकर्ता)',
@@ -1543,6 +1863,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   tr: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'Küresel B2B Toptan Ticaret Pazarı ve Güvenli Ticaret Emaneti (Escrow)',
     sourceProducts: 'Ürün Tedarik Et (Alıcı)',
     sellGlobally: 'Küresel Satış Yap (Tedarikçi)',
@@ -1682,6 +2022,26 @@ export const BASE_TRANSLATIONS: Record<LanguageCode, Translations> = {
   },
 
   vi: {
+    buyerSourcingHub: 'buyerSourcingHub',
+    buyLeadsNav: 'buyLeadsNav',
+    postBuyRequirement: 'postBuyRequirement',
+    fullSupplierDirectory: 'fullSupplierDirectory',
+    rfqHubNav: 'rfqHubNav',
+    incotermsNav: 'incotermsNav',
+    suppliersExportersHub: 'suppliersExportersHub',
+    workWithUsNav: 'workWithUsNav',
+    postCargoOffer: 'postCargoOffer',
+    membershipPlans: 'membershipPlans',
+    exporterDashboard: 'exporterDashboard',
+    landingPageNav: 'landingPageNav',
+    helpDeskHeading: 'helpDeskHeading',
+    featuredProducts: 'featuredProducts',
+    auditedSuppliersHeading: 'auditedSuppliersHeading',
+    exploreAllSuppliers: 'exploreAllSuppliers',
+    factorySize: 'factorySize',
+    viewFactoryAudit: 'viewFactoryAudit',
+    recentBuyLeads: 'recentBuyLeads',
+    viewAllRfqs: 'viewAllRfqs',
     brandTagline: 'Sàn Giao Dịch B2B Bán Buôn Toàn Cầu & Ký Quỹ Escrow Thương Mại',
     sourceProducts: 'Tìm Nguồn Hàng (Người Mua)',
     sellGlobally: 'Bán Hàng Toàn Cầu (Nhà Cung Cấp)',
