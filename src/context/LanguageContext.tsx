@@ -110,8 +110,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Sync with document element on mount and change
   useEffect(() => {
     const found = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+    const isRTL = found?.dir === 'rtl';
+    
     document.documentElement.lang = langCode;
-    document.documentElement.dir = found?.dir || 'ltr';
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+
+    if (isRTL) {
+      document.body.classList.add('text-right');
+      document.body.classList.remove('text-left');
+    } else {
+      document.body.classList.remove('text-right');
+    }
 
     // Ensure cookie matches current language so Google Translate stays in sync on navigation
     let gtCode = langCode as string;

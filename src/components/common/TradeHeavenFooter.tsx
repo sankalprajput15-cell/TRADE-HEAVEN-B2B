@@ -129,7 +129,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
 
       {/* Main Multi-Column Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-6">
           
           {/* Column 1: Brand & Mission (2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
@@ -192,7 +192,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('POST_BUY_REQUIREMENT')} className="hover:text-blue-600 transition-colors text-left font-bold text-blue-600 cursor-pointer">
+                <button onClick={() => onNavigate('POST_BUY_REQUIREMENT')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   {t('postBuyRequirement')}
                 </button>
               </li>
@@ -221,13 +221,12 @@ export const TradeHeavenFooter: React.FC<Props> = ({
             </h4>
             <ul className="space-y-2 text-xs text-slate-600">
               <li>
-                <button onClick={() => onNavigate('ONBOARD_WITH_US')} className="hover:text-emerald-700 transition-colors text-left font-black text-emerald-700 flex items-center gap-1.5 cursor-pointer">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{t('workWithUsNav')}</span>
+                <button onClick={() => onNavigate('ONBOARD_WITH_US')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
+                  {t('workWithUsNav')}
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('SELLER_OFFER')} className="hover:text-blue-600 transition-colors text-left font-bold text-slate-700 cursor-pointer">
+                <button onClick={() => onNavigate('SELLER_OFFER')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   {t('postCargoOffer')}
                 </button>
               </li>
@@ -241,8 +240,17 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                   {t('exporterDashboard')}
                 </button>
               </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Platform & Legal */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
+              Platform &amp; Legal
+            </h4>
+            <ul className="space-y-2 text-xs text-slate-600">
               <li>
-                <button onClick={() => onNavigate('ABOUT_US')} className="hover:text-blue-600 transition-colors text-left font-bold text-blue-600 cursor-pointer">
+                <button onClick={() => onNavigate('ABOUT_US')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   {t('aboutUs')}
                 </button>
               </li>
@@ -256,8 +264,13 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                   {t('tradeAssurance')}
                 </button>
               </li>
+              <li>
+                <button onClick={() => onNavigate('REFUND_POLICY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
+                  Refund &amp; Cancellation Policy
+                </button>
+              </li>
               {isAdmin && (
-                <li className="relative">
+                <li className="relative pt-2">
                   <button 
                     id="footer-cms-admin-btn"
                     onClick={handleCmsClick} 
@@ -274,8 +287,8 @@ export const TradeHeavenFooter: React.FC<Props> = ({
             </ul>
           </div>
 
-          {/* Column 4: Contact & WhatsApp Desk */}
-          <div className="space-y-3">
+          {/* Column 5: Contact & WhatsApp Desk */}
+          <div className="space-y-3 lg:col-span-1">
             <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
               {t('helpDeskHeading')}
             </h4>

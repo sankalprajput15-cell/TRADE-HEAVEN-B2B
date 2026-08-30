@@ -314,24 +314,24 @@ export const Header: React.FC<Props> = ({
 
       {/* 2. MAIN NAVIGATION BAR (Proportional, Clean Hierarchy, No Multi-line Wrapping) */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-2 w-full">
-        <div className="flex items-center justify-between gap-2 lg:gap-3 xl:gap-4 w-full min-w-0">
+        <div className="flex items-center justify-between gap-3 lg:gap-4 xl:gap-6 w-full min-w-0">
           
           {/* Left: Brand Identity */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center shrink-0 min-w-0">
             <button
               id="header-logo-home-btn"
               onClick={() => handleNavClick('HOMEPAGE')}
-              className="text-left focus:outline-none cursor-pointer"
+              className="text-left focus:outline-none cursor-pointer truncate"
             >
-              <TradeHeavenLogo size="md" subtitle="Global B2B Marketplace &amp; trade protection Rail" />
+              <TradeHeavenLogo size="md" subtitle="B2B Marketplace" />
             </button>
           </div>
 
           {/* Center: Desktop Nav Links (Streamlined) */}
-          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2 min-w-0 flex-wrap justify-center">
+          <nav className="hidden lg:flex items-center flex-1 justify-center gap-1 xl:gap-2 min-w-0">
             <button
               onClick={() => handleNavClick('HOMEPAGE')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -341,7 +341,7 @@ export const Header: React.FC<Props> = ({
             </button>
             <button
               onClick={() => handleNavClick('ABOUT_US')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'ABOUT_US'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -351,7 +351,7 @@ export const Header: React.FC<Props> = ({
             </button>
             <button
               onClick={() => handleNavClick('TRUST_SAFETY')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'TRUST_SAFETY'
                   ? 'bg-emerald-50 text-emerald-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -361,7 +361,7 @@ export const Header: React.FC<Props> = ({
             </button>
             <button
               onClick={() => handleNavClick('INSIGHTS')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'INSIGHTS'
                   ? 'bg-amber-50 text-amber-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -374,7 +374,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-premium-services"
               onClick={() => handleNavClick('PREMIUM_SERVICES')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
                 activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
                   ? 'bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-sm'
                   : 'bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-500/30'
@@ -387,7 +387,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-buyers"
               onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'BUYERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -399,7 +399,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-suppliers"
               onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'SUPPLIERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -416,7 +416,7 @@ export const Header: React.FC<Props> = ({
                   setServicesMenuOpen(!servicesMenuOpen);
                   setAdminMenuOpen(false);
                 }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   isServicesActive
                     ? 'bg-blue-50 text-blue-600 font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
