@@ -202,7 +202,7 @@ export function mapInquiryToRfq(raw: any, index: number = 0): RfqRequirement {
     ownerUid: raw.buyer_email || raw.email || 'user-buyer-001',
     buyerName: raw.buyer_name || raw.name || 'International Trade Buyer',
     buyerCompany: raw.buyer_company || raw.company_name || raw.company || raw.name || 'Verified Sourcing Enterprise',
-    buyerEmail: raw.buyer_email || raw.email || 'procurement@tradeheaven.net',
+    buyerEmail: raw.buyer_email || raw.email || 'support@tradeheaven.net',
     buyerPhone: raw.buyer_phone || raw.phone || '+1 (800) 555-0199',
     buyerCountry: raw.buyer_country || raw.country || 'United States',
     buyerVerified: true,

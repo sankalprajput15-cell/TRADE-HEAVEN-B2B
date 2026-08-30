@@ -450,7 +450,7 @@ const MainApp: React.FC = () => {
         specifications: newRfq.detailedRequirements || newRfq.detailedDescription || (newRfq as any).specifications || '',
         buyer_name: newRfq.buyerName || currentUser?.name || 'Procurement Officer',
         buyer_country: newRfq.buyerCountry || 'United States',
-        buyer_email: (newRfq as any).buyerEmail || currentUser?.email || 'buyer@tradeheaven.net',
+        buyer_email: (newRfq as any).buyerEmail || currentUser?.email || 'support@tradeheaven.net',
         buyer_company: newRfq.buyerCompany || currentUser?.companyName || 'Enterprise Buyer Ltd'
       };
 

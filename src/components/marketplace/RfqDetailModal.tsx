@@ -327,9 +327,18 @@ export const RfqDetailModal: React.FC<Props> = ({
                       resourceTitle="Buyer Direct Procurement Desk"
                     >
                       <div className="space-y-1.5 text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
-                        <div><strong>Contact Officer:</strong> {rfq.buyerName || 'Procurement Director'}</div>
-                        <div><strong>Email:</strong> {rfq.buyerEmail || 'procurement@tradebuyer.org'}</div>
-                        <div><strong>Phone:</strong> {rfq.buyerPhone || '+1 (555) 902-8411'}</div>
+                        <div><strong>Contact Officer:</strong> {rfq.buyerName || 'Contact Representative'}</div>
+                        <div className="flex items-center flex-wrap gap-1">
+                          <strong>Email:</strong> 
+                          {rfq.buyerEmail ? (
+                            <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
+                          ) : (
+                            <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
+                              Contact via Trade Heaven
+                            </a>
+                          )}
+                        </div>
+                        <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
                       </div>
                     </PremiumContactGate>
                   </div>

@@ -480,8 +480,17 @@ export const BuyLeadsView: React.FC<Props> = ({
                       resourceTitle="Buyer Direct Desk Contact"
                     >
                       <div className="space-y-1 text-xs text-slate-700">
-                        <div><strong>Email:</strong> {rfq.buyerEmail || 'procurement@buyer.org'}</div>
-                        <div><strong>Phone:</strong> {rfq.buyerPhone || '+1 (555) 902-8411'}</div>
+                        <div className="flex items-center flex-wrap gap-1">
+                          <strong>Email:</strong> 
+                          {rfq.buyerEmail ? (
+                            <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
+                          ) : (
+                            <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
+                              Contact via Trade Heaven
+                            </a>
+                          )}
+                        </div>
+                        <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
                       </div>
                     </PremiumContactGate>
                   </div>

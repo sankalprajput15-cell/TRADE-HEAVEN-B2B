@@ -56,7 +56,7 @@ export const RfqCreationModal: React.FC<Props> = ({
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [buyerCompany, setBuyerCompany] = useState('Nordic Industrial Import Oy');
   const [buyerCountry, setBuyerCountry] = useState('Finland');
-  const [buyerEmail, setBuyerEmail] = useState('procurement@nordic-industrial.fi');
+  const [buyerEmail, setBuyerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -85,7 +85,7 @@ export const RfqCreationModal: React.FC<Props> = ({
       paymentTerms: paymentTerms || '30% TT Deposit, 70% against B/L',
       targetDeliveryDate,
       detailedRequirements: description || `Seeking direct OEM/ODM factory quotation for ${targetQuantity} ${quantityUnit} of ${productName}. Target Incoterm: ${preferredIncoterm}, Destination Port: ${destinationPort}.`,
-      buyerEmail: buyerEmail || 'buyer@tradeheaven.net',
+      buyerEmail: buyerEmail || 'support@tradeheaven.net',
       urgency: 'STANDARD',
       quotesCount: 0,
       postedDate: new Date().toISOString().split('T')[0],
@@ -99,7 +99,7 @@ export const RfqCreationModal: React.FC<Props> = ({
       // Sync to live BigRock PHP MySQL API (POST ./api.php?action=submit_rfq)
       const bigrockResult = await bigrockApi.submitRfq({
         buyer_name: buyerCompany || 'Procurement Officer',
-        buyer_email: buyerEmail || 'buyer@tradeheaven.net',
+        buyer_email: buyerEmail || 'support@tradeheaven.net',
         buyer_phone: '',
         buyer_company: buyerCompany || 'Procurement Officer',
         buyer_country: 'United States',
@@ -113,7 +113,7 @@ export const RfqCreationModal: React.FC<Props> = ({
         payment_terms: paymentTerms,
         requirements: description || `Seeking direct OEM/ODM factory quotation for ${targetQuantity} ${quantityUnit} of ${productName}. Target Incoterm: ${preferredIncoterm}, Destination Port: ${destinationPort}.`,
         name: buyerCompany || 'Procurement Officer',
-        email: buyerEmail || 'buyer@tradeheaven.net',
+        email: buyerEmail || 'support@tradeheaven.net',
         phone: '',
         subject: `Buy Lead RFQ [${generatedId}]: ${targetQuantity} ${quantityUnit} of ${productName}`,
         message: `Target Incoterm: ${preferredIncoterm} | Port: ${destinationPort} | Target Price: $${targetPriceUsd} | Terms: ${paymentTerms} | Description: ${newRfq.detailedRequirements}`

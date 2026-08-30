@@ -75,7 +75,7 @@ export const UnifiedContactInquiryModal: React.FC<UnifiedContactModalProps> = ({
     }
   }, [targetType, targetTitle, supplierCompany]);
 
-  const defaultEmail = contactEmail || (supplierCompany ? `sales@${supplierCompany.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` : 'desk@tradeheaven.net');
+  const defaultEmail = contactEmail || 'support@tradeheaven.net';
   const defaultPhone = contactPhone || '+1 (800) 555-0199';
 
   const handleSubmit = async (e: React.FormEvent) => {
