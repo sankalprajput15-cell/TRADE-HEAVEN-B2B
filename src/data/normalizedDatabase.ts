@@ -1276,5 +1276,216 @@ export const NORMALIZED_B2B_DATABASE: NormalizedB2BDatabase = {
         "Krimpen Aan Den Ijssel"
       ]
     }
+  ],
+  extracted_document_suppliers: [
+    {
+      company_name: "Astra Commodities LLC",
+      business_type: "Supplier",
+      contact_person: "Fred Bernard Zaziski",
+      email: null,
+      phone: "+1-939-214...",
+      location: "United States - Texas",
+      products_offered: ["White sugar", "White rice", "Cooking oil", "Copper cathode", "Aluminium ingot"],
+      year_established: 2019,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Empire Metals Recyclers LLC",
+      business_type: "Buyer / Recycler",
+      contact_person: "Miguel Hernandez",
+      email: null,
+      phone: "+1-623-474...",
+      location: "United States - Arizona",
+      products_offered: ["Recycling", "Scrap Metal", "Buy Scrap Metal", "Copper", "Buy Wire", "Stainless Steel", "Aluminum Cans"],
+      year_established: 2019,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Copper Canyon Law Estate Planning",
+      business_type: "Legal Services",
+      contact_person: "Stephen Rogers Brian Fillmore",
+      email: null,
+      phone: "+1-480-664...",
+      location: "United States - Arizona",
+      products_offered: ["Estate Planning Lawyer", "Wills & Trusts", "Estate Plans"],
+      year_established: 2012,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "International Scrap Metals",
+      business_type: "Supplier",
+      contact_person: "Noel Brennan",
+      email: null,
+      phone: "+1-203-767...",
+      location: "United States - Connecticut",
+      products_offered: ["Copper cathodes", "Scrap metals", "Industrial metals"],
+      year_established: 2009,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Brown's Aluminum & Catalytic Converters Recycling Center",
+      business_type: "Buyer / Recycler",
+      contact_person: "Angela Brown",
+      email: null,
+      phone: "+1256-778-8785",
+      location: "United States - Alabama",
+      products_offered: ["Scrap Yard", "Catalytic Converter", "Scrap Metal Dealer", "Aluminum Vehicles", "Iron", "Copper", "Insulated Wire", "Batteries"],
+      year_established: 2011,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Beam Copper Company",
+      business_type: "Supplier",
+      contact_person: "rodney Jenkins",
+      email: null,
+      phone: "+1-806589-1493",
+      location: "United States - Massachusetts",
+      products_offered: ["Sunflower oil", "A4 paper", "Foodstuffs", "Frozen food", "Import & Export"],
+      year_established: 1995,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Copper Cellar Marketplace",
+      business_type: "Supplier",
+      contact_person: "Kelsey Headrick",
+      email: null,
+      phone: "+1-865-5450315",
+      location: "United States - Tennessee",
+      products_offered: ["Gourmet Grocery", "Seafood Market", "Butcher Shop", "Chef-prepared meals", "Hand-cut steaks"],
+      year_established: 2020,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Kax Group Llc",
+      business_type: "Manufacturer",
+      contact_person: "Peter Molly",
+      email: null,
+      phone: "+1-773-2259008",
+      location: "United States - New York",
+      products_offered: ["Aluminium scrap", "Copper", "Gold", "Diamond", "Industrial machinery"],
+      year_established: 2000,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Quality Wholesalers Inc",
+      business_type: "Supplier",
+      contact_person: "Frank Lawrence",
+      email: null,
+      phone: "+1-650-5029758",
+      location: "United States - New York",
+      products_offered: ["Ceramic cpu scrap", "Copper scrap", "Ubc scrap", "Electric bike"],
+      year_established: 2019,
+      employee_count: "501 - 1000"
+    },
+    {
+      company_name: "Dongguan Jiaye Dingsheng Precision Casting and Forging Co., Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Executive Management",
+      email: null,
+      phone: "+86-769-...",
+      location: "China / USA",
+      products_offered: ["C17200 beryllium copper", "Beryllium bronze", "Precision casting"],
+      year_established: 1997,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Jacobs Minerals Metals Groups",
+      business_type: "Supplier",
+      contact_person: "Jake",
+      email: null,
+      phone: "+1-424-7572477",
+      location: "United States - California",
+      products_offered: ["Copper Wire Scrap", "EN590 10PPM", "EN590 50PPM", "Jet Fuel A1", "Virgin Fuel Oil ESPO"],
+      year_established: 2000,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Metal & Ores Limited",
+      business_type: "Supplier",
+      contact_person: "DEAN PARKER",
+      email: null,
+      phone: "+1-737-2044922",
+      location: "United States - California",
+      products_offered: ["Metal Scraps", "Iron Scrap", "Steel Scrap", "Battery Scrap", "Copper Scrap"],
+      year_established: 2006,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Searaven Global Ltd",
+      business_type: "Supplier",
+      contact_person: "Sabrina Taylor",
+      email: null,
+      phone: "+1-323-9037667",
+      location: "United States - Singapore",
+      products_offered: ["Copper Powder", "Ultrafine Copper Powder", "IGAS-certified 99.9995% pure copper"],
+      year_established: 2010,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Scrap and Metal Collections Ltd",
+      business_type: "Supplier",
+      contact_person: "Nitu",
+      email: null,
+      phone: "+44-7452-112555",
+      location: "United States - Colorado",
+      products_offered: ["Copper wire scrap", "Ceramic cpu gold intel processor scrap", "Aluminum Ubc scrap", "Fridge compressor scrap"],
+      year_established: 2021,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Stacey Chem Sales",
+      business_type: "Supplier",
+      contact_person: "Andy Henderson",
+      email: "+6603240003-660-3240003",
+      phone: "+6603240003",
+      location: "United States - Nevada",
+      products_offered: ["Agro chemicals", "Urea fertilizer", "Ammonium", "Soybeans", "Yellow corn", "Copper wire scrap", "Wheat flour"],
+      year_established: 2008,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Rule First Holdings",
+      business_type: "Commodity Brokerage",
+      contact_person: "Benjamin Rule",
+      email: null,
+      phone: "+098-971-8417",
+      location: "United States - Wyoming",
+      products_offered: ["Copper cathode", "Used rail", "Steel scrap"],
+      year_established: 2024,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Gsk Global Traders",
+      business_type: "Supplier",
+      contact_person: "Frederic Alua",
+      email: null,
+      phone: "+1818-657-0180",
+      location: "United States - California",
+      products_offered: ["Gold", "Copper", "Industrial & commercial metal applications"],
+      year_established: 2008,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "AB Trading Llc",
+      business_type: "Supplier",
+      contact_person: "JIMMY MORGAN",
+      email: null,
+      phone: "+1-76039-23579",
+      location: "United States - Delaware",
+      products_offered: ["Copper Wire Scraps 99%", "Best Quality Millbery Scraps ($3500-$4500/Metric Ton)"],
+      year_established: 1995,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "ZheJiang YiYang Electric Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Emily",
+      email: null,
+      phone: "+183-5853-7224",
+      location: "United States - New York",
+      products_offered: ["Earth rod", "Lightning rod", "Earth clamp", "Copper tape", "Exothermic weld"],
+      year_established: 2021,
+      employee_count: "51 - 100"
+    }
   ]
 };

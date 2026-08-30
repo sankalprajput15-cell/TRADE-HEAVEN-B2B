@@ -196,7 +196,7 @@ export const Header: React.FC<Props> = ({
     <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
       {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-slate-200 border-b border-indigo-900/60 shadow-xs px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row flex-wrap sm:flex-nowrap items-center justify-center sm:justify-between gap-1.5 sm:gap-4 w-full">
+        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 w-full overflow-x-auto">
           
           {/* Left: Security & Direct Assistance */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -224,7 +224,7 @@ export const Header: React.FC<Props> = ({
           </div>
 
           {/* Right: FX Selector + Language/Region + Authentication State */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto justify-end">
             
             {/* Compact Language & Region Selector */}
             <LanguageRegionSelector variant="compact" />
@@ -754,11 +754,6 @@ export const Header: React.FC<Props> = ({
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Mobile Language & Region Selector */}
-          <div className="pt-1">
-            <LanguageRegionSelector variant="mobile" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
