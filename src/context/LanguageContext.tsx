@@ -69,32 +69,25 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const found = SUPPORTED_LANGUAGES.find(l => l.code === normalized);
     const validCode = found ? (found.code as LanguageCode) : 'en';
     
-    setLangCode(validCode);
-
+    if (validCode === langCode) return;
+    
     try {
       localStorage.setItem('tradeheaven_language', validCode);
       if (found) {
         localStorage.setItem('tradeheaven_region', found.region);
       }
       
-      // Update HTML attributes on root document for accessibility and direction
-      document.documentElement.lang = validCode;
-      document.documentElement.dir = found?.dir || 'ltr';
+      let gtCode = validCode as string;
+      if (gtCode === 'zh') gtCode = 'zh-CN';
+      if (gtCode === 'en') gtCode = '';
 
-      // Update URL search parameter smoothly without reload
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        if (validCode === 'en') {
-          url.searchParams.delete('lang');
-        } else {
-          url.searchParams.set('lang', validCode);
-        }
-        window.history.replaceState({}, '', url.toString());
-
-        window.dispatchEvent(new CustomEvent('tradeheaven_language_change', {
-          detail: { language: validCode, region: found?.region, langObj: found }
-        }));
-      }
+      // Set Google Translate cookie so it picks up the language on next load
+      document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/`;
+      document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/; domain=${window.location.hostname}`;
+      
+      // Reload the page to ensure Google Translate initializes with the new language
+      // and doesn't conflict with React's DOM rendering cycle.
+      window.location.reload();
     } catch {}
   };
 
@@ -119,6 +112,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const found = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
     document.documentElement.lang = langCode;
     document.documentElement.dir = found?.dir || 'ltr';
+
+    // Ensure cookie matches current language so Google Translate stays in sync on navigation
+    let gtCode = langCode as string;
+    if (gtCode === 'zh') gtCode = 'zh-CN';
+    if (gtCode === 'en') gtCode = '';
+
+    document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/`;
+    document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/; domain=${window.location.hostname}`;
+    
   }, [langCode]);
 
   const currentOption = SUPPORTED_LANGUAGES.find(l => l.code === langCode) || SUPPORTED_LANGUAGES[0];

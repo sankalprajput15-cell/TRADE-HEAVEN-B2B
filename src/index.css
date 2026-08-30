@@ -26,3 +26,24 @@ html, body {
 }
 
 
+
+/* Google Translate Overrides */
+.skiptranslate iframe {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+#google_translate_element {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  z-index: -999;
+}
+.goog-te-gadget {
+  color: transparent !important;
+  font-size: 0px;
+}
+.goog-te-gadget span {
+  display: none !important;
+}

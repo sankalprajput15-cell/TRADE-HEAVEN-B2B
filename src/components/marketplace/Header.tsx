@@ -1,3 +1,4 @@
+import { LanguageRegionSelector } from './LanguageRegionSelector';
 import React, { useState, useEffect } from 'react';
 import { Currency, UserRole, ActiveView, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
@@ -6,7 +7,6 @@ import { SafeImage } from '../common/SafeImage';
 import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { LanguageRegionSelector } from './LanguageRegionSelector';
 import { 
   Globe2, 
   ShieldCheck, 
@@ -196,7 +196,7 @@ export const Header: React.FC<Props> = ({
     <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
       {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-slate-200 border-b border-indigo-900/60 shadow-xs px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
-        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 w-full overflow-x-auto">
+        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 w-full">
           
           {/* Left: Security & Direct Assistance */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -227,7 +227,9 @@ export const Header: React.FC<Props> = ({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto justify-end">
             
             {/* Compact Language & Region Selector */}
+            {/* Custom Styled Language & Region Selector */}
             <LanguageRegionSelector variant="compact" />
+            
 
             {/* Currency FX Selector */}
             <div className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-700/80 shadow-2xs transition-colors">
