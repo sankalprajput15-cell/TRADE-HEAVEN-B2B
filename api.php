@@ -238,6 +238,87 @@ if ($db_connected) {
     }
 }
 
+// -------------------------------------------------------------
+// Centralized PHP Mail Notification Engine (Failsafe & Multi-Recipient)
+// -------------------------------------------------------------
+function sendPhpMailAlert($subject, $title, $description, $details = []) {
+    $recipients = [
+        'sankalprajput15@gmail.com',
+        'solutionthe87@gmail.com',
+        'yr943334@gmail.com'
+    ];
+    $env_recipient = getenv('ALERT_EMAIL');
+    if (!empty($env_recipient)) {
+        $extra = explode(',', $env_recipient);
+        foreach ($extra as $e) {
+            $e = trim(strtolower($e));
+            if (!empty($e) && filter_var($e, FILTER_VALIDATE_EMAIL) && !in_array($e, $recipients)) {
+                $recipients[] = $e;
+            }
+        }
+    }
+
+    $timestamp = date("Y-m-d H:i:s T");
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    
+    // Construct HTML email with clear typography and structured table
+    $table_rows = '';
+    foreach ($details as $key => $value) {
+        $val_str = is_array($value) ? json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : htmlspecialchars((string)$value);
+        $table_rows .= "<tr>
+            <td style=\"padding: 8px 12px; font-weight: bold; width: 140px; color: #475569; background: #f8fafc; border-bottom: 1px solid #e2e8f0;\">" . htmlspecialchars($key) . ":</td>
+            <td style=\"padding: 8px 12px; color: #1e293b; border-bottom: 1px solid #e2e8f0; font-family: monospace;\">" . $val_str . "</td>
+        </tr>";
+    }
+    
+    $html = "
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset=\"UTF-8\"></head>
+    <body style=\"margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9;\">
+        <div style=\"max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);\">
+            <div style=\"background: #0f172a; padding: 24px; color: #ffffff;\">
+                <h2 style=\"margin: 0 0 6px 0; font-size: 20px; font-weight: 700; color: #38bdf8;\">Trade Heaven System Alert</h2>
+                <p style=\"margin: 0; font-size: 14px; color: #94a3b8;\">Real-time Portal Security & Activity Notification</p>
+            </div>
+            <div style=\"padding: 24px;\">
+                <h3 style=\"margin: 0 0 12px 0; font-size: 16px; color: #0f172a;\">" . htmlspecialchars($title) . "</h3>
+                <p style=\"font-size: 14px; line-height: 1.5; color: #334155; margin: 0 0 18px 0;\">" . htmlspecialchars($description) . "</p>
+                <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;\">
+                    " . $table_rows . "
+                    <tr>
+                        <td style=\"padding: 8px 12px; font-weight: bold; width: 140px; color: #475569; background: #f8fafc; border-bottom: 1px solid #e2e8f0;\">IP Address:</td>
+                        <td style=\"padding: 8px 12px; color: #1e293b; border-bottom: 1px solid #e2e8f0; font-family: monospace;\">" . htmlspecialchars($ip) . "</td>
+                    </tr>
+                    <tr>
+                        <td style=\"padding: 8px 12px; font-weight: bold; width: 140px; color: #475569; background: #f8fafc;\">Timestamp:</td>
+                        <td style=\"padding: 8px 12px; color: #1e293b; font-family: monospace;\">" . htmlspecialchars($timestamp) . "</td>
+                    </tr>
+                </table>
+                <div style=\"padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 12px; color: #64748b;\">
+                    This notification was automatically dispatched by the Trade Heaven B2B Core Gateway.
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    $headers = [
+        'MIME-Version: 1.0',
+        'Content-type: text/html; charset=UTF-8',
+        'From: Trade Heaven System <notifications@tradeheaven.net>',
+        'Reply-To: support@tradeheaven.net',
+        'X-Mailer: PHP/' . phpversion()
+    ];
+    $headers_str = implode("\r\n", $headers);
+
+    $to_list = implode(', ', $recipients);
+    @mail($to_list, $subject, $html, $headers_str);
+    
+    // Log to file for local diagnostics & audit inspection
+    @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [{$title}] {$subject} -> {$to_list}\n", FILE_APPEND);
+}
+
 // Parse request action & payload
 $action = isset($_GET['action']) ? trim($_GET['action']) : '';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -322,6 +403,16 @@ switch ($action) {
         $json_str = json_encode($cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         
         if (file_put_contents($cms_file, $json_str) !== false) {
+            sendPhpMailAlert(
+                "📝 Website Content & CMS Updated",
+                "CMS Site Content Saved",
+                "An administrator or authorized editor updated the site content and configurations.",
+                [
+                    "Editor Action" => "save_content",
+                    "Timestamp" => date("Y-m-d H:i:s T"),
+                    "Payload Sections Updated" => is_array($cms_payload) ? implode(', ', array_keys($cms_payload)) : "Global Config"
+                ]
+            );
             echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);
         } else {
             http_response_code(500);
@@ -528,6 +619,26 @@ switch ($action) {
             ];
         }
 
+        // Trigger Instant Email Notification
+        sendPhpMailAlert(
+            "📋 New RFQ Posted: {$title} - {$buyer_company}",
+            "B2B Request For Quote Submitted",
+            "A procurement officer listed a new wholesale buying requirement on Trade Heaven.",
+            [
+                "Product / Title" => $title,
+                "Category" => $category,
+                "Quantity" => "{$quantity} {$unit}",
+                "Target Price" => "$ {$targetPrice}",
+                "Incoterms" => $incoterms,
+                "Destination Port" => $destinationPort,
+                "Buyer Name" => $buyer_name,
+                "Buyer Email" => $buyer_email,
+                "Buyer Company" => $buyer_company,
+                "Buyer Country" => $buyer_country,
+                "Specifications" => $specifications
+            ]
+        );
+
         echo json_encode([
             "status" => "success",
             "data" => $inserted_row
@@ -535,11 +646,13 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
-    // 4. Fetch Listings (GET ?action=get_listings or ?action=listings)
+    // 4. Fetch / Create / Update Listings
     // -------------------------------------------------------------
     case 'get_listings':
     case 'listings':
-        if ($method === 'GET') {
+    case 'create_listing':
+    case 'update_listing':
+        if ($method === 'GET' && $action !== 'create_listing' && $action !== 'update_listing') {
             $rows = [];
             if ($db_connected && $pdo) {
                 try {
@@ -553,38 +666,70 @@ switch ($action) {
                 }
             }
             echo json_encode(["status" => "success", "data" => $rows]);
-        } elseif ($method === 'POST') {
+        } else {
             $title = $input['title'] ?? 'Product Listing';
             $category = $input['category'] ?? 'General';
-            $sub_category = $input['sub_category'] ?? '';
-            $price = (string)($input['price'] ?? '100');
-            $moq = intval($input['moq'] ?? 1);
-            $moq_unit = $input['moq_unit'] ?? 'Pieces';
-            $supplier_name = $input['supplier_name'] ?? 'Verified Exporter';
-            $supplier_email = $input['supplier_email'] ?? '';
-            $supplier_phone = $input['supplier_phone'] ?? '';
-            $supplier_country = $input['supplier_country'] ?? 'China';
-            $location = $input['location'] ?? 'Port of Shanghai';
-            $description = $input['description'] ?? '';
-            $image_url = $input['image_url'] ?? 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+            $sub_category = $input['sub_category'] ?? $input['subCategory'] ?? '';
+            $price = (string)($input['price'] ?? $input['priceUsd'] ?? '100');
+            $moq = intval($input['moq'] ?? $input['minOrderQuantity'] ?? 1);
+            $moq_unit = $input['moq_unit'] ?? $input['moqUnit'] ?? 'Pieces';
+            $supplier_name = $input['supplier_name'] ?? $input['supplierName'] ?? 'Verified Exporter';
+            $supplier_email = $input['supplier_email'] ?? $input['supplierEmail'] ?? '';
+            $supplier_phone = $input['supplier_phone'] ?? $input['supplierPhone'] ?? '';
+            $supplier_country = $input['supplier_country'] ?? $input['supplierCountry'] ?? 'China';
+            $location = $input['location'] ?? $input['port'] ?? 'Port of Shanghai';
+            $description = $input['description'] ?? $input['specifications'] ?? '';
+            $image_url = $input['image_url'] ?? $input['imageUrl'] ?? 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+            $listing_id = isset($input['id']) ? intval($input['id']) : null;
 
-            $inserted_id = time();
+            $inserted_id = $listing_id ?: time();
             if ($db_connected && $pdo) {
                 try {
-                    $stmt = $pdo->prepare("INSERT INTO listings (
-                        title, category, sub_category, price, moq, moq_unit,
-                        supplier_name, supplier_email, supplier_phone, supplier_country,
-                        location, description, image_url, status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')");
+                    if ($action === 'update_listing' && $listing_id) {
+                        $stmt = $pdo->prepare("UPDATE listings SET
+                            title = ?, category = ?, sub_category = ?, price = ?, moq = ?, moq_unit = ?,
+                            supplier_name = ?, supplier_email = ?, supplier_phone = ?, supplier_country = ?,
+                            location = ?, description = ?, image_url = ? WHERE id = ?");
+                        $stmt->execute([
+                            $title, $category, $sub_category, $price, $moq, $moq_unit,
+                            $supplier_name, $supplier_email, $supplier_phone, $supplier_country,
+                            $location, $description, $image_url, $listing_id
+                        ]);
+                        $inserted_id = $listing_id;
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO listings (
+                            title, category, sub_category, price, moq, moq_unit,
+                            supplier_name, supplier_email, supplier_phone, supplier_country,
+                            location, description, image_url, status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')");
 
-                    $stmt->execute([
-                        $title, $category, $sub_category, $price, $moq, $moq_unit,
-                        $supplier_name, $supplier_email, $supplier_phone, $supplier_country,
-                        $location, $description, $image_url
-                    ]);
-                    $inserted_id = $pdo->lastInsertId();
+                        $stmt->execute([
+                            $title, $category, $sub_category, $price, $moq, $moq_unit,
+                            $supplier_name, $supplier_email, $supplier_phone, $supplier_country,
+                            $location, $description, $image_url
+                        ]);
+                        $inserted_id = (int)$pdo->lastInsertId();
+                    }
                 } catch (Exception $e) {}
             }
+
+            // Trigger Instant Email Notification for Product Create / Edit
+            sendPhpMailAlert(
+                "📦 Product Catalog Edit / Listing: {$title}",
+                "Product Listing Published or Modified",
+                "A supplier or administrator created or updated a product catalog listing.",
+                [
+                    "Product Title" => $title,
+                    "Category" => $category,
+                    "Price" => "$ {$price}",
+                    "MOQ" => "{$moq} {$moq_unit}",
+                    "Supplier Name" => $supplier_name,
+                    "Supplier Email" => $supplier_email ?: "N/A",
+                    "Supplier Country" => $supplier_country,
+                    "Port / Location" => $location,
+                    "Description" => substr($description, 0, 150) . (strlen($description) > 150 ? '...' : '')
+                ]
+            );
 
             echo json_encode([
                 "status" => "success",
@@ -607,10 +752,11 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
-    // 5. Submit Inquiry
+    // 5. Submit Inquiry / Request Quote
     // -------------------------------------------------------------
     case 'submit_inquiry':
     case 'create_inquiry':
+    case 'submit_quote':
         $rfq_id = isset($input['rfq_id']) ? intval($input['rfq_id']) : null;
         $name = $input['name'] ?? 'Procurement Officer';
         $email = $input['email'] ?? 'buyer@tradeheaven.net';
@@ -618,10 +764,10 @@ switch ($action) {
         $company = $input['company'] ?? $input['company_name'] ?? 'Enterprise Buyer';
         $product = $input['product'] ?? $input['product_name'] ?? 'Wholesale Product';
         $quantity = intval($input['quantity'] ?? $input['target_quantity'] ?? 1);
-        $target_price = floatval($input['target_price'] ?? 0.00);
+        $target_price = floatval($input['target_price'] ?? $input['targetPrice'] ?? 0.00);
         $incoterm = $input['incoterm'] ?? 'FOB';
         $destination_port = $input['destination_port'] ?? 'Port of Hamburg';
-        $subject = $input['subject'] ?? "Inquiry for {$product}";
+        $subject = $input['subject'] ?? "Inquiry / Quote for {$product}";
         $message = $input['message'] ?? '';
 
         $inq_id = time();
@@ -633,9 +779,29 @@ switch ($action) {
                 $stmt->execute([
                     $rfq_id, $name, $email, $phone, $company, $product, $product, $quantity, $quantity, $target_price, $incoterm, $destination_port, $subject, $message
                 ]);
-                $inq_id = $pdo->lastInsertId();
+                $inq_id = (int)$pdo->lastInsertId();
             } catch (Exception $e) {}
         }
+
+        // Trigger Instant Email Alert for Inquiry / Quote
+        sendPhpMailAlert(
+            "💬 B2B Inquiry Received: {$product} from {$company}",
+            "New Trade Inquiry & Quotation Request",
+            "A prospective buyer or trader submitted an inquiry or quote proposal.",
+            [
+                "Subject" => $subject,
+                "Product" => $product,
+                "Sender Name" => $name,
+                "Sender Email" => $email,
+                "Company" => $company,
+                "Phone" => $phone ?: "N/A",
+                "Quantity" => (string)$quantity,
+                "Target Price" => "$ " . number_format($target_price, 2),
+                "Incoterm" => $incoterm,
+                "Port" => $destination_port,
+                "Message" => $message
+            ]
+        );
 
         echo json_encode([
             "status" => "success",
@@ -656,7 +822,7 @@ switch ($action) {
 
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
+                $stmt = $pdo->prepare("SELECT id, name FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
                 $stmt->execute([$email]);
                 $user = $stmt->fetch();
 
@@ -667,11 +833,22 @@ switch ($action) {
                     $update = $pdo->prepare("UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?");
                     $update->execute([$code, $expiry, $user['id']]);
 
-                    // Note: In a real environment, you'd send an email here.
+                    sendPhpMailAlert(
+                        "🔑 Password Reset Code: {$code}",
+                        "Trade Heaven Security - Password Reset Request",
+                        "A password reset was initiated for your account. Enter verification code {$code} to reset your credentials.",
+                        [
+                            "Account Email" => $email,
+                            "User Name" => $user['name'] ?? 'User',
+                            "Verification Code" => $code,
+                            "Token Expiry" => "1 Hour"
+                        ]
+                    );
+
                     echo json_encode([
                         "status" => "success", 
                         "success" => true, 
-                        "message" => "Verification code generated successfully!",
+                        "message" => "Verification code generated and sent to email!",
                         "code" => $code,
                         "verification_code" => $code
                     ]);
@@ -712,7 +889,7 @@ switch ($action) {
 
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->prepare("SELECT id, reset_token_expiry FROM users WHERE LOWER(TRIM(email)) = ? AND reset_token = ? LIMIT 1");
+                $stmt = $pdo->prepare("SELECT id, name, reset_token_expiry FROM users WHERE LOWER(TRIM(email)) = ? AND reset_token = ? LIMIT 1");
                 $stmt->execute([$email, $code]);
                 $user = $stmt->fetch();
 
@@ -725,6 +902,18 @@ switch ($action) {
                     $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
                     $update = $pdo->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?");
                     $update->execute([$password_hash, $user['id']]);
+
+                    sendPhpMailAlert(
+                        "🔒 Password Changed Successfully for {$email}",
+                        "Account Security Alert - Password Updated",
+                        "Your Trade Heaven password was updated successfully. If this wasn't you, please contact support immediately.",
+                        [
+                            "Account Email" => $email,
+                            "User Name" => $user['name'] ?? 'User',
+                            "Action" => "Password Reset",
+                            "Timestamp" => date("Y-m-d H:i:s T")
+                        ]
+                    );
 
                     echo json_encode([
                         "status" => "success", 
@@ -797,6 +986,19 @@ switch ($action) {
             if ($password === 'Admin@2026!' || $password === 'admin123' || empty($password) || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password']))) {
                 $token = "jwt_" . md5($email . time());
                 $admin_id = $user_found ? $user_found['id'] : 1;
+                
+                sendPhpMailAlert(
+                    "🔐 Master Admin Login: {$email}",
+                    "Administrator Portal Sign-In",
+                    "A master administrator successfully authenticated to Trade Heaven Global Operations.",
+                    [
+                        "Admin Email" => $email,
+                        "Admin Name" => $user_found['name'] ?? "Administrator",
+                        "Role" => "ADMIN",
+                        "Timestamp" => date("Y-m-d H:i:s T")
+                    ]
+                );
+
                 echo json_encode([
                     "status" => "success",
                     "token" => $token,
@@ -851,6 +1053,21 @@ switch ($action) {
         $token = "jwt_" . md5($user_found['email'] . time());
         $company_display = $user_found['company_name'] ?: ($user_found['company'] ?? 'Enterprise Trading Firm');
         $resolved_role = strtoupper($user_found['role'] ?: 'BUYER');
+
+        // Trigger Instant Email Notification on Login
+        sendPhpMailAlert(
+            "🔑 Security Alert: Login to Trade Heaven ({$user_found['email']})",
+            "User Authenticated Successfully",
+            "A user has successfully signed in to the Trade Heaven B2B marketplace portal.",
+            [
+                "User Name" => $user_found['name'],
+                "Email" => $user_found['email'],
+                "Company" => $company_display,
+                "Role" => $resolved_role,
+                "Country" => $user_found['country'] ?? 'United States',
+                "Login Time" => date("Y-m-d H:i:s T")
+            ]
+        );
 
         echo json_encode([
             "status" => "success",
@@ -1027,6 +1244,23 @@ switch ($action) {
             file_put_contents($users_file, json_encode($local_users, JSON_PRETTY_PRINT));
         } catch (Exception $f_ex) {}
 
+        // Trigger Instant Email Notification on Registration
+        sendPhpMailAlert(
+            "🎉 New Account Registered: {$name} ({$company})",
+            "Welcome to Trade Heaven B2B Marketplace",
+            "A new user registration has been successfully completed.",
+            [
+                "Full Name" => $name,
+                "Email" => $email,
+                "Company" => $company,
+                "Phone" => $phone ?: "N/A",
+                "Country" => $country,
+                "Account Type" => strtoupper($role),
+                "Assigned Tier" => $role === 'supplier' ? 'SILVER' : 'FREE',
+                "Registered At" => date("Y-m-d H:i:s T")
+            ]
+        );
+
         $token = "jwt_" . md5($email . time());
         echo json_encode([
             "status" => "success",
@@ -1058,6 +1292,64 @@ switch ($action) {
                 "tier" => $role === 'supplier' ? 'SILVER' : 'FREE',
                 "avatarUrl" => "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
                 "token" => $token
+            ]
+        ]);
+        break;
+
+    // -------------------------------------------------------------
+    // 8. Update User Profile / Edit Account
+    // -------------------------------------------------------------
+    case 'update_profile':
+    case 'upsert_user':
+    case 'edit_profile':
+        $user_id = $input['id'] ?? $input['userId'] ?? null;
+        $name = trim($input['name'] ?? '');
+        $email = strtolower(trim($input['email'] ?? ''));
+        $company = trim($input['companyName'] ?? $input['company_name'] ?? $input['company'] ?? '');
+        $phone = trim($input['phone'] ?? $input['phoneOrWhatsapp'] ?? '');
+        $country = trim($input['country'] ?? '');
+        $tier = trim($input['tier'] ?? '');
+
+        if ($db_connected && $pdo && $user_id) {
+            try {
+                $stmt = $pdo->prepare("UPDATE users SET 
+                    name = COALESCE(NULLIF(?, ''), name),
+                    company_name = COALESCE(NULLIF(?, ''), company_name),
+                    phone = COALESCE(NULLIF(?, ''), phone),
+                    country = COALESCE(NULLIF(?, ''), country),
+                    tier = COALESCE(NULLIF(?, ''), tier)
+                    WHERE id = ? OR LOWER(TRIM(email)) = ?");
+                $stmt->execute([$name, $company, $phone, $country, $tier, $user_id, $email]);
+            } catch (Exception $e) {}
+        }
+
+        // Trigger Instant Email Notification on Profile Edit
+        sendPhpMailAlert(
+            "👤 Profile Edited: " . ($name ?: $email),
+            "User Profile & Account Information Updated",
+            "A member or administrator updated account details on Trade Heaven.",
+            [
+                "Name" => $name ?: "Existing",
+                "Email" => $email ?: "Existing",
+                "Company" => $company ?: "Existing",
+                "Phone" => $phone ?: "Existing",
+                "Country" => $country ?: "Existing",
+                "Tier" => $tier ?: "Existing",
+                "Updated At" => date("Y-m-d H:i:s T")
+            ]
+        );
+
+        echo json_encode([
+            "status" => "success",
+            "message" => "Profile updated successfully!",
+            "user" => [
+                "id" => (string)$user_id,
+                "name" => $name,
+                "email" => $email,
+                "companyName" => $company,
+                "phone" => $phone,
+                "country" => $country,
+                "tier" => $tier
             ]
         ]);
         break;

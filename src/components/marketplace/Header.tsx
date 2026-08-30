@@ -5,6 +5,8 @@ import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { SafeImage } from '../common/SafeImage';
 import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageRegionSelector } from './LanguageRegionSelector';
 import { 
   Globe2, 
   ShieldCheck, 
@@ -85,12 +87,34 @@ export const Header: React.FC<Props> = ({
   unreadMessagesCount = 2
 }) => {
   const { setCurrentUser, isUserAuthorized } = useSiteContent();
+  const { languageCode } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const auth = isUserAuthorized(currentUser);
   const isAdmin = auth.isAuthorized;
+
+  const navDict = {
+    home: { en: 'Home', zh: '首页', es: 'Inicio', ar: 'الرئيسية', de: 'Startseite', fr: 'Accueil', pt: 'Início', ru: 'Главная', ja: 'ホーム', hi: 'होम', tr: 'Ana Sayfa', vi: 'Trang chủ' },
+    aboutUs: { en: 'About Us', zh: '关于我们', es: 'Sobre Nosotros', ar: 'معلومات عنا', de: 'Über uns', fr: 'À propos', pt: 'Sobre Nós', ru: 'О нас', ja: '会社概要', hi: 'हमारे बारे में', tr: 'Hakkımızda', vi: 'Về chúng tôi' },
+    trustSafety: { en: 'Trust & Safety', zh: '安全信保', es: 'Seguridad', ar: 'الأمان والثقة', de: 'Sicherheit', fr: 'Sécurité', pt: 'Segurança', ru: 'Безопасность', ja: '信頼と安全', hi: 'सुरक्षा और विश्वास', tr: 'Güvenlik', vi: 'An toàn & Tin cậy' },
+    newsInsights: { en: 'News & Insights', zh: '行业资讯', es: 'Noticias', ar: 'الأخبار', de: 'Nachrichten', fr: 'Actualités', pt: 'Notícias', ru: 'Новости', ja: 'ニュース', hi: 'समाचार', tr: 'Haberler', vi: 'Tin tức' },
+    premiumServices: { en: 'Premium Services', zh: '尊享服务', es: 'Servicios Premium', ar: 'خدمات متميزة', de: 'Premium-Dienste', fr: 'Services Premium', pt: 'Serviços Premium', ru: 'Премиум', ja: 'プレミアム', hi: 'प्रीमियम सेवाएं', tr: 'Premium Hizmetler', vi: 'Dịch vụ cao cấp' },
+    buyers: { en: 'Buyers', zh: '采购买家', es: 'Compradores', ar: 'المشترون', de: 'Käufer', fr: 'Acheteurs', pt: 'Compradores', ru: 'Покупатели', ja: 'バイヤー', hi: 'खरीदार', tr: 'Alıcılar', vi: 'Người mua' },
+    suppliers: { en: 'Suppliers', zh: '认证供应商', es: 'Proveedores', ar: 'الموردون', de: 'Lieferanten', fr: 'Fournisseurs', pt: 'Fornecedores', ru: 'Поставщики', ja: 'サプライヤー', hi: 'आपूर्तिकर्ता', tr: 'Tedarikçiler', vi: 'Nhà cung cấp' },
+    menu: { en: 'Menu', zh: '全站菜单', es: 'Menú', ar: 'القائمة', de: 'Menü', fr: 'Menu', pt: 'Menu', ru: 'Меню', ja: 'メニュー', hi: 'मेन्यू', tr: 'Menü', vi: 'Menu' },
+    postBuyRfq: { en: 'Post Buy RFQ', zh: '发布采购需求', es: 'Publicar RFQ', ar: 'نشر طلب RFQ', de: 'RFQ erstellen', fr: 'Publier RFQ', pt: 'Publicar RFQ', ru: 'Разместить RFQ', ja: '調達案件投稿', hi: 'खरीद मांग दर्ज करें', tr: 'RFQ Oluştur', vi: 'Đăng RFQ' },
+    signIn: { en: 'Sign In', zh: '登录', es: 'Iniciar Sesión', ar: 'تسجيل الدخول', de: 'Anmelden', fr: 'Connexion', pt: 'Entrar', ru: 'Войти', ja: 'ログイン', hi: 'साइन इन', tr: 'Giriş Yap', vi: 'Đăng nhập' },
+    registerFree: { en: 'Register Free', zh: '免费注册', es: 'Registro Gratis', ar: 'تسجيل مجاني', de: 'Kostenlos registrieren', fr: 'Inscription Gratuite', pt: 'Cadastre-se', ru: 'Регистрация', ja: '無料会員登録', hi: 'मुफ़्त पंजीकरण', tr: 'Ücretsiz Kayıt', vi: 'Đăng ký miễn phí' },
+    signOut: { en: 'Sign Out', zh: '退出', es: 'Cerrar Sesión', ar: 'خروج', de: 'Abmelden', fr: 'Déconnexion', pt: 'Sair', ru: 'Выйти', ja: 'ログアウト', hi: 'साइन आउट', tr: 'Çıkış', vi: 'Đăng xuất' },
+    tradeAssurance: { en: '100% trade protection & Trade Assurance', zh: '100% 资金托管与信保体系', es: '100% Protección Comercial', ar: 'حماية وضمان تجاري 100%', de: '100% Handelsschutz', fr: '100% Protection commerciale', pt: '100% Proteção Comercial', ru: '100% Защита сделок', ja: '100% 取引保証・エスクロー', hi: '100% व्यापार सुरक्षा', tr: '%100 Ticaret Güvencesi', vi: '100% Bảo vệ giao dịch' }
+  };
+
+  const getTxt = (key: keyof typeof navDict): string => {
+    const entry = navDict[key] as Record<string, string>;
+    return entry[languageCode] || entry.en || '';
+  };
 
   // Automatically close open dropdown menus when clicking outside or pressing Escape
   useEffect(() => {
@@ -178,7 +202,7 @@ export const Header: React.FC<Props> = ({
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px] sm:text-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden sm:inline">100% trade protection &amp; Trade Assurance</span>
+              <span className="hidden sm:inline">{getTxt('tradeAssurance')}</span>
               <span className="sm:hidden">trade protection Protected</span>
             </span>
 
@@ -199,9 +223,12 @@ export const Header: React.FC<Props> = ({
             </a>
           </div>
 
-          {/* Right: FX Selector + Mode Switcher + Authentication State */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Right: FX Selector + Language/Region + Authentication State */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
+            {/* Compact Language & Region Selector */}
+            <LanguageRegionSelector variant="compact" />
+
             {/* Currency FX Selector */}
             <div className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-700/80 shadow-2xs transition-colors">
               <span className="text-[9px] text-amber-400 font-bold uppercase">FX</span>
@@ -254,7 +281,7 @@ export const Header: React.FC<Props> = ({
                   title="Sign out of current account"
                 >
                   <LogOut className="w-3 h-3 text-rose-400 shrink-0" />
-                  <span className="hidden sm:inline">Sign Out</span>
+                  <span className="hidden sm:inline">{getTxt('signOut')}</span>
                 </button>
               </div>
             ) : (
@@ -266,7 +293,7 @@ export const Header: React.FC<Props> = ({
                   className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition-all shadow-xs cursor-pointer border border-slate-700/80"
                 >
                   <LogIn className="w-3.5 h-3.5 text-slate-300" />
-                  <span>Sign In</span>
+                  <span>{getTxt('signIn')}</span>
                 </button>
                 <button
                   id="header-register-free-btn"
@@ -274,7 +301,7 @@ export const Header: React.FC<Props> = ({
                   className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition-all shadow-xs cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5 text-emerald-100" />
-                  <span>Register Free</span>
+                  <span>{getTxt('registerFree')}</span>
                 </button>
               </div>
             )}
@@ -308,7 +335,7 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Home
+              {getTxt('home')}
             </button>
             <button
               onClick={() => handleNavClick('ABOUT_US')}
@@ -318,7 +345,7 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              About Us
+              {getTxt('aboutUs')}
             </button>
             <button
               onClick={() => handleNavClick('TRUST_SAFETY')}
@@ -328,7 +355,7 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Trust & Safety
+              {getTxt('trustSafety')}
             </button>
             <button
               onClick={() => handleNavClick('INSIGHTS')}
@@ -338,7 +365,7 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              News & Insights
+              {getTxt('newsInsights')}
             </button>
 
             {/* Premium Services (Top Nav Button) */}
@@ -352,7 +379,7 @@ export const Header: React.FC<Props> = ({
               }`}
             >
               <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Premium Services</span>
+              <span>{getTxt('premiumServices')}</span>
             </button>
 
             <button
@@ -364,7 +391,7 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Buyers
+              {getTxt('buyers')}
             </button>
 
             <button
@@ -376,7 +403,7 @@ export const Header: React.FC<Props> = ({
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Suppliers
+              {getTxt('suppliers')}
             </button>
 
             {/* Dropdown: Menu (Contains all other options) */}
@@ -394,7 +421,7 @@ export const Header: React.FC<Props> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Menu</span>
+                <span>{getTxt('menu')}</span>
                 <ChevronDown className="w-3 h-3 shrink-0" />
               </button>
 
@@ -626,7 +653,7 @@ export const Header: React.FC<Props> = ({
               className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
             >
               <PlusCircle className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Post Buy RFQ</span>
+              <span className="hidden sm:inline">{getTxt('postBuyRfq')}</span>
             </button>
 
             {/* Messages / Negotiation Room */}
@@ -727,6 +754,11 @@ export const Header: React.FC<Props> = ({
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Mobile Language & Region Selector */}
+          <div className="pt-1">
+            <LanguageRegionSelector variant="mobile" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">

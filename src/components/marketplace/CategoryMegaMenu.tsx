@@ -1,6 +1,7 @@
 import React from 'react';
 import { CATEGORIES_TREE, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { ActiveView } from '../../types';
 import { 
@@ -79,6 +80,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
   onOpenCreateRfq
 }) => {
   const { siteContent, isLiveEditMode, openQuickEdit, currentUser, isUserAuthorized } = useSiteContent();
+  const { t, tText } = useLanguage();
   const auth = isUserAuthorized(currentUser);
   const isAdmin = auth.isAuthorized;
 
@@ -210,13 +212,13 @@ export const CategoryMegaMenu: React.FC<Props> = ({
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[11px] font-bold border border-blue-200 mb-1.5">
             <Layers className="w-3.5 h-3.5 text-blue-600" />
-            <span>Industrial Sectors &amp; Global Sourcing Verticals</span>
+            <span>{t('categoriesHeading')}</span>
           </div>
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-            {hp.featuredCategoriesHeading || 'Verified Direct Factory Sectors & Wholesale Directories'}
+            {hp.featuredCategoriesHeading ? tText(hp.featuredCategoriesHeading) : t('categoriesSubheading')}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
-            {hp.featuredCategoriesSubheading || 'Browse audited manufacturing suppliers by specialized industry vertical, explore verified catalog items, or source factory quotations.'}
+            {hp.featuredCategoriesSubheading ? tText(hp.featuredCategoriesSubheading) : 'Browse audited manufacturing suppliers by specialized industry vertical, explore verified catalog items, or source factory quotations.'}
           </p>
         </div>
 
@@ -228,7 +230,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
               onClick={() => onSelectCategory('')}
               className="text-xs text-blue-600 hover:text-blue-800 font-bold transition-colors bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-200 shrink-0 cursor-pointer flex items-center gap-1"
             >
-              <span>Clear Filter ({selectedCategory})</span>
+              <span>{t('allCategories')} ({tText(selectedCategory)})</span>
               <span className="text-blue-400">×</span>
             </button>
           )}
@@ -239,7 +241,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
             className="text-xs font-bold text-slate-700 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-blue-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Package className="w-3.5 h-3.5 text-blue-600" />
-            <span>Full Catalog</span>
+            <span>{t('viewAllProducts')}</span>
             <ArrowRight className="w-3 h-3 text-slate-400" />
           </button>
 
@@ -249,7 +251,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
             className="text-xs font-bold text-slate-700 hover:text-emerald-600 bg-slate-50 hover:bg-emerald-50 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-emerald-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Factory Directory</span>
+            <span>{t('fullSupplierDirectory')}</span>
             <ArrowRight className="w-3 h-3 text-slate-400" />
           </button>
         </div>
@@ -286,7 +288,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
                   <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200 relative group-hover:scale-105 transition-transform">
                     <SafeImage 
                       src={catImage} 
-                      alt={cat.name} 
+                      alt={tText(cat.name)} 
                       className="w-full h-full object-cover" 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
@@ -304,17 +306,17 @@ export const CategoryMegaMenu: React.FC<Props> = ({
                       {cat.badge && (
                         <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                          <span>{cat.badge}</span>
+                          <span>{tText(cat.badge)}</span>
                         </span>
                       )}
                     </div>
                     
                     <h3 className="font-black text-sm text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
-                      {cat.name}
+                      {tText(cat.name)}
                     </h3>
                     
                     <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                      {cat.description}
+                      {tText(cat.description)}
                     </p>
                   </div>
                 </div>

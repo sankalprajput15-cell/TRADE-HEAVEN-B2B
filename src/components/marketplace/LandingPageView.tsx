@@ -29,10 +29,14 @@ import {
   Store,
   ChevronDown,
   Search,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
+import { useLanguage } from '../../context/LanguageContext';
+import { SUPPORTED_LANGUAGES } from './LanguageRegionSelector';
 
 interface Props {
   onNavigate: (view: ActiveView) => void;
@@ -144,6 +148,8 @@ export const LandingPageView: React.FC<Props> = ({
   onOpenCreateRfq,
   onCategorySelect
 }) => {
+  const { languageCode, currentLanguage, setLanguage, t, isRTL } = useLanguage();
+
   // Search state
   const [searchCategory, setSearchCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,13 +188,13 @@ export const LandingPageView: React.FC<Props> = ({
   const handleRfqNext = (nextStep: 2 | 3) => {
     if (nextStep === 2) {
       if (!productName.trim() || !quantity.trim()) {
-        alert('Please enter both Product Name and Quantity.');
+        alert(languageCode === 'zh' ? '请填写产品名称和采购数量。' : 'Please enter both Product Name and Quantity.');
         return;
       }
     }
     if (nextStep === 3) {
       if (!destination.trim()) {
-        alert('Please enter your Target Destination / Port of Discharge.');
+        alert(languageCode === 'zh' ? '请填写目标交货港口或目的国家。' : 'Please enter your Target Destination / Port of Discharge.');
         return;
       }
     }
@@ -215,10 +221,91 @@ export const LandingPageView: React.FC<Props> = ({
     setRfqStep(1);
   };
 
+  const isZh = languageCode === 'zh';
+
   const activeCorridor = CORRIDOR_DATA[selectedCorridorKey] || CORRIDOR_DATA['usa'];
 
   return (
     <div className="space-y-16 pb-16">
+      {/* ========================================================================= */}
+      {/* 1. INTERACTIVE LANGUAGE & TEST SWITCHER BAR */}
+      {/* ========================================================================= */}
+      <div className="mx-4 sm:mx-6 lg:mx-8 bg-slate-900 border border-slate-700/90 rounded-2xl p-3 sm:p-4 shadow-lg text-white flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 text-xs sm:text-sm">
+          <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 border border-sky-400/30">
+            <Globe2 className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-bold flex items-center gap-2 text-white">
+              <span>{isZh ? '🌏 国际化语言测试模式' : '🌏 International Locale Live Preview'}</span>
+              <span className="text-[10px] font-mono bg-sky-950 text-sky-300 border border-sky-600/40 px-2 py-0.5 rounded-full font-bold">
+                {currentLanguage.flag} {currentLanguage.nativeName} ({currentLanguage.code.toUpperCase()})
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {isZh ? '当前展示：简体中文 (中国及亚太地区)。可点击右侧快捷切换测试：' : 'Switch locale instantly to verify multi-language rendering and translated landing page:'}
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Locale Pills */}
+        <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+          <button
+            type="button"
+            onClick={() => setLanguage('zh')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              isZh
+                ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md ring-2 ring-amber-400/50'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+            }`}
+          >
+            <span>🇨🇳</span>
+            <span>简体中文 (Chinese)</span>
+            {isZh && <Check className="w-3.5 h-3.5 text-amber-200" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              languageCode === 'en'
+                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/50'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+            }`}
+          >
+            <span>🇺🇸</span>
+            <span>English (US)</span>
+            {languageCode === 'en' && <Check className="w-3.5 h-3.5 text-blue-200" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLanguage('es')}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              languageCode === 'es'
+                ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/50'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+          >
+            <span>🇪🇸</span>
+            <span>Español</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLanguage('ar')}
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              languageCode === 'ar'
+                ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-400/50'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+          >
+            <span>🇦🇪</span>
+            <span>العربية</span>
+          </button>
+        </div>
+      </div>
+
       {/* ========================================================================= */}
       {/* 2. HERO SECTION */}
       {/* ========================================================================= */}
@@ -233,19 +320,33 @@ export const LandingPageView: React.FC<Props> = ({
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                <span>180+ Global Ports &bull; 125,000+ Active Wholesale Buyers</span>
+                <span>{isZh ? '180+ 国际战略港口 • 125,000+ 活跃批发采购商' : '180+ Global Ports • 125,000+ Active Wholesale Buyers'}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
-                The Next-Generation <br className="hidden sm:inline" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-300">
-                  Global B2B Marketplace
-                </span> <br />
-                &amp; Cross-Border Sourcing Platform.
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15]">
+                {isZh ? (
+                  <>
+                    新一代数字化 <br className="hidden sm:inline" />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-300">
+                      全球B2B跨境贸易
+                    </span> <br />
+                    与大宗商品源头直采平台。
+                  </>
+                ) : (
+                  <>
+                    The Next-Generation <br className="hidden sm:inline" />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-300">
+                      Global B2B Marketplace
+                    </span> <br />
+                    &amp; Cross-Border Sourcing Platform.
+                  </>
+                )}
               </h1>
 
               <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed font-normal">
-                Connecting verified manufacturers, exporters, and wholesale buyers worldwide with direct RFQ broadcasting, transparent FOB/CIF pricing, and custodial trade protection.
+                {isZh
+                  ? '连接全球认证生产工厂、外贸出口商与国际批发采购商。提供全球采购需求(RFQ)即时广播、透明FOB/CIF离岸到岸比价与第三方资金托管履约保障。'
+                  : 'Connecting verified manufacturers, exporters, and wholesale buyers worldwide with direct RFQ broadcasting, transparent FOB/CIF pricing, and custodial trade protection.'}
               </p>
 
               {/* Dual CTAs */}
@@ -255,14 +356,14 @@ export const LandingPageView: React.FC<Props> = ({
                   className="px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2.5 transition-all shadow-lg shadow-blue-600/30 cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Source Products (Buyer)</span>
+                  <span>{isZh ? '采购商品货源 (买家通道)' : 'Source Products (Buyer)'}</span>
                 </button>
                 <button
                   onClick={() => onNavigate('ONBOARD_WITH_US')}
                   className="px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs sm:text-sm backdrop-blur-md flex items-center gap-2.5 transition-all cursor-pointer"
                 >
                   <Zap className="w-4 h-4 text-emerald-400" />
-                  <span>Sell Globally (Supplier)</span>
+                  <span>{isZh ? '全球货源出海 (供应商入驻)' : 'Sell Globally (Supplier)'}</span>
                 </button>
               </div>
 
@@ -273,13 +374,13 @@ export const LandingPageView: React.FC<Props> = ({
                   onChange={(e) => setSearchCategory(e.target.value)}
                   className="bg-slate-900/80 text-white text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-700 outline-none cursor-pointer shrink-0"
                 >
-                  <option value="all">All Sectors</option>
-                  <option value="Agriculture & Food">Agriculture &amp; Food</option>
-                  <option value="Apparel & Garments">Apparel &amp; Fabrics</option>
-                  <option value="Safety & PPE">Safety, PPE &amp; Medical</option>
-                  <option value="Industrial Machinery">Machinery &amp; Industrial</option>
-                  <option value="Furniture & Home Decor">Furniture &amp; Decor</option>
-                  <option value="Chemicals & Plastics">Chemicals &amp; Oils</option>
+                  <option value="all">{isZh ? '所有工业行业' : 'All Sectors'}</option>
+                  <option value="Agriculture & Food">{isZh ? '农业与大宗食品' : 'Agriculture & Food'}</option>
+                  <option value="Apparel & Garments">{isZh ? '服装与纺织面料' : 'Apparel & Fabrics'}</option>
+                  <option value="Safety & PPE">{isZh ? '安全防护与医疗劳保' : 'Safety, PPE & Medical'}</option>
+                  <option value="Industrial Machinery">{isZh ? '工业重工与数控机械' : 'Machinery & Industrial'}</option>
+                  <option value="Furniture & Home Decor">{isZh ? '商用家具与整装建材' : 'Furniture & Decor'}</option>
+                  <option value="Chemicals & Plastics">{isZh ? '精细化工与塑料原料' : 'Chemicals & Oils'}</option>
                 </select>
 
                 <div className="flex-1 flex items-center px-3 bg-white/5 rounded-xl border border-white/10">
@@ -288,7 +389,7 @@ export const LandingPageView: React.FC<Props> = ({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search commodities, HS codes, factories..."
+                    placeholder={isZh ? '搜索大宗商品、海关HS编码、制造工厂...' : 'Search commodities, HS codes, factories...'}
                     className="w-full text-xs text-white placeholder-slate-400 bg-transparent focus:outline-none py-2"
                   />
                 </div>
@@ -297,20 +398,26 @@ export const LandingPageView: React.FC<Props> = ({
                   type="submit"
                   className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shrink-0"
                 >
-                  Find Deals
+                  {isZh ? '搜索商机' : 'Find Deals'}
                 </button>
               </form>
 
               {/* Quick Commodity Tags */}
               <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
-                <span className="text-slate-400 font-medium">Trending:</span>
-                {['Basmati Rice', 'PPE Gear', 'Industrial Pumps', 'Organic Cotton', 'Agarwood Extract'].map((tag) => (
+                <span className="text-slate-400 font-medium">{isZh ? '热门行业:' : 'Trending:'}</span>
+                {[
+                  { en: 'Basmati Rice', zh: '巴斯马蒂大米' },
+                  { en: 'PPE Gear', zh: '医用防护物资' },
+                  { en: 'Industrial Pumps', zh: '工业离心泵' },
+                  { en: 'Organic Cotton', zh: '有机棉面料' },
+                  { en: 'Agarwood Extract', zh: '天然沉香精油' }
+                ].map((tagObj) => (
                   <button
-                    key={tag}
-                    onClick={() => handleQuickTagClick(tag)}
+                    key={tagObj.en}
+                    onClick={() => handleQuickTagClick(isZh ? tagObj.zh : tagObj.en)}
                     className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-blue-900/60 border border-slate-700 text-slate-200 text-[11px] font-medium transition-colors cursor-pointer"
                   >
-                    {tag}
+                    {isZh ? tagObj.zh : tagObj.en}
                   </button>
                 ))}
               </div>
@@ -322,10 +429,12 @@ export const LandingPageView: React.FC<Props> = ({
                 <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                   <div className="flex items-center gap-2.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Live Global Trade Exchange</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      {isZh ? '全球实时大宗现货与采购买盘' : 'Live Global Trade Exchange'}
+                    </span>
                   </div>
                   <span className="text-[10px] font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-md border border-blue-400/20">
-                    REAL-TIME
+                    {isZh ? '实时行情' : 'REAL-TIME'}
                   </span>
                 </div>
 
@@ -333,11 +442,11 @@ export const LandingPageView: React.FC<Props> = ({
                   <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="font-bold text-white flex items-center gap-1.5">
-                        <span>1121 Steam Basmati Rice</span>
+                        <span>{isZh ? '1121 蒸谷巴斯马蒂香米' : '1121 Steam Basmati Rice'}</span>
                         <span className="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono text-[10px]">FOB</span>
                       </div>
-                      <p className="text-slate-400 text-[11px]">Destination: Jebel Ali Port, UAE &bull; 500 MT</p>
-                      <div className="text-[10px] text-blue-400 font-medium">Buyer: Al-Mansoor Foodstuff Trading LLC</div>
+                      <p className="text-slate-400 text-[11px]">{isZh ? '目的港: 阿联酋杰贝阿里港 • 500吨' : 'Destination: Jebel Ali Port, UAE • 500 MT'}</p>
+                      <div className="text-[10px] text-blue-400 font-medium">{isZh ? '买家: Al-Mansoor 食品进出口集团' : 'Buyer: Al-Mansoor Foodstuff Trading LLC'}</div>
                     </div>
                     <span className="text-emerald-400 font-mono font-bold shrink-0">$840/MT</span>
                   </div>
@@ -345,11 +454,11 @@ export const LandingPageView: React.FC<Props> = ({
                   <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="font-bold text-white flex items-center gap-1.5">
-                        <span>Industrial Nitrile Gloves (100ct)</span>
+                        <span>{isZh ? '工业级丁腈防护手套 (100只装)' : 'Industrial Nitrile Gloves (100ct)'}</span>
                         <span className="px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 font-mono text-[10px]">CIF</span>
                       </div>
-                      <p className="text-slate-400 text-[11px]">Destination: Port of Los Angeles, USA &bull; 20,000 Boxes</p>
-                      <div className="text-[10px] text-blue-400 font-medium">Buyer: MedShield Logistics Inc.</div>
+                      <p className="text-slate-400 text-[11px]">{isZh ? '目的港: 美国洛杉矶港 • 20,000箱' : 'Destination: Port of Los Angeles, USA • 20,000 Boxes'}</p>
+                      <div className="text-[10px] text-blue-400 font-medium">{isZh ? '买家: MedShield 医疗供应链集团' : 'Buyer: MedShield Logistics Inc.'}</div>
                     </div>
                     <span className="text-emerald-400 font-mono font-bold shrink-0">$4.15/Box</span>
                   </div>
@@ -357,11 +466,11 @@ export const LandingPageView: React.FC<Props> = ({
                   <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <div className="font-bold text-white flex items-center gap-1.5">
-                        <span>Submersible Pumps 50HP</span>
+                        <span>{isZh ? '50HP 农用大流量深井潜水泵' : 'Submersible Pumps 50HP'}</span>
                         <span className="px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 font-mono text-[10px]">EXW</span>
                       </div>
-                      <p className="text-slate-400 text-[11px]">Destination: Santos Port, Brazil &bull; 120 Units</p>
-                      <div className="text-[10px] text-blue-400 font-medium">Buyer: Agrotech Equipamentos S.A.</div>
+                      <p className="text-slate-400 text-[11px]">{isZh ? '目的港: 巴西桑托斯港 • 120台' : 'Destination: Santos Port, Brazil • 120 Units'}</p>
+                      <div className="text-[10px] text-blue-400 font-medium">{isZh ? '买家: Agrotech 农机装备股份' : 'Buyer: Agrotech Equipamentos S.A.'}</div>
                     </div>
                     <span className="text-emerald-400 font-mono font-bold shrink-0">$1,250/Unit</span>
                   </div>
@@ -371,7 +480,7 @@ export const LandingPageView: React.FC<Props> = ({
                   onClick={onOpenCreateRfq}
                   className="w-full py-2.5 rounded-xl bg-blue-600/30 hover:bg-blue-600 border border-blue-500/40 text-blue-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <span>Post RFQ or View Active Sourcing Leads</span>
+                  <span>{isZh ? '发布采购标书 / 查看全球活跃买盘' : 'Post RFQ or View Active Sourcing Leads'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -386,8 +495,8 @@ export const LandingPageView: React.FC<Props> = ({
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-white">100% Verified Suppliers</div>
-                <div className="text-[11px] text-slate-400">KYC &amp; Factory Audits</div>
+                <div className="text-xs font-bold text-white">{isZh ? '100% 验厂实名认证供应商' : '100% Verified Suppliers'}</div>
+                <div className="text-[11px] text-slate-400">{isZh ? 'KYC与生产实地验厂审计' : 'KYC & Factory Audits'}</div>
               </div>
             </div>
 
@@ -396,8 +505,8 @@ export const LandingPageView: React.FC<Props> = ({
                 <Lock className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-white">Secure Escrow Protection</div>
-                <div className="text-[11px] text-slate-400">Milestone Trade Vaults</div>
+                <div className="text-xs font-bold text-white">{isZh ? '独立资金托管履约保护' : 'Secure Escrow Protection'}</div>
+                <div className="text-[11px] text-slate-400">{isZh ? '分阶段按质验货放款' : 'Milestone Trade Vaults'}</div>
               </div>
             </div>
 
@@ -406,8 +515,8 @@ export const LandingPageView: React.FC<Props> = ({
                 <Container className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-white">Global Logistics Support</div>
-                <div className="text-[11px] text-slate-400">Customs &amp; Inspection</div>
+                <div className="text-xs font-bold text-white">{isZh ? '全球多式联运物流网络' : 'Global Logistics Support'}</div>
+                <div className="text-[11px] text-slate-400">{isZh ? '清关退税与SGS商检' : 'Customs & Inspection'}</div>
               </div>
             </div>
 
@@ -416,8 +525,8 @@ export const LandingPageView: React.FC<Props> = ({
                 <BadgeCheck className="w-5 h-5" />
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold text-white">Direct Factory Access</div>
-                <div className="text-[11px] text-slate-400">Zero Middleman Spread</div>
+                <div className="text-xs font-bold text-white">{isZh ? '源头工厂一手出厂价' : 'Direct Factory Access'}</div>
+                <div className="text-[11px] text-slate-400">{isZh ? '零中介加价透明询盘' : 'Zero Middleman Spread'}</div>
               </div>
             </div>
           </div>
@@ -432,13 +541,15 @@ export const LandingPageView: React.FC<Props> = ({
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
             <Award className="w-3.5 h-3.5 text-blue-600" />
-            <span>Enterprise B2B Infrastructure</span>
+            <span>{isZh ? '企业级B2B跨境贸易基础设施' : 'Enterprise B2B Infrastructure'}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Engineered for High-Stakes International Commerce
+            {isZh ? '专为高价值跨境大宗贸易打造' : 'Engineered for High-Stakes International Commerce'}
           </h2>
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-            Trade Heaven breaks traditional export barriers through algorithmic buyer matching, audited supply chains, and frictionless cross-border escrow payment rails.
+            {isZh
+              ? 'Trade Heaven 通过算法采购匹配、实地验厂审计与瑞士第三方资金托管结算通道，打破传统外贸壁垒，让跨境交易安全透明。'
+              : 'Trade Heaven breaks traditional export barriers through algorithmic buyer matching, audited supply chains, and frictionless cross-border escrow payment rails.'}
           </p>
         </div>
 
@@ -450,14 +561,16 @@ export const LandingPageView: React.FC<Props> = ({
                 <Globe2 className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                Unmatched Global Reach
+                {isZh ? '覆盖全球 180+ 战略市场' : 'Unmatched Global Reach'}
               </h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Active trade coverage across USA, UAE, India, Singapore, Brazil, Australia, Saudi Arabia, and Europe with real-time localized currency settlement.
+                {isZh
+                  ? '深度覆盖美国、阿联酋中东、印度、新加坡、巴西、澳大利亚及欧洲市场，支持实时多币种本地清算。'
+                  : 'Active trade coverage across USA, UAE, India, Singapore, Brazil, Australia, Saudi Arabia, and Europe with real-time localized currency settlement.'}
               </p>
             </div>
             <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between text-xs font-bold text-blue-600">
-              <span>180+ Active Markets</span>
+              <span>{isZh ? '180+ 活跃国际港口' : '180+ Active Markets'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -469,14 +582,16 @@ export const LandingPageView: React.FC<Props> = ({
                 <Cpu className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                Trade Enablement Suite
+                {isZh ? '智能贸易赋能套件' : 'Trade Enablement Suite'}
               </h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Empower your factory with automated SEO digital storefronts, AI-driven RFQ matchmaking, WhatsApp chat integrations, and dedicated International Export Managers.
+                {isZh
+                  ? '为工厂配备多语言独立站SEO、AI商机智能匹配、WhatsApp实时洽谈及专属国际出口客户经理。'
+                  : 'Empower your factory with automated SEO digital storefronts, AI-driven RFQ matchmaking, WhatsApp chat integrations, and dedicated International Export Managers.'}
               </p>
             </div>
             <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between text-xs font-bold text-emerald-600">
-              <span>Smart Match Engine</span>
+              <span>{isZh ? '智能AI商机引擎' : 'Smart Match Engine'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -488,17 +603,19 @@ export const LandingPageView: React.FC<Props> = ({
                 <Crown className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 group-hover:text-amber-600 transition-colors">
-                Tailored Growth Tiers
+                {isZh ? '定制化会员增长阶梯' : 'Tailored Growth Tiers'}
               </h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                From starter SME tiers to Gold &amp; VIP Business memberships, scale at your budget with guaranteed verified buyer leads and product showcase banners.
+                {isZh
+                  ? '从中小企业入门版到金牌与VIP企业版，根据预算获取高意向买家线索与顶级展位推荐。'
+                  : 'From starter SME tiers to Gold & VIP Business memberships, scale at your budget with guaranteed verified buyer leads and product showcase banners.'}
               </p>
             </div>
             <button
               onClick={() => onNavigate('PREMIUM_MEMBERSHIP')}
               className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between text-xs font-bold text-amber-600 w-full text-left cursor-pointer"
             >
-              <span>View Membership Tiers</span>
+              <span>{isZh ? '查看会员方案' : 'View Membership Tiers'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -510,17 +627,19 @@ export const LandingPageView: React.FC<Props> = ({
                 <ShieldAlert className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                Trade Assurance Escrow
+                {isZh ? '100% 资金第三方托管' : 'Trade Assurance Escrow'}
               </h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Protect 100% of your capital. Buyer funds are securely escrowed and released to suppliers only upon bill of lading verification and pre-shipment quality release.
+                {isZh
+                  ? '买家货款安全存入合规托管账户，在收到提单及SGS质检报告合格后分批放款，保障买卖双方权益。'
+                  : 'Protect 100% of your capital. Buyer funds are securely escrowed and released to suppliers only upon bill of lading verification and pre-shipment quality release.'}
               </p>
             </div>
             <button
               onClick={() => onNavigate('TRADE_TOOLS')}
               className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between text-xs font-bold text-indigo-600 w-full text-left cursor-pointer"
             >
-              <span>Explore Escrow Vaults</span>
+              <span>{isZh ? '了解托管保障' : 'Explore Escrow Vaults'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -763,35 +882,37 @@ export const LandingPageView: React.FC<Props> = ({
           <div className="lg:col-span-5 space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 text-xs font-bold uppercase tracking-wider">
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Instant Buyer Match Engine</span>
+              <span>{isZh ? '智能极速买家匹配引擎' : 'Instant Buyer Match Engine'}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black leading-tight tracking-tight">
-              Post Your Buy Requirement in 60 Seconds
+              {isZh ? '60秒发布采购需求 快速触达源头厂家' : 'Post Your Buy Requirement in 60 Seconds'}
             </h2>
             <p className="text-slate-300 text-sm leading-relaxed">
-              Broadcast your purchasing tenders to over 50,000+ audited manufacturers. Receive competitive FOB/CIF quotation breakdowns, lab reports, and samples within 24 hours.
+              {isZh
+                ? '向全球 50,000+ 家经实地验厂的优质制造商精准广播您的采购标书，24小时内获取具有竞争力的 FOB/CIF 报价单、质检报告及免费样品。'
+                : 'Broadcast your purchasing tenders to over 50,000+ audited manufacturers. Receive competitive FOB/CIF quotation breakdowns, lab reports, and samples within 24 hours.'}
             </p>
 
             <div className="space-y-4 pt-2">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 font-bold text-xs border border-blue-400/20">1</div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Direct Factory Quotations</h4>
-                  <p className="text-xs text-slate-400">No intermediary commissions or hidden trading spreads.</p>
+                  <h4 className="text-sm font-bold text-white">{isZh ? '源头工厂一手出厂报价' : 'Direct Factory Quotations'}</h4>
+                  <p className="text-xs text-slate-400">{isZh ? '无中间商层层加价或隐性差价佣金。' : 'No intermediary commissions or hidden trading spreads.'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs border border-emerald-400/20">2</div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Trade Assurance Protected</h4>
-                  <p className="text-xs text-slate-400">Escrow vault holding your funds until physical port discharge.</p>
+                  <h4 className="text-sm font-bold text-white">{isZh ? '跨境履约信用托管保障' : 'Trade Assurance Protected'}</h4>
+                  <p className="text-xs text-slate-400">{isZh ? '第三方托管账户锁定货款，直至目的地口岸实物提单验收。' : 'Escrow vault holding your funds until physical port discharge.'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold text-xs border border-amber-400/20">3</div>
                 <div>
-                  <h4 className="text-sm font-bold text-white">Dedicated International Export Manager</h4>
-                  <p className="text-xs text-slate-400">Assisted translation, document verification, and shipment tracking.</p>
+                  <h4 className="text-sm font-bold text-white">{isZh ? '专属国际出口服务顾问' : 'Dedicated International Export Manager'}</h4>
+                  <p className="text-xs text-slate-400">{isZh ? '提供多语种商务翻译、单证核验及全程物流追踪协助。' : 'Assisted translation, document verification, and shipment tracking.'}</p>
                 </div>
               </div>
             </div>
@@ -809,8 +930,8 @@ export const LandingPageView: React.FC<Props> = ({
                     {rfqStep > 1 ? '✓' : '1'}
                   </div>
                   <div className="text-xs">
-                    <span className="block font-bold text-slate-900">Step 1</span>
-                    <span className="text-slate-500">Product &amp; Volume</span>
+                    <span className="block font-bold text-slate-900">{isZh ? '第一步' : 'Step 1'}</span>
+                    <span className="text-slate-500">{isZh ? '采购商品与数量' : 'Product & Volume'}</span>
                   </div>
                 </div>
                 <div className="h-0.5 w-10 sm:w-16 bg-slate-200"></div>
@@ -821,8 +942,8 @@ export const LandingPageView: React.FC<Props> = ({
                     {rfqStep > 2 ? '✓' : '2'}
                   </div>
                   <div className="text-xs">
-                    <span className="block font-bold text-slate-900">Step 2</span>
-                    <span className="text-slate-500">Port &amp; Terms</span>
+                    <span className="block font-bold text-slate-900">{isZh ? '第二步' : 'Step 2'}</span>
+                    <span className="text-slate-500">{isZh ? '目的港与贸易条款' : 'Port & Terms'}</span>
                   </div>
                 </div>
                 <div className="h-0.5 w-10 sm:w-16 bg-slate-200"></div>
@@ -833,8 +954,8 @@ export const LandingPageView: React.FC<Props> = ({
                     {isSubmitted ? '✓' : '3'}
                   </div>
                   <div className="text-xs">
-                    <span className="block font-bold text-slate-900">Step 3</span>
-                    <span className="text-slate-500">Submit</span>
+                    <span className="block font-bold text-slate-900">{isZh ? '第三步' : 'Step 3'}</span>
+                    <span className="text-slate-500">{isZh ? '联系人与提交' : 'Submit'}</span>
                   </div>
                 </div>
               </div>
@@ -846,14 +967,14 @@ export const LandingPageView: React.FC<Props> = ({
                     <div className="space-y-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          Product Name or Required Commodity <span className="text-rose-500">*</span>
+                          {isZh ? '所需采购商品或大宗货物名称' : 'Product Name or Required Commodity'} <span className="text-rose-500">*</span>
                         </label>
                         <input
                           type="text"
                           required
                           value={productName}
                           onChange={(e) => setProductName(e.target.value)}
-                          placeholder="e.g., 1121 Sella Basmati Rice / Nitrile Exam Gloves"
+                          placeholder={isZh ? '例如：特级1121巴斯马蒂大米 / 医用无粉丁腈手套 / 纯棉平纹布' : 'e.g., 1121 Sella Basmati Rice / Nitrile Exam Gloves'}
                           className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                         />
                       </div>
@@ -861,32 +982,32 @@ export const LandingPageView: React.FC<Props> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Industry Category <span className="text-rose-500">*</span>
+                            {isZh ? '所属产业分类' : 'Industry Category'} <span className="text-rose-500">*</span>
                           </label>
                           <select
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none bg-white"
                           >
-                            <option value="Agriculture & Food">Agriculture &amp; Food</option>
-                            <option value="Textiles & Apparel">Textiles &amp; Apparel</option>
-                            <option value="Safety & Medical">Safety, PPE &amp; Medical</option>
-                            <option value="Machinery & Industrial">Machinery &amp; Industrial</option>
-                            <option value="Furniture & Decor">Furniture &amp; Decor</option>
-                            <option value="Chemicals & Oils">Chemicals &amp; Oils</option>
+                            <option value="Agriculture & Food">{isZh ? '农业、粮食与食品' : 'Agriculture & Food'}</option>
+                            <option value="Textiles & Apparel">{isZh ? '纺织面料与成衣' : 'Textiles & Apparel'}</option>
+                            <option value="Safety & Medical">{isZh ? '劳保PPE与医疗器械' : 'Safety, PPE & Medical'}</option>
+                            <option value="Machinery & Industrial">{isZh ? '工业机械与成套装备' : 'Machinery & Industrial'}</option>
+                            <option value="Furniture & Decor">{isZh ? '家具家居与工艺装潢' : 'Furniture & Decor'}</option>
+                            <option value="Chemicals & Oils">{isZh ? '精细化工与塑料原料' : 'Chemicals & Oils'}</option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Quantity &amp; Unit <span className="text-rose-500">*</span>
+                            {isZh ? '预计采购总量与单位' : 'Quantity & Unit'} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="text"
                             required
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}
-                            placeholder="e.g., 500 Metric Tons / 10,000 Boxes"
+                            placeholder={isZh ? '例如：500 公吨 / 10,000 箱 / 2个40尺高柜' : 'e.g., 500 Metric Tons / 10,000 Boxes'}
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                           />
                         </div>
@@ -898,7 +1019,7 @@ export const LandingPageView: React.FC<Props> = ({
                           onClick={() => handleRfqNext(2)}
                           className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
                         >
-                          <span>Proceed to Delivery &amp; Terms</span>
+                          <span>{isZh ? '继续填写交付与条款' : 'Proceed to Delivery & Terms'}</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -911,31 +1032,31 @@ export const LandingPageView: React.FC<Props> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Preferred Incoterm
+                            {isZh ? '贸易术语 (Incoterm)' : 'Preferred Incoterm'}
                           </label>
                           <select
                             value={incoterm}
                             onChange={(e) => setIncoterm(e.target.value)}
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none bg-white"
                           >
-                            <option value="FOB">FOB (Free on Board)</option>
-                            <option value="CIF">CIF (Cost, Insurance &amp; Freight)</option>
-                            <option value="CFR">CFR (Cost and Freight)</option>
-                            <option value="EXW">EXW (Ex Works)</option>
-                            <option value="DDP">DDP (Delivered Duty Paid)</option>
+                            <option value="FOB">FOB (装运港船上交货)</option>
+                            <option value="CIF">CIF (成本加保险费、运费)</option>
+                            <option value="CFR">CFR (成本加运费)</option>
+                            <option value="EXW">EXW (工厂交货)</option>
+                            <option value="DDP">DDP (完税后交货)</option>
                           </select>
                         </div>
 
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Destination Port <span className="text-rose-500">*</span>
+                            {isZh ? '目的港口或卸货口岸' : 'Destination Port'} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="text"
                             required
                             value={destination}
                             onChange={(e) => setDestination(e.target.value)}
-                            placeholder="e.g., Jebel Ali, Port of Houston, Rotterdam"
+                            placeholder={isZh ? '例如：上海港、宁波港、迪拜杰贝阿里、休斯顿港' : 'e.g., Jebel Ali, Port of Houston, Rotterdam'}
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                           />
                         </div>
@@ -943,13 +1064,13 @@ export const LandingPageView: React.FC<Props> = ({
 
                       <div>
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          Technical Specs &amp; Target Price
+                          {isZh ? '技术规格要求与目标单价 (选填)' : 'Technical Specs & Target Price'}
                         </label>
                         <textarea
                           rows={3}
                           value={specs}
                           onChange={(e) => setSpecs(e.target.value)}
-                          placeholder="Packaging (50kg PP bags), moisture content, lab testing certificates (SGS/FDA), target price..."
+                          placeholder={isZh ? '例如：包装要求 (50kg PP编织袋)、水分含量小于12%、需具备SGS第三方检测认证、目标CIF价...' : 'Packaging (50kg PP bags), moisture content, lab testing certificates (SGS/FDA), target price...'}
                           className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                         ></textarea>
                       </div>
@@ -960,14 +1081,14 @@ export const LandingPageView: React.FC<Props> = ({
                           onClick={() => setRfqStep(1)}
                           className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm cursor-pointer"
                         >
-                          Back
+                          {isZh ? '返回上一步' : 'Back'}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRfqNext(3)}
                           className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer"
                         >
-                          <span>Proceed to Contact Info</span>
+                          <span>{isZh ? '继续填写联系方式' : 'Proceed to Contact Info'}</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -980,28 +1101,28 @@ export const LandingPageView: React.FC<Props> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Company Name <span className="text-rose-500">*</span>
+                            {isZh ? '企业/公司名称' : 'Company Name'} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="text"
                             required
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder="e.g., Al-Maha General Trading Co."
+                            placeholder={isZh ? '例如：香港远东进出口贸易有限公司' : 'e.g., Al-Maha General Trading Co.'}
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                           />
                         </div>
 
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Contact Person <span className="text-rose-500">*</span>
+                            {isZh ? '联系人姓名 / 职务' : 'Contact Person'} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="text"
                             required
                             value={contactName}
                             onChange={(e) => setContactName(e.target.value)}
-                            placeholder="e.g., Tariq Al-Mansoor"
+                            placeholder={isZh ? '例如：张总 (采购总监)' : 'e.g., Tariq Al-Mansoor'}
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                           />
                         </div>
@@ -1010,7 +1131,7 @@ export const LandingPageView: React.FC<Props> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Corporate Email <span className="text-rose-500">*</span>
+                            {isZh ? '商务电子邮箱' : 'Corporate Email'} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="email"
@@ -1024,14 +1145,14 @@ export const LandingPageView: React.FC<Props> = ({
 
                         <div>
                           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                            Phone / WhatsApp <span className="text-rose-500">*</span>
+                            {isZh ? '联系电话 / WhatsApp / 微信' : 'Phone / WhatsApp'} <span className="text-rose-500">*</span>
                           </label>
                           <input
                             type="tel"
                             required
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+971 50 123 4567"
+                            placeholder="+86 138 0000 0000 / +971 50 123 4567"
                             className="w-full px-4 py-3 text-xs sm:text-sm rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none"
                           />
                         </div>
@@ -1039,7 +1160,7 @@ export const LandingPageView: React.FC<Props> = ({
 
                       <div className="p-3 bg-blue-50 rounded-xl text-[11px] text-blue-900 border border-blue-100 flex items-start gap-2">
                         <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                        <span>Your request will be cryptographically broadcasted to vetted tier-1 factories. NDA protection guaranteed.</span>
+                        <span>{isZh ? '您的采购标书将经过数据加密直接精准推送给认证的一线源头工厂。严格遵守保密协议(NDA)。' : 'Your request will be cryptographically broadcasted to vetted tier-1 factories. NDA protection guaranteed.'}</span>
                       </div>
 
                       <div className="pt-4 flex items-center justify-between">
@@ -1048,14 +1169,14 @@ export const LandingPageView: React.FC<Props> = ({
                           onClick={() => setRfqStep(2)}
                           className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm cursor-pointer"
                         >
-                          Back
+                          {isZh ? '返回上一步' : 'Back'}
                         </button>
                         <button
                           type="submit"
                           className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
                         >
                           <Send className="w-4 h-4" />
-                          <span>Broadcast RFQ Now</span>
+                          <span>{isZh ? '立即广播全球采购需求' : 'Broadcast RFQ Now'}</span>
                         </button>
                       </div>
                     </div>
@@ -1066,22 +1187,26 @@ export const LandingPageView: React.FC<Props> = ({
                   <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center shadow-inner">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h3 className="text-2xl font-black text-slate-900">RFQ Broadcast Successfully!</h3>
+                  <h3 className="text-2xl font-black text-slate-900">{isZh ? '采购标书发布成功！' : 'RFQ Broadcast Successfully!'}</h3>
                   <p className="text-sm text-slate-600 max-w-md mx-auto">
-                    Your sourcing request has been assigned Reference <strong className="text-blue-600">{refCode}</strong> and routed to our verified international exporters network.
+                    {isZh ? (
+                      <>您的全球采购需求已生成专属参考编号 <strong className="text-blue-600">{refCode}</strong>，并已推送到经过严格验厂审核的认证出口商网络中。</>
+                    ) : (
+                      <>Your sourcing request has been assigned Reference <strong className="text-blue-600">{refCode}</strong> and routed to our verified international exporters network.</>
+                    )}
                   </p>
                   <div className="flex justify-center gap-3 pt-2">
                     <button
                       onClick={handleResetRfq}
                       className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
                     >
-                      Post Another Requirement
+                      {isZh ? '发布另一条需求' : 'Post Another Requirement'}
                     </button>
                     <button
                       onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
                       className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition-colors cursor-pointer"
                     >
-                      Explore Suppliers
+                      {isZh ? '探索认证供应商' : 'Explore Suppliers'}
                     </button>
                   </div>
                 </div>
@@ -1098,27 +1223,29 @@ export const LandingPageView: React.FC<Props> = ({
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-wider">
             <Navigation className="w-3.5 h-3.5 text-blue-600" />
-            <span>Active Bilateral Trade Corridors</span>
+            <span>{isZh ? '活跃双边跨国贸易走廊' : 'Active Bilateral Trade Corridors'}</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            High-Volume Cross-Border Trade Lanes
+            {isZh ? '高流动性跨境主力航线与陆海新通道' : 'High-Volume Cross-Border Trade Lanes'}
           </h2>
           <p className="text-slate-600 text-sm sm:text-base">
-            Trade Heaven operates direct custom-cleared freight lanes, verified buyer networks, and banking escrow across key world trade centers.
+            {isZh
+              ? 'Trade Heaven 在全球核心贸易枢纽设有报关绿色通道、验货质检团队与多币种跨境结算资金池。'
+              : 'Trade Heaven operates direct custom-cleared freight lanes, verified buyer networks, and banking escrow across key world trade centers.'}
           </p>
         </div>
 
         {/* Interactive Corridor Country Tabs */}
         <div className="flex items-center justify-center flex-wrap gap-2.5">
           {[
-            { key: 'usa', label: '🇺🇸 United States • North America' },
-            { key: 'uae', label: '🇦🇪 UAE • MENA Hub' },
-            { key: 'india', label: '🇮🇳 India • South Asia' },
-            { key: 'singapore', label: '🇸🇬 Singapore • ASEAN' },
-            { key: 'saudi', label: '🇸🇦 Saudi Arabia • GCC' },
-            { key: 'brazil', label: '🇧🇷 Brazil • LATAM' },
-            { key: 'uk', label: '🇬🇧 United Kingdom • Europe' },
-            { key: 'australia', label: '🇦🇺 Australia • Oceania' }
+            { key: 'usa', label: isZh ? '🇺🇸 美国 • 北美枢纽' : '🇺🇸 United States • North America' },
+            { key: 'uae', label: isZh ? '🇦🇪 阿联酋 • 中东与北非' : '🇦🇪 UAE • MENA Hub' },
+            { key: 'india', label: isZh ? '🇮🇳 印度 • 南亚走廊' : '🇮🇳 India • South Asia' },
+            { key: 'singapore', label: isZh ? '🇸🇬 新加坡 • 东盟经贸' : '🇸🇬 Singapore • ASEAN' },
+            { key: 'saudi', label: isZh ? '🇸🇦 沙特阿拉伯 • 海湾合作委员会' : '🇸🇦 Saudi Arabia • GCC' },
+            { key: 'brazil', label: isZh ? '🇧🇷 巴西 • 拉美大宗' : '🇧🇷 Brazil • LATAM' },
+            { key: 'uk', label: isZh ? '🇬🇧 英国 • 欧洲通道' : '🇬🇧 United Kingdom • Europe' },
+            { key: 'australia', label: isZh ? '🇦🇺 澳大利亚 • 大洋洲' : '🇦🇺 Australia • Oceania' }
           ].map((corridor) => (
             <button
               key={corridor.key}
@@ -1146,7 +1273,7 @@ export const LandingPageView: React.FC<Props> = ({
             </div>
 
             <div className="space-y-4 bg-slate-800/60 p-6 rounded-2xl border border-slate-700/60">
-              <div className="text-xs font-bold text-slate-400 uppercase">Top Inbound / Outbound Commodities</div>
+              <div className="text-xs font-bold text-slate-400 uppercase">{isZh ? '主要进出口大宗品类' : 'Top Inbound / Outbound Commodities'}</div>
               <div className="space-y-2 text-xs">
                 {activeCorridor.commodities.map((item, idx) => (
                   <div key={idx} className={`flex justify-between py-1 ${idx < activeCorridor.commodities.length - 1 ? 'border-b border-slate-700' : ''}`}>
@@ -1159,15 +1286,15 @@ export const LandingPageView: React.FC<Props> = ({
 
             <div className="space-y-4 bg-blue-950/60 p-6 rounded-2xl border border-blue-800/50 flex flex-col justify-between">
               <div>
-                <div className="text-xs font-bold text-blue-300 uppercase">Customs &amp; Trade Assurance</div>
+                <div className="text-xs font-bold text-blue-300 uppercase">{isZh ? '通关与信保支付' : 'Customs & Trade Assurance'}</div>
                 <div className="text-xl font-bold text-white mt-1">{activeCorridor.stat}</div>
-                <p className="text-xs text-slate-300 mt-1">Escrow supported in major global currencies via SWIFT &amp; local rails.</p>
+                <p className="text-xs text-slate-300 mt-1">{isZh ? '支持SWIFT及本地快速清算通道，多币种直接结算。' : 'Escrow supported in major global currencies via SWIFT & local rails.'}</p>
               </div>
               <button
                 onClick={onOpenCreateRfq}
                 className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span>Post Corridor Tender</span>
+                <span>{isZh ? '发布该走廊采购标书' : 'Post Corridor Tender'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

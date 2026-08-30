@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { 
   ActiveView, 
   Currency, 
@@ -1245,7 +1246,9 @@ export default function App() {
       <GuardedRootView>
         <AuthProvider>
           <SiteContentProvider>
-            <MainApp />
+            <LanguageProvider>
+              <MainApp />
+            </LanguageProvider>
           </SiteContentProvider>
         </AuthProvider>
       </GuardedRootView>

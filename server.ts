@@ -7,9 +7,23 @@ import nodemailer from 'nodemailer';
 
 dotenv.config();
 
-// Helper to send login email alerts safely to solutionthe87@gmail.com
+// Helper to get active alert recipients (multi-recipient)
+function getAlertRecipients(): string[] {
+  const defaults = ['sankalprajput15@gmail.com', 'solutionthe87@gmail.com', 'yr943334@gmail.com'];
+  const envVal = process.env.ALERT_EMAIL;
+  if (envVal) {
+    const list = envVal.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    for (const e of list) {
+      if (!defaults.includes(e)) defaults.push(e);
+    }
+  }
+  return defaults;
+}
+
+// Helper to send login email alerts safely
 async function sendLoginAlert(userEmail: string, userName: string, userRole: string, companyName: string, country: string) {
-  const alertRecipient = (process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
+  const recipients = getAlertRecipients();
+  const alertRecipient = recipients.join(', ');
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
   console.log(`[LOGIN ALERT TRIGGERED] User ${userEmail} logged in. Dispatched security alert email task to ${alertRecipient}...`);
@@ -82,9 +96,10 @@ async function sendLoginAlert(userEmail: string, userName: string, userRole: str
   }
 }
 
-// Helper to send general system activity alerts safely to solutionthe87@gmail.com
+// Helper to send general system activity alerts safely
 async function sendActivityAlert(activityType: string, actorEmail: string, description: string, metadata: Record<string, any> = {}) {
-  const alertRecipient = (process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
+  const recipients = getAlertRecipients();
+  const alertRecipient = recipients.join(', ');
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
   console.log(`[ACTIVITY ALERT TRIGGERED] Action ${activityType} performed. Dispatched alert email to ${alertRecipient}...`);

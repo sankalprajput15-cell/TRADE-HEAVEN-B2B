@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product, Currency, CompanyProfile, RfqRequirement, ActiveView } from '../../types';
 import { CURRENCY_RATES, MOCK_COMPANIES, MOCK_RFQS } from '../../data/mockData';
+import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
@@ -61,6 +62,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onNavigateToSuppliers,
   onNavigateToRfqs
 }) => {
+  const { t, tText } = useLanguage();
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
   const activeRfqsPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
@@ -139,7 +141,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
               <Package className="w-6 h-6 text-blue-600" />
-              Verified Direct Factory Products &amp; Volume Wholesale
+              {t('featuredProducts')}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Source directly from audited manufacturing plants with live FOB/CIF tier pricing and guaranteed lead times.
@@ -149,7 +151,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             onClick={() => onNavigate('PRODUCT_DIRECTORY')}
             className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 shrink-0 cursor-pointer"
           >
-            <span>View All Products</span>
+            <span>{t('viewAllProducts')}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -174,7 +176,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               <span>Audited Global Manufacturers (ISO 9001, CE, TÜV)</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-              Featured Verified Supplier Storefronts
+              {t('auditedSuppliersHeading')}
             </h3>
             <p className="text-xs text-slate-600 mt-1 max-w-xl">
               Inspect on-site factory audit certificates, production line capacity, and trade protection limits of premier export partners.
@@ -185,7 +187,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
             className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 transition-colors shrink-0 shadow-sm cursor-pointer"
           >
-            <span>Explore All 480k+ Suppliers</span>
+            <span>{t('exploreAllSuppliers')}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -210,7 +212,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                       <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                         {company.tier}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono">{company.country}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{tText(company.country)}</span>
                     </div>
                     <div className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-0.5">
                       {company.companyName}
@@ -224,13 +226,13 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-500">trade protection Limit:</span>
+                    <span className="text-[10px] text-slate-500">{t('tradeAssurance')}:</span>
                     <div className="font-mono font-bold text-emerald-600">
                       ${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k USD
                     </div>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500">Factory Size:</span>
+                    <span className="text-[10px] text-slate-500">{t('factorySize')}:</span>
                     <div className="font-bold text-slate-800">
                       {company.factorySizeSqM && company.factorySizeSqM > 0 
                         ? `${company.factorySizeSqM.toLocaleString()} m²` 
@@ -241,7 +243,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-semibold">
-                <span>View Factory Audit &amp; Catalog</span>
+                <span>{t('viewFactoryAudit')}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
@@ -266,7 +268,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               onClick={() => onNavigate('SUPPLIERS_DIRECTORY')}
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
             >
-              <span>Full Supplier Directory</span>
+              <span>{t('fullSupplierDirectory')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -282,7 +284,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
               <span>Live Global Sourcing Tenders &amp; RFQ Feed ({activeRfqsPool.length} Active Leads)</span>
             </div>
             <h3 className="text-xl font-black text-slate-900">
-              Recent Buying Requirements from International Importers
+              {t('recentBuyLeads')}
             </h3>
             <p className="text-xs text-slate-500">
               Verified buyers seeking direct factory quotations. Exporters can submit binding bids directly.
@@ -293,7 +295,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             onClick={() => onNavigate('BUY_LEADS')}
             className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 transition-colors shrink-0 cursor-pointer"
           >
-            <span>View All Global Buy Leads ({activeRfqsPool.length})</span>
+            <span>{t('viewAllRfqs')} ({activeRfqsPool.length})</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

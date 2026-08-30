@@ -27,6 +27,7 @@ import {
 import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
@@ -145,6 +146,7 @@ export const HeroSection: React.FC<Props> = ({
   onSelectRfq
 }) => {
   const { siteContent, isLiveEditMode, openQuickEdit, currentUser, isUserAuthorized } = useSiteContent();
+  const { t, tText, languageCode } = useLanguage();
   const auth = isUserAuthorized(currentUser);
   const isAdmin = auth.isAuthorized;
   const [searchQuery, setSearchQuery] = useState('');
@@ -414,20 +416,22 @@ export const HeroSection: React.FC<Props> = ({
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 backdrop-blur-md mb-6 shadow-lg">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">🚀 For Exporters & Manufacturers • 125k+ Active Buyers</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+              {t('heroBadge')}
+            </span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight mb-6 flex flex-wrap gap-2">
-            <EditableText contentKey="homepage.heroHeadline" defaultText="Close Deals with" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
-              <EditableText contentKey="homepage.heroHeadlineGradient" defaultText="Verified High-Intent" />
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15] mb-6 flex flex-wrap items-center gap-2.5 drop-shadow-md">
+            <EditableText contentKey="homepage.heroHeadline" defaultText={t('heroTitle1')} />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 drop-shadow-sm">
+              <EditableText contentKey="homepage.heroHeadlineGradient" defaultText={t('heroTitleGradient')} />
             </span>
-            Global Buyers.
+            <EditableText contentKey="homepage.heroHeadlineSuffix" defaultText={t('heroTitle2')} />
           </h1>
 
           <p className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl font-normal leading-relaxed">
-            <EditableText contentKey="homepage.heroSubheadline" defaultText="Empower your factory export pipeline with instant access to high-value buy leads, verified RFQ broadcasts, direct buyer chats, and Swiss escrow trade protection." />
+            <EditableText contentKey="homepage.heroSubheadline" defaultText={t('heroSubtitle')} />
           </p>
 
         {/* ------------------------------------------------------------- */}
@@ -450,7 +454,7 @@ export const HeroSection: React.FC<Props> = ({
               }`}
             >
               <Package className="w-3.5 h-3.5" />
-              <span>Products</span>
+              <span>{t('searchProductsTab')}</span>
             </button>
 
             <button
@@ -467,7 +471,7 @@ export const HeroSection: React.FC<Props> = ({
               }`}
             >
               <FileText className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Live RFQs &amp; Buy Leads</span>
+              <span>{t('searchRfqsTab')}</span>
               <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black uppercase tracking-wider animate-pulse">
                 LIVE
               </span>
@@ -486,7 +490,7 @@ export const HeroSection: React.FC<Props> = ({
               }`}
             >
               <Building2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>Audited Suppliers</span>
+              <span>{t('searchSuppliersTab')}</span>
             </button>
           </div>
 
@@ -511,7 +515,9 @@ export const HeroSection: React.FC<Props> = ({
                 >
                   <div className="flex items-center gap-2 truncate">
                     <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span className="truncate">{selectedCat}</span>
+                    <span className="truncate">
+                      {selectedCat === 'All Categories' ? t('allCategories') : tText(selectedCat)}
+                    </span>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-slate-500 shrink-0 transition-transform duration-200 ${isCategoryMenuOpen ? 'rotate-180 text-blue-600' : ''}`} />
                 </button>
@@ -523,9 +529,9 @@ export const HeroSection: React.FC<Props> = ({
                     className="absolute top-full left-0 mt-2 z-50 w-72 sm:w-80 bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
                   >
                     <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
-                      <span className="uppercase tracking-wider">Industrial Sectors</span>
+                      <span className="uppercase tracking-wider">{t('categoriesHeading')}</span>
                       <span className="text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-semibold">
-                        {CATEGORIES_TREE.length} Sectors
+                        {CATEGORIES_TREE.length}
                       </span>
                     </div>
 
@@ -542,7 +548,7 @@ export const HeroSection: React.FC<Props> = ({
                       >
                         <div className="flex items-center gap-2.5">
                           <Layers className={`w-4 h-4 ${selectedCat === 'All Categories' ? 'text-white' : 'text-blue-600'}`} />
-                          <span>All Verified Sectors</span>
+                          <span>{t('allCategories')}</span>
                         </div>
                         {selectedCat === 'All Categories' && <CheckCircle2 className="w-4 h-4 text-white" />}
                       </button>
@@ -563,7 +569,7 @@ export const HeroSection: React.FC<Props> = ({
                           >
                             <div className="flex items-center gap-2.5 truncate pr-2">
                               <Tag className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
-                              <span className="truncate">{cat.name}</span>
+                              <span className="truncate">{tText(cat.name)}</span>
                             </div>
                             <span className={`text-[10px] shrink-0 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
                               {cat.count.split(' ')[0]}
@@ -595,10 +601,10 @@ export const HeroSection: React.FC<Props> = ({
                   }}
                   placeholder={
                     searchTargetMode === 'RFQS'
-                      ? "Search 1,200+ active RFQs by product, port, Incoterms, buyer country, or ID..."
+                      ? t('searchRfqPlaceholder')
                       : searchTargetMode === 'SUPPLIERS'
-                      ? "Search verified factories, suppliers, certifications, and countries..."
-                      : hp.searchPlaceholder || "Search products, materials, factories, RFQs, or Incoterms tools..."
+                      ? t('searchSupplierPlaceholder')
+                      : t('searchOmniPlaceholder')
                   }
                   className="w-full bg-transparent pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 font-medium placeholder-slate-400 focus:outline-none"
                   autoComplete="off"
@@ -630,10 +636,10 @@ export const HeroSection: React.FC<Props> = ({
                 <Search className="w-4 h-4" />
                 <span>
                   {searchTargetMode === 'RFQS'
-                    ? 'Search Live RFQs'
+                    ? t('searchRfqsTab')
                     : searchTargetMode === 'SUPPLIERS'
-                    ? 'Search Suppliers'
-                    : 'Source Products'}
+                    ? t('searchSuppliersTab')
+                    : t('heroSearchBtn')}
                 </span>
               </button>
             </div>

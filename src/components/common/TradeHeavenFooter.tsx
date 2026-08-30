@@ -23,6 +23,7 @@ import { TradeHeavenLogo } from './TradeHeavenLogo';
 import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from './TradeHeavenSocialBar';
 import { ActiveView, AuthUser } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   onNavigate: (view: ActiveView | string) => void;
@@ -44,6 +45,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
   onOpenAuthModal
 }) => {
   const { siteContent, isUserAuthorized, isLiveEditMode, openQuickEdit, currentUser: contextUser } = useSiteContent();
+  const { t, tText } = useLanguage();
   const effectiveUser = currentUser || contextUser || null;
   const userAuth = isUserAuthorized(effectiveUser);
   const isAdmin = Boolean(
@@ -176,37 +178,37 @@ export const TradeHeavenFooter: React.FC<Props> = ({
           {/* Column 2: Sourcing & Buy Leads */}
           <div className="space-y-3">
             <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
-              Buyer Sourcing Hub
+              {t('buyerSourcingHub')}
             </h4>
             <ul className="space-y-2 text-xs text-slate-600">
               <li>
                 <button onClick={() => onNavigate('PRODUCT_DIRECTORY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Verified Product Catalog
+                  {t('viewAllProducts')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('BUY_LEADS')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Global Buy Leads Feed
+                  {t('buyLeadsNav')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('POST_BUY_REQUIREMENT')} className="hover:text-blue-600 transition-colors text-left font-bold text-blue-600 cursor-pointer">
-                  Post Buy Requirement (RFQ)
+                  {t('postBuyRequirement')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('SUPPLIERS_DIRECTORY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Audited Factories Directory
+                  {t('fullSupplierDirectory')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('RFQ_HUB')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  RFQ Comparison Studio
+                  {t('rfqHubNav')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('TRADE_TOOLS')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Incoterms &amp; Freight Tools
+                  {t('incotermsNav')}
                 </button>
               </li>
             </ul>
@@ -215,43 +217,43 @@ export const TradeHeavenFooter: React.FC<Props> = ({
           {/* Column 3: Supplier & Membership */}
           <div className="space-y-3">
             <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
-              Suppliers &amp; Exporters
+              {t('suppliersExportersHub')}
             </h4>
             <ul className="space-y-2 text-xs text-slate-600">
               <li>
                 <button onClick={() => onNavigate('ONBOARD_WITH_US')} className="hover:text-emerald-700 transition-colors text-left font-black text-emerald-700 flex items-center gap-1.5 cursor-pointer">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Work With Us (Free Vetting)</span>
+                  <span>{t('workWithUsNav')}</span>
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('SELLER_OFFER')} className="hover:text-blue-600 transition-colors text-left font-bold text-slate-700 cursor-pointer">
-                  Post Export Cargo Offer
+                  {t('postCargoOffer')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('PREMIUM_PLANS')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Gold &amp; VIP Membership Tiers
+                  {t('membershipPlans')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('DASHBOARD')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Exporter Orders &amp; Shipments
+                  {t('exporterDashboard')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('ABOUT_US')} className="hover:text-blue-600 transition-colors text-left font-bold text-blue-600 cursor-pointer">
-                  Value Added Services &amp; About Us
+                  {t('aboutUs')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('LANDING_PAGE')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Global Trade Landing Page &amp; Corridors
+                  {t('landingPageNav')}
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('TRADE_PROTECTION')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
-                  Custodial trade protection Vaults
+                  {t('tradeAssurance')}
                 </button>
               </li>
               {isAdmin && (
@@ -275,7 +277,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
           {/* Column 4: Contact & WhatsApp Desk */}
           <div className="space-y-3">
             <h4 className="text-xs font-black text-slate-950 uppercase tracking-wider">
-              Official Help Desk &amp; Direct
+              {t('helpDeskHeading')}
             </h4>
 
             <div className="space-y-2.5">
