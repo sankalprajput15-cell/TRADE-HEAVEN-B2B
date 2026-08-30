@@ -718,7 +718,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-[1400px] w-full max-w-full overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <GlobalErrorBoundary fallbackTitle="TradeHeaven Section View Recovery" onReset={() => setActiveView('HOMEPAGE')}>
           <React.Suspense fallback={
             <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4">
@@ -1095,7 +1095,7 @@ const MainApp: React.FC = () => {
       </main>
 
       {/* 4. OFFICIAL SOCIAL & WHATSAPP NETWORK BAR */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <TradeHeavenSocialBar onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
       </div>
 

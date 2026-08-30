@@ -60,7 +60,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
           value={query}
           onChange={handleSearch}
           onFocus={() => setIsOpen(true)}
-          className="w-8 h-8 md:w-48 lg:w-56 xl:w-64 pl-9 pr-8 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs outline-none cursor-pointer md:cursor-text text-transparent md:text-slate-800 placeholder-transparent md:placeholder-slate-400"
+          className="w-[110px] sm:w-48 lg:w-56 xl:w-64 pl-8 pr-2 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-[11px] sm:text-xs outline-none text-slate-800 placeholder-slate-400 focus:w-[130px] sm:focus:w-48"
         />
         {query && (
           <button

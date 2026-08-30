@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe2, ChevronDown, Check, Search, MapPin } from 'lucide-react';
+import { Globe2, ChevronDown, Check, MapPin } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 export interface LanguageOption {
@@ -38,54 +38,38 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
   onLanguageChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
   
   const { currentLanguage, languageCode, setLanguage } = useLanguage();
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  
 
   const currentLang = currentLanguage || SUPPORTED_LANGUAGES[0];
 
   // Close dropdown on outside click or Escape key
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+    
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleOutsideClick, true);
-      document.addEventListener('touchstart', handleOutsideClick, true);
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('keydown', handleEscape);
     }
+    
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick, true);
-      document.removeEventListener('touchstart', handleOutsideClick, true);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
-
-  // Focus search input when popover opens
-  useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      const timer = setTimeout(() => {
-        // Only auto-focus on non-touch devices to prevent mobile keyboard from immediately popping up and breaking layout
-        if (window.innerWidth > 768) {
-          searchInputRef.current?.focus();
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    } else {
-      setSearchQuery('');
-    }
   }, [isOpen]);
 
   const handleSelectLanguage = (lang: LanguageOption) => {
@@ -97,12 +81,7 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
     setIsOpen(false);
   };
 
-  const filteredLanguages = SUPPORTED_LANGUAGES.filter(lang => 
-    lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lang.nativeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lang.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lang.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLanguages = SUPPORTED_LANGUAGES;
 
   if (variant === 'mobile') {
     return (
@@ -175,33 +154,8 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
           id="language-region-popover"
           role="listbox"
           onClick={(e) => e.stopPropagation()}
-          className="fixed top-16 right-4 left-4 sm:left-auto sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-72 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
+          className="fixed top-16 right-4 left-4 sm:left-auto sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-56 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
         >
-          {/* Header & Search */}
-          <div className="p-2.5 bg-slate-950/80 border-b border-slate-800">
-            <div className="flex items-center justify-between gap-1 mb-2">
-              <span className="text-[11px] font-bold text-sky-300 flex items-center gap-1.5">
-                <Globe2 className="w-3.5 h-3.5 text-sky-400" />
-                Select Region / Language
-              </span>
-              <span className="text-[9px] font-mono uppercase bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">
-                12 Locales
-              </span>
-            </div>
-
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search language or region..."
-                className="w-full bg-slate-900 border border-slate-700/80 rounded-lg pl-8 pr-2.5 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30"
-              />
-            </div>
-          </div>
-
           {/* Languages List */}
           <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5 divide-y divide-slate-800/40">
             {filteredLanguages.length === 0 ? (
@@ -256,12 +210,6 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
                 );
               })
             )}
-          </div>
-
-          {/* Footer note */}
-          <div className="px-2.5 py-1.5 bg-slate-950/90 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
-            <span>Marketplace localized view</span>
-            <span className="font-mono text-[9px] text-sky-400">Trade Heaven Global</span>
           </div>
         </div>
       )}

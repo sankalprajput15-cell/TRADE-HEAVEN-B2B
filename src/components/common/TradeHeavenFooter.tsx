@@ -94,7 +94,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
 
       {/* Top Banner: Corporate Guarantee & TrustScore */}
       <div className="border-b border-slate-200 bg-slate-200/60 px-4 sm:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 text-center md:text-left">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 font-bold text-xs">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -128,7 +128,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
       </div>
 
       {/* Main Multi-Column Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-6">
           
           {/* Column 1: Brand & Mission (2 cols on lg) */}

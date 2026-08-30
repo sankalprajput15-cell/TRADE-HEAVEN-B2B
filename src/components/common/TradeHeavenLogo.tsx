@@ -103,7 +103,7 @@ export const TradeHeavenLogo: React.FC<Props> = ({
 
       {/* Brand Wordmark & Subtitle */}
       {showWordmark && (
-        <div className="leading-tight">
+        <div className="leading-tight hidden sm:block">
           <div className={`font-black ${currentSize.title} tracking-tight flex items-center gap-1.5`}>
             <span className={wmStyle.trade}>TRADE</span>
             <span className={wmStyle.heaven}>HEAVEN</span>

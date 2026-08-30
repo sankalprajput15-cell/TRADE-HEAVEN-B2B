@@ -195,10 +195,10 @@ export const Header: React.FC<Props> = ({
   };
 
   return (
-    <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full">
+    <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full max-w-full">
       {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-slate-200 border-b border-indigo-900/60 shadow-xs px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full">
-        <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-2 w-full">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-slate-200 border-b border-indigo-900/60 shadow-xs px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full max-w-full">
+        <div className="max-w-[1400px] mx-auto flex flex-row items-center justify-between gap-2 w-full">
           
           {/* Left: Security & Direct Assistance */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -227,6 +227,12 @@ export const Header: React.FC<Props> = ({
           {/* Right: FX Selector + Language/Region + Authentication State */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto justify-end">
             
+            
+            <div className="hidden xl:flex items-center gap-3 mr-2 text-[11px] font-medium text-slate-300">
+              <button onClick={() => handleNavClick('ABOUT_US')} className="hover:text-white transition-colors">{getTxt('aboutUs')}</button>
+              <button onClick={() => handleNavClick('TRUST_SAFETY')} className="hover:text-emerald-400 transition-colors">{getTxt('trustSafety')}</button>
+              <button onClick={() => handleNavClick('INSIGHTS')} className="hover:text-amber-400 transition-colors">{getTxt('newsInsights')}</button>
+            </div>
             {/* Compact Language & Region Selector */}
             {/* Custom Styled Language & Region Selector */}
             <LanguageRegionSelector variant="compact" />
@@ -315,8 +321,7 @@ export const Header: React.FC<Props> = ({
       </div>
 
       {/* 2. MAIN NAVIGATION BAR (Proportional, Clean Hierarchy, No Multi-line Wrapping) */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-2 w-full">
-        <div className="flex items-center justify-between gap-3 lg:gap-4 xl:gap-6 w-full min-w-0">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-2 w-full max-w-full flex items-center justify-between gap-2 lg:gap-3 xl:gap-4 min-w-0">
           
           {/* Left: Brand Identity */}
           <div className="flex items-center shrink-0 min-w-0">
@@ -330,10 +335,10 @@ export const Header: React.FC<Props> = ({
           </div>
 
           {/* Center: Desktop Nav Links (Streamlined) */}
-          <nav className="hidden lg:flex items-center flex-1 justify-center gap-1 xl:gap-2 min-w-0">
+          <nav className="hidden xl:flex items-center flex-1 justify-center gap-0.5 xl:gap-1 min-w-0">
             <button
               onClick={() => handleNavClick('HOMEPAGE')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -341,42 +346,13 @@ export const Header: React.FC<Props> = ({
             >
               {getTxt('home')}
             </button>
-            <button
-              onClick={() => handleNavClick('ABOUT_US')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'ABOUT_US'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('aboutUs')}
-            </button>
-            <button
-              onClick={() => handleNavClick('TRUST_SAFETY')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'TRUST_SAFETY'
-                  ? 'bg-emerald-50 text-emerald-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('trustSafety')}
-            </button>
-            <button
-              onClick={() => handleNavClick('INSIGHTS')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'INSIGHTS'
-                  ? 'bg-amber-50 text-amber-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('newsInsights')}
-            </button>
+
 
             {/* Premium Services (Top Nav Button) */}
             <button
               id="nav-link-premium-services"
               onClick={() => handleNavClick('PREMIUM_SERVICES')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
+              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
                 activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
                   ? 'bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-sm'
                   : 'bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-500/30'
@@ -389,7 +365,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-buyers"
               onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'BUYERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -401,7 +377,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-suppliers"
               onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-              className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'SUPPLIERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -418,7 +394,7 @@ export const Header: React.FC<Props> = ({
                   setServicesMenuOpen(!servicesMenuOpen);
                   setAdminMenuOpen(false);
                 }}
-                className={`px-2 xl:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   isServicesActive
                     ? 'bg-blue-50 text-blue-600 font-extrabold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -656,7 +632,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-post-rfq-btn"
               onClick={onOpenCreateRfq}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
+              className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
             >
               <PlusCircle className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">{getTxt('postBuyRfq')}</span>
@@ -699,17 +675,16 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
+              className="xl:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
           </div>
-        </div>
       </div>
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-150 shadow-lg">
+        <div className="xl:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-150 shadow-lg">
           {/* User Status Bar */}
           <div className="p-3 bg-slate-50 rounded-xl mb-3 flex items-center justify-between">
             {currentUser ? (
@@ -762,6 +737,30 @@ export const Header: React.FC<Props> = ({
             )}
           </div>
 
+          
+          {currentUser && (
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <button
+                onClick={() => { handleNavClick('DASHBOARD'); setMobileMenuOpen(false); }}
+                className="p-2.5 rounded-xl text-xs font-bold bg-blue-600 text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Dashboard</span>
+              </button>
+              <button
+                onClick={() => { handleNavClick('NEGOTIATION_ROOM'); setMobileMenuOpen(false); }}
+                className="p-2.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-900 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs relative"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Messages</span>
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleNavClick('HOMEPAGE')}
