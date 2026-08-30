@@ -205,7 +205,6 @@ export const Header: React.FC<Props> = ({
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px] sm:text-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span className="hidden sm:inline">{getTxt('tradeAssurance')}</span>
-              <span className="sm:hidden">trade protection Protected</span>
             </span>
 
             <span className="hidden md:inline-block text-slate-700">|</span>
@@ -255,6 +254,7 @@ export const Header: React.FC<Props> = ({
             </div>
 
             {/* AUTHENTICATION CONTROL SECTION */}
+            <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
             {currentUser ? (
               // LOGGED IN SESSION
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -309,8 +309,8 @@ export const Header: React.FC<Props> = ({
                 </button>
               </div>
             )}
-
-          </div>
+            </div>
+            </div>
         </div>
       </div>
 

@@ -175,7 +175,7 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
           id="language-region-popover"
           role="listbox"
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 mt-1.5 w-[calc(100vw-24px)] max-w-64 sm:max-w-72 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
+          className="fixed top-16 right-4 left-4 sm:left-auto sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-72 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
         >
           {/* Header & Search */}
           <div className="p-2.5 bg-slate-950/80 border-b border-slate-800">

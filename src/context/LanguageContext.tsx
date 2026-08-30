@@ -83,9 +83,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (validCode === 'en') {
         document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
       } else {
+        document.cookie = 'googtrans=/auto/' + gtCode + '; path=/';
+        document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=' + window.location.hostname;
+        document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=.' + window.location.hostname;
         document.cookie = 'googtrans=/en/' + gtCode + '; path=/';
         document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=' + window.location.hostname;
+        document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=.' + window.location.hostname;
       }
       
       // Reload the page to ensure Google Translate initializes with the new language
@@ -132,9 +137,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (langCode === 'en') {
       document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
       document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
     } else {
+      document.cookie = 'googtrans=/auto/' + gtCode + '; path=/';
+      document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=' + window.location.hostname;
+      document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=.' + window.location.hostname;
       document.cookie = 'googtrans=/en/' + gtCode + '; path=/';
       document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=' + window.location.hostname;
+      document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=.' + window.location.hostname;
     }
     
   }, [langCode]);
