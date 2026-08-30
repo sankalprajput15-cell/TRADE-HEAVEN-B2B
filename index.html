@@ -7,8 +7,9 @@
     <!-- Preconnect resource hints for extreme image loading performance (LCP) -->
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <!-- Preload critical Largest Contentful Paint (LCP) assets -->
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80" fetchpriority="high" />
+    <!-- Preload critical Largest Contentful Paint (LCP) assets responsively -->
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80" media="(max-width: 768px)" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80" media="(min-width: 769px)" fetchpriority="high" />
     <!-- Failsafe fetch interceptor shim to prevent browser environment getter/setter conflicts on window.fetch -->
     <script>
       (function() {
@@ -56,17 +57,36 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
   
-    <!-- Google Translate Script -->
+    <!-- Google Translate Script (Deferred to prevent render-blocking) -->
     <script type="text/javascript">
-      function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-          pageLanguage: 'en',
-          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-          autoDisplay: false
-        }, 'google_translate_element');
-      }
+      window.googleTranslateElementInit = function() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false
+          }, 'google_translate_element');
+        }
+      };
+
+      (function() {
+        var loadScript = function() {
+          var script = document.createElement('script');
+          script.type = 'text/javascript';
+          script.async = true;
+          script.defer = true;
+          script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+          document.body.appendChild(script);
+        };
+        if (window.addEventListener) {
+          window.addEventListener('load', function() {
+            setTimeout(loadScript, 1200);
+          });
+        } else {
+          window.attachEvent('onload', loadScript);
+        }
+      })();
     </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   </head>
   <body class="overflow-x-hidden max-w-full bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
     <div id="google_translate_element"></div>
