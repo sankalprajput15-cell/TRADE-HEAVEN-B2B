@@ -128,7 +128,7 @@ export const ProductDetailModal: React.FC<Props> = ({
               <div className="h-64 w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 relative">
                 <SafeImage
                   src={product?.images?.[activeImageIdx] || product?.images?.[0] || undefined}
-                  alt={product?.title || 'Product Image'}
+                  alt={product?.title || 'B2B Wholesale Product'}
                   className="w-full h-full"
                 />
               </div>
@@ -144,7 +144,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                         activeImageIdx === idx ? 'border-blue-600 scale-105 shadow-sm' : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <SafeImage src={img} alt="" className="w-full h-full" />
+                      <SafeImage src={img} alt={`${product?.title} - Thumbnail ${idx + 1}`} className="w-full h-full" />
                     </button>
                   ))}
                 </div>

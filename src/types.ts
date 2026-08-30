@@ -682,3 +682,15 @@ export interface B2BTradeMetric {
   growth_trend: string;
 }
 
+
+export type NotificationType = 'RFQ' | 'MESSAGE' | 'SYSTEM' | 'ORDER';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: number;
+  isRead: boolean;
+  linkView?: ActiveView;
+}

@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Currency, UserRole, ActiveView, AuthUser } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
+import { GlobalSearch } from '../common/GlobalSearch';
+import { NotificationBell } from './NotificationBell';
 import { SafeImage } from '../common/SafeImage';
 import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { useSiteContent } from '../../context/SiteContentContext';
@@ -648,6 +650,8 @@ export const Header: React.FC<Props> = ({
 
           {/* Right: Key Direct Action Cluster */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <GlobalSearch onNavigate={handleNavClick} />
+            <NotificationBell onNavigate={handleNavClick} />
             {/* Post RFQ Button */}
             <button
               id="header-post-rfq-btn"

@@ -1,3 +1,4 @@
+import { NotificationProvider } from "./context/NotificationContext";
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
@@ -25,6 +26,7 @@ import { TradeHeavenFooter } from './components/common/TradeHeavenFooter';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
 import { ScrollToTop } from './components/common/ScrollToTop';
+import { SEOManager } from './components/common/SEOManager';
 import { NotFoundView } from './components/common/NotFoundView';
 
 // Views
@@ -679,6 +681,8 @@ const MainApp: React.FC = () => {
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
       {/* Scroll restoration anchor */}
       <ScrollToTop activeView={activeView} />
+      {/* Dynamic SEO Meta Tags Manager */}
+      <SEOManager activeView={activeView} />
 
       {/* 1. TOP ANNOUNCEMENT & LIVE RFQ TICKER */}
       <LiveRfqTicker
@@ -1247,7 +1251,7 @@ export default function App() {
         <AuthProvider>
           <SiteContentProvider>
             <LanguageProvider>
-              <MainApp />
+              <NotificationProvider><MainApp /></NotificationProvider>
             </LanguageProvider>
           </SiteContentProvider>
         </AuthProvider>
