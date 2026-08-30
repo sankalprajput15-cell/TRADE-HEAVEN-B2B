@@ -342,12 +342,21 @@ export const ProductDetailModal: React.FC<Props> = ({
               Technical Parameter Specifications
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {(product?.specifications || []).map((spec, idx) => (
-                <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between text-xs">
-                  <span className="text-slate-500 font-medium">{spec.name}</span>
-                  <span className="text-slate-900 font-bold text-right">{spec.value}</span>
-                </div>
-              ))}
+              {Array.isArray(product?.specifications)
+                ? product.specifications.map((spec, idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between text-xs">
+                      <span className="text-slate-500 font-medium">{spec.name}</span>
+                      <span className="text-slate-900 font-bold text-right">{spec.value}</span>
+                    </div>
+                  ))
+                : product?.specifications && typeof product.specifications === 'object'
+                ? Object.entries(product.specifications).map(([key, val], idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between text-xs">
+                      <span className="text-slate-500 font-medium">{key}</span>
+                      <span className="text-slate-900 font-bold text-right">{String(val)}</span>
+                    </div>
+                  ))
+                : null}
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">

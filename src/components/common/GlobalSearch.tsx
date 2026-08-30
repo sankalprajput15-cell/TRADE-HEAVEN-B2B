@@ -25,20 +25,26 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
   }, []);
 
   // Simple search logic
-  const normalizedQuery = query.toLowerCase().trim();
+  const normalizedQuery = (query || '').toLowerCase().trim();
   const showResults = isOpen && normalizedQuery.length >= 2;
 
-  const productResults = MOCK_PRODUCTS.filter(p => 
-    p.title.toLowerCase().includes(normalizedQuery) || p.category.toLowerCase().includes(normalizedQuery)
-  ).slice(0, 3);
+  const productResults = MOCK_PRODUCTS.filter(p => {
+    const title = (p.title || '').toLowerCase();
+    const category = (p.category || '').toLowerCase();
+    return title.includes(normalizedQuery) || category.includes(normalizedQuery);
+  }).slice(0, 3);
 
-  const supplierResults = MOCK_COMPANIES.filter(c => 
-    c.companyName.toLowerCase().includes(normalizedQuery) || c.businessType.toLowerCase().includes(normalizedQuery)
-  ).slice(0, 3);
+  const supplierResults = MOCK_COMPANIES.filter(c => {
+    const companyName = (c.companyName || '').toLowerCase();
+    const businessType = (c.businessType || '').toLowerCase();
+    return companyName.includes(normalizedQuery) || businessType.includes(normalizedQuery);
+  }).slice(0, 3);
 
-  const rfqResults = MOCK_RFQS.filter(r => 
-    r.productName.toLowerCase().includes(normalizedQuery) || r.category.toLowerCase().includes(normalizedQuery)
-  ).slice(0, 3);
+  const rfqResults = MOCK_RFQS.filter(r => {
+    const name = (r.productName || r.title || '').toLowerCase();
+    const category = (r.category || '').toLowerCase();
+    return name.includes(normalizedQuery) || category.includes(normalizedQuery);
+  }).slice(0, 3);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
@@ -151,13 +157,17 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
                         key={r.id}
                         onClick={() => {
                           setIsOpen(false);
-                          onNavigate('RFQ_HUB', { search: r.productName });
+                          onNavigate('RFQ_HUB', { search: r.productName || r.title || '' });
                         }}
                         className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-50 flex items-center justify-between group transition-colors"
                       >
                         <div className="truncate pr-4">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{r.productName} ({r.targetQuantity} {r.quantityUnit})</p>
-                          <p className="text-[10px] text-slate-500 truncate">{r.destinationPort} • {r.buyerCountry}</p>
+                          <p className="text-sm font-semibold text-slate-800 truncate">
+                            {r.productName || r.title || 'RFQ Requirement'} {r.targetQuantity ? `(${r.targetQuantity} ${r.quantityUnit || ''})` : ''}
+                          </p>
+                          <p className="text-[10px] text-slate-500 truncate">
+                            {r.destinationPort || r.destinationCity || r.destinationCountry || 'Global'} • {r.buyerCountry || 'Verified Buyer'}
+                          </p>
                         </div>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-500 shrink-0" />
                       </button>

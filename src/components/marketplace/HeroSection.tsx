@@ -215,7 +215,7 @@ export const HeroSection: React.FC<Props> = ({
         p.supplierName.toLowerCase().includes(q) ||
         (p.supplierCountry && p.supplierCountry.toLowerCase().includes(q)) ||
         (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.specifications && p.specifications.some(s => s.name.toLowerCase().includes(q) || s.value.toLowerCase().includes(q)))
+        (p.specifications && Array.isArray(p.specifications) && p.specifications.some(s => s.name?.toLowerCase().includes(q) || s.value?.toLowerCase().includes(q)))
       );
     }).slice(0, 16);
 

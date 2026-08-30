@@ -70,11 +70,24 @@ function persistStoredSuppliers(suppliers: CompanyProfile[]) {
 }
 
 function loadStoredBuyers(): DetailedBuyerProfile[] {
+  let stored: DetailedBuyerProfile[] = [];
   try {
     const saved = localStorage.getItem(BUYERS_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      stored = JSON.parse(saved);
+    }
   } catch {}
-  return [...MOCK_BUYER_PROFILES];
+
+  const existingIds = new Set(stored.map(b => b.id));
+  const missingMockBuyers = MOCK_BUYER_PROFILES.filter(b => !existingIds.has(b.id));
+
+  if (missingMockBuyers.length > 0) {
+    const combined = [...stored, ...missingMockBuyers];
+    persistStoredBuyers(combined);
+    return combined;
+  }
+
+  return stored.length > 0 ? stored : [...MOCK_BUYER_PROFILES];
 }
 
 function persistStoredBuyers(buyers: DetailedBuyerProfile[]) {

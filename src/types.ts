@@ -128,7 +128,7 @@ export interface SecurityAuditLog {
   ipAddress?: string;
 }
 
-export type SupplierTier = 'FREE' | 'SILVER' | 'GOLD' | 'VIP';
+export type SupplierTier = 'FREE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'VIP';
 export type Incoterm = 'EXW' | 'FOB' | 'CIF' | 'CFR' | 'DDP' | 'FCA' | 'CIP' | 'TTO';
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY' | 'INR' | 'AED' | 'JPY';
 
@@ -148,7 +148,7 @@ export interface CompanyProfile {
   city: string;
   address: string;
   establishedYear: number;
-  businessType: 'Manufacturer' | 'Trading Company' | 'Wholesaler' | 'Exporter' | 'Brokerage';
+  businessType: 'Manufacturer' | 'Trading Company' | 'Wholesaler' | 'Exporter' | 'Brokerage' | 'Corporate Importer' | string;
   tier: SupplierTier;
   status?: 'ACTIVE' | 'PENDING_REVIEW' | 'SUSPENDED';
   isVerifiedKYC: boolean;
@@ -191,7 +191,11 @@ export interface Product {
   supplierName: string;
   supplierCountry: string;
   supplierTier: SupplierTier;
-  supplierTrustScore: number;
+  supplierTrustScore?: number;
+  supplierIsVerified?: boolean;
+  minOrderQuantity?: string;
+  priceRangeUsd?: string;
+  unit?: string;
   title: string;
   category: string;
   subCategory: string;
@@ -199,20 +203,23 @@ export interface Product {
   description: string;
   priceTiers?: VolumePriceTier[];
   fobPriceUsd?: number;
-  moq: number;
-  moqUnit: string; // 'Pieces', 'Metric Tons', 'Cartons', 'Sets', 'Kg'
+  moq?: number;
+  moqUnit?: string; // 'Pieces', 'Metric Tons', 'Cartons', 'Sets', 'Kg'
   sampleAvailable?: boolean;
   samplePriceUsd?: number;
-  leadTimeDays: number;
-  supportedIncoterms: Incoterm[];
-  specifications?: ProductSpecification[];
+  leadTimeDays?: number;
+  supportedIncoterms?: Incoterm[];
+  specifications?: ProductSpecification[] | Record<string, string>;
   packagingDetails?: string;
   portOfDispatch?: string;
   certifications?: string[];
   customizationAvailable?: boolean;
   supplyAbilityPerMonth?: string;
   featured?: boolean;
-  createdDate: string;
+  inStock?: boolean;
+  rating?: number;
+  reviewCount?: number;
+  createdDate?: string;
   ownerEmail?: string;
   ownerId?: string;
 }
@@ -228,6 +235,7 @@ export interface RfqRequirement {
   buyerCountry: string;
   buyerVerified: boolean;
   isContactMasked?: boolean;
+  title?: string;
   productName: string;
   category: string;
   targetQuantity: number;
@@ -236,6 +244,8 @@ export interface RfqRequirement {
   targetDeliveryDate?: string;
   preferredIncoterm: Incoterm;
   destinationPort: string;
+  destinationCity?: string;
+  destinationCountry?: string;
   paymentTerms: string; // e.g. 'L/C at sight', '30% T/T Deposit + 70% B/L', 'Trade Protection Certificate'
   detailedRequirements: string;
   detailedDescription?: string;
@@ -245,8 +255,9 @@ export interface RfqRequirement {
   postedDate: string;
   expiryDate: string;
   status: 'OPEN' | 'MATCHED' | 'CLOSED';
-  matchedSupplierCount: number;
-  spamScore: number; // 0 to 100 (low is good)
+  matchedSupplierCount?: number;
+  viewsCount?: number;
+  spamScore?: number; // 0 to 100 (low is good)
 }
 
 export type RFQ = RfqRequirement;
@@ -368,7 +379,7 @@ export interface SubscriptionPlanConfig {
   features: string[];
 }
 
-export type BuyerTier = 'FREE' | 'SILVER' | 'GOLD' | 'VIP';
+export type BuyerTier = 'FREE' | 'SILVER' | 'GOLD' | 'VIP' | 'VERIFIED_BUYER';
 
 export interface BuyerWarehouse {
   id: string;
@@ -414,9 +425,9 @@ export interface DetailedBuyerProfile {
   productionLines?: number;
   tradeAssuranceLimitUsd?: number;
   completedOrdersCount?: number;
-  logoUrl: string;
-  bannerUrl: string;
-  description: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  description?: string;
   contactPerson: string;
   contactDesignation?: string;
   contactEmail: string;

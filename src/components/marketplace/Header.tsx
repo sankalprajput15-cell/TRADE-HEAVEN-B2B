@@ -228,11 +228,12 @@ export const Header: React.FC<Props> = ({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto justify-end">
             
             
-            <div className="hidden xl:flex items-center gap-3 mr-2 text-[11px] font-medium text-slate-300">
-              <button onClick={() => handleNavClick('ABOUT_US')} className="hover:text-white transition-colors">{getTxt('aboutUs')}</button>
-              <button onClick={() => handleNavClick('TRUST_SAFETY')} className="hover:text-emerald-400 transition-colors">{getTxt('trustSafety')}</button>
-              <button onClick={() => handleNavClick('INSIGHTS')} className="hover:text-amber-400 transition-colors">{getTxt('newsInsights')}</button>
-            </div>
+            {/* Secondary Utility Navigation */}
+            <nav aria-label="Utility Navigation" className="hidden xl:flex items-center gap-3 mr-2 text-[11px] font-medium text-slate-300">
+              <button onClick={() => handleNavClick('ABOUT_US')} aria-label={getTxt('aboutUs')} className="hover:text-white transition-colors">{getTxt('aboutUs')}</button>
+              <button onClick={() => handleNavClick('TRUST_SAFETY')} aria-label={getTxt('trustSafety')} className="hover:text-emerald-400 transition-colors">{getTxt('trustSafety')}</button>
+              <button onClick={() => handleNavClick('INSIGHTS')} aria-label={getTxt('newsInsights')} className="hover:text-amber-400 transition-colors">{getTxt('newsInsights')}</button>
+            </nav>
             {/* Compact Language & Region Selector */}
             {/* Custom Styled Language & Region Selector */}
             <LanguageRegionSelector variant="compact" />
@@ -267,6 +268,7 @@ export const Header: React.FC<Props> = ({
                 <button
                   id="header-user-profile-btn"
                   onClick={onOpenAuthModal}
+                  aria-label={`User Profile: ${currentUser.name}`}
                   className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/50 rounded-lg px-2 sm:px-2.5 py-0.5 sm:py-1 transition-all text-left group cursor-pointer"
                   title="Account Profile & Credentials"
                 >
@@ -287,6 +289,7 @@ export const Header: React.FC<Props> = ({
                 <button
                   id="header-logout-btn"
                   onClick={handleLogout}
+                  aria-label={getTxt('signOut')}
                   className="flex items-center gap-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 border border-rose-500/30 px-2 py-0.5 sm:py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer"
                   title="Sign out of current account"
                 >
@@ -300,6 +303,7 @@ export const Header: React.FC<Props> = ({
                 <button
                   id="header-login-btn"
                   onClick={onOpenAuthModal}
+                  aria-label={getTxt('signIn')}
                   className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition-all shadow-xs cursor-pointer border border-slate-700/80"
                 >
                   <LogIn className="w-3.5 h-3.5 text-slate-300" />
@@ -308,6 +312,7 @@ export const Header: React.FC<Props> = ({
                 <button
                   id="header-register-free-btn"
                   onClick={onOpenRegisterFree || onOpenAuthModal}
+                  aria-label={getTxt('registerFree')}
                   className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition-all shadow-xs cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5 text-emerald-100" />
@@ -328,6 +333,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-logo-home-btn"
               onClick={() => handleNavClick('HOMEPAGE')}
+              aria-label="Trade Heaven B2B Marketplace Home"
               className="text-left focus:outline-none cursor-pointer truncate"
             >
               <TradeHeavenLogo size="md" subtitle="B2B Marketplace" />
@@ -335,9 +341,10 @@ export const Header: React.FC<Props> = ({
           </div>
 
           {/* Center: Desktop Nav Links (Streamlined) */}
-          <nav className="hidden xl:flex items-center flex-1 justify-center gap-0.5 xl:gap-1 min-w-0">
+          <nav aria-label="Primary Navigation" className="hidden xl:flex items-center flex-1 justify-center gap-0.5 xl:gap-1 min-w-0">
             <button
               onClick={() => handleNavClick('HOMEPAGE')}
+              aria-label={getTxt('home')}
               className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
@@ -352,6 +359,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-premium-services"
               onClick={() => handleNavClick('PREMIUM_SERVICES')}
+              aria-label={getTxt('premiumServices')}
               className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
                 activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
                   ? 'bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-sm'
@@ -365,6 +373,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-buyers"
               onClick={() => handleNavClick('BUYERS_DIRECTORY')}
+              aria-label={getTxt('buyers')}
               className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'BUYERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
@@ -377,6 +386,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="nav-link-suppliers"
               onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
+              aria-label={getTxt('suppliers')}
               className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                 activeView === 'SUPPLIERS_DIRECTORY'
                   ? 'bg-blue-50 text-blue-600 font-extrabold'
@@ -394,6 +404,9 @@ export const Header: React.FC<Props> = ({
                   setServicesMenuOpen(!servicesMenuOpen);
                   setAdminMenuOpen(false);
                 }}
+                aria-label={`${getTxt('menu')} Menu`}
+                aria-expanded={servicesMenuOpen}
+                aria-haspopup="true"
                 className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   isServicesActive
                     ? 'bg-blue-50 text-blue-600 font-extrabold'
@@ -406,9 +419,10 @@ export const Header: React.FC<Props> = ({
               </button>
 
               {servicesMenuOpen && (
-                <div className="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150" role="menu" aria-label="Services Menu">
                   <button
                     onClick={() => handleNavClick('LANDING_PAGE')}
+                    aria-label="Global Trade Hub"
                     className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-blue-50/80 flex items-center gap-2.5 text-slate-900 border-b border-slate-100 cursor-pointer"
                   >
                     <Globe2 className="w-4 h-4 text-blue-600 shrink-0" />
@@ -424,6 +438,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
+                    aria-label="Products Catalog"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <ShoppingBag className="w-4 h-4 text-blue-600" />
@@ -434,6 +449,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('COUNTRY_HUB')}
+                    aria-label="Country Hub Portals"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <Landmark className="w-4 h-4 text-amber-600" />
@@ -444,6 +460,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('RFQ_HUB')}
+                    aria-label="RFQ Marketplace"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <FileText className="w-4 h-4 text-blue-500" />
@@ -454,6 +471,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('BUY_LEADS')}
+                    aria-label="Buy Leads & Inquiries"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <Workflow className="w-4 h-4 text-indigo-600" />
@@ -464,6 +482,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('VENDOR_PROFILE')}
+                    aria-label="Verified Vendor Profile"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
                   >
                     <Building2 className="w-4 h-4 text-blue-600" />
@@ -474,6 +493,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('BUYER_PROFILE')}
+                    aria-label="Corporate Buyer Profile"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <BadgeCheck className="w-4 h-4 text-emerald-600" />
@@ -484,6 +504,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('POST_SELL_OFFER')}
+                    aria-label="Post Product / Sell Offer"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
                   >
                     <PackagePlus className="w-4 h-4 text-emerald-600" />
@@ -494,6 +515,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('TRADE_TOOLS')}
+                    aria-label="Trade Calculators & Incoterms"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <Calculator className="w-4 h-4 text-blue-500" />
@@ -504,6 +526,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('ABOUT_US')}
+                    aria-label="About Trade Heaven"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
                   >
                     <ShieldCheck className="w-4 h-4 text-blue-600" />
@@ -514,6 +537,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('ONBOARD_WITH_US')}
+                    aria-label="Work With Us / Onboard"
                     className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                   >
                     <UserPlus className="w-4 h-4 text-emerald-600" />
@@ -524,6 +548,7 @@ export const Header: React.FC<Props> = ({
                   </button>
                   <button
                     onClick={() => handleNavClick('CONTACT_US')}
+                    aria-label="Contact Assistance Desk"
                     className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
                   >
                     <Mail className="w-4 h-4 text-blue-600" />
@@ -547,6 +572,9 @@ export const Header: React.FC<Props> = ({
                     setAdminMenuOpen(!adminMenuOpen);
                     setServicesMenuOpen(false);
                   }}
+                  aria-label="Admin Hub Menu"
+                  aria-expanded={adminMenuOpen}
+                  aria-haspopup="true"
                   className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
                     isAdminActive
                       ? 'bg-amber-100 text-amber-950 font-extrabold border border-amber-300'
@@ -559,9 +587,10 @@ export const Header: React.FC<Props> = ({
                 </button>
 
                 {adminMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150" role="menu" aria-label="Admin Hub Menu">
                     <button
                       onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
+                      aria-label="Plan & Pricing Engine"
                       className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
                     >
                       <Layers className="w-4 h-4 text-blue-600" />
@@ -575,6 +604,7 @@ export const Header: React.FC<Props> = ({
                     </button>
                     <button
                       onClick={() => handleNavClick('BULK_ENTITY_CRM')}
+                      aria-label="Bulk Lead & Entity CRM"
                       className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
                     >
                       <FileSpreadsheet className="w-4 h-4 text-amber-600" />
@@ -585,6 +615,7 @@ export const Header: React.FC<Props> = ({
                     </button>
                     <button
                       onClick={() => handleNavClick('CLIENT_ADMIN')}
+                      aria-label="Admin & Treasury Portal"
                       className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
                     >
                       <Landmark className="w-4 h-4 text-amber-600" />
@@ -595,6 +626,7 @@ export const Header: React.FC<Props> = ({
                     </button>
                     <button
                       onClick={() => handleNavClick('CMS_MANAGEMENT')}
+                      aria-label="Full Site CMS Editor"
                       className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
                     >
                       <SlidersHorizontal className="w-4 h-4 text-amber-600" />
@@ -609,6 +641,7 @@ export const Header: React.FC<Props> = ({
                           setAdminMenuOpen(false);
                           onOpenBackendManager();
                         }}
+                        aria-label="Database Management"
                         className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
                       >
                         <Database className="w-4 h-4 text-amber-600" />
@@ -632,6 +665,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-post-rfq-btn"
               onClick={onOpenCreateRfq}
+              aria-label={getTxt('postBuyRfq')}
               className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
             >
               <PlusCircle className="w-4 h-4 shrink-0" />
@@ -642,6 +676,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-negotiation-btn"
               onClick={() => handleNavClick('NEGOTIATION_ROOM')}
+              aria-label="Negotiation Room & Inquiries"
               className={`p-1.5 sm:p-2 rounded-xl border relative transition-all shrink-0 cursor-pointer ${
                 activeView === 'NEGOTIATION_ROOM'
                   ? 'bg-blue-600 text-white border-blue-600'
@@ -661,6 +696,7 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-dashboard-btn"
               onClick={() => handleNavClick('DASHBOARD')}
+              aria-label="Trade Dashboard"
               className={`hidden sm:flex p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 cursor-pointer ${
                 activeView === 'DASHBOARD'
                   ? 'bg-blue-600 text-white border-blue-600'
@@ -675,6 +711,8 @@ export const Header: React.FC<Props> = ({
             <button
               id="header-mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
               className="xl:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
@@ -708,6 +746,7 @@ export const Header: React.FC<Props> = ({
                   handleLogout();
                   setMobileMenuOpen(false);
                 }}
+                aria-label={getTxt('signOut')}
                 className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
               >
                 Sign Out
@@ -719,6 +758,7 @@ export const Header: React.FC<Props> = ({
                     onOpenAuthModal();
                     setMobileMenuOpen(false);
                   }}
+                  aria-label={getTxt('signIn')}
                   className="text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
                 >
                   Sign In
@@ -729,6 +769,7 @@ export const Header: React.FC<Props> = ({
                     else onOpenAuthModal();
                     setMobileMenuOpen(false);
                   }}
+                  aria-label={getTxt('registerFree')}
                   className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 cursor-pointer"
                 >
                   Register Free
@@ -737,200 +778,225 @@ export const Header: React.FC<Props> = ({
             )}
           </div>
 
-          
-          {currentUser && (
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <button
-                onClick={() => { handleNavClick('DASHBOARD'); setMobileMenuOpen(false); }}
-                className="p-2.5 rounded-xl text-xs font-bold bg-blue-600 text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Dashboard</span>
-              </button>
-              <button
-                onClick={() => { handleNavClick('NEGOTIATION_ROOM'); setMobileMenuOpen(false); }}
-                className="p-2.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-900 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs relative"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>Messages</span>
-                {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
-                    {unreadMessagesCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleNavClick('HOMEPAGE')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Home Marketplace
-            </button>
-            <button
-              onClick={() => handleNavClick('ABOUT_US')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              About Us
-            </button>
-            <button
-              onClick={() => handleNavClick('TRUST_SAFETY')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-700 cursor-pointer col-span-2 text-center"
-            >
-              Security & Trust Center
-            </button>
-            <button
-              onClick={() => handleNavClick('INSIGHTS')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-700 cursor-pointer col-span-2 text-center"
-            >
-              News & Insights
-            </button>
-            <button
-              onClick={() => handleNavClick('LANDING_PAGE')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-1.5">
-                <Globe2 className="w-3.5 h-3.5 text-blue-600" />
-                <span>Global Hub</span>
+          <nav aria-label="Mobile Navigation" className="space-y-2">
+            {currentUser && (
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button
+                  onClick={() => { handleNavClick('DASHBOARD'); setMobileMenuOpen(false); }}
+                  aria-label="Dashboard"
+                  className="p-2.5 rounded-xl text-xs font-bold bg-blue-600 text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Dashboard</span>
+                </button>
+                <button
+                  onClick={() => { handleNavClick('NEGOTIATION_ROOM'); setMobileMenuOpen(false); }}
+                  aria-label="Messages & Negotiation Room"
+                  className="p-2.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-900 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs relative"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Messages</span>
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
+                </button>
               </div>
-              <span className="text-[9px] font-black uppercase px-1 py-0.2 rounded bg-blue-600 text-white">NEW</span>
-            </button>
-            <button
-              onClick={() => handleNavClick('ONBOARD_WITH_US')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center justify-between cursor-pointer"
-            >
-              <span>Work With Us</span>
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            </button>
-            <button
-              onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Find Products
-            </button>
-            <button
-              onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Verified Suppliers
-            </button>
-            <button
-              onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50/70 text-blue-900 border border-blue-200/60 flex items-center justify-between cursor-pointer"
-            >
-              <span>Verified Buyers</span>
-              <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
-            </button>
-            <button
-              onClick={() => handleNavClick('VENDOR_PROFILE')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between cursor-pointer"
-            >
-              <span>Vendor Profile (Demo)</span>
-              <Building2 className="w-3.5 h-3.5 text-blue-600" />
-            </button>
-            <button
-              onClick={() => handleNavClick('BUYER_PROFILE')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 border border-slate-200 flex items-center justify-between cursor-pointer"
-            >
-              <span>Buyer Profile (Demo)</span>
-              <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
-            </button>
-            <button
-              onClick={() => handleNavClick('RFQ_HUB')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              RFQ Hub
-            </button>
-            <button
-              onClick={() => handleNavClick('BUY_LEADS')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Buy Leads Feed
-            </button>
-            {isAdmin && (
+            )}
+            <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-950 border border-blue-200 flex items-center justify-between cursor-pointer"
+                onClick={() => handleNavClick('HOMEPAGE')}
+                aria-label="Home Marketplace"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Home Marketplace
+              </button>
+              <button
+                onClick={() => handleNavClick('ABOUT_US')}
+                aria-label="About Us"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                About Us
+              </button>
+              <button
+                onClick={() => handleNavClick('TRUST_SAFETY')}
+                aria-label="Security & Trust Center"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-700 cursor-pointer col-span-2 text-center"
+              >
+                Security &amp; Trust Center
+              </button>
+              <button
+                onClick={() => handleNavClick('INSIGHTS')}
+                aria-label="News & Insights"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-700 cursor-pointer col-span-2 text-center"
+              >
+                News &amp; Insights
+              </button>
+              <button
+                onClick={() => handleNavClick('LANDING_PAGE')}
+                aria-label="Global Hub"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Global Hub</span>
+                </div>
+                <span className="text-[9px] font-black uppercase px-1 py-0.2 rounded bg-blue-600 text-white">NEW</span>
+              </button>
+              <button
+                onClick={() => handleNavClick('ONBOARD_WITH_US')}
+                aria-label="Work With Us"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center justify-between cursor-pointer"
+              >
+                <span>Work With Us</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              </button>
+              <button
+                onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
+                aria-label="Find Products"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Find Products
+              </button>
+              <button
+                onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
+                aria-label="Verified Suppliers"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Verified Suppliers
+              </button>
+              <button
+                onClick={() => handleNavClick('BUYERS_DIRECTORY')}
+                aria-label="Verified Buyers"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50/70 text-blue-900 border border-blue-200/60 flex items-center justify-between cursor-pointer"
+              >
+                <span>Verified Buyers</span>
+                <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
+              </button>
+              <button
+                onClick={() => handleNavClick('VENDOR_PROFILE')}
+                aria-label="Vendor Profile (Demo)"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between cursor-pointer"
+              >
+                <span>Vendor Profile (Demo)</span>
+                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+              </button>
+              <button
+                onClick={() => handleNavClick('BUYER_PROFILE')}
+                aria-label="Buyer Profile (Demo)"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 border border-slate-200 flex items-center justify-between cursor-pointer"
+              >
+                <span>Buyer Profile (Demo)</span>
+                <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
+              </button>
+              <button
+                onClick={() => handleNavClick('RFQ_HUB')}
+                aria-label="RFQ Hub"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                RFQ Hub
+              </button>
+              <button
+                onClick={() => handleNavClick('BUY_LEADS')}
+                aria-label="Buy Leads Feed"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Buy Leads Feed
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
+                  aria-label="Plan & Pricing Engine"
+                  className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-950 border border-blue-200 flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Plan &amp; Pricing Engine</span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">SaaS</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => handleNavClick('CLIENT_ADMIN')}
+                  aria-label="Admin Suite"
+                  className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-between cursor-pointer"
+                >
+                  <span>Admin Suite</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => handleNavClick('CMS_MANAGEMENT')}
+                  aria-label="Edit Site CMS"
+                  className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-950 border border-amber-200 flex items-center justify-between cursor-pointer"
+                >
+                  <span>Edit Site CMS</span>
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600" />
+                </button>
+              )}
+              <button
+                onClick={() => handleNavClick('PREMIUM_SERVICES')}
+                aria-label="Premium Services & Memberships"
+                className={`p-2.5 rounded-xl text-left text-xs font-black flex items-center justify-between col-span-2 cursor-pointer ${
+                  activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    : 'bg-amber-500/10 text-amber-900 border border-amber-500/30'
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Plan &amp; Pricing Engine</span>
+                  <Crown className="w-4 h-4 text-amber-600" />
+                  <span>Premium Services &amp; Memberships</span>
                 </div>
-                <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">SaaS</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-950">Plans</span>
               </button>
-            )}
-            {isAdmin && (
               <button
-                onClick={() => handleNavClick('CLIENT_ADMIN')}
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-between cursor-pointer"
+                onClick={() => handleNavClick('TRADE_TOOLS')}
+                aria-label="Trade Tools"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
               >
-                <span>Admin Suite</span>
+                Trade Tools
               </button>
-            )}
-            {isAdmin && (
               <button
-                onClick={() => handleNavClick('CMS_MANAGEMENT')}
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-950 border border-amber-200 flex items-center justify-between cursor-pointer"
+                onClick={() => handleNavClick('POST_SELL_OFFER')}
+                aria-label="Post Sell Offer"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
               >
-                <span>Edit Site CMS</span>
-                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600" />
+                Post Sell Offer
               </button>
-            )}
-            <button
-              onClick={() => handleNavClick('PREMIUM_SERVICES')}
-              className={`p-2.5 rounded-xl text-left text-xs font-black flex items-center justify-between col-span-2 cursor-pointer ${
-                activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
-                  ? 'bg-amber-400 text-slate-950 shadow-xs'
-                  : 'bg-amber-500/10 text-amber-900 border border-amber-500/30'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-600" />
-                <span>Premium Services &amp; Memberships</span>
-              </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-950">Plans</span>
-            </button>
-            <button
-              onClick={() => handleNavClick('TRADE_TOOLS')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Trade Tools
-            </button>
-            <button
-              onClick={() => handleNavClick('POST_SELL_OFFER')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Post Sell Offer
-            </button>
-            <button
-              onClick={() => handleNavClick('REFUND_POLICY')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-            >
-              Refund Policy
-            </button>
-            <button
-              onClick={() => handleNavClick('CONTACT_US')}
-              className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between col-span-2 cursor-pointer"
-            >
-              <div className="flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-blue-600" />
-                <span>Contact Help Desk</span>
-              </div>
-              <span className="text-[10px] font-mono text-blue-600">help@tradeheaven.net</span>
-            </button>
-          </div>
+              <button
+                onClick={() => handleNavClick('REFUND_POLICY')}
+                aria-label="Refund Policy"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Refund Policy
+              </button>
+              <button
+                onClick={() => handleNavClick('CONTACT_US')}
+                aria-label="Contact Help Desk"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between col-span-2 cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Contact Help Desk</span>
+                </div>
+                <span className="text-[10px] font-mono text-blue-600">help@tradeheaven.net</span>
+              </button>
+            </div>
 
-          <button
-            onClick={() => {
-              onOpenCreateRfq();
-              setMobileMenuOpen(false);
-            }}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Post Buy RFQ</span>
-          </button>
+            <button
+              onClick={() => {
+                onOpenCreateRfq();
+                setMobileMenuOpen(false);
+              }}
+              aria-label={getTxt('postBuyRfq')}
+              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Post Buy RFQ</span>
+            </button>
+          </nav>
         </div>
       )}
     </header>

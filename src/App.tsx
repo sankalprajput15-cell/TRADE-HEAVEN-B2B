@@ -952,7 +952,7 @@ const MainApp: React.FC = () => {
                   <CountryTradeHubView
                     initialCountryId="uk"
                     onOpenProductModal={(title) => {
-                      const prod = products.find(p => p.title.toLowerCase().includes(title.toLowerCase()));
+                      const prod = products.find(p => p && p.title && p.title.toLowerCase().includes((title || '').toLowerCase()));
                       if (prod) setSelectedProduct(prod);
                       else handleOpenContactModal({ targetType: 'GENERAL', targetTitle: `Inquiry: ${title}` });
                     }}
