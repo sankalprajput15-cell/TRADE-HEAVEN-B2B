@@ -33,6 +33,8 @@ export const AstraProductGrid: React.FC<Props> = ({
             <SafeImage
               src={product.images?.[0] || 'https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=400'}
               alt={product.title}
+              category={product.category}
+              productId={product.id}
               className="w-full h-full object-cover hover:scale-105 transition-transform"
             />
             <div className="absolute bottom-2.5 right-2.5">

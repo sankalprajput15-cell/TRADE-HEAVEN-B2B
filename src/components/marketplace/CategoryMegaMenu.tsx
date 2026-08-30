@@ -289,6 +289,9 @@ export const CategoryMegaMenu: React.FC<Props> = ({
                     <SafeImage 
                       src={catImage} 
                       alt={tText(cat.name)} 
+                      category={cat.name}
+                      productId={cat.id}
+                      type="category"
                       className="w-full h-full object-cover" 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
