@@ -1,0 +1,40 @@
+--- src/context/LanguageContext.tsx
++++ src/context/LanguageContext.tsx
+@@ -99,10 +99,14 @@
+       if (found) {
+         localStorage.setItem('tradeheaven_region', found.region);
+       }
+       
+       let gtCode = validCode as string;
+       if (gtCode === 'zh') gtCode = 'zh-CN';
+-      if (gtCode === 'en') gtCode = '';
+       
+-      // Set Google Translate cookie so it picks up the language on next load
+-      document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/`;
+-      document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/; domain=${window.location.hostname}`;
++      if (validCode === 'en') {
++        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
++        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
++      } else {
++        document.cookie = `googtrans=/auto/${gtCode}; path=/`;
++        document.cookie = `googtrans=/auto/${gtCode}; path=/; domain=${window.location.hostname}`;
++      }
+       
+       // Reload the page to ensure Google Translate initializes with the new language
+@@ -128,8 +132,13 @@
+     // Ensure cookie matches current language so Google Translate stays in sync on navigation
+     let gtCode = langCode as string;
+     if (gtCode === 'zh') gtCode = 'zh-CN';
+-    if (gtCode === 'en') gtCode = '';
+-    document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/`;
+-    document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/; domain=${window.location.hostname}`;
++    
++    if (langCode === 'en') {
++      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
++      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
++    } else {
++      document.cookie = `googtrans=/auto/${gtCode}; path=/`;
++      document.cookie = `googtrans=/auto/${gtCode}; path=/; domain=${window.location.hostname}`;
++    }
+     
+   }, [langCode]);

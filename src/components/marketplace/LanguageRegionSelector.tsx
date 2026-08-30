@@ -77,7 +77,10 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
       const timer = setTimeout(() => {
-        searchInputRef.current?.focus();
+        // Only auto-focus on non-touch devices to prevent mobile keyboard from immediately popping up and breaking layout
+        if (window.innerWidth > 768) {
+          searchInputRef.current?.focus();
+        }
       }, 50);
       return () => clearTimeout(timer);
     } else {
@@ -113,7 +116,7 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
             {currentLang.flag} {currentLang.code.toUpperCase()}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-0.5">
+                <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-0.5">
           {SUPPORTED_LANGUAGES.map(lang => (
             <button
               key={lang.code}
@@ -172,7 +175,7 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
           id="language-region-popover"
           role="listbox"
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 mt-1.5 w-64 sm:w-72 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
+          className="absolute right-0 mt-1.5 w-[calc(100vw-24px)] max-w-64 sm:max-w-72 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
         >
           {/* Header & Search */}
           <div className="p-2.5 bg-slate-950/80 border-b border-slate-800">

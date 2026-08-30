@@ -79,11 +79,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       let gtCode = validCode as string;
       if (gtCode === 'zh') gtCode = 'zh-CN';
-      if (gtCode === 'en') gtCode = '';
-
-      // Set Google Translate cookie so it picks up the language on next load
-      document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/`;
-      document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/; domain=${window.location.hostname}`;
+      
+      if (validCode === 'en') {
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+      } else {
+        document.cookie = 'googtrans=/en/' + gtCode + '; path=/';
+        document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=' + window.location.hostname;
+      }
       
       // Reload the page to ensure Google Translate initializes with the new language
       // and doesn't conflict with React's DOM rendering cycle.
@@ -125,10 +128,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Ensure cookie matches current language so Google Translate stays in sync on navigation
     let gtCode = langCode as string;
     if (gtCode === 'zh') gtCode = 'zh-CN';
-    if (gtCode === 'en') gtCode = '';
-
-    document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/`;
-    document.cookie = `googtrans=/en/${gtCode || 'en'}; path=/; domain=${window.location.hostname}`;
+    
+    if (langCode === 'en') {
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+    } else {
+      document.cookie = 'googtrans=/en/' + gtCode + '; path=/';
+      document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=' + window.location.hostname;
+    }
     
   }, [langCode]);
 
