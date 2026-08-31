@@ -56,6 +56,10 @@ import {
 } from './espoData';
 import { GLOBAL_CASHEW_COMPANIES, GLOBAL_CASHEW_BUYER_PROFILES, GLOBAL_CASHEW_PRODUCTS, GLOBAL_CASHEW_RFQS } from "./cashewData";
 import { GLOBAL_VANILLA_COMPANIES, GLOBAL_VANILLA_BUYER_PROFILES, GLOBAL_VANILLA_PRODUCTS, GLOBAL_VANILLA_RFQS } from "./vanillaBeansData";
+
+import { GLOBAL_EXCAVATOR_COMPANIES, GLOBAL_EXCAVATOR_BUYER_PROFILES, GLOBAL_EXCAVATOR_PRODUCTS, GLOBAL_EXCAVATOR_RFQS } from "./excavatorData";
+import { GLOBAL_WELDER_MACHINE_COMPANIES, GLOBAL_WELDER_MACHINE_BUYER_PROFILES, GLOBAL_WELDER_MACHINE_PRODUCTS, GLOBAL_WELDER_MACHINE_RFQS } from "./welderMachineData";
+
 import { 
   CompanyProfile, 
   DetailedBuyerProfile,
@@ -147,6 +151,24 @@ export const CURRENCY_RATES: CurrencyRate[] = [
 ];
 
 export const CATEGORIES_TREE = [
+
+  {
+    id: 'cat-construction-excavation',
+    name: 'Construction & Excavation Machinery',
+    icon: 'Tractor',
+    image: 'https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Excavator', 'Bulldozer', 'Wheel Loader', 'Backhoe', 'Crawler Excavator', 'Mini Excavator', 'Skid Steer Loader', 'Dump Truck', 'Excavator Bucket', 'Hydraulic Excavator'],
+    count: '1,240+ Verified Suppliers | 560+ RFQs'
+  },
+  {
+    id: 'cat-welding-equipment',
+    name: 'Welding & Soldering Equipment',
+    icon: 'Flame',
+    image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=600&auto=format&fit=crop&q=80',
+    subcategories: ['Welder Machine', 'Laser Welder', 'Laser Cutting Machine', 'Plastic Welding Machine', 'Spot Welder', 'Butt Welding Machine', 'Ultrasonic Welder', 'MIG Welder', 'TIG Welder', 'Submerged Arc Welder'],
+    count: '980+ Verified Suppliers | 420+ RFQs'
+  },
+
   {
     id: 'cat-computer-software',
     name: 'Computer Software & Hardware',
@@ -665,6 +687,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ...GLOBAL_METAL_SCRAP_COMPANIES,
   ...GLOBAL_CASHEW_COMPANIES,
   ...GLOBAL_VANILLA_COMPANIES,
+  ...GLOBAL_EXCAVATOR_COMPANIES,
+  ...GLOBAL_WELDER_MACHINE_COMPANIES,
   {
   "id": "comp-ext2026-0",
   "ownerUid": "user-ext-supplier-0",
@@ -4145,6 +4169,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   ...GLOBAL_METAL_SCRAP_BUYER_PROFILES,
   ...GLOBAL_CASHEW_BUYER_PROFILES,
   ...GLOBAL_VANILLA_BUYER_PROFILES,
+  ...GLOBAL_EXCAVATOR_BUYER_PROFILES,
+  ...GLOBAL_WELDER_MACHINE_BUYER_PROFILES,
   {
   "id": "buyer-ext2026-0",
   "companyName": "UKKL Company Limited",
@@ -6935,6 +6961,8 @@ export const MOCK_PRODUCTS: Product[] = [
   ...GLOBAL_METAL_SCRAP_PRODUCTS,
   ...GLOBAL_CASHEW_PRODUCTS,
   ...GLOBAL_VANILLA_PRODUCTS,
+  ...GLOBAL_EXCAVATOR_PRODUCTS,
+  ...GLOBAL_WELDER_MACHINE_PRODUCTS,
   {
   "id": "prod-ext2026-0-0",
   "title": "Sunflower oil (Bulk Wholesale)",
@@ -11570,6 +11598,8 @@ export const MOCK_RFQS: RfqRequirement[] = [
   ...GLOBAL_METAL_SCRAP_RFQS,
   ...GLOBAL_CASHEW_RFQS,
   ...GLOBAL_VANILLA_RFQS,
+  ...GLOBAL_EXCAVATOR_RFQS,
+  ...GLOBAL_WELDER_MACHINE_RFQS,
   ...MAPPED_CATALOG_DERIVED_RFQS,
   ...BASE_MOCK_RFQS,
   ...METRICS_DERIVED_RFQS
