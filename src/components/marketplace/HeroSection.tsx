@@ -22,8 +22,10 @@ import {
   ChevronRight,
   Filter,
   Lock,
-  LayoutGrid
+  LayoutGrid,
+  Clock
 } from 'lucide-react';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
@@ -818,38 +820,43 @@ export const HeroSection: React.FC<Props> = ({
                             <div
                               key={rfq.id}
                               onClick={() => handleRfqClick(rfq)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs"
+                              className="p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs overflow-hidden"
                             >
-                              <div className="flex items-center justify-between gap-1.5">
-                                <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="flex items-center justify-between gap-1.5 min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                                   <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
                                     {rfq.id}
                                   </span>
-                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1">
-                                    {rfq.productName}
-                                  </div>
+                                  <span className="text-[9px] text-blue-700 font-semibold flex items-center gap-0.5 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+                                    <Clock className="w-2.5 h-2.5 text-blue-500" />
+                                    <span>{getFreshRfqDate(rfq)}</span>
+                                  </span>
                                 </div>
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
                                   {rfq.quotesCount} Bids
                                 </span>
                               </div>
 
+                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1 truncate">
+                                {rfq.productName}
+                              </div>
+
                               <div className="grid grid-cols-2 gap-1.5 text-[10px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-200/80">
-                                <div>
+                                <div className="min-w-0 truncate">
                                   <span className="text-slate-400">Target Vol:</span>{' '}
                                   <strong className="text-slate-900">{rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}</strong>
                                 </div>
-                                <div>
+                                <div className="min-w-0 truncate">
                                   <span className="text-slate-400">Port:</span>{' '}
-                                  <strong className="text-slate-800 truncate">{rfq.destinationPort}</strong>
+                                  <strong className="text-slate-800">{rfq.destinationPort}</strong>
                                 </div>
-                                <div className="col-span-2 text-emerald-700 font-bold font-mono pt-0.5 border-t border-slate-100">
+                                <div className="col-span-2 text-emerald-700 font-bold font-mono pt-0.5 border-t border-slate-100 min-w-0 truncate">
                                   {rfq.preferredIncoterm} • {rfq.targetPriceUsd ? formatPrice(rfq.targetPriceUsd) : 'Market Quote'}
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between text-[10px] text-slate-600 pt-1 border-t border-slate-100 gap-1">
-                                <span className="truncate">Buyer: <strong className="text-slate-800">{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
+                              <div className="flex items-center justify-between text-[10px] text-slate-600 pt-1 border-t border-slate-100 gap-1.5 min-w-0">
+                                <span className="truncate min-w-0 flex-1">Buyer: <strong className="text-slate-800">{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
                                 <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 font-bold text-[9px] border border-amber-200 shrink-0">
                                   <Lock className="w-2.5 h-2.5 text-amber-600" />
                                   <span>Hidden Contact</span>
@@ -888,20 +895,20 @@ export const HeroSection: React.FC<Props> = ({
                               <div
                                 key={prod.id}
                                 onClick={() => handleProductClick(prod)}
-                                className="p-2.5 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer flex items-center gap-3 group/item bg-white"
+                                className="p-2.5 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer flex items-center gap-3 group/item bg-white overflow-hidden"
                               >
                                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                                   <SafeImage src={imgUrl} alt={prod.title} category={prod.category} productId={prod.id} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform" />
                                 </div>
-                                <div className="min-w-0 flex-1 space-y-0.5">
-                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-600 transition-colors line-clamp-1">
+                                <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
+                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-600 transition-colors line-clamp-1 truncate">
                                     {prod.title}
                                   </div>
-                                  <div className="text-[11px] font-mono font-black text-slate-900">
+                                  <div className="text-[11px] font-mono font-black text-slate-900 truncate">
                                     {formatPrice(unitPrice)} <span className="text-[10px] text-slate-500 font-normal">/ {unitLabel}</span>
                                   </div>
-                                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                    <span>MOQ: {prod.moq} {unitLabel}</span>
+                                  <div className="flex items-center gap-2 text-[10px] text-slate-500 min-w-0">
+                                    <span className="shrink-0">MOQ: {prod.moq} {unitLabel}</span>
                                     <span>•</span>
                                     <span className="truncate">{prod.supplierCountry}</span>
                                   </div>
@@ -939,20 +946,20 @@ export const HeroSection: React.FC<Props> = ({
                             <div
                               key={supp.id}
                               onClick={() => handleSupplierClick(supp.id)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white"
+                              className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white overflow-hidden"
                             >
-                              <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
                                 <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                                   <SafeImage src={supp.logoUrl} alt={supp.companyName} className="w-full h-full object-cover" />
                                 </div>
-                                <div className="min-w-0 space-y-0.5">
-                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1">
+                                <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
+                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
                                     {supp.companyName}
                                   </div>
-                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
-                                    <span>{supp.country}</span>
+                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
+                                    <span className="truncate">{supp.country}</span>
                                     <span>•</span>
-                                    <span className="font-semibold text-emerald-600">{supp.trustScore}% Trust Score</span>
+                                    <span className="font-semibold text-emerald-600 shrink-0">{supp.trustScore}% Trust Score</span>
                                   </div>
                                 </div>
                               </div>
@@ -991,13 +998,13 @@ export const HeroSection: React.FC<Props> = ({
                             <div
                               key={tool.id}
                               onClick={() => handleToolClick(tool)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white"
+                              className="p-3 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white overflow-hidden"
                             >
-                              <div className="space-y-0.5 min-w-0">
-                                <div className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-700 transition-colors line-clamp-1">
+                              <div className="space-y-0.5 min-w-0 flex-1 overflow-hidden">
+                                <div className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-700 transition-colors line-clamp-1 truncate">
                                   {tool.name}
                                 </div>
-                                <div className="text-[10px] text-slate-500 line-clamp-1">
+                                <div className="text-[10px] text-slate-500 line-clamp-1 truncate">
                                   {tool.description}
                                 </div>
                               </div>
@@ -1040,10 +1047,10 @@ export const HeroSection: React.FC<Props> = ({
                                 onSearch(metric.subcategory, metric.main_category);
                                 if (onNavigate) onNavigate('PRODUCT_DIRECTORY');
                               }}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs"
+                              className="p-3 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs overflow-hidden"
                             >
-                              <div className="flex items-center justify-between gap-1.5">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[180px]">
+                              <div className="flex items-center justify-between gap-1.5 min-w-0">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px] sm:max-w-[180px]">
                                   {metric.main_category}
                                 </span>
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
@@ -1051,20 +1058,20 @@ export const HeroSection: React.FC<Props> = ({
                                 </span>
                               </div>
 
-                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-700 transition-colors">
+                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-700 transition-colors truncate">
                                 {metric.subcategory}
                               </div>
 
                               <div className="grid grid-cols-2 gap-1.5 text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-200/80">
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 min-w-0 truncate">
                                   <Building2 className="w-3 h-3 text-amber-600 shrink-0" />
-                                  <span className="text-slate-500">Suppliers:</span>{' '}
-                                  <strong className="text-slate-900 font-mono">{metric.total_verified_suppliers.toLocaleString()}</strong>
+                                  <span className="text-slate-500 shrink-0">Suppliers:</span>{' '}
+                                  <strong className="text-slate-900 font-mono truncate">{metric.total_verified_suppliers.toLocaleString()}</strong>
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 min-w-0 truncate">
                                   <FileText className="w-3 h-3 text-emerald-600 shrink-0" />
-                                  <span className="text-slate-500">Buy Leads:</span>{' '}
-                                  <strong className="text-slate-900 font-mono">{metric.total_buying_leads_rfqs.toLocaleString()}</strong>
+                                  <span className="text-slate-500 shrink-0">Buy Leads:</span>{' '}
+                                  <strong className="text-slate-900 font-mono truncate">{metric.total_buying_leads_rfqs.toLocaleString()}</strong>
                                 </div>
                               </div>
                             </div>

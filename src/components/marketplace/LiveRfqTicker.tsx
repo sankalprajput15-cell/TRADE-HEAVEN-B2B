@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MOCK_RFQS } from '../../data/mockData';
 import { RfqRequirement } from '../../types';
 import { Radio, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 
 interface Props {
   rfqs?: RfqRequirement[];
@@ -52,7 +53,7 @@ export const LiveRfqTicker: React.FC<Props> = ({ rfqs = MOCK_RFQS, onSelectRfq }
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-[10px] sm:text-[11px] text-slate-500 hidden md:flex items-center gap-1">
-          <Clock className="w-3 h-3 text-slate-400 shrink-0" /> Posted by <strong className="text-slate-700 truncate max-w-[120px]">{activeRfq.buyerCompany}</strong> ({activeRfq.buyerCountry})
+          <Clock className="w-3 h-3 text-slate-400 shrink-0" /> Posted {getFreshRfqDate(activeRfq)} by <strong className="text-slate-700 truncate max-w-[120px]">{activeRfq.buyerCompany}</strong> ({activeRfq.buyerCountry})
         </span>
         <button
           onClick={() => onSelectRfq(activeRfq)}

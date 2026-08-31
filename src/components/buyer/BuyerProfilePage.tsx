@@ -11,6 +11,7 @@ import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { SafeImage } from '../common/SafeImage';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { 
   ShieldCheck, 
   Award, 
@@ -575,8 +576,9 @@ export const BuyerProfilePage: React.FC<Props> = ({
                       <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded bg-blue-100 text-blue-800">
                         {rfq.category}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        Posted: {rfq.postedDate}
+                      <span className="text-[10px] text-blue-700 font-semibold flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                        <Clock className="w-2.5 h-2.5 text-blue-500" />
+                        <span>Posted: {getFreshRfqDate(rfq)}</span>
                       </span>
                     </div>
 

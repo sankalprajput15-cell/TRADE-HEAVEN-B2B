@@ -1,59 +1,59 @@
 import { METRICS_DERIVED_RFQS } from './b2bTradeMetrics';
 import { MAPPED_CATALOG_DERIVED_RFQS, MAPPED_CATALOG_DERIVED_PRODUCTS, MAPPED_CATALOG_DATABASE } from './mappedCatalogDatabase';
 import { 
-  EC21_COPPER_POWDER_COMPANIES, 
-  EC21_COPPER_POWDER_BUYER_PROFILES, 
-  EC21_COPPER_POWDER_PRODUCTS, 
-  EC21_COPPER_POWDER_RFQS 
-} from './ec21CopperPowderData';
+  GLOBAL_COPPER_POWDER_COMPANIES, 
+  GLOBAL_COPPER_POWDER_BUYER_PROFILES, 
+  GLOBAL_COPPER_POWDER_PRODUCTS, 
+  GLOBAL_COPPER_POWDER_RFQS 
+} from './copperPowderData';
 import { 
-  EC21_USED_CLOTHES_COMPANIES, 
-  EC21_USED_CLOTHES_BUYER_PROFILES, 
-  EC21_USED_CLOTHES_PRODUCTS, 
-  EC21_USED_CLOTHES_RFQS 
-} from './ec21UsedClothesData';
+  GLOBAL_USED_CLOTHES_COMPANIES, 
+  GLOBAL_USED_CLOTHES_BUYER_PROFILES, 
+  GLOBAL_USED_CLOTHES_PRODUCTS, 
+  GLOBAL_USED_CLOTHES_RFQS 
+} from './usedClothesData';
 import { 
-  EC21_METAL_SCRAP_COMPANIES, 
-  EC21_METAL_SCRAP_BUYER_PROFILES, 
-  EC21_METAL_SCRAP_PRODUCTS, 
-  EC21_METAL_SCRAP_RFQS 
-} from './ec21MetalScrapData';
+  GLOBAL_METAL_SCRAP_COMPANIES, 
+  GLOBAL_METAL_SCRAP_BUYER_PROFILES, 
+  GLOBAL_METAL_SCRAP_PRODUCTS, 
+  GLOBAL_METAL_SCRAP_RFQS 
+} from './metalScrapData';
 import { 
-  EC21_GOLD_COMPANIES, 
-  EC21_GOLD_BUYER_PROFILES, 
-  EC21_GOLD_PRODUCTS, 
-  EC21_GOLD_RFQS 
-} from './ec21GoldData';
+  GLOBAL_GOLD_COMPANIES, 
+  GLOBAL_GOLD_BUYER_PROFILES, 
+  GLOBAL_GOLD_PRODUCTS, 
+  GLOBAL_GOLD_RFQS 
+} from './goldData';
 import { 
-  EC21_COAL_COMPANIES, 
-  EC21_COAL_BUYER_PROFILES, 
-  EC21_COAL_PRODUCTS, 
-  EC21_COAL_RFQS 
-} from './ec21CoalData';
+  GLOBAL_COAL_COMPANIES, 
+  GLOBAL_COAL_BUYER_PROFILES, 
+  GLOBAL_COAL_PRODUCTS, 
+  GLOBAL_COAL_RFQS 
+} from './coalData';
 import { 
-  EC21_JAM_COMPANIES, 
-  EC21_JAM_BUYER_PROFILES, 
-  EC21_JAM_PRODUCTS, 
-  EC21_JAM_RFQS 
-} from './ec21JamData';
+  GLOBAL_JAM_COMPANIES, 
+  GLOBAL_JAM_BUYER_PROFILES, 
+  GLOBAL_JAM_PRODUCTS, 
+  GLOBAL_JAM_RFQS 
+} from './jamData';
 import { 
-  EC21_SEAFOOD_COMPANIES, 
-  EC21_SEAFOOD_BUYER_PROFILES, 
-  EC21_SEAFOOD_PRODUCTS, 
-  EC21_SEAFOOD_RFQS 
-} from './ec21SeafoodData';
+  GLOBAL_SEAFOOD_COMPANIES, 
+  GLOBAL_SEAFOOD_BUYER_PROFILES, 
+  GLOBAL_SEAFOOD_PRODUCTS, 
+  GLOBAL_SEAFOOD_RFQS 
+} from './seafoodData';
 import { 
-  EC21_JET_FUEL_COMPANIES, 
-  EC21_JET_FUEL_BUYER_PROFILES, 
-  EC21_JET_FUEL_PRODUCTS, 
-  EC21_JET_FUEL_RFQS 
-} from './ec21JetFuelData';
+  GLOBAL_JET_FUEL_COMPANIES, 
+  GLOBAL_JET_FUEL_BUYER_PROFILES, 
+  GLOBAL_JET_FUEL_PRODUCTS, 
+  GLOBAL_JET_FUEL_RFQS 
+} from './jetFuelData';
 import { 
-  EC21_ESPO_COMPANIES, 
-  EC21_ESPO_BUYER_PROFILES, 
-  EC21_ESPO_PRODUCTS, 
-  EC21_ESPO_RFQS 
-} from './ec21EspoData';
+  GLOBAL_ESPO_COMPANIES, 
+  GLOBAL_ESPO_BUYER_PROFILES, 
+  GLOBAL_ESPO_PRODUCTS, 
+  GLOBAL_ESPO_RFQS 
+} from './espoData';
 import { 
   CompanyProfile, 
   DetailedBuyerProfile,
@@ -652,15 +652,15 @@ export const CATEGORIES_TREE = [
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
-  ...EC21_JET_FUEL_COMPANIES,
-  ...EC21_ESPO_COMPANIES,
-  ...EC21_COPPER_POWDER_COMPANIES,
-  ...EC21_USED_CLOTHES_COMPANIES,
-  ...EC21_JAM_COMPANIES,
-  ...EC21_SEAFOOD_COMPANIES,
-  ...EC21_COAL_COMPANIES,
-  ...EC21_GOLD_COMPANIES,
-  ...EC21_METAL_SCRAP_COMPANIES,
+  ...GLOBAL_JET_FUEL_COMPANIES,
+  ...GLOBAL_ESPO_COMPANIES,
+  ...GLOBAL_COPPER_POWDER_COMPANIES,
+  ...GLOBAL_USED_CLOTHES_COMPANIES,
+  ...GLOBAL_JAM_COMPANIES,
+  ...GLOBAL_SEAFOOD_COMPANIES,
+  ...GLOBAL_COAL_COMPANIES,
+  ...GLOBAL_GOLD_COMPANIES,
+  ...GLOBAL_METAL_SCRAP_COMPANIES,
   {
   "id": "comp-ext2026-0",
   "ownerUid": "user-ext-supplier-0",
@@ -4130,15 +4130,15 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
-  ...EC21_JET_FUEL_BUYER_PROFILES,
-  ...EC21_ESPO_BUYER_PROFILES,
-  ...EC21_COPPER_POWDER_BUYER_PROFILES,
-  ...EC21_USED_CLOTHES_BUYER_PROFILES,
-  ...EC21_JAM_BUYER_PROFILES,
-  ...EC21_SEAFOOD_BUYER_PROFILES,
-  ...EC21_COAL_BUYER_PROFILES,
-  ...EC21_GOLD_BUYER_PROFILES,
-  ...EC21_METAL_SCRAP_BUYER_PROFILES,
+  ...GLOBAL_JET_FUEL_BUYER_PROFILES,
+  ...GLOBAL_ESPO_BUYER_PROFILES,
+  ...GLOBAL_COPPER_POWDER_BUYER_PROFILES,
+  ...GLOBAL_USED_CLOTHES_BUYER_PROFILES,
+  ...GLOBAL_JAM_BUYER_PROFILES,
+  ...GLOBAL_SEAFOOD_BUYER_PROFILES,
+  ...GLOBAL_COAL_BUYER_PROFILES,
+  ...GLOBAL_GOLD_BUYER_PROFILES,
+  ...GLOBAL_METAL_SCRAP_BUYER_PROFILES,
   {
   "id": "buyer-ext2026-0",
   "companyName": "UKKL Company Limited",
@@ -6918,15 +6918,15 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
-  ...EC21_JET_FUEL_PRODUCTS,
-  ...EC21_ESPO_PRODUCTS,
-  ...EC21_COPPER_POWDER_PRODUCTS,
-  ...EC21_USED_CLOTHES_PRODUCTS,
-  ...EC21_JAM_PRODUCTS,
-  ...EC21_SEAFOOD_PRODUCTS,
-  ...EC21_COAL_PRODUCTS,
-  ...EC21_GOLD_PRODUCTS,
-  ...EC21_METAL_SCRAP_PRODUCTS,
+  ...GLOBAL_JET_FUEL_PRODUCTS,
+  ...GLOBAL_ESPO_PRODUCTS,
+  ...GLOBAL_COPPER_POWDER_PRODUCTS,
+  ...GLOBAL_USED_CLOTHES_PRODUCTS,
+  ...GLOBAL_JAM_PRODUCTS,
+  ...GLOBAL_SEAFOOD_PRODUCTS,
+  ...GLOBAL_COAL_PRODUCTS,
+  ...GLOBAL_GOLD_PRODUCTS,
+  ...GLOBAL_METAL_SCRAP_PRODUCTS,
   {
   "id": "prod-ext2026-0-0",
   "title": "Sunflower oil (Bulk Wholesale)",
@@ -11551,15 +11551,15 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
 ];
 
 export const MOCK_RFQS: RfqRequirement[] = [
-  ...EC21_JET_FUEL_RFQS,
-  ...EC21_ESPO_RFQS,
-  ...EC21_COPPER_POWDER_RFQS,
-  ...EC21_USED_CLOTHES_RFQS,
-  ...EC21_JAM_RFQS,
-  ...EC21_SEAFOOD_RFQS,
-  ...EC21_COAL_RFQS,
-  ...EC21_GOLD_RFQS,
-  ...EC21_METAL_SCRAP_RFQS,
+  ...GLOBAL_JET_FUEL_RFQS,
+  ...GLOBAL_ESPO_RFQS,
+  ...GLOBAL_COPPER_POWDER_RFQS,
+  ...GLOBAL_USED_CLOTHES_RFQS,
+  ...GLOBAL_JAM_RFQS,
+  ...GLOBAL_SEAFOOD_RFQS,
+  ...GLOBAL_COAL_RFQS,
+  ...GLOBAL_GOLD_RFQS,
+  ...GLOBAL_METAL_SCRAP_RFQS,
   ...MAPPED_CATALOG_DERIVED_RFQS,
   ...BASE_MOCK_RFQS,
   ...METRICS_DERIVED_RFQS
@@ -11626,12 +11626,12 @@ export const MOCK_QUOTES: SupplierQuote[] = [
 export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
   {
     id: 'thread-jf-101',
-    rfqId: 'rfq-ec21-jf-1',
+    rfqId: 'rfq-th-jf-1',
     productTitle: 'Aviation Kerosene Jet Fuel A-1 (ASTM D1655 / JIG Specs)',
-    buyerId: 'buyer-ec21-jf-1',
+    buyerId: 'buyer-th-jf-1',
     buyerName: 'Marcus Sterling',
     buyerCompany: 'PetroAir Global Aviation Fuel Consortium',
-    supplierId: 'comp-ec21-jf-1',
+    supplierId: 'comp-th-jf-1',
     supplierName: 'Global Fuel Oil Llc',
     agreedPriceUsd: 82,
     agreedQuantity: 2000000,
@@ -11641,7 +11641,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
     messages: [
       {
         id: 'msg-jf-1',
-        senderId: 'buyer-ec21-jf-1',
+        senderId: 'buyer-th-jf-1',
         senderName: 'Marcus Sterling',
         senderRole: 'BUYER',
         timestamp: '2026-08-30T14:20:00Z',
@@ -11649,7 +11649,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
       },
       {
         id: 'msg-jf-2',
-        senderId: 'comp-ec21-jf-1',
+        senderId: 'comp-th-jf-1',
         senderName: 'FRANK ROBETTO (Global Fuel Oil)',
         senderRole: 'SUPPLIER',
         timestamp: '2026-08-30T15:10:00Z',
@@ -11662,7 +11662,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
       },
       {
         id: 'msg-jf-3',
-        senderId: 'buyer-ec21-jf-1',
+        senderId: 'buyer-th-jf-1',
         senderName: 'Marcus Sterling',
         senderRole: 'BUYER',
         timestamp: '2026-08-30T16:30:00Z',
@@ -11670,7 +11670,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
       },
       {
         id: 'msg-jf-4',
-        senderId: 'comp-ec21-jf-1',
+        senderId: 'comp-th-jf-1',
         senderName: 'FRANK ROBETTO (Global Fuel Oil)',
         senderRole: 'SUPPLIER',
         timestamp: '2026-08-30T17:05:00Z',
@@ -11685,12 +11685,12 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
   },
   {
     id: 'thread-espo-202',
-    rfqId: 'rfq-ec21-espo-1',
+    rfqId: 'rfq-th-espo-1',
     productTitle: 'Eastern Siberian Pacific Ocean (ESPO) Blend Crude Oil',
-    buyerId: 'buyer-ec21-espo-1',
+    buyerId: 'buyer-th-espo-1',
     buyerName: 'John Zhang',
     buyerCompany: 'ZiLex Green Tech International, LLC',
-    supplierId: 'comp-ec21-espo-2',
+    supplierId: 'comp-th-espo-2',
     supplierName: 'Kazinst Petroleum Refinery',
     agreedPriceUsd: 71.5,
     agreedQuantity: 2000000,
@@ -11700,7 +11700,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
     messages: [
       {
         id: 'msg-espo-1',
-        senderId: 'buyer-ec21-espo-1',
+        senderId: 'buyer-th-espo-1',
         senderName: 'John Zhang',
         senderRole: 'BUYER',
         timestamp: '2026-08-30T11:00:00Z',
@@ -11708,7 +11708,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
       },
       {
         id: 'msg-espo-2',
-        senderId: 'comp-ec21-espo-2',
+        senderId: 'comp-th-espo-2',
         senderName: 'Kazinst Petroleum Trade Directorate',
         senderRole: 'SUPPLIER',
         timestamp: '2026-08-30T12:45:00Z',
@@ -11723,12 +11723,12 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
   },
   {
     id: 'thread-cu-303',
-    rfqId: 'rfq-ec21-cu-1',
+    rfqId: 'rfq-th-cu-1',
     productTitle: 'IGAS-Certified Ultra-Fine Copper Powder (Purity 99.9995% 5N5 Zurich Origin)',
-    buyerId: 'buyer-ec21-cu-1',
+    buyerId: 'buyer-th-cu-1',
     buyerName: 'Dr. Elizabeth Thorne',
     buyerCompany: 'Quantum Nanotech Materials Inc.',
-    supplierId: 'comp-ec21-cu-0',
+    supplierId: 'comp-th-cu-0',
     supplierName: 'Searaven Global Ltd',
     agreedPriceUsd: 950,
     agreedQuantity: 1000,
@@ -11738,7 +11738,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
     messages: [
       {
         id: 'msg-cu-1',
-        senderId: 'buyer-ec21-cu-1',
+        senderId: 'buyer-th-cu-1',
         senderName: 'Dr. Elizabeth Thorne',
         senderRole: 'BUYER',
         timestamp: '2026-08-29T10:00:00Z',
@@ -11746,7 +11746,7 @@ export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
       },
       {
         id: 'msg-cu-2',
-        senderId: 'comp-ec21-cu-0',
+        senderId: 'comp-th-cu-0',
         senderName: 'Sabrina Taylor (Searaven Global)',
         senderRole: 'SUPPLIER',
         timestamp: '2026-08-29T11:20:00Z',

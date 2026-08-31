@@ -13,6 +13,7 @@ import {
   Globe2, 
   PlusCircle, 
   Calendar, 
+  Clock,
   Anchor, 
   Building2, 
   ArrowRight,
@@ -30,6 +31,7 @@ import {
   Tag,
   X
 } from 'lucide-react';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 
 interface Props {
   selectedCurrency: Currency;
@@ -425,9 +427,15 @@ export const BuyLeadsView: React.FC<Props> = ({
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
                   <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block max-w-full truncate">
-                      {rfq.id}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block max-w-full truncate">
+                        {rfq.id}
+                      </span>
+                      <span className="text-[10px] text-blue-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-200/80">
+                        <Clock className="w-2.5 h-2.5 text-blue-500 shrink-0" />
+                        <span>{getFreshRfqDate(rfq)}</span>
+                      </span>
+                    </div>
                     <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
                   </div>
 

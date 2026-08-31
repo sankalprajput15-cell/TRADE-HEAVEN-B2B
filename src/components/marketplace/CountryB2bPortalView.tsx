@@ -19,9 +19,11 @@ import {
   ChevronRight, 
   CheckCircle2, 
   Award,
-  Filter
+  Filter,
+  Clock
 } from 'lucide-react';
 import { SafeImage } from '../common/SafeImage';
+import { formatRequirementDate } from '../../utils/rfqDateUtils';
 
 interface CountryB2bPortalViewProps {
   countryId: string;
@@ -508,7 +510,10 @@ export const CountryB2bPortalView: React.FC<CountryB2bPortalViewProps> = ({
                     <span className="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">
                       Qty: {offer.quantity}
                     </span>
-                    <span>{offer.date}</span>
+                    <span className="text-blue-700 font-semibold flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                      <Clock className="w-2.5 h-2.5 text-blue-500" />
+                      <span>{formatRequirementDate(offer.date, offer.id)}</span>
+                    </span>
                   </div>
                 </div>
               ))}

@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { 
   X, 
   FileText, 
@@ -169,7 +170,7 @@ export const RfqDetailModal: React.FC<Props> = ({
             <p className="text-xs text-slate-300 flex items-center gap-2 font-medium">
               <span>Target Buyer: <strong>{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
               <span>•</span>
-              <span>Posted: {rfq.postedDate || 'Recent'}</span>
+              <span>Posted: {getFreshRfqDate(rfq)}</span>
             </p>
           </div>
 
@@ -280,8 +281,11 @@ export const RfqDetailModal: React.FC<Props> = ({
                     <strong className="text-slate-900 font-semibold">{rfq.paymentTerms || '30% T/T Deposit, 70% against B/L or trade protection'}</strong>
                   </div>
                   <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-slate-500">Tender Expiry:</span>
-                    <strong className="text-slate-700 font-mono">{rfq.expiryDate || '30 Days Remaining'}</strong>
+                    <span className="text-slate-500">Tender Status:</span>
+                    <strong className="text-emerald-700 font-mono font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Active • Verified Fresh</span>
+                    </strong>
                   </div>
                 </div>
               </div>

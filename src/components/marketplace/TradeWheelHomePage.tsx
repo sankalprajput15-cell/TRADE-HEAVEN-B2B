@@ -25,11 +25,13 @@ import {
   TrendingUp, 
   FileText, 
   Calendar,
+  Clock,
   MessageCircle,
   ExternalLink,
   Lock,
   Headphones
 } from 'lucide-react';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 
 interface Props {
   products: Product[];
@@ -313,9 +315,15 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-start justify-between gap-1.5">
                       <div className="min-w-0">
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
-                          {rfq.id}
-                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                            {rfq.id}
+                          </span>
+                          <span className="text-[9px] text-blue-700 font-semibold flex items-center gap-0.5 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/80">
+                            <Clock className="w-2.5 h-2.5 text-blue-500" />
+                            <span>{getFreshRfqDate(rfq)}</span>
+                          </span>
+                        </div>
                         <h4 className="font-bold text-xs text-slate-900 mt-1 line-clamp-2 leading-snug">
                           {rfq.productName}
                         </h4>
