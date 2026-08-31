@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AuthUser } from '../../types';
-import { Calendar, User, Tag, ArrowRight, PlayCircle, Share2, TrendingUp, X, ExternalLink, Linkedin, Twitter, MessageCircle } from 'lucide-react';
+import { Calendar, User, Tag, ArrowRight, PlayCircle, Share2, TrendingUp, X, ExternalLink, Linkedin, Twitter, MessageCircle, Copy, Check } from 'lucide-react';
 import blogImage from '../../assets/images/regenerated_image_1787916463995.jpg';
 import buyerNoMoneyImage from '../../assets/images/regenerated_image_1787986452542.jpg';
 import brokersImage from '../../assets/images/regenerated_image_1788177506942.jpg';
@@ -41,6 +41,7 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
     ]
   });
   const [newComment, setNewComment] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const handlePostComment = () => {
     if (!currentUser || !newComment.trim() || !selectedArticleId) return;
@@ -214,6 +215,17 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
               >
                 <MessageCircle className="w-4 h-4" />
               </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              </button>
             </div>
             {onNavigate && (
               <button 
@@ -347,6 +359,17 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
               >
                 <MessageCircle className="w-4 h-4" />
               </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              </button>
             </div>
             {onNavigate && (
               <button 
@@ -469,6 +492,17 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
                 title="Share on WhatsApp"
               >
                 <MessageCircle className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
             {onNavigate && (
@@ -711,6 +745,17 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
                 title="Share on WhatsApp"
               >
                 <MessageCircle className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
               {onNavigate && (
