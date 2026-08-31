@@ -71,7 +71,7 @@ function loadStoredSuppliers(): CompanyProfile[] {
   const missingMockSuppliers = MOCK_COMPANIES.filter(s => !existingIds.has(s.id));
   
   if (missingMockSuppliers.length > 0) {
-    const combined = [...stored, ...missingMockSuppliers];
+    const combined = [...missingMockSuppliers, ...stored];
     persistStoredSuppliers(combined);
     return combined;
   }
@@ -98,7 +98,7 @@ function loadStoredBuyers(): DetailedBuyerProfile[] {
   const missingMockBuyers = MOCK_BUYER_PROFILES.filter(b => !existingIds.has(b.id));
 
   if (missingMockBuyers.length > 0) {
-    const combined = [...stored, ...missingMockBuyers];
+    const combined = [...missingMockBuyers, ...stored];
     persistStoredBuyers(combined);
     return combined;
   }
@@ -125,7 +125,7 @@ function loadStoredRfqs(): RfqRequirement[] {
   const missingMockRfqs = MOCK_RFQS.filter(r => !existingIds.has(r.id));
   
   if (missingMockRfqs.length > 0) {
-    const combined = [...stored, ...missingMockRfqs];
+    const combined = [...missingMockRfqs, ...stored];
     persistStoredRfqs(combined);
     return combined;
   }

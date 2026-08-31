@@ -1,6 +1,18 @@
 import { METRICS_DERIVED_RFQS } from './b2bTradeMetrics';
 import { MAPPED_CATALOG_DERIVED_RFQS, MAPPED_CATALOG_DERIVED_PRODUCTS, MAPPED_CATALOG_DATABASE } from './mappedCatalogDatabase';
 import { 
+  EC21_METAL_SCRAP_COMPANIES, 
+  EC21_METAL_SCRAP_BUYER_PROFILES, 
+  EC21_METAL_SCRAP_PRODUCTS, 
+  EC21_METAL_SCRAP_RFQS 
+} from './ec21MetalScrapData';
+import { 
+  EC21_GOLD_COMPANIES, 
+  EC21_GOLD_BUYER_PROFILES, 
+  EC21_GOLD_PRODUCTS, 
+  EC21_GOLD_RFQS 
+} from './ec21GoldData';
+import { 
   CompanyProfile, 
   DetailedBuyerProfile,
   CurrencyRate, 
@@ -598,6 +610,8 @@ export const CATEGORIES_TREE = [
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
+  ...EC21_GOLD_COMPANIES,
+  ...EC21_METAL_SCRAP_COMPANIES,
   {
   "id": "comp-ext2026-0",
   "ownerUid": "user-ext-supplier-0",
@@ -4067,6 +4081,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
+  ...EC21_GOLD_BUYER_PROFILES,
+  ...EC21_METAL_SCRAP_BUYER_PROFILES,
   {
   "id": "buyer-ext2026-0",
   "companyName": "UKKL Company Limited",
@@ -6846,6 +6862,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  ...EC21_GOLD_PRODUCTS,
+  ...EC21_METAL_SCRAP_PRODUCTS,
   {
   "id": "prod-ext2026-0-0",
   "title": "Sunflower oil (Bulk Wholesale)",
@@ -11469,7 +11487,7 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
   }
 ];
 
-export const MOCK_RFQS: RfqRequirement[] = [...MAPPED_CATALOG_DERIVED_RFQS, ...BASE_MOCK_RFQS, ...METRICS_DERIVED_RFQS];
+export const MOCK_RFQS: RfqRequirement[] = [...EC21_GOLD_RFQS, ...EC21_METAL_SCRAP_RFQS, ...MAPPED_CATALOG_DERIVED_RFQS, ...BASE_MOCK_RFQS, ...METRICS_DERIVED_RFQS];
 export { MAPPED_CATALOG_DATABASE };
 
 export const MOCK_QUOTES: SupplierQuote[] = [
