@@ -11586,7 +11586,7 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
   }
 ];
 
-export const MOCK_RFQS: RfqRequirement[] = [
+const RAW_UNORDERED_RFQS: RfqRequirement[] = [
   ...GLOBAL_JET_FUEL_RFQS,
   ...GLOBAL_ESPO_RFQS,
   ...GLOBAL_COPPER_POWDER_RFQS,
@@ -11604,6 +11604,49 @@ export const MOCK_RFQS: RfqRequirement[] = [
   ...BASE_MOCK_RFQS,
   ...METRICS_DERIVED_RFQS
 ];
+
+// Group by category and round-robin interleave so every page displays a diverse cross-section of global trade
+function interleaveRfqsByIndustry(rfqList: RfqRequirement[]): RfqRequirement[] {
+  const buckets = new Map<string, RfqRequirement[]>();
+  
+  rfqList.forEach((r, i) => {
+    // Ensure 100% complete contact details
+    if (!r.buyerEmail || r.buyerEmail === 'undefined' || !r.buyerPhone || r.buyerPhone === 'undefined') {
+      const cleanName = (r.buyerName || 'Buyer Contact').toLowerCase().replace(/[^a-z]/g, '.');
+      const cleanComp = (r.buyerCompany || 'Global Sourcing Corp').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!r.buyerEmail || r.buyerEmail === 'undefined') {
+        r.buyerEmail = `${cleanName}@${cleanComp || 'tradeglobal'}.com`;
+      }
+      if (!r.buyerPhone || r.buyerPhone === 'undefined' || r.buyerPhone.trim() === '') {
+        r.buyerPhone = `+1 800 ${Math.floor(200 + (i * 17) % 700)} ${Math.floor(1000 + (i * 37) % 8999)}`;
+      }
+    }
+    
+    const cat = r.category || 'General Commodities';
+    if (!buckets.has(cat)) buckets.set(cat, []);
+    buckets.get(cat)!.push(r);
+  });
+
+  const categoryArrays = Array.from(buckets.values());
+  const interleaved: RfqRequirement[] = [];
+  let added = true;
+  let round = 0;
+
+  while (added) {
+    added = false;
+    for (let i = 0; i < categoryArrays.length; i++) {
+      const arr = categoryArrays[i];
+      if (round < arr.length) {
+        interleaved.push(arr[round]);
+        added = true;
+      }
+    }
+    round++;
+  }
+  return interleaved;
+}
+
+export const MOCK_RFQS: RfqRequirement[] = interleaveRfqsByIndustry(RAW_UNORDERED_RFQS);
 export { MAPPED_CATALOG_DATABASE };
 
 export const MOCK_QUOTES: SupplierQuote[] = [

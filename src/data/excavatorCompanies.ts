@@ -23,7 +23,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 5,
     tier: 'GOLD',
     contactPerson: 'Director Apex',
-    contactPhone: '+1-800-555-1000'
+    contactPhone: '+9 510 216 3190'
   },
   {
     id: 'comp-th-exc-1',
@@ -48,7 +48,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 8,
     tier: 'SILVER',
     contactPerson: 'Director Titan',
-    contactPhone: '+1-800-555-1001'
+    contactPhone: '+77 946 428 7578'
   },
   {
     id: 'comp-th-exc-2',
@@ -73,7 +73,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 11,
     tier: 'FREE',
     contactPerson: 'Director IronTrack',
-    contactPhone: '+1-800-555-1002'
+    contactPhone: '+99 691 434 5394'
   },
   {
     id: 'comp-th-exc-3',
@@ -98,7 +98,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 14,
     tier: 'GOLD',
     contactPerson: 'Director Terra',
-    contactPhone: '+1-800-555-1003'
+    contactPhone: '+1 148 550 5782'
   },
   {
     id: 'comp-th-exc-4',
@@ -123,7 +123,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 17,
     tier: 'SILVER',
     contactPerson: 'Director HeavyTech',
-    contactPhone: '+1-800-555-1004'
+    contactPhone: '+57 642 902 9999'
   },
   {
     id: 'comp-th-exc-5',
@@ -148,7 +148,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 20,
     tier: 'FREE',
     contactPerson: 'Director Vanguard',
-    contactPhone: '+1-800-555-1005'
+    contactPhone: '+89 392 930 8597'
   },
   {
     id: 'comp-th-exc-6',
@@ -173,7 +173,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 23,
     tier: 'GOLD',
     contactPerson: 'Director Prime',
-    contactPhone: '+1-800-555-1006'
+    contactPhone: '+47 324 576 6190'
   },
   {
     id: 'comp-th-exc-7',
@@ -198,7 +198,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 26,
     tier: 'SILVER',
     contactPerson: 'Director Solid',
-    contactPhone: '+1-800-555-1007'
+    contactPhone: '+7 802 125 4901'
   },
   {
     id: 'comp-th-exc-8',
@@ -223,7 +223,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 29,
     tier: 'FREE',
     contactPerson: 'Director Goliath',
-    contactPhone: '+1-800-555-1008'
+    contactPhone: '+7 635 228 8871'
   },
   {
     id: 'comp-th-exc-9',
@@ -248,7 +248,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 32,
     tier: 'GOLD',
     contactPerson: 'Director Mammoth',
-    contactPhone: '+1-800-555-1009'
+    contactPhone: '+19 982 289 1829'
   },
   {
     id: 'comp-th-exc-10',
@@ -273,7 +273,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 35,
     tier: 'SILVER',
     contactPerson: 'Director Rhino',
-    contactPhone: '+1-800-555-1010'
+    contactPhone: '+53 340 569 3318'
   },
   {
     id: 'comp-th-exc-11',
@@ -298,7 +298,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 38,
     tier: 'FREE',
     contactPerson: 'Director Atlas',
-    contactPhone: '+1-800-555-1011'
+    contactPhone: '+26 413 894 7300'
   },
   {
     id: 'comp-th-exc-12',
@@ -323,7 +323,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 41,
     tier: 'GOLD',
     contactPerson: 'Director Forge',
-    contactPhone: '+1-800-555-1012'
+    contactPhone: '+9 648 709 1754'
   },
   {
     id: 'comp-th-exc-13',
@@ -348,7 +348,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 44,
     tier: 'SILVER',
     contactPerson: 'Director Vulcan',
-    contactPhone: '+1-800-555-1013'
+    contactPhone: '+91 918 969 5604'
   },
   {
     id: 'comp-th-exc-14',
@@ -373,7 +373,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 47,
     tier: 'FREE',
     contactPerson: 'Director Dozer',
-    contactPhone: '+1-800-555-1014'
+    contactPhone: '+60 465 298 4371'
   },
   {
     id: 'comp-th-exc-15',
@@ -398,7 +398,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 50,
     tier: 'GOLD',
     contactPerson: 'Director Apex',
-    contactPhone: '+1-800-555-1015'
+    contactPhone: '+69 707 344 6586'
   },
   {
     id: 'comp-th-exc-16',
@@ -423,7 +423,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 53,
     tier: 'SILVER',
     contactPerson: 'Director Titan',
-    contactPhone: '+1-800-555-1016'
+    contactPhone: '+21 656 808 8644'
   },
   {
     id: 'comp-th-exc-17',
@@ -448,7 +448,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 56,
     tier: 'FREE',
     contactPerson: 'Director IronTrack',
-    contactPhone: '+1-800-555-1017'
+    contactPhone: '+48 256 732 6390'
   },
   {
     id: 'comp-th-exc-18',
@@ -473,7 +473,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 59,
     tier: 'GOLD',
     contactPerson: 'Director Terra',
-    contactPhone: '+1-800-555-1018'
+    contactPhone: '+30 153 153 5809'
   },
   {
     id: 'comp-th-exc-19',
@@ -498,7 +498,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 62,
     tier: 'SILVER',
     contactPerson: 'Director HeavyTech',
-    contactPhone: '+1-800-555-1019'
+    contactPhone: '+90 404 282 2941'
   },
   {
     id: 'comp-th-exc-20',
@@ -523,7 +523,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 65,
     tier: 'FREE',
     contactPerson: 'Director Vanguard',
-    contactPhone: '+1-800-555-1020'
+    contactPhone: '+57 605 756 5625'
   },
   {
     id: 'comp-th-exc-21',
@@ -548,7 +548,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 68,
     tier: 'GOLD',
     contactPerson: 'Director Prime',
-    contactPhone: '+1-800-555-1021'
+    contactPhone: '+3 619 155 4257'
   },
   {
     id: 'comp-th-exc-22',
@@ -573,7 +573,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 71,
     tier: 'SILVER',
     contactPerson: 'Director Solid',
-    contactPhone: '+1-800-555-1022'
+    contactPhone: '+27 821 103 2890'
   },
   {
     id: 'comp-th-exc-23',
@@ -598,7 +598,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 74,
     tier: 'FREE',
     contactPerson: 'Director Goliath',
-    contactPhone: '+1-800-555-1023'
+    contactPhone: '+12 629 156 3005'
   },
   {
     id: 'comp-th-exc-24',
@@ -623,7 +623,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 77,
     tier: 'GOLD',
     contactPerson: 'Director Mammoth',
-    contactPhone: '+1-800-555-1024'
+    contactPhone: '+50 135 467 4688'
   },
   {
     id: 'comp-th-exc-25',
@@ -648,7 +648,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 80,
     tier: 'SILVER',
     contactPerson: 'Director Rhino',
-    contactPhone: '+1-800-555-1025'
+    contactPhone: '+26 965 351 8726'
   },
   {
     id: 'comp-th-exc-26',
@@ -673,7 +673,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 83,
     tier: 'FREE',
     contactPerson: 'Director Atlas',
-    contactPhone: '+1-800-555-1026'
+    contactPhone: '+48 357 880 2208'
   },
   {
     id: 'comp-th-exc-27',
@@ -698,7 +698,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 86,
     tier: 'GOLD',
     contactPerson: 'Director Forge',
-    contactPhone: '+1-800-555-1027'
+    contactPhone: '+47 931 134 1946'
   },
   {
     id: 'comp-th-exc-28',
@@ -723,7 +723,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 89,
     tier: 'SILVER',
     contactPerson: 'Director Vulcan',
-    contactPhone: '+1-800-555-1028'
+    contactPhone: '+17 364 205 8491'
   },
   {
     id: 'comp-th-exc-29',
@@ -748,7 +748,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 92,
     tier: 'FREE',
     contactPerson: 'Director Dozer',
-    contactPhone: '+1-800-555-1029'
+    contactPhone: '+41 262 315 4497'
   },
   {
     id: 'comp-th-exc-30',
@@ -773,7 +773,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 95,
     tier: 'GOLD',
     contactPerson: 'Director Apex',
-    contactPhone: '+1-800-555-1030'
+    contactPhone: '+72 989 771 2569'
   },
   {
     id: 'comp-th-exc-31',
@@ -798,7 +798,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 98,
     tier: 'SILVER',
     contactPerson: 'Director Titan',
-    contactPhone: '+1-800-555-1031'
+    contactPhone: '+99 913 112 5605'
   },
   {
     id: 'comp-th-exc-32',
@@ -823,7 +823,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 101,
     tier: 'FREE',
     contactPerson: 'Director IronTrack',
-    contactPhone: '+1-800-555-1032'
+    contactPhone: '+13 145 626 1157'
   },
   {
     id: 'comp-th-exc-33',
@@ -848,7 +848,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 104,
     tier: 'GOLD',
     contactPerson: 'Director Terra',
-    contactPhone: '+1-800-555-1033'
+    contactPhone: '+59 132 678 8552'
   },
   {
     id: 'comp-th-exc-34',
@@ -873,7 +873,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 107,
     tier: 'SILVER',
     contactPerson: 'Director HeavyTech',
-    contactPhone: '+1-800-555-1034'
+    contactPhone: '+45 781 866 8724'
   },
   {
     id: 'comp-th-exc-35',
@@ -898,7 +898,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 110,
     tier: 'FREE',
     contactPerson: 'Director Vanguard',
-    contactPhone: '+1-800-555-1035'
+    contactPhone: '+30 275 580 3706'
   },
   {
     id: 'comp-th-exc-36',
@@ -923,7 +923,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 113,
     tier: 'GOLD',
     contactPerson: 'Director Prime',
-    contactPhone: '+1-800-555-1036'
+    contactPhone: '+62 946 772 9212'
   },
   {
     id: 'comp-th-exc-37',
@@ -948,7 +948,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 116,
     tier: 'SILVER',
     contactPerson: 'Director Solid',
-    contactPhone: '+1-800-555-1037'
+    contactPhone: '+47 470 295 4971'
   },
   {
     id: 'comp-th-exc-38',
@@ -973,7 +973,7 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 119,
     tier: 'FREE',
     contactPerson: 'Director Goliath',
-    contactPhone: '+1-800-555-1038'
+    contactPhone: '+30 772 353 7773'
   },
   {
     id: 'comp-th-exc-39',
@@ -998,6 +998,6 @@ export const GLOBAL_EXCAVATOR_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 122,
     tier: 'GOLD',
     contactPerson: 'Director Mammoth',
-    contactPhone: '+1-800-555-1039'
+    contactPhone: '+98 905 387 4390'
   }
 ];

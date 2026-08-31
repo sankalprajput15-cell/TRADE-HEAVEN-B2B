@@ -14,7 +14,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 70,
     contactPerson: 'Purchasing Head 0',
     contactEmail: 'procurement@vanguardimporters.com',
-    contactPhone: '+1-888-000-2000'
+    contactPhone: '+94 307 758 3366'
   },
   {
     id: 'buyer-exc-1',
@@ -30,7 +30,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 71,
     contactPerson: 'Purchasing Head 1',
     contactEmail: 'procurement@primeimporters.com',
-    contactPhone: '+1-888-000-2001'
+    contactPhone: '+12 628 265 8980'
   },
   {
     id: 'buyer-exc-2',
@@ -46,7 +46,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 72,
     contactPerson: 'Purchasing Head 2',
     contactEmail: 'procurement@solidimporters.com',
-    contactPhone: '+1-888-000-2002'
+    contactPhone: '+50 605 984 8150'
   },
   {
     id: 'buyer-exc-3',
@@ -62,7 +62,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 73,
     contactPerson: 'Purchasing Head 3',
     contactEmail: 'procurement@goliathimporters.com',
-    contactPhone: '+1-888-000-2003'
+    contactPhone: '+72 996 970 5618'
   },
   {
     id: 'buyer-exc-4',
@@ -78,7 +78,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 74,
     contactPerson: 'Purchasing Head 4',
     contactEmail: 'procurement@mammothimporters.com',
-    contactPhone: '+1-888-000-2004'
+    contactPhone: '+44 256 746 3752'
   },
   {
     id: 'buyer-exc-5',
@@ -94,7 +94,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 75,
     contactPerson: 'Purchasing Head 5',
     contactEmail: 'procurement@rhinoimporters.com',
-    contactPhone: '+1-888-000-2005'
+    contactPhone: '+14 884 622 8601'
   },
   {
     id: 'buyer-exc-6',
@@ -110,7 +110,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 76,
     contactPerson: 'Purchasing Head 6',
     contactEmail: 'procurement@atlasimporters.com',
-    contactPhone: '+1-888-000-2006'
+    contactPhone: '+32 357 741 6323'
   },
   {
     id: 'buyer-exc-7',
@@ -126,7 +126,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 77,
     contactPerson: 'Purchasing Head 7',
     contactEmail: 'procurement@forgeimporters.com',
-    contactPhone: '+1-888-000-2007'
+    contactPhone: '+47 358 205 9708'
   },
   {
     id: 'buyer-exc-8',
@@ -142,7 +142,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 78,
     contactPerson: 'Purchasing Head 8',
     contactEmail: 'procurement@vulcanimporters.com',
-    contactPhone: '+1-888-000-2008'
+    contactPhone: '+50 849 870 7991'
   },
   {
     id: 'buyer-exc-9',
@@ -158,7 +158,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 79,
     contactPerson: 'Purchasing Head 9',
     contactEmail: 'procurement@dozerimporters.com',
-    contactPhone: '+1-888-000-2009'
+    contactPhone: '+65 448 253 9206'
   },
   {
     id: 'buyer-exc-10',
@@ -174,7 +174,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 80,
     contactPerson: 'Purchasing Head 10',
     contactEmail: 'procurement@apeximporters.com',
-    contactPhone: '+1-888-000-2010'
+    contactPhone: '+95 817 604 2416'
   },
   {
     id: 'buyer-exc-11',
@@ -190,7 +190,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 81,
     contactPerson: 'Purchasing Head 11',
     contactEmail: 'procurement@titanimporters.com',
-    contactPhone: '+1-888-000-2011'
+    contactPhone: '+18 930 998 9683'
   },
   {
     id: 'buyer-exc-12',
@@ -206,7 +206,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 82,
     contactPerson: 'Purchasing Head 12',
     contactEmail: 'procurement@irontrackimporters.com',
-    contactPhone: '+1-888-000-2012'
+    contactPhone: '+61 822 636 8375'
   },
   {
     id: 'buyer-exc-13',
@@ -222,7 +222,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 83,
     contactPerson: 'Purchasing Head 13',
     contactEmail: 'procurement@terraimporters.com',
-    contactPhone: '+1-888-000-2013'
+    contactPhone: '+31 301 168 3562'
   },
   {
     id: 'buyer-exc-14',
@@ -238,7 +238,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 84,
     contactPerson: 'Purchasing Head 14',
     contactEmail: 'procurement@heavytechimporters.com',
-    contactPhone: '+1-888-000-2014'
+    contactPhone: '+76 723 631 6711'
   },
   {
     id: 'buyer-exc-15',
@@ -254,7 +254,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 85,
     contactPerson: 'Purchasing Head 15',
     contactEmail: 'procurement@vanguardimporters.com',
-    contactPhone: '+1-888-000-2015'
+    contactPhone: '+64 509 871 7240'
   },
   {
     id: 'buyer-exc-16',
@@ -270,7 +270,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 86,
     contactPerson: 'Purchasing Head 16',
     contactEmail: 'procurement@primeimporters.com',
-    contactPhone: '+1-888-000-2016'
+    contactPhone: '+65 184 503 7554'
   },
   {
     id: 'buyer-exc-17',
@@ -286,7 +286,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 87,
     contactPerson: 'Purchasing Head 17',
     contactEmail: 'procurement@solidimporters.com',
-    contactPhone: '+1-888-000-2017'
+    contactPhone: '+30 946 840 5779'
   },
   {
     id: 'buyer-exc-18',
@@ -302,7 +302,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 88,
     contactPerson: 'Purchasing Head 18',
     contactEmail: 'procurement@goliathimporters.com',
-    contactPhone: '+1-888-000-2018'
+    contactPhone: '+59 296 356 2673'
   },
   {
     id: 'buyer-exc-19',
@@ -318,7 +318,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 89,
     contactPerson: 'Purchasing Head 19',
     contactEmail: 'procurement@mammothimporters.com',
-    contactPhone: '+1-888-000-2019'
+    contactPhone: '+26 363 888 1219'
   },
   {
     id: 'buyer-exc-20',
@@ -334,7 +334,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 90,
     contactPerson: 'Purchasing Head 20',
     contactEmail: 'procurement@rhinoimporters.com',
-    contactPhone: '+1-888-000-2020'
+    contactPhone: '+20 268 618 5388'
   },
   {
     id: 'buyer-exc-21',
@@ -350,7 +350,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 91,
     contactPerson: 'Purchasing Head 21',
     contactEmail: 'procurement@atlasimporters.com',
-    contactPhone: '+1-888-000-2021'
+    contactPhone: '+87 200 173 3772'
   },
   {
     id: 'buyer-exc-22',
@@ -366,7 +366,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 92,
     contactPerson: 'Purchasing Head 22',
     contactEmail: 'procurement@forgeimporters.com',
-    contactPhone: '+1-888-000-2022'
+    contactPhone: '+42 763 512 7844'
   },
   {
     id: 'buyer-exc-23',
@@ -382,7 +382,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 93,
     contactPerson: 'Purchasing Head 23',
     contactEmail: 'procurement@vulcanimporters.com',
-    contactPhone: '+1-888-000-2023'
+    contactPhone: '+37 708 520 3545'
   },
   {
     id: 'buyer-exc-24',
@@ -398,7 +398,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 94,
     contactPerson: 'Purchasing Head 24',
     contactEmail: 'procurement@dozerimporters.com',
-    contactPhone: '+1-888-000-2024'
+    contactPhone: '+48 873 119 4932'
   },
   {
     id: 'buyer-exc-25',
@@ -414,7 +414,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 95,
     contactPerson: 'Purchasing Head 25',
     contactEmail: 'procurement@apeximporters.com',
-    contactPhone: '+1-888-000-2025'
+    contactPhone: '+47 589 105 7940'
   },
   {
     id: 'buyer-exc-26',
@@ -430,7 +430,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 96,
     contactPerson: 'Purchasing Head 26',
     contactEmail: 'procurement@titanimporters.com',
-    contactPhone: '+1-888-000-2026'
+    contactPhone: '+49 925 803 6241'
   },
   {
     id: 'buyer-exc-27',
@@ -446,7 +446,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 97,
     contactPerson: 'Purchasing Head 27',
     contactEmail: 'procurement@irontrackimporters.com',
-    contactPhone: '+1-888-000-2027'
+    contactPhone: '+82 661 287 5508'
   },
   {
     id: 'buyer-exc-28',
@@ -462,7 +462,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 98,
     contactPerson: 'Purchasing Head 28',
     contactEmail: 'procurement@terraimporters.com',
-    contactPhone: '+1-888-000-2028'
+    contactPhone: '+38 396 406 2094'
   },
   {
     id: 'buyer-exc-29',
@@ -478,7 +478,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 99,
     contactPerson: 'Purchasing Head 29',
     contactEmail: 'procurement@heavytechimporters.com',
-    contactPhone: '+1-888-000-2029'
+    contactPhone: '+40 815 276 2667'
   },
   {
     id: 'buyer-exc-30',
@@ -494,7 +494,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 70,
     contactPerson: 'Purchasing Head 30',
     contactEmail: 'procurement@vanguardimporters.com',
-    contactPhone: '+1-888-000-2030'
+    contactPhone: '+78 829 763 5174'
   },
   {
     id: 'buyer-exc-31',
@@ -510,7 +510,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 71,
     contactPerson: 'Purchasing Head 31',
     contactEmail: 'procurement@primeimporters.com',
-    contactPhone: '+1-888-000-2031'
+    contactPhone: '+50 806 437 4185'
   },
   {
     id: 'buyer-exc-32',
@@ -526,7 +526,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 72,
     contactPerson: 'Purchasing Head 32',
     contactEmail: 'procurement@solidimporters.com',
-    contactPhone: '+1-888-000-2032'
+    contactPhone: '+18 164 822 5360'
   },
   {
     id: 'buyer-exc-33',
@@ -542,7 +542,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 73,
     contactPerson: 'Purchasing Head 33',
     contactEmail: 'procurement@goliathimporters.com',
-    contactPhone: '+1-888-000-2033'
+    contactPhone: '+48 847 600 5054'
   },
   {
     id: 'buyer-exc-34',
@@ -558,7 +558,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 74,
     contactPerson: 'Purchasing Head 34',
     contactEmail: 'procurement@mammothimporters.com',
-    contactPhone: '+1-888-000-2034'
+    contactPhone: '+10 351 340 7584'
   },
   {
     id: 'buyer-exc-35',
@@ -574,7 +574,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 75,
     contactPerson: 'Purchasing Head 35',
     contactEmail: 'procurement@rhinoimporters.com',
-    contactPhone: '+1-888-000-2035'
+    contactPhone: '+66 151 480 4065'
   },
   {
     id: 'buyer-exc-36',
@@ -590,7 +590,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 76,
     contactPerson: 'Purchasing Head 36',
     contactEmail: 'procurement@atlasimporters.com',
-    contactPhone: '+1-888-000-2036'
+    contactPhone: '+41 539 387 6758'
   },
   {
     id: 'buyer-exc-37',
@@ -606,7 +606,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 77,
     contactPerson: 'Purchasing Head 37',
     contactEmail: 'procurement@forgeimporters.com',
-    contactPhone: '+1-888-000-2037'
+    contactPhone: '+7 901 465 9660'
   },
   {
     id: 'buyer-exc-38',
@@ -622,7 +622,7 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 78,
     contactPerson: 'Purchasing Head 38',
     contactEmail: 'procurement@vulcanimporters.com',
-    contactPhone: '+1-888-000-2038'
+    contactPhone: '+9 177 977 4058'
   },
   {
     id: 'buyer-exc-39',
@@ -638,6 +638,6 @@ export const GLOBAL_EXCAVATOR_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 79,
     contactPerson: 'Purchasing Head 39',
     contactEmail: 'procurement@dozerimporters.com',
-    contactPhone: '+1-888-000-2039'
+    contactPhone: '+64 901 551 6596'
   }
 ];

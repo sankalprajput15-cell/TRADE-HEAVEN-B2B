@@ -23,7 +23,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 5,
     tier: 'GOLD',
     contactPerson: 'Director Precision',
-    contactPhone: '+1-800-555-1000'
+    contactPhone: '+71 874 182 6215'
   },
   {
     id: 'comp-th-weld-1',
@@ -48,7 +48,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 8,
     tier: 'SILVER',
     contactPerson: 'Director Spark',
-    contactPhone: '+1-800-555-1001'
+    contactPhone: '+24 774 152 8151'
   },
   {
     id: 'comp-th-weld-2',
@@ -73,7 +73,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 11,
     tier: 'FREE',
     contactPerson: 'Director ArcMaster',
-    contactPhone: '+1-800-555-1002'
+    contactPhone: '+44 242 998 4763'
   },
   {
     id: 'comp-th-weld-3',
@@ -98,7 +98,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 14,
     tier: 'GOLD',
     contactPerson: 'Director Quantum',
-    contactPhone: '+1-800-555-1003'
+    contactPhone: '+50 786 873 6987'
   },
   {
     id: 'comp-th-weld-4',
@@ -123,7 +123,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 17,
     tier: 'SILVER',
     contactPerson: 'Director Fusion',
-    contactPhone: '+1-800-555-1004'
+    contactPhone: '+79 664 909 7450'
   },
   {
     id: 'comp-th-weld-5',
@@ -148,7 +148,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 20,
     tier: 'FREE',
     contactPerson: 'Director WeldTech',
-    contactPhone: '+1-800-555-1005'
+    contactPhone: '+85 490 483 9372'
   },
   {
     id: 'comp-th-weld-6',
@@ -173,7 +173,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 23,
     tier: 'GOLD',
     contactPerson: 'Director Plasma',
-    contactPhone: '+1-800-555-1006'
+    contactPhone: '+91 587 684 4435'
   },
   {
     id: 'comp-th-weld-7',
@@ -198,7 +198,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 26,
     tier: 'SILVER',
     contactPerson: 'Director LaserCore',
-    contactPhone: '+1-800-555-1007'
+    contactPhone: '+30 555 351 8166'
   },
   {
     id: 'comp-th-weld-8',
@@ -223,7 +223,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 29,
     tier: 'FREE',
     contactPerson: 'Director IronWeld',
-    contactPhone: '+1-800-555-1008'
+    contactPhone: '+38 913 106 9259'
   },
   {
     id: 'comp-th-weld-9',
@@ -248,7 +248,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 32,
     tier: 'GOLD',
     contactPerson: 'Director ProWeld',
-    contactPhone: '+1-800-555-1009'
+    contactPhone: '+93 498 297 8241'
   },
   {
     id: 'comp-th-weld-10',
@@ -273,7 +273,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 35,
     tier: 'SILVER',
     contactPerson: 'Director Nova',
-    contactPhone: '+1-800-555-1010'
+    contactPhone: '+22 818 501 4623'
   },
   {
     id: 'comp-th-weld-11',
@@ -298,7 +298,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 38,
     tier: 'FREE',
     contactPerson: 'Director Lumi',
-    contactPhone: '+1-800-555-1011'
+    contactPhone: '+15 848 400 5862'
   },
   {
     id: 'comp-th-weld-12',
@@ -323,7 +323,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 41,
     tier: 'GOLD',
     contactPerson: 'Director Beam',
-    contactPhone: '+1-800-555-1012'
+    contactPhone: '+63 556 150 4084'
   },
   {
     id: 'comp-th-weld-13',
@@ -348,7 +348,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 44,
     tier: 'SILVER',
     contactPerson: 'Director Flux',
-    contactPhone: '+1-800-555-1013'
+    contactPhone: '+69 618 126 9117'
   },
   {
     id: 'comp-th-weld-14',
@@ -373,7 +373,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 47,
     tier: 'FREE',
     contactPerson: 'Director Inert',
-    contactPhone: '+1-800-555-1014'
+    contactPhone: '+98 404 674 5342'
   },
   {
     id: 'comp-th-weld-15',
@@ -398,7 +398,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 50,
     tier: 'GOLD',
     contactPerson: 'Director Precision',
-    contactPhone: '+1-800-555-1015'
+    contactPhone: '+30 342 268 6198'
   },
   {
     id: 'comp-th-weld-16',
@@ -423,7 +423,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 53,
     tier: 'SILVER',
     contactPerson: 'Director Spark',
-    contactPhone: '+1-800-555-1016'
+    contactPhone: '+73 384 125 3081'
   },
   {
     id: 'comp-th-weld-17',
@@ -448,7 +448,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 56,
     tier: 'FREE',
     contactPerson: 'Director ArcMaster',
-    contactPhone: '+1-800-555-1017'
+    contactPhone: '+6 600 642 4919'
   },
   {
     id: 'comp-th-weld-18',
@@ -473,7 +473,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 59,
     tier: 'GOLD',
     contactPerson: 'Director Quantum',
-    contactPhone: '+1-800-555-1018'
+    contactPhone: '+37 731 299 3839'
   },
   {
     id: 'comp-th-weld-19',
@@ -498,7 +498,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 62,
     tier: 'SILVER',
     contactPerson: 'Director Fusion',
-    contactPhone: '+1-800-555-1019'
+    contactPhone: '+37 377 462 5707'
   },
   {
     id: 'comp-th-weld-20',
@@ -523,7 +523,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 65,
     tier: 'FREE',
     contactPerson: 'Director WeldTech',
-    contactPhone: '+1-800-555-1020'
+    contactPhone: '+36 925 471 5434'
   },
   {
     id: 'comp-th-weld-21',
@@ -548,7 +548,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 68,
     tier: 'GOLD',
     contactPerson: 'Director Plasma',
-    contactPhone: '+1-800-555-1021'
+    contactPhone: '+76 620 123 6815'
   },
   {
     id: 'comp-th-weld-22',
@@ -573,7 +573,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 71,
     tier: 'SILVER',
     contactPerson: 'Director LaserCore',
-    contactPhone: '+1-800-555-1022'
+    contactPhone: '+2 262 112 9575'
   },
   {
     id: 'comp-th-weld-23',
@@ -598,7 +598,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 74,
     tier: 'FREE',
     contactPerson: 'Director IronWeld',
-    contactPhone: '+1-800-555-1023'
+    contactPhone: '+11 925 615 1189'
   },
   {
     id: 'comp-th-weld-24',
@@ -623,7 +623,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 77,
     tier: 'GOLD',
     contactPerson: 'Director ProWeld',
-    contactPhone: '+1-800-555-1024'
+    contactPhone: '+6 578 533 8008'
   },
   {
     id: 'comp-th-weld-25',
@@ -648,7 +648,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 80,
     tier: 'SILVER',
     contactPerson: 'Director Nova',
-    contactPhone: '+1-800-555-1025'
+    contactPhone: '+56 909 736 4739'
   },
   {
     id: 'comp-th-weld-26',
@@ -673,7 +673,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 83,
     tier: 'FREE',
     contactPerson: 'Director Lumi',
-    contactPhone: '+1-800-555-1026'
+    contactPhone: '+81 828 629 7341'
   },
   {
     id: 'comp-th-weld-27',
@@ -698,7 +698,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 86,
     tier: 'GOLD',
     contactPerson: 'Director Beam',
-    contactPhone: '+1-800-555-1027'
+    contactPhone: '+17 574 912 2900'
   },
   {
     id: 'comp-th-weld-28',
@@ -723,7 +723,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 89,
     tier: 'SILVER',
     contactPerson: 'Director Flux',
-    contactPhone: '+1-800-555-1028'
+    contactPhone: '+13 358 345 4217'
   },
   {
     id: 'comp-th-weld-29',
@@ -748,7 +748,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 92,
     tier: 'FREE',
     contactPerson: 'Director Inert',
-    contactPhone: '+1-800-555-1029'
+    contactPhone: '+50 321 651 4972'
   },
   {
     id: 'comp-th-weld-30',
@@ -773,7 +773,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 95,
     tier: 'GOLD',
     contactPerson: 'Director Precision',
-    contactPhone: '+1-800-555-1030'
+    contactPhone: '+76 655 826 5943'
   },
   {
     id: 'comp-th-weld-31',
@@ -798,7 +798,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 98,
     tier: 'SILVER',
     contactPerson: 'Director Spark',
-    contactPhone: '+1-800-555-1031'
+    contactPhone: '+21 852 437 6188'
   },
   {
     id: 'comp-th-weld-32',
@@ -823,7 +823,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 101,
     tier: 'FREE',
     contactPerson: 'Director ArcMaster',
-    contactPhone: '+1-800-555-1032'
+    contactPhone: '+42 732 528 4233'
   },
   {
     id: 'comp-th-weld-33',
@@ -848,7 +848,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 104,
     tier: 'GOLD',
     contactPerson: 'Director Quantum',
-    contactPhone: '+1-800-555-1033'
+    contactPhone: '+50 905 546 2164'
   },
   {
     id: 'comp-th-weld-34',
@@ -873,7 +873,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 107,
     tier: 'SILVER',
     contactPerson: 'Director Fusion',
-    contactPhone: '+1-800-555-1034'
+    contactPhone: '+45 203 235 1209'
   },
   {
     id: 'comp-th-weld-35',
@@ -898,7 +898,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 110,
     tier: 'FREE',
     contactPerson: 'Director WeldTech',
-    contactPhone: '+1-800-555-1035'
+    contactPhone: '+88 892 914 2651'
   },
   {
     id: 'comp-th-weld-36',
@@ -923,7 +923,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 113,
     tier: 'GOLD',
     contactPerson: 'Director Plasma',
-    contactPhone: '+1-800-555-1036'
+    contactPhone: '+13 875 718 8149'
   },
   {
     id: 'comp-th-weld-37',
@@ -948,7 +948,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 116,
     tier: 'SILVER',
     contactPerson: 'Director LaserCore',
-    contactPhone: '+1-800-555-1037'
+    contactPhone: '+24 770 543 6385'
   },
   {
     id: 'comp-th-weld-38',
@@ -973,7 +973,7 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 119,
     tier: 'FREE',
     contactPerson: 'Director IronWeld',
-    contactPhone: '+1-800-555-1038'
+    contactPhone: '+77 513 338 9079'
   },
   {
     id: 'comp-th-weld-39',
@@ -998,6 +998,6 @@ export const GLOBAL_WELDER_MACHINE_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 122,
     tier: 'GOLD',
     contactPerson: 'Director ProWeld',
-    contactPhone: '+1-800-555-1039'
+    contactPhone: '+42 625 349 4699'
   }
 ];

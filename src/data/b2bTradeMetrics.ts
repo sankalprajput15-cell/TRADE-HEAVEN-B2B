@@ -3118,17 +3118,118 @@ const PORTS = [
   'Santos Port, Brazil'
 ];
 
-const INCOTERMS: Incoterm[] = ['CIF', 'FOB', 'CFR', 'DDP'];
+const INCOTERMS: Incoterm[] = ['CIF', 'FOB', 'CFR', 'DDP', 'FCA', 'EXW'];
+
+const FIRST_NAMES_EXPANDED = [
+  'Marcus', 'Elena', 'Lucas', 'Sven', 'Tariq', 'Chen', 'Hiroshi', 'Astrid', 'Mateo', 'Kareem',
+  'David', 'Sophia', 'Vikram', 'Laurent', 'Amira', 'James', 'Klaus', 'Carlos', 'Isabella', 'Diego',
+  'Fatima', 'Liam', 'Zainab', 'Alexander', 'Freja', 'Nikolai', 'Kwame', 'Giovanni', 'Hugo', 'Henrik',
+  'Arjun', 'Ren', 'Thiago', 'Dmitri', 'Mikhail', 'Arthur', 'Louis', 'Gabriel', 'Magnus', 'Oskar',
+  'Rohan', 'Taro', 'Kazuki', 'Felipe', 'Rodrigo', 'Bruno', 'Kofi', 'Jabari', 'Lorenzo', 'Alessio',
+  'Charles', 'Christopher', 'Daniel', 'Benjamin', 'Theodore', 'Alejandro', 'Javier', 'Wei', 'Kenji', 'Daisuke',
+  'Omar', 'Suresh', 'Rajesh', 'Stefan', 'Jean-Pierre', 'Etienne', 'Sergei', 'Andrei', 'Emeka', 'Matteo',
+  'Karan', 'Dev', 'Aditya', 'Ryota', 'Shun', 'Gustavo', 'Babatunde', 'Marco', 'Leonardo', 'Federico'
+];
+
+const LAST_NAMES_EXPANDED = [
+  'Sterling', 'Rostova', 'Lindholm', 'Vance', 'Al-Mansoor', 'Wei Ling', 'Tanaka', 'Weber', 'Silva', 'El-Sayed',
+  'Tremblay', 'Fischer', 'Patel', 'Dubois', 'Omondi', 'MacLeod', 'Schneider', 'Mendoza', 'Santoro', 'Becker',
+  'Khatib', 'Moreau', 'Nkosi', 'Richter', 'Schäfer', 'Ivanov', 'Kuznetsov', 'Diallo', 'Ferrari', 'Leroy',
+  'Eriksson', 'Chatterjee', 'Kobayashi', 'Castillo', 'Guerrero', 'Silva', 'Okafor', 'Adeyemi', 'Lombardi', 'Barone',
+  'Hoffmann', 'Koch', 'Bauer', 'Yamamoto', 'Nakamura', 'Saito', 'Zhang', 'Wang', 'Li', 'Liu',
+  'Al-Hashimi', 'Al-Sayed', 'El-Masry', 'Sharma', 'Verma', 'Gupta', 'Iyer', 'Osei', 'Mensah', 'Keita',
+  'Sokolov', 'Popov', 'Smirnov', 'Volkov', 'De Jong', 'Van Dijk', 'Bakker', 'Visser', 'Smit', 'Colombo',
+  'Dupont', 'Lambert', 'Martin', 'Bernard', 'Johansson', 'Andersson', 'Karlsson', 'Nilsson', 'Larsson', 'Morales'
+];
+
+const GLOBAL_BUYER_PORTS_EXPANDED = [
+  { country: 'United States', port: 'Port of Los Angeles, USA', code: '+1', domain: 'us' },
+  { country: 'Germany', port: 'Port of Hamburg, Germany', code: '+49', domain: 'de' },
+  { country: 'United Arab Emirates', port: 'Jebel Ali Port, Dubai, UAE', code: '+971', domain: 'ae' },
+  { country: 'Singapore', port: 'Jurong Port, Singapore', code: '+65', domain: 'sg' },
+  { country: 'Netherlands', port: 'Port of Rotterdam, Netherlands', code: '+31', domain: 'nl' },
+  { country: 'United Kingdom', port: 'Port of Felixstowe, UK', code: '+44', domain: 'co.uk' },
+  { country: 'Japan', port: 'Yokohama Port, Japan', code: '+81', domain: 'co.jp' },
+  { country: 'Australia', port: 'Port of Melbourne, Australia', code: '+61', domain: 'com.au' },
+  { country: 'Canada', port: 'Port of Vancouver, Canada', code: '+1', domain: 'ca' },
+  { country: 'Brazil', port: 'Santos Port, Brazil', code: '+55', domain: 'com.br' },
+  { country: 'South Korea', port: 'Port of Busan, South Korea', code: '+82', domain: 'co.kr' },
+  { country: 'Spain', port: 'Port of Valencia, Spain', code: '+34', domain: 'es' },
+  { country: 'Italy', port: 'Port of Genoa, Italy', code: '+39', domain: 'it' },
+  { country: 'France', port: 'Port of Marseille, France', code: '+33', domain: 'fr' },
+  { country: 'India', port: 'Nhava Sheva Port, India', code: '+91', domain: 'in' },
+  { country: 'Saudi Arabia', port: 'Jeddah Islamic Port, Saudi Arabia', code: '+966', domain: 'com.sa' },
+  { country: 'Turkey', port: 'Port of Ambarli, Istanbul, Turkey', code: '+90', domain: 'com.tr' },
+  { country: 'Vietnam', port: 'Hai Phong Port, Vietnam', code: '+84', domain: 'vn' },
+  { country: 'South Africa', port: 'Port of Durban, South Africa', code: '+27', domain: 'co.za' },
+  { country: 'Mexico', port: 'Port of Manzanillo, Mexico', code: '+52', domain: 'com.mx' },
+  { country: 'Thailand', port: 'Laem Chabang Port, Thailand', code: '+66', domain: 'co.th' },
+  { country: 'Malaysia', port: 'Port Klang, Malaysia', code: '+60', domain: 'com.my' },
+  { country: 'Egypt', port: 'Port of Alexandria, Egypt', code: '+20', domain: 'com.eg' },
+  { country: 'Chile', port: 'Port of Valparaiso, Chile', code: '+56', domain: 'cl' },
+  { country: 'Indonesia', port: 'Tanjung Priok, Jakarta, Indonesia', code: '+62', domain: 'co.id' },
+  { country: 'Belgium', port: 'Port of Antwerp, Belgium', code: '+32', domain: 'be' },
+  { country: 'Poland', port: 'Port of Gdansk, Poland', code: '+48', domain: 'pl' },
+  { country: 'Sweden', port: 'Port of Gothenburg, Sweden', code: '+46', domain: 'se' },
+  { country: 'Norway', port: 'Port of Oslo, Norway', code: '+47', domain: 'no' },
+  { country: 'Greece', port: 'Port of Piraeus, Greece', code: '+30', domain: 'gr' }
+];
+
+const B2B_CORP_SUFFIXES_EXPANDED = [
+  'Industries Group', 'Commodities Corp', 'Logistics & Trade', 'Procurement AG', 'Global Sourcing Ltd',
+  'Holdings International', 'Commercial Partners', 'Distribution SA', 'Supply Chain Network', 'Merchants Pte Ltd',
+  'Universal Materials BV', 'Strategic Logistics Corp', 'International Freight & Trade', 'Meridian Supply Partners',
+  'Nexus Raw Materials Ltd', 'Vanguard Trading SA', 'Equator Commodities Group', 'Atlas Sourcing LLC',
+  'Titan Industrial Supply', 'Sovereign Merchant Alliance', 'Keystone Procurement Pte', 'Pinnacle Trade Ltd'
+];
+
+const TITLE_TEMPLATES_1 = [
+  'Grade-A Certified %s (Bulk Industrial Supply)',
+  'Commercial Specification %s (Immediate Export Order)',
+  'High Purity %s (Spot Vessel / FCL Delivery)',
+  'Factory Direct %s (Annual Wholesale Contract)',
+  'International Standard %s (SGS Tested at Loading Port)',
+  'Custom Formulated %s for Manufacturing Plant',
+  'Prime Quality %s (Urgent Turnkey Sourcing)',
+  'OEM Specification %s for Global Distribution'
+];
+
+const TITLE_TEMPLATES_2 = [
+  'Industrial Grade %s (Custom Packaging / Private Label)',
+  'Bulk %s (Prompt Loading & Delivery Stream)',
+  'Long-Term Supply Contract: %s (Verified Importer)',
+  'Standard Export Quality %s (FOB / CIF Contract)',
+  'High Volume Procurement: %s for Enterprise Operations',
+  'Certified %s (Pre-Shipment Inspection Required)',
+  'Containerized Bulk %s (Regular Monthly Schedule)',
+  'Premium Quality %s (Strict Technical Tolerances)'
+];
 
 export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.flatMap((m, idx) => {
-  const buyer1 = BUYER_PROFILES[(idx * 2) % BUYER_PROFILES.length];
-  const buyer2 = BUYER_PROFILES[(idx * 2 + 1) % BUYER_PROFILES.length];
-  const port1 = PORTS[idx % PORTS.length];
-  const port2 = PORTS[(idx + 3) % PORTS.length];
-  const inco1 = INCOTERMS[idx % INCOTERMS.length];
-  const inco2 = INCOTERMS[(idx + 2) % INCOTERMS.length];
+  const geo1 = GLOBAL_BUYER_PORTS_EXPANDED[(idx * 7 + 3) % GLOBAL_BUYER_PORTS_EXPANDED.length];
+  const geo2 = GLOBAL_BUYER_PORTS_EXPANDED[(idx * 13 + 11) % GLOBAL_BUYER_PORTS_EXPANDED.length];
+  
+  const fn1 = FIRST_NAMES_EXPANDED[(idx * 17 + 5) % FIRST_NAMES_EXPANDED.length];
+  const ln1 = LAST_NAMES_EXPANDED[(idx * 23 + 9) % LAST_NAMES_EXPANDED.length];
+  const buyer1Name = `${fn1} ${ln1}`;
+  const buyer1Company = `${ln1} ${B2B_CORP_SUFFIXES_EXPANDED[(idx * 11 + 2) % B2B_CORP_SUFFIXES_EXPANDED.length]}`;
+  const domain1 = `${buyer1Company.toLowerCase().replace(/[^a-z0-9]/g, '')}.${geo1.domain}`;
+  const cleanP1 = `${fn1.toLowerCase()}.${ln1.toLowerCase()}`.replace(/[^a-z0-9.]/g, '');
+  const buyer1Email = `${cleanP1}@${domain1}`;
+  const buyer1Phone = `${geo1.code} ${Math.floor(200 + (idx * 17) % 700)} ${Math.floor(100 + (idx * 31) % 899)} ${Math.floor(1000 + (idx * 53) % 8999)}`;
 
-  const slug = m.subcategory.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const fn2 = FIRST_NAMES_EXPANDED[(idx * 19 + 8) % FIRST_NAMES_EXPANDED.length];
+  const ln2 = LAST_NAMES_EXPANDED[(idx * 29 + 14) % LAST_NAMES_EXPANDED.length];
+  const buyer2Name = `${fn2} ${ln2}`;
+  const buyer2Company = `${ln2} ${B2B_CORP_SUFFIXES_EXPANDED[(idx * 13 + 7) % B2B_CORP_SUFFIXES_EXPANDED.length]}`;
+  const domain2 = `${buyer2Company.toLowerCase().replace(/[^a-z0-9]/g, '')}.${geo2.domain}`;
+  const cleanP2 = `${fn2.toLowerCase()}.${ln2.toLowerCase()}`.replace(/[^a-z0-9.]/g, '');
+  const buyer2Email = `${cleanP2}@${domain2}`;
+  const buyer2Phone = `${geo2.code} ${Math.floor(200 + (idx * 23) % 700)} ${Math.floor(100 + (idx * 43) % 899)} ${Math.floor(1000 + (idx * 67) % 8999)}`;
+
+  const inco1 = INCOTERMS[(idx * 3) % INCOTERMS.length];
+  const inco2 = INCOTERMS[(idx * 5 + 2) % INCOTERMS.length];
+
   const sub = m.subcategory.toLowerCase();
   const main = m.main_category.toLowerCase();
 
@@ -3145,25 +3246,33 @@ export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.f
   const baseQty = Math.round(m.total_buying_leads_rfqs * 12 + 150);
   const basePrice = Math.round((m.total_verified_suppliers % 80) * 15 + 45);
 
+  const tpl1 = TITLE_TEMPLATES_1[idx % TITLE_TEMPLATES_1.length];
+  const tpl2 = TITLE_TEMPLATES_2[(idx * 3 + 1) % TITLE_TEMPLATES_2.length];
+  const prodTitle1 = tpl1.replace('%s', m.subcategory);
+  const prodTitle2 = tpl2.replace('%s', m.subcategory);
+
   const rfq1: RfqRequirement = {
     id: `RFQ-METRIC-${idx + 1}-01`,
-    buyerName: buyer1.name,
-    buyerCompany: buyer1.company,
-    buyerCountry: buyer1.country,
+    buyerName: buyer1Name,
+    buyerCompany: buyer1Company,
+    buyerCountry: geo1.country,
+    buyerEmail: buyer1Email,
+    buyerPhone: buyer1Phone,
     buyerVerified: true,
-    productName: `${m.subcategory} - Bulk Commercial Supply Order`,
+    productName: prodTitle1,
     category: m.main_category,
     targetQuantity: baseQty,
     quantityUnit: unit,
     targetPriceUsd: basePrice,
     preferredIncoterm: inco1,
-    destinationPort: port1,
+    destinationPort: geo1.port,
     paymentTerms: 'Irrevocable L/C at sight from Top 50 Global Bank',
-    detailedRequirements: `Direct buyer requirement for high grade ${m.subcategory}. Active category buying leads: ${m.total_buying_leads_rfqs} RFQs currently open. Verified manufacturers preferred. Growth trend: ${m.growth_trend}.`,
+    detailedRequirements: `Direct procurement for verified ${m.subcategory}. Full standard international specifications required with SGS / Intertek certificate at loading port. Fast supplier turnaround requested.`,
+    detailedDescription: `Direct procurement for verified ${m.subcategory}. Full standard international specifications required with SGS / Intertek certificate at loading port. Fast supplier turnaround requested.`,
     urgency: 'URGENT',
     quotesCount: Math.floor(m.total_buying_leads_rfqs / 15) + 4,
-    postedDate: '2026-08-15',
-    expiryDate: '2026-10-30',
+    postedDate: '2026-08-25',
+    expiryDate: '2026-11-30',
     status: 'OPEN',
     matchedSupplierCount: m.total_verified_suppliers,
     spamScore: 0.2
@@ -3171,23 +3280,26 @@ export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.f
 
   const rfq2: RfqRequirement = {
     id: `RFQ-METRIC-${idx + 1}-02`,
-    buyerName: buyer2.name,
-    buyerCompany: buyer2.company,
-    buyerCountry: buyer2.country,
+    buyerName: buyer2Name,
+    buyerCompany: buyer2Company,
+    buyerCountry: geo2.country,
+    buyerEmail: buyer2Email,
+    buyerPhone: buyer2Phone,
     buyerVerified: true,
-    productName: `Industrial Grade ${m.subcategory} (OEM / Custom Packaging)`,
+    productName: prodTitle2,
     category: m.main_category,
     targetQuantity: Math.round(baseQty * 0.6),
     quantityUnit: unit,
     targetPriceUsd: Math.round(basePrice * 1.15),
     preferredIncoterm: inco2,
-    destinationPort: port2,
+    destinationPort: geo2.port,
     paymentTerms: '30% T/T Advance Deposit + 70% Irrevocable DLC at sight',
-    detailedRequirements: `Seeking certified exporter/manufacturer for ${m.subcategory}. Requires SGS inspection at loading port. Active category suppliers: ${m.total_verified_suppliers} verified units.`,
+    detailedRequirements: `Seeking certified exporter/manufacturer for ${m.subcategory}. Requires SGS inspection at loading port. Long term supply contract.`,
+    detailedDescription: `Seeking certified exporter/manufacturer for ${m.subcategory}. Requires SGS inspection at loading port. Long term supply contract.`,
     urgency: 'LONG_TERM_CONTRACT',
     quotesCount: Math.floor(m.total_buying_leads_rfqs / 22) + 2,
-    postedDate: '2026-08-20',
-    expiryDate: '2026-11-15',
+    postedDate: '2026-08-28',
+    expiryDate: '2026-12-15',
     status: 'OPEN',
     matchedSupplierCount: m.total_verified_suppliers,
     spamScore: 0.1
@@ -3195,4 +3307,3 @@ export const METRICS_DERIVED_RFQS: RfqRequirement[] = GLOBAL_B2B_TRADE_METRICS.f
 
   return [rfq1, rfq2];
 });
-

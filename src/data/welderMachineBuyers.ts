@@ -14,7 +14,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 70,
     contactPerson: 'Purchasing Head 0',
     contactEmail: 'procurement@weldtechimporters.com',
-    contactPhone: '+1-888-000-2000'
+    contactPhone: '+82 703 207 7507'
   },
   {
     id: 'buyer-weld-1',
@@ -30,7 +30,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 71,
     contactPerson: 'Purchasing Head 1',
     contactEmail: 'procurement@plasmaimporters.com',
-    contactPhone: '+1-888-000-2001'
+    contactPhone: '+28 507 602 7827'
   },
   {
     id: 'buyer-weld-2',
@@ -46,7 +46,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 72,
     contactPerson: 'Purchasing Head 2',
     contactEmail: 'procurement@lasercoreimporters.com',
-    contactPhone: '+1-888-000-2002'
+    contactPhone: '+44 999 750 6424'
   },
   {
     id: 'buyer-weld-3',
@@ -62,7 +62,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 73,
     contactPerson: 'Purchasing Head 3',
     contactEmail: 'procurement@ironweldimporters.com',
-    contactPhone: '+1-888-000-2003'
+    contactPhone: '+19 308 354 5291'
   },
   {
     id: 'buyer-weld-4',
@@ -78,7 +78,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 74,
     contactPerson: 'Purchasing Head 4',
     contactEmail: 'procurement@proweldimporters.com',
-    contactPhone: '+1-888-000-2004'
+    contactPhone: '+75 409 150 3406'
   },
   {
     id: 'buyer-weld-5',
@@ -94,7 +94,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 75,
     contactPerson: 'Purchasing Head 5',
     contactEmail: 'procurement@novaimporters.com',
-    contactPhone: '+1-888-000-2005'
+    contactPhone: '+23 826 572 2708'
   },
   {
     id: 'buyer-weld-6',
@@ -110,7 +110,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 76,
     contactPerson: 'Purchasing Head 6',
     contactEmail: 'procurement@lumiimporters.com',
-    contactPhone: '+1-888-000-2006'
+    contactPhone: '+20 539 546 3632'
   },
   {
     id: 'buyer-weld-7',
@@ -126,7 +126,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 77,
     contactPerson: 'Purchasing Head 7',
     contactEmail: 'procurement@beamimporters.com',
-    contactPhone: '+1-888-000-2007'
+    contactPhone: '+10 478 754 5076'
   },
   {
     id: 'buyer-weld-8',
@@ -142,7 +142,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 78,
     contactPerson: 'Purchasing Head 8',
     contactEmail: 'procurement@fluximporters.com',
-    contactPhone: '+1-888-000-2008'
+    contactPhone: '+70 400 841 7761'
   },
   {
     id: 'buyer-weld-9',
@@ -158,7 +158,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 79,
     contactPerson: 'Purchasing Head 9',
     contactEmail: 'procurement@inertimporters.com',
-    contactPhone: '+1-888-000-2009'
+    contactPhone: '+29 550 389 1966'
   },
   {
     id: 'buyer-weld-10',
@@ -174,7 +174,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 80,
     contactPerson: 'Purchasing Head 10',
     contactEmail: 'procurement@precisionimporters.com',
-    contactPhone: '+1-888-000-2010'
+    contactPhone: '+6 239 861 8026'
   },
   {
     id: 'buyer-weld-11',
@@ -190,7 +190,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 81,
     contactPerson: 'Purchasing Head 11',
     contactEmail: 'procurement@sparkimporters.com',
-    contactPhone: '+1-888-000-2011'
+    contactPhone: '+54 228 592 7935'
   },
   {
     id: 'buyer-weld-12',
@@ -206,7 +206,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 82,
     contactPerson: 'Purchasing Head 12',
     contactEmail: 'procurement@arcmasterimporters.com',
-    contactPhone: '+1-888-000-2012'
+    contactPhone: '+20 929 690 3275'
   },
   {
     id: 'buyer-weld-13',
@@ -222,7 +222,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 83,
     contactPerson: 'Purchasing Head 13',
     contactEmail: 'procurement@quantumimporters.com',
-    contactPhone: '+1-888-000-2013'
+    contactPhone: '+66 631 675 6275'
   },
   {
     id: 'buyer-weld-14',
@@ -238,7 +238,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 84,
     contactPerson: 'Purchasing Head 14',
     contactEmail: 'procurement@fusionimporters.com',
-    contactPhone: '+1-888-000-2014'
+    contactPhone: '+93 773 914 5975'
   },
   {
     id: 'buyer-weld-15',
@@ -254,7 +254,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 85,
     contactPerson: 'Purchasing Head 15',
     contactEmail: 'procurement@weldtechimporters.com',
-    contactPhone: '+1-888-000-2015'
+    contactPhone: '+84 101 719 2686'
   },
   {
     id: 'buyer-weld-16',
@@ -270,7 +270,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 86,
     contactPerson: 'Purchasing Head 16',
     contactEmail: 'procurement@plasmaimporters.com',
-    contactPhone: '+1-888-000-2016'
+    contactPhone: '+81 341 632 8912'
   },
   {
     id: 'buyer-weld-17',
@@ -286,7 +286,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 87,
     contactPerson: 'Purchasing Head 17',
     contactEmail: 'procurement@lasercoreimporters.com',
-    contactPhone: '+1-888-000-2017'
+    contactPhone: '+62 845 738 2439'
   },
   {
     id: 'buyer-weld-18',
@@ -302,7 +302,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 88,
     contactPerson: 'Purchasing Head 18',
     contactEmail: 'procurement@ironweldimporters.com',
-    contactPhone: '+1-888-000-2018'
+    contactPhone: '+53 932 406 8398'
   },
   {
     id: 'buyer-weld-19',
@@ -318,7 +318,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 89,
     contactPerson: 'Purchasing Head 19',
     contactEmail: 'procurement@proweldimporters.com',
-    contactPhone: '+1-888-000-2019'
+    contactPhone: '+20 803 807 9896'
   },
   {
     id: 'buyer-weld-20',
@@ -334,7 +334,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 90,
     contactPerson: 'Purchasing Head 20',
     contactEmail: 'procurement@novaimporters.com',
-    contactPhone: '+1-888-000-2020'
+    contactPhone: '+26 883 524 8219'
   },
   {
     id: 'buyer-weld-21',
@@ -350,7 +350,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 91,
     contactPerson: 'Purchasing Head 21',
     contactEmail: 'procurement@lumiimporters.com',
-    contactPhone: '+1-888-000-2021'
+    contactPhone: '+22 394 397 6252'
   },
   {
     id: 'buyer-weld-22',
@@ -366,7 +366,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 92,
     contactPerson: 'Purchasing Head 22',
     contactEmail: 'procurement@beamimporters.com',
-    contactPhone: '+1-888-000-2022'
+    contactPhone: '+15 899 203 5065'
   },
   {
     id: 'buyer-weld-23',
@@ -382,7 +382,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 93,
     contactPerson: 'Purchasing Head 23',
     contactEmail: 'procurement@fluximporters.com',
-    contactPhone: '+1-888-000-2023'
+    contactPhone: '+23 199 395 2461'
   },
   {
     id: 'buyer-weld-24',
@@ -398,7 +398,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 94,
     contactPerson: 'Purchasing Head 24',
     contactEmail: 'procurement@inertimporters.com',
-    contactPhone: '+1-888-000-2024'
+    contactPhone: '+8 664 627 7058'
   },
   {
     id: 'buyer-weld-25',
@@ -414,7 +414,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 95,
     contactPerson: 'Purchasing Head 25',
     contactEmail: 'procurement@precisionimporters.com',
-    contactPhone: '+1-888-000-2025'
+    contactPhone: '+17 292 194 4673'
   },
   {
     id: 'buyer-weld-26',
@@ -430,7 +430,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 96,
     contactPerson: 'Purchasing Head 26',
     contactEmail: 'procurement@sparkimporters.com',
-    contactPhone: '+1-888-000-2026'
+    contactPhone: '+59 580 505 1001'
   },
   {
     id: 'buyer-weld-27',
@@ -446,7 +446,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 97,
     contactPerson: 'Purchasing Head 27',
     contactEmail: 'procurement@arcmasterimporters.com',
-    contactPhone: '+1-888-000-2027'
+    contactPhone: '+36 946 536 3251'
   },
   {
     id: 'buyer-weld-28',
@@ -462,7 +462,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 98,
     contactPerson: 'Purchasing Head 28',
     contactEmail: 'procurement@quantumimporters.com',
-    contactPhone: '+1-888-000-2028'
+    contactPhone: '+95 139 169 1801'
   },
   {
     id: 'buyer-weld-29',
@@ -478,7 +478,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 99,
     contactPerson: 'Purchasing Head 29',
     contactEmail: 'procurement@fusionimporters.com',
-    contactPhone: '+1-888-000-2029'
+    contactPhone: '+15 872 157 5910'
   },
   {
     id: 'buyer-weld-30',
@@ -494,7 +494,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 70,
     contactPerson: 'Purchasing Head 30',
     contactEmail: 'procurement@weldtechimporters.com',
-    contactPhone: '+1-888-000-2030'
+    contactPhone: '+73 263 167 8412'
   },
   {
     id: 'buyer-weld-31',
@@ -510,7 +510,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 71,
     contactPerson: 'Purchasing Head 31',
     contactEmail: 'procurement@plasmaimporters.com',
-    contactPhone: '+1-888-000-2031'
+    contactPhone: '+42 597 456 2349'
   },
   {
     id: 'buyer-weld-32',
@@ -526,7 +526,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 72,
     contactPerson: 'Purchasing Head 32',
     contactEmail: 'procurement@lasercoreimporters.com',
-    contactPhone: '+1-888-000-2032'
+    contactPhone: '+54 539 448 7787'
   },
   {
     id: 'buyer-weld-33',
@@ -542,7 +542,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 73,
     contactPerson: 'Purchasing Head 33',
     contactEmail: 'procurement@ironweldimporters.com',
-    contactPhone: '+1-888-000-2033'
+    contactPhone: '+93 430 681 2462'
   },
   {
     id: 'buyer-weld-34',
@@ -558,7 +558,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 74,
     contactPerson: 'Purchasing Head 34',
     contactEmail: 'procurement@proweldimporters.com',
-    contactPhone: '+1-888-000-2034'
+    contactPhone: '+56 272 702 2243'
   },
   {
     id: 'buyer-weld-35',
@@ -574,7 +574,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 75,
     contactPerson: 'Purchasing Head 35',
     contactEmail: 'procurement@novaimporters.com',
-    contactPhone: '+1-888-000-2035'
+    contactPhone: '+84 293 146 3864'
   },
   {
     id: 'buyer-weld-36',
@@ -590,7 +590,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 76,
     contactPerson: 'Purchasing Head 36',
     contactEmail: 'procurement@lumiimporters.com',
-    contactPhone: '+1-888-000-2036'
+    contactPhone: '+12 371 460 6684'
   },
   {
     id: 'buyer-weld-37',
@@ -606,7 +606,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 77,
     contactPerson: 'Purchasing Head 37',
     contactEmail: 'procurement@beamimporters.com',
-    contactPhone: '+1-888-000-2037'
+    contactPhone: '+64 275 966 4020'
   },
   {
     id: 'buyer-weld-38',
@@ -622,7 +622,7 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 78,
     contactPerson: 'Purchasing Head 38',
     contactEmail: 'procurement@fluximporters.com',
-    contactPhone: '+1-888-000-2038'
+    contactPhone: '+61 991 343 7899'
   },
   {
     id: 'buyer-weld-39',
@@ -638,6 +638,6 @@ export const GLOBAL_WELDER_MACHINE_BUYER_PROFILES: DetailedBuyerProfile[] = [
     trustScore: 79,
     contactPerson: 'Purchasing Head 39',
     contactEmail: 'procurement@inertimporters.com',
-    contactPhone: '+1-888-000-2039'
+    contactPhone: '+90 311 374 9561'
   }
 ];

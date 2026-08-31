@@ -768,12 +768,42 @@ export const MAPPED_CATALOG_DERIVED_RFQS: RfqRequirement[] = MAPPED_CATALOG_DATA
   };
 
   const qty = parseQty(item.active_rfq_sample.quantity_required);
+  
+  const FIRST_NAMES = ['Elena', 'Marcus', 'Sophia', 'Lucas', 'Astrid', 'Tariq', 'Chen', 'Mateo', 'Kareem', 'David', 'Vikram', 'Laurent', 'Amira', 'Klaus', 'Carlos', 'Isabella', 'Diego', 'Fatima', 'Liam', 'Zainab', 'Alexander', 'Freja', 'Nikolai', 'Kwame', 'Giovanni', 'Hugo', 'Henrik', 'Arjun', 'Ren', 'Thiago'];
+  const LAST_NAMES = ['Sterling', 'Vance', 'Tremblay', 'Lindholm', 'MacLeod', 'Silva', 'Mendoza', 'Santoro', 'Rossi', 'Dubois', 'Moreau', 'Schneider', 'Fischer', 'Weber', 'Becker', 'Hoffmann', 'Schäfer', 'Koch', 'Bauer', 'Richter', 'Tanaka', 'Yamamoto', 'Nakamura', 'Kobayashi', 'Saito', 'Zhang', 'Wang', 'Li', 'Liu', 'Chen'];
+  const CORP_NOUNS = ['Global Sourcing Ltd', 'Procurement AG', 'Supply Chain Network', 'Enterprises BV', 'Holdings Corp', 'Trade Alliance SA', 'Industries Pte Ltd', 'Commercial Partners Inc', 'Logistics & Trade', 'Merchants Group'];
+  const GLOBAL_DESTS = [
+    { country: 'United States', port: 'Port of Los Angeles, USA', code: '+1', domain: 'us' },
+    { country: 'Germany', port: 'Port of Hamburg, Germany', code: '+49', domain: 'de' },
+    { country: 'United Arab Emirates', port: 'Jebel Ali Port, Dubai, UAE', code: '+971', domain: 'ae' },
+    { country: 'Singapore', port: 'Jurong Port, Singapore', code: '+65', domain: 'sg' },
+    { country: 'Netherlands', port: 'Port of Rotterdam, Netherlands', code: '+31', domain: 'nl' },
+    { country: 'United Kingdom', port: 'Port of Felixstowe, UK', code: '+44', domain: 'co.uk' },
+    { country: 'Japan', port: 'Yokohama Port, Japan', code: '+81', domain: 'co.jp' },
+    { country: 'Australia', port: 'Port of Melbourne, Australia', code: '+61', domain: 'com.au' },
+    { country: 'Canada', port: 'Port of Vancouver, Canada', code: '+1', domain: 'ca' },
+    { country: 'Brazil', port: 'Santos Port, Brazil', code: '+55', domain: 'com.br' }
+  ];
+
+  const fn = FIRST_NAMES[(index * 7 + 3) % FIRST_NAMES.length];
+  const ln = LAST_NAMES[(index * 13 + 5) % LAST_NAMES.length];
+  const noun = CORP_NOUNS[(index * 11 + 2) % CORP_NOUNS.length];
+  const dest = GLOBAL_DESTS[(index * 17 + 1) % GLOBAL_DESTS.length];
+  
+  const bName = `${fn} ${ln}`;
+  const bComp = `${ln} ${noun}`;
+  const cleanComp = bComp.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanPerson = `${fn.toLowerCase()}.${ln.toLowerCase()}`.replace(/[^a-z0-9.]/g, '');
+  const bEmail = `${cleanPerson}@${cleanComp}.${dest.domain}`;
+  const bPhone = `${dest.code} ${Math.floor(200 + (index * 19) % 700)} ${Math.floor(100 + (index * 37) % 899)} ${Math.floor(1000 + (index * 61) % 8999)}`;
 
   return {
     id: item.active_rfq_sample.rfq_id,
-    buyerName: `Verified Sourcing Officer (${item.active_rfq_sample.buyer_region.split(',')[0]})`,
-    buyerCompany: `Global ${item.main_category.split('&')[0].trim()} Enterprises Ltd.`,
-    buyerCountry: item.active_rfq_sample.buyer_region.split(',').pop()?.trim() || 'Global',
+    buyerName: bName,
+    buyerCompany: bComp,
+    buyerCountry: dest.country,
+    buyerEmail: bEmail,
+    buyerPhone: bPhone,
     buyerVerified: true,
     productName: item.product_name,
     category: item.main_category,
@@ -781,9 +811,10 @@ export const MAPPED_CATALOG_DERIVED_RFQS: RfqRequirement[] = MAPPED_CATALOG_DATA
     quantityUnit: qty.unit,
     targetPriceUsd: parsePrice(item.active_rfq_sample.target_price),
     preferredIncoterm: (item.active_rfq_sample.incoterm as Incoterm) || 'CIF',
-    destinationPort: item.active_rfq_sample.buyer_region,
+    destinationPort: item.active_rfq_sample.buyer_region || dest.port,
     paymentTerms: 'Confirmed Irrevocable L/C at Sight or Escrow Trade Assurance',
     detailedRequirements: `${item.active_rfq_sample.specs_summary}. Immediate procurement for verified wholesale delivery under ${item.active_rfq_sample.incoterm} terms. Total live buying inquiries: ${item.total_active_inquiries}.`,
+    detailedDescription: `${item.active_rfq_sample.specs_summary}. Immediate procurement for verified wholesale delivery under ${item.active_rfq_sample.incoterm} terms. Total live buying inquiries: ${item.total_active_inquiries}.`,
     urgency: item.total_active_inquiries > 200 ? 'URGENT' : 'LONG_TERM_CONTRACT',
     quotesCount: Math.min(24, Math.floor(item.total_active_inquiries / 12) + 3),
     postedDate: '2026-08-28',

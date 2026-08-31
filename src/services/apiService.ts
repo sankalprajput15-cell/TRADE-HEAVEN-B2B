@@ -67,16 +67,10 @@ function loadStoredSuppliers(): CompanyProfile[] {
     }
   } catch {}
   
-  const existingIds = new Set(stored.map(s => s.id));
-  const missingMockSuppliers = MOCK_COMPANIES.filter(s => !existingIds.has(s.id));
-  
-  if (missingMockSuppliers.length > 0) {
-    const combined = [...missingMockSuppliers, ...stored];
-    persistStoredSuppliers(combined);
-    return combined;
-  }
-  
-  return stored.length > 0 ? stored : [...MOCK_COMPANIES];
+  const mockMap = new Map<string, CompanyProfile>();
+  MOCK_COMPANIES.forEach(s => mockMap.set(s.id, s));
+  const userCreated = stored.filter(s => !mockMap.has(s.id));
+  return [...MOCK_COMPANIES, ...userCreated];
 }
 
 function persistStoredSuppliers(suppliers: CompanyProfile[]) {
@@ -93,17 +87,11 @@ function loadStoredBuyers(): DetailedBuyerProfile[] {
       stored = JSON.parse(saved);
     }
   } catch {}
-
-  const existingIds = new Set(stored.map(b => b.id));
-  const missingMockBuyers = MOCK_BUYER_PROFILES.filter(b => !existingIds.has(b.id));
-
-  if (missingMockBuyers.length > 0) {
-    const combined = [...missingMockBuyers, ...stored];
-    persistStoredBuyers(combined);
-    return combined;
-  }
-
-  return stored.length > 0 ? stored : [...MOCK_BUYER_PROFILES];
+  
+  const mockMap = new Map<string, DetailedBuyerProfile>();
+  MOCK_BUYER_PROFILES.forEach(b => mockMap.set(b.id, b));
+  const userCreated = stored.filter(b => !mockMap.has(b.id));
+  return [...MOCK_BUYER_PROFILES, ...userCreated];
 }
 
 function persistStoredBuyers(buyers: DetailedBuyerProfile[]) {
@@ -121,16 +109,16 @@ function loadStoredRfqs(): RfqRequirement[] {
     }
   } catch {}
   
-  const existingIds = new Set(stored.map(r => r.id));
-  const missingMockRfqs = MOCK_RFQS.filter(r => !existingIds.has(r.id));
+  // Create map of mock RFQs
+  const mockMap = new Map<string, RfqRequirement>();
+  MOCK_RFQS.forEach(r => mockMap.set(r.id, r));
   
-  if (missingMockRfqs.length > 0) {
-    const combined = [...missingMockRfqs, ...stored];
-    persistStoredRfqs(combined);
-    return combined;
-  }
+  // Custom user-created RFQs (starting with 'rfq-2026' or user created)
+  const userCreated = stored.filter(s => !mockMap.has(s.id));
   
-  return stored.length > 0 ? stored : [...MOCK_RFQS];
+  // Fresh combined list ensuring latest updated mock data fields are always loaded
+  const combined = [...MOCK_RFQS, ...userCreated];
+  return combined;
 }
 
 function persistStoredRfqs(rfqs: RfqRequirement[]) {
