@@ -718,7 +718,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
-      <main className="flex-1 max-w-[1400px] w-full max-w-full overflow-x-hidden mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 w-full max-w-[1400px] overflow-x-hidden mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-[calc(100vh-200px)]">
         <GlobalErrorBoundary fallbackTitle="TradeHeaven Section View Recovery" onReset={() => setActiveView('HOMEPAGE')}>
           <React.Suspense fallback={
             <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4">
@@ -819,6 +819,14 @@ const MainApp: React.FC = () => {
                   <TradeNegotiationChat
                     selectedCurrency={selectedCurrency}
                     onInitiateEscrow={handleInitiateEscrow}
+                    currentUser={currentUser}
+                    onOpenStorefront={handleOpenStorefront}
+                    onOpenBuyerProfile={(buyerId) => {
+                      setSelectedBuyerId(buyerId);
+                      setActiveView('BUYER_PROFILE');
+                    }}
+                    onNavigate={handleNavigate}
+                    onOpenContactModal={handleOpenContactModal}
                   />
                 );
 

@@ -467,12 +467,12 @@ export const SiteContentCmsEditor: React.FC = () => {
                     onChange={e => setFormData({ ...formData, homepage: { ...formData.homepage, heroBgImage: e.target.value } })}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                   />
-                  {formData.homepage.heroBgImage && (
+                  {formData.homepage.heroBgImage && formData.homepage.heroBgImage.trim() ? (
                     <div className="mt-2 h-20 w-full rounded-xl overflow-hidden border border-slate-200 relative">
-                      <img src={formData.homepage.heroBgImage} alt="Hero BG Preview" className="w-full h-full object-cover" />
+                      <img src={formData.homepage.heroBgImage.trim()} alt="Hero BG Preview" className="w-full h-full object-cover" />
                       <span className="absolute bottom-1 right-2 px-2 py-0.5 rounded bg-black/60 text-white text-[10px] font-bold">Image Preview</span>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

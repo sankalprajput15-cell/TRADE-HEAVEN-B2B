@@ -326,6 +326,44 @@ export const BackendDataManagementModal: React.FC<Props> = ({
                 </div>
               </div>
 
+              {/* Cloud Run Environment & Endpoint Registry */}
+              <div className="p-3.5 bg-slate-900 text-slate-100 rounded-xl space-y-2.5 font-mono text-[11px]">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800 pb-1.5">
+                  <span className="text-emerald-400 font-bold uppercase tracking-wider">Cloud Run Deployment Node</span>
+                  <span>Region: asia-southeast1</span>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-slate-400 text-[10px]">Active Session Timestamp:</div>
+                  <div className="text-slate-200 font-bold">2026-08-30T20:14:36-07:00</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-slate-400 text-[10px]">Platform Administrator / Lead Contact:</div>
+                  <div className="text-blue-400 font-bold">sankalprajput15@gmail.com</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-slate-400 text-[10px]">Development Gateway URL:</div>
+                  <a 
+                    href="https://ais-dev-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app" 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-emerald-400 break-all hover:underline"
+                  >
+                    https://ais-dev-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app
+                  </a>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-slate-400 text-[10px]">Shared Preview Distribution URL:</div>
+                  <a 
+                    href="https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app" 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-amber-400 break-all hover:underline"
+                  >
+                    https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app
+                  </a>
+                </div>
+              </div>
+
               <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-blue-900 text-xs">
                 <div className="font-bold">Persistent Storage Engine:</div>
                 <div className="text-[11px] text-blue-800 mt-0.5">

@@ -379,7 +379,7 @@ export interface SubscriptionPlanConfig {
   features: string[];
 }
 
-export type BuyerTier = 'FREE' | 'SILVER' | 'GOLD' | 'VIP' | 'VERIFIED_BUYER';
+export type BuyerTier = 'FREE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'VIP' | 'VERIFIED_BUYER';
 
 export interface BuyerWarehouse {
   id: string;

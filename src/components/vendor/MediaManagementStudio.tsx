@@ -31,7 +31,8 @@ import {
   RefreshCw,
   FolderOpen,
   Layers,
-  FileCheck
+  FileCheck,
+  Building2
 } from 'lucide-react';
 
 interface Props {
@@ -438,12 +439,18 @@ export const MediaManagementStudio: React.FC<Props> = ({
                       : 'border-slate-300 bg-slate-50 hover:border-slate-400'
                   }`}
                 >
-                  <img
-                    src={bannerUrl}
-                    alt="Cover Banner Preview"
-                    referrerPolicy="no-referrer"
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                  />
+                  {bannerUrl && bannerUrl.trim() ? (
+                    <img
+                      src={bannerUrl.trim()}
+                      alt="Cover Banner Preview"
+                      referrerPolicy="no-referrer"
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-800 flex items-center justify-center">
+                      <Building2 className="w-12 h-12 text-slate-600" />
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/60 transition-colors flex flex-col items-center justify-center p-4 text-white text-center">
                     <Upload className="w-8 h-8 mb-2 opacity-90 group-hover:scale-110 transition-transform" />
                     <p className="text-xs font-bold">
@@ -497,12 +504,18 @@ export const MediaManagementStudio: React.FC<Props> = ({
                         : 'border-slate-300 bg-slate-50 hover:border-slate-400'
                     }`}
                   >
-                    <img
-                      src={logoUrl}
-                      alt="Logo Preview"
-                      referrerPolicy="no-referrer"
-                      className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-md mb-2 bg-white"
-                    />
+                    {logoUrl && logoUrl.trim() ? (
+                      <img
+                        src={logoUrl.trim()}
+                        alt="Logo Preview"
+                        referrerPolicy="no-referrer"
+                        className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-md mb-2 bg-white"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl border border-slate-200 bg-white flex items-center justify-center mb-2 text-slate-400 shadow-sm">
+                        <Building2 className="w-8 h-8" />
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => logoInputRef.current?.click()}
@@ -655,7 +668,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
                       <div>
                         <div className="relative h-32 rounded-xl overflow-hidden bg-slate-100 mb-3 border border-slate-100">
                           <img
-                            src={cert.thumbnailUrl || cert.documentUrl}
+                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400'}
                             alt={cert.name}
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
@@ -803,7 +816,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
                     <div>
                       <div className="relative h-36 rounded-xl overflow-hidden bg-slate-100 mb-2 border border-slate-100">
                         <img
-                          src={img.imageUrl}
+                          src={img.imageUrl || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600'}
                           alt={img.title}
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-cover"
@@ -934,12 +947,14 @@ export const MediaManagementStudio: React.FC<Props> = ({
               >
                 <X className="w-5 h-5" />
               </button>
-              <img
-                src={previewModalUrl}
-                alt="Enlarged Document Preview"
-                referrerPolicy="no-referrer"
-                className="max-w-full max-h-[85vh] object-contain rounded-xl"
-              />
+              {previewModalUrl && previewModalUrl.trim() ? (
+                <img
+                  src={previewModalUrl}
+                  alt="Enlarged Document Preview"
+                  referrerPolicy="no-referrer"
+                  className="max-w-full max-h-[85vh] object-contain rounded-xl"
+                />
+              ) : null}
             </div>
           </div>
         )}

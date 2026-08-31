@@ -16,6 +16,7 @@ import { CompanyHeader } from './CompanyHeader';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { securityService } from '../../services/securityService';
 import { UnifiedContactInquiryModal } from '../modals/UnifiedContactInquiryModal';
+import { SafeImage } from '../common/SafeImage';
 import { 
   ShieldCheck, 
   Award, 
@@ -465,10 +466,11 @@ export const VendorProfilePage: React.FC<Props> = ({
                     <div className="p-4 space-y-3">
                       {/* Image Thumbnail with Lightbox */}
                       <div className="relative h-44 rounded-2xl overflow-hidden bg-slate-100">
-                        <img
+                        <SafeImage
                           src={prod.images?.[0]}
                           alt={prod.title}
-                          referrerPolicy="no-referrer"
+                          category={prod.category}
+                          productId={prod.id}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold">
@@ -588,10 +590,9 @@ export const VendorProfilePage: React.FC<Props> = ({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
-                          <img
-                            src={cert.thumbnailUrl || cert.documentUrl}
+                          <SafeImage
+                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400'}
                             alt={cert.name}
-                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                           <button
@@ -722,10 +723,9 @@ export const VendorProfilePage: React.FC<Props> = ({
                       className="group rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-xs hover:shadow-md cursor-pointer transition-all"
                     >
                       <div className="relative h-44 overflow-hidden bg-slate-200">
-                        <img
-                          src={tour.imageUrl}
+                        <SafeImage
+                          src={tour.imageUrl || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600'}
                           alt={tour.title}
-                          referrerPolicy="no-referrer"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-slate-900/80 text-white text-xs shadow-md">
@@ -755,10 +755,10 @@ export const VendorProfilePage: React.FC<Props> = ({
           {/* Contact Person Card */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-3.5">
-              <img
+              <SafeImage
                 src={profile.contactPersonDetails?.avatarUrl || profile.logoUrl}
                 alt={profile.contactPerson}
-                referrerPolicy="no-referrer"
+                type="avatar"
                 className="w-14 h-14 rounded-2xl object-cover border-2 border-slate-100 shadow-md bg-slate-50"
               />
               <div>
@@ -996,12 +996,14 @@ export const VendorProfilePage: React.FC<Props> = ({
             >
               <X className="w-5 h-5" />
             </button>
-            <img
-              src={lightboxImage.url}
-              alt={lightboxImage.title}
-              referrerPolicy="no-referrer"
-              className="max-w-full max-h-[75vh] object-contain rounded-2xl"
-            />
+            {lightboxImage.url && lightboxImage.url.trim() ? (
+              <img
+                src={lightboxImage.url}
+                alt={lightboxImage.title}
+                referrerPolicy="no-referrer"
+                className="max-w-full max-h-[75vh] object-contain rounded-2xl"
+              />
+            ) : null}
             <div className="mt-3 text-center px-4">
               <h4 className="text-sm font-black text-slate-900">{lightboxImage.title}</h4>
               {lightboxImage.subtitle && (

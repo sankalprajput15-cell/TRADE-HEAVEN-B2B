@@ -43,6 +43,18 @@ import {
   EC21_SEAFOOD_RFQS 
 } from './ec21SeafoodData';
 import { 
+  EC21_JET_FUEL_COMPANIES, 
+  EC21_JET_FUEL_BUYER_PROFILES, 
+  EC21_JET_FUEL_PRODUCTS, 
+  EC21_JET_FUEL_RFQS 
+} from './ec21JetFuelData';
+import { 
+  EC21_ESPO_COMPANIES, 
+  EC21_ESPO_BUYER_PROFILES, 
+  EC21_ESPO_PRODUCTS, 
+  EC21_ESPO_RFQS 
+} from './ec21EspoData';
+import { 
   CompanyProfile, 
   DetailedBuyerProfile,
   CurrencyRate, 
@@ -640,6 +652,8 @@ export const CATEGORIES_TREE = [
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
+  ...EC21_JET_FUEL_COMPANIES,
+  ...EC21_ESPO_COMPANIES,
   ...EC21_COPPER_POWDER_COMPANIES,
   ...EC21_USED_CLOTHES_COMPANIES,
   ...EC21_JAM_COMPANIES,
@@ -4116,6 +4130,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
+  ...EC21_JET_FUEL_BUYER_PROFILES,
+  ...EC21_ESPO_BUYER_PROFILES,
   ...EC21_COPPER_POWDER_BUYER_PROFILES,
   ...EC21_USED_CLOTHES_BUYER_PROFILES,
   ...EC21_JAM_BUYER_PROFILES,
@@ -6902,6 +6918,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  ...EC21_JET_FUEL_PRODUCTS,
+  ...EC21_ESPO_PRODUCTS,
   ...EC21_COPPER_POWDER_PRODUCTS,
   ...EC21_USED_CLOTHES_PRODUCTS,
   ...EC21_JAM_PRODUCTS,
@@ -11533,6 +11551,8 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
 ];
 
 export const MOCK_RFQS: RfqRequirement[] = [
+  ...EC21_JET_FUEL_RFQS,
+  ...EC21_ESPO_RFQS,
   ...EC21_COPPER_POWDER_RFQS,
   ...EC21_USED_CLOTHES_RFQS,
   ...EC21_JAM_RFQS,
@@ -11604,6 +11624,141 @@ export const MOCK_QUOTES: SupplierQuote[] = [
 ];
 
 export const MOCK_NEGOTIATION_THREADS: NegotiationThread[] = [
+  {
+    id: 'thread-jf-101',
+    rfqId: 'rfq-ec21-jf-1',
+    productTitle: 'Aviation Kerosene Jet Fuel A-1 (ASTM D1655 / JIG Specs)',
+    buyerId: 'buyer-ec21-jf-1',
+    buyerName: 'Marcus Sterling',
+    buyerCompany: 'PetroAir Global Aviation Fuel Consortium',
+    supplierId: 'comp-ec21-jf-1',
+    supplierName: 'Global Fuel Oil Llc',
+    agreedPriceUsd: 82,
+    agreedQuantity: 2000000,
+    agreedIncoterm: 'FOB',
+    escrowStatus: 'FUNDS_LOCKED',
+    lastUpdated: '2026-08-30T19:40:00Z',
+    messages: [
+      {
+        id: 'msg-jf-1',
+        senderId: 'buyer-ec21-jf-1',
+        senderName: 'Marcus Sterling',
+        senderRole: 'BUYER',
+        timestamp: '2026-08-30T14:20:00Z',
+        message: 'Hello Frank, we reviewed Global Fuel Oil LLC\'s Soft Corporate Offer for 2,000,000 Barrels Jet A-1. We require dip test in Rotterdam shore tanks with SGS report prior to pipeline injection. Can you confirm $82/BBL on FOB Dip & Pay?'
+      },
+      {
+        id: 'msg-jf-2',
+        senderId: 'comp-ec21-jf-1',
+        senderName: 'FRANK ROBETTO (Global Fuel Oil)',
+        senderRole: 'SUPPLIER',
+        timestamp: '2026-08-30T15:10:00Z',
+        message: 'Hello Marcus, confirmed. We hold active TSR and tank allocation at Europoort Rotterdam. We accept $82.00/BBL FOB. SGS inspectors can board and dip within 24 hours of MT103 escrow confirmation.',
+        attachment: {
+          type: 'COUNTER_OFFER',
+          title: 'Confirmed Offer: 2,000,000 Barrels Jet A-1 @ $82.00 / BBL FOB Rotterdam',
+          valueSummary: 'Total: $164,000,000.00 USD | SGS Quality & Quantity Guarantee'
+        }
+      },
+      {
+        id: 'msg-jf-3',
+        senderId: 'buyer-ec21-jf-1',
+        senderName: 'Marcus Sterling',
+        senderRole: 'BUYER',
+        timestamp: '2026-08-30T16:30:00Z',
+        message: 'Please issue the formal Proforma Invoice and Commercial Invoice with escrow payment instructions for the 30% initial guarantee.'
+      },
+      {
+        id: 'msg-jf-4',
+        senderId: 'comp-ec21-jf-1',
+        senderName: 'FRANK ROBETTO (Global Fuel Oil)',
+        senderRole: 'SUPPLIER',
+        timestamp: '2026-08-30T17:05:00Z',
+        message: 'Proforma Invoice PI-GFO-2026-9041 is generated and counter-signed below with Trade Assurance protection.',
+        attachment: {
+          type: 'PROFORMA_INVOICE',
+          title: 'Proforma Invoice PI-GFO-2026-9041.pdf',
+          valueSummary: 'Deposit: $49,200,000.00 USD (30%) | Escrow Protected'
+        }
+      }
+    ]
+  },
+  {
+    id: 'thread-espo-202',
+    rfqId: 'rfq-ec21-espo-1',
+    productTitle: 'Eastern Siberian Pacific Ocean (ESPO) Blend Crude Oil',
+    buyerId: 'buyer-ec21-espo-1',
+    buyerName: 'John Zhang',
+    buyerCompany: 'ZiLex Green Tech International, LLC',
+    supplierId: 'comp-ec21-espo-2',
+    supplierName: 'Kazinst Petroleum Refinery',
+    agreedPriceUsd: 71.5,
+    agreedQuantity: 2000000,
+    agreedIncoterm: 'CIF',
+    escrowStatus: 'NONE',
+    lastUpdated: '2026-08-30T18:15:00Z',
+    messages: [
+      {
+        id: 'msg-espo-1',
+        senderId: 'buyer-ec21-espo-1',
+        senderName: 'John Zhang',
+        senderRole: 'BUYER',
+        timestamp: '2026-08-30T11:00:00Z',
+        message: 'We are prepared to issue DLC MT700 from Bank of China for 2,000,000 Barrels/month ESPO Crude CIF Rizhao Port. Target price is $70.00/BBL.'
+      },
+      {
+        id: 'msg-espo-2',
+        senderId: 'comp-ec21-espo-2',
+        senderName: 'Kazinst Petroleum Trade Directorate',
+        senderRole: 'SUPPLIER',
+        timestamp: '2026-08-30T12:45:00Z',
+        message: 'Greetings Mr. Zhang. We can support 2,000,000 BBL x 12 months CIF Rizhao at Platts Oman/Dubai average minus discount, netting $71.50/BBL CIF with full maritime insurance. SGS loading report and CIQ discharge port inspection accepted.',
+        attachment: {
+          type: 'COUNTER_OFFER',
+          title: 'Contract Proposal: ESPO Blend Crude 2M BBL @ $71.50/BBL CIF Rizhao',
+          valueSummary: 'Monthly: $143,000,000.00 USD | 12-Month Revolving DLC'
+        }
+      }
+    ]
+  },
+  {
+    id: 'thread-cu-303',
+    rfqId: 'rfq-ec21-cu-1',
+    productTitle: 'IGAS-Certified Ultra-Fine Copper Powder (Purity 99.9995% 5N5 Zurich Origin)',
+    buyerId: 'buyer-ec21-cu-1',
+    buyerName: 'Dr. Elizabeth Thorne',
+    buyerCompany: 'Quantum Nanotech Materials Inc.',
+    supplierId: 'comp-ec21-cu-0',
+    supplierName: 'Searaven Global Ltd',
+    agreedPriceUsd: 950,
+    agreedQuantity: 1000,
+    agreedIncoterm: 'CIP',
+    escrowStatus: 'PRODUCTION_IN_PROGRESS',
+    lastUpdated: '2026-08-30T19:00:00Z',
+    messages: [
+      {
+        id: 'msg-cu-1',
+        senderId: 'buyer-ec21-cu-1',
+        senderName: 'Dr. Elizabeth Thorne',
+        senderRole: 'BUYER',
+        timestamp: '2026-08-29T10:00:00Z',
+        message: 'Hello Sabrina, we need 1 Kilogram (1,000 grams) of 5N5 ultra-fine copper powder with IGAS certificate from the Zurich vault for our semiconductor lab.'
+      },
+      {
+        id: 'msg-cu-2',
+        senderId: 'comp-ec21-cu-0',
+        senderName: 'Sabrina Taylor (Searaven Global)',
+        senderRole: 'SUPPLIER',
+        timestamp: '2026-08-29T11:20:00Z',
+        message: 'Hello Dr. Thorne. The 1 MT lot in Zurich bonded storage has official SKR and IGAS certification. We can release 1,000g in argon-flushed ampoules via secured armored courier at $950/gram CIP Zurich/London.',
+        attachment: {
+          type: 'COUNTER_OFFER',
+          title: 'Zurich Vault Release: 1,000g 99.9995% Cu Powder @ $950.00/g',
+          valueSummary: 'Total: $950,000.00 USD | IGAS Lab Certificate Attached'
+        }
+      }
+    ]
+  },
   {
     id: 'thread-9901',
     rfqId: 'rfq-2026-901',

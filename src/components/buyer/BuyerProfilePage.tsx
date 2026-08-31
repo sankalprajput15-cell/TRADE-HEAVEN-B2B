@@ -10,6 +10,7 @@ import { CURRENCY_RATES, MOCK_BUYER_PROFILES, MOCK_RFQS } from '../../data/mockD
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { SafeImage } from '../common/SafeImage';
 import { 
   ShieldCheck, 
   Award, 
@@ -210,10 +211,9 @@ export const BuyerProfilePage: React.FC<Props> = ({
       <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
         {/* Banner */}
         <div className="relative h-48 sm:h-64 lg:h-72 w-full bg-slate-900 overflow-hidden">
-          <img
-            src={profile.bannerUrl}
+          <SafeImage
+            src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80'}
             alt={profile.companyName}
-            referrerPolicy="no-referrer"
             className="w-full h-full object-cover opacity-85"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
@@ -237,10 +237,10 @@ export const BuyerProfilePage: React.FC<Props> = ({
         <div className="p-6 sm:p-8 pt-0 relative">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 -mt-12 sm:-mt-16 mb-6">
             <div className="flex items-end gap-4">
-              <img
+              <SafeImage
                 src={profile.logoUrl}
                 alt={profile.companyName}
-                referrerPolicy="no-referrer"
+                type="logo"
                 className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white bg-white shadow-xl relative z-10 shrink-0"
               />
               <div className="space-y-1">

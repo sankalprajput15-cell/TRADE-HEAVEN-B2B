@@ -510,8 +510,8 @@ export const RfqCreationModal: React.FC<Props> = ({
                       key={idx}
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium"
                     >
-                      {att.previewUrl ? (
-                        <img src={att.previewUrl} alt={`Attachment preview for ${att.name}`} className="w-5 h-5 rounded object-cover" />
+                      {att.previewUrl && att.previewUrl.trim() ? (
+                        <img src={att.previewUrl.trim()} alt={`Attachment preview for ${att.name}`} className="w-5 h-5 rounded object-cover" />
                       ) : (
                         <FileText className="w-3.5 h-3.5 text-blue-600" />
                       )}

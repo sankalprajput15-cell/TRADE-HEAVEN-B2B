@@ -378,8 +378,8 @@ export const CustomerReviews: React.FC = () => {
                 {/* Reviewer Info Footer */}
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
                   {/* User Initial Avatar or Profile Image */}
-                  {review.imageUrl ? (
-                    <img src={review.imageUrl} alt={review.name} className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm" />
+                  {review.imageUrl && review.imageUrl.trim() ? (
+                    <img src={review.imageUrl.trim()} alt={review.name} className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm" />
                   ) : (
                     <div className={`w-9 h-9 rounded-full ${avatarBg} text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-inner`}>
                       {initial}

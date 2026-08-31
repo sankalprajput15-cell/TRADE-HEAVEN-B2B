@@ -14,7 +14,10 @@ export const EditableImage: React.FC<Props> = ({ contentKey, defaultSrc, alt, cl
   const { siteContent, updateField, isUserAuthorized, currentUser } = useSiteContent();
   
   const canEdit = isUserAuthorized(currentUser).isAuthorized;
-  const src = contentKey.split('.').reduce((o, i) => (o ? o[i] : null), siteContent) || defaultSrc;
+  const rawSrc = contentKey.split('.').reduce((o, i) => (o ? o[i] : null), siteContent);
+  const src = (rawSrc && typeof rawSrc === 'string' && rawSrc.trim()) 
+    ? rawSrc.trim() 
+    : (defaultSrc && defaultSrc.trim() ? defaultSrc.trim() : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800');
 
   const handleClick = () => {
     if (!canEdit) return;
@@ -26,7 +29,7 @@ export const EditableImage: React.FC<Props> = ({ contentKey, defaultSrc, alt, cl
 
   return (
     <div className={`relative ${canEdit ? 'group cursor-pointer' : ''} ${className}`} onClick={(e) => { if (canEdit) { e.preventDefault(); e.stopPropagation(); handleClick(); } }}>
-      <img src={src || undefined} alt={alt} className="w-full h-full object-cover rounded-inherit" />
+      <img src={src} alt={alt} className="w-full h-full object-cover rounded-inherit" />
       {canEdit && (
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-inherit">
           <div className="bg-white/90 text-slate-900 px-4 py-2 rounded-full font-semibold text-sm shadow-xl flex items-center gap-2">

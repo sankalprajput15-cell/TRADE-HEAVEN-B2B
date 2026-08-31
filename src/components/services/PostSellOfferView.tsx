@@ -293,8 +293,8 @@ export const PostSellOfferView: React.FC<Props> = ({
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   <div className="w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shrink-0 flex items-center justify-center">
-                    {imageUrl ? (
-                      <img src={imageUrl} alt={title ? `Preview of ${title}` : "Product photo preview"} className="w-full h-full object-cover" />
+                    {imageUrl && imageUrl.trim() ? (
+                      <img src={imageUrl.trim()} alt={title ? `Preview of ${title}` : "Product photo preview"} className="w-full h-full object-cover" />
                     ) : (
                       <ImageIcon className="w-6 h-6 text-slate-400" />
                     )}

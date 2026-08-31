@@ -401,8 +401,8 @@ export const HeroSection: React.FC<Props> = ({
       {/* Background Image with Professional Gradient Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
-          src={hp.heroBgImage || "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80"} 
-          srcSet={hp.heroBgImage ? undefined : "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80 1200w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80 1600w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80 2000w"}
+          src={hp.heroBgImage && hp.heroBgImage.trim() ? hp.heroBgImage.trim() : "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80"} 
+          srcSet={hp.heroBgImage && hp.heroBgImage.trim() ? undefined : "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80 1200w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80 1600w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80 2000w"}
           sizes="100vw"
           alt="Global B2B Logistics and Trade Shipping Port" 
           className="w-full h-full object-cover object-center"

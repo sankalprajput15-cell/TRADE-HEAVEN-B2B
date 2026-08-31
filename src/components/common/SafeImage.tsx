@@ -244,7 +244,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     setHasError(false);
   }, [src, fallbackSrc, category, productId]);
 
-  const currentUrl = candidates[attemptIndex] || FALLBACK_SEEDS[0];
+  const currentCandidate = candidates[attemptIndex];
+  const validUrl = (currentCandidate && typeof currentCandidate === 'string' && currentCandidate.trim() !== '')
+    ? currentCandidate.trim()
+    : (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim() !== '')
+      ? fallbackSrc.trim()
+      : FALLBACK_SEEDS[0];
 
   const handleError = () => {
     if (attemptIndex < candidates.length - 1) {
@@ -284,7 +289,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         </div>
       ) : (
         <img
-          src={currentUrl}
+          src={validUrl}
           alt={alt || 'Industrial product or sector'}
           referrerPolicy="no-referrer"
           loading={props.loading || (props.fetchPriority === 'high' ? 'eager' : 'lazy')}

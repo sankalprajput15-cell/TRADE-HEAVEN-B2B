@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { SafeImage } from '../common/SafeImage';
 import { 
   Building2, 
   Search, 
@@ -158,10 +159,9 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                 onClick={() => onOpenStorefront(company.id)}
                 className="relative h-36 w-full bg-slate-100 overflow-hidden cursor-pointer group"
               >
-                <img
-                  src={company.bannerUrl || undefined}
+                <SafeImage
+                  src={company.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'}
                   alt={company.companyName}
-                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute top-3 left-3">
@@ -177,10 +177,10 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                   onClick={() => onOpenStorefront(company.id)}
                   className="flex items-center gap-3 cursor-pointer"
                 >
-                  <img
-                    src={company.logoUrl || undefined}
+                  <SafeImage
+                    src={company.logoUrl}
                     alt={company.companyName}
-                    referrerPolicy="no-referrer"
+                    type="logo"
                     className="w-12 h-12 rounded-xl object-cover border-2 border-white bg-white -mt-10 shadow-md relative z-10"
                   />
                   <div>

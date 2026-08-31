@@ -21,6 +21,7 @@ import {
   Award,
   Filter
 } from 'lucide-react';
+import { SafeImage } from '../common/SafeImage';
 
 interface CountryB2bPortalViewProps {
   countryId: string;
@@ -423,9 +424,11 @@ export const CountryB2bPortalView: React.FC<CountryB2bPortalViewProps> = ({
                   className="bg-white rounded-2xl border border-slate-200 hover:border-blue-400 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
                 >
                   <div className="aspect-square bg-slate-100 overflow-hidden relative">
-                    <img
+                    <SafeImage
                       src={prod.image}
                       alt={prod.title}
+                      category={prod.category}
+                      productId={prod.id}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[9px] font-bold text-white uppercase">

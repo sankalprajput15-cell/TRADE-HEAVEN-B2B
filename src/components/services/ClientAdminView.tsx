@@ -1105,7 +1105,7 @@ export const ClientAdminView: React.FC<Props> = ({
                     <div className="space-y-2">
                       <div className="w-full h-36 rounded-xl overflow-hidden bg-white border border-slate-200 relative">
                         <img
-                          src={l.image_url || 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'}
+                          src={l.image_url && l.image_url.trim() ? l.image_url.trim() : 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'}
                           alt={l.title}
                           className="w-full h-full object-cover"
                         />
