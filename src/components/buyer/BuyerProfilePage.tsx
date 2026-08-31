@@ -215,7 +215,8 @@ export const BuyerProfilePage: React.FC<Props> = ({
           <SafeImage
             src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80'}
             alt={profile.companyName}
-            className="w-full h-full object-cover opacity-85"
+            className="w-full h-full opacity-85"
+            imgClassName="object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
 
@@ -242,11 +243,12 @@ export const BuyerProfilePage: React.FC<Props> = ({
                 src={profile.logoUrl}
                 alt={profile.companyName}
                 type="logo"
-                className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white bg-white shadow-xl relative z-10 shrink-0"
+                className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl border-4 border-white bg-white shadow-xl relative z-10 shrink-0"
+                imgClassName="object-contain p-1"
               />
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+              <div className="space-y-1 min-w-0 flex-1 pb-1 sm:pb-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
                     {profile.companyName}
                   </h1>
                   {profile.isVerifiedKYC && (

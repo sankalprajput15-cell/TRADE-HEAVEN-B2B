@@ -54,6 +54,8 @@ import {
   GLOBAL_ESPO_PRODUCTS, 
   GLOBAL_ESPO_RFQS 
 } from './espoData';
+import { GLOBAL_CASHEW_COMPANIES, GLOBAL_CASHEW_BUYER_PROFILES, GLOBAL_CASHEW_PRODUCTS, GLOBAL_CASHEW_RFQS } from "./cashewData";
+import { GLOBAL_VANILLA_COMPANIES, GLOBAL_VANILLA_BUYER_PROFILES, GLOBAL_VANILLA_PRODUCTS, GLOBAL_VANILLA_RFQS } from "./vanillaBeansData";
 import { 
   CompanyProfile, 
   DetailedBuyerProfile,
@@ -661,6 +663,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ...GLOBAL_COAL_COMPANIES,
   ...GLOBAL_GOLD_COMPANIES,
   ...GLOBAL_METAL_SCRAP_COMPANIES,
+  ...GLOBAL_CASHEW_COMPANIES,
+  ...GLOBAL_VANILLA_COMPANIES,
   {
   "id": "comp-ext2026-0",
   "ownerUid": "user-ext-supplier-0",
@@ -4139,6 +4143,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   ...GLOBAL_COAL_BUYER_PROFILES,
   ...GLOBAL_GOLD_BUYER_PROFILES,
   ...GLOBAL_METAL_SCRAP_BUYER_PROFILES,
+  ...GLOBAL_CASHEW_BUYER_PROFILES,
+  ...GLOBAL_VANILLA_BUYER_PROFILES,
   {
   "id": "buyer-ext2026-0",
   "companyName": "UKKL Company Limited",
@@ -6927,6 +6933,8 @@ export const MOCK_PRODUCTS: Product[] = [
   ...GLOBAL_COAL_PRODUCTS,
   ...GLOBAL_GOLD_PRODUCTS,
   ...GLOBAL_METAL_SCRAP_PRODUCTS,
+  ...GLOBAL_CASHEW_PRODUCTS,
+  ...GLOBAL_VANILLA_PRODUCTS,
   {
   "id": "prod-ext2026-0-0",
   "title": "Sunflower oil (Bulk Wholesale)",
@@ -11560,6 +11568,8 @@ export const MOCK_RFQS: RfqRequirement[] = [
   ...GLOBAL_COAL_RFQS,
   ...GLOBAL_GOLD_RFQS,
   ...GLOBAL_METAL_SCRAP_RFQS,
+  ...GLOBAL_CASHEW_RFQS,
+  ...GLOBAL_VANILLA_RFQS,
   ...MAPPED_CATALOG_DERIVED_RFQS,
   ...BASE_MOCK_RFQS,
   ...METRICS_DERIVED_RFQS

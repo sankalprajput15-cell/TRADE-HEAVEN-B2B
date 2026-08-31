@@ -74,7 +74,16 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenCreateRfq,
   onOpenStorefront
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'RFQS' | 'SETTINGS'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS'>('OVERVIEW');
+  const handleDownloadTemplate = (title: string) => {
+    const link = document.createElement('a');
+    link.href = 'data:application/pdf;base64,JVBERi0xLjAKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqIDIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iaiAzIDAgb2JqPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMTAgMDAwMDAgbgowMDAwMDAwMDUzIDAwMDAwIG4KMDAwMDAwMDEwMiAwMDAwMCBuCnRyYWlsZXI8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxNDkKJUVPRgo=';
+    link.download = title.replace(/\s+/g, '_') + '_Template.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   // Settings State loaded from localStorage or defaults
@@ -427,6 +436,17 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] bg-blue-100 text-blue-800 font-black animate-pulse">
             NEW
           </span>
+        </button>
+        <button
+          onClick={() => setActiveTab('DOCUMENTS')}
+          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'DOCUMENTS'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Document Library</span>
         </button>
       </div>
 
@@ -835,6 +855,48 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+            {activeTab === 'DOCUMENTS' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fadeIn">
+          <div className="md:col-span-3 mb-2">
+            <h3 className="text-lg font-black text-slate-900 tracking-tight">Standardized Document Library</h3>
+            <p className="text-sm text-slate-500">Download official, globally recognized PDF templates for international trade transactions.</p>
+          </div>
+
+          {[
+            {
+              title: 'Commercial Invoice',
+              desc: 'Standardized format for international customs declaration and valuation.',
+              icon: <FileText className="w-6 h-6 text-blue-600" />
+            },
+            {
+              title: 'Packing List',
+              desc: 'Detailed itemized list of goods, weights, and packaging specs for freight forwarders.',
+              icon: <Package className="w-6 h-6 text-indigo-600" />
+            },
+            {
+              title: 'Bill of Lading (B/L)',
+              desc: 'Official template for carrier receipt and contract of carriage.',
+              icon: <Layers className="w-6 h-6 text-emerald-600" />
+            }
+          ].map((doc, idx) => (
+            <div key={idx} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+              <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 mb-4">
+                {doc.icon}
+              </div>
+              <h4 className="font-bold text-slate-900 mb-2">{doc.title}</h4>
+              <p className="text-xs text-slate-500 mb-6 flex-grow leading-relaxed">{doc.desc}</p>
+              <button 
+                onClick={() => handleDownloadTemplate(doc.title)} 
+                className="mt-auto w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

@@ -766,7 +766,7 @@ const MainApp: React.FC = () => {
               case 'TRUST_SAFETY':
                 return <TrustAndSafety />;
               case 'INSIGHTS':
-                return <InsightsBlog onNavigate={handleNavigate} />;
+                return <InsightsBlog onNavigate={handleNavigate} currentUser={currentUser} onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
               case 'PRODUCT_DIRECTORY':
                 return (
                   <div id="product-catalog-section" className="space-y-6">
