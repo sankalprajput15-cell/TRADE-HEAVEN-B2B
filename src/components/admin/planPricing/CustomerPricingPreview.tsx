@@ -33,7 +33,6 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
   featuresCatalog,
   onSelectPlanForCheckout
 }) => {
-  const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
   const [showComparisonMatrix, setShowComparisonMatrix] = useState(true);
 
   const activePlans = plans.filter(p => p.status === 'ACTIVE').sort((a, b) => a.displayOrder - b.displayOrder);
@@ -58,44 +57,13 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
         <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
           Scale seamlessly from free local prototyping to high-throughput multimodal pipelines with 2,000,000 token context windows.
         </p>
-
-        {/* Monthly / Annual Switcher */}
-        <div className="pt-2 flex items-center justify-center">
-          <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200 inline-flex items-center gap-1">
-            <button
-              onClick={() => setBillingCycle('MONTHLY')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                billingCycle === 'MONTHLY'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Monthly Billing
-            </button>
-            <button
-              onClick={() => setBillingCycle('ANNUAL')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                billingCycle === 'ANNUAL'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span>Annual Billing</span>
-              <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                billingCycle === 'ANNUAL' ? 'bg-blue-800 text-blue-200' : 'bg-emerald-100 text-emerald-700'
-              }`}>
-                Save ~17%
-              </span>
-            </button>
-          </div>
         </div>
-      </div>
 
       {/* Pricing Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
         {activePlans.map(plan => {
-          const price = billingCycle === 'MONTHLY' ? plan.monthlyPriceUsd : Math.round(plan.annualPriceUsd / 12);
-          const isFree = plan.monthlyPriceUsd === 0;
+          const price = plan.annualPriceUsd;
+          const isFree = plan.annualPriceUsd === 0;
 
           return (
             <div
@@ -144,15 +112,10 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
                     </span>
                     {!isFree && (
                       <span className={`text-xs ${plan.isPopular ? 'text-slate-400' : 'text-slate-500'}`}>
-                        / month {billingCycle === 'ANNUAL' ? '(billed annually)' : ''}
+                        / year
                       </span>
                     )}
                   </div>
-                  {billingCycle === 'ANNUAL' && !isFree && (
-                    <div className="text-[11px] text-emerald-500 font-bold mt-0.5">
-                      Billed as ${plan.annualPriceUsd}/year
-                    </div>
-                  )}
                 </div>
 
                 {/* Core Allocation Badges */}
@@ -244,7 +207,7 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
               <div className="pt-6">
                 <button
                   type="button"
-                  onClick={() => onSelectPlanForCheckout && onSelectPlanForCheckout(plan, billingCycle)}
+                  onClick={() => onSelectPlanForCheckout && onSelectPlanForCheckout(plan, 'ANNUAL')}
                   className={`w-full py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm ${
                     plan.isPopular
                       ? 'bg-blue-600 hover:bg-blue-500 text-white'
@@ -290,7 +253,7 @@ export const CustomerPricingPreview: React.FC<CustomerPricingPreviewProps> = ({
                     <th key={p.id} className="py-3 px-4 font-black text-slate-900 text-center">
                       <div className="font-black text-sm">{p.name}</div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        ${billingCycle === 'MONTHLY' ? p.monthlyPriceUsd : Math.round(p.annualPriceUsd / 12)}/mo
+                        ${p.annualPriceUsd}/year
                       </div>
                     </th>
                   ))}

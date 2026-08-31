@@ -38,7 +38,6 @@ export const PremiumServicesView: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'SUPPLIER' | 'BUYER'>('SUPPLIER');
   const [plans, setPlans] = useState<SaaSPlan[]>(INITIAL_SAAS_PLANS);
   const [isLoading, setIsLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState<'ANNUAL' | 'MONTHLY'>('ANNUAL');
 
   // Support request form states
   const [supportName, setSupportName] = useState('');
@@ -46,7 +45,7 @@ export const PremiumServicesView: React.FC<Props> = ({
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportType, setSupportType] = useState('Payment Link Request');
-  const [customAmount, setCustomAmount] = useState(2500);
+  const [customAmount, setCustomAmount] = useState(4100);
   const [supportNotes, setSupportNotes] = useState('');
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportSuccess, setSupportSuccess] = useState(false);
@@ -75,15 +74,11 @@ export const PremiumServicesView: React.FC<Props> = ({
   };
 
   const handleSelectPackage = (plan: SaaSPlan) => {
-    const isAnn = billingCycle === 'ANNUAL';
-    const amountUsd = isAnn ? plan.annualPriceUsd : plan.monthlyPriceUsd;
-    const cycleSuffix = isAnn ? 'Annual' : 'Monthly';
-
     onOpenPaymentCheckout({
       planId: plan.slug || plan.id,
-      title: `${plan.name} (${cycleSuffix})`,
+      title: plan.name,
       description: plan.description || `${plan.name} membership plan`,
-      amountUsd,
+      amountUsd: plan.annualPriceUsd,
       type: 'MEMBERSHIP'
     });
   };
@@ -217,8 +212,8 @@ export const PremiumServicesView: React.FC<Props> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           {displayedCategoryPlans.map(plan => {
-            const isAnn = billingCycle === 'ANNUAL';
-            const price = isAnn ? plan.annualPriceUsd : plan.monthlyPriceUsd;
+            
+            const price = plan.annualPriceUsd;
             const isHighlight = plan.isPopular;
 
             // Determine card theme styling
@@ -244,7 +239,7 @@ export const PremiumServicesView: React.FC<Props> = ({
 
                     <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
                       {formatPrice(price)}{' '}
-                      <span className="text-xs font-normal text-slate-400">/ {isAnn ? 'year' : 'month'}</span>
+                      <span className="text-xs font-normal text-slate-400">/ year</span>
                     </div>
 
                     <p className="text-xs text-slate-300 font-normal leading-relaxed">
@@ -342,7 +337,7 @@ export const PremiumServicesView: React.FC<Props> = ({
                       }`}
                     >
                       {formatPrice(price)}{' '}
-                      <span className="text-xs font-normal text-slate-500">/ {isAnn ? 'year' : 'month'}</span>
+                      <span className="text-xs font-normal text-slate-500">/ year</span>
                     </div>
 
                     <p className="text-xs text-slate-600 font-normal leading-relaxed">
@@ -420,7 +415,7 @@ export const PremiumServicesView: React.FC<Props> = ({
 
                   <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
                     {formatPrice(price)}{' '}
-                    <span className="text-xs font-normal text-slate-500">/ {isAnn ? 'year' : 'month'}</span>
+                    <span className="text-xs font-normal text-slate-500">/ year</span>
                   </div>
 
                   <p className="text-xs text-slate-600 font-normal leading-relaxed">
@@ -648,7 +643,7 @@ export const PremiumServicesView: React.FC<Props> = ({
                   type="range"
                   min="500"
                   max="15000"
-                  step="250"
+                  step="100"
                   value={customAmount}
                   onChange={e => setCustomAmount(Number(e.target.value))}
                   className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"

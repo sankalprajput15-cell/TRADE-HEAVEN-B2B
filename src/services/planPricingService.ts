@@ -17,7 +17,7 @@ import {
   FEATURE_DEFINITIONS_CATALOG 
 } from '../data/planPricingMockData';
 
-const PLANS_STORAGE_KEY = 'th_gemini_saas_plans_store_v8';
+const PLANS_STORAGE_KEY = 'th_gemini_saas_plans_store_v12';
 const RATE_LIMITS_STORAGE_KEY = 'th_gemini_rate_limits_store_v1';
 const SUBSCRIPTIONS_STORAGE_KEY = 'th_gemini_subscriptions_store_v1';
 const STRIPE_LOGS_STORAGE_KEY = 'th_gemini_stripe_logs_store_v1';
