@@ -209,20 +209,37 @@ export const HeroSection: React.FC<Props> = ({
 
     // 1. Match Products
     const matchedProducts = products.filter(p => {
-      const matchCat = selectedCat === 'All Categories' || p.category.toLowerCase().includes(selectedCat.toLowerCase());
+      if (!p) return false;
+      const cat = p.category || '';
+      const matchCat = selectedCat === 'All Categories' || cat.toLowerCase().includes(selectedCat.toLowerCase());
       if (!matchCat) return false;
+      const title = p.title || '';
+      const sName = p.supplierName || '';
+      const sCountry = p.supplierCountry || '';
+      const desc = p.description || '';
+      const hasSpecMatch = Array.isArray(p.specifications) && p.specifications.some((s: any) => {
+        if (!s) return false;
+        if (typeof s === 'string') return (s as string).toLowerCase().includes(q);
+        return (
+          (typeof s.name === 'string' && s.name.toLowerCase().includes(q)) ||
+          (s.value !== undefined && String(s.value).toLowerCase().includes(q)) ||
+          (typeof s.key === 'string' && s.key.toLowerCase().includes(q))
+        );
+      });
+
       return (
-        p.title.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.supplierName.toLowerCase().includes(q) ||
-        (p.supplierCountry && p.supplierCountry.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.specifications && Array.isArray(p.specifications) && p.specifications.some(s => s.name?.toLowerCase().includes(q) || s.value?.toLowerCase().includes(q)))
+        title.toLowerCase().includes(q) ||
+        cat.toLowerCase().includes(q) ||
+        sName.toLowerCase().includes(q) ||
+        sCountry.toLowerCase().includes(q) ||
+        desc.toLowerCase().includes(q) ||
+        Boolean(hasSpecMatch)
       );
     }).slice(0, 16);
 
     // 2. Match Verified Suppliers & Manufacturers
     const matchedSuppliers = MOCK_COMPANIES.filter(c => {
+      if (!c) return false;
       return (
         (c.companyName && c.companyName.toLowerCase().includes(q)) ||
         (c.country && c.country.toLowerCase().includes(q)) ||
@@ -231,12 +248,13 @@ export const HeroSection: React.FC<Props> = ({
         (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
         (c.contactPhone && c.contactPhone.toLowerCase().includes(q)) ||
         (c.description && c.description.toLowerCase().includes(q)) ||
-        ((c.certifications || []).some(cert => cert && cert.toLowerCase().includes(q)))
+        ((c.certifications || []).some(cert => cert && typeof cert === 'string' && cert.toLowerCase().includes(q)))
       );
     }).slice(0, 16);
 
     // 3. Match RFQs & Buy Leads (Searches live database feed)
     const matchedRfqs = activeRfqPool.filter(r => {
+      if (!r) return false;
       const pName = (r.productName || '').toLowerCase();
       const bCompany = (r.buyerCompany || '').toLowerCase();
       const bName = (r.buyerName || '').toLowerCase();
@@ -266,19 +284,19 @@ export const HeroSection: React.FC<Props> = ({
 
     // 4. Match Categories & Subcategories Trade Metrics
     const matchedTradeMetrics = (GLOBAL_B2B_TRADE_METRICS || []).filter(m => {
-      return (
-        m.main_category.toLowerCase().includes(q) ||
-        m.subcategory.toLowerCase().includes(q)
-      );
+      if (!m) return false;
+      const mainCat = (m.main_category || '').toLowerCase();
+      const subCat = (m.subcategory || '').toLowerCase();
+      return mainCat.includes(q) || subCat.includes(q);
     }).slice(0, 16);
 
     // 5. Match Site Tools & Services
     const matchedTools = SITE_TOOLS.filter(t => {
-      return (
-        t.name.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q)
-      );
+      if (!t) return false;
+      const name = (t.name || '').toLowerCase();
+      const desc = (t.description || '').toLowerCase();
+      const cat = (t.category || '').toLowerCase();
+      return name.includes(q) || desc.includes(q) || cat.includes(q);
     }).slice(0, 6);
 
     const totalCount = 
@@ -766,29 +784,39 @@ export const HeroSection: React.FC<Props> = ({
               </div>
 
               {/* Scrollable Results Feed */}
-              <div className="max-h-[500px] sm:max-h-[560px] overflow-y-auto p-4 space-y-5">
+              <div className="max-h-[480px] sm:max-h-[540px] overflow-y-auto p-3.5 sm:p-5 space-y-6 bg-slate-50/50">
                 {searchResults.totalCount === 0 ? (
-                  <div className="py-8 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
-                      <Search className="w-6 h-6" />
+                  <div className="py-10 text-center space-y-3 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+                      <Search className="w-5 h-5" />
                     </div>
                     <div className="space-y-1">
-                      <div className="text-sm font-bold text-slate-900">No direct matches found for "{searchQuery}"</div>
-                      <div className="text-xs text-slate-500 max-w-sm mx-auto">
-                        We couldn't find exact matches in our current index. Would you like to post an RFQ to get factory quotes in 24 hours?
+                      <div className="text-sm font-bold text-slate-900">No exact matches found for "{searchQuery}"</div>
+                      <div className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                        We couldn't find active listings matching your query. Post a free custom RFQ to receive competitive factory quotes within 24 hours.
                       </div>
                     </div>
-                    <div className="pt-2">
+                    <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
                           setIsSearchPopoverOpen(false);
                           onOpenCreateRfq();
                         }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm cursor-pointer transition-colors"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         <span>Post Custom RFQ for "{searchQuery}"</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSearchPopoverOpen(false);
+                          if (onNavigate) onNavigate('PRODUCT_DIRECTORY');
+                        }}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-slate-200 cursor-pointer transition-colors"
+                      >
+                        <span>Browse Full Catalog</span>
                       </button>
                     </div>
                   </div>
@@ -796,70 +824,80 @@ export const HeroSection: React.FC<Props> = ({
                   <>
                     {/* SECTION 1: MATCHED BUY LEADS & RFQS */}
                     {(activeFilter === 'ALL' || activeFilter === 'RFQS') && searchResults.rfqs.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                          <span className="flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                            Active RFQs &amp; Buy Leads ({searchResults.rfqs.length})
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                              <FileText className="w-3.5 h-3.5" />
+                            </span>
+                            <span>Active RFQs &amp; Buy Leads</span>
+                            <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+                              {searchResults.rfqs.length}
+                            </span>
                           </span>
                           <button
                             type="button"
                             onClick={() => {
                               setIsSearchPopoverOpen(false);
-                              onNavigate('BUY_LEADS');
+                              onNavigate?.('BUY_LEADS');
                             }}
-                            className="text-[11px] text-emerald-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                            className="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                           >
                             <span>View all buy leads</span>
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {(activeFilter === 'ALL' ? searchResults.rfqs.slice(0, 6) : searchResults.rfqs).map(rfq => (
                             <div
                               key={rfq.id}
                               onClick={() => handleRfqClick(rfq)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs overflow-hidden"
+                              className="p-3.5 rounded-2xl border border-slate-200/90 hover:border-emerald-500 hover:bg-emerald-50/30 transition-all cursor-pointer space-y-2.5 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                             >
-                              <div className="flex items-center justify-between gap-1.5 min-w-0">
-                                <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
+                              <div className="flex items-center justify-between gap-2 min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 shrink-0">
                                     {rfq.id}
                                   </span>
-                                  <span className="text-[9px] text-blue-700 font-semibold flex items-center gap-0.5 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
-                                    <Clock className="w-2.5 h-2.5 text-blue-500" />
+                                  <span className="text-[10px] text-slate-600 flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0">
+                                    <Clock className="w-3 h-3 text-slate-400" />
                                     <span>{getFreshRfqDate(rfq)}</span>
                                   </span>
                                 </div>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                                   {rfq.quotesCount} Bids
                                 </span>
                               </div>
 
-                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1 truncate">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1 truncate">
                                 {rfq.productName}
                               </div>
 
-                              <div className="grid grid-cols-2 gap-1.5 text-[10px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                              <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60">
                                 <div className="min-w-0 truncate">
                                   <span className="text-slate-400">Target Vol:</span>{' '}
-                                  <strong className="text-slate-900">{rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}</strong>
+                                  <strong className="text-slate-900 font-semibold">{rfq.targetQuantity.toLocaleString()} {rfq.quantityUnit}</strong>
                                 </div>
                                 <div className="min-w-0 truncate">
                                   <span className="text-slate-400">Port:</span>{' '}
-                                  <strong className="text-slate-800">{rfq.destinationPort}</strong>
+                                  <strong className="text-slate-800 font-semibold">{rfq.destinationPort || 'Global'}</strong>
                                 </div>
-                                <div className="col-span-2 text-emerald-700 font-bold font-mono pt-0.5 border-t border-slate-100 min-w-0 truncate">
-                                  {rfq.preferredIncoterm} • {rfq.targetPriceUsd ? formatPrice(rfq.targetPriceUsd) : 'Market Quote'}
+                                <div className="col-span-2 text-emerald-700 font-bold font-mono pt-1.5 border-t border-slate-200/60 min-w-0 truncate flex items-center justify-between">
+                                  <span>{rfq.preferredIncoterm} • {rfq.targetPriceUsd ? formatPrice(rfq.targetPriceUsd) : 'Market Quote'}</span>
+                                  <span className="text-[10px] text-slate-400 font-sans font-normal">{rfq.paymentTerms || 'Standard Terms'}</span>
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between text-[10px] text-slate-600 pt-1 border-t border-slate-100 gap-1.5 min-w-0">
-                                <span className="truncate min-w-0 flex-1">Buyer: <strong className="text-slate-800">{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
-                                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 font-bold text-[9px] border border-amber-200 shrink-0">
+                              <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 border-t border-slate-100 gap-2 min-w-0">
+                                <div className="truncate min-w-0 flex-1 flex items-center gap-1">
+                                  <span className="text-slate-400 shrink-0">Buyer:</span>
+                                  <strong className="text-slate-800 truncate">{rfq.buyerCompany}</strong>
+                                  <span className="text-slate-400 shrink-0">({rfq.buyerCountry})</span>
+                                </div>
+                                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 font-semibold text-[10px] border border-amber-200/80 shrink-0">
                                   <Lock className="w-2.5 h-2.5 text-amber-600" />
-                                  <span>Hidden Contact</span>
+                                  <span>Verified Buyer</span>
                                 </div>
                               </div>
                             </div>
@@ -870,23 +908,28 @@ export const HeroSection: React.FC<Props> = ({
 
                     {/* SECTION 2: MATCHED PRODUCTS */}
                     {(activeFilter === 'ALL' || activeFilter === 'PRODUCTS') && searchResults.products.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                          <span className="flex items-center gap-1.5">
-                            <Package className="w-3.5 h-3.5 text-blue-600" />
-                            Verified Factory Products ({searchResults.products.length})
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
+                              <Package className="w-3.5 h-3.5" />
+                            </span>
+                            <span>Verified Factory Products</span>
+                            <span className="text-[10px] font-semibold bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full border border-sky-200">
+                              {searchResults.products.length}
+                            </span>
                           </span>
                           <button
                             type="button"
                             onClick={handleSearchSubmit}
-                            className="text-[11px] text-blue-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                            className="text-[11px] text-sky-700 hover:text-sky-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                           >
                             <span>View in catalog</span>
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {(activeFilter === 'ALL' ? searchResults.products.slice(0, 4) : searchResults.products).map(prod => {
                             const unitPrice = prod.priceTiers && prod.priceTiers[0] ? prod.priceTiers[0].priceUsd : 0;
                             const imgUrl = prod.images && prod.images[0] ? prod.images[0] : '';
@@ -895,24 +938,25 @@ export const HeroSection: React.FC<Props> = ({
                               <div
                                 key={prod.id}
                                 onClick={() => handleProductClick(prod)}
-                                className="p-2.5 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer flex items-center gap-3 group/item bg-white overflow-hidden"
+                                className="p-3 rounded-2xl border border-slate-200/90 hover:border-sky-500 hover:bg-sky-50/30 transition-all cursor-pointer flex items-center gap-3.5 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                               >
                                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                                   <SafeImage src={imgUrl} alt={prod.title} category={prod.category} productId={prod.id} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform" />
                                 </div>
-                                <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
-                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-600 transition-colors line-clamp-1 truncate">
+                                <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
+                                  <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-sky-700 transition-colors line-clamp-1 truncate">
                                     {prod.title}
                                   </div>
                                   <div className="text-[11px] font-mono font-black text-slate-900 truncate">
                                     {formatPrice(unitPrice)} <span className="text-[10px] text-slate-500 font-normal">/ {unitLabel}</span>
                                   </div>
                                   <div className="flex items-center gap-2 text-[10px] text-slate-500 min-w-0">
-                                    <span className="shrink-0">MOQ: {prod.moq} {unitLabel}</span>
+                                    <span className="shrink-0 font-medium">MOQ: {prod.moq} {unitLabel}</span>
                                     <span>•</span>
                                     <span className="truncate">{prod.supplierCountry}</span>
                                   </div>
                                 </div>
+                                <ChevronRight className="w-4 h-4 text-slate-300 group-hover/item:text-sky-600 transition-colors shrink-0" />
                               </div>
                             );
                           })}
@@ -922,48 +966,56 @@ export const HeroSection: React.FC<Props> = ({
 
                     {/* SECTION 3: MATCHED SUPPLIERS & FACTORIES */}
                     {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS') && searchResults.suppliers.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                          <span className="flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-amber-600" />
-                            Audited Manufacturers ({searchResults.suppliers.length})
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+                              <Building2 className="w-3.5 h-3.5" />
+                            </span>
+                            <span>Audited Manufacturers</span>
+                            <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                              {searchResults.suppliers.length}
+                            </span>
                           </span>
                           <button
                             type="button"
                             onClick={() => {
                               setIsSearchPopoverOpen(false);
-                              onNavigate('SUPPLIERS_DIRECTORY');
+                              onNavigate?.('SUPPLIERS_DIRECTORY');
                             }}
-                            className="text-[11px] text-amber-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                            className="text-[11px] text-amber-700 hover:text-amber-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                           >
                             <span>View all suppliers</span>
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {(activeFilter === 'ALL' ? searchResults.suppliers.slice(0, 4) : searchResults.suppliers).map(supp => (
                             <div
                               key={supp.id}
                               onClick={() => handleSupplierClick(supp.id)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white overflow-hidden"
+                              className="p-3 rounded-2xl border border-slate-200/90 hover:border-amber-500 hover:bg-amber-50/30 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                             >
                               <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
-                                <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                                   <SafeImage src={supp.logoUrl} alt={supp.companyName} className="w-full h-full object-cover" />
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
-                                  <div className="text-xs font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
+                                  <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
                                     {supp.companyName}
                                   </div>
                                   <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
                                     <span className="truncate">{supp.country}</span>
                                     <span>•</span>
-                                    <span className="font-semibold text-emerald-600 shrink-0">{supp.trustScore}% Trust Score</span>
+                                    <span className="font-semibold text-emerald-600 shrink-0 flex items-center gap-0.5">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      {supp.trustScore}% Trust Score
+                                    </span>
                                   </div>
                                 </div>
                               </div>
-                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 shrink-0">
                                 {supp.tier}
                               </span>
                             </div>
@@ -974,41 +1026,46 @@ export const HeroSection: React.FC<Props> = ({
 
                     {/* SECTION 4: MATCHED TOOLS & SERVICES */}
                     {(activeFilter === 'ALL' || activeFilter === 'TOOLS') && searchResults.tools.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                          <span className="flex items-center gap-1.5">
-                            <Wrench className="w-3.5 h-3.5 text-indigo-600" />
-                            Platform Tools &amp; Services ({searchResults.tools.length})
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                              <Wrench className="w-3.5 h-3.5" />
+                            </span>
+                            <span>Platform Tools &amp; Services</span>
+                            <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                              {searchResults.tools.length}
+                            </span>
                           </span>
                           <button
                             type="button"
                             onClick={() => {
                               setIsSearchPopoverOpen(false);
-                              onNavigate('INCOTERMS_CALCULATOR');
+                              onNavigate?.('INCOTERMS_CALCULATOR');
                             }}
-                            className="text-[11px] text-indigo-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                            className="text-[11px] text-indigo-700 hover:text-indigo-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                           >
                             <span>Explore tools</span>
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {searchResults.tools.map(tool => (
                             <div
                               key={tool.id}
                               onClick={() => handleToolClick(tool)}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white overflow-hidden"
+                              className="p-3 rounded-2xl border border-slate-200/90 hover:border-indigo-500 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                             >
                               <div className="space-y-0.5 min-w-0 flex-1 overflow-hidden">
-                                <div className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-700 transition-colors line-clamp-1 truncate">
+                                <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-indigo-700 transition-colors line-clamp-1 truncate">
                                   {tool.name}
                                 </div>
                                 <div className="text-[10px] text-slate-500 line-clamp-1 truncate">
                                   {tool.description}
                                 </div>
                               </div>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 shrink-0">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
                                 {tool.badge}
                               </span>
                             </div>
@@ -1019,11 +1076,16 @@ export const HeroSection: React.FC<Props> = ({
 
                     {/* SECTION 5: MATCHED B2B TRADE METRICS & CATEGORIES */}
                     {(activeFilter === 'ALL' || activeFilter === 'CATEGORIES') && searchResults.categories.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
-                          <span className="flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-blue-600" />
-                            Verified B2B Trade Metrics &amp; Categories ({searchResults.categories.length})
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                          <span className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                              <Layers className="w-3.5 h-3.5" />
+                            </span>
+                            <span>Verified B2B Trade Metrics &amp; Categories</span>
+                            <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                              {searchResults.categories.length}
+                            </span>
                           </span>
                           <button
                             type="button"
@@ -1031,14 +1093,14 @@ export const HeroSection: React.FC<Props> = ({
                               setIsSearchPopoverOpen(false);
                               if (onNavigate) onNavigate('PRODUCT_DIRECTORY');
                             }}
-                            className="text-[11px] text-blue-600 font-bold hover:underline normal-case flex items-center gap-0.5 cursor-pointer"
+                            className="text-[11px] text-blue-700 hover:text-blue-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
                           >
                             <span>Browse categories</span>
                             <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {searchResults.categories.map((metric, idx) => (
                             <div
                               key={idx}
@@ -1047,22 +1109,23 @@ export const HeroSection: React.FC<Props> = ({
                                 onSearch(metric.subcategory, metric.main_category);
                                 if (onNavigate) onNavigate('PRODUCT_DIRECTORY');
                               }}
-                              className="p-3 rounded-2xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition-all cursor-pointer space-y-2 group/item bg-white shadow-2xs overflow-hidden"
+                              className="p-3.5 rounded-2xl border border-slate-200/90 hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer space-y-2.5 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                             >
                               <div className="flex items-center justify-between gap-1.5 min-w-0">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px] sm:max-w-[180px]">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px] sm:max-w-[180px]">
                                   {metric.main_category}
                                 </span>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 flex items-center gap-1">
+                                  <TrendingUp className="w-2.5 h-2.5 text-emerald-600" />
                                   {metric.growth_trend}
                                 </span>
                               </div>
 
-                              <div className="text-xs font-bold text-slate-900 group-hover/item:text-blue-700 transition-colors truncate">
+                              <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-blue-700 transition-colors truncate">
                                 {metric.subcategory}
                               </div>
 
-                              <div className="grid grid-cols-2 gap-1.5 text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                              <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-200/80">
                                 <div className="flex items-center gap-1 min-w-0 truncate">
                                   <Building2 className="w-3 h-3 text-amber-600 shrink-0" />
                                   <span className="text-slate-500 shrink-0">Suppliers:</span>{' '}

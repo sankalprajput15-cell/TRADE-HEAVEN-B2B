@@ -62,13 +62,19 @@ export interface RawListingPayload {
 }
 
 // Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
-const originalFetch = window.fetch;
+const nativeFetch = typeof window !== 'undefined' && typeof window.fetch === 'function'
+  ? window.fetch.bind(window)
+  : (typeof globalThis !== 'undefined' && typeof globalThis.fetch === 'function' ? globalThis.fetch.bind(globalThis) : undefined);
+
 const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Promise<Response> => {
+  if (!nativeFetch) {
+    throw new Error('Fetch API is not available in the current environment');
+  }
   const timeout = 25000; // 25 seconds timeout to prevent premature aborts on slow environments or cold starts
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
-    return await originalFetch(resource, {
+    return await nativeFetch(resource, {
       ...options,
       signal: options.signal || controller.signal
     });
