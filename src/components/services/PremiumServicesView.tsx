@@ -21,8 +21,42 @@ import {
   CreditCard,
   Link,
   Send,
-  Check
+  Check,
+  Star,
+  Quote,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+
+const BUYER_TESTIMONIALS = [
+  {
+    id: 1,
+    quote: "The Advance Buyer Plan transformed our sourcing. We cut out the middlemen and got direct access to top-tier factories. Saved us $2M in procurement costs last year.",
+    author: "Sarah Jenkins",
+    role: "Head of Global Sourcing",
+    company: "TechTronics Inc.",
+    rating: 5,
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
+  },
+  {
+    id: 2,
+    quote: "Having a dedicated personal sourcing agent has been a game-changer. The priority RFQ matching got us quotes in 12 hours instead of 5 days.",
+    author: "Marcus Chen",
+    role: "Procurement Director",
+    company: "Global Retail Partners",
+    rating: 5,
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150&h=150"
+  },
+  {
+    id: 3,
+    quote: "Live video stream factory inspections gave us the confidence to place a $500k order without flying a team to Asia. The ROI on this membership is undeniable.",
+    author: "Elena Rostova",
+    role: "Chief Supply Chain Officer",
+    company: "Vostok Sourcing",
+    rating: 5,
+    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150"
+  }
+];
 
 interface Props {
   selectedCurrency: Currency;
@@ -49,8 +83,19 @@ export const PremiumServicesView: React.FC<Props> = ({
   const [supportNotes, setSupportNotes] = useState('');
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportSuccess, setSupportSuccess] = useState(false);
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (activeTab === 'BUYER') {
+      interval = setInterval(() => {
+        setTestimonialIndex((prev) => (prev + 1) % BUYER_TESTIMONIALS.length);
+      }, 7000);
+    }
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
   const fetchPlans = async () => {
     setIsLoading(true);
@@ -463,6 +508,255 @@ export const PremiumServicesView: React.FC<Props> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* SUPPLIER COMPARISON TABLE */}
+      {activeTab === 'SUPPLIER' && (
+        <div className="mt-16 mb-8 animate-in fade-in duration-300">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Compare Supplier Export Plans</h2>
+            <p className="text-sm text-slate-600 mt-2">See how an upgraded membership boosts your global visibility.</p>
+          </div>
+          
+          <div className="overflow-x-auto bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-4 sm:p-6 text-sm font-black text-slate-900 w-1/5">Feature Capability</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-slate-500 w-1/5 text-center border-l border-slate-200">Standard Access (Free)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-emerald-700 w-1/5 text-center border-l border-emerald-100 bg-emerald-50/50">Basic Business ($1100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/5 text-center border-l border-blue-100 bg-blue-50/50">Premium Partner ($2100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-amber-700 w-1/5 text-center border-l border-amber-100 bg-amber-50/50">VIP Business ($4100/yr)</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Verified Exporter Badge</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Standard</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Included</span>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <BadgeCheck className="w-4 h-4 text-blue-600" />
+                      <span>Verified Gold</span>
+                    </div>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-amber-900 border-l border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <Crown className="w-4 h-4 text-amber-600" />
+                      <span>VIP Elite Status</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Global Directory Ranking</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Standard</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Priority Ranking</span>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <ArrowRight className="w-4 h-4 text-blue-600" />
+                      <span>High Priority</span>
+                    </div>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-amber-900 border-l border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-600" />
+                      <span>Top Tier Priority</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Product Listings</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Up to 10</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Up to 50</span>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                      <span>Up to 150</span>
+                    </div>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-amber-900 border-l border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                      <span>Unlimited</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Buy Lead Credits</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">5 / month</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>20 / month</span>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                      <span>50 / month</span>
+                    </div>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-amber-900 border-l border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                      <span>Unlimited</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Dedicated Account Manager</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-400 border-l border-slate-200">—</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-400 border-l border-emerald-100 bg-emerald-50/50">—</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                      <span>Priority Support</span>
+                    </div>
+                  </td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-amber-900 border-l border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                      <span>Yes (Personal Sourcing Agent)</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* BUYER COMPARISON TABLE */}
+      {activeTab === 'BUYER' && (
+        <div className="mt-16 mb-8 animate-in fade-in duration-300">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Compare Buyer Access Levels</h2>
+            <p className="text-sm text-slate-600 mt-2">See why top procurement teams choose the Advance Buyer Plan.</p>
+          </div>
+          
+          <div className="overflow-x-auto bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-4 sm:p-6 text-sm font-black text-slate-900 w-1/3">Feature Capability</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-slate-500 w-1/3 text-center border-l border-slate-200">Standard Access (Free)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/3 text-center border-l border-blue-100 bg-blue-50/50">Advance Buyer Plan ($4100/yr)</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Factory Direct Contacts</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Masked / Limited Views</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                    <span>Unlimited Unmasked Access</span>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Priority RFQ Matching</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Standard Queue</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                    <span>Priority Broadcast to Top Tier</span>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Dedicated Account Manager</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-400 border-l border-slate-200">—</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                    <span>Yes (Personal Sourcing Agent)</span>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Factory Audits & Inspections</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Paid Add-on</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                    <span>Full Access (Live Video Stream)</span>
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 sm:p-6 font-bold text-slate-700">Verified Importer Trust Badge</td>
+                  <td className="p-4 sm:p-6 text-center text-slate-400 border-l border-slate-200">—</td>
+                  <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50 flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                    <span>Included (Highest Trust)</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* TESTIMONIAL CAROUSEL */}
+          <div className="mt-16 bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-8 sm:p-12 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Quote className="w-32 h-32 text-white" />
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                  <span className="text-white font-bold text-sm tracking-wide uppercase">Enterprise Buyer Success Stories</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setTestimonialIndex(prev => prev === 0 ? BUYER_TESTIMONIALS.length - 1 : prev - 1)}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => setTestimonialIndex(prev => (prev + 1) % BUYER_TESTIMONIALS.length)}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div key={testimonialIndex} className="min-h-[180px] flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-500">
+                <p className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight mb-8">
+                  "{BUYER_TESTIMONIALS[testimonialIndex].quote}"
+                </p>
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={BUYER_TESTIMONIALS[testimonialIndex].image} 
+                    alt={BUYER_TESTIMONIALS[testimonialIndex].author}
+                    className="w-14 h-14 rounded-full border-2 border-white/20 object-cover"
+                  />
+                  <div>
+                    <h4 className="text-white font-bold text-base">{BUYER_TESTIMONIALS[testimonialIndex].author}</h4>
+                    <p className="text-blue-200 text-xs sm:text-sm">{BUYER_TESTIMONIALS[testimonialIndex].role}, {BUYER_TESTIMONIALS[testimonialIndex].company}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Carousel Dots */}
+              <div className="flex items-center gap-2 mt-8">
+                {BUYER_TESTIMONIALS.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setTestimonialIndex(idx)}
+                    aria-label={`Go to testimonial ${idx + 1}`}
+                    className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                      idx === testimonialIndex ? 'bg-amber-400 w-8' : 'bg-white/20 hover:bg-white/40 w-2.5'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
