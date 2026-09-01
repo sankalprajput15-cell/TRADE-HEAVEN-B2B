@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Product, Currency, Incoterm, ActiveView } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
 import { bigrockApi } from '../../services/bigrockApi';
-import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
+import { ImageUploadService, ImagePreviewResult } from '../../services/imageUploadService';
+import { ImagePreview, ImagePreviewItem } from '../common/ImagePreview';
 import { 
   PackagePlus, 
   ShieldCheck, 
@@ -13,7 +14,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Upload,
-  Loader2
+  Loader2,
+  Eye,
+  Plus
 } from 'lucide-react';
 
 interface Props {
@@ -31,6 +34,14 @@ export const PostSellOfferView: React.FC<Props> = ({
   const [category, setCategory] = useState(CATEGORIES_TREE[0]?.name || 'Industrial Machinery');
   const [subCategory, setSubCategory] = useState('CNC & Precision Tooling');
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
+  const [productImages, setProductImages] = useState<ImagePreviewItem[]>([
+    {
+      id: 'default-img-1',
+      url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
+      name: 'Primary_Machinery.jpg',
+      formattedSize: '1.2 MB'
+    }
+  ]);
   const [moq, setMoq] = useState<number>(50);
   const [moqUnit, setMoqUnit] = useState('Units');
   const [priceTier1, setPriceTier1] = useState<number>(120);
@@ -100,39 +111,99 @@ export const PostSellOfferView: React.FC<Props> = ({
   };
 
   const handleImageUpload = async (file: File) => {
-    const check = validateUploadFile(file, 'IMAGE');
-    if (!check.valid) {
-      setUploadMessage(check.error || 'Invalid image file');
-      return;
-    }
     setIsUploadingImage(true);
-    setUploadMessage('Processing image...');
+    setUploadMessage('Reading instant local preview...');
     try {
-      const compressed = await compressAndResizeImage(file);
-      const res = await bigrockApi.uploadFile(file, 'products');
-      if (res.success && res.publicUrl) {
-        setImageUrl(res.publicUrl);
-        setUploadMessage('✓ Image processed successfully!');
-      } else {
-        setImageUrl(compressed.dataUrl);
-        setUploadMessage('✓ Image optimized and loaded');
+      // 1. Frontend-only FileReader API preview
+      const preview = await ImageUploadService.readAsPreview(file, {
+        maxSizeBytes: 8 * 1024 * 1024,
+        autoDimensions: true
+      });
+
+      const newItem: ImagePreviewItem = {
+        id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        url: preview.previewUrl,
+        name: preview.name,
+        sizeBytes: preview.sizeBytes,
+        formattedSize: preview.formattedSize,
+        width: preview.width,
+        height: preview.height,
+        file: preview.file
+      };
+
+      setProductImages(prev => [newItem, ...prev]);
+      setImageUrl(preview.previewUrl);
+      setUploadMessage(`✓ Preview loaded (${preview.formattedSize}${preview.width ? `, ${preview.width}x${preview.height}px` : ''}).`);
+
+      // 2. Mock / backend upload attempt
+      try {
+        const res = await bigrockApi.uploadFile(file, 'products');
+        if (res.success && res.publicUrl) {
+          setProductImages(prev =>
+            prev.map(img => img.id === newItem.id ? { ...img, url: res.publicUrl! } : img)
+          );
+          setImageUrl(res.publicUrl);
+          setUploadMessage('✓ Saved to storage bucket successfully!');
+        }
+      } catch {
+        // Safe offline / mock fallback
       }
-    } catch {
-      setUploadMessage('Failed to upload image. Using default URL.');
+    } catch (err: any) {
+      setUploadMessage(err?.message || 'Failed to read image file for preview.');
     } finally {
       setIsUploadingImage(false);
-      setTimeout(() => setUploadMessage(null), 3000);
+      setTimeout(() => setUploadMessage(null), 4000);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setProductImages(prev => {
+      const updated = prev.filter((_, idx) => idx !== index);
+      if (updated.length > 0) {
+        setImageUrl(updated[0].url);
+      } else {
+        setImageUrl('');
+      }
+      return updated;
+    });
+  };
+
+  const handleSetPrimaryImage = (index: number) => {
+    setProductImages(prev => {
+      const selected = prev[index];
+      if (!selected) return prev;
+      const rest = prev.filter((_, idx) => idx !== index);
+      setImageUrl(selected.url);
+      return [selected, ...rest];
+    });
+  };
+
+  const handleAddUrlImage = () => {
+    if (!imageUrl || !imageUrl.trim()) return;
+    const url = imageUrl.trim();
+    if (!productImages.some(img => img.url === url)) {
+      setProductImages(prev => [
+        {
+          id: `img-url-${Date.now()}`,
+          url,
+          name: `Image_${prev.length + 1}.jpg`,
+          formattedSize: 'Web URL'
+        },
+        ...prev
+      ]);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const imageList = productImages.length > 0 ? productImages.map(img => img.url) : [imageUrl];
+
     const newProd: Partial<Product> = {
       title,
       category,
       subCategory,
-      images: [imageUrl],
+      images: imageList,
       moq: Number(moq),
       moqUnit,
       priceTiers: [
@@ -287,60 +358,76 @@ export const PostSellOfferView: React.FC<Props> = ({
                 />
               </div>
 
-              <div className="sm:col-span-2 space-y-2">
+              <div className="sm:col-span-2 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="block font-bold text-slate-700">Product Image URL / Asset</label>
-                  <span className="text-[10px] text-blue-600 font-bold">Image Attachment</span>
+                  <label className="block font-bold text-slate-700">Product Images &amp; Media Attachments</label>
+                  <span className="text-[10px] text-blue-600 font-bold">FileReader Local Previews</span>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 shrink-0 flex items-center justify-center">
-                    {imageUrl && imageUrl.trim() ? (
-                      <img src={imageUrl.trim()} alt={title ? `Preview of ${title}` : "Product photo preview"} className="w-full h-full object-cover" />
+                {/* Upload Action Bar */}
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <label className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 transition-all">
+                    {isUploadingImage ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                     ) : (
-                      <ImageIcon className="w-6 h-6 text-slate-400" />
+                      <Upload className="w-3.5 h-3.5 text-white" />
                     )}
-                  </div>
+                    <span>{isUploadingImage ? 'Reading Local Preview...' : 'Select Image File'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      disabled={isUploadingImage}
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          for (let i = 0; i < files.length; i++) {
+                            await handleImageUpload(files[i]);
+                          }
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
 
-                  <div className="flex-1 w-full space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <label className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
-                        {isUploadingImage ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                        ) : (
-                          <Upload className="w-3.5 h-3.5 text-blue-600" />
-                        )}
-                        <span>{isUploadingImage ? 'Uploading to Bucket...' : 'Upload Image File'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={isUploadingImage}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) handleImageUpload(f);
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
-                      <span className="text-[11px] text-slate-400">or enter image URL below</span>
-                    </div>
-
+                  <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
                     <input
                       type="url"
                       value={imageUrl}
                       onChange={e => setImageUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 font-mono text-[11px] focus:outline-none focus:border-blue-500"
+                      placeholder="Or paste image URL (https://...)"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                     />
-
-                    {uploadMessage && (
-                      <div className="text-[10px] font-bold text-emerald-600">
-                        {uploadMessage}
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleAddUrlImage}
+                      className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold flex items-center gap-1 shrink-0 active:scale-95 transition-colors"
+                      title="Add URL to image list"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
+                    </button>
                   </div>
                 </div>
+
+                {uploadMessage && (
+                  <div className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{uploadMessage}</span>
+                  </div>
+                )}
+
+                {/* Grid of Selected Product Images with Remove Button Overlay */}
+                <ImagePreview
+                  id="post-sell-image-preview-grid"
+                  images={productImages}
+                  onRemove={handleRemoveImage}
+                  onSetPrimary={handleSetPrimaryImage}
+                  primaryIndex={0}
+                  columnsClassName="grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+                  emptyMessage="No product images uploaded yet."
+                />
               </div>
             </div>
           </div>

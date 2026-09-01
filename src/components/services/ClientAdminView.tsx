@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { bigrockApi, DbInquiry, DbListing, DbFaq, DbUser } from '../../services/bigrockApi';
+import { ImageUploadService } from '../../services/imageUploadService';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
 import { 
   Landmark, 
@@ -1222,13 +1223,26 @@ export const ClientAdminView: React.FC<Props> = ({
                       const f = e.target.files?.[0];
                       if (!f) return;
                       setIsUploadingListingImage(true);
-                      const res = await bigrockApi.uploadFile(f, 'listings');
-                      if (res.success && res.publicUrl) {
-                        setNewListingImageUrl(res.publicUrl);
-                        showToast('success', 'Image processed successfully!');
+                      try {
+                        // 1. Instant local FileReader preview
+                        const preview = await ImageUploadService.readAsPreview(f, {
+                          maxSizeBytes: 8 * 1024 * 1024
+                        });
+                        setNewListingImageUrl(preview.previewUrl);
+                        showToast('success', `Preview generated (${preview.formattedSize}). Syncing storage...`);
+
+                        // 2. Storage upload
+                        const res = await bigrockApi.uploadFile(f, 'listings');
+                        if (res.success && res.publicUrl) {
+                          setNewListingImageUrl(res.publicUrl);
+                          showToast('success', 'Image uploaded to storage successfully!');
+                        }
+                      } catch (err: any) {
+                        showToast('error', err?.message || 'Failed to read image preview.');
+                      } finally {
+                        setIsUploadingListingImage(false);
+                        e.target.value = '';
                       }
-                      setIsUploadingListingImage(false);
-                      e.target.value = '';
                     }}
                   />
                 </label>
