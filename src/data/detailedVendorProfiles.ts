@@ -501,6 +501,129 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       phone: '+1 825-255-7022',
       isVerified: false
     }
+  },
+  'comp-eec-poland-sp-zoo': {
+    id: 'comp-eec-poland-sp-zoo',
+    companyName: 'EEC POLAND SP ZOO',
+    tradeName: 'EEC Poland European Trade & Export Co.',
+    legalRegistrationNumber: 'KRS-0000849201 / NIP: PL5252849102',
+    taxVatNumber: 'PL5252849102',
+    dunsNumber: '52-849-1029',
+    country: 'Poland',
+    city: 'Warsaw',
+    address: 'Kosciuszko Coast 31/33, 00-379 Warsaw, Poland',
+    establishedYear: 2014,
+    yearsInBusiness: 12,
+    businessType: 'Wholesaler & Exporter',
+    tier: 'GOLD',
+    memberTierLabel: 'Gold Verified European Supplier',
+    isVerifiedKYC: true,
+    kycVerificationDate: '2025-06-12',
+    trustScore: 92.0,
+    responseRate: '98.5%',
+    avgResponseTime: '< 2 hours',
+    totalEmployees: '50 - 100 Employees',
+    annualRevenueUsd: '$10M - $25M USD',
+    tradeAssuranceLimitUsd: 1500000,
+    completedOrdersCount: 284,
+    factorySizeSqM: 18000,
+    productionLines: 6,
+    logoUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=80',
+    tagline: 'Premier European Wholesale Exporter of Agro Fertilizers, Pure Oils, Polymers, Machinery & Commodities',
+    description: 'EEC POLAND SP ZOO is an accredited European wholesale trading and export house based in Warsaw, Poland. Supplying verified international buyers across 40+ countries with top-tier water-soluble MAP & NPK fertilizers, refined edible oils, fresh agricultural produce, recycled hot-washed PET polymer flakes, concrete mixers, go-karts, automotive components, and food commodities with certified Baltic sea freight and road transport.',
+    acceptedPaymentTerms: [
+      'Trade Protection Certificate',
+      'L/C at Sight (Irrevocable Confirmed)',
+      '30% T/T Advance + 70% against B/L',
+      'D/P (Documents Against Payment)'
+    ],
+    supportedIncotermsList: ['FOB', 'CIF', 'CFR', 'EXW', 'DDP', 'FCA'],
+    portsOfDispatch: [
+      'Port of Gdansk, Poland (PLGDN)',
+      'Port of Gdynia, Poland (PLGDY)',
+      'Port of Szczecin, Poland (PLSZZ)'
+    ],
+    marketDistribution: [
+      { market: 'European Union & UK', percentage: 45, topCountries: ['Germany', 'France', 'Netherlands', 'UK'] },
+      { market: 'Middle East & GCC', percentage: 25, topCountries: ['UAE', 'Saudi Arabia', 'Qatar'] },
+      { market: 'North America', percentage: 18, topCountries: ['USA', 'Canada'] },
+      { market: 'Asia-Pacific', percentage: 12, topCountries: ['Vietnam', 'India', 'Japan'] }
+    ],
+    oemOdmCapabilities: {
+      oemServicesOffered: true,
+      customLogoPrinting: true,
+      customPackaging: true,
+      sampleLeadTimeDays: 5,
+      prototype3DModeling: false,
+      reverseEngineering: false
+    },
+    contactPerson: 'Marek Kowalski',
+    contactEmail: 'export@eecpoland.trade',
+    contactPhone: '+48 22 849 2011',
+    whatsapp: '+48228492011',
+    contactPersonDetails: {
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+      name: 'Marek Kowalski',
+      designation: 'Head of International Trade & Export Logistics',
+      email: 'export@eecpoland.trade',
+      phone: '+48 22 849 2011',
+      whatsapp: '+48228492011',
+      languages: ['Polish', 'English', 'German', 'Russian'],
+      timezone: 'CET (UTC+1) / 08:00 - 18:00',
+      isVerified: true,
+      responseTime: '< 2 hours'
+    },
+    complianceCertificates: [
+      {
+        id: 'cert-eec-iso9001',
+        name: 'ISO 9001:2015 Quality Management System',
+        category: 'QUALITY',
+        certificateNumber: 'PL-ISO-9001-88429-A',
+        issuingAuthority: 'Polish Centre for Testing and Certification (PCBC)',
+        issueDate: '2024-02-10',
+        expiryDate: '2027-02-09',
+        documentUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=300&auto=format&fit=crop&q=80',
+        type: 'IMAGE',
+        verified: true,
+        scope: 'Wholesale, storage, and global export distribution of agricultural commodities, chemical fertilizers, polymers, and machinery.'
+      },
+      {
+        id: 'cert-eec-haccp',
+        name: 'HACCP & ISO 22000 Food Safety System',
+        category: 'SAFETY',
+        certificateNumber: 'HACCP-EU-2024-99182',
+        issuingAuthority: 'TÜV Rheinland Polska Sp. z o.o.',
+        issueDate: '2024-03-01',
+        expiryDate: '2027-02-28',
+        documentUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1200&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=300&auto=format&fit=crop&q=80',
+        type: 'IMAGE',
+        verified: true,
+        scope: 'Procurement, packaging, and export of edible oils, grains, fresh fruits, eggs, and food staples.'
+      },
+      {
+        id: 'cert-eec-reach',
+        name: 'EU REACH Compliance Certificate',
+        category: 'ENVIRONMENTAL',
+        certificateNumber: 'REACH-PL-REG-5252849102',
+        issuingAuthority: 'European Chemicals Agency (ECHA) Registered',
+        issueDate: '2023-11-15',
+        expiryDate: '2026-11-14',
+        documentUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=1200&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=300&auto=format&fit=crop&q=80',
+        type: 'IMAGE',
+        verified: true,
+        scope: 'Conformity of recycled PET flakes and technical fertilizer compounds with EU environmental thresholds.'
+      }
+    ],
+    factoryDetails: {
+      factorySizeSqM: 18000,
+      productionLines: 6,
+      annualOutputUnits: '120,000 Metric Tons & Units / Year',
+      monthlyCapacity: '10,000 Metric Tons & Units / Month'
+    }
   }
 };
 

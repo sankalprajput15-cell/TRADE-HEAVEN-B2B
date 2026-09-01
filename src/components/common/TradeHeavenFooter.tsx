@@ -411,44 +411,6 @@ export const TradeHeavenFooter: React.FC<Props> = ({
             </a>
           </div>
         </div>
-
-        {/* Live Environment & Verified Deployment Node Strip */}
-        <div className="mt-4 pt-4 border-t border-slate-200/70 text-[10px] text-slate-500 flex flex-col lg:flex-row items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Node Asia-SE1
-            </span>
-            <span className="font-mono text-slate-600">
-              Session: <span className="text-slate-900 font-semibold">2026-08-30T20:14:36-07:00</span>
-            </span>
-            <span className="text-slate-300 hidden sm:inline">•</span>
-            <span className="font-mono text-slate-600">
-              Admin: <a href="mailto:sankalprajput15@gmail.com" className="text-blue-600 font-medium hover:underline">sankalprajput15@gmail.com</a>
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-[10px]">
-            <a 
-              href="https://ais-dev-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200/80 hover:bg-slate-300 text-slate-800 transition-colors"
-            >
-              <span>Dev URL</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-            </a>
-            <a 
-              href="https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100/80 hover:bg-blue-200 text-blue-900 font-semibold transition-colors"
-            >
-              <span>Shared URL</span>
-              <ExternalLink className="w-2.5 h-2.5 opacity-70" />
-            </a>
-          </div>
-        </div>
       </div>
     </footer>
   );
