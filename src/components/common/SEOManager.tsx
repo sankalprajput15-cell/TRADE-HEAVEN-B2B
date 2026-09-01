@@ -72,6 +72,26 @@ export const SEOManager: React.FC<SEOManagerProps> = ({ activeView }) => {
         title="Trade Heaven Marketplace"
         description="Join the world's most secure B2B trading platform."
       />;
+    case 'PRODUCT_LISTING_POLICY':
+      return <SEO 
+        title="Product Listing Policy & Prohibited Items | Trade Heaven"
+        description="Learn about Trade Heaven's product listing rules, prohibited categories, intellectual property compliance, and zero-tolerance policies."
+      />;
+    case 'PRIVACY_POLICY':
+      return <SEO 
+        title="Privacy Policy | Tradeheaven ECOM Solution LLP | Trade Heaven"
+        description="Review Trade Heaven's privacy policy, data collection terms, B2B account protection, and data subject rights by Tradeheaven ECOM Solution LLP."
+      />;
+    case 'TERMS_OF_USE':
+      return <SEO 
+        title="Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven"
+        description="Read Trade Heaven's terms of use, membership rights, 60-day refund policy, and trade dispute terms operated by Tradeheaven ECOM Solution LLP."
+      />;
+    case 'REFUND_POLICY':
+      return <SEO 
+        title="Return & Refund Policy | Trade Protection Guarantee | Trade Heaven"
+        description="Review Trade Heaven's refund conditions, milestone payment protections, and SGS dispute mediation terms."
+      />;
     default:
       return <SEO />;
   }

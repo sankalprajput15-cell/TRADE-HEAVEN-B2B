@@ -265,8 +265,23 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate('TERMS_OF_USE')} className="hover:text-blue-600 transition-colors text-left cursor-pointer font-medium text-slate-800">
+                  Terms of Use
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('REFUND_POLICY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer">
                   Refund &amp; Cancellation Policy
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('PRODUCT_LISTING_POLICY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer font-medium text-slate-800">
+                  Product Listing Policy
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('PRIVACY_POLICY')} className="hover:text-blue-600 transition-colors text-left cursor-pointer font-medium text-slate-800">
+                  Privacy Policy
                 </button>
               </li>
               {isAdmin && (
@@ -353,16 +368,28 @@ export const TradeHeavenFooter: React.FC<Props> = ({
         {/* Corporate Trust & Legal Strip */}
         <div className="mt-10 pt-6 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-            <span className="font-bold text-slate-900">{hf?.footerCopyright || '© 2025–2026 Trade Heaven Inc. All rights reserved.'}</span>
+            <span className="font-bold text-slate-900">{hf?.footerCopyright || '© 2025–2026 Tradeheaven ECOM Solution LLP. All rights reserved.'}</span>
             <span className="hidden sm:inline text-slate-300">•</span>
-            <span className="text-slate-600">{hf?.footerIsoText || 'ISO 9001 & ISO 27001 Certified Enterprise'}</span>
+            <span className="text-slate-700 font-medium">{hf?.footerIsoText || 'Govt. Registered LLP (MCA) • GST Compliant Entity'}</span>
             <span className="hidden sm:inline text-slate-300">•</span>
             <span className="text-emerald-700 font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              PCI-DSS Level 1 trade protection Vault
+              256-Bit SSL Encrypted • Secure Gateway Processing
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-slate-600">
+            <button onClick={() => onNavigate('TERMS_OF_USE')} className="hover:text-slate-950 transition-colors text-slate-700 font-semibold underline decoration-slate-300 underline-offset-4 cursor-pointer">
+              Terms of Use
+            </button>
+            <span className="text-slate-300">•</span>
+            <button onClick={() => onNavigate('PRIVACY_POLICY')} className="hover:text-slate-950 transition-colors text-slate-700 font-semibold underline decoration-slate-300 underline-offset-4 cursor-pointer">
+              Privacy Policy
+            </button>
+            <span className="text-slate-300">•</span>
+            <button onClick={() => onNavigate('PRODUCT_LISTING_POLICY')} className="hover:text-slate-950 transition-colors text-slate-700 font-semibold underline decoration-slate-300 underline-offset-4 cursor-pointer">
+              Product Listing Policy
+            </button>
+            <span className="text-slate-300">•</span>
             <button onClick={() => onNavigate('REFUND_POLICY')} className="hover:text-slate-950 transition-colors text-slate-700 font-semibold underline decoration-slate-300 underline-offset-4 cursor-pointer">
               Return &amp; Refund Policy
             </button>

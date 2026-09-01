@@ -37,6 +37,7 @@ import {
   User,
   UserPlus,
   ShieldAlert,
+  Ban,
   Sliders,
   SlidersHorizontal,
   ExternalLink,
@@ -177,6 +178,8 @@ export const Header: React.FC<Props> = ({
     'TRADE_TOOLS',
     'INCOTERMS_CALCULATOR',
     'REFUND_POLICY',
+    'PRODUCT_LISTING_POLICY',
+    'PRIVACY_POLICY',
     'ARCHITECTURE_BLUEPRINT'
   ].includes(activeView);
 
@@ -533,6 +536,39 @@ export const Header: React.FC<Props> = ({
                     <div>
                       <div>About Trade Heaven</div>
                       <div className="text-[10px] text-slate-400 font-normal">Company mission &amp; guarantees</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('PRODUCT_LISTING_POLICY')}
+                    aria-label="Product Listing Policy"
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <Ban className="w-4 h-4 text-rose-600" />
+                    <div>
+                      <div>Product Listing Policy</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Prohibited items &amp; trade compliance</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('TERMS_OF_USE')}
+                    aria-label="Terms of Use"
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <div>Terms of Use</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Platform agreement &amp; legal terms</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleNavClick('PRIVACY_POLICY')}
+                    aria-label="Privacy Policy"
+                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <div>
+                      <div>Privacy Policy</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Tradeheaven ECOM Solution LLP</div>
                     </div>
                   </button>
                   <button
@@ -971,6 +1007,20 @@ export const Header: React.FC<Props> = ({
                 className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
               >
                 Refund Policy
+              </button>
+              <button
+                onClick={() => handleNavClick('PRODUCT_LISTING_POLICY')}
+                aria-label="Listing Policy"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Listing Policy
+              </button>
+              <button
+                onClick={() => handleNavClick('PRIVACY_POLICY')}
+                aria-label="Privacy Policy"
+                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+              >
+                Privacy Policy
               </button>
               <button
                 onClick={() => handleNavClick('CONTACT_US')}

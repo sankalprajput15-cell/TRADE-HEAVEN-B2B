@@ -49,6 +49,36 @@ export const AboutUs: React.FC<{ onNavigate?: (view: string) => void }> = ({ onN
               The company has no affiliation whatsoever with unregulated financial speculation, forex trading software, or cryptocurrency brokers (such as the unrelated entity "Trade Heaven FX"). By maintaining a strict focus on physical supply chains and wholesale commerce, Trade Heaven ensures its users are engaging in tangible, legitimate business growth.
             </p>
 
+            <h2 className="text-3xl font-bold text-slate-900 mb-8 font-display">Corporate Structure &amp; Regulatory Compliance</h2>
+            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 mb-10 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-600 text-white rounded-xl">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Tradeheaven ECOM Solution LLP</h3>
+                  <p className="text-xs text-slate-500">Owning &amp; Operating Legal Entity</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-xs">
+                <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1">
+                  <div className="font-bold text-slate-900 uppercase text-[10px] text-blue-700">Corporate Incorporation</div>
+                  <div className="text-slate-700 font-medium">Registered LLP under Ministry of Corporate Affairs (MCA), Govt. of India</div>
+                </div>
+                <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1">
+                  <div className="font-bold text-slate-900 uppercase text-[10px] text-emerald-700">Tax &amp; Trade Compliance</div>
+                  <div className="text-slate-700 font-medium">GST Registered Business Entity &amp; Statutory Tax Compliant</div>
+                </div>
+                <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1 sm:col-span-2">
+                  <div className="font-bold text-slate-900 uppercase text-[10px] text-slate-500">Registered Office Address</div>
+                  <div className="text-slate-700">B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India.</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 leading-relaxed pt-1">
+                Trade Heaven leverages industry-standard 256-bit SSL/TLS encryption and partners with authorized, PCI-DSS compliant payment gateways to process transactions with zero sensitive card storage.
+              </p>
+            </div>
+
             <h2 className="text-3xl font-bold text-slate-900 mb-8 font-display">Why Businesses are Choosing Trade Heaven</h2>
             <ul className="space-y-6 mb-12 list-none pl-0">
               <li className="flex items-start gap-4">

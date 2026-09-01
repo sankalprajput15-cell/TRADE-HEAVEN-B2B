@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product, Currency, Incoterm } from '../../types';
+import { Product, Currency, Incoterm, ActiveView } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
 import { bigrockApi } from '../../services/bigrockApi';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
@@ -19,11 +19,13 @@ import {
 interface Props {
   selectedCurrency: Currency;
   onProductCreated: (product: Partial<Product>) => void;
+  onNavigate?: (view: ActiveView | string) => void;
 }
 
 export const PostSellOfferView: React.FC<Props> = ({
   selectedCurrency,
-  onProductCreated
+  onProductCreated,
+  onNavigate
 }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(CATEGORIES_TREE[0]?.name || 'Industrial Machinery');
@@ -424,6 +426,25 @@ export const PostSellOfferView: React.FC<Props> = ({
             <Send className="w-4 h-4" />
             <span>Publish Export Offer to Global Catalog</span>
           </button>
+
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <span>By submitting this listing, you confirm that your items comply with Trade Heaven's </span>
+              {onNavigate ? (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('PRODUCT_LISTING_POLICY')}
+                  className="text-blue-600 font-bold hover:underline cursor-pointer"
+                >
+                  Product Listing Policy
+                </button>
+              ) : (
+                <span className="font-bold text-blue-600">Product Listing Policy</span>
+              )}
+              <span>. Prohibited items, IPR infringements, and unauthorized controlled goods will be removed immediately.</span>
+            </div>
+          </div>
         </form>
       )}
     </div>

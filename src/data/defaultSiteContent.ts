@@ -543,10 +543,10 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     headerCountriesNotice: "180+ Countries Sourcing",
     footerTagline: "Trade Heaven is an international B2B marketplace and export portal connecting verified global buyers with vetted manufacturing plants across 180+ countries.",
     footerMission: "Empowering transparent global trade through verified manufacturer audits, dedicated Key Account Managers, and bank trade protection protections.",
-    footerCopyright: "© 2025–2026 Trade Heaven Inc. All rights reserved.",
-    footerIsoText: "ISO 27001 & GDPR Compliant Enterprise",
+    footerCopyright: "© 2025–2026 Tradeheaven ECOM Solution LLP. All rights reserved.",
+    footerIsoText: "Govt. Registered LLP (MCA) • GST Compliant Entity",
     footerSupportEmail: "support@tradeheaven.net",
-    footerSupportPhone: "+1 (800) 555-TRADE / +91 85329 34479",
-    footerHeadquarters: "Trade Heaven Global HQ, 140 Fenchurch St, London, UK & Operations Hub in Mumbai, India"
+    footerSupportPhone: "+91 93685 02627 / help@tradeheaven.net",
+    footerHeadquarters: "Tradeheaven ECOM Solution LLP, B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, UP - 206244, India"
   }
 };

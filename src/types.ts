@@ -129,7 +129,7 @@ export interface SecurityAuditLog {
 }
 
 export type SupplierTier = 'FREE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'VIP';
-export type Incoterm = 'EXW' | 'FOB' | 'CIF' | 'CFR' | 'DDP' | 'FCA' | 'CIP' | 'TTO';
+export type Incoterm = 'EXW' | 'FOB' | 'CIF' | 'CFR' | 'DDP' | 'DAP' | 'FCA' | 'CIP' | 'TTO';
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'CNY' | 'INR' | 'AED' | 'JPY';
 
 export interface CurrencyRate {
@@ -461,6 +461,9 @@ export type ActiveView =
   | 'ARCHITECTURE_BLUEPRINT'
   | 'TRADE_TOOLS'
   | 'REFUND_POLICY'
+  | 'PRODUCT_LISTING_POLICY'
+  | 'PRIVACY_POLICY'
+  | 'TERMS_OF_USE'
   | 'CONTACT_US'
   | 'ONBOARD_WITH_US'
   | 'ABOUT_US'

@@ -19,7 +19,7 @@ import {
   Layers,
   Lock
 } from 'lucide-react';
-import { ProductCatalogGrid } from './ProductCatalogGrid';
+import { ProductCatalogGrid, ProductListSkeleton } from './ProductCatalogGrid';
 
 interface Props {
   products: Product[];
@@ -31,6 +31,7 @@ interface Props {
   onCategoryChange?: (cat: string) => void;
   initialCategory?: string;
   initialSearch?: string;
+  isLoading?: boolean;
 }
 
 export const ProductCatalog: React.FC<Props> = ({
@@ -42,7 +43,8 @@ export const ProductCatalog: React.FC<Props> = ({
   selectedCategory: propCategory,
   onCategoryChange,
   initialCategory,
-  initialSearch
+  initialSearch,
+  isLoading = false
 }) => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
@@ -209,16 +211,16 @@ export const ProductCatalog: React.FC<Props> = ({
   const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div id="product-catalog-section" className="space-y-4 sm:space-y-6 bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm">
+    <div id="product-catalog-section" className="space-y-4 sm:space-y-6 bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm min-w-0 max-w-full overflow-hidden">
       {/* Offline/Cached Connection Banner */}
       {(isOffline || isUsingCache) && (
-        <div className="flex items-center justify-between gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs animate-in fade-in slide-in-from-top-1">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs animate-in fade-in slide-in-from-top-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
-            <span>
+            <span className="truncate">
               {isOffline 
                 ? "Intermittent connectivity detected — You are currently offline." 
                 : "Using offline backup — Displaying recently loaded product data."}
@@ -229,8 +231,8 @@ export const ProductCatalog: React.FC<Props> = ({
       )}
 
       {/* Search & Top Controls */}
-      <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 shadow-2xs">
-        <div className="relative flex-1 w-full">
+      <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 shadow-2xs min-w-0">
+        <div className="relative flex-1 w-full min-w-0">
           <Search className="absolute left-3 top-2.5 sm:top-3 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
           <input
             id="catalog-search-input"
@@ -241,19 +243,23 @@ export const ProductCatalog: React.FC<Props> = ({
             className="w-full bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl pl-9 sm:pl-10 pr-3 py-1.5 sm:py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
           />
         </div>
-        <div className="flex items-center justify-between w-full sm:w-auto gap-2.5 shrink-0">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-2.5 shrink-0 min-w-0">
           {/* Mobile Filter Toggle Button */}
           <button
             onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-            className="lg:hidden flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 font-bold text-xs rounded-lg border border-blue-200 cursor-pointer"
+            className="lg:hidden flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-700 font-bold text-xs rounded-lg border border-blue-200 cursor-pointer shrink-0"
           >
             <Filter className="w-3.5 h-3.5" />
             <span>Filters</span>
           </button>
-          <div className="text-[11px] sm:text-xs text-slate-600 font-mono">
-            <strong className="text-slate-900 font-bold">{filtered.length}</strong> Products
+          <div className="text-[11px] sm:text-xs text-slate-600 font-mono shrink-0">
+            {isLoading || (products.length === 0 && !isUsingCache) ? (
+              <span className="inline-block w-20 h-3 bg-slate-200 rounded animate-pulse align-middle" />
+            ) : (
+              <><strong className="text-slate-900 font-bold">{filtered.length}</strong> Products</>
+            )}
           </div>
-          <div className="flex items-center bg-slate-100 p-0.5 sm:p-1 rounded-lg border border-slate-200">
+          <div className="flex items-center bg-slate-100 p-0.5 sm:p-1 rounded-lg border border-slate-200 shrink-0">
             <button
               onClick={() => setViewMode('GRID')}
               className={`p-1 sm:p-1.5 rounded cursor-pointer ${viewMode === 'GRID' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
@@ -272,9 +278,9 @@ export const ProductCatalog: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 items-start min-w-0 w-full">
         {/* Faceted Filter Sidebar (Collapsible on mobile) */}
-        <div className={`space-y-4 sm:space-y-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 h-fit shadow-2xs ${mobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
+        <div className={`space-y-4 sm:space-y-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 h-fit shadow-2xs min-w-0 w-full ${mobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
           <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-200">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
               <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> Sourcing Filters
@@ -436,7 +442,7 @@ export const ProductCatalog: React.FC<Props> = ({
         </div>
 
         {/* Product Results Grid/List */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-4 min-w-0 w-full">
           {/* Active Filter Chips */}
           {(activeCategory !== 'ALL' || searchTerm.trim() !== '' || selectedTier !== 'ALL' || selectedIncoterm !== 'ALL') && (
             <div className="flex flex-wrap items-center gap-2 bg-blue-50/70 border border-blue-200/80 rounded-xl p-2.5 sm:p-3 text-xs">
@@ -506,7 +512,29 @@ export const ProductCatalog: React.FC<Props> = ({
             </div>
           )}
 
-          {filtered.length === 0 ? (
+          {isLoading || (products.length === 0 && !isUsingCache) ? (
+            <div className="space-y-4">
+              {viewMode === 'GRID' ? (
+                <ProductCatalogGrid
+                  isLoading={true}
+                  skeletonCount={itemsPerPage}
+                  products={[]}
+                  selectedCurrency={selectedCurrency}
+                  onSelectProduct={onSelectProduct}
+                  onOpenStorefront={onOpenStorefront}
+                  onContactSupplier={onContactSupplier}
+                  formatPrice={formatPrice}
+                  getTierBadge={getTierBadge}
+                />
+              ) : (
+                <div className="space-y-2.5 sm:space-y-3">
+                  {Array.from({ length: Math.min(itemsPerPage, 8) }).map((_, i) => (
+                    <ProductListSkeleton key={`list-skeleton-${i}`} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : filtered.length === 0 ? (
             <>
             <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center space-y-3 shadow-2xs flex flex-col items-center">
               <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2">

@@ -1486,6 +1486,282 @@ export const NORMALIZED_B2B_DATABASE: NormalizedB2BDatabase = {
       products_offered: ["Earth rod", "Lightning rod", "Earth clamp", "Copper tape", "Exothermic weld"],
       year_established: 2021,
       employee_count: "51 - 100"
+    },
+    // Extracted from Chinese & USA Conveyor Belt Directory PDF (EC21)
+    {
+      company_name: "Pingxiang Husheng Rubber&Plastic Co., Ltd",
+      business_type: "Supplier",
+      contact_person: "Husheng Pan",
+      email: "sales@hushengrubber.com",
+      phone: "+86-1510-7819231",
+      location: "China - Jiangxi",
+      products_offered: ["Conveyor Belt", "Rubber products", "Rubber hose", "V-belt", "Rubber plugs", "Rubber blocks", "Rubber shock absorbers", "Cushioning gaskets", "Combined V-belts", "Timing belts", "Poly-V belt", "Ribbed belt", "Serpentine belt", "Drive belt", "Wrapped V Belt", "Triangle Belt", "Raw Edge Cogged V Belt", "Flat Belts"],
+      year_established: 2017,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Zibo Qinjiang Machinery Co., Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Zibo Qinjiang Machinery Co., Ltd.",
+      email: "contact@qinjiangmachinery.com",
+      phone: "+86-13156948211",
+      location: "China - Shandong",
+      products_offered: ["Motorized pulley", "Electric roller", "Gear reducer", "Gearbox", "Belt conveyor", "Mining equipment", "Mining machinery", "Industrial pump"],
+      year_established: 2010,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Yancheng Goodlark International Trade Corp.,Ltd",
+      business_type: "Supplier",
+      contact_person: "wangying",
+      email: "sales@goodlarktrade.com",
+      phone: "+86-158-62018471",
+      location: "China - Jiangsu",
+      products_offered: ["Conveyor Belt Fastener", "Mechanical hardware", "Conveyor joint clamps"],
+      year_established: 2020,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Shanghai Guxi Industrial Co.,Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Zuo Jiang Hua",
+      email: "zuo@guxi-conveyor.com",
+      phone: "+86-021-81920412",
+      location: "China - Shanghai",
+      products_offered: ["Belt conveyor", "Chain plate conveyor", "Bucket elevator", "Conveyor system", "Material handling equipment"],
+      year_established: 2019,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Beijing Kaupert Coal Machine Epuipment Co.LTD",
+      business_type: "Manufacturer",
+      contact_person: "Paul.Wang",
+      email: "paul.wang@kaupertcoal.com",
+      phone: "+86-010-67522281",
+      location: "China - Beijing",
+      products_offered: ["Chain", "Connecting ring", "Conveyor", "Hydraulic support", "Coal Mining Machinery", "Scraper Conveyor", "Belt Conveyor", "Shunt Slot Crusher", "Scraper Transfer Machine", "Link Ring"],
+      year_established: 2010,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Qingdao Datung Machinery Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Kai",
+      email: "kai@datungconveyor.com",
+      phone: "+86-0532-64293079",
+      location: "China - Shandong",
+      products_offered: ["Rubber belt", "Conveyor belt", "Heavy duty belt", "Belt conveyor", "Industrial belt"],
+      year_established: 2016,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Hebei Shudan Tech.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "shasha",
+      email: "shasha@shudantech.com",
+      phone: "+86-158220-81295",
+      location: "China - Hebei",
+      products_offered: ["Flat Flex Conveyor Belts", "Flexible Rod Conveyor Belt", "Spiral Grid Conveyor Belts", "Plate link conveyor belts", "Flat wire conveyor belt", "Eye Link Conveyor Belt", "Barrel and Wedges", "Multi Strand Anchorage", "Casting Anchorage", "Tensioning End Anchorage", "PC Strand", "Unboned PC Strand"],
+      year_established: 2018,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Beijing EXQUISITE International Development Co., Ltd",
+      business_type: "Supplier",
+      contact_person: "Edward Li",
+      email: "edward@exquisiteconveyorbelt.com",
+      phone: "+86-10-61275877",
+      location: "China - Beijing",
+      products_offered: ["Conveyor belts", "Machine accessory", "Heavy duty rubber conveyor belts"],
+      year_established: 2010,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Henan Yiheng Mesh Belt Industry Co., Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "YULI",
+      email: "yuli@yihengmesh.com",
+      phone: "+86-184-36814894",
+      location: "China - Henan",
+      products_offered: ["Polyester spiral dryer fabric", "Polyester spiral press-filter fabric", "Polyester anti-static fabric", "Vacuum filter belt", "Sludge dehydration fabric", "Nonwoven conveyor mesh"],
+      year_established: 2003,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Shanghai Mengguang Wide Metal Detection Equipment Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Yue Pan",
+      email: "yuepan@mengguang-detect.com",
+      phone: "+86-138-16081340",
+      location: "China - Shanghai",
+      products_offered: ["Needle detection", "Metal detection", "Belt conveyor", "Food inspection conveyors"],
+      year_established: 2010,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Xingtai Tengyuan Rubber Technology Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "kit",
+      email: "kit@tengyuanrubber.com",
+      phone: "+86-0319-4388008",
+      location: "China - Hebei",
+      products_offered: ["Conveyor belt", "Flat rubber belt", "Chevron belt", "Heat resistant conveyor belting"],
+      year_established: 2004,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Baoding Flow Conveyor Co.,Ltd",
+      business_type: "Supplier",
+      contact_person: "flowconveyor",
+      email: "export@flowconveyor.com",
+      phone: "+86-133-31242183",
+      location: "China - Hebei",
+      products_offered: ["Rubber conveyor belt", "Chevron conveyor belt", "Cotton conveyor belt", "EP conveyor belt", "Conveyor rollers"],
+      year_established: 2024,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Qingdao Jiaoliu Rubber Special Tape Co.",
+      business_type: "Manufacturer",
+      contact_person: "Wang Ji Yang",
+      email: "wangjiyang@jiaoliurubber.com",
+      phone: "+86-0-15806537213",
+      location: "China - Shandong",
+      products_offered: ["Rubber Conveyor Belt", "Jiaoliu conveyor belt", "Qingliu conveyor belt", "Specialty rubber tapes"],
+      year_established: 2009,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Jinflex Rubber & Plastic Technology Co., Ltd",
+      business_type: "Manufacturer",
+      contact_person: "boyuan",
+      email: "boyuan@jinflexconveyor.com",
+      phone: "+86-0632-13561163052",
+      location: "China - Shandong",
+      products_offered: ["Conveyer belt", "Rubber hose conveyor belt", "High abrasion conveyor belt"],
+      year_established: 2012,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Jiangsu Lafa Engineering Technology Co., Ltd",
+      business_type: "Supplier",
+      contact_person: "Jack Zou",
+      email: "jack.zou@lafa-engineering.com",
+      phone: "+86-1595254-0906",
+      location: "China - Jiangsu",
+      products_offered: ["Cement equipment", "Rotary kiln", "Cement mill", "Grate cooler", "Belt conveyor", "Vertical mill", "Cyclone preheater", "Multi-channel coal burner", "Cement engineering EPC"],
+      year_established: 2007,
+      employee_count: "Above 1000"
+    },
+    {
+      company_name: "Wuxi Brilliant Boton Conveyor Services Co., Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Sarah Shen",
+      email: "sarah.shen@botonconveyor.com",
+      phone: "+86-123456-12345",
+      location: "China - Jiangsu",
+      products_offered: ["Conveyor belt", "Rubber belt", "Steel cord", "Modern industrial bulk materials transportation"],
+      year_established: 2006,
+      employee_count: "501 - 1000"
+    },
+    {
+      company_name: "Shanghai Xionggu Medical Equipment Co., Ltd.",
+      business_type: "Supplier",
+      contact_person: "Anika XI",
+      email: "anika@xionggumedical.com",
+      phone: "+86-1390182-1067",
+      location: "China - Shanghai",
+      products_offered: ["Conveyor belt", "Pet training pad", "Pet product", "Metallurgical product"],
+      year_established: 2009,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Hebei Qian Shun Energy Saving Technology Co., Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Michael Sun",
+      email: "michaelsun@qianshuntech.com",
+      phone: "+86-0310-2138598",
+      location: "China - Hebei",
+      products_offered: ["Conveyor belt", "Conveyor pulley", "Permanent magnet drive technology"],
+      year_established: 2016,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Baoding Haichuan Rubber Belt Manufacturing Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Michelle Lu",
+      email: "michelle@haichuanbelt.com",
+      phone: "+86-0312-8382777",
+      location: "China - Hebei",
+      products_offered: ["Canvas Conveyor Belt", "Steel Cord Conveyor Belt", "Special conveyor belt", "Conveyor accessories"],
+      year_established: 2006,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Jiangsu Eco Data Service Co.",
+      business_type: "Manufacturer",
+      contact_person: "Eco Ding",
+      email: "ecoding@ecodataservice.com",
+      phone: "+86-150-61787707",
+      location: "China - Jiangsu",
+      products_offered: ["Conveyor", "Bucket elevator", "Belt conveyor", "Screw conveyor", "Drag chain conveyor system", "Pneumatic conveying system", "Weighing-Batching-Mixing"],
+      year_established: 2023,
+      employee_count: "6 - 10"
+    },
+    {
+      company_name: "Lotus International Trading Co.",
+      business_type: "Supplier",
+      contact_person: "Berry Bill",
+      email: "berry.bill@lotustrading.com",
+      phone: "+1-760-349-8120",
+      location: "United States - Oklahoma",
+      products_offered: ["Used Belt Conveyor Scrap", "Pet Bottle Scrap", "Pet Flakes", "Hdpe Milk Bottle Scrap", "Hdpe Drum Scrap", "Ldpe Film Scrap", "Catalytic Converter Scrap", "Pu Foam Scrap", "Computer Ram"],
+      year_established: 1994,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Capital Rubber & Gasket",
+      business_type: "Supplier",
+      contact_person: "Travis Theobold",
+      email: "travis@capitalrubberca.com",
+      phone: "+1-707-615-9421",
+      location: "United States - California",
+      products_offered: ["Rubber", "Conveyor belting", "Sheet rubber", "Safety gear", "Rubber matting", "Tubing", "Material handling solutions", "Adhesives", "Sealants"],
+      year_established: 2022,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Henan Mingyuan Heavy Industrial Equipment Co., LTD",
+      business_type: "Manufacturer",
+      contact_person: "Sam Zhang",
+      email: "sam.zhang@mingyuanmachinery.com",
+      phone: "+86-0371-67891230",
+      location: "United States - Arizona",
+      products_offered: ["Belt Conveyor", "Jaw crusher", "Impact crusher", "Cone crusher", "Double roll crusher", "Vsi crusher", "Vibrating screen", "Stone crusher", "Ball mill", "Cement ball mill", "Grinding machinery"],
+      year_established: 2016,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Falcons International",
+      business_type: "Supplier",
+      contact_person: "Shahzad Paul",
+      email: "shahzad.paul@falconsinternational.com",
+      phone: "+1-630-682-9104",
+      location: "United States - Illinois",
+      products_offered: ["Used Conveyor Belt", "Foam Scraps", "Fibre Optic Cables", "Printed Banners", "Tyre Cord Fabrics", "EPDM Products", "Plastic Waste", "Rubber Waste", "Textile Waste", "Tent", "Tarpaulin", "Camo", "Uniform fabric", "Blinds", "Upholstery", "Cardura", "Blackout", "Curtain", "Velvet", "Awnings"],
+      year_established: 2002,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Group Limited",
+      business_type: "Manufacturer",
+      contact_person: "Mr David David",
+      email: "david.david@grouplimited-trade.com",
+      phone: "+1-745-2266991",
+      location: "United States - WARWICKSHIRE",
+      products_offered: ["CONVEYOR BELT", "FRIDGE COMPRESSOR SCRAP", "RUBBER SCRAP", "ALUMINIUM UBC CAN SCRAP", "PET FLAKES", "HDPE MILK BOTTLES IN BALES", "HDPE GRANULES", "LDPE FILM IN ROLLS", "LDPE FILM IN BALES", "LDPE GRANULES", "HDPE ROLL", "Copper", "Abs", "PC"],
+      year_established: 1997,
+      employee_count: "51 - 100"
     }
   ]
 };

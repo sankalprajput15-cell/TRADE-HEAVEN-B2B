@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "B2BClientVendorProfile",
-  "description": "Comprehensive schema and mock dataset for international B2B Client/Vendor profile and media assets modeled after go4WorldBusiness, Alibaba, and Global Sources.",
+  "description": "Comprehensive schema and mock dataset for international B2B Client/Vendor profile and media assets for Trade Heaven enterprise marketplace.",
   "type": "object",
   "required": [
     "id",

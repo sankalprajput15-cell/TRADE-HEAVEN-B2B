@@ -42,6 +42,9 @@ const BuyLeadsView = React.lazy(() => import('./components/services/BuyLeadsView
 const SuppliersDirectoryView = React.lazy(() => import('./components/services/SuppliersDirectoryView').then(m => ({ default: m.SuppliersDirectoryView })));
 const BuyersDirectoryView = React.lazy(() => import('./components/services/BuyersDirectoryView').then(m => ({ default: m.BuyersDirectoryView })));
 const RefundPolicyView = React.lazy(() => import('./components/services/RefundPolicyView').then(m => ({ default: m.RefundPolicyView })));
+const ProductListingPolicyView = React.lazy(() => import('./components/services/ProductListingPolicyView').then(m => ({ default: m.ProductListingPolicyView })));
+const PrivacyPolicyView = React.lazy(() => import('./components/services/PrivacyPolicyView').then(m => ({ default: m.PrivacyPolicyView })));
+const TermsOfUseView = React.lazy(() => import('./components/services/TermsOfUseView').then(m => ({ default: m.TermsOfUseView })));
 const ClientAdminView = React.lazy(() => import('./components/services/ClientAdminView').then(m => ({ default: m.ClientAdminView })));
 const PlanPricingAdminModule = React.lazy(() => import('./components/admin/PlanPricingAdminModule').then(m => ({ default: m.PlanPricingAdminModule })));
 const BulkEntityCrmModule = React.lazy(() => import('./components/admin/BulkEntityCrmModule').then(m => ({ default: m.BulkEntityCrmModule })));
@@ -360,6 +363,24 @@ const MainApp: React.FC = () => {
         canonical = 'https://tradeheaven.com/?view=ABOUT_US';
         ogImage = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200';
         break;
+      case 'PRODUCT_LISTING_POLICY':
+        title = 'Product Listing Policy & Prohibited Items | Trade Heaven';
+        description = 'Review Trade Heaven\'s terms of listing products, restricted items, IPR compliance, and regulatory sanctions.';
+        canonical = 'https://tradeheaven.com/?view=PRODUCT_LISTING_POLICY';
+        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'PRIVACY_POLICY':
+        title = 'Privacy Policy | Tradeheaven ECOM Solution LLP | Trade Heaven';
+        description = 'Review Trade Heaven\'s privacy terms, data protection commitment, and B2B user rights managed by Tradeheaven ECOM Solution LLP.';
+        canonical = 'https://tradeheaven.com/?view=PRIVACY_POLICY';
+        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
+        break;
+      case 'TERMS_OF_USE':
+        title = 'Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven';
+        description = 'Review Trade Heaven\'s user terms of use, membership rights, trade guidelines, and refund policy operated by Tradeheaven ECOM Solution LLP.';
+        canonical = 'https://tradeheaven.com/?view=TERMS_OF_USE';
+        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
+        break;
       case 'VENDOR_PROFILE':
         title = 'Verified Supplier Storefront | Trade Heaven';
         description = 'View verified supplier profiles, browse product catalogs, and review manufacturing certifications on Trade Heaven.';
@@ -637,6 +658,18 @@ const MainApp: React.FC = () => {
       setActiveView('REFUND_POLICY');
       return;
     }
+    if (target === 'PRODUCT_LISTING_POLICY' || target === 'LISTING_POLICY' || target === 'PRODUCT_POLICY' || target === 'PROHIBITED_ITEMS' || target === 'PROHIBITED_PRODUCTS' || target === 'LISTING_RULES') {
+      setActiveView('PRODUCT_LISTING_POLICY');
+      return;
+    }
+    if (target === 'PRIVACY_POLICY' || target === 'PRIVACY' || target === 'PRIVACY_STATEMENT' || target === 'TERMS_PRIVACY') {
+      setActiveView('PRIVACY_POLICY');
+      return;
+    }
+    if (target === 'TERMS_OF_USE' || target === 'TERMS' || target === 'TERMS_AND_CONDITIONS' || target === 'TOS' || target === 'USER_AGREEMENT') {
+      setActiveView('TERMS_OF_USE');
+      return;
+    }
     if (target === 'ONBOARD_WITH_US' || target === 'ONBOARD' || target === 'REGISTER_SELLER' || target === 'WORK_WITH_US') {
       setActiveView('ONBOARD_WITH_US');
       return;
@@ -758,6 +791,7 @@ const MainApp: React.FC = () => {
                       setActiveView('BUY_LEADS');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
+                    isLoadingProducts={isLoadingInitialData}
                   />
                 );
 
@@ -788,6 +822,7 @@ const MainApp: React.FC = () => {
                       selectedCategory={catalogCategory}
                       onCategoryChange={setCatalogCategory}
                       initialSearch={catalogSearch}
+                      isLoading={isLoadingInitialData}
                     />
                   </div>
                 );
@@ -861,6 +896,7 @@ const MainApp: React.FC = () => {
                   <PostSellOfferView
                     selectedCurrency={selectedCurrency}
                     onProductCreated={handleProductCreated}
+                    onNavigate={handleNavigate}
                   />
                 );
 
@@ -918,6 +954,30 @@ const MainApp: React.FC = () => {
               case 'REFUND_POLICY':
                 return (
                   <RefundPolicyView onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
+                );
+
+              case 'PRODUCT_LISTING_POLICY':
+                return (
+                  <ProductListingPolicyView
+                    onNavigate={handleNavigate}
+                    onOpenContactModal={handleOpenContactModal}
+                  />
+                );
+
+              case 'PRIVACY_POLICY':
+                return (
+                  <PrivacyPolicyView
+                    onNavigate={handleNavigate}
+                    onOpenContactModal={handleOpenContactModal}
+                  />
+                );
+
+              case 'TERMS_OF_USE':
+                return (
+                  <TermsOfUseView
+                    onNavigate={handleNavigate}
+                    onOpenContactModal={handleOpenContactModal}
+                  />
                 );
 
               case 'ONBOARD_WITH_US':

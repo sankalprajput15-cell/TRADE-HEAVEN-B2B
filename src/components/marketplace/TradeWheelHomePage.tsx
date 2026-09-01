@@ -47,6 +47,7 @@ interface Props {
   onNavigateToCategory?: (catName: string, subcategory?: string) => void;
   onNavigateToSuppliers?: (sectorName?: string) => void;
   onNavigateToRfqs?: (categoryName?: string) => void;
+  isLoadingProducts?: boolean;
 }
 
 export const TradeWheelHomePage: React.FC<Props> = ({
@@ -62,7 +63,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onSelectRfq,
   onNavigateToCategory,
   onNavigateToSuppliers,
-  onNavigateToRfqs
+  onNavigateToRfqs,
+  isLoadingProducts = false
 }) => {
   const { t, tText } = useLanguage();
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
@@ -166,6 +168,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           onContactSupplier={onContactSupplier}
           selectedCategory={selectedCategory || 'ALL'}
           onCategoryChange={(cat) => setSelectedCategory(cat === 'ALL' ? null : cat)}
+          isLoading={isLoadingProducts}
         />
       </div>
 
