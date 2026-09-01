@@ -423,7 +423,7 @@ export const Header: React.FC<Props> = ({
 
               {servicesMenuOpen && (
                 <div 
-                  className="absolute left-0 sm:left-1/2 sm:-translate-x-1/2 mt-2 w-[640px] max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-100px)] overflow-y-auto" 
+                  className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-2 w-[580px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-120px)] overflow-y-auto" 
                   role="menu" 
                   aria-label="Services Menu"
                 >

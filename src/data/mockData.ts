@@ -61,6 +61,7 @@ import { GLOBAL_EXCAVATOR_COMPANIES, GLOBAL_EXCAVATOR_BUYER_PROFILES, GLOBAL_EXC
 import { GLOBAL_WELDER_MACHINE_COMPANIES, GLOBAL_WELDER_MACHINE_BUYER_PROFILES, GLOBAL_WELDER_MACHINE_PRODUCTS, GLOBAL_WELDER_MACHINE_RFQS } from "./welderMachineData";
 import { GLOBAL_CONVEYOR_BELT_COMPANIES, GLOBAL_CONVEYOR_BELT_BUYER_PROFILES, GLOBAL_CONVEYOR_BELT_PRODUCTS, GLOBAL_CONVEYOR_BELT_RFQS } from "./conveyorBeltData";
 import { GLOBAL_EEC_POLAND_COMPANIES, GLOBAL_EEC_POLAND_BUYER_PROFILES, GLOBAL_EEC_POLAND_PRODUCTS, GLOBAL_EEC_POLAND_RFQS } from "./eecPolandData";
+import { GLOBAL_SUNFLOWER_OIL_COMPANIES, GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES, GLOBAL_SUNFLOWER_OIL_PRODUCTS, GLOBAL_SUNFLOWER_OIL_RFQS } from "./sunflowerOilData";
 
 import { 
   CompanyProfile, 
@@ -216,8 +217,8 @@ export const CATEGORIES_TREE = [
     name: 'Farm Products - Grains, Fruits etc',
     icon: 'Wheat',
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80',
-    subcategories: ['1121 Basmati Rice', 'Alfalfa Hay', 'Apples', 'Arabica Coffee', 'Avocados', 'Bananas', 'Barley', 'Basmati Rice', 'Black Pepper', 'Cashew Nuts'],
-    count: '5,290+ Verified Suppliers | 3,820+ RFQs'
+    subcategories: ['Sunflower Oil', 'Refined Sunflower Oil', '1121 Basmati Rice', 'Alfalfa Hay', 'Apples', 'Arabica Coffee', 'Avocados', 'Bananas', 'Barley', 'Basmati Rice', 'Black Pepper', 'Cashew Nuts'],
+    count: '5,850+ Verified Suppliers | 4,120+ RFQs'
   },
   {
     id: 'cat-farm-inputs',
@@ -232,8 +233,8 @@ export const CATEGORIES_TREE = [
     name: 'Processed Food & Beverages Products & By Products',
     icon: 'UtensilsCrossed',
     image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
-    subcategories: ['Almond Milk', 'Apple Cider Vinegar', 'Apple Juice', 'Apple Powder', 'Arabic Gum', 'Arabica Coffee', 'Bakery Ingredients', 'Canned Vegetables', 'Chocolate Products', 'Olive Oil'],
-    count: '4,150+ Verified Suppliers | 2,930+ RFQs'
+    subcategories: ['Sunflower Oil', 'Olive Oil', 'Edible Cooking Oil', 'Almond Milk', 'Apple Cider Vinegar', 'Apple Juice', 'Apple Powder', 'Arabic Gum', 'Arabica Coffee', 'Bakery Ingredients', 'Canned Vegetables', 'Chocolate Products'],
+    count: '4,450+ Verified Suppliers | 3,180+ RFQs'
   },
   {
     id: 'cat-livestock',
@@ -678,6 +679,7 @@ export const CATEGORIES_TREE = [
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
+  ...GLOBAL_SUNFLOWER_OIL_COMPANIES,
   ...GLOBAL_EEC_POLAND_COMPANIES,
   ...GLOBAL_JET_FUEL_COMPANIES,
   ...GLOBAL_ESPO_COMPANIES,
@@ -4162,6 +4164,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
+  ...GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES,
+  ...GLOBAL_EEC_POLAND_BUYER_PROFILES,
   ...GLOBAL_JET_FUEL_BUYER_PROFILES,
   ...GLOBAL_ESPO_BUYER_PROFILES,
   ...GLOBAL_COPPER_POWDER_BUYER_PROFILES,
@@ -6955,6 +6959,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  ...GLOBAL_SUNFLOWER_OIL_PRODUCTS,
   ...GLOBAL_EEC_POLAND_PRODUCTS,
   ...GLOBAL_JET_FUEL_PRODUCTS,
   ...GLOBAL_ESPO_PRODUCTS,
@@ -11594,6 +11599,7 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
 ];
 
 const RAW_UNORDERED_RFQS: RfqRequirement[] = [
+  ...GLOBAL_SUNFLOWER_OIL_RFQS,
   ...GLOBAL_EEC_POLAND_RFQS,
   ...GLOBAL_JET_FUEL_RFQS,
   ...GLOBAL_ESPO_RFQS,
