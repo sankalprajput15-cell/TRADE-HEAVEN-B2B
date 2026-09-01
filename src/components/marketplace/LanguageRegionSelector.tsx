@@ -154,61 +154,61 @@ export const LanguageRegionSelector: React.FC<LanguageRegionSelectorProps> = ({
           id="language-region-popover"
           role="listbox"
           onClick={(e) => e.stopPropagation()}
-          className="fixed top-16 right-4 left-4 sm:left-auto sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-56 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
+          className="fixed top-16 right-4 left-4 sm:left-auto sm:absolute sm:right-0 sm:top-full sm:mt-1.5 sm:w-[480px] max-w-[94vw] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl z-[9999] overflow-hidden text-slate-200 animate-in fade-in slide-in-from-top-1 duration-150"
         >
-          {/* Languages List */}
-          <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5 divide-y divide-slate-800/40">
+          {/* Languages List in 2 Columns */}
+          <div className="max-h-[calc(100vh-120px)] sm:max-h-72 overflow-y-auto p-2">
             {filteredLanguages.length === 0 ? (
               <div className="p-4 text-center text-xs text-slate-400">
                 No matching language or region found.
               </div>
             ) : (
-              filteredLanguages.map(lang => {
-                const isSelected = languageCode === lang.code;
-                return (
-                  <button
-                    key={lang.code}
-                    role="option"
-                    aria-selected={isSelected}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSelectLanguage(lang);
-                    }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer group ${
-                      isSelected
-                        ? 'bg-sky-950/70 border border-sky-600/40 text-sky-200'
-                        : 'hover:bg-slate-800/80 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                      <span className="text-base shrink-0 select-none">{lang.flag}</span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-semibold truncate ${isSelected ? 'text-sky-300 font-bold' : 'text-slate-200 group-hover:text-white'}`}>
-                            {lang.nativeName}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">({lang.name})</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate">
-                          <MapPin className="w-2.5 h-2.5 text-slate-500 shrink-0" />
-                          <span className="truncate">{lang.region}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                {filteredLanguages.map(lang => {
+                  const isSelected = languageCode === lang.code;
+                  return (
+                    <button
+                      key={lang.code}
+                      role="option"
+                      aria-selected={isSelected}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSelectLanguage(lang);
+                      }}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-left transition-colors cursor-pointer group ${
+                        isSelected
+                          ? 'bg-sky-950/70 border border-sky-600/40 text-sky-200'
+                          : 'hover:bg-slate-800/80 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-1">
+                        <span className="text-sm shrink-0 select-none">{lang.flag}</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1">
+                            <span className={`text-[11px] font-semibold truncate ${isSelected ? 'text-sky-300 font-bold' : 'text-slate-200 group-hover:text-white'}`}>
+                              {lang.nativeName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[9px] text-slate-400 truncate">
+                            <span className="truncate">{lang.region}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[10px] font-mono font-bold uppercase text-slate-400 bg-slate-800 px-1 py-0.5 rounded border border-slate-700">
-                        {lang.code}
-                      </span>
-                      {isSelected && (
-                        <Check className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[9px] font-mono font-bold uppercase text-slate-400 bg-slate-800 px-1 py-0.5 rounded border border-slate-700">
+                          {lang.code}
+                        </span>
+                        {isSelected && (
+                          <Check className="w-3 h-3 text-sky-400 shrink-0" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>

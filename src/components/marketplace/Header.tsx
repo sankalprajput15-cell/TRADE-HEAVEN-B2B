@@ -422,177 +422,243 @@ export const Header: React.FC<Props> = ({
               </button>
 
               {servicesMenuOpen && (
-                <div className="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150" role="menu" aria-label="Services Menu">
-                  <button
-                    onClick={() => handleNavClick('LANDING_PAGE')}
-                    aria-label="Global Trade Hub"
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-blue-50/80 flex items-center gap-2.5 text-slate-900 border-b border-slate-100 cursor-pointer"
-                  >
-                    <Globe2 className="w-4 h-4 text-blue-600 shrink-0" />
-                    <div>
-                      <div className="flex items-center gap-1.5 font-bold text-blue-700">
-                        <span>Global Trade Hub</span>
-                        <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase">
-                          NEW
-                        </span>
+                <div 
+                  className="absolute left-0 sm:left-1/2 sm:-translate-x-1/2 mt-2 w-[640px] max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-100px)] overflow-y-auto" 
+                  role="menu" 
+                  aria-label="Services Menu"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Left Column (Line 1): Sourcing & Trade Hubs */}
+                    <div className="space-y-1">
+                      <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-b border-slate-100 pb-1 mb-1">
+                        <Globe2 className="w-3 h-3 text-blue-600" />
+                        <span>Trade &amp; Sourcing Hubs</span>
                       </div>
-                      <div className="text-[10px] text-slate-500 font-normal">Corridors, Sectors, Live Tickers &amp; 3-Step RFQ</div>
+                      
+                      <button
+                        onClick={() => handleNavClick('LANDING_PAGE')}
+                        aria-label="Global Trade Hub"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-blue-50/80 rounded-xl flex items-center gap-2.5 text-slate-900 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
+                          <Globe2 className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 font-bold text-blue-700">
+                            <span className="truncate">Global Trade Hub</span>
+                            <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase shrink-0">
+                              NEW
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-normal truncate">Corridors, Sectors, Live Tickers &amp; RFQ</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
+                        aria-label="Products Catalog"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Products Catalog</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Browse verified export inventory</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('COUNTRY_HUB')}
+                        aria-label="Country Hub Portals"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 text-amber-600">
+                          <Landmark className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Country Hub Portals</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Explore 34 regional trade hubs</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('RFQ_HUB')}
+                        aria-label="RFQ Marketplace"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center shrink-0 text-sky-600">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">RFQ Marketplace</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Live buyer quote requests</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('BUY_LEADS')}
+                        aria-label="Buy Leads & Inquiries"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600">
+                          <Workflow className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Buy Leads &amp; Inquiries</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Verified international trade leads</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('VENDOR_PROFILE')}
+                        aria-label="Verified Vendor Profile"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
+                          <Building2 className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Verified Vendor Profile</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Factory dossier &amp; ISO certs</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('BUYER_PROFILE')}
+                        aria-label="Corporate Buyer Profile"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
+                          <BadgeCheck className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Corporate Buyer Profile</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">D&amp;B audited dossier</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('POST_SELL_OFFER')}
+                        aria-label="Post Product / Sell Offer"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-emerald-50/80 bg-emerald-50/40 rounded-xl flex items-center gap-2.5 text-emerald-950 transition-colors cursor-pointer border border-emerald-100"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700">
+                          <PackagePlus className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-emerald-900 truncate">Post Product / Sell Offer</div>
+                          <div className="text-[10px] text-emerald-700 font-normal truncate">Direct Factory Listing</div>
+                        </div>
+                      </button>
                     </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
-                    aria-label="Products Catalog"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>Products Catalog</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Browse verified export inventory</div>
+
+                    {/* Right Column (Line 2): Tools, Policies & Company */}
+                    <div className="space-y-1">
+                      <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-b border-slate-100 pb-1 mb-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        <span>Tools, Policies &amp; Company</span>
+                      </div>
+
+                      <button
+                        onClick={() => handleNavClick('TRADE_TOOLS')}
+                        aria-label="Trade Calculators & Incoterms"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
+                          <Calculator className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Trade Calculators &amp; Incoterms</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Landed Cost &amp; CIF/FOB Rules</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('ABOUT_US')}
+                        aria-label="About Trade Heaven"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">About Trade Heaven</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Company mission &amp; guarantees</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('PRODUCT_LISTING_POLICY')}
+                        aria-label="Product Listing Policy"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+                          <Ban className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Product Listing Policy</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Prohibited items &amp; compliance</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('TERMS_OF_USE')}
+                        aria-label="Terms of Use"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-600">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Terms of Use</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Platform agreement &amp; terms</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('PRIVACY_POLICY')}
+                        aria-label="Privacy Policy"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Privacy Policy</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Tradeheaven ECOM Solution LLP</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('ONBOARD_WITH_US')}
+                        aria-label="Work With Us / Onboard"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate">Work With Us / Onboard</div>
+                          <div className="text-[10px] text-slate-400 font-normal truncate">Partner program &amp; verification</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleNavClick('CONTACT_US')}
+                        aria-label="Contact Assistance Desk"
+                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-blue-50/80 bg-blue-50/40 rounded-xl flex items-center gap-2.5 text-blue-950 transition-colors cursor-pointer border border-blue-100"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 text-blue-600">
+                          <Mail className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-blue-900 truncate">Contact Assistance Desk</div>
+                          <div className="text-[10px] text-blue-700 font-normal truncate">24/7 Global Support</div>
+                        </div>
+                      </button>
                     </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('COUNTRY_HUB')}
-                    aria-label="Country Hub Portals"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <Landmark className="w-4 h-4 text-amber-600" />
-                    <div>
-                      <div>Country Hub Portals</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Explore 34 regional trade hubs</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('RFQ_HUB')}
-                    aria-label="RFQ Marketplace"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 text-blue-500" />
-                    <div>
-                      <div>RFQ Marketplace</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Live buyer quote requests</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('BUY_LEADS')}
-                    aria-label="Buy Leads & Inquiries"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <Workflow className="w-4 h-4 text-indigo-600" />
-                    <div>
-                      <div>Buy Leads &amp; Inquiries</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Verified international trade leads</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('VENDOR_PROFILE')}
-                    aria-label="Verified Vendor Profile"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
-                  >
-                    <Building2 className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>Verified Vendor Profile</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Factory dossier &amp; ISO certs</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('BUYER_PROFILE')}
-                    aria-label="Corporate Buyer Profile"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <BadgeCheck className="w-4 h-4 text-emerald-600" />
-                    <div>
-                      <div>Corporate Buyer Profile</div>
-                      <div className="text-[10px] text-slate-400 font-normal">D&amp;B audited dossier</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('POST_SELL_OFFER')}
-                    aria-label="Post Product / Sell Offer"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
-                  >
-                    <PackagePlus className="w-4 h-4 text-emerald-600" />
-                    <div>
-                      <div>Post Product / Sell Offer</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Direct Factory Listing</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('TRADE_TOOLS')}
-                    aria-label="Trade Calculators & Incoterms"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <Calculator className="w-4 h-4 text-blue-500" />
-                    <div>
-                      <div>Trade Calculators &amp; Incoterms</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Landed Cost &amp; CIF/FOB Rules</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('ABOUT_US')}
-                    aria-label="About Trade Heaven"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>About Trade Heaven</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Company mission &amp; guarantees</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('PRODUCT_LISTING_POLICY')}
-                    aria-label="Product Listing Policy"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <Ban className="w-4 h-4 text-rose-600" />
-                    <div>
-                      <div>Product Listing Policy</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Prohibited items &amp; trade compliance</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('TERMS_OF_USE')}
-                    aria-label="Terms of Use"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>Terms of Use</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Platform agreement &amp; legal terms</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('PRIVACY_POLICY')}
-                    aria-label="Privacy Policy"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <div>
-                      <div>Privacy Policy</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Tradeheaven ECOM Solution LLP</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('ONBOARD_WITH_US')}
-                    aria-label="Work With Us / Onboard"
-                    className="w-full px-4 py-2 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                  >
-                    <UserPlus className="w-4 h-4 text-emerald-600" />
-                    <div>
-                      <div>Work With Us / Onboard</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Partner program &amp; verification</div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleNavClick('CONTACT_US')}
-                    aria-label="Contact Assistance Desk"
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-slate-50 flex items-center gap-2.5 text-slate-800 border-t border-slate-100 cursor-pointer"
-                  >
-                    <Mail className="w-4 h-4 text-blue-600" />
-                    <div>
-                      <div>Contact Assistance Desk</div>
-                      <div className="text-[10px] text-slate-400 font-normal">24/7 Global Support</div>
-                    </div>
-                  </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -623,7 +689,7 @@ export const Header: React.FC<Props> = ({
                 </button>
 
                 {adminMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150" role="menu" aria-label="Admin Hub Menu">
+                  <div className="absolute right-0 mt-2 w-72 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-100px)] overflow-y-auto" role="menu" aria-label="Admin Hub Menu">
                     <button
                       onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
                       aria-label="Plan & Pricing Engine"
