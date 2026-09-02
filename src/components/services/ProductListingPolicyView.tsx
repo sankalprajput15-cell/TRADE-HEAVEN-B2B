@@ -232,7 +232,7 @@ export const ProductListingPolicyView: React.FC<Props> = ({
   }, [searchQuery]);
 
   const handleCopyPolicy = () => {
-    const textToCopy = `TRADE HEAVEN - PRODUCT LISTING POLICY\nhttps://tradeheaven.com/?view=PRODUCT_LISTING_POLICY\n\nThis Product Listing Policy describes the terms of listing your products on TradeHeaven.com. Please read carefully before registering your product(s) on TradeHeaven.com.\n\nYou may not post, sell or buy any item that is restricted or prohibited by a federal, state or local law in any country or jurisdiction on TradeHeaven.com.\n\nTrade Heaven does not permit buying or selling of products that are illegal, infringe upon the intellectual property rights of others, or may easily be used for illegal purposes.\n\nFor questions or to report a violation: help@tradeheaven.net`;
+    const textToCopy = `TRADE HEAVEN - PRODUCT LISTING POLICY\nhttps://tradeheaven.net/?view=PRODUCT_LISTING_POLICY\n\nThis Product Listing Policy describes the terms of listing your products on TradeHeaven.net. Please read carefully before registering your product(s) on TradeHeaven.net.\n\nYou may not post, sell or buy any item that is restricted or prohibited by a federal, state or local law in any country or jurisdiction on TradeHeaven.net.\n\nTrade Heaven does not permit buying or selling of products that are illegal, infringe upon the intellectual property rights of others, or may easily be used for illegal purposes.\n\nFor questions or to report a violation: help@tradeheaven.net`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -281,7 +281,7 @@ export const ProductListingPolicyView: React.FC<Props> = ({
           </h1>
 
           <p className="text-xs sm:text-sm lg:text-base text-slate-300 max-w-3xl leading-relaxed font-normal">
-            This Product Listing Policy describes the terms of listing your products on <strong>TradeHeaven.com</strong>. Please read carefully before registering your products, posting selling leads, or submitting buying requirements on Trade Heaven.
+            This Product Listing Policy describes the terms of listing your products on <strong>TradeHeaven.net</strong>. Please read carefully before registering your products, posting selling leads, or submitting buying requirements on Trade Heaven.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
@@ -315,7 +315,7 @@ export const ProductListingPolicyView: React.FC<Props> = ({
           </div>
           <h3 className="font-black text-slate-900 text-sm">Legal &amp; Jurisdictional Rule</h3>
           <p className="text-xs text-slate-600 leading-relaxed">
-            You may not post, sell or buy any item that is restricted or prohibited by a federal, state, national, or local law in any country or jurisdiction on <strong>TradeHeaven.com</strong>.
+            You may not post, sell or buy any item that is restricted or prohibited by a federal, state, national, or local law in any country or jurisdiction on <strong>TradeHeaven.net</strong>.
           </p>
         </div>
 

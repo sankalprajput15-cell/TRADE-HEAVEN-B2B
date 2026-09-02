@@ -62,6 +62,8 @@ import { GLOBAL_WELDER_MACHINE_COMPANIES, GLOBAL_WELDER_MACHINE_BUYER_PROFILES, 
 import { GLOBAL_CONVEYOR_BELT_COMPANIES, GLOBAL_CONVEYOR_BELT_BUYER_PROFILES, GLOBAL_CONVEYOR_BELT_PRODUCTS, GLOBAL_CONVEYOR_BELT_RFQS } from "./conveyorBeltData";
 import { GLOBAL_EEC_POLAND_COMPANIES, GLOBAL_EEC_POLAND_BUYER_PROFILES, GLOBAL_EEC_POLAND_PRODUCTS, GLOBAL_EEC_POLAND_RFQS } from "./eecPolandData";
 import { GLOBAL_SUNFLOWER_OIL_COMPANIES, GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES, GLOBAL_SUNFLOWER_OIL_PRODUCTS, GLOBAL_SUNFLOWER_OIL_RFQS } from "./sunflowerOilData";
+import { TH_LOBSTER_SUPPLIERS, TH_LOBSTER_BUYERS, TH_LOBSTER_PRODUCTS, TH_LOBSTER_RFQS } from "./thLobstersData";
+import { TH_RICE_HUSK_SUPPLIERS, TH_RICE_HUSK_BUYERS, TH_RICE_HUSK_PRODUCTS, TH_RICE_HUSK_RFQS } from "./thRiceHuskBriquettesData";
 
 import { 
   CompanyProfile, 
@@ -679,6 +681,8 @@ export const CATEGORIES_TREE = [
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
+  ...TH_RICE_HUSK_SUPPLIERS,
+  ...TH_LOBSTER_SUPPLIERS,
   ...GLOBAL_SUNFLOWER_OIL_COMPANIES,
   ...GLOBAL_EEC_POLAND_COMPANIES,
   ...GLOBAL_JET_FUEL_COMPANIES,
@@ -4164,6 +4168,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
+  ...TH_RICE_HUSK_BUYERS,
+  ...TH_LOBSTER_BUYERS,
   ...GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES,
   ...GLOBAL_EEC_POLAND_BUYER_PROFILES,
   ...GLOBAL_JET_FUEL_BUYER_PROFILES,
@@ -6959,6 +6965,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  ...TH_RICE_HUSK_PRODUCTS,
+  ...TH_LOBSTER_PRODUCTS,
   ...GLOBAL_SUNFLOWER_OIL_PRODUCTS,
   ...GLOBAL_EEC_POLAND_PRODUCTS,
   ...GLOBAL_JET_FUEL_PRODUCTS,
@@ -11599,6 +11607,8 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
 ];
 
 const RAW_UNORDERED_RFQS: RfqRequirement[] = [
+  ...TH_RICE_HUSK_RFQS,
+  ...TH_LOBSTER_RFQS,
   ...GLOBAL_SUNFLOWER_OIL_RFQS,
   ...GLOBAL_EEC_POLAND_RFQS,
   ...GLOBAL_JET_FUEL_RFQS,
@@ -12041,7 +12051,7 @@ export const MOCK_PLAN_CONFIGS: SubscriptionPlanConfig[] = [
       'Unlimited Product Listings & 4K Factory Video Tours',
       'Dedicated Key Account Manager & Buyer Matchmaker',
       'Verified SGS / TÜV On-Site Factory Audit Included',
-      'Custom Subdomain (company.tradeheaven.com)',
+      'Custom Subdomain (company.tradeheaven.net)',
       '1.5% trade protection Fee Discount on Trade Assurance'
     ]
   },

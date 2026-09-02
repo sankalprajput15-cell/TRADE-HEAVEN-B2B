@@ -924,7 +924,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
             <div className="bg-slate-950 p-5 space-y-2 border-b border-slate-800 text-left text-xs font-mono">
               <div className="flex gap-4">
                 <span className="text-slate-500 w-16 text-right select-none">From:</span>
-                <span className="text-blue-400 font-bold">Trade Heaven RFQ Dispatcher &lt;alerts@tradeheaven.com&gt;</span>
+                <span className="text-blue-400 font-bold">Trade Heaven RFQ Dispatcher &lt;alerts@tradeheaven.net&gt;</span>
               </div>
               <div className="flex gap-4">
                 <span className="text-slate-500 w-16 text-right select-none">To:</span>

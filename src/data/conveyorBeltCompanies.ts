@@ -3,7 +3,7 @@ import { CompanyProfile } from '../types';
 export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
   // 1. Pingxiang Husheng Rubber&Plastic Co., Ltd (China - Jiangxi)
   {
-    id: 'comp-ec21-cb-01',
+    id: 'comp-th-cb-01',
     companyName: 'Pingxiang Husheng Rubber&Plastic Co., Ltd',
     businessType: 'Supplier',
     country: 'China',
@@ -32,7 +32,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 2. Zibo Qinjiang Machinery Co., Ltd. (China - Shandong)
   {
-    id: 'comp-ec21-cb-02',
+    id: 'comp-th-cb-02',
     companyName: 'Zibo Qinjiang Machinery Co., Ltd.',
     businessType: 'Manufacturer',
     country: 'China',
@@ -61,7 +61,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 3. Yancheng Goodlark International Trade Corp.,Ltd (China - Jiangsu)
   {
-    id: 'comp-ec21-cb-03',
+    id: 'comp-th-cb-03',
     companyName: 'Yancheng Goodlark International Trade Corp.,Ltd',
     businessType: 'Supplier',
     country: 'China',
@@ -90,7 +90,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 4. Shanghai Guxi Industrial Co.,Ltd. (China - Shanghai)
   {
-    id: 'comp-ec21-cb-04',
+    id: 'comp-th-cb-04',
     companyName: 'Shanghai Guxi Industrial Co.,Ltd.',
     businessType: 'Manufacturer',
     country: 'China',
@@ -119,7 +119,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 5. Beijing Kaupert Coal Machine Epuipment Co.LTD (China - Beijing)
   {
-    id: 'comp-ec21-cb-05',
+    id: 'comp-th-cb-05',
     companyName: 'Beijing Kaupert Coal Machine Epuipment Co.LTD',
     businessType: 'Manufacturer',
     country: 'China',
@@ -148,7 +148,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 6. Qingdao Datung Machinery Co.,Ltd (China - Shandong)
   {
-    id: 'comp-ec21-cb-06',
+    id: 'comp-th-cb-06',
     companyName: 'Qingdao Datung Machinery Co.,Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -177,7 +177,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 7. Hebei Shudan Tech.,Ltd (China - Hebei)
   {
-    id: 'comp-ec21-cb-07',
+    id: 'comp-th-cb-07',
     companyName: 'Hebei Shudan Tech.,Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -206,7 +206,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 8. Beijing EXQUISITE International Development Co., Ltd (China - Beijing)
   {
-    id: 'comp-ec21-cb-08',
+    id: 'comp-th-cb-08',
     companyName: 'Beijing EXQUISITE International Development Co., Ltd',
     businessType: 'Supplier',
     country: 'China',
@@ -235,7 +235,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 9. Henan Yiheng Mesh Belt Industry Co., Ltd. (China - Henan)
   {
-    id: 'comp-ec21-cb-09',
+    id: 'comp-th-cb-09',
     companyName: 'Henan Yiheng Mesh Belt Industry Co., Ltd.',
     businessType: 'Manufacturer',
     country: 'China',
@@ -264,7 +264,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 10. Shanghai Mengguang Wide Metal Detection Equipment Co.,Ltd (China - Shanghai)
   {
-    id: 'comp-ec21-cb-10',
+    id: 'comp-th-cb-10',
     companyName: 'Shanghai Mengguang Wide Metal Detection Equipment Co.,Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -293,7 +293,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 11. Xingtai Tengyuan Rubber Technology Co.,Ltd (China - Hebei)
   {
-    id: 'comp-ec21-cb-11',
+    id: 'comp-th-cb-11',
     companyName: 'Xingtai Tengyuan Rubber Technology Co.,Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -322,7 +322,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 12. Baoding Flow Conveyor Co.,Ltd (China - Hebei)
   {
-    id: 'comp-ec21-cb-12',
+    id: 'comp-th-cb-12',
     companyName: 'Baoding Flow Conveyor Co.,Ltd',
     businessType: 'Supplier',
     country: 'China',
@@ -351,7 +351,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 13. Qingdao Jiaoliu Rubber Special Tape Co. (China - Shandong)
   {
-    id: 'comp-ec21-cb-13',
+    id: 'comp-th-cb-13',
     companyName: 'Qingdao Jiaoliu Rubber Special Tape Co.',
     businessType: 'Manufacturer',
     country: 'China',
@@ -380,7 +380,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 14. Jinflex Rubber & Plastic Technology Co., Ltd (China - Shandong)
   {
-    id: 'comp-ec21-cb-14',
+    id: 'comp-th-cb-14',
     companyName: 'Jinflex Rubber & Plastic Technology Co., Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -409,7 +409,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 15. Jiangsu Lafa Engineering Technology Co., Ltd (China - Jiangsu)
   {
-    id: 'comp-ec21-cb-15',
+    id: 'comp-th-cb-15',
     companyName: 'Jiangsu Lafa Engineering Technology Co., Ltd',
     businessType: 'Supplier',
     country: 'China',
@@ -438,7 +438,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 16. Wuxi Brilliant Boton Conveyor Services Co., Ltd. (China - Jiangsu)
   {
-    id: 'comp-ec21-cb-16',
+    id: 'comp-th-cb-16',
     companyName: 'Wuxi Brilliant Boton Conveyor Services Co., Ltd.',
     businessType: 'Manufacturer',
     country: 'China',
@@ -467,7 +467,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 17. Shanghai Xionggu Medical Equipment Co., Ltd. (China - Shanghai)
   {
-    id: 'comp-ec21-cb-17',
+    id: 'comp-th-cb-17',
     companyName: 'Shanghai Xionggu Medical Equipment Co., Ltd.',
     businessType: 'Supplier',
     country: 'China',
@@ -496,7 +496,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 18. Hebei Qian Shun Energy Saving Technology Co., Ltd (China - Hebei)
   {
-    id: 'comp-ec21-cb-18',
+    id: 'comp-th-cb-18',
     companyName: 'Hebei Qian Shun Energy Saving Technology Co., Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -525,7 +525,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 19. Baoding Haichuan Rubber Belt Manufacturing Co.,Ltd (China - Hebei)
   {
-    id: 'comp-ec21-cb-19',
+    id: 'comp-th-cb-19',
     companyName: 'Baoding Haichuan Rubber Belt Manufacturing Co.,Ltd',
     businessType: 'Manufacturer',
     country: 'China',
@@ -554,7 +554,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 20. Jiangsu Eco Data Service Co. (China - Jiangsu)
   {
-    id: 'comp-ec21-cb-20',
+    id: 'comp-th-cb-20',
     companyName: 'Jiangsu Eco Data Service Co.',
     businessType: 'Manufacturer',
     country: 'China',
@@ -583,7 +583,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 21. Lotus International Trading Co. (United States - Oklahoma)
   {
-    id: 'comp-ec21-cb-21',
+    id: 'comp-th-cb-21',
     companyName: 'Lotus International Trading Co.',
     businessType: 'Supplier',
     country: 'United States',
@@ -612,7 +612,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 22. Capital Rubber & Gasket (United States - California)
   {
-    id: 'comp-ec21-cb-22',
+    id: 'comp-th-cb-22',
     companyName: 'Capital Rubber & Gasket',
     businessType: 'Supplier',
     country: 'United States',
@@ -641,7 +641,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 23. Henan Mingyuan Heavy Industrial Equipment Co., LTD (United States - Arizona branch)
   {
-    id: 'comp-ec21-cb-23',
+    id: 'comp-th-cb-23',
     companyName: 'Henan Mingyuan Heavy Industrial Equipment Co., LTD',
     businessType: 'Manufacturer',
     country: 'United States',
@@ -670,7 +670,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 24. Falcons International (United States - Illinois)
   {
-    id: 'comp-ec21-cb-24',
+    id: 'comp-th-cb-24',
     companyName: 'Falcons International',
     businessType: 'Supplier',
     country: 'United States',
@@ -699,7 +699,7 @@ export const GLOBAL_CONVEYOR_BELT_COMPANIES: CompanyProfile[] = [
 
   // 25. Group Limited (United States - Warwickshire / International)
   {
-    id: 'comp-ec21-cb-25',
+    id: 'comp-th-cb-25',
     companyName: 'Group Limited',
     businessType: 'Manufacturer',
     country: 'United States',

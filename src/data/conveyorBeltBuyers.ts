@@ -2,7 +2,7 @@ import { DetailedBuyerProfile } from '../types';
 
 export const GLOBAL_CONVEYOR_BELT_BUYER_PROFILES: DetailedBuyerProfile[] = [
   {
-    id: 'buyer-ec21-cb-01',
+    id: 'buyer-th-cb-01',
     companyName: 'Rio Doce Mining & Logistics S.A.',
     legalRegistrationNumber: 'BR-CNPJ-33592510000154',
     country: 'Brazil',
@@ -18,7 +18,7 @@ export const GLOBAL_CONVEYOR_BELT_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPhone: '+55-31-3829-1029'
   },
   {
-    id: 'buyer-ec21-cb-02',
+    id: 'buyer-th-cb-02',
     companyName: 'Perth Aggregate & Quarry Supplies Pty Ltd',
     legalRegistrationNumber: 'AU-ABN-49102938471',
     country: 'Australia',
@@ -34,7 +34,7 @@ export const GLOBAL_CONVEYOR_BELT_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPhone: '+61-8-9321-4450'
   },
   {
-    id: 'buyer-ec21-cb-03',
+    id: 'buyer-th-cb-03',
     companyName: 'Bavaria Recycling & Polymer GmbH',
     legalRegistrationNumber: 'DE-HRB-892014',
     country: 'Germany',
@@ -50,7 +50,7 @@ export const GLOBAL_CONVEYOR_BELT_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPhone: '+49-89-2049182'
   },
   {
-    id: 'buyer-ec21-cb-04',
+    id: 'buyer-th-cb-04',
     companyName: 'Gulf Cement Industries PJSC',
     legalRegistrationNumber: 'AE-DXB-COMM-44910',
     country: 'United Arab Emirates',
@@ -66,7 +66,7 @@ export const GLOBAL_CONVEYOR_BELT_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPhone: '+971-4-8812903'
   },
   {
-    id: 'buyer-ec21-cb-05',
+    id: 'buyer-th-cb-05',
     companyName: 'Hindustan Crumb Rubber & Flooring Corp',
     legalRegistrationNumber: 'IN-CIN-U25190MH2011PTC219481',
     country: 'India',

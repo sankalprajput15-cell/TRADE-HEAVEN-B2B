@@ -173,6 +173,14 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Explicitly serve public directory static assets (logo.png, favicons, robots.txt, sitemap.xml, etc.) with CORS and headers
+app.use(express.static(path.join(process.cwd(), 'public'), {
+  maxAge: '1d',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+}));
+
 // Server environment credentials
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yr943334@gmail.com').toLowerCase().trim();
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Yash@8532';

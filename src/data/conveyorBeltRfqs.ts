@@ -3,8 +3,8 @@ import { RFQ } from '../types';
 export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
   // 1. Heavy Steel Cord Belts for Ports & Mining
   {
-    id: 'rfq-ec21-cb-01',
-    buyerId: 'buyer-ec21-cb-01',
+    id: 'rfq-th-cb-01',
+    buyerId: 'buyer-th-cb-01',
     buyerName: 'Carlos Menezes',
     buyerCompany: 'Rio Doce Mining & Logistics S.A.',
     buyerCountry: 'Brazil',
@@ -30,8 +30,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 2. High Abrasion EP Multi-Ply Belts for Quarries
   {
-    id: 'rfq-ec21-cb-02',
-    buyerId: 'buyer-ec21-cb-02',
+    id: 'rfq-th-cb-02',
+    buyerId: 'buyer-th-cb-02',
     buyerName: 'Liam O’Connor',
     buyerCompany: 'Perth Aggregate & Quarry Supplies Pty Ltd',
     buyerCountry: 'Australia',
@@ -57,8 +57,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 3. Used Rubber Conveyor Belt Scrap for Crumb Milling (Germany)
   {
-    id: 'rfq-ec21-cb-03',
-    buyerId: 'buyer-ec21-cb-03',
+    id: 'rfq-th-cb-03',
+    buyerId: 'buyer-th-cb-03',
     buyerName: 'Hans Gruber',
     buyerCompany: 'Bavaria Recycling & Polymer GmbH',
     buyerCountry: 'Germany',
@@ -84,8 +84,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 4. Heat Resistant Sinter & Clinker Belts (UAE Cement)
   {
-    id: 'rfq-ec21-cb-04',
-    buyerId: 'buyer-ec21-cb-04',
+    id: 'rfq-th-cb-04',
+    buyerId: 'buyer-th-cb-04',
     buyerName: 'Tariq Al-Mansoor',
     buyerCompany: 'Gulf Cement Industries PJSC',
     buyerCountry: 'United Arab Emirates',
@@ -111,8 +111,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 5. Baled Conveyor Belting Scrap (India)
   {
-    id: 'rfq-ec21-cb-05',
-    buyerId: 'buyer-ec21-cb-05',
+    id: 'rfq-th-cb-05',
+    buyerId: 'buyer-th-cb-05',
     buyerName: 'Rajesh Sharma',
     buyerCompany: 'Hindustan Crumb Rubber & Flooring Corp',
     buyerCountry: 'India',
@@ -138,8 +138,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 6. Motorized Drum Pulleys & Internal Electric Rollers
   {
-    id: 'rfq-ec21-cb-06',
-    buyerId: 'buyer-ec21-cb-06',
+    id: 'rfq-th-cb-06',
+    buyerId: 'buyer-th-cb-06',
     buyerName: 'Dmitry Volkov',
     buyerCompany: 'Siberian Coal & Bulk Handling Ltd',
     buyerCountry: 'Kazakhstan',
@@ -165,8 +165,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 7. Mechanical Fasteners & Heavy Conveyor Belt Clamps
   {
-    id: 'rfq-ec21-cb-07',
-    buyerId: 'buyer-ec21-cb-07',
+    id: 'rfq-th-cb-07',
+    buyerId: 'buyer-th-cb-07',
     buyerName: 'Alejandro Morales',
     buyerCompany: 'Andes Mining Equipment S.A.C.',
     buyerCountry: 'Peru',
@@ -192,8 +192,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 8. Stainless Steel Mesh & Spiral Grid Food Belts
   {
-    id: 'rfq-ec21-cb-08',
-    buyerId: 'buyer-ec21-cb-08',
+    id: 'rfq-th-cb-08',
+    buyerId: 'buyer-th-cb-08',
     buyerName: 'Jean-Luc Moreau',
     buyerCompany: 'PanAsia Frozen Foods Industrial Corp',
     buyerCountry: 'France',
@@ -219,8 +219,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 9. High-Incline Chevron & Cleated Conveyor Belts
   {
-    id: 'rfq-ec21-cb-09',
-    buyerId: 'buyer-ec21-cb-09',
+    id: 'rfq-th-cb-09',
+    buyerId: 'buyer-th-cb-09',
     buyerName: 'Tan Sri Dato Lee',
     buyerCompany: 'Malaysian Palm Oil Bio-Energy Berhad',
     buyerCountry: 'Malaysia',
@@ -246,8 +246,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 10. Filter Press & Dewatering Mesh Fabrics
   {
-    id: 'rfq-ec21-cb-10',
-    buyerId: 'buyer-ec21-cb-10',
+    id: 'rfq-th-cb-10',
+    buyerId: 'buyer-th-cb-10',
     buyerName: 'Kenji Takahashi',
     buyerCompany: 'Kanto Paper & Sludge Dehydration Systems KK',
     buyerCountry: 'Japan',
@@ -273,8 +273,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 11. Overland Pipe Conveyor Systems & Cement EPC
   {
-    id: 'rfq-ec21-cb-11',
-    buyerId: 'buyer-ec21-cb-11',
+    id: 'rfq-th-cb-11',
+    buyerId: 'buyer-th-cb-11',
     buyerName: 'Ahmed El-Sayed',
     buyerCompany: 'Sinai Cement & Minerals Company',
     buyerCountry: 'Egypt',
@@ -300,8 +300,8 @@ export const GLOBAL_CONVEYOR_BELT_RFQS: RFQ[] = [
 
   // 12. Shredded EPDM & Polymeric Recycled Belts
   {
-    id: 'rfq-ec21-cb-12',
-    buyerId: 'buyer-ec21-cb-12',
+    id: 'rfq-th-cb-12',
+    buyerId: 'buyer-th-cb-12',
     buyerName: 'Marek Wisniewski',
     buyerCompany: 'Polonia Eco-Tiles & Acoustic Matting Sp. z o.o.',
     buyerCountry: 'Poland',

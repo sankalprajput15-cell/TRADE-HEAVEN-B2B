@@ -7,9 +7,10 @@
     <!-- Preconnect resource hints for extreme image loading performance (LCP) -->
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
-    <!-- Preload critical Largest Contentful Paint (LCP) assets responsively -->
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80" media="(max-width: 768px)" fetchpriority="high" />
-    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80" media="(min-width: 769px)" fetchpriority="high" />
+    <!-- Preload critical Largest Contentful Paint (LCP) hero image and logo assets with explicit dimensions & fetchpriority -->
+    <link rel="preload" as="image" href="/logo.png" type="image/png" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80" media="(max-width: 768px)" imagesrcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80 600w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80 800w" imagesizes="100vw" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80" media="(min-width: 769px)" imagesrcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80 1200w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80 1600w" imagesizes="100vw" fetchpriority="high" />
     <!-- Failsafe fetch interceptor shim to prevent browser environment getter/setter conflicts on window.fetch -->
     <script>
       (function() {
@@ -48,14 +49,104 @@
         }
       } catch(e) {}
     </script>
-    <link rel="icon" type="image/png" sizes="256x256" href="/icon.png" />
-    <link rel="apple-touch-icon" href="/icon.png" />
+    <!-- Favicon & Brand Icons (Google Search & Multi-Device Compliant) -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="Interactive B2B international trade marketplace platform." />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-TileImage" content="/favicon-144x144.png" />
+
+    <!-- Search Engine Meta Tags -->
+    <meta name="description" content="International B2B trade marketplace, connecting verified manufacturers, suppliers, and exporters with global buyers across 190+ countries." />
+    <meta name="keywords" content="B2B marketplace, global trade, import export, verified suppliers, RFQ, wholesale manufacturers, international trade, buyers directory" />
+    <meta name="author" content="Trade Heaven" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- Open Graph / Facebook / LinkedIn / WhatsApp -->
+    <meta property="og:site_name" content="Trade Heaven" />
     <meta property="og:title" content="Trade Heaven - B2B Marketplace" />
-    <meta property="og:description" content="Enterprise B2B trade engine." />
+    <meta property="og:description" content="International B2B trade marketplace connecting verified manufacturers, exporters, and global buyers." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tradeheaven.net" />
+    <meta property="og:image" content="https://tradeheaven.net/og-image.png" />
+    <meta property="og:image:secure_url" content="https://tradeheaven.net/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Trade Heaven - Global B2B Marketplace" />
+    <meta property="og:logo" content="https://tradeheaven.net/logo.png" />
+
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@tradeheaven" />
+    <meta name="twitter:creator" content="@tradeheaven" />
+    <meta name="twitter:title" content="Trade Heaven - B2B Marketplace" />
+    <meta name="twitter:description" content="International B2B trade marketplace connecting verified manufacturers, exporters, and global buyers." />
+    <meta name="twitter:image" content="https://tradeheaven.net/og-image.png" />
+    <meta name="twitter:image:alt" content="Trade Heaven Logo & Platform Preview" />
+
+    <!-- Schema.org Organization & WebSite Structured Data for Google Knowledge Graph & Rich Snippets -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://tradeheaven.net/#organization",
+            "name": "Trade Heaven",
+            "alternateName": ["Trade Heaven B2B Marketplace", "TradeHeaven", "tradeheaven.net"],
+            "url": "https://tradeheaven.net",
+            "logo": "https://tradeheaven.net/logo.png",
+            "image": "https://tradeheaven.net/logo.png",
+            "description": "Global B2B marketplace connecting verified manufacturers, suppliers, and exporters with international buyers across 190+ countries.",
+            "sameAs": [
+              "https://www.linkedin.com/company/tradeheaven",
+              "https://twitter.com/tradeheaven",
+              "https://www.facebook.com/tradeheaven"
+            ],
+            "contactPoint": [
+              {
+                "@type": "ContactPoint",
+                "telephone": "+1-800-555-0199",
+                "contactType": "customer service",
+                "areaServed": "Global",
+                "availableLanguage": ["English", "Spanish", "Chinese", "Arabic", "French", "German"]
+              }
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://tradeheaven.net/#website",
+            "url": "https://tradeheaven.net",
+            "name": "Trade Heaven",
+            "description": "International B2B Marketplace & Global Trade Directory",
+            "publisher": {
+              "@id": "https://tradeheaven.net/#organization"
+            },
+            "potentialAction": [
+              {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https://tradeheaven.net/?search={search_term_string}"
+                },
+                "query-input": "required name=search_term_string"
+              }
+            ],
+            "inLanguage": "en-US"
+          }
+        ]
+      }
+    </script>
   
     <!-- Google Translate Script (Deferred to prevent render-blocking) -->
     <script type="text/javascript">

@@ -146,7 +146,7 @@ export const TermsOfUseView: React.FC<Props> = ({
                 <span>Company / Website</span>
               </strong>
               <p className="text-xs text-slate-600 leading-relaxed">
-                <strong>Tradeheaven ECOM Solution LLP</strong> is the registered legal entity that owns and operates the network of sites, which includes <strong>Trade Heaven</strong> (TradeHeaven.com). This website, its agents, owners, operators, and employees are referred to collectively herein as "Website", "Trade Heaven", or "Company".
+                <strong>Tradeheaven ECOM Solution LLP</strong> is the registered legal entity that owns and operates the network of sites, which includes <strong>Trade Heaven</strong> (TradeHeaven.net). This website, its agents, owners, operators, and employees are referred to collectively herein as "Website", "Trade Heaven", or "Company".
               </p>
             </div>
 
@@ -779,7 +779,7 @@ export const TermsOfUseView: React.FC<Props> = ({
   }, [searchQuery, sections]);
 
   const handleCopyTerms = () => {
-    const textToCopy = `TRADE HEAVEN - TERMS OF USE AGREEMENT\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Office: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.com/?view=TERMS_OF_USE\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nImportant Highlights:\n- Consideration for access: acceptance of Terms of Use and Privacy Policy is required.\n- Trade Heaven is an independent B2B information & matchmaking platform.\n- Zero tolerance for fraudulent schemes, 419 sample scams, scraping, and prohibited items.\n- 60-day satisfaction refund policy applies to qualifying 6+ month memberships paid via Cards/PayPal/Online Gateways.\n- Single user account policy with strict geolocation verification.\n- Governing Law: Laws of India (Uttar Pradesh / New Delhi jurisdiction).`;
+    const textToCopy = `TRADE HEAVEN - TERMS OF USE AGREEMENT\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Office: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.net/?view=TERMS_OF_USE\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nImportant Highlights:\n- Consideration for access: acceptance of Terms of Use and Privacy Policy is required.\n- Trade Heaven is an independent B2B information & matchmaking platform.\n- Zero tolerance for fraudulent schemes, 419 sample scams, scraping, and prohibited items.\n- 60-day satisfaction refund policy applies to qualifying 6+ month memberships paid via Cards/PayPal/Online Gateways.\n- Single user account policy with strict geolocation verification.\n- Governing Law: Laws of India (Uttar Pradesh / New Delhi jurisdiction).`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

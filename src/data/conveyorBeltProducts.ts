@@ -3,8 +3,8 @@ import { Product } from '../types';
 export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
   // 1. Pingxiang Husheng Rubber&Plastic Co., Ltd
   {
-    id: 'prod-ec21-cb-01',
-    supplierId: 'comp-ec21-cb-01',
+    id: 'prod-th-cb-01',
+    supplierId: 'comp-th-cb-01',
     supplierName: 'Pingxiang Husheng Rubber&Plastic Co., Ltd',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -47,8 +47,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 2. Zibo Qinjiang Machinery Co., Ltd.
   {
-    id: 'prod-ec21-cb-02',
-    supplierId: 'comp-ec21-cb-02',
+    id: 'prod-th-cb-02',
+    supplierId: 'comp-th-cb-02',
     supplierName: 'Zibo Qinjiang Machinery Co., Ltd.',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -91,8 +91,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 3. Yancheng Goodlark International Trade Corp.,Ltd
   {
-    id: 'prod-ec21-cb-03',
-    supplierId: 'comp-ec21-cb-03',
+    id: 'prod-th-cb-03',
+    supplierId: 'comp-th-cb-03',
     supplierName: 'Yancheng Goodlark International Trade Corp.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -134,8 +134,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 4. Shanghai Guxi Industrial Co.,Ltd.
   {
-    id: 'prod-ec21-cb-04',
-    supplierId: 'comp-ec21-cb-04',
+    id: 'prod-th-cb-04',
+    supplierId: 'comp-th-cb-04',
     supplierName: 'Shanghai Guxi Industrial Co.,Ltd.',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -177,8 +177,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 5. Beijing Kaupert Coal Machine Epuipment Co.LTD
   {
-    id: 'prod-ec21-cb-05',
-    supplierId: 'comp-ec21-cb-05',
+    id: 'prod-th-cb-05',
+    supplierId: 'comp-th-cb-05',
     supplierName: 'Beijing Kaupert Coal Machine Epuipment Co.LTD',
     supplierCountry: 'China',
     supplierTier: 'VIP',
@@ -220,8 +220,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 6. Qingdao Datung Machinery Co.,Ltd
   {
-    id: 'prod-ec21-cb-06',
-    supplierId: 'comp-ec21-cb-06',
+    id: 'prod-th-cb-06',
+    supplierId: 'comp-th-cb-06',
     supplierName: 'Qingdao Datung Machinery Co.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -264,8 +264,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 7. Hebei Shudan Tech.,Ltd
   {
-    id: 'prod-ec21-cb-07',
-    supplierId: 'comp-ec21-cb-07',
+    id: 'prod-th-cb-07',
+    supplierId: 'comp-th-cb-07',
     supplierName: 'Hebei Shudan Tech.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -308,8 +308,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 8. Beijing EXQUISITE International Development Co., Ltd
   {
-    id: 'prod-ec21-cb-08',
-    supplierId: 'comp-ec21-cb-08',
+    id: 'prod-th-cb-08',
+    supplierId: 'comp-th-cb-08',
     supplierName: 'Beijing EXQUISITE International Development Co., Ltd',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -351,8 +351,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 9. Henan Yiheng Mesh Belt Industry Co., Ltd.
   {
-    id: 'prod-ec21-cb-09',
-    supplierId: 'comp-ec21-cb-09',
+    id: 'prod-th-cb-09',
+    supplierId: 'comp-th-cb-09',
     supplierName: 'Henan Yiheng Mesh Belt Industry Co., Ltd.',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -395,8 +395,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 10. Shanghai Mengguang Wide Metal Detection Equipment Co.,Ltd
   {
-    id: 'prod-ec21-cb-10',
-    supplierId: 'comp-ec21-cb-10',
+    id: 'prod-th-cb-10',
+    supplierId: 'comp-th-cb-10',
     supplierName: 'Shanghai Mengguang Wide Metal Detection Equipment Co.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -438,8 +438,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 11. Xingtai Tengyuan Rubber Technology Co.,Ltd
   {
-    id: 'prod-ec21-cb-11',
-    supplierId: 'comp-ec21-cb-11',
+    id: 'prod-th-cb-11',
+    supplierId: 'comp-th-cb-11',
     supplierName: 'Xingtai Tengyuan Rubber Technology Co.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -481,8 +481,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 12. Baoding Flow Conveyor Co.,Ltd
   {
-    id: 'prod-ec21-cb-12',
-    supplierId: 'comp-ec21-cb-12',
+    id: 'prod-th-cb-12',
+    supplierId: 'comp-th-cb-12',
     supplierName: 'Baoding Flow Conveyor Co.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -524,8 +524,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 13. Qingdao Jiaoliu Rubber Special Tape Co.
   {
-    id: 'prod-ec21-cb-13',
-    supplierId: 'comp-ec21-cb-13',
+    id: 'prod-th-cb-13',
+    supplierId: 'comp-th-cb-13',
     supplierName: 'Qingdao Jiaoliu Rubber Special Tape Co.',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -567,8 +567,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 14. Jinflex Rubber & Plastic Technology Co., Ltd
   {
-    id: 'prod-ec21-cb-14',
-    supplierId: 'comp-ec21-cb-14',
+    id: 'prod-th-cb-14',
+    supplierId: 'comp-th-cb-14',
     supplierName: 'Jinflex Rubber & Plastic Technology Co., Ltd',
     supplierCountry: 'China',
     supplierTier: 'VIP',
@@ -610,8 +610,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 15. Jiangsu Lafa Engineering Technology Co., Ltd
   {
-    id: 'prod-ec21-cb-15',
-    supplierId: 'comp-ec21-cb-15',
+    id: 'prod-th-cb-15',
+    supplierId: 'comp-th-cb-15',
     supplierName: 'Jiangsu Lafa Engineering Technology Co., Ltd',
     supplierCountry: 'China',
     supplierTier: 'VIP',
@@ -652,8 +652,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 16. Wuxi Brilliant Boton Conveyor Services Co., Ltd.
   {
-    id: 'prod-ec21-cb-16',
-    supplierId: 'comp-ec21-cb-16',
+    id: 'prod-th-cb-16',
+    supplierId: 'comp-th-cb-16',
     supplierName: 'Wuxi Brilliant Boton Conveyor Services Co., Ltd.',
     supplierCountry: 'China',
     supplierTier: 'VIP',
@@ -695,8 +695,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 17. Shanghai Xionggu Medical Equipment Co., Ltd.
   {
-    id: 'prod-ec21-cb-17',
-    supplierId: 'comp-ec21-cb-17',
+    id: 'prod-th-cb-17',
+    supplierId: 'comp-th-cb-17',
     supplierName: 'Shanghai Xionggu Medical Equipment Co., Ltd.',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -738,8 +738,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 18. Hebei Qian Shun Energy Saving Technology Co., Ltd
   {
-    id: 'prod-ec21-cb-18',
-    supplierId: 'comp-ec21-cb-18',
+    id: 'prod-th-cb-18',
+    supplierId: 'comp-th-cb-18',
     supplierName: 'Hebei Qian Shun Energy Saving Technology Co., Ltd',
     supplierCountry: 'China',
     supplierTier: 'PLATINUM',
@@ -780,8 +780,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 19. Baoding Haichuan Rubber Belt Manufacturing Co.,Ltd
   {
-    id: 'prod-ec21-cb-19',
-    supplierId: 'comp-ec21-cb-19',
+    id: 'prod-th-cb-19',
+    supplierId: 'comp-th-cb-19',
     supplierName: 'Baoding Haichuan Rubber Belt Manufacturing Co.,Ltd',
     supplierCountry: 'China',
     supplierTier: 'VIP',
@@ -823,8 +823,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 20. Jiangsu Eco Data Service Co.
   {
-    id: 'prod-ec21-cb-20',
-    supplierId: 'comp-ec21-cb-20',
+    id: 'prod-th-cb-20',
+    supplierId: 'comp-th-cb-20',
     supplierName: 'Jiangsu Eco Data Service Co.',
     supplierCountry: 'China',
     supplierTier: 'GOLD',
@@ -865,8 +865,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 21. Lotus International Trading Co. (USA - Oklahoma)
   {
-    id: 'prod-ec21-cb-21',
-    supplierId: 'comp-ec21-cb-21',
+    id: 'prod-th-cb-21',
+    supplierId: 'comp-th-cb-21',
     supplierName: 'Lotus International Trading Co.',
     supplierCountry: 'United States',
     supplierTier: 'PLATINUM',
@@ -909,8 +909,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 22. Capital Rubber & Gasket (USA - California)
   {
-    id: 'prod-ec21-cb-22',
-    supplierId: 'comp-ec21-cb-22',
+    id: 'prod-th-cb-22',
+    supplierId: 'comp-th-cb-22',
     supplierName: 'Capital Rubber & Gasket',
     supplierCountry: 'United States',
     supplierTier: 'GOLD',
@@ -951,8 +951,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 23. Henan Mingyuan Heavy Industrial Equipment Co., LTD (USA Branch - Arizona)
   {
-    id: 'prod-ec21-cb-23',
-    supplierId: 'comp-ec21-cb-23',
+    id: 'prod-th-cb-23',
+    supplierId: 'comp-th-cb-23',
     supplierName: 'Henan Mingyuan Heavy Industrial Equipment Co., LTD',
     supplierCountry: 'United States',
     supplierTier: 'PLATINUM',
@@ -993,8 +993,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 24. Falcons International (USA - Illinois)
   {
-    id: 'prod-ec21-cb-24',
-    supplierId: 'comp-ec21-cb-24',
+    id: 'prod-th-cb-24',
+    supplierId: 'comp-th-cb-24',
     supplierName: 'Falcons International',
     supplierCountry: 'United States',
     supplierTier: 'GOLD',
@@ -1036,8 +1036,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
 
   // 25. Group Limited (USA - Warwickshire / International)
   {
-    id: 'prod-ec21-cb-25',
-    supplierId: 'comp-ec21-cb-25',
+    id: 'prod-th-cb-25',
+    supplierId: 'comp-th-cb-25',
     supplierName: 'Group Limited',
     supplierCountry: 'United States',
     supplierTier: 'PLATINUM',

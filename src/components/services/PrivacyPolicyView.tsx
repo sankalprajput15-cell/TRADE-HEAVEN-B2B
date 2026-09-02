@@ -88,7 +88,7 @@ export const PrivacyPolicyView: React.FC<Props> = ({
       content: (
         <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
           <p>
-            This Privacy Policy describes the terms of commitment of <strong>Trade Heaven</strong> (available at <strong>TradeHeaven.com</strong> and associated subdomains/services) to your privacy and data security. Acceptance of the terms of this Privacy Policy is a pre-requisite to visit, register, or transact on this website. If you visit, access, or utilize this platform, you acknowledge and accept all terms of this Privacy Policy.
+            This Privacy Policy describes the terms of commitment of <strong>Trade Heaven</strong> (available at <strong>TradeHeaven.net</strong> and associated subdomains/services) to your privacy and data security. Acceptance of the terms of this Privacy Policy is a pre-requisite to visit, register, or transact on this website. If you visit, access, or utilize this platform, you acknowledge and accept all terms of this Privacy Policy.
           </p>
           <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-2">
             <div className="flex items-center gap-2 text-blue-900 font-bold text-xs uppercase tracking-wider">
@@ -475,7 +475,7 @@ export const PrivacyPolicyView: React.FC<Props> = ({
   }, [searchQuery, sections]);
 
   const handleCopyPolicy = () => {
-    const textToCopy = `TRADE HEAVEN - PRIVACY POLICY\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Address: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.com/?view=PRIVACY_POLICY\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nThis Privacy Policy describes the terms of commitment of Trade Heaven to your privacy. Tradeheaven ECOM Solution LLP owns and operates Trade Heaven.\n\nKey Highlights:\n- Business Information is used to connect you with verified international B2B buyers and sellers.\n- Payment details are submitted directly to secure payment gateways and are never stored on our servers.\n- Profile modifications or deletion requests are executed within 48-72 business hours via help@tradeheaven.net.`;
+    const textToCopy = `TRADE HEAVEN - PRIVACY POLICY\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Address: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.net/?view=PRIVACY_POLICY\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nThis Privacy Policy describes the terms of commitment of Trade Heaven to your privacy. Tradeheaven ECOM Solution LLP owns and operates Trade Heaven.\n\nKey Highlights:\n- Business Information is used to connect you with verified international B2B buyers and sellers.\n- Payment details are submitted directly to secure payment gateways and are never stored on our servers.\n- Profile modifications or deletion requests are executed within 48-72 business hours via help@tradeheaven.net.`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

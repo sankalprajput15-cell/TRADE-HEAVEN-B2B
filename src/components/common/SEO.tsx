@@ -15,8 +15,8 @@ export const SEO: React.FC<SEOProps> = ({
   title = 'Trade Heaven - Global B2B Wholesale Marketplace & Exporter Hub',
   description = 'Trade Heaven is the premier global B2B marketplace. Source wholesale products, find verified manufacturers, and securely trade across borders with 100% escrow protection.',
   keywords = 'B2B marketplace, wholesale sourcing, manufacturers, global trade, import export, Trade Heaven, RFQ, escrow protection',
-  canonicalUrl = 'https://tradeheaven.com',
-  ogImage = 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80',
+  canonicalUrl = 'https://tradeheaven.net',
+  ogImage = 'https://tradeheaven.net/og-image.png',
   ogType = 'website'
 }) => {
   const { languageCode } = useLanguage();

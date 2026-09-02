@@ -292,7 +292,7 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     let title = 'Trade Heaven | Global B2B Wholesale Marketplace';
     let description = 'Connect with verified global suppliers, compare live RFQs, and secure wholesale deals with Trade Heaven\'s secure B2B platform.';
-    let canonical = 'https://tradeheaven.com';
+    let canonical = 'https://tradeheaven.net';
     let ogImage = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200'; // Global premium B2B hero image
 
     switch (activeView) {
@@ -300,91 +300,91 @@ const MainApp: React.FC = () => {
       case 'LANDING_PAGE':
         title = 'Trade Heaven | Secure Global B2B Wholesale Marketplace';
         description = 'Discover verified factory inventory, connect with global suppliers, and trade securely with Trade Heaven.';
-        canonical = 'https://tradeheaven.com';
+        canonical = 'https://tradeheaven.net';
         ogImage = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'PRODUCT_DIRECTORY':
         title = 'Global Product Catalog & Wholesale Directory | Trade Heaven';
         description = 'Browse verified factory inventory across industrial sectors. Compare tiered volume pricing and source high-quality products.';
-        canonical = 'https://tradeheaven.com/?view=PRODUCT_DIRECTORY';
+        canonical = 'https://tradeheaven.net/?view=PRODUCT_DIRECTORY';
         ogImage = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'RFQ_HUB':
         title = 'Live B2B RFQs & Tenders | Trade Heaven';
         description = 'View live Requests for Quotation (RFQs), submit wholesale quotes, and connect with verified buyers worldwide.';
-        canonical = 'https://tradeheaven.com/?view=RFQ_HUB';
+        canonical = 'https://tradeheaven.net/?view=RFQ_HUB';
         ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'SUPPLIERS_DIRECTORY':
         title = 'Verified Global Suppliers & Exporters | Trade Heaven';
         description = 'Find and partner with verified manufacturers, exporters, and wholesale suppliers from around the globe.';
-        canonical = 'https://tradeheaven.com/?view=SUPPLIERS_DIRECTORY';
+        canonical = 'https://tradeheaven.net/?view=SUPPLIERS_DIRECTORY';
         ogImage = 'https://images.unsplash.com/photo-1565891741441-64926e441838?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'BUYERS_DIRECTORY':
         title = 'Verified Global Buyers & Importers | Trade Heaven';
         description = 'Connect with verified international buyers and importers actively seeking wholesale product sourcing.';
-        canonical = 'https://tradeheaven.com/?view=BUYERS_DIRECTORY';
+        canonical = 'https://tradeheaven.net/?view=BUYERS_DIRECTORY';
         ogImage = 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'BUY_LEADS':
         title = 'Active Wholesale Buy Leads | Trade Heaven';
         description = 'Access active buy leads from verified global importers. Quote on RFQs and grow your export business.';
-        canonical = 'https://tradeheaven.com/?view=BUY_LEADS';
+        canonical = 'https://tradeheaven.net/?view=BUY_LEADS';
         ogImage = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'TRUST_SAFETY':
         title = 'Trust & Safety Center | Trade Heaven';
         description = 'Learn how Trade Heaven ensures secure international B2B transactions through supplier verification and escrow protection.';
-        canonical = 'https://tradeheaven.com/?view=TRUST_SAFETY';
+        canonical = 'https://tradeheaven.net/?view=TRUST_SAFETY';
         ogImage = 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'INSIGHTS':
         title = 'B2B Trade Insights & Industry News | Trade Heaven';
         description = 'Expert insights on global B2B trade, physical commodity trading, supply chain due diligence, and verified sourcing.';
-        canonical = 'https://tradeheaven.com/?view=INSIGHTS';
+        canonical = 'https://tradeheaven.net/?view=INSIGHTS';
         ogImage = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'PREMIUM_MEMBERSHIP':
         title = 'Premium B2B Supplier Membership | Trade Heaven';
         description = 'Upgrade your supplier profile to access priority RFQs, verified buyer data, and enhanced storefront visibility.';
-        canonical = 'https://tradeheaven.com/?view=PREMIUM_MEMBERSHIP';
+        canonical = 'https://tradeheaven.net/?view=PREMIUM_MEMBERSHIP';
         ogImage = 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'INCOTERMS_CALCULATOR':
         title = 'Incoterms Cost & Risk Calculator | Trade Heaven';
         description = 'Calculate shipping costs and understand risk transfers for global trade using our interactive Incoterms tool.';
-        canonical = 'https://tradeheaven.com/?view=INCOTERMS_CALCULATOR';
+        canonical = 'https://tradeheaven.net/?view=INCOTERMS_CALCULATOR';
         ogImage = 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'ABOUT_US':
         title = 'About Trade Heaven | Verified B2B Marketplace';
         description = 'Learn about Trade Heaven\'s mission to connect global wholesale buyers and verified suppliers safely.';
-        canonical = 'https://tradeheaven.com/?view=ABOUT_US';
+        canonical = 'https://tradeheaven.net/?view=ABOUT_US';
         ogImage = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'PRODUCT_LISTING_POLICY':
         title = 'Product Listing Policy & Prohibited Items | Trade Heaven';
         description = 'Review Trade Heaven\'s terms of listing products, restricted items, IPR compliance, and regulatory sanctions.';
-        canonical = 'https://tradeheaven.com/?view=PRODUCT_LISTING_POLICY';
+        canonical = 'https://tradeheaven.net/?view=PRODUCT_LISTING_POLICY';
         ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'PRIVACY_POLICY':
         title = 'Privacy Policy | Tradeheaven ECOM Solution LLP | Trade Heaven';
         description = 'Review Trade Heaven\'s privacy terms, data protection commitment, and B2B user rights managed by Tradeheaven ECOM Solution LLP.';
-        canonical = 'https://tradeheaven.com/?view=PRIVACY_POLICY';
+        canonical = 'https://tradeheaven.net/?view=PRIVACY_POLICY';
         ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'TERMS_OF_USE':
         title = 'Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven';
         description = 'Review Trade Heaven\'s user terms of use, membership rights, trade guidelines, and refund policy operated by Tradeheaven ECOM Solution LLP.';
-        canonical = 'https://tradeheaven.com/?view=TERMS_OF_USE';
+        canonical = 'https://tradeheaven.net/?view=TERMS_OF_USE';
         ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
         break;
       case 'VENDOR_PROFILE':
         title = 'Verified Supplier Storefront | Trade Heaven';
         description = 'View verified supplier profiles, browse product catalogs, and review manufacturing certifications on Trade Heaven.';
-        canonical = 'https://tradeheaven.com/?view=VENDOR_PROFILE';
+        canonical = 'https://tradeheaven.net/?view=VENDOR_PROFILE';
         ogImage = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200';
         break;
     }

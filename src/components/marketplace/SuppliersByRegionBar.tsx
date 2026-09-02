@@ -90,7 +90,7 @@ export const SuppliersByRegionBar: React.FC<SuppliersByRegionBarProps> = ({
       <div className="flex flex-col lg:flex-row items-center justify-between gap-6 pt-2 text-xs text-slate-500">
         <div className="max-w-2xl text-center lg:text-left space-y-1">
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Kindly be advised that all content, including photographs, merchandise, pricing, promotions, and corporate data, submitted by users is exclusively their responsibility. TradeHeaven.com shall not be held accountable for any such submissions. We strictly forbid the utilization of any form of watermark or intellectual property mark on images posted on our platform.
+            Kindly be advised that all content, including photographs, merchandise, pricing, promotions, and corporate data, submitted by users is exclusively their responsibility. TradeHeaven.net shall not be held accountable for any such submissions. We strictly forbid the utilization of any form of watermark or intellectual property mark on images posted on our platform.
           </p>
         </div>
 

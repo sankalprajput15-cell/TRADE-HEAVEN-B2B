@@ -1487,7 +1487,7 @@ export const NORMALIZED_B2B_DATABASE: NormalizedB2BDatabase = {
       year_established: 2021,
       employee_count: "51 - 100"
     },
-    // Extracted from Chinese & USA Conveyor Belt Directory PDF (EC21)
+    // Extracted from Chinese & USA Conveyor Belt Directory PDF (TH)
     {
       company_name: "Pingxiang Husheng Rubber&Plastic Co., Ltd",
       business_type: "Supplier",

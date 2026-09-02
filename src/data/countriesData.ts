@@ -180,19 +180,19 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "bo7", title: "Mini Excavators 1.5-5 Ton Class Needed For UK Construction", date: "24 Aug, 2026", quantity: "10 Units", buyerCountry: "United Kingdom" }
     ],
     seoDescription: {
-      headline: "THE LARGEST B2B MARKETPLACE IN THE UNITED KINGDOM - TRADEHEAVEN.COM",
+      headline: "THE LARGEST B2B MARKETPLACE IN THE UNITED KINGDOM - TRADEHEAVEN.NET",
       sections: [
         {
           title: "B2B Trade in the United Kingdom",
-          body: "B2B trade has long been a prominent feature in the United Kingdom's economy, and TradeHeaven.com has been the number one facilitator for their cross-border trade activities. Made to connect manufacturers, exporters, and foreign buyers of the United Kingdom easy access to the rest of the world."
+          body: "B2B trade has long been a prominent feature in the United Kingdom's economy, and TradeHeaven.net has been the number one facilitator for their cross-border trade activities. Made to connect manufacturers, exporters, and foreign buyers of the United Kingdom easy access to the rest of the world."
         },
         {
           title: "PROVIDING EASY ENTRY ON THE LEADING B2B MARKETPLACE IN UK",
-          body: "Young entrepreneurs, SMEs, and even established businesses look for the easiest business opportunities. At TradeHeaven.com, we have been serving this B2B industry with genuine business openings that are cost-effective and time-effective. Create your digital store on our platform and start selling today."
+          body: "Young entrepreneurs, SMEs, and even established businesses look for the easiest business opportunities. At TradeHeaven.net, we have been serving this B2B industry with genuine business openings that are cost-effective and time-effective. Create your digital store on our platform and start selling today."
         },
         {
           title: "GET CLOSER TO YOUR CUSTOMERS WITH THE TOP B2B PLATFORM UK",
-          body: "We help UK B2B businesses to get closer to their customers. Brands trust TradeHeaven.com to deliver creative solutions to their complex business problems. Developing long-standing partnerships is the key to any successful business."
+          body: "We help UK B2B businesses to get closer to their customers. Brands trust TradeHeaven.net to deliver creative solutions to their complex business problems. Developing long-standing partnerships is the key to any successful business."
         },
         {
           title: "VALUE-ADDED SERVICES - GLOBAL B2B SOURCING PLATFORM",
@@ -239,11 +239,11 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "us_bo3", title: "Looking for High Volume Heavy Duty Industrial Ball Bearings", date: "25 Aug, 2026", quantity: "25,000 Units", buyerCountry: "United States" }
     ],
     seoDescription: {
-      headline: "LARGEST B2B SUPPLIERS & BUYERS DIRECTORY IN THE USA - TRADEHEAVEN.COM",
+      headline: "LARGEST B2B SUPPLIERS & BUYERS DIRECTORY IN THE USA - TRADEHEAVEN.NET",
       sections: [
         {
           title: "United States B2B Global Trade Network",
-          body: "The United States represents the largest wholesale consumer market globally. TradeHeaven.com provides seamless connectivity between American importers, distributors, manufacturers, and international bulk suppliers."
+          body: "The United States represents the largest wholesale consumer market globally. TradeHeaven.net provides seamless connectivity between American importers, distributors, manufacturers, and international bulk suppliers."
         }
       ]
     }
@@ -286,11 +286,11 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "in_bo3", title: "Looking for High Speed CNC Wire EDM Machines", date: "25 Aug, 2026", quantity: "2 Units", buyerCountry: "India" }
     ],
     seoDescription: {
-      headline: "PREMIER B2B MARKETPLACE IN INDIA - TRADEHEAVEN.COM",
+      headline: "PREMIER B2B MARKETPLACE IN INDIA - TRADEHEAVEN.NET",
       sections: [
         {
           title: "India's Global B2B Export Powerhouse",
-          body: "As one of the world's fastest-growing major trade economies, India provides unrivaled supply capabilities in agricultural commodities, pharmaceuticals, textiles, engineering goods, and handicrafts. TradeHeaven connects global buyers directly with verified Indian manufacturers."
+          body: "As one of the world's fastest-growing major trade economies, India provides unrivaled supply capabilities in agricultural commodities, pharmaceuticals, textiles, engineering goods, and handicrafts. TradeHeaven.net connects global buyers directly with verified Indian manufacturers."
         }
       ]
     }
@@ -708,15 +708,15 @@ export function getCountryData(countryId: string): CountryData {
       }
     ],
     seoDescription: {
-      headline: `THE LARGEST B2B MARKETPLACE IN ${name.toUpperCase()} - TRADEHEAVEN.COM`,
+      headline: `THE LARGEST B2B MARKETPLACE IN ${name.toUpperCase()} - TRADEHEAVEN.NET`,
       sections: [
         {
           title: `B2B Sourcing Hub in ${name}`,
-          body: `TradeHeaven.com connects manufacturers, suppliers, and foreign buyers in ${name} with global trade partners across 180+ countries.`
+          body: `TradeHeaven.net connects manufacturers, suppliers, and foreign buyers in ${name} with global trade partners across 180+ countries.`
         },
         {
           title: "EASY B2B PORTAL ACCESS",
-          body: `Register your company on TradeHeaven.com to publish product catalogs, post RFQs, and negotiate directly with verified suppliers in ${name}.`
+          body: `Register your company on TradeHeaven.net to publish product catalogs, post RFQs, and negotiate directly with verified suppliers in ${name}.`
         }
       ]
     }
