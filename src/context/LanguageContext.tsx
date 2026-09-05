@@ -64,39 +64,118 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return 'en';
   });
 
+  // Helper to purge stale Google Translate cookies across all possible domain levels,
+  // set the proper new language cookie, and update any mounted Google Translate DOM elements.
+  const syncGoogleTranslateCookiesAndDOM = (targetCode: string) => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const isEnglish = !targetCode || targetCode.toLowerCase() === 'en';
+    const gtCode = isEnglish ? 'en' : (targetCode.toLowerCase() === 'zh' ? 'zh-CN' : targetCode.toLowerCase());
+
+    // 1. Gather all possible domain variants to clear cookies thoroughly
+    const hostname = window.location.hostname;
+    const hostParts = hostname.split('.');
+    const domainVariants: (string | undefined)[] = [undefined, '', hostname, '.' + hostname];
+    
+    // Add parent domain variations (e.g. .asia-southeast1.run.app, .run.app)
+    for (let i = 0; i < hostParts.length - 1; i++) {
+      const parent = hostParts.slice(i).join('.');
+      domainVariants.push(parent);
+      domainVariants.push('.' + parent);
+    }
+
+    const paths = ['/', '/auto', window.location.pathname];
+    const cookieNames = ['googtrans', 'googtrans_prev', 'googtrans_saved'];
+
+    // Expire all old variations
+    cookieNames.forEach(cName => {
+      paths.forEach(p => {
+        domainVariants.forEach(d => {
+          const domainStr = d ? `; domain=${d}` : '';
+          document.cookie = `${cName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${p}${domainStr}`;
+          document.cookie = `${cName}=; Max-Age=0; path=${p}${domainStr}`;
+        });
+      });
+    });
+
+    // 2. Set new cookies
+    if (isEnglish) {
+      // Explicitly set /en/en and /auto/en on all domain levels so Google Translate knows NOT to translate
+      domainVariants.forEach(d => {
+        const domainStr = d ? `; domain=${d}` : '';
+        document.cookie = `googtrans=/en/en; path=/${domainStr}`;
+        document.cookie = `googtrans=/auto/en; path=/${domainStr}`;
+      });
+    } else {
+      domainVariants.forEach(d => {
+        const domainStr = d ? `; domain=${d}` : '';
+        document.cookie = `googtrans=/auto/${gtCode}; path=/${domainStr}`;
+        document.cookie = `googtrans=/en/${gtCode}; path=/${domainStr}`;
+      });
+    }
+
+    // 3. Programmatically reset Google Translate DOM elements if present
+    try {
+      const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+      if (combo) {
+        const targetVal = isEnglish ? '' : gtCode;
+        if (combo.value !== targetVal) {
+          combo.value = targetVal;
+          combo.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+
+      if (isEnglish) {
+        // Revert Google Translate classes on HTML element and remove body offset
+        document.documentElement.classList.remove('translated-ltr', 'translated-rtl');
+        document.body.style.top = '0px';
+
+        // Check for Google Translate iframe banner 'Show original' button
+        const bannerFrame = document.querySelector<HTMLIFrameElement>('iframe.goog-te-banner-frame');
+        if (bannerFrame && bannerFrame.contentDocument) {
+          const restoreBtn = bannerFrame.contentDocument.querySelector<HTMLElement>(
+            '.goog-te-button button, button#\\:1\\.restore, button#\\:2\\.restore'
+          );
+          if (restoreBtn) {
+            restoreBtn.click();
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error syncing Google Translate DOM elements:', err);
+    }
+  };
+
   const handleSetLanguage = (code: string) => {
     const normalized = (code || 'en').toLowerCase() as LanguageCode;
     const found = SUPPORTED_LANGUAGES.find(l => l.code === normalized);
     const validCode = found ? (found.code as LanguageCode) : 'en';
-    
-    if (validCode === langCode) return;
     
     try {
       localStorage.setItem('tradeheaven_language', validCode);
       if (found) {
         localStorage.setItem('tradeheaven_region', found.region);
       }
-      
-      let gtCode = validCode as string;
-      if (gtCode === 'zh') gtCode = 'zh-CN';
-      
-      if (validCode === 'en') {
-        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
-        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
-      } else {
-        document.cookie = 'googtrans=/auto/' + gtCode + '; path=/';
-        document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=' + window.location.hostname;
-        document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=.' + window.location.hostname;
-        document.cookie = 'googtrans=/en/' + gtCode + '; path=/';
-        document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=' + window.location.hostname;
-        document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=.' + window.location.hostname;
-      }
-      
-      // Reload the page to ensure Google Translate initializes with the new language
-      // and doesn't conflict with React's DOM rendering cycle.
-      window.location.reload();
     } catch {}
+
+    // Thoroughly sync Google Translate cookies & DOM
+    syncGoogleTranslateCookiesAndDOM(validCode);
+
+    // Update state immediately
+    setLangCode(validCode);
+
+    // Dispatch global custom event
+    try {
+      window.dispatchEvent(new CustomEvent('tradeheaven_language_change', {
+        detail: { language: validCode }
+      }));
+    } catch {}
+
+    // A quick reload guarantees that any Google Translate <font> wrapping tags
+    // are purged from the DOM and the page re-renders cleanly in the chosen language.
+    setTimeout(() => {
+      window.location.reload();
+    }, 50);
   };
 
   // Listen for global custom event across app
@@ -130,23 +209,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       document.body.classList.remove('text-right');
     }
 
-    // Ensure cookie matches current language so Google Translate stays in sync on navigation
-    let gtCode = langCode as string;
-    if (gtCode === 'zh') gtCode = 'zh-CN';
-    
-    if (langCode === 'en') {
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
-      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
-    } else {
-      document.cookie = 'googtrans=/auto/' + gtCode + '; path=/';
-      document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=' + window.location.hostname;
-      document.cookie = 'googtrans=/auto/' + gtCode + '; path=/; domain=.' + window.location.hostname;
-      document.cookie = 'googtrans=/en/' + gtCode + '; path=/';
-      document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=' + window.location.hostname;
-      document.cookie = 'googtrans=/en/' + gtCode + '; path=/; domain=.' + window.location.hostname;
-    }
-    
+    // Keep cookies and Google Translate DOM strictly in sync with current language
+    syncGoogleTranslateCookiesAndDOM(langCode);
   }, [langCode]);
 
   const currentOption = SUPPORTED_LANGUAGES.find(l => l.code === langCode) || SUPPORTED_LANGUAGES[0];

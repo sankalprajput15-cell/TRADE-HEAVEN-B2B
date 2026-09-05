@@ -37,7 +37,7 @@
         }
       })();
     </script>
-    <!-- Safe Client-Side Session Recovery Support -->
+    <!-- Safe Client-Side Session & Language Recovery Support -->
     <script>
       try {
         // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
@@ -46,6 +46,35 @@
           if (key.includes('corrupted') || key.includes('stale_temp_')) {
             localStorage.removeItem(key);
           }
+        }
+
+        // Proactive Google Translate cookie cleanup for English:
+        // If preferred language is English or unset, purge any residual foreign googtrans cookies
+        // across all domain levels so the page never gets stuck in Chinese or another language.
+        var userLang = localStorage.getItem('tradeheaven_language');
+        if (!userLang || userLang.toLowerCase() === 'en') {
+          var host = window.location.hostname;
+          var parts = host.split('.');
+          var domains = ['', host, '.' + host];
+          for (var i = 0; i < parts.length - 1; i++) {
+            var parent = parts.slice(i).join('.');
+            domains.push(parent);
+            domains.push('.' + parent);
+          }
+          var paths = ['/', '/auto', window.location.pathname];
+          var cookieNames = ['googtrans', 'googtrans_prev', 'googtrans_saved'];
+          for (var c = 0; c < cookieNames.length; c++) {
+            for (var p = 0; p < paths.length; p++) {
+              for (var d = 0; d < domains.length; d++) {
+                var dAttr = domains[d] ? '; domain=' + domains[d] : '';
+                document.cookie = cookieNames[c] + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=' + paths[p] + dAttr;
+                document.cookie = cookieNames[c] + '=; Max-Age=0; path=' + paths[p] + dAttr;
+              }
+            }
+          }
+          // Set /en/en and /auto/en explicitly so Google Translate knows not to translate
+          document.cookie = 'googtrans=/en/en; path=/';
+          document.cookie = 'googtrans=/auto/en; path=/';
         }
       } catch(e) {}
     </script>
@@ -148,7 +177,7 @@
       }
     </script>
   
-    <!-- Google Translate Script (Deferred to prevent render-blocking) -->
+    <!-- Google Translate Script (Conditionally loaded for international non-English locales) -->
     <script type="text/javascript">
       window.googleTranslateElementInit = function() {
         if (window.google && window.google.translate) {
@@ -162,16 +191,29 @@
 
       (function() {
         var loadScript = function() {
-          var script = document.createElement('script');
-          script.type = 'text/javascript';
-          script.async = true;
-          script.defer = true;
-          script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-          document.body.appendChild(script);
+          var userLang = 'en';
+          try {
+            userLang = (localStorage.getItem('tradeheaven_language') || 'en').toLowerCase();
+          } catch(e) {}
+
+          // Check if user has an active non-English selection or non-English googtrans cookie
+          var hasForeignCookie = document.cookie.indexOf('googtrans=/') !== -1 && 
+                                 document.cookie.indexOf('googtrans=/en/en') === -1 && 
+                                 document.cookie.indexOf('googtrans=/auto/en') === -1;
+
+          // Only inject Google Translate when a non-English language is active
+          if (userLang !== 'en' || hasForeignCookie) {
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.async = true;
+            script.defer = true;
+            script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+            document.body.appendChild(script);
+          }
         };
         if (window.addEventListener) {
           window.addEventListener('load', function() {
-            setTimeout(loadScript, 1200);
+            setTimeout(loadScript, 500);
           });
         } else {
           window.attachEvent('onload', loadScript);
