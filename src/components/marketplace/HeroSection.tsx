@@ -33,6 +33,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
+import { OptimizedHeroImage } from '../common/OptimizedHeroImage';
+import { getDynamicHeroImageForView } from '../../utils/heroImageOptimization';
 
 interface Props {
   onSearch: (query: string, category: string) => void;
@@ -418,19 +420,19 @@ export const HeroSection: React.FC<Props> = ({
         </button>
       )}
 
-      {/* Background Image with Professional Gradient Overlay */}
+      {/* Background Image with Dynamic Placeholder, Optimized Aspect Ratio & Blur-Up Effect */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src={hp.heroBgImage && hp.heroBgImage.trim() ? hp.heroBgImage.trim() : "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80"} 
-          srcSet={hp.heroBgImage && hp.heroBgImage.trim() ? undefined : "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80 800w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80 1200w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80 1600w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=2000&q=80 2000w"}
-          sizes="100vw"
-          alt="Global B2B Logistics and Trade Shipping Port" 
-          className="w-full h-full object-cover object-center"
-          loading="eager"
-          fetchPriority="high"
+        <OptimizedHeroImage
+          imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1920, 85)}
+          src={hp.heroBgImage && hp.heroBgImage.trim() ? hp.heroBgImage.trim() : undefined}
+          alt="Global B2B Logistics and Trade Shipping Port"
+          aspectRatio="16/9"
+          className="w-full h-full"
+          imgClassName="w-full h-full object-cover object-center"
+          eager={true}
         />
         {/* Balanced gradient overlay ensuring high text readability while keeping port colors luminous */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-slate-900/25"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-slate-900/25 pointer-events-none z-[2]"></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">

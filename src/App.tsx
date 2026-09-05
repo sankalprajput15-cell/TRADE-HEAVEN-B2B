@@ -73,6 +73,8 @@ import { Loader2, Mail, CheckCircle2, AlertCircle, Send } from 'lucide-react';
 import { TradeHeavenDataLoader } from './components/common/TradeHeavenDataLoader';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
+import { getDynamicHeroImageForView } from './utils/heroImageOptimization';
+import { OptimizedHeroImage } from './components/common/OptimizedHeroImage';
 
 const AboutUs = React.lazy(() => import('./components/marketplace/AboutUs').then(m => ({ default: m.AboutUs })));
 const TrustAndSafety = React.lazy(() => import('./components/marketplace/TrustAndSafety').then(m => ({ default: m.TrustAndSafety })));
@@ -124,34 +126,6 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener('tradeheaven_database_error', handleDbError);
   }, []);
 
-  // Listen for browser back/forward buttons
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const view = params.get('view');
-      if (view) setActiveView(view as ActiveView);
-      else setActiveView('HOMEPAGE');
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Update URL when activeView changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (activeView === 'HOMEPAGE') {
-        url.searchParams.delete('view');
-      } else {
-        url.searchParams.set('view', activeView);
-      }
-      // Only push if the URL actually changed to prevent infinite loops with popstate
-      if (url.toString() !== window.location.href) {
-        window.history.pushState({}, '', url.toString());
-      }
-    }
-  }, [activeView]);
-
   // Products and entities initialized with default rich marketplace dataset
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
@@ -166,6 +140,65 @@ const MainApp: React.FC = () => {
   const [isCreateRfqOpen, setIsCreateRfqOpen] = useState(false);
   const [catalogCategory, setCatalogCategory] = useState<string>('ALL');
   const [catalogSearch, setCatalogSearch] = useState<string>('');
+
+  // Listen for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      const prodId = params.get('productId') || params.get('product');
+
+      if (view) setActiveView(view as ActiveView);
+      else setActiveView('HOMEPAGE');
+
+      if (prodId && products.length > 0) {
+        const found = products.find(p => p.id === prodId);
+        if (found) setSelectedProduct(found);
+      } else if (!prodId) {
+        setSelectedProduct(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [products]);
+
+  // Sync selectedProduct with URL on mount / when products update
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const prodId = params.get('productId') || params.get('product');
+      if (prodId && products.length > 0) {
+        const found = products.find(p => p.id === prodId);
+        if (found && (!selectedProduct || selectedProduct.id !== found.id)) {
+          setSelectedProduct(found);
+        }
+      }
+    }
+  }, [products]);
+
+  // Update URL when activeView or selectedProduct changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (activeView === 'HOMEPAGE') {
+        url.searchParams.delete('view');
+      } else {
+        url.searchParams.set('view', activeView);
+      }
+
+      if (selectedProduct) {
+        url.searchParams.set('productId', selectedProduct.id);
+      } else {
+        url.searchParams.delete('productId');
+        url.searchParams.delete('product');
+      }
+
+      // Only push if the URL actually changed to prevent infinite loops with popstate
+      if (url.toString() !== window.location.href) {
+        window.history.pushState({}, '', url.toString());
+      }
+    }
+  }, [activeView, selectedProduct]);
   const [contactModalConfig, setContactModalConfig] = useState<{
     isOpen: boolean;
     targetType: 'RFQ' | 'PRODUCT' | 'SUPPLIER' | 'GENERAL';
@@ -289,105 +322,137 @@ const MainApp: React.FC = () => {
     }
   }, [activeView, currentUser, isAdmin]);
 
-  // Dynamic SEO & Meta Tags based on active view
+  // Dynamic SEO, OpenGraph & Meta Tags based on active view, selected product, and dynamic hero placeholder
   useEffect(() => {
+    // Check if target product is specified via selectedProduct state or URL query
+    let targetProduct: Product | null = selectedProduct;
+    if (!targetProduct && typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlProdId = params.get('productId') || params.get('product');
+        if (urlProdId && products.length > 0) {
+          targetProduct = products.find(p => p.id === urlProdId) || null;
+        }
+      } catch {
+        targetProduct = null;
+      }
+    }
+
     let title = 'Trade Heaven | Global B2B Wholesale Marketplace';
     let description = 'Connect with verified global suppliers, compare live RFQs, and secure wholesale deals with Trade Heaven\'s secure B2B platform.';
     let canonical = 'https://tradeheaven.net';
-    let ogImage = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200'; // Global premium B2B hero image
+    let ogType = 'website';
+    let ogImage = '';
+    let ogImageWidth = '1200';
+    let ogImageHeight = '630';
+    let ogImageAlt = 'Trade Heaven - Global B2B Marketplace';
+    const isProductPage = Boolean(targetProduct);
 
-    switch (activeView) {
-      case 'HOMEPAGE':
-      case 'LANDING_PAGE':
-        title = 'Trade Heaven | Secure Global B2B Wholesale Marketplace';
-        description = 'Discover verified factory inventory, connect with global suppliers, and trade securely with Trade Heaven.';
-        canonical = 'https://tradeheaven.net';
-        ogImage = 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'PRODUCT_DIRECTORY':
-        title = 'Global Product Catalog & Wholesale Directory | Trade Heaven';
-        description = 'Browse verified factory inventory across industrial sectors. Compare tiered volume pricing and source high-quality products.';
-        canonical = 'https://tradeheaven.net/?view=PRODUCT_DIRECTORY';
-        ogImage = 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'RFQ_HUB':
-        title = 'Live B2B RFQs & Tenders | Trade Heaven';
-        description = 'View live Requests for Quotation (RFQs), submit wholesale quotes, and connect with verified buyers worldwide.';
-        canonical = 'https://tradeheaven.net/?view=RFQ_HUB';
-        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'SUPPLIERS_DIRECTORY':
-        title = 'Verified Global Suppliers & Exporters | Trade Heaven';
-        description = 'Find and partner with verified manufacturers, exporters, and wholesale suppliers from around the globe.';
-        canonical = 'https://tradeheaven.net/?view=SUPPLIERS_DIRECTORY';
-        ogImage = 'https://images.unsplash.com/photo-1565891741441-64926e441838?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'BUYERS_DIRECTORY':
-        title = 'Verified Global Buyers & Importers | Trade Heaven';
-        description = 'Connect with verified international buyers and importers actively seeking wholesale product sourcing.';
-        canonical = 'https://tradeheaven.net/?view=BUYERS_DIRECTORY';
-        ogImage = 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'BUY_LEADS':
-        title = 'Active Wholesale Buy Leads | Trade Heaven';
-        description = 'Access active buy leads from verified global importers. Quote on RFQs and grow your export business.';
-        canonical = 'https://tradeheaven.net/?view=BUY_LEADS';
-        ogImage = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'TRUST_SAFETY':
-        title = 'Trust & Safety Center | Trade Heaven';
-        description = 'Learn how Trade Heaven ensures secure international B2B transactions through supplier verification and escrow protection.';
-        canonical = 'https://tradeheaven.net/?view=TRUST_SAFETY';
-        ogImage = 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'INSIGHTS':
-        title = 'B2B Trade Insights & Industry News | Trade Heaven';
-        description = 'Expert insights on global B2B trade, physical commodity trading, supply chain due diligence, and verified sourcing.';
-        canonical = 'https://tradeheaven.net/?view=INSIGHTS';
-        ogImage = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'PREMIUM_MEMBERSHIP':
-        title = 'Premium B2B Supplier Membership | Trade Heaven';
-        description = 'Upgrade your supplier profile to access priority RFQs, verified buyer data, and enhanced storefront visibility.';
-        canonical = 'https://tradeheaven.net/?view=PREMIUM_MEMBERSHIP';
-        ogImage = 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'INCOTERMS_CALCULATOR':
-        title = 'Incoterms Cost & Risk Calculator | Trade Heaven';
-        description = 'Calculate shipping costs and understand risk transfers for global trade using our interactive Incoterms tool.';
-        canonical = 'https://tradeheaven.net/?view=INCOTERMS_CALCULATOR';
-        ogImage = 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'ABOUT_US':
-        title = 'About Trade Heaven | Verified B2B Marketplace';
-        description = 'Learn about Trade Heaven\'s mission to connect global wholesale buyers and verified suppliers safely.';
-        canonical = 'https://tradeheaven.net/?view=ABOUT_US';
-        ogImage = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'PRODUCT_LISTING_POLICY':
-        title = 'Product Listing Policy & Prohibited Items | Trade Heaven';
-        description = 'Review Trade Heaven\'s terms of listing products, restricted items, IPR compliance, and regulatory sanctions.';
-        canonical = 'https://tradeheaven.net/?view=PRODUCT_LISTING_POLICY';
-        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'PRIVACY_POLICY':
-        title = 'Privacy Policy | Tradeheaven ECOM Solution LLP | Trade Heaven';
-        description = 'Review Trade Heaven\'s privacy terms, data protection commitment, and B2B user rights managed by Tradeheaven ECOM Solution LLP.';
-        canonical = 'https://tradeheaven.net/?view=PRIVACY_POLICY';
-        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'TERMS_OF_USE':
-        title = 'Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven';
-        description = 'Review Trade Heaven\'s user terms of use, membership rights, trade guidelines, and refund policy operated by Tradeheaven ECOM Solution LLP.';
-        canonical = 'https://tradeheaven.net/?view=TERMS_OF_USE';
-        ogImage = 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&q=80&w=1200';
-        break;
-      case 'VENDOR_PROFILE':
-        title = 'Verified Supplier Storefront | Trade Heaven';
-        description = 'View verified supplier profiles, browse product catalogs, and review manufacturing certifications on Trade Heaven.';
-        canonical = 'https://tradeheaven.net/?view=VENDOR_PROFILE';
-        ogImage = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200';
-        break;
+    // Dynamic hero image placeholder utilizing optimized 1.91:1 / 16:9 aspect ratios and blur-up loading effects
+    const dynamicHeroImage = getDynamicHeroImageForView(activeView, siteContent, '1.91:1', 1200, 80);
+    ogImage = dynamicHeroImage.url;
+    ogImageAlt = dynamicHeroImage.alt;
+    ogImageWidth = String(dynamicHeroImage.width);
+    ogImageHeight = String(dynamicHeroImage.height);
+
+    if (targetProduct) {
+      const priceVal = targetProduct.fobPriceUsd || (targetProduct.priceTiers && targetProduct.priceTiers[0]?.priceUsd) || 0;
+      const priceText = priceVal > 0 ? `$${priceVal}` : 'Factory Direct';
+      const moqText = `${targetProduct.moq || targetProduct.minOrderQuantity || 100} ${targetProduct.moqUnit || 'units'}`;
+      const cleanDesc = targetProduct.description 
+        ? targetProduct.description.slice(0, 160).trim() 
+        : `Buy ${targetProduct.title} wholesale at direct manufacturing rates.`;
+      
+      title = `${targetProduct.title} - Wholesale ${targetProduct.category} | Trade Heaven`;
+      description = `${cleanDesc} Verified supplier ${targetProduct.supplierName} (${targetProduct.supplierCountry}). MOQ: ${moqText}. FOB: ${priceText}. 100% Escrow Trade Protection on Trade Heaven.`;
+      canonical = `https://tradeheaven.net/?view=PRODUCT_DIRECTORY&productId=${encodeURIComponent(targetProduct.id)}`;
+      ogType = 'product';
+
+      if (targetProduct.images && targetProduct.images.length > 0 && targetProduct.images[0]) {
+        ogImage = targetProduct.images[0];
+        ogImageAlt = `${targetProduct.title} - ${targetProduct.supplierName}`;
+        ogImageWidth = '800';
+        ogImageHeight = '800';
+      }
+    } else {
+      switch (activeView) {
+        case 'HOMEPAGE':
+        case 'LANDING_PAGE':
+          title = 'Trade Heaven | Secure Global B2B Wholesale Marketplace';
+          description = 'Discover verified factory inventory, connect with global suppliers, and trade securely with Trade Heaven.';
+          canonical = 'https://tradeheaven.net';
+          break;
+        case 'PRODUCT_DIRECTORY':
+          title = 'Global Product Catalog & Wholesale Directory | Trade Heaven';
+          description = 'Browse verified factory inventory across industrial sectors. Compare tiered volume pricing and source high-quality products.';
+          canonical = 'https://tradeheaven.net/?view=PRODUCT_DIRECTORY';
+          break;
+        case 'RFQ_HUB':
+          title = 'Live B2B RFQs & Tenders | Trade Heaven';
+          description = 'View live Requests for Quotation (RFQs), submit wholesale quotes, and connect with verified buyers worldwide.';
+          canonical = 'https://tradeheaven.net/?view=RFQ_HUB';
+          break;
+        case 'SUPPLIERS_DIRECTORY':
+          title = 'Verified Global Suppliers & Exporters | Trade Heaven';
+          description = 'Find and partner with verified manufacturers, exporters, and wholesale suppliers from around the globe.';
+          canonical = 'https://tradeheaven.net/?view=SUPPLIERS_DIRECTORY';
+          break;
+        case 'BUYERS_DIRECTORY':
+          title = 'Verified Global Buyers & Importers | Trade Heaven';
+          description = 'Connect with verified international buyers and importers actively seeking wholesale product sourcing.';
+          canonical = 'https://tradeheaven.net/?view=BUYERS_DIRECTORY';
+          break;
+        case 'BUY_LEADS':
+          title = 'Active Wholesale Buy Leads | Trade Heaven';
+          description = 'Access active buy leads from verified global importers. Quote on RFQs and grow your export business.';
+          canonical = 'https://tradeheaven.net/?view=BUY_LEADS';
+          break;
+        case 'TRUST_SAFETY':
+          title = 'Trust & Safety Center | Trade Heaven';
+          description = 'Learn how Trade Heaven ensures secure international B2B transactions through supplier verification and escrow protection.';
+          canonical = 'https://tradeheaven.net/?view=TRUST_SAFETY';
+          break;
+        case 'INSIGHTS':
+          title = 'Trade Finance & MT700 DLC Risk Insights | Trade Heaven';
+          description = 'Is your cargo truly financeable? Understand MT700 DLC bankability, vessel risk, trade compliance, sanctions screening, and bulk export financing with Trade Heaven.';
+          canonical = 'https://tradeheaven.net/?view=INSIGHTS';
+          break;
+        case 'PREMIUM_MEMBERSHIP':
+          title = 'Premium B2B Supplier Membership | Trade Heaven';
+          description = 'Upgrade your supplier profile to access priority RFQs, verified buyer data, and enhanced storefront visibility.';
+          canonical = 'https://tradeheaven.net/?view=PREMIUM_MEMBERSHIP';
+          break;
+        case 'INCOTERMS_CALCULATOR':
+          title = 'Incoterms Cost & Risk Calculator | Trade Heaven';
+          description = 'Calculate shipping costs and understand risk transfers for global trade using our interactive Incoterms tool.';
+          canonical = 'https://tradeheaven.net/?view=INCOTERMS_CALCULATOR';
+          break;
+        case 'ABOUT_US':
+          title = 'About Trade Heaven | Verified B2B Marketplace';
+          description = 'Learn about Trade Heaven\'s mission to connect global wholesale buyers and verified suppliers safely.';
+          canonical = 'https://tradeheaven.net/?view=ABOUT_US';
+          break;
+        case 'PRODUCT_LISTING_POLICY':
+          title = 'Product Listing Policy & Prohibited Items | Trade Heaven';
+          description = 'Review Trade Heaven\'s terms of listing products, restricted items, IPR compliance, and regulatory sanctions.';
+          canonical = 'https://tradeheaven.net/?view=PRODUCT_LISTING_POLICY';
+          break;
+        case 'PRIVACY_POLICY':
+          title = 'Privacy Policy | Tradeheaven ECOM Solution LLP | Trade Heaven';
+          description = 'Review Trade Heaven\'s privacy terms, data protection commitment, and B2B user rights managed by Tradeheaven ECOM Solution LLP.';
+          canonical = 'https://tradeheaven.net/?view=PRIVACY_POLICY';
+          break;
+        case 'TERMS_OF_USE':
+          title = 'Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven';
+          description = 'Review Trade Heaven\'s user terms of use, membership rights, trade guidelines, and refund policy operated by Tradeheaven ECOM Solution LLP.';
+          canonical = 'https://tradeheaven.net/?view=TERMS_OF_USE';
+          break;
+        case 'VENDOR_PROFILE':
+          title = 'Verified Supplier Storefront | Trade Heaven';
+          description = 'View verified supplier profiles, browse product catalogs, and review manufacturing certifications on Trade Heaven.';
+          canonical = 'https://tradeheaven.net/?view=VENDOR_PROFILE';
+          break;
+      }
     }
 
     // 1. Update document title
@@ -414,6 +479,17 @@ const MainApp: React.FC = () => {
       }
     };
 
+    // Helper function to remove meta tags when not on product page
+    const removeMetaTag = (attributeValue: string, isProperty: boolean = false) => {
+      const selector = isProperty 
+        ? `meta[property="${attributeValue}"]` 
+        : `meta[name="${attributeValue}"]`;
+      const metaElement = document.querySelector(selector);
+      if (metaElement) {
+        metaElement.remove();
+      }
+    };
+
     // 2. Set description meta tags
     setMetaTag('name', 'description', description);
     setMetaTag('property', 'og:description', description, true);
@@ -423,14 +499,59 @@ const MainApp: React.FC = () => {
     setMetaTag('property', 'og:title', title, true);
     setMetaTag('name', 'twitter:title', title);
     setMetaTag('property', 'og:url', canonical, true);
-    setMetaTag('property', 'og:type', 'website', true);
+    setMetaTag('property', 'og:type', ogType, true);
     setMetaTag('name', 'twitter:card', 'summary_large_image');
 
-    // 4. Set OpenGraph & Twitter image tags
+    // 4. Set OpenGraph & Twitter image tags with dynamic aspect ratio metadata
     setMetaTag('property', 'og:image', ogImage, true);
+    setMetaTag('property', 'og:image:secure_url', ogImage, true);
+    setMetaTag('property', 'og:image:width', ogImageWidth, true);
+    setMetaTag('property', 'og:image:height', ogImageHeight, true);
+    setMetaTag('property', 'og:image:alt', ogImageAlt, true);
     setMetaTag('name', 'twitter:image', ogImage);
+    setMetaTag('name', 'twitter:image:alt', ogImageAlt);
+    setMetaTag('name', 'theme-color', dynamicHeroImage.themeColor);
 
-    // 5. Update or create canonical link tag
+    // 5. Product-specific OpenGraph and Twitter tags for social previews and search indexing
+    if (isProductPage && targetProduct) {
+      const priceVal = targetProduct.fobPriceUsd || (targetProduct.priceTiers && targetProduct.priceTiers[0]?.priceUsd) || 0;
+      setMetaTag('property', 'product:price:amount', String(priceVal), true);
+      setMetaTag('property', 'product:price:currency', 'USD', true);
+      setMetaTag('property', 'og:price:amount', String(priceVal), true);
+      setMetaTag('property', 'og:price:currency', 'USD', true);
+      setMetaTag('property', 'product:availability', targetProduct.inStock !== false ? 'in stock' : 'preorder', true);
+      setMetaTag('property', 'product:condition', 'new', true);
+      setMetaTag('property', 'product:retailer_item_id', targetProduct.id, true);
+      setMetaTag('property', 'product:category', targetProduct.category, true);
+      setMetaTag('property', 'product:brand', targetProduct.supplierName, true);
+      if (targetProduct.subCategory) {
+        setMetaTag('property', 'product:retailer_category', targetProduct.subCategory, true);
+      }
+
+      setMetaTag('name', 'twitter:label1', 'Price');
+      setMetaTag('name', 'twitter:data1', priceVal > 0 ? `$${priceVal} USD` : 'Contact for Wholesale Price');
+      setMetaTag('name', 'twitter:label2', 'Minimum Order (MOQ)');
+      setMetaTag('name', 'twitter:data2', `${targetProduct.moq || targetProduct.minOrderQuantity || 100} ${targetProduct.moqUnit || 'units'}`);
+      setMetaTag('name', 'keywords', `${targetProduct.title}, wholesale ${targetProduct.category}, ${targetProduct.subCategory || ''}, ${targetProduct.supplierCountry} suppliers, factory direct, buy bulk, Trade Heaven`);
+    } else {
+      removeMetaTag('product:price:amount', true);
+      removeMetaTag('product:price:currency', true);
+      removeMetaTag('og:price:amount', true);
+      removeMetaTag('og:price:currency', true);
+      removeMetaTag('product:availability', true);
+      removeMetaTag('product:condition', true);
+      removeMetaTag('product:retailer_item_id', true);
+      removeMetaTag('product:category', true);
+      removeMetaTag('product:brand', true);
+      removeMetaTag('product:retailer_category', true);
+      removeMetaTag('twitter:label1', false);
+      removeMetaTag('twitter:data1', false);
+      removeMetaTag('twitter:label2', false);
+      removeMetaTag('twitter:data2', false);
+      setMetaTag('name', 'keywords', 'Trade Heaven, MT700, Trade Finance, Letter of Credit, DLC bankable, cargo financing, bulk export transactions, B2B supply chain, vessel risk, trade compliance, sanctions screening, export import business, cross border trade, banking standards trade, trade risk mitigation, shipping documentation discrepancies, cargo financibility, trade execution platform');
+    }
+
+    // 6. Update or create canonical link tag
     let canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) {
       canonicalLink.setAttribute('href', canonical);
@@ -440,7 +561,55 @@ const MainApp: React.FC = () => {
       canonicalLink.setAttribute('href', canonical);
       document.head.appendChild(canonicalLink);
     }
-  }, [activeView]);
+
+    // 7. Dynamic Schema.org Product Structured Data injection for search engines
+    const ldScriptId = 'tradeheaven-dynamic-product-ld';
+    let ldScript = document.getElementById(ldScriptId) as HTMLScriptElement | null;
+    if (isProductPage && targetProduct) {
+      if (!ldScript) {
+        ldScript = document.createElement('script');
+        ldScript.id = ldScriptId;
+        ldScript.type = 'application/ld+json';
+        document.head.appendChild(ldScript);
+      }
+      const priceVal = targetProduct.fobPriceUsd || (targetProduct.priceTiers && targetProduct.priceTiers[0]?.priceUsd) || 0;
+      const productSchema = {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": targetProduct.title,
+        "image": (targetProduct.images && targetProduct.images.length > 0) ? targetProduct.images : [ogImage],
+        "description": description,
+        "sku": targetProduct.id,
+        "category": targetProduct.category,
+        "brand": {
+          "@type": "Brand",
+          "name": targetProduct.supplierName
+        },
+        "offers": {
+          "@type": "Offer",
+          "url": canonical,
+          "priceCurrency": "USD",
+          "price": String(priceVal || "0.00"),
+          "priceValidUntil": "2027-12-31",
+          "itemCondition": "https://schema.org/NewCondition",
+          "availability": targetProduct.inStock !== false ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
+          "seller": {
+            "@type": "Organization",
+            "name": targetProduct.supplierName,
+            "address": {
+              "@type": "PostalAddress",
+              "addressCountry": targetProduct.supplierCountry
+            }
+          }
+        }
+      };
+      ldScript.textContent = JSON.stringify(productSchema);
+    } else {
+      if (ldScript) {
+        ldScript.remove();
+      }
+    }
+  }, [activeView, selectedProduct, products, siteContent]);
 
   // Handlers
   const handleSelectProduct = (product: Product) => {
@@ -563,11 +732,26 @@ const MainApp: React.FC = () => {
     setContactModalConfig(prev => ({ ...prev, isOpen: false }));
   };
 
-  const handleNavigate = (view: ActiveView | string) => {
+  const handleNavigate = (
+    view: ActiveView | string, 
+    options?: { search?: string; category?: string; subcategory?: string; productId?: string }
+  ) => {
     const target = String(view || '').trim().toUpperCase();
 
-    // Reset modals on navigation
-    setSelectedProduct(null);
+    if (options?.category) {
+      setCatalogCategory(options.category);
+    }
+    if (options?.search !== undefined) {
+      setCatalogSearch(options.search);
+    }
+    if (options?.productId) {
+      const prod = products.find(p => p.id === options.productId);
+      if (prod) {
+        setSelectedProduct(prod);
+      }
+    } else {
+      setSelectedProduct(null);
+    }
     setStorefrontCompanyId(null);
 
     // Specific modal actions
@@ -716,7 +900,11 @@ const MainApp: React.FC = () => {
       {/* Scroll restoration anchor */}
       <ScrollToTop activeView={activeView} />
       {/* Dynamic SEO Meta Tags Manager */}
-      <SEOManager activeView={activeView} />
+      <SEOManager 
+        activeView={activeView} 
+        selectedProduct={selectedProduct} 
+        products={products} 
+      />
 
       {/* 1. TOP ANNOUNCEMENT & LIVE RFQ TICKER */}
       <LiveRfqTicker
@@ -749,6 +937,25 @@ const MainApp: React.FC = () => {
         onOpenContactModal={() => handleOpenContactModal({ targetType: 'GENERAL' })}
         onOpenDbModal={() => setIsDbModalOpen(true)}
         onOpenCreateRfq={handleOpenCreateRfq}
+        products={products}
+        onSelectProduct={(prod) => {
+          handleSelectProduct(prod);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onNavigateToCategory={(category, subcategory) => {
+          setCatalogCategory(category || 'ALL');
+          setCatalogSearch(subcategory || '');
+          setSelectedProduct(null);
+          setActiveView('PRODUCT_DIRECTORY');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onNavigateToSearch={(query) => {
+          setCatalogCategory('ALL');
+          setCatalogSearch(query);
+          setSelectedProduct(null);
+          setActiveView('PRODUCT_DIRECTORY');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}

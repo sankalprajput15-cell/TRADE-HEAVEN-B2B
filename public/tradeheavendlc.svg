@@ -1,0 +1,270 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1150" width="100%" height="100%" style="background-color: #faf9f6; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.12" />
+    </filter>
+    <filter id="gateShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="shipGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+
+  <!-- Editorial Headline -->
+  <g id="headline" text-anchor="middle">
+    <text x="500" y="80" font-size="52" font-weight="900" fill="#0f172a" letter-spacing="-1">YOUR DLC IS</text>
+    <text x="500" y="145" font-size="64" font-weight="950" fill="#dc2626" letter-spacing="-1">BANKABLE.</text>
+    <text x="500" y="210" font-size="44" font-weight="900" fill="#0f172a" letter-spacing="-0.5">THE CARGO STILL MAY</text>
+    <text x="500" y="265" font-size="44" font-weight="900" fill="#0f172a" letter-spacing="-0.5">NOT BE FINANCEABLE.</text>
+    <!-- Red Accent Line -->
+    <line x1="120" y1="285" x2="880" y2="285" stroke="#dc2626" stroke-width="5" stroke-linecap="round" />
+  </g>
+
+  <!-- Port Background Scene -->
+  <g id="port-background" transform="translate(0, 310)">
+    <!-- Sky & Mountains/Refinery Silhouette -->
+    <rect x="0" y="0" width="1000" height="260" fill="url(#skyGrad)" />
+    
+    <!-- Refinery Chimneys & Silos in distance -->
+    <rect x="360" y="140" width="24" height="70" fill="#94a3b8" />
+    <path d="M365 140 Q 360 100 375 80" stroke="#cbd5e1" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.8" />
+    <circle cx="430" cy="180" r="32" fill="#94a3b8" />
+    <circle cx="475" cy="185" r="26" fill="#94a3b8" />
+
+    <!-- Water Canal -->
+    <rect x="0" y="210" width="1000" height="110" fill="url(#waterGrad)" />
+    <!-- Water ripples -->
+    <path d="M50 250 Q 150 245 250 250 T 450 250" stroke="#38bdf8" stroke-width="3" fill="none" opacity="0.6" />
+    <path d="M20 280 Q 120 275 220 280 T 420 280" stroke="#38bdf8" stroke-width="3" fill="none" opacity="0.6" />
+
+    <!-- Maritime Cargo Vessel / Tanker -->
+    <!-- Red Keel -->
+    <path d="M10 240 L 420 240 L 390 270 L 40 270 Z" fill="#b91c1c" />
+    <!-- Black Hull -->
+    <path d="M0 160 L 440 160 L 420 240 L 10 240 Z" fill="url(#shipGrad)" />
+    <!-- White Superstructure / Bridge -->
+    <rect x="180" y="100" width="110" height="60" fill="#f8fafc" stroke="#64748b" stroke-width="3" />
+    <rect x="200" y="60" width="70" height="40" fill="#f8fafc" stroke="#64748b" stroke-width="3" />
+    <!-- Bridge Windows -->
+    <rect x="190" y="115" width="90" height="12" fill="#0284c7" />
+    <!-- Radar Mast -->
+    <line x1="235" y1="60" x2="235" y2="15" stroke="#334155" stroke-width="4" />
+    <line x1="215" y1="30" x2="255" y2="30" stroke="#334155" stroke-width="3" />
+    <!-- Deck Tanks / Pressure Spheres -->
+    <ellipse cx="70" cy="155" rx="35" ry="25" fill="#e2e8f0" stroke="#64748b" stroke-width="2" />
+    <ellipse cx="145" cy="155" rx="35" ry="25" fill="#e2e8f0" stroke="#64748b" stroke-width="2" />
+    <ellipse cx="340" cy="155" rx="35" ry="25" fill="#e2e8f0" stroke="#64748b" stroke-width="2" />
+    
+    <!-- Quay Wall / Cobblestone Pier -->
+    <rect x="0" y="300" width="1000" height="500" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2" />
+    <!-- Pier edge dark line -->
+    <line x1="0" y1="300" x2="1000" y2="300" stroke="#475569" stroke-width="8" />
+    <!-- Mooring Bollards -->
+    <path d="M400 290 L 425 290 L 430 315 L 395 315 Z" fill="#1e293b" />
+    <circle cx="412" cy="290" r="14" fill="#334155" />
+    <path d="M70 380 L 95 380 L 100 405 L 65 405 Z" fill="#1e293b" />
+    <circle cx="82" cy="380" r="14" fill="#334155" />
+  </g>
+
+  <!-- Ground Stone Hatching Patterns -->
+  <g stroke="#cbd5e1" stroke-width="2" opacity="0.6">
+    <line x1="50" y1="650" x2="150" y2="650" />
+    <line x1="120" y1="700" x2="220" y2="700" />
+    <line x1="80" y1="760" x2="260" y2="760" />
+    <line x1="150" y1="840" x2="320" y2="840" />
+    <line x1="100" y1="920" x2="280" y2="920" />
+  </g>
+
+  <!-- Left Character: Exporter with MT700 Document -->
+  <g id="exporter" transform="translate(40, 520)">
+    <!-- Legs -->
+    <path d="M120 370 L 110 490 L 80 500 L 70 480 L 95 370" fill="#1e293b" />
+    <path d="M150 370 L 175 490 L 210 490 L 205 470 L 165 370" fill="#1e293b" />
+    <!-- Shoes -->
+    <ellipse cx="85" cy="495" rx="26" ry="12" fill="#090d16" />
+    <ellipse cx="195" cy="490" rx="26" ry="12" fill="#090d16" />
+    <!-- Suit Body -->
+    <path d="M90 220 L 180 220 L 165 380 L 105 380 Z" fill="#1e3a8a" />
+    <!-- White Shirt & Red/Gold Tie -->
+    <polygon points="125,220 145,220 135,270" fill="#ffffff" />
+    <polygon points="132,230 138,230 140,285 135,295 130,285" fill="#f59e0b" />
+    <!-- Suit Lapels -->
+    <path d="M100 220 L 125 285 L 110 320 L 90 220" fill="#172554" />
+    <path d="M170 220 L 145 285 L 160 320 L 170 220" fill="#172554" />
+    <!-- Head & Face -->
+    <circle cx="140" cy="140" r="45" fill="#fed7aa" />
+    <!-- Hair -->
+    <path d="M95 135 Q 100 80 150 85 Q 185 85 190 120 Q 175 110 160 115 Q 140 100 105 135 Z" fill="#78350f" />
+    <!-- Big Happy Eye -->
+    <ellipse cx="155" cy="135" rx="8" ry="11" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+    <circle cx="157" cy="135" r="4" fill="#0f172a" />
+    <ellipse cx="135" cy="135" rx="7" ry="10" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+    <circle cx="137" cy="135" r="3.5" fill="#0f172a" />
+    <!-- Eyebrows -->
+    <path d="M148 118 Q 158 112 166 118" stroke="#78350f" stroke-width="3" stroke-linecap="round" fill="none" />
+    <path d="M128 120 Q 136 115 142 120" stroke="#78350f" stroke-width="3" stroke-linecap="round" fill="none" />
+    <!-- Nose -->
+    <path d="M152 140 Q 165 145 156 154" stroke="#ea580c" stroke-width="3" fill="none" stroke-linecap="round" />
+    <!-- Big Happy Smile -->
+    <path d="M140 162 Q 155 180 172 162" stroke="#0f172a" stroke-width="3.5" fill="#b91c1c" stroke-linecap="round" />
+    <path d="M143 163 Q 155 170 169 163" fill="#ffffff" />
+    <!-- Right Arm holding MT700 -->
+    <!-- Arm reaching forward -->
+    <path d="M170 230 L 230 245 L 255 255" stroke="#1e3a8a" stroke-width="34" stroke-linecap="round" />
+    <!-- Hand -->
+    <circle cx="265" cy="255" r="14" fill="#fed7aa" />
+
+    <!-- MT700 Document -->
+    <g transform="translate(245, 140) rotate(-4)" filter="url(#cardShadow)">
+      <rect x="0" y="0" width="135" height="185" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="3" />
+      <text x="68" y="45" font-size="24" font-weight="900" fill="#0f172a" text-anchor="middle">MT700</text>
+      <!-- Horizontal document lines -->
+      <line x1="20" y1="65" x2="115" y2="65" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
+      <line x1="20" y1="80" x2="115" y2="80" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round" />
+      <line x1="20" y1="95" x2="95" y2="95" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round" />
+      <line x1="20" y1="110" x2="105" y2="110" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round" />
+      <!-- Green Verified Checkmark Badge -->
+      <circle cx="68" cy="145" r="22" fill="#dcfce7" stroke="#16a34a" stroke-width="3" />
+      <path d="M57 145 L 64 153 L 79 137" stroke="#16a34a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    </g>
+  </g>
+
+  <!-- Right: Commercial Bank Checkpoint Booth -->
+  <g id="bank-booth" transform="translate(500, 410)">
+    <!-- Building Structure -->
+    <rect x="0" y="0" width="370" height="380" rx="6" fill="#e2e8f0" stroke="#475569" stroke-width="5" />
+    <!-- BANK Sign Header -->
+    <rect x="-10" y="-35" width="390" height="70" rx="6" fill="#0f172a" stroke="#334155" stroke-width="4" filter="url(#cardShadow)" />
+    <text x="185" y="14" font-size="38" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="4">BANK</text>
+    
+    <!-- Window Frame -->
+    <rect x="35" y="65" width="220" height="230" fill="#f8fafc" stroke="#334155" stroke-width="6" />
+    <rect x="42" y="72" width="206" height="216" fill="#bfdbfe" opacity="0.4" />
+    <!-- Window ledge -->
+    <rect x="20" y="295" width="250" height="20" rx="4" fill="#334155" />
+
+    <!-- Strict Banker inside window -->
+    <g id="banker" transform="translate(50, 85)">
+      <!-- Banker Body / Suit -->
+      <path d="M40 110 L 150 110 L 160 200 L 30 200 Z" fill="#0f172a" />
+      <!-- Shirt & Dark Blue Tie -->
+      <polygon points="85,110 105,110 95,150" fill="#ffffff" />
+      <polygon points="92,120 98,120 100,180 95,190 90,180" fill="#1e3a8a" />
+      <!-- Head & Glasses -->
+      <circle cx="95" cy="55" r="42" fill="#fed7aa" />
+      <!-- Short Neat Hair -->
+      <path d="M55 50 Q 70 15 100 15 Q 130 15 135 45 Q 120 30 95 30 Q 70 30 55 50 Z" fill="#1e293b" />
+      <!-- Glasses -->
+      <rect x="68" y="44" width="24" height="18" rx="3" fill="#e0f2fe" stroke="#000000" stroke-width="4" />
+      <rect x="98" y="44" width="24" height="18" rx="3" fill="#e0f2fe" stroke="#000000" stroke-width="4" />
+      <line x1="92" y1="52" x2="98" y2="52" stroke="#000000" stroke-width="4" />
+      <!-- Stern Eyes behind glasses -->
+      <circle cx="80" cy="53" r="3" fill="#000000" />
+      <circle cx="110" cy="53" r="3" fill="#000000" />
+      <!-- Stern Eyebrows angled inward -->
+      <path d="M68 38 L 90 44" stroke="#000000" stroke-width="4" stroke-linecap="round" />
+      <path d="M122 38 L 100 44" stroke="#000000" stroke-width="4" stroke-linecap="round" />
+      <!-- Frowning mouth -->
+      <path d="M85 82 Q 95 72 107 82" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none" />
+
+      <!-- Extended Left Arm: Hand STOP gesture sticking out of window -->
+      <!-- Arm extending outward to the left -->
+      <path d="M45 125 L -20 120" stroke="#0f172a" stroke-width="26" stroke-linecap="round" />
+      <!-- White cuff -->
+      <rect x="-24" y="106" width="10" height="26" fill="#ffffff" />
+      <!-- Open Palm facing exporter (STOP) -->
+      <g transform="translate(-50, 90)">
+        <rect x="12" y="10" width="22" height="28" rx="5" fill="#fed7aa" stroke="#c2410c" stroke-width="2" />
+        <!-- 4 fingers upright -->
+        <rect x="10" y="-8" width="6" height="22" rx="3" fill="#fed7aa" stroke="#c2410c" stroke-width="1.5" />
+        <rect x="17" y="-12" width="6" height="26" rx="3" fill="#fed7aa" stroke="#c2410c" stroke-width="1.5" />
+        <rect x="24" y="-10" width="6" height="24" rx="3" fill="#fed7aa" stroke="#c2410c" stroke-width="1.5" />
+        <rect x="31" y="-5" width="6" height="20" rx="3" fill="#fed7aa" stroke="#c2410c" stroke-width="1.5" />
+        <!-- Thumb -->
+        <path d="M34 18 Q 42 22 36 28" stroke="#c2410c" stroke-width="3" fill="#fed7aa" />
+      </g>
+    </g>
+
+    <!-- Checklist Clipboard hanging on Bank Wall -->
+    <g id="rejection-checklist" transform="translate(280, 110)" filter="url(#cardShadow)">
+      <!-- Board -->
+      <rect x="0" y="0" width="190" height="255" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="3" />
+      <!-- Top Metal Clip -->
+      <path d="M70 -12 L 120 -12 L 125 15 L 65 15 Z" fill="#64748b" stroke="#334155" stroke-width="2" />
+      <circle cx="95" cy="-2" r="5" fill="#e2e8f0" />
+
+      <!-- Checklist Items with Bold Red X -->
+      <!-- Item 1: Sanctions -->
+      <g transform="translate(20, 45)">
+        <text x="0" y="0" font-size="22" font-weight="900" fill="#dc2626">✕</text>
+        <text x="24" y="-2" font-size="16" font-weight="800" fill="#0f172a" letter-spacing="0.5">SANCTIONS</text>
+      </g>
+      <!-- Item 2: Origin -->
+      <g transform="translate(20, 85)">
+        <text x="0" y="0" font-size="22" font-weight="900" fill="#dc2626">✕</text>
+        <text x="24" y="-2" font-size="16" font-weight="800" fill="#0f172a" letter-spacing="0.5">ORIGIN</text>
+      </g>
+      <!-- Item 3: Vessel Risk -->
+      <g transform="translate(20, 125)">
+        <text x="0" y="0" font-size="22" font-weight="900" fill="#dc2626">✕</text>
+        <text x="24" y="-2" font-size="16" font-weight="800" fill="#0f172a" letter-spacing="0.5">VESSEL RISK</text>
+      </g>
+      <!-- Item 4: Discrepancies -->
+      <g transform="translate(20, 165)">
+        <text x="0" y="0" font-size="22" font-weight="900" fill="#dc2626">✕</text>
+        <text x="24" y="-2" font-size="16" font-weight="800" fill="#0f172a" letter-spacing="0.5">DISCREPANCIES</text>
+      </g>
+      <!-- Item 5: Bank Quality -->
+      <g transform="translate(20, 205)">
+        <text x="0" y="0" font-size="22" font-weight="900" fill="#dc2626">✕</text>
+        <text x="24" y="-2" font-size="16" font-weight="800" fill="#0f172a" letter-spacing="0.5">BANK QUALITY</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Red-and-White Striped Barrier Arm & Octagonal STOP Sign -->
+  <g id="security-barrier" transform="translate(390, 730)" filter="url(#gateShadow)">
+    <!-- Barrier Support Post -->
+    <rect x="330" y="40" width="45" height="150" rx="4" fill="#1e293b" />
+    <circle cx="352" cy="65" r="16" fill="#64748b" stroke="#0f172a" stroke-width="4" />
+
+    <!-- Striped Gate Bar -->
+    <g transform="translate(-20, 45)">
+      <!-- Main Boom Pole -->
+      <rect x="0" y="0" width="360" height="38" rx="4" fill="#ffffff" stroke="#991b1b" stroke-width="4" />
+      <!-- Red Stripes -->
+      <polygon points="10,0 40,0 20,38 -10,38" fill="#dc2626" />
+      <polygon points="60,0 90,0 70,38 40,38" fill="#dc2626" />
+      <polygon points="110,0 140,0 120,38 90,38" fill="#dc2626" />
+      <polygon points="160,0 190,0 170,38 140,38" fill="#dc2626" />
+      <polygon points="210,0 240,0 220,38 190,38" fill="#dc2626" />
+      <polygon points="260,0 290,0 270,38 240,38" fill="#dc2626" />
+      <polygon points="310,0 340,0 320,38 290,38" fill="#dc2626" />
+    </g>
+
+    <!-- Octagonal Red STOP Sign -->
+    <g transform="translate(290, 45) scale(0.9)">
+      <polygon points="35,0 85,0 120,35 120,85 85,120 35,120 0,85 0,35" fill="#dc2626" stroke="#ffffff" stroke-width="6" />
+      <polygon points="37,4 83,4 116,37 116,83 83,116 37,116 4,83 4,37" fill="none" stroke="#ffffff" stroke-width="2" />
+      <text x="60" y="70" font-size="30" font-weight="950" fill="#ffffff" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" letter-spacing="1">STOP</text>
+    </g>
+  </g>
+
+  <!-- Trade Heaven Watermark / Guarantee Badge at Bottom -->
+  <g id="footer-branding" transform="translate(500, 1100)" text-anchor="middle">
+    <rect x="-240" y="-30" width="480" height="42" rx="21" fill="#0f172a" />
+    <text x="0" y="-3" font-size="16" font-weight="800" fill="#38bdf8" letter-spacing="1">
+      TRADE HEAVEN • EXECUTION &amp; FINANCING RISK MITIGATION
+    </text>
+  </g>
+</svg>

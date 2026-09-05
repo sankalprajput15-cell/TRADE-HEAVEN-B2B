@@ -1,9 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { AuthUser } from '../../types';
-import { Calendar, User, Tag, ArrowRight, PlayCircle, Share2, TrendingUp, X, ExternalLink, Linkedin, Twitter, MessageCircle, Copy, Check } from 'lucide-react';
+import { 
+  Calendar, User, Tag, ArrowRight, PlayCircle, Share2, TrendingUp, X, 
+  ExternalLink, Linkedin, Twitter, MessageCircle, Copy, Check, ShieldAlert, 
+  FileCheck, Anchor, AlertTriangle, CheckCircle2, Building2, Sparkles, Youtube, Globe
+} from 'lucide-react';
 import blogImage from '../../assets/images/regenerated_image_1787916463995.jpg';
 import buyerNoMoneyImage from '../../assets/images/regenerated_image_1787986452542.jpg';
 import brokersImage from '../../assets/images/regenerated_image_1788177506942.jpg';
+
+export const DLC_HASHTAGS = [
+  '#TradeHeaven',
+  '#TradeFinance',
+  '#ExportImport',
+  '#LetterOfCredit',
+  '#MT700',
+  '#GlobalTrade',
+  '#SupplyChain',
+  '#Logistics',
+  '#ShippingRisk',
+  '#B2BTrade',
+  '#InternationalTrade'
+];
+
+export const DLC_SEO_TAGS = [
+  'Trade Heaven',
+  'MT700',
+  'Trade Finance',
+  'Letter of Credit',
+  'DLC bankable',
+  'cargo financing',
+  'bulk export transactions',
+  'B2B supply chain',
+  'vessel risk',
+  'trade compliance',
+  'sanctions screening',
+  'export import business',
+  'cross border trade',
+  'banking standards trade',
+  'trade risk mitigation',
+  'shipping documentation discrepancies',
+  'cargo financibility',
+  'trade execution platform'
+];
 
 interface Comment {
   id: string;
@@ -20,9 +59,25 @@ interface InsightsBlogProps {
 }
 
 export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentUser, onOpenAuthModal }) => {
-const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
 
   const [comments, setComments] = useState<Record<string, Comment[]>>({
+    'dlc-financeable-article': [
+      {
+        id: 'dlc-c1',
+        userId: 'u1',
+        userName: 'David Sterling (Head of Trade Finance & Credit)',
+        text: 'This hits the nail on the head. We see dozens of MT700 LCs issued by tier-1 banks that sit idle for weeks because maritime compliance red-flags the carrying vessel for dark-fleet transshipment history. An LC is a payment mechanism, not an operational clearance guarantee.',
+        timestamp: '1 hour ago',
+      },
+      {
+        id: 'dlc-c2',
+        userId: 'u2',
+        userName: 'Amina Al-Mansoor (Global Petrochemical Exporter)',
+        text: 'A $4.8M urea transaction of ours was almost frozen last quarter because the port of loading sequence on the bill of lading conflicted with MT700 field 44E. Synchronizing maritime documentation with bank credit clauses before ship nomination is absolutely essential.',
+        timestamp: '4 hours ago',
+      }
+    ],
     'brokers-article': [
       {
         id: '1',
@@ -42,6 +97,7 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   });
   const [newComment, setNewComment] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedTags, setCopiedTags] = useState(false);
 
   const handlePostComment = () => {
     if (!currentUser || !newComment.trim() || !selectedArticleId) return;
@@ -62,7 +118,60 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   };
 
   useEffect(() => {
-    document.title = "Insights & Industry News | Trade Heaven";
+    document.title = "Trade Finance, MT700 & Cargo Risk Insights | Trade Heaven";
+
+    // Inject Rich Structured Data (Article + VideoObject + Breadcrumb) for SEO dominance
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Is Your Cargo Truly Financeable? Why a Bankable MT700 DLC Doesn’t Guarantee Trade Execution",
+      "description": "In global B2B supply chains and bulk export transactions, cross-border deals often face the Three-Way Structural Collision between banking compliance, vessel risk, and documentation discrepancies. Learn how Trade Heaven bridges the gap.",
+      "image": [
+        "https://tradeheaven.net/tradeheavendlc.svg",
+        "https://tradeheaven.net/tradeheavendlc.jpeg"
+      ],
+      "datePublished": "2026-09-05T00:00:00+00:00",
+      "dateModified": "2026-09-05T00:00:00+00:00",
+      "author": {
+        "@type": "Organization",
+        "name": "Trade Heaven Editorial & Trade Finance Desk",
+        "url": "https://tradeheaven.net"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Trade Heaven",
+        "url": "https://tradeheaven.net",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://tradeheaven.net/logo.png"
+        }
+      },
+      "mainEntityOfPage": "https://tradeheaven.net/?view=INSIGHTS",
+      "keywords": DLC_SEO_TAGS.join(", "),
+      "video": {
+        "@type": "VideoObject",
+        "name": "Is Your Cargo Truly Financeable? MT700 DLC vs Physical Trade Reality",
+        "description": "Discover why bank-approved MT700 letters of credit still collapse due to vessel risk, sanctions screening, and documentation discrepancies.",
+        "thumbnailUrl": "https://tradeheaven.net/tradeheavendlc.svg",
+        "uploadDate": "2026-09-05T00:00:00+00:00",
+        "embedUrl": "https://www.youtube.com/embed/3qdz7biRT8A",
+        "contentUrl": "https://youtube.com/shorts/3qdz7biRT8A"
+      }
+    };
+
+    let script = document.getElementById('tradeheaven-insights-jsonld') as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'tradeheaven-insights-jsonld';
+      script.type = 'application/ld+json';
+      document.head.appendChild(script);
+    }
+    script.text = JSON.stringify(jsonLd);
+
+    return () => {
+      const el = document.getElementById('tradeheaven-insights-jsonld');
+      if (el) el.remove();
+    };
   }, []);
 
   return (
@@ -83,7 +192,162 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
       {/* Main Blog Feed */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
-        
+        {/* Article: Is Your Cargo Truly Financeable? */}
+        <article className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12">
+          {/* Article Header / Meta */}
+          <div className="p-8 pb-6 border-b border-slate-100">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-4">
+              <span className="flex items-center gap-1.5 font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                <TrendingUp className="w-4 h-4" /> Trade Finance
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" /> September 5, 2026
+              </span>
+              <span className="flex items-center gap-1.5">
+                <User className="w-4 h-4" /> Trade Heaven Editorial
+              </span>
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 font-display leading-tight mb-4">
+              Is Your Cargo Truly Financeable?
+            </h2>
+            <p className="text-xl text-slate-600 leading-relaxed font-medium">
+              Having a technically valid MT700 (Letter of Credit) or standard credit clauses does not guarantee operational reality or bank approval.
+            </p>
+          </div>
+
+          {/* Article Media (Video + Image) */}
+          <div className="bg-slate-100 p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-b border-slate-100">
+            {/* YouTube Video Player */}
+            <div className="rounded-xl overflow-hidden shadow-md bg-slate-900 relative aspect-[9/16] md:aspect-auto md:h-[400px] flex items-center justify-center group w-full">
+              <iframe 
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/3qdz7biRT8A?rel=0" 
+                title="Is your cargo truly financeable?" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            </div>
+
+            {/* Image Placeholder */}
+            <div className="rounded-xl overflow-hidden shadow-md bg-white border border-slate-200">
+              <img 
+                src="/tradeheavendlc.jpeg" 
+                onError={(e) => {
+                  e.currentTarget.src = '/tradeheavendlc.svg';
+                }}
+                alt="Is your cargo truly financeable?" 
+                className="w-full h-auto object-cover md:h-[400px]"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+
+          {/* Article Body */}
+          <div className="p-8 prose prose-lg prose-slate max-w-none">
+            <p className="lead text-slate-700">
+              In global B2B supply chains and bulk export transactions, cross-border deals often face the "Three-Way Structural Collision." Banks reject or freeze financing facilities due to hidden operational bottlenecks, including:
+            </p>
+
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li><strong>Sanctions &amp; Compliance:</strong> Regulatory roadblocks that stall transactions.</li>
+              <li><strong>Vessel Risk:</strong> Maritime screening, carrier issues, and operational delays.</li>
+              <li><strong>Documentation Discrepancies:</strong> Mismatches between commercial terms and physical shipping realities.</li>
+            </ul>
+
+            <div className="bg-indigo-50 border-l-4 border-indigo-600 p-6 rounded-r-xl my-8">
+              <p className="text-lg italic text-slate-800 font-medium m-0">
+                Trade Heaven bridges the gap between bank standards and physical trade execution.
+              </p>
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">What We Do:</h3>
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li><strong>Direct access to pre-vetted global buyers:</strong> Eliminate endless broker chains and connect directly with authentic principals.</li>
+              <li><strong>End-to-end synchronization:</strong> Harmonize commercial contracts, credit clauses, and shipping documentation before vessel nomination.</li>
+              <li><strong>Risk mitigation:</strong> Proactive compliance and vessel screening to ensure cargo is financeable and facilities remain active.</li>
+              <li><strong>Expert support:</strong> Navigate complex banking regulations and maritime logistics smoothly.</li>
+            </ul>
+
+            <p className="text-slate-800 font-bold mt-8">
+              Don't let vessel risk or compliance mismatches derail your export deals. Connect with <strong>Trade Heaven</strong> to secure execution and take your business online.
+            </p>
+
+            {/* Read More Button */}
+            <div className="mt-8">
+              <button 
+                onClick={() => setSelectedArticleId('dlc-financeable-article')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
+              >
+                Read Full Article <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Tags */}
+            <div className="mt-10 pt-8 border-t border-slate-100 flex flex-wrap gap-2">
+              {['TradeHeaven', 'TradeFinance', 'ExportImport', 'LetterOfCredit', 'MT700', 'GlobalTrade', 'SupplyChain', 'Logistics', 'ShippingRisk', 'B2BTrade', 'InternationalTrade'].map(tag => (
+                <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors cursor-pointer">
+                  <Tag className="w-3 h-3" /> {tag}
+                </span>
+              ))}
+              {['DLC bankable', 'cargo financing', 'bulk export', 'vessel risk', 'trade compliance', 'banking standards', 'shipping discrepancies'].map(tag => (
+                <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors cursor-pointer">
+                  <Tag className="w-3 h-3" /> {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Article Footer */}
+          <div className="bg-slate-50 p-6 border-t border-slate-100 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mr-1 hidden sm:flex">
+                <Share2 className="w-4 h-4" /> Share:
+              </span>
+              <button 
+                onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-[#0A66C2] hover:text-white transition-colors cursor-pointer shadow-sm"
+                title="Share on LinkedIn"
+              >
+                <Linkedin className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent('Is your cargo truly financeable? Check out this article on Trade Heaven!')}`, '_blank')}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-[#1DA1F2] hover:text-white transition-colors cursor-pointer shadow-sm"
+                title="Share on Twitter"
+              >
+                <Twitter className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Is your cargo truly financeable? Check out this article on Trade Heaven! ' + window.location.href)}`, '_blank')}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-[#25D366] hover:text-white transition-colors cursor-pointer shadow-sm"
+                title="Share on WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            {onNavigate && (
+              <button 
+                onClick={() => onNavigate('PRODUCT_DIRECTORY')}
+                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-bold text-sm transition-colors"
+              >
+                Explore Marketplace <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </article>
+
         {/* Article 3 (New: Brokers) */}
         <article className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12">
           {/* Article Header / Meta */}
@@ -533,66 +797,134 @@ const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
             </div>
 
             <div className="overflow-y-auto p-8 sm:p-12">
-              <div className="mb-8">
-                <span className="inline-flex items-center gap-1.5 font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm mb-4">
-                  <TrendingUp className="w-4 h-4" /> Market Efficiency
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-display leading-tight mb-6">
-                  Why Too Many Intermediaries Kill Commodity Deals (And How Trade Heaven Solves It)
-                </h2>
-                <div className="flex items-center gap-4 text-sm text-slate-500 pb-8 border-b border-slate-100">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4" /> August 31, 2026
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <User className="w-4 h-4" /> Trade Heaven Editorial
-                  </span>
-                </div>
-              </div>
+              {selectedArticleId === 'dlc-financeable-article' ? (
+                <>
+                  <div className="mb-8">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm mb-4">
+                      <TrendingUp className="w-4 h-4" /> Trade Finance
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-display leading-tight mb-6">
+                      Is Your Cargo Truly Financeable?
+                    </h2>
+                    <div className="flex items-center gap-4 text-sm text-slate-500 pb-8 border-b border-slate-100">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" /> September 5, 2026
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-4 h-4" /> Trade Heaven Editorial
+                      </span>
+                    </div>
+                  </div>
 
-              <div className="prose prose-lg prose-slate max-w-none">
-                <p className="lead text-slate-700 text-xl font-medium mb-8">
-                  Physical fuel and energy trading does not become safer simply because fifteen intermediaries are copied into an email chain. In high-stakes commodity markets, the exact opposite happens.
-                </p>
-                
-                <img 
-                  src={brokersImage}
-                  alt="Brokers and Intermediaries" 
-                  className="w-full h-auto object-cover rounded-2xl mb-8"
-                  referrerPolicy="no-referrer"
-                />
+                  <div className="prose prose-lg prose-slate max-w-none">
+                    <p className="lead text-slate-700 text-xl font-medium mb-8">
+                      Having a technically valid MT700 (Letter of Credit) or standard credit clauses does not guarantee operational reality or bank approval.
+                    </p>
 
-                <p className="text-slate-600">
-                  Every extra broker layer introduces friction: pricing escalates, commercial terms get distorted, critical timelines slip, and direct buyer-seller clarity vanishes. When everyone claims mandate but no one has allocation, viable deals fall apart.
-                </p>
+                    <img 
+                      src="/tradeheavendlc.jpeg" 
+                      onError={(e) => {
+                        e.currentTarget.src = '/tradeheavendlc.svg';
+                      }}
+                      alt="Is your cargo truly financeable?" 
+                      className="w-full h-auto object-cover rounded-2xl mb-8"
+                      referrerPolicy="no-referrer"
+                    />
 
-                <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">The Breakdown of the Long Broker Chain</h3>
-                <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
-                    <li><strong>Distorted Pricing & Procedures:</strong> Details shift as information passes through unverified parties.</li>
-                    <li><strong>Lack of Direct Transparency:</strong> Locating the actual principal buyer or seller requires endless back-and-forth rather than direct due diligence.</li>
-                    <li><strong>Deal Fatigue:</strong> Bureaucratic friction delays allocation slots, leading to dropped contracts and missed shipping windows.</li>
-                </ul>
+                    <p className="text-slate-600">
+                      In global B2B supply chains and bulk export transactions, cross-border deals often face the "Three-Way Structural Collision." Banks reject or freeze financing facilities due to hidden operational bottlenecks, including:
+                    </p>
 
-                <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">The Trade Heaven Advantage: Direct, Transparent Sourcing</h3>
-                <p className="text-slate-600">
-                  Intermediaries should create value by facilitating swift execution—not by becoming the obstacle. At <strong>Trade Heaven</strong>, we streamline global B2B commodity trading by connecting verified buyers and suppliers directly.
-                </p>
-                <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
-                    <li><strong>Direct Counterparty Access:</strong> Bypass unnecessary intermediary chains and negotiate straight with authorized representatives.</li>
-                    <li><strong>Verified Trading Network:</strong> Ensure counterparty credibility before initiating contracts.</li>
-                    <li><strong>Efficient Deal Execution:</strong> Keep negotiations lean, fast, and commercially viable.</li>
-                </ul>
+                    <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">The Three-Way Structural Collision</h3>
+                    <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+                      <li><strong>Sanctions &amp; Compliance:</strong> Regulatory roadblocks that stall transactions. Strict scrutiny on origin of goods, transshipment hubs, and end-user verification.</li>
+                      <li><strong>Vessel Risk:</strong> Maritime screening, carrier issues, and operational delays. Carrier creditworthiness, flag-state compliance, dark fleet AIS spoofing checks, and port-delay demurrage.</li>
+                      <li><strong>Documentation Discrepancies:</strong> Mismatches between commercial terms and physical shipping realities. Discrepancies between sales contracts, MT700 clauses, and physical bills of lading.</li>
+                    </ul>
 
-                <div className="bg-indigo-50 border-l-4 border-indigo-600 p-6 rounded-r-xl my-8">
-                  <p className="text-lg italic text-slate-800 font-medium m-0">
-                    A professional supply chain should always be direct enough to identify the buyer and seller immediately.
-                  </p>
-                </div>
+                    <div className="bg-indigo-50 border-l-4 border-indigo-600 p-6 rounded-r-xl my-8">
+                      <p className="text-lg italic text-slate-800 font-medium m-0">
+                        Trade Heaven bridges the gap between bank standards and physical trade execution.
+                      </p>
+                    </div>
 
-                <p className="text-slate-800 font-bold mt-8">
-                  Ready to eliminate trading bottlenecks and scale your global sourcing? Connect with <strong>Trade Heaven</strong> today to streamline your commodity deals.
-                </p>
-              </div>
+                    <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">What We Do:</h3>
+                    <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+                      <li><strong>Direct access to pre-vetted global buyers:</strong> Direct counterparty communication without endless unverified broker chains.</li>
+                      <li><strong>End-to-end synchronization:</strong> Harmonize commercial contracts, credit clauses, and shipping documentation before vessel nomination.</li>
+                      <li><strong>Risk mitigation:</strong> Proactive compliance and vessel screening to ensure cargo is financeable and facilities remain active.</li>
+                      <li><strong>Expert support:</strong> Navigate complex banking regulations and maritime logistics smoothly.</li>
+                    </ul>
+
+                    <p className="text-slate-800 font-bold mt-8">
+                      Don't let vessel risk or compliance mismatches derail your export deals. Connect with <strong>Trade Heaven</strong> to secure execution and take your business online.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mb-8">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm mb-4">
+                      <TrendingUp className="w-4 h-4" /> Market Efficiency
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-display leading-tight mb-6">
+                      Why Too Many Intermediaries Kill Commodity Deals (And How Trade Heaven Solves It)
+                    </h2>
+                    <div className="flex items-center gap-4 text-sm text-slate-500 pb-8 border-b border-slate-100">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" /> August 31, 2026
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-4 h-4" /> Trade Heaven Editorial
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="prose prose-lg prose-slate max-w-none">
+                    <p className="lead text-slate-700 text-xl font-medium mb-8">
+                      Physical fuel and energy trading does not become safer simply because fifteen intermediaries are copied into an email chain. In high-stakes commodity markets, the exact opposite happens.
+                    </p>
+                    
+                    <img 
+                      src={brokersImage}
+                      alt="Brokers and Intermediaries" 
+                      className="w-full h-auto object-cover rounded-2xl mb-8"
+                      referrerPolicy="no-referrer"
+                    />
+
+                    <p className="text-slate-600">
+                      Every extra broker layer introduces friction: pricing escalates, commercial terms get distorted, critical timelines slip, and direct buyer-seller clarity vanishes. When everyone claims mandate but no one has allocation, viable deals fall apart.
+                    </p>
+
+                    <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">The Breakdown of the Long Broker Chain</h3>
+                    <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+                        <li><strong>Distorted Pricing &amp; Procedures:</strong> Details shift as information passes through unverified parties.</li>
+                        <li><strong>Lack of Direct Transparency:</strong> Locating the actual principal buyer or seller requires endless back-and-forth rather than direct due diligence.</li>
+                        <li><strong>Deal Fatigue:</strong> Bureaucratic friction delays allocation slots, leading to dropped contracts and missed shipping windows.</li>
+                    </ul>
+
+                    <h3 className="text-xl font-bold text-slate-900 mt-8 mb-4">The Trade Heaven Advantage: Direct, Transparent Sourcing</h3>
+                    <p className="text-slate-600">
+                      Intermediaries should create value by facilitating swift execution—not by becoming the obstacle. At <strong>Trade Heaven</strong>, we streamline global B2B commodity trading by connecting verified buyers and suppliers directly.
+                    </p>
+                    <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+                        <li><strong>Direct Counterparty Access:</strong> Bypass unnecessary intermediary chains and negotiate straight with authorized representatives.</li>
+                        <li><strong>Verified Trading Network:</strong> Ensure counterparty credibility before initiating contracts.</li>
+                        <li><strong>Efficient Deal Execution:</strong> Keep negotiations lean, fast, and commercially viable.</li>
+                    </ul>
+
+                    <div className="bg-indigo-50 border-l-4 border-indigo-600 p-6 rounded-r-xl my-8">
+                      <p className="text-lg italic text-slate-800 font-medium m-0">
+                        A professional supply chain should always be direct enough to identify the buyer and seller immediately.
+                      </p>
+                    </div>
+
+                    <p className="text-slate-800 font-bold mt-8">
+                      Ready to eliminate trading bottlenecks and scale your global sourcing? Connect with <strong>Trade Heaven</strong> today to streamline your commodity deals.
+                    </p>
+                  </div>
+                </>
+              )}
               
               {/* Related Articles Section */}
               <div className="mt-12 pt-8 border-t border-slate-200">

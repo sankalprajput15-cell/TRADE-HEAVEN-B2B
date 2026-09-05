@@ -1,6 +1,6 @@
 import { LanguageRegionSelector } from './LanguageRegionSelector';
 import React, { useState, useEffect } from 'react';
-import { Currency, UserRole, ActiveView, AuthUser } from '../../types';
+import { Currency, UserRole, ActiveView, AuthUser, Product } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { GlobalSearch } from '../common/GlobalSearch';
@@ -51,7 +51,7 @@ import {
 interface Props {
   activeView: ActiveView;
   setActiveView?: (view: ActiveView) => void;
-  onNavigate?: (view: ActiveView) => void;
+  onNavigate?: (view: ActiveView | string, options?: any) => void;
   selectedCurrency: Currency;
   setSelectedCurrency?: (curr: Currency) => void;
   onCurrencyChange?: (curr: Currency) => void;
@@ -67,6 +67,10 @@ interface Props {
   onOpenContactModal?: () => void;
   onLogout?: () => void;
   unreadMessagesCount?: number;
+  products?: Product[];
+  onSelectProduct?: (product: Product) => void;
+  onNavigateToCategory?: (category: string, subcategory?: string) => void;
+  onNavigateToSearch?: (query: string) => void;
 }
 
 export const Header: React.FC<Props> = ({
@@ -87,7 +91,11 @@ export const Header: React.FC<Props> = ({
   onOpenOnboardModal,
   onOpenContactModal,
   onLogout = () => {},
-  unreadMessagesCount = 2
+  unreadMessagesCount = 2,
+  products,
+  onSelectProduct,
+  onNavigateToCategory,
+  onNavigateToSearch
 }) => {
   const { setCurrentUser, isUserAuthorized } = useSiteContent();
   const { languageCode } = useLanguage();
@@ -160,13 +168,13 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const navigate = (view: ActiveView) => {
-    if (onNavigate) onNavigate(view);
-    else if (setActiveView) setActiveView(view);
+  const navigate = (view: ActiveView | string, options?: any) => {
+    if (onNavigate) onNavigate(view, options);
+    else if (setActiveView) setActiveView(view as ActiveView);
   };
 
-  const handleNavClick = (view: ActiveView) => {
-    navigate(view);
+  const handleNavClick = (view: ActiveView | string, options?: any) => {
+    navigate(view, options);
     setMobileMenuOpen(false);
     setServicesMenuOpen(false);
     setAdminMenuOpen(false);
@@ -761,7 +769,14 @@ export const Header: React.FC<Props> = ({
 
           {/* Right: Key Direct Action Cluster */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <GlobalSearch onNavigate={handleNavClick} />
+            <GlobalSearch 
+              onNavigate={handleNavClick} 
+              products={products}
+              selectedCurrency={selectedCurrency}
+              onSelectProduct={onSelectProduct}
+              onNavigateToCategory={onNavigateToCategory}
+              onNavigateToSearch={onNavigateToSearch}
+            />
             <NotificationBell onNavigate={handleNavClick} />
             {/* Post RFQ Button */}
             <button
