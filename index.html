@@ -11,6 +11,51 @@
     <link rel="preload" as="image" href="/logo.png" type="image/png" fetchpriority="high" />
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80" media="(max-width: 768px)" imagesrcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80 600w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80 800w" imagesizes="100vw" fetchpriority="high" />
     <link rel="preload" as="image" href="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80" media="(min-width: 769px)" imagesrcset="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80 1200w, https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80 1600w" imagesizes="100vw" fetchpriority="high" />
+    <!-- Safe window.parent.postMessage & environment resilience shim -->
+    <script>
+      (function() {
+        try {
+          if (typeof window !== 'undefined') {
+            // Ensure window.postMessage is always a callable function
+            if (typeof window.postMessage !== 'function') {
+              window.postMessage = function() {};
+            }
+            // Ensure window.parent and window.parent.postMessage never throw "is not a function"
+            try {
+              if (window.parent && typeof window.parent.postMessage !== 'function') {
+                window.parent.postMessage = function() {};
+              }
+            } catch (err) {}
+
+            // Suppress benign iframe/parent postMessage communication errors
+            window.addEventListener('error', function(event) {
+              var msg = event && (event.message || (event.error && event.error.message));
+              if (typeof msg === 'string' && msg.indexOf('postMessage') !== -1) {
+                if (typeof event.preventDefault === 'function') {
+                  event.preventDefault();
+                }
+                if (typeof event.stopImmediatePropagation === 'function') {
+                  event.stopImmediatePropagation();
+                }
+                return true;
+              }
+            }, true);
+
+            window.addEventListener('unhandledrejection', function(event) {
+              var reason = event && (event.reason ? (event.reason.message || String(event.reason)) : '');
+              if (typeof reason === 'string' && reason.indexOf('postMessage') !== -1) {
+                if (typeof event.preventDefault === 'function') {
+                  event.preventDefault();
+                }
+                if (typeof event.stopImmediatePropagation === 'function') {
+                  event.stopImmediatePropagation();
+                }
+              }
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
     <!-- Failsafe fetch interceptor shim to prevent browser environment getter/setter conflicts on window.fetch -->
     <script>
       (function() {
@@ -39,44 +84,47 @@
     </script>
     <!-- Safe Client-Side Session & Language Recovery Support -->
     <script>
-      try {
-        // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
-        const keys = Object.keys(localStorage);
-        for (const key of keys) {
-          if (key.includes('corrupted') || key.includes('stale_temp_')) {
-            localStorage.removeItem(key);
-          }
-        }
-
-        // Proactive Google Translate cookie cleanup for English:
-        // If preferred language is English or unset, purge any residual foreign googtrans cookies
-        // across all domain levels so the page never gets stuck in Chinese or another language.
-        var userLang = localStorage.getItem('tradeheaven_language');
-        if (!userLang || userLang.toLowerCase() === 'en') {
-          var host = window.location.hostname;
-          var parts = host.split('.');
-          var domains = ['', host, '.' + host];
-          for (var i = 0; i < parts.length - 1; i++) {
-            var parent = parts.slice(i).join('.');
-            domains.push(parent);
-            domains.push('.' + parent);
-          }
-          var paths = ['/', '/auto', window.location.pathname];
-          var cookieNames = ['googtrans', 'googtrans_prev', 'googtrans_saved'];
-          for (var c = 0; c < cookieNames.length; c++) {
-            for (var p = 0; p < paths.length; p++) {
-              for (var d = 0; d < domains.length; d++) {
-                var dAttr = domains[d] ? '; domain=' + domains[d] : '';
-                document.cookie = cookieNames[c] + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=' + paths[p] + dAttr;
-                document.cookie = cookieNames[c] + '=; Max-Age=0; path=' + paths[p] + dAttr;
-              }
+      (function() {
+        try {
+          // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
+          var keys = Object.keys(localStorage);
+          for (var k = 0; k < keys.length; k++) {
+            var key = keys[k];
+            if (key.indexOf('corrupted') !== -1 || key.indexOf('stale_temp_') !== -1) {
+              localStorage.removeItem(key);
             }
           }
-          // Set /en/en and /auto/en explicitly so Google Translate knows not to translate
-          document.cookie = 'googtrans=/en/en; path=/';
-          document.cookie = 'googtrans=/auto/en; path=/';
-        }
-      } catch(e) {}
+
+          // Proactive Google Translate cookie cleanup for English:
+          // If preferred language is English or unset, purge any residual foreign googtrans cookies
+          // across all domain levels so the page never gets stuck in Chinese or another language.
+          var userLang = localStorage.getItem('tradeheaven_language');
+          if (!userLang || userLang.toLowerCase() === 'en') {
+            var host = window.location.hostname;
+            var parts = host.split('.');
+            var domains = ['', host, '.' + host];
+            for (var i = 0; i < parts.length - 1; i++) {
+              var parentDomain = parts.slice(i).join('.');
+              domains.push(parentDomain);
+              domains.push('.' + parentDomain);
+            }
+            var paths = ['/', '/auto', window.location.pathname];
+            var cookieNames = ['googtrans', 'googtrans_prev', 'googtrans_saved'];
+            for (var c = 0; c < cookieNames.length; c++) {
+              for (var p = 0; p < paths.length; p++) {
+                for (var d = 0; d < domains.length; d++) {
+                  var dAttr = domains[d] ? '; domain=' + domains[d] : '';
+                  document.cookie = cookieNames[c] + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=' + paths[p] + dAttr;
+                  document.cookie = cookieNames[c] + '=; Max-Age=0; path=' + paths[p] + dAttr;
+                }
+              }
+            }
+            // Set /en/en and /auto/en explicitly so Google Translate knows not to translate
+            document.cookie = 'googtrans=/en/en; path=/';
+            document.cookie = 'googtrans=/auto/en; path=/';
+          }
+        } catch(e) {}
+      })();
     </script>
     <!-- Favicon & Brand Icons (Google Search & Multi-Device Compliant) -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

@@ -242,7 +242,7 @@ export const INITIAL_SAAS_PLANS: SaaSPlan[] = [
   // 1. SUPPLIER & EXPORTER MEMBERSHIP PLANS
   {
     id: 'plan-basic-business',
-    name: 'Basic Business Plan',
+    name: 'Basic Business Plan (Basic Tier)',
     slug: 'basic-business-plan',
     category: 'SUPPLIER_MEMBERSHIP',
     targetAudience: 'Emerging exporters and suppliers entering global trade',
@@ -294,13 +294,13 @@ export const INITIAL_SAAS_PLANS: SaaSPlan[] = [
   },
   {
     id: 'plan-premium-partner',
-    name: 'Premium Partner Plan',
-    slug: 'premium-partner-plan',
+    name: 'Establishment Plan (Premium Partner)',
+    slug: 'establishment-plan',
     category: 'SUPPLIER_MEMBERSHIP',
     targetAudience: 'Growing enterprises & global brands',
-    description: 'Advanced trade support, buyer connections, and a strong online presence for scaling globally.',
+    description: 'Advanced trade support, pre-vetted buyer connections, and strong online verification for scaling globally.',
     status: 'ACTIVE',
-    tierBadge: 'PREMIUM PARTNER',
+    tierBadge: 'ESTABLISHMENT TIER',
     isPopular: false,
     displayOrder: 2,
     monthlyPriceUsd: 210,

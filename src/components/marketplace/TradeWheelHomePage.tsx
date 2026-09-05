@@ -1,5 +1,5 @@
 import React from 'react';
-import { Product, Currency, CompanyProfile, RfqRequirement, ActiveView } from '../../types';
+import { Product, Currency, CompanyProfile, RfqRequirement, ActiveView, AuthUser } from '../../types';
 import { CURRENCY_RATES, MOCK_COMPANIES, MOCK_RFQS } from '../../data/mockData';
 import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
@@ -32,6 +32,8 @@ import {
   Headphones
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
+import { DailyFreeLeadBanner } from './DailyFreeLeadBanner';
+import { claimDailyFreeLead } from '../../services/freeLeadService';
 
 interface Props {
   products: Product[];
@@ -48,6 +50,8 @@ interface Props {
   onNavigateToSuppliers?: (sectorName?: string) => void;
   onNavigateToRfqs?: (categoryName?: string) => void;
   isLoadingProducts?: boolean;
+  currentUser?: AuthUser | null;
+  onOpenRegisterFree?: () => void;
 }
 
 export const TradeWheelHomePage: React.FC<Props> = ({
@@ -64,7 +68,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   onNavigateToCategory,
   onNavigateToSuppliers,
   onNavigateToRfqs,
-  isLoadingProducts = false
+  isLoadingProducts = false,
+  currentUser = null,
+  onOpenRegisterFree
 }) => {
   const { t, tText } = useLanguage();
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
@@ -110,6 +116,35 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenStorefront={onOpenStorefront}
         onNavigate={onNavigate}
         onSelectRfq={onSelectRfq}
+      />
+
+      {/* HIGHLIGHTED 1 FREE BUY ORDER DAILY PROMOTION (Top of Homepage) */}
+      <DailyFreeLeadBanner
+        onUpgradeToPlans={() => onNavigate('PREMIUM_SERVICES')}
+        featuredRfq={activeRfqsPool[0] || null}
+        currentUser={currentUser}
+        onOpenRegisterFree={onOpenRegisterFree}
+        onClaimLead={(rfq) => {
+          if (!currentUser) {
+            if (onOpenRegisterFree) onOpenRegisterFree();
+            else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
+            return;
+          }
+          claimDailyFreeLead(rfq.id);
+          if (onSelectRfq) {
+            onSelectRfq(rfq);
+          } else {
+            onNavigate('BUY_LEADS');
+          }
+        }}
+        onSelectClaimedRfq={(rfqId) => {
+          const target = activeRfqsPool.find(r => r.id === rfqId);
+          if (target && onSelectRfq) {
+            onSelectRfq(target);
+          } else {
+            onNavigate('BUY_LEADS');
+          }
+        }}
       />
 
       {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}
@@ -279,6 +314,35 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Highlighted 1 Free Buy Order Daily Banner */}
+      <DailyFreeLeadBanner
+        onUpgradeToPlans={() => onNavigate('PREMIUM_SERVICES')}
+        featuredRfq={activeRfqsPool[0] || null}
+        currentUser={currentUser}
+        onOpenRegisterFree={onOpenRegisterFree}
+        onClaimLead={(rfq) => {
+          if (!currentUser) {
+            if (onOpenRegisterFree) onOpenRegisterFree();
+            else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
+            return;
+          }
+          claimDailyFreeLead(rfq.id);
+          if (onSelectRfq) {
+            onSelectRfq(rfq);
+          } else {
+            onNavigate('BUY_LEADS');
+          }
+        }}
+        onSelectClaimedRfq={(rfqId) => {
+          const target = activeRfqsPool.find(r => r.id === rfqId);
+          if (target && onSelectRfq) {
+            onSelectRfq(target);
+          } else {
+            onNavigate('BUY_LEADS');
+          }
+        }}
+      />
 
       {/* 5. LIVE BUY LEADS FEED TEASER */}
       <div id="recent-rfqs-section" className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">

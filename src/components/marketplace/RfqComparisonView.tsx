@@ -42,7 +42,135 @@ interface Props {
   onOpenNegotiation?: () => void;
   currentUser?: AuthUser | null;
   onOpenUpgradeModal?: () => void;
+  isLoading?: boolean;
 }
+
+export const RfqCardSkeleton: React.FC = () => {
+  return (
+    <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-xs space-y-3 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer pointer-events-none" />
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-4 w-20 bg-blue-100/70 rounded border border-blue-200/50 animate-pulse" />
+            <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="h-4.5 w-4/5 bg-slate-200 rounded-md animate-pulse mt-1" />
+        </div>
+        <div className="h-5 w-14 rounded-full bg-emerald-100/70 border border-emerald-200/60 animate-pulse shrink-0" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-slate-100">
+        <div className="space-y-1">
+          <div className="h-2.5 w-16 bg-slate-200 rounded animate-pulse" />
+          <div className="h-3.5 w-20 bg-slate-200 rounded animate-pulse" />
+        </div>
+        <div className="space-y-1">
+          <div className="h-2.5 w-16 bg-slate-200 rounded animate-pulse" />
+          <div className="h-3.5 w-24 bg-slate-200 rounded animate-pulse" />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100">
+        <div className="h-7 flex-1 rounded-lg bg-slate-100 animate-pulse" />
+        <div className="h-7 flex-1 rounded-lg bg-blue-100/80 animate-pulse" />
+      </div>
+    </div>
+  );
+};
+
+export const RfqDetailHeaderSkeleton: React.FC = () => {
+  return (
+    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer pointer-events-none" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="h-4 w-32 bg-blue-100/80 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-emerald-100/80 rounded-full animate-pulse" />
+            <div className="h-4 w-28 bg-slate-100 rounded-full animate-pulse" />
+          </div>
+          <div className="h-6 w-3/4 bg-slate-200 rounded-lg animate-pulse" />
+        </div>
+        <div className="h-8 w-36 bg-slate-100 rounded-xl border border-slate-200/80 animate-pulse shrink-0" />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 space-y-1.5">
+            <div className="h-2.5 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-slate-300/80 rounded animate-pulse" />
+            <div className="h-2.5 w-14 bg-slate-200 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+
+      <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-100 space-y-2">
+        <div className="h-3.5 w-32 bg-slate-300 rounded animate-pulse" />
+        <div className="h-3 w-full bg-slate-200 rounded animate-pulse" />
+        <div className="h-3 w-4/5 bg-slate-200 rounded animate-pulse" />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-28 rounded-xl bg-slate-100 animate-pulse" />
+          <div className="h-8 w-32 rounded-xl bg-slate-100 animate-pulse" />
+        </div>
+        <div className="h-8 w-44 rounded-xl bg-blue-200/80 animate-pulse" />
+      </div>
+    </div>
+  );
+};
+
+export const QuoteCardSkeleton: React.FC = () => {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4 relative overflow-hidden flex flex-col justify-between">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer pointer-events-none" />
+      <div className="space-y-3">
+        {/* Supplier Top Header */}
+        <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <div className="h-4 w-12 bg-amber-100 rounded border border-amber-200 animate-pulse" />
+              <div className="h-3 w-8 bg-slate-200 rounded animate-pulse" />
+            </div>
+            <div className="h-4.5 w-3/4 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="h-6 w-20 rounded-full bg-blue-50 border border-blue-200 animate-pulse shrink-0" />
+        </div>
+
+        {/* Pricing Box */}
+        <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="h-2.5 w-20 bg-slate-200 rounded animate-pulse" />
+            <div className="h-3 w-12 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="h-6 w-32 bg-slate-300 rounded animate-pulse" />
+          <div className="h-3 w-28 bg-emerald-100 rounded animate-pulse mt-1" />
+        </div>
+
+        {/* Specifications Grid */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="p-2.5 bg-slate-50/70 rounded-lg border border-slate-100 space-y-1">
+            <div className="h-2.5 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-3.5 w-20 bg-slate-300 rounded animate-pulse" />
+          </div>
+          <div className="p-2.5 bg-slate-50/70 rounded-lg border border-slate-100 space-y-1">
+            <div className="h-2.5 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-3.5 w-20 bg-slate-300 rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+        <div className="h-8.5 rounded-xl bg-slate-100 animate-pulse" />
+        <div className="h-8.5 rounded-xl bg-blue-200/80 animate-pulse" />
+      </div>
+    </div>
+  );
+};
 
 export const RfqComparisonView: React.FC<Props> = ({
   rfqs,
@@ -55,7 +183,8 @@ export const RfqComparisonView: React.FC<Props> = ({
   onOpenBuyerProfile,
   onOpenNegotiation,
   currentUser = null,
-  onOpenUpgradeModal
+  onOpenUpgradeModal,
+  isLoading = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -159,8 +288,40 @@ export const RfqComparisonView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Main Layout: RFQ Selector Left + Quotes Comparison Right or Empty State */}
-      {rfqs.length === 0 ? (
+      {/* Main Layout: RFQ Selector Left + Quotes Comparison Right or Loading Skeletons */}
+      {isLoading ? (
+        <div id="rfq-hub-loading-skeletons" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Panel Skeletons */}
+          <div className="lg:col-span-4 space-y-3">
+            <div className="h-9 w-full bg-slate-100 rounded-xl animate-pulse" />
+            <div className="flex items-center justify-between px-2">
+              <div className="h-3 w-36 bg-slate-200 rounded animate-pulse" />
+              <div className="h-3 w-20 bg-slate-200 rounded animate-pulse" />
+            </div>
+            <div className="space-y-2.5">
+              {[1, 2, 3, 4].map(i => (
+                <RfqCardSkeleton key={`rfq-card-skeleton-${i}`} />
+              ))}
+            </div>
+          </div>
+
+          {/* Right Panel Skeletons */}
+          <div className="lg:col-span-8 space-y-6">
+            <RfqDetailHeaderSkeleton />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-48 bg-slate-200 rounded animate-pulse" />
+                <div className="h-3 w-36 bg-slate-200 rounded animate-pulse" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map(i => (
+                  <QuoteCardSkeleton key={`quote-skeleton-${i}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : rfqs.length === 0 ? (
         <EmptyState
           type="rfqs"
           title="No Active Sourcing RFQs Found"
@@ -396,7 +557,7 @@ export const RfqComparisonView: React.FC<Props> = ({
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                     <FileText className="w-4 h-4 text-emerald-600" />
-                    <span>Received Factory Quotations ({quotes.length})</span>
+                    <span>Received Factory Quotations ({isLoadingQuotes ? '...' : quotes.length})</span>
                   </h3>
                   <span className="text-xs text-slate-500 font-medium">
                     Evaluated by Unit FOB/CIF Rate &amp; Lead Time
@@ -405,8 +566,10 @@ export const RfqComparisonView: React.FC<Props> = ({
 
                 {/* Quotes Cards Grid */}
                 {isLoadingQuotes ? (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-500">
-                    Loading factory quotations...
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1, 2].map(i => (
+                      <QuoteCardSkeleton key={`quote-loading-skeleton-${i}`} />
+                    ))}
                   </div>
                 ) : quotes.length === 0 ? (
                   <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-8 text-center space-y-3">

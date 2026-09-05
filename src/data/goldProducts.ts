@@ -14,7 +14,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70009 - $75020',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58007 - $65041',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70001 - $75035',
     unit: 'KG',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50007 - $58006',
     unit: 'KG',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58006 - $65031',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50007 - $58015',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50003 - $58021',
     unit: 'KG',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58006 - $65004',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70010 - $75048',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70000 - $75046',
     unit: 'KG',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58006 - $65003',
     unit: 'KG',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50002 - $58000',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58009 - $65015',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70002 - $75034',
     unit: 'KG',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70000 - $75044',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50003 - $58049',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50009 - $58029',
     unit: 'KG',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70006 - $75043',
     unit: 'KG',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58003 - $65000',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58008 - $65010',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58008 - $65007',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70005 - $75045',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58007 - $65030',
     unit: 'KG',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50006 - $58047',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50002 - $58033',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50005 - $58025',
     unit: 'KG',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50005 - $58012',
     unit: 'KG',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58000 - $65039',
     unit: 'KG',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70004 - $75012',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50005 - $58039',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58009 - $65009',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50009 - $58041',
     unit: 'KG',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58005 - $65016',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50002 - $58022',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70008 - $75047',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$58003 - $65031',
     unit: 'KG',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '96% - 98%' }, { name: 'Karat', value: '22K+' }, { name: 'Form', value: 'Dore Bars 1kg' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50003 - $58039',
     unit: 'KG',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$70008 - $75009',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.99%' }, { name: 'Certification', value: 'LBMA' }, { name: 'Form', value: '12.5 kg Bars' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50005 - $58013',
     unit: 'KG',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_GOLD_PRODUCTS: any[] = [
     priceRangeUsd: '$50008 - $58001',
     unit: 'KG',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1610375461246-83df859d849d?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '92% - 95%' }, { name: 'Form', value: 'Nuggets/Dust' }, { name: 'Origin', value: 'West Africa' } ]
   }
 ];

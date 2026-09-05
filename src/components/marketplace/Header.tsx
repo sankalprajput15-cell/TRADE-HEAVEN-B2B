@@ -45,7 +45,8 @@ import {
   PhoneCall,
   Mail,
   BadgeCheck,
-  Layers
+  Layers,
+  Zap
 } from 'lucide-react';
 
 interface Props {
@@ -112,6 +113,7 @@ export const Header: React.FC<Props> = ({
     trustSafety: { en: 'Trust & Safety', zh: '安全信保', es: 'Seguridad', ar: 'الأمان والثقة', de: 'Sicherheit', fr: 'Sécurité', pt: 'Segurança', ru: 'Безопасность', ja: '信頼と安全', hi: 'सुरक्षा और विश्वास', tr: 'Güvenlik', vi: 'An toàn & Tin cậy' },
     newsInsights: { en: 'News & Insights', zh: '行业资讯', es: 'Noticias', ar: 'الأخبار', de: 'Nachrichten', fr: 'Actualités', pt: 'Notícias', ru: 'Новости', ja: 'ニュース', hi: 'समाचार', tr: 'Haberler', vi: 'Tin tức' },
     premiumServices: { en: 'Premium Services', zh: '尊享服务', es: 'Servicios Premium', ar: 'خدمات متميزة', de: 'Premium-Dienste', fr: 'Services Premium', pt: 'Serviços Premium', ru: 'Премиум', ja: 'プレミアム', hi: 'प्रीमियम सेवाएं', tr: 'Premium Hizmetler', vi: 'Dịch vụ cao cấp' },
+    buyLeads: { en: 'Buy Leads', zh: '采购需求', es: 'Demandas de Compra', ar: 'طلبات الشراء', de: 'Kaufanfragen', fr: 'Demandes d\'achat', pt: 'Demandas de Compra', ru: 'Запросы покупателей', ja: '購買リード', hi: 'बाय लीड्स', tr: 'Alım Talepleri', vi: 'Yêu cầu mua hàng' },
     buyers: { en: 'Buyers', zh: '采购买家', es: 'Compradores', ar: 'المشترون', de: 'Käufer', fr: 'Acheteurs', pt: 'Compradores', ru: 'Покупатели', ja: 'バイヤー', hi: 'खरीदार', tr: 'Alıcılar', vi: 'Người mua' },
     suppliers: { en: 'Suppliers', zh: '认证供应商', es: 'Proveedores', ar: 'الموردون', de: 'Lieferanten', fr: 'Fournisseurs', pt: 'Fornecedores', ru: 'Поставщики', ja: 'サプライヤー', hi: 'आपूर्तिकर्ता', tr: 'Tedarikçiler', vi: 'Nhà cung cấp' },
     menu: { en: 'Menu', zh: '全站菜单', es: 'Menú', ar: 'القائمة', de: 'Menü', fr: 'Menu', pt: 'Menu', ru: 'Меню', ja: 'メニュー', hi: 'मेन्यू', tr: 'Menü', vi: 'Menu' },
@@ -233,6 +235,26 @@ export const Header: React.FC<Props> = ({
               <MessageCircle className="w-3 h-3 text-[#25D366] group-hover:text-white shrink-0" />
               <span>WhatsApp Desk</span>
             </a>
+
+            <span className="text-slate-700">|</span>
+
+            {/* 1 Free Buy Order Quick Pill */}
+            <button
+              id="top-bar-free-lead-pill"
+              onClick={() => {
+                if (!currentUser) {
+                  if (onOpenRegisterFree) onOpenRegisterFree();
+                  else handleNavClick('BUY_LEADS');
+                } else {
+                  handleNavClick('BUY_LEADS');
+                }
+              }}
+              aria-label="1 Free Buy Order"
+              className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 px-2.5 py-0.5 rounded-full text-[11px] font-black shadow-xs transition-all cursor-pointer active:scale-95 hover:shadow-md animate-scale-pulse hover:animate-none"
+            >
+              <Zap className="w-3 h-3 fill-slate-950 shrink-0" />
+              <span>1 Free Buy Order</span>
+            </button>
           </div>
 
           {/* Right: FX Selector + Language/Region + Authentication State */}
@@ -379,6 +401,19 @@ export const Header: React.FC<Props> = ({
             >
               <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>{getTxt('premiumServices')}</span>
+            </button>
+
+            <button
+              id="nav-link-buy-leads"
+              onClick={() => handleNavClick('BUY_LEADS')}
+              aria-label={getTxt('buyLeads')}
+              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                activeView === 'BUY_LEADS'
+                  ? 'bg-blue-50 text-blue-600 font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              {getTxt('buyLeads')}
             </button>
 
             <button
@@ -922,6 +957,17 @@ export const Header: React.FC<Props> = ({
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleNavClick('BUY_LEADS')}
+                aria-label={getTxt('buyLeads')}
+                className={`p-2.5 rounded-xl text-left text-xs font-bold cursor-pointer col-span-2 sm:col-span-1 ${
+                  activeView === 'BUY_LEADS'
+                    ? 'bg-blue-50 text-blue-600 font-extrabold'
+                    : 'bg-slate-50 text-slate-800'
+                }`}
+              >
+                {getTxt('buyLeads')}
+              </button>
               <button
                 onClick={() => handleNavClick('HOMEPAGE')}
                 aria-label="Home Marketplace"

@@ -526,20 +526,20 @@ export const PremiumServicesView: React.FC<Props> = ({
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="p-4 sm:p-6 text-sm font-black text-slate-900 w-1/5">Feature Capability</th>
-                  <th className="p-4 sm:p-6 text-sm font-black text-slate-500 w-1/5 text-center border-l border-slate-200">Standard Access (Free)</th>
-                  <th className="p-4 sm:p-6 text-sm font-black text-emerald-700 w-1/5 text-center border-l border-emerald-100 bg-emerald-50/50">Basic Business ($1100/yr)</th>
-                  <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/5 text-center border-l border-blue-100 bg-blue-50/50">Premium Partner ($2100/yr)</th>
-                  <th className="p-4 sm:p-6 text-sm font-black text-amber-700 w-1/5 text-center border-l border-amber-100 bg-amber-50/50">VIP Business ($4100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-slate-900 w-1/4">Feature Capability</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-emerald-700 w-1/4 text-center border-l border-emerald-100 bg-emerald-50/50">Basic Business ($1100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/4 text-center border-l border-blue-100 bg-blue-50/50">Premium Partner ($2100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-amber-700 w-1/4 text-center border-l border-amber-100 bg-amber-50/50">VIP Business ($4100/yr)</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                   <td className="p-4 sm:p-6 font-bold text-slate-700">Verified Exporter Badge</td>
-                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Standard</td>
-                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Included</span>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Included</span>
+                    </div>
                   </td>
                   <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-center gap-2">
@@ -556,10 +556,11 @@ export const PremiumServicesView: React.FC<Props> = ({
                 </tr>
                 <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                   <td className="p-4 sm:p-6 font-bold text-slate-700">Global Directory Ranking</td>
-                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Standard</td>
-                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Priority Ranking</span>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Priority Ranking</span>
+                    </div>
                   </td>
                   <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-center gap-2">
@@ -576,10 +577,11 @@ export const PremiumServicesView: React.FC<Props> = ({
                 </tr>
                 <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                   <td className="p-4 sm:p-6 font-bold text-slate-700">Product Listings</td>
-                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">Up to 10</td>
-                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Up to 50</span>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Up to 50</span>
+                    </div>
                   </td>
                   <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-center gap-2">
@@ -596,10 +598,11 @@ export const PremiumServicesView: React.FC<Props> = ({
                 </tr>
                 <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                   <td className="p-4 sm:p-6 font-bold text-slate-700">Buy Lead Credits</td>
-                  <td className="p-4 sm:p-6 text-center text-slate-500 border-l border-slate-200">5 / month</td>
-                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>20 / month</span>
+                  <td className="p-4 sm:p-6 text-center font-bold text-emerald-900 border-l border-emerald-100 bg-emerald-50/50">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>20 / month</span>
+                    </div>
                   </td>
                   <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-center gap-2">
@@ -616,7 +619,6 @@ export const PremiumServicesView: React.FC<Props> = ({
                 </tr>
                 <tr className="hover:bg-slate-50 transition-colors">
                   <td className="p-4 sm:p-6 font-bold text-slate-700">Dedicated Account Manager</td>
-                  <td className="p-4 sm:p-6 text-center text-slate-400 border-l border-slate-200">—</td>
                   <td className="p-4 sm:p-6 text-center text-slate-400 border-l border-emerald-100 bg-emerald-50/50">—</td>
                   <td className="p-4 sm:p-6 text-center font-bold text-blue-900 border-l border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-center gap-2">

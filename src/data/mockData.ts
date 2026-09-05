@@ -161,7 +161,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-construction-excavation',
     name: 'Construction & Excavation Machinery',
     icon: 'Tractor',
-    image: 'https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Excavator', 'Bulldozer', 'Wheel Loader', 'Backhoe', 'Crawler Excavator', 'Mini Excavator', 'Skid Steer Loader', 'Dump Truck', 'Excavator Bucket', 'Hydraulic Excavator'],
     count: '1,240+ Verified Suppliers | 560+ RFQs'
   },

@@ -44,6 +44,20 @@ html, body {
   animation: shimmer 1.8s infinite ease-in-out;
 }
 
+/* Subtle Scaling Pulse Animation */
+@keyframes scalePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.animate-scale-pulse {
+  animation: scalePulse 2.2s ease-in-out infinite;
+}
+
 
 
 /* Google Translate Overrides */

@@ -79,9 +79,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // Add parent domain variations (e.g. .asia-southeast1.run.app, .run.app)
     for (let i = 0; i < hostParts.length - 1; i++) {
-      const parent = hostParts.slice(i).join('.');
-      domainVariants.push(parent);
-      domainVariants.push('.' + parent);
+      const parentDomain = hostParts.slice(i).join('.');
+      domainVariants.push(parentDomain);
+      domainVariants.push('.' + parentDomain);
     }
 
     const paths = ['/', '/auto', window.location.pathname];

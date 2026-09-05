@@ -14,7 +14,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$160 - $324',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$49 - $90',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$49 - $121',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$153 - $316',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$50 - $78',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$206 - $392',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'CSN', value: '8-9' }, { name: 'Volatile Matter', value: '20-25%' }, { name: 'Ash', value: '<9%' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$159 - $295',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$51 - $77',
     unit: 'MT',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$83 - $155',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$52 - $96',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $120',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $121',
     unit: 'MT',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$206 - $385',
     unit: 'MT',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'CSN', value: '8-9' }, { name: 'Volatile Matter', value: '20-25%' }, { name: 'Ash', value: '<9%' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$154 - $329',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$83 - $148',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$84 - $169',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$150 - $304',
     unit: 'MT',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$88 - $157',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$55 - $78',
     unit: 'MT',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$154 - $293',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$47 - $94',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$157 - $317',
     unit: 'MT',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$50 - $107',
     unit: 'MT',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$159 - $291',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$154 - $294',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $159',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$50 - $123',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$206 - $397',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'CSN', value: '8-9' }, { name: 'Volatile Matter', value: '20-25%' }, { name: 'Ash', value: '<9%' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$46 - $120',
     unit: 'MT',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$88 - $121',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$208 - $374',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'CSN', value: '8-9' }, { name: 'Volatile Matter', value: '20-25%' }, { name: 'Ash', value: '<9%' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$157 - $284',
     unit: 'MT',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$83 - $162',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$157 - $290',
     unit: 'MT',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$207 - $359',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'CSN', value: '8-9' }, { name: 'Volatile Matter', value: '20-25%' }, { name: 'Ash', value: '<9%' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $167',
     unit: 'MT',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '5500 kcal/kg' }, { name: 'Ash', value: '<12%' }, { name: 'Sulfur', value: '<0.8%' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$159 - $317',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$53 - $118',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'GCV', value: '4200 kcal/kg GAR' }, { name: 'Moisture', value: '30-35%' }, { name: 'Sulfur', value: '<0.6%' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$156 - $303',
     unit: 'MT',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_COAL_PRODUCTS: any[] = [
     priceRangeUsd: '$157 - $329',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Fixed Carbon', value: '>85%' }, { name: 'Volatile Matter', value: '<8%' }, { name: 'Sulfur', value: '<0.5%' } ]
   }
 ];

@@ -27,12 +27,16 @@ import {
   Loader2,
   ArrowUpDown,
   Zap,
+  UserPlus,
   SlidersHorizontal,
   Tag,
   X
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
+import { DailyFreeLeadBanner } from '../marketplace/DailyFreeLeadBanner';
+import { PitchBuyerModal } from '../marketplace/PitchBuyerModal';
+import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState } from '../../services/freeLeadService';
 
 interface Props {
   selectedCurrency: Currency;
@@ -40,6 +44,7 @@ interface Props {
   onOpenCreateRfq: () => void;
   currentUser?: AuthUser | null;
   onOpenUpgradeModal?: () => void;
+  onOpenRegisterFree?: () => void;
 }
 
 const QUICK_SEARCH_CHIPS = [
@@ -63,7 +68,8 @@ export const BuyLeadsView: React.FC<Props> = ({
   onSelectRfq,
   onOpenCreateRfq,
   currentUser = null,
-  onOpenUpgradeModal
+  onOpenUpgradeModal,
+  onOpenRegisterFree
 }) => {
   const ITEMS_PER_PAGE = 18;
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,6 +79,29 @@ export const BuyLeadsView: React.FC<Props> = ({
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [pitchRfq, setPitchRfq] = useState<RfqRequirement | null>(null);
+  const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
+
+  useEffect(() => {
+    const handleFreeLeadUpdated = () => {
+      setFreeLeadStatus(getFreeLeadStatus());
+    };
+    window.addEventListener('tradeheaven_free_lead_updated', handleFreeLeadUpdated);
+    return () => {
+      window.removeEventListener('tradeheaven_free_lead_updated', handleFreeLeadUpdated);
+    };
+  }, []);
+
+  const handleClaimLead = (rfq: RfqRequirement) => {
+    if (!currentUser) {
+      if (onOpenRegisterFree) onOpenRegisterFree();
+      else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
+      return;
+    }
+    const updated = claimDailyFreeLead(rfq.id);
+    setFreeLeadStatus(updated);
+    setPitchRfq(rfq);
+  };
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -228,6 +257,21 @@ export const BuyLeadsView: React.FC<Props> = ({
           </button>
         </div>
       </div>
+
+      {/* 1 Free Buy Order Daily Banner */}
+      <DailyFreeLeadBanner
+        onUpgradeToPlans={onOpenUpgradeModal}
+        featuredRfq={filtered[0] || rfqs[0] || null}
+        onClaimLead={handleClaimLead}
+        currentUser={currentUser}
+        onOpenRegisterFree={onOpenRegisterFree}
+        onSelectClaimedRfq={(rfqId) => {
+          const target = rfqs.find(r => r.id === rfqId);
+          if (target) {
+            onSelectRfq(target);
+          }
+        }}
+      />
 
       {/* Security & Access Clearance Notice */}
       <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap ${
@@ -421,24 +465,37 @@ export const BuyLeadsView: React.FC<Props> = ({
       ) : (
                 <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {currentItems.map(rfq => (
-            <div
-              key={rfq.id}
-              className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-500 hover:shadow-md transition-all flex flex-col justify-between space-y-4 shadow-sm"
-            >
-              <div className="space-y-3">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block max-w-full truncate">
-                        {rfq.id}
-                      </span>
-                      <span className="text-[10px] text-blue-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-200/80">
-                        <Clock className="w-2.5 h-2.5 text-blue-500 shrink-0" />
-                        <span>{getFreshRfqDate(rfq)}</span>
-                      </span>
-                    </div>
+            {currentItems.map(rfq => {
+              const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
+
+              return (
+                <div
+                  key={rfq.id}
+                  className={`bg-white border rounded-2xl p-5 transition-all flex flex-col justify-between space-y-4 shadow-sm ${
+                    isClaimed
+                      ? 'border-amber-400 ring-2 ring-amber-300/40 hover:border-amber-500'
+                      : 'border-slate-200 hover:border-blue-500 hover:shadow-md'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 inline-block max-w-full truncate">
+                            {rfq.id}
+                          </span>
+                          <span className="text-[10px] text-blue-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-200/80">
+                            <Clock className="w-2.5 h-2.5 text-blue-500 shrink-0" />
+                            <span>{getFreshRfqDate(rfq)}</span>
+                          </span>
+                          {isClaimed && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 border border-amber-500 flex items-center gap-1 shadow-2xs">
+                              <Zap className="w-2.5 h-2.5 fill-slate-950" />
+                              <span>Free Lead Unlocked</span>
+                            </span>
+                          )}
+                        </div>
                     <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
                   </div>
 
@@ -497,52 +554,130 @@ export const BuyLeadsView: React.FC<Props> = ({
 
                   {/* Gated Buyer Email & Phone */}
                   <div className="pt-1">
-                    <PremiumContactGate
-                      currentUser={currentUser}
-                      onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
-                      isMasked={Boolean(rfq.isContactMasked)}
-                      resourceTitle="Buyer Direct Desk Contact"
-                    >
-                      <div className="space-y-1 text-xs text-slate-700">
-                        <div className="flex items-center flex-wrap gap-1">
-                          <strong>Email:</strong> 
-                          {rfq.buyerEmail ? (
-                            <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
-                          ) : (
-                            <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
-                              Contact via Trade Heaven
-                            </a>
-                          )}
+                    {isClaimed ? (
+                      <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-300 space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between text-[10px] font-black text-amber-950 pb-1 border-b border-amber-200">
+                          <span className="flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-amber-700 fill-amber-700" />
+                            <span>Unlocked with Daily Free Credit</span>
+                          </span>
+                          <span className="font-mono text-[9px] bg-amber-200 text-amber-900 px-1 py-0.5 rounded font-bold">Unvetted</span>
                         </div>
-                        <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
+                        <div className="space-y-1 text-slate-800 text-[11px]">
+                          <div>
+                            <strong>Email: </strong>
+                            <a href={`mailto:${rfq.buyerEmail || 'procurement@' + rfq.buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com'}`} className="text-blue-600 hover:underline font-mono font-bold">
+                              {rfq.buyerEmail || `${rfq.buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '')}@procurement.com`}
+                            </a>
+                          </div>
+                          <div>
+                            <strong>Phone: </strong>
+                            <span className="font-mono font-bold">{rfq.buyerPhone || '+1 (555) 382-9901'}</span>
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-amber-900 font-medium italic pt-1 border-t border-amber-200/70">
+                          (Free community inquiry—deals &amp; legitimacy not guaranteed).
+                        </div>
                       </div>
-                    </PremiumContactGate>
+                    ) : (
+                      <PremiumContactGate
+                        currentUser={currentUser}
+                        onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                        isMasked={Boolean(rfq.isContactMasked)}
+                        resourceTitle="Buyer Direct Desk Contact"
+                      >
+                        <div className="space-y-1 text-xs text-slate-700">
+                          <div className="flex items-center flex-wrap gap-1">
+                            <strong>Email:</strong> 
+                            {rfq.buyerEmail ? (
+                              <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
+                            ) : (
+                              <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
+                                Contact via Trade Heaven
+                              </a>
+                            )}
+                          </div>
+                          <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
+                        </div>
+                      </PremiumContactGate>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                <button
-                  onClick={() => onSelectRfq(rfq)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                >
-                  <span>Quote Tender</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              <div className="space-y-2 mt-2">
+                {/* 1 Free Buy Order Direct Pitch / Claim Action */}
+                {isClaimed ? (
+                  <button
+                    type="button"
+                    onClick={() => setPitchRfq(rfq)}
+                    className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+                  >
+                    <Zap className="w-3.5 h-3.5 fill-slate-950" />
+                    <span>⚡ Pitch Buyer Directly</span>
+                  </button>
+                ) : !currentUser ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onOpenRegisterFree) onOpenRegisterFree();
+                      else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 animate-scale-pulse"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-slate-950" />
+                    <span>⚡ Register Free to Claim Order</span>
+                  </button>
+                ) : freeLeadStatus.canClaim ? (
+                  <button
+                    type="button"
+                    onClick={() => handleClaimLead(rfq)}
+                    className="w-full py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-700 fill-amber-700" />
+                    <span>⚡ Claim with 1 Free Daily Credit</span>
+                  </button>
+                ) : (
+                  <div className="text-[10px] text-slate-500 text-center py-1 bg-slate-50 rounded-lg border border-slate-200">
+                    Daily free buy order used •{' '}
+                    {onOpenUpgradeModal ? (
+                      <button
+                        type="button"
+                        onClick={onOpenUpgradeModal}
+                        className="text-blue-600 hover:underline font-bold cursor-pointer"
+                      >
+                        Upgrade to Basic or Establishment Plan
+                      </button>
+                    ) : (
+                      <span>Upgrade to Unlock</span>
+                    )}
+                  </div>
+                )}
 
-                <a
-                  href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm text-center"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>WhatsApp</span>
-                </a>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    onClick={() => onSelectRfq(rfq)}
+                    className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                  >
+                    <span>Quote Tender</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  <a
+                    href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm text-center"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
@@ -588,6 +723,17 @@ export const BuyLeadsView: React.FC<Props> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Direct Pitch Buyer Modal for Claimed Daily Free Lead */}
+      {pitchRfq && (
+        <PitchBuyerModal
+          rfq={pitchRfq}
+          currentUser={currentUser}
+          selectedCurrency={selectedCurrency}
+          onClose={() => setPitchRfq(null)}
+          onOpenUpgradeModal={onOpenUpgradeModal}
+        />
       )}
     </div>
   );

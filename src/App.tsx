@@ -219,6 +219,21 @@ const MainApp: React.FC = () => {
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<PaymentCheckoutData | null>(null);
 
+  const handleOpenRegisterFree = () => {
+    setAuthModalMode('REGISTER');
+    setIsAuthModalOpen(true);
+  };
+
+  useEffect(() => {
+    const handleRegisterEvent = () => {
+      handleOpenRegisterFree();
+    };
+    window.addEventListener('tradeheaven_open_register', handleRegisterEvent);
+    return () => {
+      window.removeEventListener('tradeheaven_open_register', handleRegisterEvent);
+    };
+  }, []);
+
   // Exponential backoff helper to prevent application crashes when backend/database is slow to respond
   const fetchWithRetry = async <T,>(
     fn: () => Promise<T>,
@@ -1001,6 +1016,8 @@ const MainApp: React.FC = () => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     isLoadingProducts={isLoadingInitialData}
+                    currentUser={currentUser}
+                    onOpenRegisterFree={handleOpenRegisterFree}
                   />
                 );
 
@@ -1055,6 +1072,7 @@ const MainApp: React.FC = () => {
                     onOpenNegotiation={() => setActiveView('NEGOTIATION_ROOM')}
                     currentUser={currentUser}
                     onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                    isLoading={isLoadingInitialData}
                   />
                 );
 
@@ -1120,6 +1138,7 @@ const MainApp: React.FC = () => {
                     onOpenCreateRfq={handleOpenCreateRfq}
                     currentUser={currentUser}
                     onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                    onOpenRegisterFree={handleOpenRegisterFree}
                   />
                 );
 
@@ -1363,6 +1382,9 @@ const MainApp: React.FC = () => {
                       setActiveView('BUY_LEADS');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
+                    isLoadingProducts={isLoadingInitialData}
+                    currentUser={currentUser}
+                    onOpenRegisterFree={handleOpenRegisterFree}
                   />
                 );
             }
@@ -1420,6 +1442,7 @@ const MainApp: React.FC = () => {
             selectedCurrency={selectedCurrency}
             onClose={() => setSelectedRfqForModal(null)}
             currentUser={currentUser}
+            onOpenRegisterFree={handleOpenRegisterFree}
             onOpenUpgradeModal={() => {
               setSelectedRfqForModal(null);
               setActiveView('PREMIUM_MEMBERSHIP');
