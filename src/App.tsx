@@ -28,9 +28,9 @@ import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { SEOManager } from './components/common/SEOManager';
 import { NotFoundView } from './components/common/NotFoundView';
+import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
 
 // Views
-const TradeWheelHomePage = React.lazy(() => import('./components/marketplace/TradeWheelHomePage').then(m => ({ default: m.TradeWheelHomePage })));
 const ProductCatalog = React.lazy(() => import('./components/marketplace/ProductCatalog').then(m => ({ default: m.ProductCatalog })));
 const RfqComparisonView = React.lazy(() => import('./components/marketplace/RfqComparisonView').then(m => ({ default: m.RfqComparisonView })));
 const TradeNegotiationChat = React.lazy(() => import('./components/marketplace/TradeNegotiationChat').then(m => ({ default: m.TradeNegotiationChat })));
@@ -70,6 +70,7 @@ import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
 import { Loader2, Mail, CheckCircle2, AlertCircle, Send } from 'lucide-react';
+import { TradeHeavenDataLoader } from './components/common/TradeHeavenDataLoader';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
 
@@ -754,10 +755,11 @@ const MainApp: React.FC = () => {
       <main className="flex-1 w-full max-w-[1400px] overflow-x-hidden mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-[calc(100vh-200px)]">
         <GlobalErrorBoundary fallbackTitle="TradeHeaven Section View Recovery" onReset={() => setActiveView('HOMEPAGE')}>
           <React.Suspense fallback={
-            <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-              <p className="text-xs text-slate-500 font-medium animate-pulse">Loading dynamic view...</p>
-            </div>
+            <TradeHeavenDataLoader 
+              size="fullscreen" 
+              message="Fetching Trade Heaven Data..." 
+              subMessage="Loading international trade views and verified factory directories..." 
+            />
           }>
             {(() => {
               switch (activeView) {

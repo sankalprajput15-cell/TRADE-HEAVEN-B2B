@@ -5,6 +5,7 @@ import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { SafeImage } from '../common/SafeImage';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { 
   Building2, 
   Search, 
@@ -147,8 +148,22 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
       </div>
 
       {/* Factories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map(company => (
+      {isLoading ? (
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+          <TradeHeavenDataLoader 
+            message="Fetching audited factory suppliers..." 
+            subMessage="Connecting to global manufacturer records and inspection databases..."
+            size="lg"
+          />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm">
+          <p className="text-base font-bold text-slate-800 mb-1">No Exporters Found</p>
+          <p className="text-xs text-slate-500">No factory profiles match your search criteria. Try clearing filters.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map(company => (
           <div
             key={company.id}
             className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all flex flex-col justify-between shadow-sm"
@@ -253,6 +268,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

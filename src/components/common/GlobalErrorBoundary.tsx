@@ -92,8 +92,14 @@ export class GlobalErrorBoundary extends React.Component<Props, State> {
       // Direct auto-divert to home
       return (
         <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-slate-50">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-4">
-            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 rounded-xl bg-white border-2 border-slate-900 shadow-sm flex items-center justify-center p-1 mb-4 animate-pulse">
+            <svg viewBox="0 0 512 512" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <rect width="512" height="512" fill="#FFFFFF" />
+              <g fill="#000000">
+                <path d="M 66 136 H 246 V 186 H 181 V 376 H 131 V 186 H 66 Z" />
+                <path d="M 266 136 H 316 V 231 H 396 V 136 H 446 V 376 H 396 V 281 H 316 V 376 H 266 Z" />
+              </g>
+            </svg>
           </div>
           <p className="text-sm font-semibold text-slate-800 mb-1">Redirecting to Marketplace Home...</p>
           <p className="text-xs text-slate-500 max-w-sm mb-4">

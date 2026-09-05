@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, ShieldCheck, CheckCircle2, Eye, Loader2, X, AlertCircle, LogIn, Building, Phone, Mail } from 'lucide-react';
+import { TradeHeavenDataLoader } from './TradeHeavenDataLoader';
 import { AuthUser } from '../../types';
 
 interface Props {
@@ -182,14 +183,12 @@ export const SecureContactVerificationModal: React.FC<Props> = ({
             )}
 
             {verificationStep === 'VERIFYING' && (
-              <div className="py-8 flex flex-col items-center text-center space-y-4">
-                <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
-                <div className="space-y-1.5">
-                  <h4 className="text-base font-bold text-slate-900">Establishing Secure Clearance</h4>
-                  <p className="text-xs text-slate-500 font-medium max-w-[260px] leading-relaxed">
-                    {statusMessage}
-                  </p>
-                </div>
+              <div className="py-4">
+                <TradeHeavenDataLoader 
+                  size="md"
+                  message="Establishing Secure Clearance" 
+                  subMessage={statusMessage || "Verifying corporate credentials..."} 
+                />
               </div>
             )}
 

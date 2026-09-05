@@ -178,10 +178,114 @@
         }
       })();
     </script>
+
+    <!-- Initial Load CSS: Zero margin/padding/overflow reset & zero-CLS SVG scaling -->
+    <style id="trade-heaven-initial-loader-css">
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+      }
+      #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+      #initial-loading-container {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        box-sizing: border-box;
+      }
+      #initial-loading-logo-box {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        min-height: 64px;
+        max-width: 64px;
+        max-height: 64px;
+        aspect-ratio: 1 / 1;
+        flex-shrink: 0;
+        box-sizing: border-box;
+        margin: 0 0 16px 0;
+        padding: 6px;
+        background-color: #ffffff;
+        border: 2px solid #0f172a;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+      #initial-loading-svg {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: 1 / 1;
+        display: block;
+        flex-shrink: 0;
+        pointer-events: none;
+      }
+      #initial-loading-title {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 15px;
+        line-height: 1.25;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+        text-align: center;
+      }
+      #initial-loading-subtitle {
+        margin: 4px 0 0 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #64748b;
+        text-align: center;
+      }
+    </style>
   </head>
   <body class="overflow-x-hidden max-w-full bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
     <div id="google_translate_element"></div>
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loading-container">
+        <div id="initial-loading-logo-box">
+          <svg id="initial-loading-svg" viewBox="0 0 512 512" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <rect width="512" height="512" fill="#FFFFFF" />
+            <g fill="#000000">
+              <path d="M 66 136 H 246 V 186 H 181 V 376 H 131 V 186 H 66 Z" />
+              <path d="M 266 136 H 316 V 231 H 396 V 136 H 446 V 376 H 396 V 281 H 316 V 376 H 266 Z" />
+            </g>
+          </svg>
+        </div>
+        <div id="initial-loading-title">Trade Heaven</div>
+        <div id="initial-loading-subtitle">Fetching live B2B marketplace data...</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

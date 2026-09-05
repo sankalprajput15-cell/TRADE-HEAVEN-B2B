@@ -134,7 +134,7 @@ export const TradeHeavenFooter: React.FC<Props> = ({
           {/* Column 1: Brand & Mission (2 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <TradeHeavenLogo size="md" variant="dark" showWordmark={true} />
+              <TradeHeavenLogo size="md" variant="light" showWordmark={true} />
             </div>
             <p className="text-slate-600 text-xs leading-relaxed max-w-sm">
               {hf?.footerMission || "Trade Heaven is an international B2B marketplace and export portal connecting verified global buyers with vetted manufacturing plants across 180+ countries."}

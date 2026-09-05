@@ -20,6 +20,7 @@ import {
   Lock
 } from 'lucide-react';
 import { ProductCatalogGrid, ProductListSkeleton } from './ProductCatalogGrid';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 
 interface Props {
   products: Product[];
@@ -514,6 +515,13 @@ export const ProductCatalog: React.FC<Props> = ({
 
           {isLoading || (products.length === 0 && !isUsingCache) ? (
             <div className="space-y-4">
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
+                <TradeHeavenDataLoader 
+                  size="md"
+                  message="Fetching Trade Heaven Catalog..." 
+                  subMessage="Synchronizing verified exporter inventories and wholesale volume pricing..."
+                />
+              </div>
               {viewMode === 'GRID' ? (
                 <ProductCatalogGrid
                   isLoading={true}

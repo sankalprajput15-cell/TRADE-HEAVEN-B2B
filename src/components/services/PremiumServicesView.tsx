@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { planPricingService } from '../../services/planPricingService';
 import { SaaSPlan } from '../../types/planPricingTypes';
 import { INITIAL_SAAS_PLANS } from '../../data/planPricingMockData';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { 
   Crown, 
   ShieldCheck, 
@@ -245,9 +246,11 @@ export const PremiumServicesView: React.FC<Props> = ({
 
       {/* PLANS GRID (Dynamically Rendered from Database / Service) */}
       {isLoading ? (
-        <div className="p-12 text-center rounded-3xl bg-white border border-slate-200">
-          <div className="w-8 h-8 mx-auto mb-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-bold">Loading live membership plans from Admin Engine...</p>
+        <div className="p-8 text-center rounded-3xl bg-white border border-slate-200 shadow-sm">
+          <TradeHeavenDataLoader 
+            message="Fetching membership plans..." 
+            subMessage="Synchronizing live tier pricing, features, and token quotas..."
+          />
         </div>
       ) : displayedCategoryPlans.length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-white border border-dashed border-slate-300">

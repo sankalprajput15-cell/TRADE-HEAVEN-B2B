@@ -5,13 +5,20 @@ interface Props {
   variant?: 'monochrome' | 'dark' | 'light' | 'blue' | 'gold';
   wordmarkTheme?: 'light' | 'dark';
   showWordmark?: boolean;
+  useSearchEmblem?: boolean;
   subtitle?: string | boolean;
   className?: string;
 }
 
+/**
+ * Official TradeHeaven Logo Component.
+ * Displays the bold, high-contrast black & white "TH" monogram
+ * exactly matching the tradeheavenbg1 brand asset.
+ * Completely flat, geometric, and free of any circular or magnifying-glass emblems.
+ */
 export const TradeHeavenLogo: React.FC<Props> = ({
   size = 'md',
-  variant = 'dark',
+  variant = 'light',
   wordmarkTheme,
   showWordmark = true,
   subtitle = 'Global Sourcing & Trade Directory',
@@ -19,62 +26,31 @@ export const TradeHeavenLogo: React.FC<Props> = ({
 }) => {
   // Dimensions
   const sizeMap = {
-    xs: { box: 'w-6 h-6', iconText: 'text-[11px]', title: 'text-xs', sub: 'text-[8px]' },
-    sm: { box: 'w-8 h-8', iconText: 'text-sm', title: 'text-sm', sub: 'text-[9px]' },
-    md: { box: 'w-9 h-9', iconText: 'text-base', title: 'text-base', sub: 'text-[10px]' },
-    lg: { box: 'w-12 h-12', iconText: 'text-xl', title: 'text-xl', sub: 'text-xs' },
-    xl: { box: 'w-16 h-16', iconText: 'text-2xl', title: 'text-2xl', sub: 'text-sm' }
+    xs: { box: 'w-6 h-6', title: 'text-xs', sub: 'text-[8px]' },
+    sm: { box: 'w-8 h-8', title: 'text-sm', sub: 'text-[9px]' },
+    md: { box: 'w-9 h-9', title: 'text-base', sub: 'text-[10px]' },
+    lg: { box: 'w-12 h-12', title: 'text-xl', sub: 'text-xs' },
+    xl: { box: 'w-16 h-16', title: 'text-2xl', sub: 'text-sm' }
   };
 
   const currentSize = sizeMap[size];
 
-  // Variant themes
-  const getBoxStyle = () => {
-    switch (variant) {
-      case 'light':
-        return 'bg-white text-slate-950 border border-slate-200 shadow-xs';
-      case 'monochrome':
-        return 'bg-black text-white';
-      case 'blue':
-        return 'bg-blue-600 text-white shadow-md shadow-blue-600/20';
-      case 'gold':
-        return 'bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-md shadow-amber-500/20';
-      case 'dark':
-      default:
-        return 'bg-slate-950 text-white shadow-sm';
-    }
-  };
+  const isDarkCanvas = wordmarkTheme === 'light' || variant === 'dark';
 
   const getWordmarkStyle = () => {
-    if (wordmarkTheme === 'light' || variant === 'light') {
+    if (isDarkCanvas) {
       return {
         trade: 'text-white',
-        heaven: 'text-black',
+        heaven: 'text-white',
         badge: 'bg-white/15 text-white border-white/20',
         sub: 'text-slate-300'
       };
     }
-    if (variant === 'gold') {
-      return {
-        trade: 'text-slate-900',
-        heaven: 'text-black',
-        badge: 'bg-amber-400/20 text-amber-900 border-amber-400/40',
-        sub: 'text-slate-600'
-      };
-    }
-    if (variant === 'monochrome') {
-      return {
-        trade: 'text-black',
-        heaven: 'text-black',
-        badge: 'bg-slate-100 text-black border-slate-300',
-        sub: 'text-slate-600'
-      };
-    }
     return {
-      trade: 'text-slate-900',
+      trade: 'text-black',
       heaven: 'text-black',
-      badge: 'bg-blue-50 text-blue-700 border-blue-200',
-      sub: 'text-slate-500'
+      badge: 'bg-slate-900 text-white border-slate-900',
+      sub: 'text-slate-700'
     };
   };
 
@@ -82,29 +58,33 @@ export const TradeHeavenLogo: React.FC<Props> = ({
 
   return (
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
-      {/* Official "TH" Monogram Icon Box */}
+      {/* Official "TH" Square Monogram matching tradeheavenbg1 */}
       <div 
-        className={`${currentSize.box} ${getBoxStyle()} rounded-xl flex items-center justify-center font-black tracking-tighter shrink-0 transition-transform duration-200 group-hover:scale-105`}
-        style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
+        className={`${currentSize.box} shrink-0 bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden flex items-center justify-center p-0.5 transition-transform duration-200 group-hover:scale-105`}
+        title="Trade Heaven - B2B Marketplace"
       >
-        {/* Crisp Vector Rendering of the Official TH Logo */}
         <svg 
-          viewBox="0 0 100 100" 
-          className="w-4/5 h-4/5" 
-          fill="currentColor"
+          viewBox="0 0 512 512" 
+          className="w-full h-full" 
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Letter T */}
-          <path d="M 14 24 H 48 V 35 H 36 V 76 H 26 V 35 H 14 Z" />
-          {/* Letter H */}
-          <path d="M 54 24 H 64 V 45 H 78 V 24 H 88 V 76 H 78 V 55 H 64 V 76 H 54 Z" />
+          {/* Clean White Background */}
+          <rect width="512" height="512" fill="#FFFFFF" />
+
+          {/* Solid Black Bold TH Monogram */}
+          <g fill="#000000">
+            {/* Letter T */}
+            <path d="M 66 136 H 246 V 186 H 181 V 376 H 131 V 186 H 66 Z" />
+            {/* Letter H */}
+            <path d="M 266 136 H 316 V 231 H 396 V 136 H 446 V 376 H 396 V 281 H 316 V 376 H 266 Z" />
+          </g>
         </svg>
       </div>
 
       {/* Brand Wordmark & Subtitle */}
       {showWordmark && (
         <div className="leading-tight hidden sm:block">
-          <div className={`font-black ${currentSize.title} tracking-tight flex items-center gap-1.5`}>
+          <div className={`font-black ${currentSize.title} tracking-tight flex items-center gap-1.5 text-black`}>
             <span className={wmStyle.trade}>TRADE</span>
             <span className={wmStyle.heaven}>HEAVEN</span>
             <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider border ${wmStyle.badge}`}>

@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Plain White Background matching user uploaded tradeheavenbg1.png -->
   <rect width="512" height="512" fill="#FFFFFF" />
+
+  <!-- Bold Black Monogram TH matching user uploaded tradeheavenbg1.png -->
   <g fill="#000000">
     <!-- Letter T -->
     <path d="M 66 136 H 246 V 186 H 181 V 376 H 131 V 186 H 66 Z" />

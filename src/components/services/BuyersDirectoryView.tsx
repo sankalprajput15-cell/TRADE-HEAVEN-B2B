@@ -5,6 +5,7 @@ import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { SafeImage } from '../common/SafeImage';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { 
   Building2, 
   Search, 
@@ -167,8 +168,22 @@ export const BuyersDirectoryView: React.FC<Props> = ({
       </div>
 
       {/* Buyers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map(buyer => (
+      {isLoading ? (
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+          <TradeHeavenDataLoader 
+            message="Fetching verified buyer profiles..." 
+            subMessage="Connecting to global importer database and active procurement records..."
+            size="lg"
+          />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm">
+          <p className="text-base font-bold text-slate-800 mb-1">No Buyers Found</p>
+          <p className="text-xs text-slate-500">No buyer profiles match your search criteria. Try clearing filters.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map(buyer => (
           <div
             key={buyer.id}
             className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all flex flex-col justify-between shadow-sm"
@@ -290,6 +305,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

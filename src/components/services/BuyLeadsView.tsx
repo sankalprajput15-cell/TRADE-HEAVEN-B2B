@@ -32,6 +32,7 @@ import {
   X
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 
 interface Props {
   selectedCurrency: Currency;
@@ -402,10 +403,12 @@ export const BuyLeadsView: React.FC<Props> = ({
 
       {/* Leads Grid / Empty State */}
       {isLoading ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center space-y-4 shadow-sm">
-          <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto" />
-          <div className="text-base font-bold text-slate-800">Fetching live procurement buy leads...</div>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">Connecting to MySQL backend on BigRock to retrieve verified international importer tenders.</p>
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+          <TradeHeavenDataLoader 
+            message="Fetching live procurement buy leads..." 
+            subMessage="Connecting to verified international importer tenders and global buyer RFQs..."
+            size="lg"
+          />
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState

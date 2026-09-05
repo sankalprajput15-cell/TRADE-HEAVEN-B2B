@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Package, Factory, FileText, ChevronRight, Loader2, X } from 'lucide-react';
+import { TradeHeavenDataLoader } from './TradeHeavenDataLoader';
 import { MOCK_PRODUCTS, MOCK_COMPANIES, MOCK_RFQS } from '../../data/mockData';
 import { ActiveView } from '../../types';
 
@@ -85,9 +86,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
       {showResults && (
         <div className="absolute top-full right-0 mt-2 w-[320px] sm:w-[380px] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[80vh] overflow-y-auto">
           {isSearching ? (
-            <div className="p-8 flex flex-col items-center justify-center text-slate-500 space-y-3">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-              <span className="text-xs font-medium">Searching marketplace...</span>
+            <div className="p-6">
+              <TradeHeavenDataLoader 
+                size="sm"
+                message="Searching Trade Heaven..." 
+                subMessage="Querying verified inventory & suppliers..." 
+              />
             </div>
           ) : (
             <div className="py-2">
