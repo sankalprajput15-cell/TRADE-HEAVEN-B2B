@@ -129,8 +129,12 @@ export const ProductDetailModal: React.FC<Props> = ({
                 <SafeImage
                   src={product?.images?.[activeImageIdx] || product?.images?.[0] || undefined}
                   alt={product?.title || 'B2B Wholesale Product'}
+                  productTitle={product?.title}
+                  supplierName={product?.supplierName}
                   category={product?.category}
                   productId={product?.id}
+                  imageIndex={activeImageIdx}
+                  totalImages={product?.images?.length}
                   className="w-full h-full"
                 />
               </div>
@@ -146,7 +150,18 @@ export const ProductDetailModal: React.FC<Props> = ({
                         activeImageIdx === idx ? 'border-blue-600 scale-105 shadow-sm' : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <SafeImage src={img} alt={`${product?.title} - Thumbnail ${idx + 1}`} category={product?.category} productId={product?.id} className="w-full h-full" />
+                      <SafeImage 
+                        src={img} 
+                        alt={`${product?.title || 'Product'} thumbnail view ${idx + 1}`} 
+                        productTitle={product?.title}
+                        supplierName={product?.supplierName}
+                        category={product?.category} 
+                        productId={product?.id}
+                        imageIndex={idx}
+                        totalImages={product?.images?.length}
+                        isThumbnail={true}
+                        className="w-full h-full" 
+                      />
                     </button>
                   ))}
                 </div>

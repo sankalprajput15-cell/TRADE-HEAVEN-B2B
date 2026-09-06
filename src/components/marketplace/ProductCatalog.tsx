@@ -603,6 +603,8 @@ export const ProductCatalog: React.FC<Props> = ({
                           <SafeImage
                             src={product.images?.[0]}
                             alt={product.title}
+                            productTitle={product.title}
+                            supplierName={product.supplierName}
                             category={product.category}
                             productId={product.id}
                             className="w-full h-full"

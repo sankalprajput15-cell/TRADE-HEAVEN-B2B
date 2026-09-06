@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors, Sparkles } from 'lucide-react';
+import { getAutoAltText } from '../../utils/imageSeo';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string | undefined;
-  alt: string;
+  alt?: string;
   fallbackSrc?: string;
   className?: string;
   imgClassName?: string;
   category?: string;
   productId?: string;
-  type?: 'product' | 'logo' | 'avatar' | 'category';
+  productTitle?: string;
+  supplierName?: string;
+  origin?: string;
+  imageIndex?: number;
+  totalImages?: number;
+  isThumbnail?: boolean;
+  type?: 'product' | 'logo' | 'avatar' | 'category' | 'rfq';
 }
 
 // 100% verified, highly accessible Unsplash industrial photos
@@ -165,6 +172,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   imgClassName = '',
   category,
   productId,
+  productTitle,
+  supplierName,
+  origin,
+  imageIndex,
+  totalImages,
+  isThumbnail,
   type = 'product',
   ...props
 }) => {
@@ -173,11 +186,25 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
 
+  // Automatically compute descriptive, WCAG and SEO-optimized alt text
+  const resolvedAlt = useMemo(() => {
+    return getAutoAltText({
+      alt,
+      title: productTitle || (typeof props.title === 'string' ? props.title : undefined),
+      category,
+      supplierName,
+      type,
+      index: imageIndex,
+      total: totalImages,
+      isThumbnail
+    });
+  }, [alt, productTitle, props.title, category, supplierName, type, imageIndex, totalImages, isThumbnail]);
+
   // 1. Detect if this is an avatar or logo
   const isLogoOrAvatar = useMemo(() => {
     if (type === 'logo' || type === 'avatar') return true;
     const lowerSrc = (src || '').toLowerCase();
-    const lowerAlt = (alt || '').toLowerCase();
+    const lowerAlt = (resolvedAlt || alt || '').toLowerCase();
     return (
       lowerSrc.includes('logo') ||
       lowerSrc.includes('avatar') ||
@@ -188,7 +215,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       lowerAlt.includes('profile') ||
       lowerAlt.includes('user')
     );
-  }, [src, alt, type]);
+  }, [src, alt, resolvedAlt, type]);
 
   // 2. Build prioritized candidate URLs list
   const candidates = useMemo(() => {
@@ -287,7 +314,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         <div className="w-full h-full min-h-[44px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950 p-2 text-white text-center select-none">
           <Factory className="w-4 h-4 text-amber-400 shrink-0 mb-0.5" />
           <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
-            {alt || 'Verified Industrial Export'}
+            {resolvedAlt || alt || 'Verified Industrial Export'}
           </span>
           <span className="text-[8px] text-amber-400/90 font-mono uppercase tracking-wider">
             Audited Exporter
@@ -297,7 +324,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         <img
           ref={imgRef}
           src={currentCandidate}
-          alt={alt || 'Industrial Product'}
+          alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
           referrerPolicy="no-referrer"
           loading={props.loading || (props.fetchPriority === 'high' ? 'eager' : 'lazy')}
           onLoad={handleLoad}

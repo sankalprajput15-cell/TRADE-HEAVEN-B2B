@@ -1,4 +1,150 @@
-User-agent: *
-Allow: /
+# ==============================================================================
+# Trade Heaven B2B Global Sourcing & Exporter Portal - Robots.txt
+# Auto-generated: 2026-09-06T04:40:23.516Z
+# Documentation: https://developers.google.com/search/docs/crawling-indexing/robots/intro
+# ==============================================================================
 
+# Universal Crawler Instructions
+User-agent: *
+
+# --- DISALLOW: Private Admin, Internal Chat, User Dashboards & API ---
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /?view=ADMIN_*
+Disallow: /?view=ADMIN_DASHBOARD
+Disallow: /?view=ADMIN_USERS
+Disallow: /?view=ADMIN_DISPUTES
+Disallow: /?view=ADMIN_RFQS
+Disallow: /?view=ADMIN_FEEDS
+Disallow: /?view=ADMIN_REVENUE
+Disallow: /?view=ADMIN_SECURITY_LOGS
+Disallow: /?view=NEGOTIATION_ROOM
+Disallow: /?view=TRADE_ROOM
+Disallow: /?view=USER_DASHBOARD
+Disallow: /?view=MY_ACCOUNT
+Disallow: /?view=SETTINGS
+Disallow: /negotiation
+Disallow: /negotiation/*
+Disallow: /negotiation-room
+Disallow: /negotiation-room/*
+Disallow: /trade-room
+Disallow: /trade-room/*
+Disallow: /chat
+Disallow: /chat/*
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /user
+Disallow: /user/*
+Disallow: /account
+Disallow: /account/*
+Disallow: /my-account
+Disallow: /my-account/*
+Disallow: /profile/settings
+Disallow: /api
+Disallow: /api/*
+Disallow: /auth
+Disallow: /auth/*
+Disallow: /login
+Disallow: /register
+Disallow: /reset-password
+Disallow: /logout
+Disallow: /escrow
+Disallow: /escrow/*
+Disallow: /payment
+Disallow: /payment/*
+Disallow: /checkout
+Disallow: /checkout/*
+Disallow: /drafts
+Disallow: /drafts/*
+Disallow: /preview
+Disallow: /preview/*
+Disallow: /*?*session_id=
+Disallow: /*?*auth_token=
+Disallow: /*?*access_token=
+Disallow: /*?*redirect=
+
+# --- ALLOW: Public B2B Marketplace Catalogs, Exporters & Tenders ---
+Allow: /
+Allow: /?view=HOMEPAGE
+Allow: /?view=PRODUCT_DIRECTORY
+Allow: /?view=SUPPLIERS_DIRECTORY
+Allow: /?view=BUYERS_DIRECTORY
+Allow: /?view=BUY_LEADS
+Allow: /?view=RFQ_HUB
+Allow: /?view=POST_SELL_OFFER
+Allow: /?view=PREMIUM_MEMBERSHIP
+Allow: /?view=PREMIUM_SERVICES
+Allow: /?view=ONBOARD_WITH_US
+Allow: /?view=INCOTERMS_CALCULATOR
+Allow: /?view=ABOUT_US
+Allow: /?view=TRUST_SAFETY
+Allow: /?view=TERMS_OF_USE
+Allow: /?view=PRIVACY_POLICY
+Allow: /?view=PRODUCT_LISTING_POLICY
+Allow: /?view=REFUND_POLICY
+Allow: /?view=LANDING_PAGE
+Allow: /products
+Allow: /products/*
+Allow: /categories
+Allow: /categories/*
+Allow: /suppliers
+Allow: /suppliers/*
+Allow: /buyers
+Allow: /buyers/*
+Allow: /rfqs
+Allow: /rfqs/*
+Allow: /buy-leads
+Allow: /buy-leads/*
+Allow: /storefront/*
+Allow: /catalog/*
+Allow: /assets/*
+Allow: /images/*
+Allow: /*.js
+Allow: /*.css
+Allow: /*.png
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.svg
+Allow: /*.webp
+Allow: /*.ico
+Allow: /*.webmanifest
+Allow: /sitemap.xml
+Allow: /robots.txt
+
+# ==============================================================================
+# Googlebot Specific Rules (Ensure full rendering access to JS/CSS)
+# ==============================================================================
+User-agent: Googlebot
+Allow: /*.js$
+Allow: /*.css$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.webp$
+Allow: /*.svg$
+Disallow: /admin/
+Disallow: /api/
+Disallow: /negotiation/
+Disallow: /negotiation-room/
+Disallow: /dashboard/
+Disallow: /account/
+Disallow: /auth/
+
+# ==============================================================================
+# Bingbot Specific Rules
+# ==============================================================================
+User-agent: Bingbot
+Crawl-delay: 1
+Allow: /*.js$
+Allow: /*.css$
+Disallow: /admin/
+Disallow: /api/
+Disallow: /negotiation/
+Disallow: /negotiation-room/
+Disallow: /dashboard/
+Disallow: /account/
+
+# ==============================================================================
+# Sitemaps Reference
+# ==============================================================================
 Sitemap: https://tradeheaven.net/sitemap.xml

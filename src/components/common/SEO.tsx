@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../../context/LanguageContext';
+import { getAutoAltText, generateProductAlt, generateLogoAlt } from '../../utils/imageSeo';
 
 export interface ProductSeoData {
   price?: number | string;
@@ -24,6 +25,7 @@ interface SEOProps {
   keywords?: string;
   canonicalUrl?: string;
   ogImage?: string;
+  ogImageAlt?: string;
   ogType?: 'website' | 'article' | 'product';
   productData?: ProductSeoData;
   jsonLd?: Record<string, any>;
@@ -35,6 +37,7 @@ export const SEO: React.FC<SEOProps> = ({
   keywords = 'B2B marketplace, wholesale sourcing, manufacturers, global trade, import export, Trade Heaven, RFQ, escrow protection',
   canonicalUrl = 'https://tradeheaven.net',
   ogImage = 'https://tradeheaven.net/og-image.png',
+  ogImageAlt,
   ogType = 'website',
   productData,
   jsonLd
@@ -46,6 +49,17 @@ export const SEO: React.FC<SEOProps> = ({
   const fullTitle = title === siteName || title.includes(siteName) 
     ? title 
     : `${title} | ${siteName}`;
+
+  // Automatically compute rich, accessible alt text for social graph images
+  const resolvedImageAlt = ogImageAlt || (
+    ogType === 'product' && productData
+      ? generateProductAlt(title, {
+          category: productData.category,
+          supplierName: productData.seller || productData.brand,
+          origin: productData.countryOfOrigin
+        })
+      : generateLogoAlt('Trade Heaven')
+  );
     
   // Helper to append query params to base URL safely
   const buildLangUrl = (lang: string) => {
@@ -99,7 +113,7 @@ export const SEO: React.FC<SEOProps> = ({
       <meta property="og:description" content={description} />
       <meta property="og:image" content={ogImage} />
       <meta property="og:image:secure_url" content={ogImage} />
-      <meta property="og:image:alt" content={fullTitle} />
+      <meta property="og:image:alt" content={resolvedImageAlt} />
       <meta property="og:site_name" content={siteName} />
       {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
 
@@ -129,7 +143,7 @@ export const SEO: React.FC<SEOProps> = ({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
-      <meta name="twitter:image:alt" content={fullTitle} />
+      <meta name="twitter:image:alt" content={resolvedImageAlt} />
 
       {/* Product-Specific Twitter Data Chips */}
       {ogType === 'product' && productData && (

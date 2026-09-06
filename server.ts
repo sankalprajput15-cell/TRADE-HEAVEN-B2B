@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -180,6 +181,64 @@ app.use(express.static(path.join(process.cwd(), 'public'), {
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
 }));
+
+// Explicit favicon endpoint for Google-Favicon & browser bots
+app.get('/favicon.ico', (req, res) => {
+  const icoPath = path.join(process.cwd(), 'public', 'favicon.ico');
+  if (fs.existsSync(icoPath)) {
+    res.setHeader('Content-Type', 'image/x-icon');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.sendFile(icoPath);
+  }
+  res.status(404).end();
+});
+
+// Explicit 48x48 PNG endpoint (Google Search Favicon specification)
+app.get('/favicon-48x48.png', (req, res) => {
+  const pngPath = path.join(process.cwd(), 'public', 'favicon-48x48.png');
+  if (fs.existsSync(pngPath)) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.sendFile(pngPath);
+  }
+  res.status(404).end();
+});
+
+// Explicit logo endpoint for Google Knowledge Panel & Organization schema
+app.get('/logo.png', (req, res) => {
+  const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+  if (fs.existsSync(logoPath)) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.sendFile(logoPath);
+  }
+  res.status(404).end();
+});
+
+// Explicit robots.txt endpoint for search engine crawlers
+app.get('/robots.txt', (req, res) => {
+  const robotsPath = path.join(process.cwd(), 'public', 'robots.txt');
+  if (fs.existsSync(robotsPath)) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(robotsPath);
+  }
+  res.status(404).type('text/plain').send('User-agent: *\nDisallow: /admin\nAllow: /');
+});
+
+// Explicit sitemap.xml endpoint for search engine crawlers
+app.get('/sitemap.xml', (req, res) => {
+  const sitemapPath = path.join(process.cwd(), 'public', 'sitemap.xml');
+  if (fs.existsSync(sitemapPath)) {
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(sitemapPath);
+  }
+  res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+});
 
 // Server environment credentials
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yr943334@gmail.com').toLowerCase().trim();

@@ -1,4 +1,5 @@
 import React from 'react';
+import { generateLogoAlt } from '../../utils/imageSeo';
 
 interface Props {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -55,19 +56,23 @@ export const TradeHeavenLogo: React.FC<Props> = ({
   };
 
   const wmStyle = getWordmarkStyle();
+  const logoAlt = generateLogoAlt('Trade Heaven');
 
   return (
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
       {/* Official "TH" Square Monogram matching tradeheavenbg1 */}
       <div 
         className={`${currentSize.box} shrink-0 bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden flex items-center justify-center p-0.5 transition-transform duration-200 group-hover:scale-105`}
-        title="Trade Heaven - B2B Marketplace"
+        title={logoAlt}
       >
         <svg 
           viewBox="0 0 512 512" 
           className="w-full h-full" 
           xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-label={logoAlt}
         >
+          <title>{logoAlt}</title>
           {/* Clean White Background */}
           <rect width="512" height="512" fill="#FFFFFF" />
 
