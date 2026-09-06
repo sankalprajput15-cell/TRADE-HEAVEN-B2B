@@ -4,7 +4,6 @@ import {
   ShieldCheck, 
   Clock, 
   ArrowRight, 
-  Sparkles, 
   Lock, 
   Unlock, 
   AlertTriangle, 

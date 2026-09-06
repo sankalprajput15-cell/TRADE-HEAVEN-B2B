@@ -30,7 +30,6 @@ import {
   ChevronDown,
   Search,
   ExternalLink,
-  Sparkles,
   Check
 } from 'lucide-react';
 import { ActiveView } from '../../types';

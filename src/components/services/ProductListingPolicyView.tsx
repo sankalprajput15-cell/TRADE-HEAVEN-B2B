@@ -26,7 +26,6 @@ import {
   Copy,
   Check,
   ArrowRight,
-  Sparkles,
   HelpCircle,
   ChevronDown,
   ChevronUp

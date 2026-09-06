@@ -369,7 +369,7 @@ export const CATEGORIES_TREE = [
   {
     id: 'cat-glass-ceramics',
     name: 'Glass & Ceramics',
-    icon: 'Sparkles',
+    icon: 'Layers',
     image: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Bent Glass', 'Ceramic Cartridge', 'Ceramic Coasters', 'Ceramic Colors', 'Ceramic Fiber', 'Ceramic Filters', 'Ceramic Handicrafts', 'Ceramic Kitchenware', 'Ceramic Knobs', 'Ceramic Lamps'],
     count: '2,435+ Verified Suppliers | 1,245+ RFQs'
@@ -457,7 +457,7 @@ export const CATEGORIES_TREE = [
   {
     id: 'cat-metallic-elements',
     name: 'Metallic Elements',
-    icon: 'Sparkles',
+    icon: 'Shield',
     image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Mercury'],
     count: '65+ Verified Suppliers | 30+ RFQs'
@@ -617,7 +617,7 @@ export const CATEGORIES_TREE = [
   {
     id: 'cat-cosmetics-toiletries',
     name: 'Cosmetics, Toiletries & Hygiene Products',
-    icon: 'Sparkles',
+    icon: 'Heart',
     image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=600&auto=format&fit=crop&q=80',
     subcategories: ['Aftershave Lotions', 'Agarwood Oil (Oud Oil)', 'Alcohol Based Hand Sanitizer', 'Alcohol Disinfectant Wipes', 'Anti Aging Creams', 'Antibacterial Hand Wash', 'Antibacterial Wipes', 'Antiseptic Wipes', 'Argan Oil', 'Artificial Nails'],
     count: '5,300+ Verified Suppliers | 3,170+ RFQs'

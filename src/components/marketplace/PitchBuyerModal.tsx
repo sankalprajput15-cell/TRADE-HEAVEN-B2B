@@ -11,7 +11,6 @@ import {
   Building2, 
   ShieldAlert, 
   CheckCircle2, 
-  Sparkles, 
   Zap, 
   ArrowRight,
   Crown

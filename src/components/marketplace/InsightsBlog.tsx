@@ -3,7 +3,7 @@ import { AuthUser } from '../../types';
 import { 
   Calendar, User, Tag, ArrowRight, PlayCircle, Share2, TrendingUp, X, 
   ExternalLink, Linkedin, Twitter, MessageCircle, Copy, Check, ShieldAlert, 
-  FileCheck, Anchor, AlertTriangle, CheckCircle2, Building2, Sparkles, Youtube, Globe
+  FileCheck, Anchor, AlertTriangle, CheckCircle2, Building2, Youtube, Globe
 } from 'lucide-react';
 import blogImage from '../../assets/images/regenerated_image_1787916463995.jpg';
 import buyerNoMoneyImage from '../../assets/images/regenerated_image_1787986452542.jpg';

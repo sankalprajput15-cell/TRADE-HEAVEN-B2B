@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors, Sparkles } from 'lucide-react';
+import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors } from 'lucide-react';
 import { getAutoAltText } from '../../utils/imageSeo';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {

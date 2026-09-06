@@ -6,7 +6,6 @@ import {
   ChevronUp, 
   Search, 
   MessageSquare, 
-  Sparkles,
   ArrowRight
 } from 'lucide-react';
 

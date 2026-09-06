@@ -25,7 +25,7 @@ import {
   CheckCircle2,
   ArrowUpDown,
   Armchair,
-  Sparkles,
+  Heart,
   Wind,
   Home,
   Trees,
@@ -99,7 +99,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       case 'Layers': return <Layers className="w-4 h-4 text-cyan-600" />;
       case 'ArrowUpDown': return <ArrowUpDown className="w-4 h-4 text-sky-600" />;
       case 'Armchair': return <Armchair className="w-4 h-4 text-rose-700" />;
-      case 'Sparkles': return <Sparkles className="w-4 h-4 text-violet-600" />;
+      case 'Heart': return <Heart className="w-4 h-4 text-rose-600" />;
       case 'Wind': return <Wind className="w-4 h-4 text-blue-500" />;
       case 'Home': return <Home className="w-4 h-4 text-teal-700" />;
       case 'Package': return <Package className="w-4 h-4 text-amber-800" />;

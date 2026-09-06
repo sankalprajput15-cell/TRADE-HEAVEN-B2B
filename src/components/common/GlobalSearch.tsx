@@ -23,7 +23,6 @@ import {
   Sun, 
   Pickaxe, 
   CornerDownLeft, 
-  Sparkles,
   Tag
 } from 'lucide-react';
 import { SafeImage } from './SafeImage';
@@ -869,8 +868,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
               {/* Popular Categories / Fast Jumps */}
               <div>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2 px-1 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500" /> Popular Sourcing Categories
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2 px-1 block">
+                  Popular Sourcing Categories
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1.5">
