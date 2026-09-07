@@ -1,0 +1,11 @@
+import { GLOBAL_HOTEL_SUPPLIES_COMPANIES } from './hotelSuppliesCompanies';
+import { GLOBAL_HOTEL_SUPPLIES_PRODUCTS } from './hotelSuppliesProducts';
+import { GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES } from './hotelSuppliesBuyers';
+import { GLOBAL_HOTEL_SUPPLIES_RFQS } from './hotelSuppliesRfqs';
+
+export {
+  GLOBAL_HOTEL_SUPPLIES_COMPANIES,
+  GLOBAL_HOTEL_SUPPLIES_PRODUCTS,
+  GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES,
+  GLOBAL_HOTEL_SUPPLIES_RFQS
+};
