@@ -439,6 +439,8 @@ export interface DetailedBuyerProfile {
   recentRfqIds?: string[];
 }
 
+export type BuyerProfile = DetailedBuyerProfile;
+
 export type ActiveView = 
   | 'MARKETPLACE_HOME'
   | 'HOMEPAGE'

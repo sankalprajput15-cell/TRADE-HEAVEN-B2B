@@ -56,6 +56,8 @@ const TRENDING_CATEGORIES = [
 ];
 
 const POPULAR_SEARCH_TERMS = [
+  'Turbine',
+  'Wind Turbine',
   'Excavator',
   'Solar Inverter',
   'CNC Lathe',
