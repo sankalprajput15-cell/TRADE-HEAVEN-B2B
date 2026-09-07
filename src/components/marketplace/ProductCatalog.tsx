@@ -20,6 +20,7 @@ import {
   Lock
 } from 'lucide-react';
 import { ProductCatalogGrid, ProductListSkeleton } from './ProductCatalogGrid';
+import { PaginationControls } from '../common/PaginationControls';
 
 interface Props {
   products: Product[];
@@ -199,7 +200,7 @@ export const ProductCatalog: React.FC<Props> = ({
   });
 
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 12; // 3x4 / 4x3 product grid (12 items per page)
+  const [itemsPerPage, setItemsPerPage] = useState<number>(12); // 3x4 / 4x3 product grid (12 items per page default)
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -664,64 +665,18 @@ export const ProductCatalog: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* Bottom Pagination Bar for 3x4 / 4x3 Grid */}
-              {totalPages > 1 && (
-                <div className="pt-5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs w-full">
-                  <div className="text-slate-600 font-medium text-center sm:text-left">
-                    Showing <strong className="text-slate-900 font-bold">{(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filtered.length)}</strong> of{' '}
-                    <strong className="text-slate-900 font-bold">{filtered.length}</strong> products
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5">
-                    <button
-                      type="button"
-                      disabled={currentPage <= 1}
-                      onClick={() => {
-                        setCurrentPage(prev => Math.max(1, prev - 1));
-                        const el = document.getElementById('featured-products-section');
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none text-slate-700 font-semibold cursor-pointer transition-colors whitespace-nowrap shadow-2xs"
-                    >
-                      Previous
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                        <button
-                          key={pageNum}
-                          type="button"
-                          onClick={() => {
-                            setCurrentPage(pageNum);
-                            const el = document.getElementById('featured-products-section');
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }}
-                          className={`w-8 h-8 min-w-[32px] flex items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            currentPage === pageNum
-                              ? 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-600/30'
-                              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={currentPage >= totalPages}
-                      onClick={() => {
-                        setCurrentPage(prev => Math.min(totalPages, prev + 1));
-                        const el = document.getElementById('featured-products-section');
-                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }}
-                      className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none text-slate-700 font-semibold cursor-pointer transition-colors whitespace-nowrap shadow-2xs"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Bottom Pagination Bar */}
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+                itemsPerPageOptions={[12, 24, 48]}
+                itemLabel="products"
+                scrollTargetId="product-catalog-section"
+              />
             </div>
           )}
         </div>

@@ -36,6 +36,7 @@ import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { DailyFreeLeadBanner } from '../marketplace/DailyFreeLeadBanner';
 import { PitchBuyerModal } from '../marketplace/PitchBuyerModal';
+import { PaginationControls } from '../common/PaginationControls';
 import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState } from '../../services/freeLeadService';
 
 interface Props {
@@ -71,7 +72,7 @@ export const BuyLeadsView: React.FC<Props> = ({
   onOpenUpgradeModal,
   onOpenRegisterFree
 }) => {
-  const ITEMS_PER_PAGE = 18;
+  const [itemsPerPage, setItemsPerPage] = useState(18);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -227,8 +228,8 @@ export const BuyLeadsView: React.FC<Props> = ({
   const hasActiveFilters = searchTerm.trim() !== '' || selectedCategory !== 'ALL' || urgentOnly || sortBy !== 'newest';
 
   
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const currentItems = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   
   return (
     <div id="buy-leads-view-root" className="space-y-6">
@@ -679,50 +680,19 @@ export const BuyLeadsView: React.FC<Props> = ({
         })}
       </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-200 gap-4">
-              <span className="text-sm text-slate-600 font-medium">
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} Leads
-              </span>
-              <div className="flex items-center gap-2 flex-wrap justify-center">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-1 hidden sm:flex">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1).map((p, i, arr) => (
-                    <React.Fragment key={p}>
-                      {i > 0 && arr[i - 1] !== p - 1 && (
-                        <span className="px-2 text-slate-400">...</span>
-                      )}
-                      <button
-                        onClick={() => setCurrentPage(p)}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors ${
-                          currentPage === p
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    </React.Fragment>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Pagination Controls */}
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+          itemsPerPageOptions={[18, 36, 54]}
+          itemLabel="leads"
+          scrollTargetId="buy-leads-view-root"
+        />
+      </div>
       )}
 
       {/* Direct Pitch Buyer Modal for Claimed Daily Free Lead */}
