@@ -2,7 +2,7 @@ import { CompanyProfile } from '../types';
 
 export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
   {
-    "id": "comp-hotel-ec21-01",
+    "id": "comp-hotel-corp-01",
     "companyName": "The Fusion Flux",
     "legalRegistrationNumber": "HTL-REG-PAK-2024-1000",
     "country": "Pakistan",
@@ -46,7 +46,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 50
   },
   {
-    "id": "comp-hotel-ec21-02",
+    "id": "comp-hotel-corp-02",
     "companyName": "Crystal Globe Oil Trading",
     "legalRegistrationNumber": "HTL-REG-MAL-2003-1047",
     "country": "Malaysia",
@@ -90,7 +90,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 61
   },
   {
-    "id": "comp-hotel-ec21-03",
+    "id": "comp-hotel-corp-03",
     "companyName": "Monalisa Group Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-1992-1094",
     "country": "China",
@@ -134,7 +134,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 72
   },
   {
-    "id": "comp-hotel-ec21-04",
+    "id": "comp-hotel-corp-04",
     "companyName": "Shri Krishna Stone Company",
     "legalRegistrationNumber": "HTL-REG-IND-2016-1141",
     "country": "India",
@@ -178,7 +178,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 83
   },
   {
-    "id": "comp-hotel-ec21-05",
+    "id": "comp-hotel-corp-05",
     "companyName": "CKI Industries",
     "legalRegistrationNumber": "HTL-REG-IND-2021-1188",
     "country": "India",
@@ -222,7 +222,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 94
   },
   {
-    "id": "comp-hotel-ec21-06",
+    "id": "comp-hotel-corp-06",
     "companyName": "Maas Apparels",
     "legalRegistrationNumber": "HTL-REG-IND-2020-1235",
     "country": "India",
@@ -266,7 +266,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 105
   },
   {
-    "id": "comp-hotel-ec21-07",
+    "id": "comp-hotel-corp-07",
     "companyName": "Keyue Converge (Shenzhen) Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2024-1282",
     "country": "China",
@@ -310,7 +310,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 116
   },
   {
-    "id": "comp-hotel-ec21-08",
+    "id": "comp-hotel-corp-08",
     "companyName": "Mi Hwa Industrial Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-SOU-1998-1329",
     "country": "South Korea",
@@ -354,7 +354,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 127
   },
   {
-    "id": "comp-hotel-ec21-09",
+    "id": "comp-hotel-corp-09",
     "companyName": "The Biszantz Connection",
     "legalRegistrationNumber": "HTL-REG-UNI-2000-1376",
     "country": "United States",
@@ -398,7 +398,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 138
   },
   {
-    "id": "comp-hotel-ec21-10",
+    "id": "comp-hotel-corp-10",
     "companyName": "Ekipmer Hotel Equipment",
     "legalRegistrationNumber": "HTL-REG-TUR-2020-1423",
     "country": "Turkey",
@@ -442,7 +442,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 149
   },
   {
-    "id": "comp-hotel-ec21-11",
+    "id": "comp-hotel-corp-11",
     "companyName": "Yongkang Huishuo Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2017-1470",
     "country": "China",
@@ -486,7 +486,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 160
   },
   {
-    "id": "comp-hotel-ec21-12",
+    "id": "comp-hotel-corp-12",
     "companyName": "Arjuna Company",
     "legalRegistrationNumber": "HTL-REG-IND-2025-1517",
     "country": "Indonesia",
@@ -530,7 +530,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 171
   },
   {
-    "id": "comp-hotel-ec21-13",
+    "id": "comp-hotel-corp-13",
     "companyName": "Beijing Kameige Environmental Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2017-1564",
     "country": "China",
@@ -574,7 +574,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 182
   },
   {
-    "id": "comp-hotel-ec21-14",
+    "id": "comp-hotel-corp-14",
     "companyName": "LS card Systems",
     "legalRegistrationNumber": "HTL-REG-ISR-2003-1611",
     "country": "Israel",
@@ -618,7 +618,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 193
   },
   {
-    "id": "comp-hotel-ec21-15",
+    "id": "comp-hotel-corp-15",
     "companyName": "Mixmadsan Outdoor & Hospitality Furniture",
     "legalRegistrationNumber": "HTL-REG-TUR-2000-1658",
     "country": "Turkey",
@@ -662,7 +662,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 204
   },
   {
-    "id": "comp-hotel-ec21-16",
+    "id": "comp-hotel-corp-16",
     "companyName": "Beijing Mingxiang Gongfang Trade Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2025-1705",
     "country": "China",
@@ -706,7 +706,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 215
   },
   {
-    "id": "comp-hotel-ec21-17",
+    "id": "comp-hotel-corp-17",
     "companyName": "Decent Towels",
     "legalRegistrationNumber": "HTL-REG-PAK-2000-1752",
     "country": "Pakistan",
@@ -750,7 +750,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 226
   },
   {
-    "id": "comp-hotel-ec21-18",
+    "id": "comp-hotel-corp-18",
     "companyName": "Almeat Al Samaa for Food Trading",
     "legalRegistrationNumber": "HTL-REG-JOR-2022-1799",
     "country": "Jordan",
@@ -794,7 +794,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 237
   },
   {
-    "id": "comp-hotel-ec21-19",
+    "id": "comp-hotel-corp-19",
     "companyName": "Restaurant Patio Furniture",
     "legalRegistrationNumber": "HTL-REG-UNI-2013-1846",
     "country": "United States",
@@ -838,7 +838,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 248
   },
   {
-    "id": "comp-hotel-ec21-20",
+    "id": "comp-hotel-corp-20",
     "companyName": "Yonfer Agricultural Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-1982-1893",
     "country": "China",
@@ -882,7 +882,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 259
   },
   {
-    "id": "comp-hotel-ec21-21",
+    "id": "comp-hotel-corp-21",
     "companyName": "Malie in the Shops At Kukui'ula",
     "legalRegistrationNumber": "HTL-REG-UNI-2000-1940",
     "country": "United States",
@@ -926,7 +926,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 270
   },
   {
-    "id": "comp-hotel-ec21-22",
+    "id": "comp-hotel-corp-22",
     "companyName": "Dzee Textiles LLC",
     "legalRegistrationNumber": "HTL-REG-UNI-2001-1987",
     "country": "United States",
@@ -970,7 +970,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 281
   },
   {
-    "id": "comp-hotel-ec21-23",
+    "id": "comp-hotel-corp-23",
     "companyName": "GuangZhou Bianyi Hotel Supplies Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2004-2034",
     "country": "China",
@@ -1014,7 +1014,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 292
   },
   {
-    "id": "comp-hotel-ec21-24",
+    "id": "comp-hotel-corp-24",
     "companyName": "LePack Accommodation Supplies Australia",
     "legalRegistrationNumber": "HTL-REG-AUS-2006-2081",
     "country": "Australia",
@@ -1058,7 +1058,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 303
   },
   {
-    "id": "comp-hotel-ec21-25",
+    "id": "comp-hotel-corp-25",
     "companyName": "Foshan Southbay Hotel Supply Limited",
     "legalRegistrationNumber": "HTL-REG-CHI-2016-2128",
     "country": "China",
@@ -1102,7 +1102,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 314
   },
   {
-    "id": "comp-hotel-ec21-26",
+    "id": "comp-hotel-corp-26",
     "companyName": "Guangdong Teehoo Stainless Steel Co., Limited",
     "legalRegistrationNumber": "HTL-REG-CHI-2022-2175",
     "country": "China",
@@ -1146,7 +1146,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 325
   },
   {
-    "id": "comp-hotel-ec21-27",
+    "id": "comp-hotel-corp-27",
     "companyName": "Guangzhou Willco Trading Co., Limited",
     "legalRegistrationNumber": "HTL-REG-CHI-2013-2222",
     "country": "China",
@@ -1190,7 +1190,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 336
   },
   {
-    "id": "comp-hotel-ec21-28",
+    "id": "comp-hotel-corp-28",
     "companyName": "Jinan Huayu Tianshun Hotel Supplies Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2020-2269",
     "country": "China",
@@ -1234,7 +1234,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 347
   },
   {
-    "id": "comp-hotel-ec21-29",
+    "id": "comp-hotel-corp-29",
     "companyName": "Food Technotic",
     "legalRegistrationNumber": "HTL-REG-TUR-1999-2316",
     "country": "Turkey",
@@ -1278,7 +1278,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 358
   },
   {
-    "id": "comp-hotel-ec21-30",
+    "id": "comp-hotel-corp-30",
     "companyName": "Aromach Gida Makine",
     "legalRegistrationNumber": "HTL-REG-TUR-2005-2363",
     "country": "Turkey",
@@ -1322,7 +1322,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 369
   },
   {
-    "id": "comp-hotel-ec21-31",
+    "id": "comp-hotel-corp-31",
     "companyName": "Biscute Mak Sti",
     "legalRegistrationNumber": "HTL-REG-TUR-1988-2410",
     "country": "Turkey",
@@ -1366,7 +1366,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 60
   },
   {
-    "id": "comp-hotel-ec21-32",
+    "id": "comp-hotel-corp-32",
     "companyName": "Uniconcept Mutfak Ekipmanlari",
     "legalRegistrationNumber": "HTL-REG-TUR-1993-2457",
     "country": "Turkey",
@@ -1410,7 +1410,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 71
   },
   {
-    "id": "comp-hotel-ec21-33",
+    "id": "comp-hotel-corp-33",
     "companyName": "Shanghai SCC Environmental Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2009-2504",
     "country": "China",
@@ -1454,7 +1454,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 82
   },
   {
-    "id": "comp-hotel-ec21-34",
+    "id": "comp-hotel-corp-34",
     "companyName": "Shenzhen Younuo IET Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-CHI-2011-2551",
     "country": "China",
@@ -1498,7 +1498,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 93
   },
   {
-    "id": "comp-hotel-ec21-35",
+    "id": "comp-hotel-corp-35",
     "companyName": "K R Enterprise",
     "legalRegistrationNumber": "HTL-REG-IND-2016-2598",
     "country": "India",
@@ -1542,7 +1542,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 104
   },
   {
-    "id": "comp-hotel-ec21-36",
+    "id": "comp-hotel-corp-36",
     "companyName": "PT Exentra Internasional Trade",
     "legalRegistrationNumber": "HTL-REG-IND-2025-2645",
     "country": "Indonesia",
@@ -1586,7 +1586,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 115
   },
   {
-    "id": "comp-hotel-ec21-37",
+    "id": "comp-hotel-corp-37",
     "companyName": "Oriental International Business Group LLC",
     "legalRegistrationNumber": "HTL-REG-UNI-2001-2692",
     "country": "United States",
@@ -1630,7 +1630,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 126
   },
   {
-    "id": "comp-hotel-ec21-38",
+    "id": "comp-hotel-corp-38",
     "companyName": "Nova Global Trading GmbH",
     "legalRegistrationNumber": "HTL-REG-GER-2011-2739",
     "country": "Germany",
@@ -1674,7 +1674,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 137
   },
   {
-    "id": "comp-hotel-ec21-39",
+    "id": "comp-hotel-corp-39",
     "companyName": "Alkemal Foods Singapore",
     "legalRegistrationNumber": "HTL-REG-SIN-2000-2786",
     "country": "Singapore",
@@ -1718,7 +1718,7 @@ export const GLOBAL_HOTEL_SUPPLIES_COMPANIES: CompanyProfile[] = [
     "completedOrdersCount": 148
   },
   {
-    "id": "comp-hotel-ec21-40",
+    "id": "comp-hotel-corp-40",
     "companyName": "Shenzhen IBG Digital Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-REG-HON-2026-2833",
     "country": "Hong Kong",

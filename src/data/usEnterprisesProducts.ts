@@ -2,8 +2,8 @@ import { Product } from '../types';
 
 export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   {
-    "id": "prod-us-ec21-01",
-    "supplierId": "comp-us-ec21-01",
+    "id": "prod-us-corp-01",
+    "supplierId": "comp-us-corp-01",
     "supplierName": "Sweet Tea & Tox Beauty Boutique",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -97,8 +97,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-02",
-    "supplierId": "comp-us-ec21-02",
+    "id": "prod-us-corp-02",
+    "supplierId": "comp-us-corp-02",
     "supplierName": "Ez2Fix Garage Doors & Automation",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -192,8 +192,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-03",
-    "supplierId": "comp-us-ec21-03",
+    "id": "prod-us-corp-03",
+    "supplierId": "comp-us-corp-03",
     "supplierName": "Amped Up Car Audio",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -287,8 +287,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-04",
-    "supplierId": "comp-us-ec21-04",
+    "id": "prod-us-corp-04",
+    "supplierId": "comp-us-corp-04",
     "supplierName": "CodingCops Software Solutions",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -382,8 +382,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-05",
-    "supplierId": "comp-us-ec21-05",
+    "id": "prod-us-corp-05",
+    "supplierId": "comp-us-corp-05",
     "supplierName": "Home Improvement & Renovation NYC",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -477,8 +477,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-06",
-    "supplierId": "comp-us-ec21-06",
+    "id": "prod-us-corp-06",
+    "supplierId": "comp-us-corp-06",
     "supplierName": "Texas Sage Landscaping & Lawn",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -572,8 +572,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-07",
-    "supplierId": "comp-us-ec21-07",
+    "id": "prod-us-corp-07",
+    "supplierId": "comp-us-corp-07",
     "supplierName": "Reliable Brothers Remodeling & Construction",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -667,8 +667,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-08",
-    "supplierId": "comp-us-ec21-08",
+    "id": "prod-us-corp-08",
+    "supplierId": "comp-us-corp-08",
     "supplierName": "Sebastian Francese General Contractor",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -762,8 +762,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-09",
-    "supplierId": "comp-us-ec21-09",
+    "id": "prod-us-corp-09",
+    "supplierId": "comp-us-corp-09",
     "supplierName": "Pacific Sleep Apnea Center",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -857,8 +857,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-10",
-    "supplierId": "comp-us-ec21-10",
+    "id": "prod-us-corp-10",
+    "supplierId": "comp-us-corp-10",
     "supplierName": "OnStage Hawai'i Event Productions",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -952,8 +952,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-11",
-    "supplierId": "comp-us-ec21-11",
+    "id": "prod-us-corp-11",
+    "supplierId": "comp-us-corp-11",
     "supplierName": "Power Speakers Unlimited LLC",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -1047,8 +1047,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-12",
-    "supplierId": "comp-us-ec21-12",
+    "id": "prod-us-corp-12",
+    "supplierId": "comp-us-corp-12",
     "supplierName": "R&R Painting and Wallpaper",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -1142,8 +1142,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-13",
-    "supplierId": "comp-us-ec21-13",
+    "id": "prod-us-corp-13",
+    "supplierId": "comp-us-corp-13",
     "supplierName": "Bollywood Threading Beauty Salon",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -1237,8 +1237,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-14",
-    "supplierId": "comp-us-ec21-14",
+    "id": "prod-us-corp-14",
+    "supplierId": "comp-us-corp-14",
     "supplierName": "Hold My Hand Wholesale Inc.",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -1332,8 +1332,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-15",
-    "supplierId": "comp-us-ec21-15",
+    "id": "prod-us-corp-15",
+    "supplierId": "comp-us-corp-15",
     "supplierName": "Valley Medical Weight Loss & Med Spa",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -1427,8 +1427,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-16",
-    "supplierId": "comp-us-ec21-16",
+    "id": "prod-us-corp-16",
+    "supplierId": "comp-us-corp-16",
     "supplierName": "Revord Home Builder",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -1522,8 +1522,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-17",
-    "supplierId": "comp-us-ec21-17",
+    "id": "prod-us-corp-17",
+    "supplierId": "comp-us-corp-17",
     "supplierName": "32ology Dentist Studio",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -1617,8 +1617,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-18",
-    "supplierId": "comp-us-ec21-18",
+    "id": "prod-us-corp-18",
+    "supplierId": "comp-us-corp-18",
     "supplierName": "OMG Painting Contractors",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -1712,8 +1712,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-19",
-    "supplierId": "comp-us-ec21-19",
+    "id": "prod-us-corp-19",
+    "supplierId": "comp-us-corp-19",
     "supplierName": "Parisian Window Treatments",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -1807,8 +1807,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-20",
-    "supplierId": "comp-us-ec21-20",
+    "id": "prod-us-corp-20",
+    "supplierId": "comp-us-corp-20",
     "supplierName": "Babcock Restoration Flooring",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -1902,8 +1902,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-21",
-    "supplierId": "comp-us-ec21-21",
+    "id": "prod-us-corp-21",
+    "supplierId": "comp-us-corp-21",
     "supplierName": "Raleigh Custom Kitchens",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -1997,8 +1997,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-22",
-    "supplierId": "comp-us-ec21-22",
+    "id": "prod-us-corp-22",
+    "supplierId": "comp-us-corp-22",
     "supplierName": "A Team Home Services",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -2092,8 +2092,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-23",
-    "supplierId": "comp-us-ec21-23",
+    "id": "prod-us-corp-23",
+    "supplierId": "comp-us-corp-23",
     "supplierName": "Queens Carpet One Floor & Home",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -2187,8 +2187,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-24",
-    "supplierId": "comp-us-ec21-24",
+    "id": "prod-us-corp-24",
+    "supplierId": "comp-us-corp-24",
     "supplierName": "Precise Outdoors Landscape Design",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -2282,8 +2282,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-25",
-    "supplierId": "comp-us-ec21-25",
+    "id": "prod-us-corp-25",
+    "supplierId": "comp-us-corp-25",
     "supplierName": "Strateger AI Digital Innovation Labs",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -2377,8 +2377,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-26",
-    "supplierId": "comp-us-ec21-26",
+    "id": "prod-us-corp-26",
+    "supplierId": "comp-us-corp-26",
     "supplierName": "Laser by Aleya Aesthetic Center",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -2472,8 +2472,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-27",
-    "supplierId": "comp-us-ec21-27",
+    "id": "prod-us-corp-27",
+    "supplierId": "comp-us-corp-27",
     "supplierName": "Enterprise Excellence Execution LLC",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -2567,8 +2567,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-28",
-    "supplierId": "comp-us-ec21-28",
+    "id": "prod-us-corp-28",
+    "supplierId": "comp-us-corp-28",
     "supplierName": "Orlando Special Effects & Pyrotechnics",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -2662,8 +2662,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-29",
-    "supplierId": "comp-us-ec21-29",
+    "id": "prod-us-corp-29",
+    "supplierId": "comp-us-corp-29",
     "supplierName": "Wolf Spirit Deck Builders",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -2757,8 +2757,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-30",
-    "supplierId": "comp-us-ec21-30",
+    "id": "prod-us-corp-30",
+    "supplierId": "comp-us-corp-30",
     "supplierName": "California Collision Center El Cajon",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -2852,8 +2852,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-31",
-    "supplierId": "comp-us-ec21-31",
+    "id": "prod-us-corp-31",
+    "supplierId": "comp-us-corp-31",
     "supplierName": "Grandview Painting Contractors",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -2947,8 +2947,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-32",
-    "supplierId": "comp-us-ec21-32",
+    "id": "prod-us-corp-32",
+    "supplierId": "comp-us-corp-32",
     "supplierName": "Vision Construction & Design",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -3042,8 +3042,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-33",
-    "supplierId": "comp-us-ec21-33",
+    "id": "prod-us-corp-33",
+    "supplierId": "comp-us-corp-33",
     "supplierName": "Big Red Flooring & Restoration",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -3137,8 +3137,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-34",
-    "supplierId": "comp-us-ec21-34",
+    "id": "prod-us-corp-34",
+    "supplierId": "comp-us-corp-34",
     "supplierName": "Kitchen-Remodelling-Frisco",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -3232,8 +3232,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-35",
-    "supplierId": "comp-us-ec21-35",
+    "id": "prod-us-corp-35",
+    "supplierId": "comp-us-corp-35",
     "supplierName": "Leading Edge Decorative Lighting",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -3327,8 +3327,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-36",
-    "supplierId": "comp-us-ec21-36",
+    "id": "prod-us-corp-36",
+    "supplierId": "comp-us-corp-36",
     "supplierName": "All Pro Paving Long Island",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -3422,8 +3422,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-37",
-    "supplierId": "comp-us-ec21-37",
+    "id": "prod-us-corp-37",
+    "supplierId": "comp-us-corp-37",
     "supplierName": "MS Remodeling Group",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -3517,8 +3517,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-38",
-    "supplierId": "comp-us-ec21-38",
+    "id": "prod-us-corp-38",
+    "supplierId": "comp-us-corp-38",
     "supplierName": "Premier Siding & Exteriors",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -3612,8 +3612,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-39",
-    "supplierId": "comp-us-ec21-39",
+    "id": "prod-us-corp-39",
+    "supplierId": "comp-us-corp-39",
     "supplierName": "Deck Science | Deck Builder and Remodeler",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -3707,8 +3707,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-40",
-    "supplierId": "comp-us-ec21-40",
+    "id": "prod-us-corp-40",
+    "supplierId": "comp-us-corp-40",
     "supplierName": "Orgaspaces LLC Garage Renovation",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -3802,8 +3802,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-41",
-    "supplierId": "comp-us-ec21-41",
+    "id": "prod-us-corp-41",
+    "supplierId": "comp-us-corp-41",
     "supplierName": "Capital Business Solutions",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -3897,8 +3897,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-42",
-    "supplierId": "comp-us-ec21-42",
+    "id": "prod-us-corp-42",
+    "supplierId": "comp-us-corp-42",
     "supplierName": "Horizon Boston Movers",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -3992,8 +3992,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-43",
-    "supplierId": "comp-us-ec21-43",
+    "id": "prod-us-corp-43",
+    "supplierId": "comp-us-corp-43",
     "supplierName": "Impact Digitizing Studio",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -4087,8 +4087,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-44",
-    "supplierId": "comp-us-ec21-44",
+    "id": "prod-us-corp-44",
+    "supplierId": "comp-us-corp-44",
     "supplierName": "A&A Pro General Contractor Inc.",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -4182,8 +4182,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-45",
-    "supplierId": "comp-us-ec21-45",
+    "id": "prod-us-corp-45",
+    "supplierId": "comp-us-corp-45",
     "supplierName": "Bath Crest Home Solutions",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -4277,8 +4277,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-46",
-    "supplierId": "comp-us-ec21-46",
+    "id": "prod-us-corp-46",
+    "supplierId": "comp-us-corp-46",
     "supplierName": "North Coastal Floral Design",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -4372,8 +4372,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-47",
-    "supplierId": "comp-us-ec21-47",
+    "id": "prod-us-corp-47",
+    "supplierId": "comp-us-corp-47",
     "supplierName": "McDowell Mountain Builders",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -4467,8 +4467,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-48",
-    "supplierId": "comp-us-ec21-48",
+    "id": "prod-us-corp-48",
+    "supplierId": "comp-us-corp-48",
     "supplierName": "Unique Builders and Remodeling Houston",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -4562,8 +4562,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-49",
-    "supplierId": "comp-us-ec21-49",
+    "id": "prod-us-corp-49",
+    "supplierId": "comp-us-corp-49",
     "supplierName": "Peace of Mind Counseling",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -4657,8 +4657,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-50",
-    "supplierId": "comp-us-ec21-50",
+    "id": "prod-us-corp-50",
+    "supplierId": "comp-us-corp-50",
     "supplierName": "Landscapes USA San Diego",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -4752,8 +4752,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-51",
-    "supplierId": "comp-us-ec21-51",
+    "id": "prod-us-corp-51",
+    "supplierId": "comp-us-corp-51",
     "supplierName": "Cabinet IQ of Overland Park",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -4847,8 +4847,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-52",
-    "supplierId": "comp-us-ec21-52",
+    "id": "prod-us-corp-52",
+    "supplierId": "comp-us-corp-52",
     "supplierName": "AM Woodland Outdoor Design",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -4942,8 +4942,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-53",
-    "supplierId": "comp-us-ec21-53",
+    "id": "prod-us-corp-53",
+    "supplierId": "comp-us-corp-53",
     "supplierName": "Mobile Dent Experts",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -5037,8 +5037,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-54",
-    "supplierId": "comp-us-ec21-54",
+    "id": "prod-us-corp-54",
+    "supplierId": "comp-us-corp-54",
     "supplierName": "Madison Deck Co.",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -5132,8 +5132,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-55",
-    "supplierId": "comp-us-ec21-55",
+    "id": "prod-us-corp-55",
+    "supplierId": "comp-us-corp-55",
     "supplierName": "Southern Scapes Turf Management",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -5227,8 +5227,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-56",
-    "supplierId": "comp-us-ec21-56",
+    "id": "prod-us-corp-56",
+    "supplierId": "comp-us-corp-56",
     "supplierName": "AutoBlastSD Detailing & Ceramic Coating",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -5322,8 +5322,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-57",
-    "supplierId": "comp-us-ec21-57",
+    "id": "prod-us-corp-57",
+    "supplierId": "comp-us-corp-57",
     "supplierName": "Earthsculpt Commercial Landscaping Las Vegas",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -5417,8 +5417,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-58",
-    "supplierId": "comp-us-ec21-58",
+    "id": "prod-us-corp-58",
+    "supplierId": "comp-us-corp-58",
     "supplierName": "RCEENetworks LLC Software & QA",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -5512,8 +5512,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-59",
-    "supplierId": "comp-us-ec21-59",
+    "id": "prod-us-corp-59",
+    "supplierId": "comp-us-corp-59",
     "supplierName": "HTH Car Signs & Fleet Graphics",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -5607,8 +5607,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "createdDate": "2025-01-18"
   },
   {
-    "id": "prod-us-ec21-60",
-    "supplierId": "comp-us-ec21-60",
+    "id": "prod-us-corp-60",
+    "supplierId": "comp-us-corp-60",
     "supplierName": "Fvtled Smart Lighting Co.",
     "supplierCountry": "United States",
     "supplierTier": "SILVER",
@@ -5700,5 +5700,3285 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "rating": 5,
     "reviewCount": 79,
     "createdDate": "2025-01-18"
-  }
+  },
+  {
+  "id": "prod-us-corp-61",
+  "supplierId": "comp-us-corp-61",
+  "supplierName": "Cwl Group Ltd",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Units",
+  "priceRangeUsd": "$78,000 - $115,000 / Unit",
+  "unit": "Units",
+  "title": "Heavy-Duty Crawler Excavators & Industrial Hydraulic Crane Systems",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Crawler Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Heavy-Duty Crawler Excavators & Industrial Hydraulic Crane Systems supplied directly by Cwl Group Ltd (North Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 85000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 78200
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 72250
+    }
+  ],
+  "fobPriceUsd": 85000,
+  "moq": 1,
+  "moqUnit": "Units",
+  "sampleAvailable": true,
+  "samplePriceUsd": 93500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Charlotte, North Carolina, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Units / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 56,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-62",
+  "supplierId": "comp-us-corp-62",
+  "supplierName": "Angelo Underground LLC",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$15,000 - $45,000 / Project",
+  "unit": "Projects",
+  "title": "Precision Trenching & Underground Utility Earthmoving Excavation Services",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Precision Trenching & Underground Utility Earthmoving Excavation Services supplied directly by Angelo Underground LLC (Oregon, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 25000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 23000
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 21250
+    }
+  ],
+  "fobPriceUsd": 25000,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 27500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Portland, Oregon, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 57,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-63",
+  "supplierId": "comp-us-corp-63",
+  "supplierName": "Carolina United Grading LLC",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Sites",
+  "priceRangeUsd": "$12,000 - $35,000 / Site",
+  "unit": "Sites",
+  "title": "Commercial Land Clearing, Precision Earthmoving & Pond Excavation Services",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Bulldozer",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Commercial Land Clearing, Precision Earthmoving & Pond Excavation Services supplied directly by Carolina United Grading LLC (North Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 18000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 16560
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 15300
+    }
+  ],
+  "fobPriceUsd": 18000,
+  "moq": 1,
+  "moqUnit": "Sites",
+  "sampleAvailable": true,
+  "samplePriceUsd": 19800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Mebane, North Carolina, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Sites / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 58,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-64",
+  "supplierId": "comp-us-corp-64",
+  "supplierName": "Emergency Sewer Repair",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Deployments",
+  "priceRangeUsd": "$4,500 - $16,000 / Deployment",
+  "unit": "Deployments",
+  "title": "Emergency Sewer Line Trenching & Rapid Hydro-Excavation Services",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Emergency Sewer Line Trenching & Rapid Hydro-Excavation Services supplied directly by Emergency Sewer Repair (Kansas, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 8500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 7820
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 7225
+    }
+  ],
+  "fobPriceUsd": 8500,
+  "moq": 1,
+  "moqUnit": "Deployments",
+  "sampleAvailable": true,
+  "samplePriceUsd": 9350,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Wichita, Kansas, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Deployments / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 59,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-65",
+  "supplierId": "comp-us-corp-65",
+  "supplierName": "Booth Gas Service, LLC",
+  "supplierCountry": "United States",
+  "supplierTier": "SILVER",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Contracts",
+  "priceRangeUsd": "$8,000 - $28,000 / Contract",
+  "unit": "Contracts",
+  "title": "Certified Gas Pipeline Trenching, Backfilling & Site Restoration Services",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Backhoe",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Certified Gas Pipeline Trenching, Backfilling & Site Restoration Services supplied directly by Booth Gas Service, LLC (Pennsylvania, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 14000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 12880
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 11900
+    }
+  ],
+  "fobPriceUsd": 14000,
+  "moq": 1,
+  "moqUnit": "Contracts",
+  "sampleAvailable": true,
+  "samplePriceUsd": 15400,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Pittsburgh, Pennsylvania, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Contracts / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 60,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-66",
+  "supplierId": "comp-us-corp-66",
+  "supplierName": "Big Rock Excavations",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$20,000 - $65,000 / Project",
+  "unit": "Projects",
+  "title": "Heavy Rock Excavation, Hydraulic Breaking & Precision Site Grading Services",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Hydraulic Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Heavy Rock Excavation, Hydraulic Breaking & Precision Site Grading Services supplied directly by Big Rock Excavations (Pennsylvania, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 32000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 29440
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 27200
+    }
+  ],
+  "fobPriceUsd": 32000,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 35200,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Scranton, Pennsylvania, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 61,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-67",
+  "supplierId": "comp-us-corp-67",
+  "supplierName": "John Himchak Construction Company Inc.",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Structures",
+  "priceRangeUsd": "$25,000 - $90,000 / Structure",
+  "unit": "Structures",
+  "title": "Structural Concrete Foundation Pouring & Deep Basement Excavation Engineering",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Structural Concrete Foundation Pouring & Deep Basement Excavation Engineering supplied directly by John Himchak Construction Company Inc. (Maryland, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 45000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 41400
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 38250
+    }
+  ],
+  "fobPriceUsd": 45000,
+  "moq": 1,
+  "moqUnit": "Structures",
+  "sampleAvailable": true,
+  "samplePriceUsd": 49500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Baltimore, Maryland, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Structures / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 62,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-68",
+  "supplierId": "comp-us-corp-68",
+  "supplierName": "Bellingrath Bros. Landscape & Design",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Jobs",
+  "priceRangeUsd": "$14,000 - $50,000 / Job",
+  "unit": "Jobs",
+  "title": "Municipal Storm Drainage, Culvert Excavation & Civil Earthmoving",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Wheel Loader",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Municipal Storm Drainage, Culvert Excavation & Civil Earthmoving supplied directly by Bellingrath Bros. Landscape & Design (Connecticut, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 22000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 20240
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 18700
+    }
+  ],
+  "fobPriceUsd": 22000,
+  "moq": 1,
+  "moqUnit": "Jobs",
+  "sampleAvailable": true,
+  "samplePriceUsd": 24200,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "West Hartford, Connecticut, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Jobs / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 63,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-69",
+  "supplierId": "comp-us-corp-69",
+  "supplierName": "Valley View Excavating, LLC",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$10,000 - $38,000 / Project",
+  "unit": "Projects",
+  "title": "Central Connecticut Commercial Foundation Digging & Sewer Line Trenching",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Central Connecticut Commercial Foundation Digging & Sewer Line Trenching supplied directly by Valley View Excavating, LLC (Connecticut, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 19500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 17940
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 16575
+    }
+  ],
+  "fobPriceUsd": 19500,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 21450,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Plainville, Connecticut, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 64,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-70",
+  "supplierId": "comp-us-corp-70",
+  "supplierName": "Chesterton Well & Pump Service",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Wells",
+  "priceRangeUsd": "$7,500 - $24,000 / Well",
+  "unit": "Wells",
+  "title": "Deep Borehole Well Drilling, Submersible Pumps & Groundwater Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Deep Borehole Well Drilling, Submersible Pumps & Groundwater Excavation supplied directly by Chesterton Well & Pump Service (Indiana, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 12500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 11500
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 10625
+    }
+  ],
+  "fobPriceUsd": 12500,
+  "moq": 1,
+  "moqUnit": "Wells",
+  "sampleAvailable": true,
+  "samplePriceUsd": 13750,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Chesterton, Indiana, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Wells / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 65,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-71",
+  "supplierId": "comp-us-corp-71",
+  "supplierName": "Southwest JCB",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Units",
+  "priceRangeUsd": "$85,000 - $140,000 / Unit",
+  "unit": "Units",
+  "title": "JCB Heavy Excavators, Backhoe Loaders & Multi-Terrain Telehandlers",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Wheel Loader",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance JCB Heavy Excavators, Backhoe Loaders & Multi-Terrain Telehandlers supplied directly by Southwest JCB (Arizona, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 98000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 90160
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 83300
+    }
+  ],
+  "fobPriceUsd": 98000,
+  "moq": 1,
+  "moqUnit": "Units",
+  "sampleAvailable": true,
+  "samplePriceUsd": 107800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Phoenix, Arizona, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Units / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 66,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-72",
+  "supplierId": "comp-us-corp-72",
+  "supplierName": "Jining Tovisen Intelligent Equipment Co., Ltd.",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Units",
+  "priceRangeUsd": "$8,500 - $29,000 / Unit",
+  "unit": "Units",
+  "title": "Tovisen KV & KE Series Electric/Diesel Compact Mini-Excavators & Skid Steers",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Mini Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Tovisen KV & KE Series Electric/Diesel Compact Mini-Excavators & Skid Steers supplied directly by Jining Tovisen Intelligent Equipment Co., Ltd. (South Dakota, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 14500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 13340
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 12325
+    }
+  ],
+  "fobPriceUsd": 14500,
+  "moq": 1,
+  "moqUnit": "Units",
+  "sampleAvailable": true,
+  "samplePriceUsd": 15950,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Sioux Falls, South Dakota, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Units / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 67,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-73",
+  "supplierId": "comp-us-corp-73",
+  "supplierName": "ROMCO Equipment Co.",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Units",
+  "priceRangeUsd": "$110,000 - $185,000 / Unit",
+  "unit": "Units",
+  "title": "Commercial Tier-4 Heavy Articulated Dump Trucks & Earthmoving Wheel Loaders",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Dump Truck",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Commercial Tier-4 Heavy Articulated Dump Trucks & Earthmoving Wheel Loaders supplied directly by ROMCO Equipment Co. (Texas, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 125000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 115000
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 106250
+    }
+  ],
+  "fobPriceUsd": 125000,
+  "moq": 1,
+  "moqUnit": "Units",
+  "sampleAvailable": true,
+  "samplePriceUsd": 137500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Houston, Texas, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Units / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 68,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-74",
+  "supplierId": "comp-us-corp-74",
+  "supplierName": "JW Land Management",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Acres",
+  "priceRangeUsd": "$4,500 - $18,000 / Site",
+  "unit": "Acres",
+  "title": "Forestry Mulching, High-Volume Site Excavation & Wildlife Habitat Grading",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Bulldozer",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Forestry Mulching, High-Volume Site Excavation & Wildlife Habitat Grading supplied directly by JW Land Management (Wisconsin, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 7500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 6900
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 6375
+    }
+  ],
+  "fobPriceUsd": 7500,
+  "moq": 1,
+  "moqUnit": "Acres",
+  "sampleAvailable": true,
+  "samplePriceUsd": 8250,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Bonduel, Wisconsin, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Acres / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 69,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-75",
+  "supplierId": "comp-us-corp-75",
+  "supplierName": "Grading & Gravel Driveway Co.",
+  "supplierCountry": "United States",
+  "supplierTier": "SILVER",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Driveways",
+  "priceRangeUsd": "$3,800 - $15,000 / Job",
+  "unit": "Driveways",
+  "title": "Midlands Gravel Road Base Installation, Compaction & Earth Grading",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Bulldozer",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Midlands Gravel Road Base Installation, Compaction & Earth Grading supplied directly by Grading & Gravel Driveway Co. (South Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 6800
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 6256
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 5780
+    }
+  ],
+  "fobPriceUsd": 6800,
+  "moq": 1,
+  "moqUnit": "Driveways",
+  "sampleAvailable": true,
+  "samplePriceUsd": 7480,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Columbia, South Carolina, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Driveways / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 70,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-76",
+  "supplierId": "comp-us-corp-76",
+  "supplierName": "Icon Equipment Distributors",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Sets",
+  "priceRangeUsd": "$12,000 - $38,000 / Set",
+  "unit": "Sets",
+  "title": "Aluminum & Steel Modular Trench Shoring Shields & Hydraulic Excavation Braces",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Aluminum & Steel Modular Trench Shoring Shields & Hydraulic Excavation Braces supplied directly by Icon Equipment Distributors (New Jersey, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 18500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 17020
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 15725
+    }
+  ],
+  "fobPriceUsd": 18500,
+  "moq": 1,
+  "moqUnit": "Sets",
+  "sampleAvailable": true,
+  "samplePriceUsd": 20350,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Newark, New Jersey, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Sets / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 71,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-77",
+  "supplierId": "comp-us-corp-77",
+  "supplierName": "Valhalla Construction LLC",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$35,000 - $120,000 / Project",
+  "unit": "Projects",
+  "title": "Severe-Terrain Excavation, Reinforced Concrete Vaults & Earthwork",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Severe-Terrain Excavation, Reinforced Concrete Vaults & Earthwork supplied directly by Valhalla Construction LLC (Idaho, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 55000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 50600
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 46750
+    }
+  ],
+  "fobPriceUsd": 55000,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 60500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Coeur d'Alene, Idaho, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 72,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-78",
+  "supplierId": "comp-us-corp-78",
+  "supplierName": "Santa Monica Pool Contractors",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$55,000 - $160,000 / Pool",
+  "unit": "Pools",
+  "title": "Luxury Custom In-Ground Swimming Pool Construction & Deep Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Luxury Custom In-Ground Swimming Pool Construction & Deep Excavation supplied directly by Santa Monica Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 75000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 69000
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 63750
+    }
+  ],
+  "fobPriceUsd": 75000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 82500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Santa Monica, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 73,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-79",
+  "supplierId": "comp-us-corp-79",
+  "supplierName": "Santa Monica Pool Builders",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Installations",
+  "priceRangeUsd": "$48,000 - $140,000 / Installation",
+  "unit": "Installations",
+  "title": "Sustainable Gunite Pool Engineering, Automated Sanitizers & Earth Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Sustainable Gunite Pool Engineering, Automated Sanitizers & Earth Excavation supplied directly by Santa Monica Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 68000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 62560
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 57800
+    }
+  ],
+  "fobPriceUsd": 68000,
+  "moq": 1,
+  "moqUnit": "Installations",
+  "sampleAvailable": true,
+  "samplePriceUsd": 74800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Santa Monica, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Installations / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 74,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-80",
+  "supplierId": "comp-us-corp-80",
+  "supplierName": "Glendale Pool Construction",
+  "supplierCountry": "United States",
+  "supplierTier": "SILVER",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$45,000 - $130,000 / Pool",
+  "unit": "Pools",
+  "title": "Glendale Custom Spa & Swimming Pool Hydro-Excavation & Gunite Placement",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Glendale Custom Spa & Swimming Pool Hydro-Excavation & Gunite Placement supplied directly by Glendale Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 62000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 57040
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 52700
+    }
+  ],
+  "fobPriceUsd": 62000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 68200,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Glendale, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 75,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-81",
+  "supplierId": "comp-us-corp-81",
+  "supplierName": "Aqualux Pool Construction",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$60,000 - $180,000 / Pool",
+  "unit": "Pools",
+  "title": "Architectural Commercial & Residential Swimming Pool Concrete Construction",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Architectural Commercial & Residential Swimming Pool Concrete Construction supplied directly by Aqualux Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 85000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 78200
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 72250
+    }
+  ],
+  "fobPriceUsd": 85000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 93500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Los Angeles, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 76,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-82",
+  "supplierId": "comp-us-corp-82",
+  "supplierName": "Encino Pool Contractors",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$70,000 - $210,000 / Pool",
+  "unit": "Pools",
+  "title": "Infinity Edge Custom Swimming Pool Design, Masonry & Earthmoving",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Infinity Edge Custom Swimming Pool Design, Masonry & Earthmoving supplied directly by Encino Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 92000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 84640
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 78200
+    }
+  ],
+  "fobPriceUsd": 92000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 101200,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Encino, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 77,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-83",
+  "supplierId": "comp-us-corp-83",
+  "supplierName": "Romano Pool Builders",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$42,000 - $125,000 / Pool",
+  "unit": "Pools",
+  "title": "Hudson Valley Custom In-Ground Pool Engineering & Soil Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Hudson Valley Custom In-Ground Pool Engineering & Soil Excavation supplied directly by Romano Pool Builders (New York, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 58000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 53360
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 49300
+    }
+  ],
+  "fobPriceUsd": 58000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 63800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Poughkeepsie, New York, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 78,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-84",
+  "supplierId": "comp-us-corp-84",
+  "supplierName": "Glendale Pool Builders",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$55,000 - $165,000 / Project",
+  "unit": "Projects",
+  "title": "Smart-Tech Automated Luxury Swimming Pools & Precision Foundation Digging",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Smart-Tech Automated Luxury Swimming Pools & Precision Foundation Digging supplied directly by Glendale Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 78000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 71760
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 66300
+    }
+  ],
+  "fobPriceUsd": 78000,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 85800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Glendale, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 79,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-85",
+  "supplierId": "comp-us-corp-85",
+  "supplierName": "Burbank Pool Construction",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$50,000 - $150,000 / Pool",
+  "unit": "Pools",
+  "title": "Burbank Custom Gunite Pool Build, Decking & Deep Soil Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Burbank Custom Gunite Pool Build, Decking & Deep Soil Excavation supplied directly by Burbank Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 72000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 66240
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 61200
+    }
+  ],
+  "fobPriceUsd": 72000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 79200,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Burbank, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 80,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-86",
+  "supplierId": "comp-us-corp-86",
+  "supplierName": "Lynwood Pool Contractors",
+  "supplierCountry": "United States",
+  "supplierTier": "SILVER",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$45,000 - $135,000 / Pool",
+  "unit": "Pools",
+  "title": "Infinity Edge Pool Construction, Structural Steel & Precision Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Infinity Edge Pool Construction, Structural Steel & Precision Excavation supplied directly by Lynwood Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 65000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 59800
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 55250
+    }
+  ],
+  "fobPriceUsd": 65000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 71500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Lynwood, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 81,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-87",
+  "supplierId": "comp-us-corp-87",
+  "supplierName": "Burbank Pool Builders",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$52,000 - $145,000 / Pool",
+  "unit": "Pools",
+  "title": "Custom Gunite Swimming Pool Renovation, Hardscaping & Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Custom Gunite Swimming Pool Renovation, Hardscaping & Excavation supplied directly by Burbank Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 70000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 64400
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 59500
+    }
+  ],
+  "fobPriceUsd": 70000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 77000,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Burbank, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 82,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-88",
+  "supplierId": "comp-us-corp-88",
+  "supplierName": "Hollywood Pool Builders",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Estates",
+  "priceRangeUsd": "$95,000 - $350,000 / Estate",
+  "unit": "Estates",
+  "title": "Celebrity Estate Swimming Pool Engineering, PebbleTec & Soil Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Celebrity Estate Swimming Pool Engineering, PebbleTec & Soil Excavation supplied directly by Hollywood Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 135000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 124200
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 114750
+    }
+  ],
+  "fobPriceUsd": 135000,
+  "moq": 1,
+  "moqUnit": "Estates",
+  "sampleAvailable": true,
+  "samplePriceUsd": 148500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Hollywood, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Estates / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 83,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-89",
+  "supplierId": "comp-us-corp-89",
+  "supplierName": "Coral Pacific Pool Construction",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$58,000 - $175,000 / Project",
+  "unit": "Projects",
+  "title": "Outdoor Living Spas, Custom Concrete Pools & Site Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Outdoor Living Spas, Custom Concrete Pools & Site Excavation supplied directly by Coral Pacific Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 82000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 75440
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 69700
+    }
+  ],
+  "fobPriceUsd": 82000,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 90200,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Los Angeles, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 84,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-90",
+  "supplierId": "comp-us-corp-90",
+  "supplierName": "Oasisblue Pool Contractors",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$54,000 - $160,000 / Pool",
+  "unit": "Pools",
+  "title": "SoCal Lifestyle Resort Swimming Pools, Wet Decks & Precision Earthwork",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance SoCal Lifestyle Resort Swimming Pools, Wet Decks & Precision Earthwork supplied directly by Oasisblue Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 76000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 69920
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 64600
+    }
+  ],
+  "fobPriceUsd": 76000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 83600,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "San Diego, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 85,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-91",
+  "supplierId": "comp-us-corp-91",
+  "supplierName": "Pasadena Pool Construction",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$65,000 - $190,000 / Pool",
+  "unit": "Pools",
+  "title": "Architectural Geometric Pool Construction, Spa Integrations & Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Architectural Geometric Pool Construction, Spa Integrations & Excavation supplied directly by Pasadena Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 88000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 80960
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 74800
+    }
+  ],
+  "fobPriceUsd": 88000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 96800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Pasadena, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 86,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-92",
+  "supplierId": "comp-us-corp-92",
+  "supplierName": "Suncrest Pool Builders",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pools",
+  "priceRangeUsd": "$48,000 - $145,000 / Pool",
+  "unit": "Pools",
+  "title": "3D Rendered Custom Swimming Pools, Waterfalls & Gunite Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance 3D Rendered Custom Swimming Pools, Waterfalls & Gunite Excavation supplied directly by Suncrest Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 69000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 63480
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 58650
+    }
+  ],
+  "fobPriceUsd": 69000,
+  "moq": 1,
+  "moqUnit": "Pools",
+  "sampleAvailable": true,
+  "samplePriceUsd": 75900,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Riverside, California, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pools / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 87,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-93",
+  "supplierId": "comp-us-corp-93",
+  "supplierName": "The Sewer Kings",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Contracts",
+  "priceRangeUsd": "$9,500 - $35,000 / Contract",
+  "unit": "Contracts",
+  "title": "Heavy Municipal Sewer Line Excavation & Deep Septic Trenching",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Heavy Municipal Sewer Line Excavation & Deep Septic Trenching supplied directly by The Sewer Kings (New Jersey, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 16500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 15180
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 14025
+    }
+  ],
+  "fobPriceUsd": 16500,
+  "moq": 1,
+  "moqUnit": "Contracts",
+  "sampleAvailable": true,
+  "samplePriceUsd": 18150,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Cherry Hill, New Jersey, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Contracts / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 88,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-94",
+  "supplierId": "comp-us-corp-94",
+  "supplierName": "Norton Management Services",
+  "supplierCountry": "United States",
+  "supplierTier": "PLATINUM",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Sites",
+  "priceRangeUsd": "$16,000 - $60,000 / Site",
+  "unit": "Sites",
+  "title": "Sub-Arctic Land Clearing, Permafrost Excavation & Gravel Pad Grading",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Bulldozer",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Sub-Arctic Land Clearing, Permafrost Excavation & Gravel Pad Grading supplied directly by Norton Management Services (Alaska, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 28000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 25760
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 23800
+    }
+  ],
+  "fobPriceUsd": 28000,
+  "moq": 1,
+  "moqUnit": "Sites",
+  "sampleAvailable": true,
+  "samplePriceUsd": 30800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Wasilla, Alaska, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Sites / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 89,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-95",
+  "supplierId": "comp-us-corp-95",
+  "supplierName": "Pull Pan Dave Inc.",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Projects",
+  "priceRangeUsd": "$40,000 - $160,000 / Project",
+  "unit": "Projects",
+  "title": "Large-Volume Tractor Pull-Pan Scraper Earthmoving & Civil Site Prep",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Bulldozer",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Large-Volume Tractor Pull-Pan Scraper Earthmoving & Civil Site Prep supplied directly by Pull Pan Dave Inc. (Alabama, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 65000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 59800
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 55250
+    }
+  ],
+  "fobPriceUsd": 65000,
+  "moq": 1,
+  "moqUnit": "Projects",
+  "sampleAvailable": true,
+  "samplePriceUsd": 71500,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Mobile, Alabama, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Projects / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 90,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-96",
+  "supplierId": "comp-us-corp-96",
+  "supplierName": "Construction Attachments",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 95,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Pieces",
+  "priceRangeUsd": "$2,800 - $14,000 / Piece",
+  "unit": "Pieces",
+  "title": "Severe-Duty Hydraulic Excavator Breakers, Rock Grapples & Pallet Forks",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator Bucket",
+  "images": [
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Severe-Duty Hydraulic Excavator Breakers, Rock Grapples & Pallet Forks supplied directly by Construction Attachments (North Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 4200
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 3864
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 3570
+    }
+  ],
+  "fobPriceUsd": 4200,
+  "moq": 1,
+  "moqUnit": "Pieces",
+  "sampleAvailable": true,
+  "samplePriceUsd": 4620,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Lenoir, North Carolina, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Pieces / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 91,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-97",
+  "supplierId": "comp-us-corp-97",
+  "supplierName": "Superior Groundcover (Georgia)",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 96,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Jobs",
+  "priceRangeUsd": "$5,500 - $22,000 / Job",
+  "unit": "Jobs",
+  "title": "Pneumatic Blower Truck Material Placement, Topsoil & Erosion Control",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Wheel Loader",
+  "images": [
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Pneumatic Blower Truck Material Placement, Topsoil & Erosion Control supplied directly by Superior Groundcover (Georgia) (Georgia, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 9500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 8740
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 8075
+    }
+  ],
+  "fobPriceUsd": 9500,
+  "moq": 1,
+  "moqUnit": "Jobs",
+  "sampleAvailable": true,
+  "samplePriceUsd": 10450,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Atlanta, Georgia, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Jobs / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 92,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-98",
+  "supplierId": "comp-us-corp-98",
+  "supplierName": "Premium Waterproofing, Inc.",
+  "supplierCountry": "United States",
+  "supplierTier": "GOLD",
+  "supplierTrustScore": 97,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Properties",
+  "priceRangeUsd": "$8,000 - $32,000 / Property",
+  "unit": "Properties",
+  "title": "Commercial Crawl Space Encapsulation, Foundation Waterproofing & Excavation",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Commercial Crawl Space Encapsulation, Foundation Waterproofing & Excavation supplied directly by Premium Waterproofing, Inc. (Illinois, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 14500
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 13340
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 12325
+    }
+  ],
+  "fobPriceUsd": 14500,
+  "moq": 1,
+  "moqUnit": "Properties",
+  "sampleAvailable": true,
+  "samplePriceUsd": 15950,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Batavia, Illinois, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Properties / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 93,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-99",
+  "supplierId": "comp-us-corp-99",
+  "supplierName": "Superior Groundcover (Indiana)",
+  "supplierCountry": "United States",
+  "supplierTier": "SILVER",
+  "supplierTrustScore": 98,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Loads",
+  "priceRangeUsd": "$2,800 - $12,000 / Load",
+  "unit": "Loads",
+  "title": "Crushed Aggregate, Washed Gravel & Pneumatic Topsoil Material Supply",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Dump Truck",
+  "images": [
+    "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Crushed Aggregate, Washed Gravel & Pneumatic Topsoil Material Supply supplied directly by Superior Groundcover (Indiana) (Indiana, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 4800
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 4416
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 4080
+    }
+  ],
+  "fobPriceUsd": 4800,
+  "moq": 1,
+  "moqUnit": "Loads",
+  "sampleAvailable": true,
+  "samplePriceUsd": 5280,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Indianapolis, Indiana, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Loads / Month",
+  "featured": false,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 94,
+  "createdDate": "2025-01-20"
+},
+  {
+  "id": "prod-us-corp-100",
+  "supplierId": "comp-us-corp-100",
+  "supplierName": "Pro Tool & Supply and Pro Equipment Rental",
+  "supplierCountry": "United States",
+  "supplierTier": "VIP",
+  "supplierTrustScore": 94,
+  "supplierIsVerified": true,
+  "minOrderQuantity": "1 Units",
+  "priceRangeUsd": "$28,000 - $65,000 / Unit",
+  "unit": "Units",
+  "title": "Compact Excavators, Industrial Diesel Generators & Site Tool Rentals",
+  "category": "Construction & Excavation Machinery",
+  "subCategory": "Mini Excavator",
+  "images": [
+    "https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+  ],
+  "description": "High-performance Compact Excavators, Industrial Diesel Generators & Site Tool Rentals supplied directly by Pro Tool & Supply and Pro Equipment Rental (Massachusetts, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
+  "priceTiers": [
+    {
+      "minUnits": 1,
+      "maxUnits": 5,
+      "priceUsd": 38000
+    },
+    {
+      "minUnits": 6,
+      "maxUnits": 20,
+      "priceUsd": 34960
+    },
+    {
+      "minUnits": 21,
+      "priceUsd": 32300
+    }
+  ],
+  "fobPriceUsd": 38000,
+  "moq": 1,
+  "moqUnit": "Units",
+  "sampleAvailable": true,
+  "samplePriceUsd": 41800,
+  "leadTimeDays": 14,
+  "supportedIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP",
+    "EXW"
+  ],
+  "specifications": [
+    {
+      "name": "Origin",
+      "value": "Boston, Massachusetts, USA"
+    },
+    {
+      "name": "Compliance",
+      "value": "US OSHA / ASTM / CE / ISO 9001:2015"
+    },
+    {
+      "name": "Warranty & Support",
+      "value": "2 Years Manufacturer Direct Warranty"
+    },
+    {
+      "name": "Inspection Standard",
+      "value": "100% Pre-Shipment Optical & Stress QC Tested"
+    }
+  ],
+  "packagingDetails": "Heavy-Duty Reinforced Export Pallet / Moisture-Proof Sealed Corrugated Container",
+  "portOfDispatch": "Port of Los Angeles / Long Beach / New York-New Jersey / Houston",
+  "certifications": [
+    "ISO 9001:2015",
+    "OSHA Compliant",
+    "CE Certified",
+    "UL Listed"
+  ],
+  "customizationAvailable": true,
+  "supplyAbilityPerMonth": "50 Units / Month",
+  "featured": true,
+  "inStock": true,
+  "rating": 5,
+  "reviewCount": 45,
+  "createdDate": "2025-01-20"
+}
 ];

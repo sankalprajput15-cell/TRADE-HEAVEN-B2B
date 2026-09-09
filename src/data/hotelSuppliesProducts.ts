@@ -2,8 +2,8 @@ import { Product } from '../types';
 
 export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
   {
-    "id": "prod-hotel-ec21-01",
-    "supplierId": "comp-hotel-ec21-01",
+    "id": "prod-hotel-corp-01",
+    "supplierId": "comp-hotel-corp-01",
     "supplierName": "The Fusion Flux",
     "supplierCountry": "Pakistan",
     "supplierTier": "VIP",
@@ -93,8 +93,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-02",
-    "supplierId": "comp-hotel-ec21-02",
+    "id": "prod-hotel-corp-02",
+    "supplierId": "comp-hotel-corp-02",
     "supplierName": "Crystal Globe Oil Trading",
     "supplierCountry": "Malaysia",
     "supplierTier": "PLATINUM",
@@ -184,8 +184,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-03",
-    "supplierId": "comp-hotel-ec21-03",
+    "id": "prod-hotel-corp-03",
+    "supplierId": "comp-hotel-corp-03",
     "supplierName": "Monalisa Group Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "GOLD",
@@ -275,8 +275,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-04",
-    "supplierId": "comp-hotel-ec21-04",
+    "id": "prod-hotel-corp-04",
+    "supplierId": "comp-hotel-corp-04",
     "supplierName": "Shri Krishna Stone Company",
     "supplierCountry": "India",
     "supplierTier": "SILVER",
@@ -366,8 +366,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-05",
-    "supplierId": "comp-hotel-ec21-05",
+    "id": "prod-hotel-corp-05",
+    "supplierId": "comp-hotel-corp-05",
     "supplierName": "CKI Industries",
     "supplierCountry": "India",
     "supplierTier": "VIP",
@@ -457,8 +457,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-06",
-    "supplierId": "comp-hotel-ec21-06",
+    "id": "prod-hotel-corp-06",
+    "supplierId": "comp-hotel-corp-06",
     "supplierName": "Maas Apparels",
     "supplierCountry": "India",
     "supplierTier": "PLATINUM",
@@ -548,8 +548,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-07",
-    "supplierId": "comp-hotel-ec21-07",
+    "id": "prod-hotel-corp-07",
+    "supplierId": "comp-hotel-corp-07",
     "supplierName": "Keyue Converge (Shenzhen) Technology Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "GOLD",
@@ -639,8 +639,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-08",
-    "supplierId": "comp-hotel-ec21-08",
+    "id": "prod-hotel-corp-08",
+    "supplierId": "comp-hotel-corp-08",
     "supplierName": "Mi Hwa Industrial Co., Ltd.",
     "supplierCountry": "South Korea",
     "supplierTier": "SILVER",
@@ -730,8 +730,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-09",
-    "supplierId": "comp-hotel-ec21-09",
+    "id": "prod-hotel-corp-09",
+    "supplierId": "comp-hotel-corp-09",
     "supplierName": "The Biszantz Connection",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -821,8 +821,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-10",
-    "supplierId": "comp-hotel-ec21-10",
+    "id": "prod-hotel-corp-10",
+    "supplierId": "comp-hotel-corp-10",
     "supplierName": "Ekipmer Hotel Equipment",
     "supplierCountry": "Turkey",
     "supplierTier": "PLATINUM",
@@ -912,8 +912,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-11",
-    "supplierId": "comp-hotel-ec21-11",
+    "id": "prod-hotel-corp-11",
+    "supplierId": "comp-hotel-corp-11",
     "supplierName": "Yongkang Huishuo Technology Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "GOLD",
@@ -1003,8 +1003,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-12",
-    "supplierId": "comp-hotel-ec21-12",
+    "id": "prod-hotel-corp-12",
+    "supplierId": "comp-hotel-corp-12",
     "supplierName": "Arjuna Company",
     "supplierCountry": "Indonesia",
     "supplierTier": "SILVER",
@@ -1094,8 +1094,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-13",
-    "supplierId": "comp-hotel-ec21-13",
+    "id": "prod-hotel-corp-13",
+    "supplierId": "comp-hotel-corp-13",
     "supplierName": "Beijing Kameige Environmental Technology Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "VIP",
@@ -1185,8 +1185,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-14",
-    "supplierId": "comp-hotel-ec21-14",
+    "id": "prod-hotel-corp-14",
+    "supplierId": "comp-hotel-corp-14",
     "supplierName": "LS card Systems",
     "supplierCountry": "Israel",
     "supplierTier": "PLATINUM",
@@ -1276,8 +1276,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-15",
-    "supplierId": "comp-hotel-ec21-15",
+    "id": "prod-hotel-corp-15",
+    "supplierId": "comp-hotel-corp-15",
     "supplierName": "Mixmadsan Outdoor & Hospitality Furniture",
     "supplierCountry": "Turkey",
     "supplierTier": "GOLD",
@@ -1367,8 +1367,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-16",
-    "supplierId": "comp-hotel-ec21-16",
+    "id": "prod-hotel-corp-16",
+    "supplierId": "comp-hotel-corp-16",
     "supplierName": "Beijing Mingxiang Gongfang Trade Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "SILVER",
@@ -1458,8 +1458,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-17",
-    "supplierId": "comp-hotel-ec21-17",
+    "id": "prod-hotel-corp-17",
+    "supplierId": "comp-hotel-corp-17",
     "supplierName": "Decent Towels",
     "supplierCountry": "Pakistan",
     "supplierTier": "VIP",
@@ -1549,8 +1549,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-18",
-    "supplierId": "comp-hotel-ec21-18",
+    "id": "prod-hotel-corp-18",
+    "supplierId": "comp-hotel-corp-18",
     "supplierName": "Almeat Al Samaa for Food Trading",
     "supplierCountry": "Jordan",
     "supplierTier": "PLATINUM",
@@ -1640,8 +1640,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-19",
-    "supplierId": "comp-hotel-ec21-19",
+    "id": "prod-hotel-corp-19",
+    "supplierId": "comp-hotel-corp-19",
     "supplierName": "Restaurant Patio Furniture",
     "supplierCountry": "United States",
     "supplierTier": "GOLD",
@@ -1731,8 +1731,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-20",
-    "supplierId": "comp-hotel-ec21-20",
+    "id": "prod-hotel-corp-20",
+    "supplierId": "comp-hotel-corp-20",
     "supplierName": "Yonfer Agricultural Technology Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "SILVER",
@@ -1822,8 +1822,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-21",
-    "supplierId": "comp-hotel-ec21-21",
+    "id": "prod-hotel-corp-21",
+    "supplierId": "comp-hotel-corp-21",
     "supplierName": "Malie in the Shops At Kukui'ula",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -1913,8 +1913,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-22",
-    "supplierId": "comp-hotel-ec21-22",
+    "id": "prod-hotel-corp-22",
+    "supplierId": "comp-hotel-corp-22",
     "supplierName": "Dzee Textiles LLC",
     "supplierCountry": "United States",
     "supplierTier": "PLATINUM",
@@ -2004,8 +2004,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-23",
-    "supplierId": "comp-hotel-ec21-23",
+    "id": "prod-hotel-corp-23",
+    "supplierId": "comp-hotel-corp-23",
     "supplierName": "GuangZhou Bianyi Hotel Supplies Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "GOLD",
@@ -2095,8 +2095,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-24",
-    "supplierId": "comp-hotel-ec21-24",
+    "id": "prod-hotel-corp-24",
+    "supplierId": "comp-hotel-corp-24",
     "supplierName": "LePack Accommodation Supplies Australia",
     "supplierCountry": "Australia",
     "supplierTier": "SILVER",
@@ -2186,8 +2186,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-25",
-    "supplierId": "comp-hotel-ec21-25",
+    "id": "prod-hotel-corp-25",
+    "supplierId": "comp-hotel-corp-25",
     "supplierName": "Foshan Southbay Hotel Supply Limited",
     "supplierCountry": "China",
     "supplierTier": "VIP",
@@ -2277,8 +2277,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-26",
-    "supplierId": "comp-hotel-ec21-26",
+    "id": "prod-hotel-corp-26",
+    "supplierId": "comp-hotel-corp-26",
     "supplierName": "Guangdong Teehoo Stainless Steel Co., Limited",
     "supplierCountry": "China",
     "supplierTier": "PLATINUM",
@@ -2368,8 +2368,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-27",
-    "supplierId": "comp-hotel-ec21-27",
+    "id": "prod-hotel-corp-27",
+    "supplierId": "comp-hotel-corp-27",
     "supplierName": "Guangzhou Willco Trading Co., Limited",
     "supplierCountry": "China",
     "supplierTier": "GOLD",
@@ -2459,8 +2459,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-28",
-    "supplierId": "comp-hotel-ec21-28",
+    "id": "prod-hotel-corp-28",
+    "supplierId": "comp-hotel-corp-28",
     "supplierName": "Jinan Huayu Tianshun Hotel Supplies Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "SILVER",
@@ -2550,8 +2550,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-29",
-    "supplierId": "comp-hotel-ec21-29",
+    "id": "prod-hotel-corp-29",
+    "supplierId": "comp-hotel-corp-29",
     "supplierName": "Food Technotic",
     "supplierCountry": "Turkey",
     "supplierTier": "VIP",
@@ -2641,8 +2641,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-30",
-    "supplierId": "comp-hotel-ec21-30",
+    "id": "prod-hotel-corp-30",
+    "supplierId": "comp-hotel-corp-30",
     "supplierName": "Aromach Gida Makine",
     "supplierCountry": "Turkey",
     "supplierTier": "PLATINUM",
@@ -2732,8 +2732,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-31",
-    "supplierId": "comp-hotel-ec21-31",
+    "id": "prod-hotel-corp-31",
+    "supplierId": "comp-hotel-corp-31",
     "supplierName": "Biscute Mak Sti",
     "supplierCountry": "Turkey",
     "supplierTier": "GOLD",
@@ -2823,8 +2823,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-32",
-    "supplierId": "comp-hotel-ec21-32",
+    "id": "prod-hotel-corp-32",
+    "supplierId": "comp-hotel-corp-32",
     "supplierName": "Uniconcept Mutfak Ekipmanlari",
     "supplierCountry": "Turkey",
     "supplierTier": "SILVER",
@@ -2914,8 +2914,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-33",
-    "supplierId": "comp-hotel-ec21-33",
+    "id": "prod-hotel-corp-33",
+    "supplierId": "comp-hotel-corp-33",
     "supplierName": "Shanghai SCC Environmental Technology Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "VIP",
@@ -3005,8 +3005,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-34",
-    "supplierId": "comp-hotel-ec21-34",
+    "id": "prod-hotel-corp-34",
+    "supplierId": "comp-hotel-corp-34",
     "supplierName": "Shenzhen Younuo IET Technology Co., Ltd.",
     "supplierCountry": "China",
     "supplierTier": "PLATINUM",
@@ -3096,8 +3096,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-35",
-    "supplierId": "comp-hotel-ec21-35",
+    "id": "prod-hotel-corp-35",
+    "supplierId": "comp-hotel-corp-35",
     "supplierName": "K R Enterprise",
     "supplierCountry": "India",
     "supplierTier": "GOLD",
@@ -3187,8 +3187,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-36",
-    "supplierId": "comp-hotel-ec21-36",
+    "id": "prod-hotel-corp-36",
+    "supplierId": "comp-hotel-corp-36",
     "supplierName": "PT Exentra Internasional Trade",
     "supplierCountry": "Indonesia",
     "supplierTier": "SILVER",
@@ -3278,8 +3278,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-37",
-    "supplierId": "comp-hotel-ec21-37",
+    "id": "prod-hotel-corp-37",
+    "supplierId": "comp-hotel-corp-37",
     "supplierName": "Oriental International Business Group LLC",
     "supplierCountry": "United States",
     "supplierTier": "VIP",
@@ -3369,8 +3369,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-38",
-    "supplierId": "comp-hotel-ec21-38",
+    "id": "prod-hotel-corp-38",
+    "supplierId": "comp-hotel-corp-38",
     "supplierName": "Nova Global Trading GmbH",
     "supplierCountry": "Germany",
     "supplierTier": "PLATINUM",
@@ -3460,8 +3460,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-39",
-    "supplierId": "comp-hotel-ec21-39",
+    "id": "prod-hotel-corp-39",
+    "supplierId": "comp-hotel-corp-39",
     "supplierName": "Alkemal Foods Singapore",
     "supplierCountry": "Singapore",
     "supplierTier": "GOLD",
@@ -3551,8 +3551,8 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "createdDate": "2025-02-12"
   },
   {
-    "id": "prod-hotel-ec21-40",
-    "supplierId": "comp-hotel-ec21-40",
+    "id": "prod-hotel-corp-40",
+    "supplierId": "comp-hotel-corp-40",
     "supplierName": "Shenzhen IBG Digital Technology Co., Ltd.",
     "supplierCountry": "Hong Kong",
     "supplierTier": "SILVER",

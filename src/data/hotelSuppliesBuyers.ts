@@ -2,7 +2,7 @@ import { BuyerProfile } from '../types';
 
 export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
   {
-    "id": "buyer-hotel-ec21-01",
+    "id": "buyer-hotel-corp-01",
     "companyName": "The Fusion Flux",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5000000",
     "country": "Pakistan",
@@ -59,7 +59,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for The Fusion Flux. Actively sourcing certified Rice, Grains & Meat with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-02",
+    "id": "buyer-hotel-corp-02",
     "companyName": "Crystal Globe Oil Trading",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5001421",
     "country": "Malaysia",
@@ -116,7 +116,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Crystal Globe Oil Trading. Actively sourcing certified Edible Oils & Cooking Fats with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-03",
+    "id": "buyer-hotel-corp-03",
     "companyName": "Monalisa Group Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5002842",
     "country": "China",
@@ -173,7 +173,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Monalisa Group Co., Ltd.. Actively sourcing certified Ceramic & Porcelain Slabs with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-04",
+    "id": "buyer-hotel-corp-04",
     "companyName": "Shri Krishna Stone Company",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5004263",
     "country": "India",
@@ -230,7 +230,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Shri Krishna Stone Company. Actively sourcing certified Natural Sandstone & Carved Pillars with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-05",
+    "id": "buyer-hotel-corp-05",
     "companyName": "CKI Industries",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5005684",
     "country": "India",
@@ -287,7 +287,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for CKI Industries. Actively sourcing certified Commercial Kitchen & Hotel Tableware with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-06",
+    "id": "buyer-hotel-corp-06",
     "companyName": "Maas Apparels",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5007105",
     "country": "India",
@@ -344,7 +344,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Maas Apparels. Actively sourcing certified Hotel & Hospitality Uniforms with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-07",
+    "id": "buyer-hotel-corp-07",
     "companyName": "Keyue Converge (Shenzhen) Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5008526",
     "country": "China",
@@ -401,7 +401,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Keyue Converge (Shenzhen) Technology Co., Ltd.. Actively sourcing certified CCTV, IP Cameras & PoE Switches with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-08",
+    "id": "buyer-hotel-corp-08",
     "companyName": "Mi Hwa Industrial Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5009947",
     "country": "South Korea",
@@ -458,7 +458,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Mi Hwa Industrial Co., Ltd.. Actively sourcing certified Commercial Kitchen Gas Ranges & Ovens with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-09",
+    "id": "buyer-hotel-corp-09",
     "companyName": "The Biszantz Connection",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5011368",
     "country": "United States",
@@ -515,7 +515,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for The Biszantz Connection. Actively sourcing certified Commercial Real Estate & Hotel Acquisitions with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-10",
+    "id": "buyer-hotel-corp-10",
     "companyName": "Ekipmer Hotel Equipment",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5012789",
     "country": "Turkey",
@@ -572,7 +572,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Ekipmer Hotel Equipment. Actively sourcing certified Hotel Minibars, Safes & Bathroom Gear with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-11",
+    "id": "buyer-hotel-corp-11",
     "companyName": "Yongkang Huishuo Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5014210",
     "country": "China",
@@ -629,7 +629,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Yongkang Huishuo Technology Co., Ltd.. Actively sourcing certified Intelligent Hotel Locks & Keycards with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-12",
+    "id": "buyer-hotel-corp-12",
     "companyName": "Arjuna Company",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5015631",
     "country": "Indonesia",
@@ -686,7 +686,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Arjuna Company. Actively sourcing certified Spices, Seasonings & Coffee with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-13",
+    "id": "buyer-hotel-corp-13",
     "companyName": "Beijing Kameige Environmental Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5017052",
     "country": "China",
@@ -743,7 +743,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Beijing Kameige Environmental Technology Co., Ltd.. Actively sourcing certified Ice Makers & Commercial Water Treatment with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-14",
+    "id": "buyer-hotel-corp-14",
     "companyName": "LS card Systems",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5018473",
     "country": "Israel",
@@ -800,7 +800,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for LS card Systems. Actively sourcing certified RFID Cards, NFC Keycards & Wristbands with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-15",
+    "id": "buyer-hotel-corp-15",
     "companyName": "Mixmadsan Outdoor & Hospitality Furniture",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5019894",
     "country": "Turkey",
@@ -857,7 +857,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Mixmadsan Outdoor & Hospitality Furniture. Actively sourcing certified Outdoor Garden & Patio Furniture with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-16",
+    "id": "buyer-hotel-corp-16",
     "companyName": "Beijing Mingxiang Gongfang Trade Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5021315",
     "country": "China",
@@ -914,7 +914,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Beijing Mingxiang Gongfang Trade Co., Ltd.. Actively sourcing certified Commercial Kitchen Prep Tables & Shelving with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-17",
+    "id": "buyer-hotel-corp-17",
     "companyName": "Decent Towels",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5022736",
     "country": "Pakistan",
@@ -971,7 +971,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Decent Towels. Actively sourcing certified Hotel Bath Towels, Robes & Mats with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-18",
+    "id": "buyer-hotel-corp-18",
     "companyName": "Almeat Al Samaa for Food Trading",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5024157",
     "country": "Jordan",
@@ -1028,7 +1028,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Almeat Al Samaa for Food Trading. Actively sourcing certified Frozen Halal Beef & Lamb with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-19",
+    "id": "buyer-hotel-corp-19",
     "companyName": "Restaurant Patio Furniture",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5025578",
     "country": "United States",
@@ -1085,7 +1085,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Restaurant Patio Furniture. Actively sourcing certified Dining Chairs, Barstools & Booths with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-20",
+    "id": "buyer-hotel-corp-20",
     "companyName": "Yonfer Agricultural Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5026999",
     "country": "China",
@@ -1142,7 +1142,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Yonfer Agricultural Technology Co., Ltd.. Actively sourcing certified Compound Fertilizers & Plant Nutrients with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-21",
+    "id": "buyer-hotel-corp-21",
     "companyName": "Malie in the Shops At Kukui'ula",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5028420",
     "country": "United States",
@@ -1199,7 +1199,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Malie in the Shops At Kukui'ula. Actively sourcing certified Hotel Spa Amenities & Diffusers with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-22",
+    "id": "buyer-hotel-corp-22",
     "companyName": "Dzee Textiles LLC",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5029841",
     "country": "United States",
@@ -1256,7 +1256,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Dzee Textiles LLC. Actively sourcing certified Hotel Bedding, Sheets & Duvets with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-23",
+    "id": "buyer-hotel-corp-23",
     "companyName": "GuangZhou Bianyi Hotel Supplies Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5031262",
     "country": "China",
@@ -1313,7 +1313,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for GuangZhou Bianyi Hotel Supplies Co., Ltd.. Actively sourcing certified Hotel Bedroom Suites & Headboards with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-24",
+    "id": "buyer-hotel-corp-24",
     "companyName": "LePack Accommodation Supplies Australia",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5032683",
     "country": "Australia",
@@ -1370,7 +1370,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for LePack Accommodation Supplies Australia. Actively sourcing certified Minibar Kits & Guest Welcome Packs with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-25",
+    "id": "buyer-hotel-corp-25",
     "companyName": "Foshan Southbay Hotel Supply Limited",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5034104",
     "country": "China",
@@ -1427,7 +1427,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Foshan Southbay Hotel Supply Limited. Actively sourcing certified Housekeeping Carts & Lobby Bellman Posts with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-26",
+    "id": "buyer-hotel-corp-26",
     "companyName": "Guangdong Teehoo Stainless Steel Co., Limited",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5035525",
     "country": "China",
@@ -1484,7 +1484,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Guangdong Teehoo Stainless Steel Co., Limited. Actively sourcing certified Stainless Steel Waste Bins & Furniture with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-27",
+    "id": "buyer-hotel-corp-27",
     "companyName": "Guangzhou Willco Trading Co., Limited",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5036946",
     "country": "China",
@@ -1541,7 +1541,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Guangzhou Willco Trading Co., Limited. Actively sourcing certified Electric Kettles, Ironing Stations & Trays with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-28",
+    "id": "buyer-hotel-corp-28",
     "companyName": "Jinan Huayu Tianshun Hotel Supplies Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5038367",
     "country": "China",
@@ -1598,7 +1598,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Jinan Huayu Tianshun Hotel Supplies Co., Ltd.. Actively sourcing certified Disposable Paper Goods & Coasters with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-29",
+    "id": "buyer-hotel-corp-29",
     "companyName": "Food Technotic",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5039788",
     "country": "Turkey",
@@ -1655,7 +1655,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Food Technotic. Actively sourcing certified Commercial Bakery Mixers & Rotisseries with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-30",
+    "id": "buyer-hotel-corp-30",
     "companyName": "Aromach Gida Makine",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5041209",
     "country": "Turkey",
@@ -1712,7 +1712,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Aromach Gida Makine. Actively sourcing certified Food Processing Lines & Canteen Gear with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-31",
+    "id": "buyer-hotel-corp-31",
     "companyName": "Biscute Mak Sti",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5042630",
     "country": "Turkey",
@@ -1769,7 +1769,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Biscute Mak Sti. Actively sourcing certified Confectionery & Biscuit Production Lines with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-32",
+    "id": "buyer-hotel-corp-32",
     "companyName": "Uniconcept Mutfak Ekipmanlari",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5044051",
     "country": "Turkey",
@@ -1826,7 +1826,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Uniconcept Mutfak Ekipmanlari. Actively sourcing certified Commercial Cooktops, Bain-Maries & Fryers with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-33",
+    "id": "buyer-hotel-corp-33",
     "companyName": "Shanghai SCC Environmental Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5045472",
     "country": "China",
@@ -1883,7 +1883,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Shanghai SCC Environmental Technology Co., Ltd.. Actively sourcing certified Insulated Food Pan Carriers & Ice Carts with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-34",
+    "id": "buyer-hotel-corp-34",
     "companyName": "Shenzhen Younuo IET Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5046893",
     "country": "China",
@@ -1940,7 +1940,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Shenzhen Younuo IET Technology Co., Ltd.. Actively sourcing certified Face Recognition & Tuya Smart Locks with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-35",
+    "id": "buyer-hotel-corp-35",
     "companyName": "K R Enterprise",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5048314",
     "country": "India",
@@ -1997,7 +1997,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for K R Enterprise. Actively sourcing certified Dehydrated Vegetables & Dry Mushrooms with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-36",
+    "id": "buyer-hotel-corp-36",
     "companyName": "PT Exentra Internasional Trade",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5049735",
     "country": "Indonesia",
@@ -2054,7 +2054,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for PT Exentra Internasional Trade. Actively sourcing certified Green Coffee Beans (Arabica & Robusta) with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-37",
+    "id": "buyer-hotel-corp-37",
     "companyName": "Oriental International Business Group LLC",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5051156",
     "country": "United States",
@@ -2111,7 +2111,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Oriental International Business Group LLC. Actively sourcing certified Organic Argan Oil & Haircare with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-38",
+    "id": "buyer-hotel-corp-38",
     "companyName": "Nova Global Trading GmbH",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5052577",
     "country": "Germany",
@@ -2168,7 +2168,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Nova Global Trading GmbH. Actively sourcing certified Gourmet Beverages & Condiments with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-39",
+    "id": "buyer-hotel-corp-39",
     "companyName": "Alkemal Foods Singapore",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5053998",
     "country": "Singapore",
@@ -2225,7 +2225,7 @@ export const GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES: BuyerProfile[] = [
     "description": "Central procurement & supply management division for Alkemal Foods Singapore. Actively sourcing certified Truffles, Caviar & Gourmet Dairy with Trade Protection."
   },
   {
-    "id": "buyer-hotel-ec21-40",
+    "id": "buyer-hotel-corp-40",
     "companyName": "Shenzhen IBG Digital Technology Co., Ltd.",
     "legalRegistrationNumber": "HTL-BUYER-EIN-5055419",
     "country": "Hong Kong",

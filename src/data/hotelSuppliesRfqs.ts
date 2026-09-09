@@ -2,8 +2,8 @@ import { RfqRequirement } from '../types';
 
 export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
   {
-    "id": "rfq-hotel-ec21-01",
-    "buyerId": "buyer-hotel-ec21-01",
+    "id": "rfq-hotel-corp-01",
+    "buyerId": "buyer-hotel-corp-01",
     "buyerName": "Naveed Tariq Sid",
     "buyerCompany": "The Fusion Flux",
     "buyerEmail": "procurement@thefusionflux.com",
@@ -34,8 +34,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-02",
-    "buyerId": "buyer-hotel-ec21-02",
+    "id": "rfq-hotel-corp-02",
+    "buyerId": "buyer-hotel-corp-02",
     "buyerName": "Amir Rahman",
     "buyerCompany": "Crystal Globe Oil Trading",
     "buyerEmail": "amir.rahman@crystalglobeoil.com",
@@ -66,8 +66,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-03",
-    "buyerId": "buyer-hotel-ec21-03",
+    "id": "rfq-hotel-corp-03",
+    "buyerId": "buyer-hotel-corp-03",
     "buyerName": "Monalisa Tiles Desk",
     "buyerCompany": "Monalisa Group Co., Ltd.",
     "buyerEmail": "export@monalisatiles.cn",
@@ -98,8 +98,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-04",
-    "buyerId": "buyer-hotel-ec21-04",
+    "id": "rfq-hotel-corp-04",
+    "buyerId": "buyer-hotel-corp-04",
     "buyerName": "Mukesh Kumar Saini",
     "buyerCompany": "Shri Krishna Stone Company",
     "buyerEmail": "mukesh@shrikrishnastone.in",
@@ -130,8 +130,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-05",
-    "buyerId": "buyer-hotel-ec21-05",
+    "id": "rfq-hotel-corp-05",
+    "buyerId": "buyer-hotel-corp-05",
     "buyerName": "P Pawar",
     "buyerCompany": "CKI Industries",
     "buyerEmail": "info@ckiindustries.com",
@@ -162,8 +162,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-06",
-    "buyerId": "buyer-hotel-ec21-06",
+    "id": "rfq-hotel-corp-06",
+    "buyerId": "buyer-hotel-corp-06",
     "buyerName": "Mahaboob Basha",
     "buyerCompany": "Maas Apparels",
     "buyerEmail": "sales@maasapparels.com",
@@ -194,8 +194,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-07",
-    "buyerId": "buyer-hotel-ec21-07",
+    "id": "rfq-hotel-corp-07",
+    "buyerId": "buyer-hotel-corp-07",
     "buyerName": "Vape Mytube Desk",
     "buyerCompany": "Keyue Converge (Shenzhen) Technology Co., Ltd.",
     "buyerEmail": "service@keyueconverge.com",
@@ -226,8 +226,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-08",
-    "buyerId": "buyer-hotel-ec21-08",
+    "id": "rfq-hotel-corp-08",
+    "buyerId": "buyer-hotel-corp-08",
     "buyerName": "James Hong",
     "buyerCompany": "Mi Hwa Industrial Co., Ltd.",
     "buyerEmail": "james.hong@mihwacorp.com",
@@ -258,8 +258,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-09",
-    "buyerId": "buyer-hotel-ec21-09",
+    "id": "rfq-hotel-corp-09",
+    "buyerId": "buyer-hotel-corp-09",
     "buyerName": "Shannon Biszantz",
     "buyerCompany": "The Biszantz Connection",
     "buyerEmail": "shannon@biszantzconnection.com",
@@ -290,8 +290,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-10",
-    "buyerId": "buyer-hotel-ec21-10",
+    "id": "rfq-hotel-corp-10",
+    "buyerId": "buyer-hotel-corp-10",
     "buyerName": "Ahmed A. Aziz",
     "buyerCompany": "Ekipmer Hotel Equipment",
     "buyerEmail": "ahmed@ekipmer.com",
@@ -322,8 +322,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-11",
-    "buyerId": "buyer-hotel-ec21-11",
+    "id": "rfq-hotel-corp-11",
+    "buyerId": "buyer-hotel-corp-11",
     "buyerName": "Eva Zhou",
     "buyerCompany": "Yongkang Huishuo Technology Co., Ltd.",
     "buyerEmail": "sales@huishuolock.com",
@@ -354,8 +354,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-12",
-    "buyerId": "buyer-hotel-ec21-12",
+    "id": "rfq-hotel-corp-12",
+    "buyerId": "buyer-hotel-corp-12",
     "buyerName": "Ridwan Dwi Nurcahyo",
     "buyerCompany": "Arjuna Company",
     "buyerEmail": "ridwan@arjunacompany.id",
@@ -386,8 +386,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-13",
-    "buyerId": "buyer-hotel-ec21-13",
+    "id": "rfq-hotel-corp-13",
+    "buyerId": "buyer-hotel-corp-13",
     "buyerName": "Huang Jian Jun",
     "buyerCompany": "Beijing Kameige Environmental Technology Co., Ltd.",
     "buyerEmail": "kameige@kameigecorp.com",
@@ -418,8 +418,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-14",
-    "buyerId": "buyer-hotel-ec21-14",
+    "id": "rfq-hotel-corp-14",
+    "buyerId": "buyer-hotel-corp-14",
     "buyerName": "Jason Noyek",
     "buyerCompany": "LS card Systems",
     "buyerEmail": "jason@lscards.com",
@@ -450,8 +450,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-15",
-    "buyerId": "buyer-hotel-ec21-15",
+    "id": "rfq-hotel-corp-15",
+    "buyerId": "buyer-hotel-corp-15",
     "buyerName": "Madoka Kosset",
     "buyerCompany": "Mixmadsan Outdoor & Hospitality Furniture",
     "buyerEmail": "madoka@mixmadsan.com",
@@ -482,8 +482,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-16",
-    "buyerId": "buyer-hotel-ec21-16",
+    "id": "rfq-hotel-corp-16",
+    "buyerId": "buyer-hotel-corp-16",
     "buyerName": "Minghui",
     "buyerCompany": "Beijing Mingxiang Gongfang Trade Co., Ltd.",
     "buyerEmail": "minghui@mingxiangtrade.com",
@@ -514,8 +514,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-17",
-    "buyerId": "buyer-hotel-ec21-17",
+    "id": "rfq-hotel-corp-17",
+    "buyerId": "buyer-hotel-corp-17",
     "buyerName": "Ramzan",
     "buyerCompany": "Decent Towels",
     "buyerEmail": "sales@decenttowels.com",
@@ -546,8 +546,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-18",
-    "buyerId": "buyer-hotel-ec21-18",
+    "id": "rfq-hotel-corp-18",
+    "buyerId": "buyer-hotel-corp-18",
     "buyerName": "Khamis Abu khamis",
     "buyerCompany": "Almeat Al Samaa for Food Trading",
     "buyerEmail": "khamis@almeatsamaa.com",
@@ -578,8 +578,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-19",
-    "buyerId": "buyer-hotel-ec21-19",
+    "id": "rfq-hotel-corp-19",
+    "buyerId": "buyer-hotel-corp-19",
     "buyerName": "Patio Furniture Sales Desk",
     "buyerCompany": "Restaurant Patio Furniture",
     "buyerEmail": "info@restaurantpatiofurniture.com",
@@ -610,8 +610,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-20",
-    "buyerId": "buyer-hotel-ec21-20",
+    "id": "rfq-hotel-corp-20",
+    "buyerId": "buyer-hotel-corp-20",
     "buyerName": "Helen Wang",
     "buyerCompany": "Yonfer Agricultural Technology Co., Ltd.",
     "buyerEmail": "helen.wang@yonferagri.com",
@@ -642,8 +642,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-21",
-    "buyerId": "buyer-hotel-ec21-21",
+    "id": "rfq-hotel-corp-21",
+    "buyerId": "buyer-hotel-corp-21",
     "buyerName": "Malie Hospitality Desk",
     "buyerCompany": "Malie in the Shops At Kukui'ula",
     "buyerEmail": "concierge@maliehawaii.com",
@@ -674,8 +674,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-22",
-    "buyerId": "buyer-hotel-ec21-22",
+    "id": "rfq-hotel-corp-22",
+    "buyerId": "buyer-hotel-corp-22",
     "buyerName": "Eric Wilson",
     "buyerCompany": "Dzee Textiles LLC",
     "buyerEmail": "eric.wilson@dzeetextiles.com",
@@ -706,8 +706,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-23",
-    "buyerId": "buyer-hotel-ec21-23",
+    "id": "rfq-hotel-corp-23",
+    "buyerId": "buyer-hotel-corp-23",
     "buyerName": "Ken Zhang",
     "buyerCompany": "GuangZhou Bianyi Hotel Supplies Co., Ltd.",
     "buyerEmail": "ken@bianyifurniture.com",
@@ -738,8 +738,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-24",
-    "buyerId": "buyer-hotel-ec21-24",
+    "id": "rfq-hotel-corp-24",
+    "buyerId": "buyer-hotel-corp-24",
     "buyerName": "Mark Mcfadyen",
     "buyerCompany": "LePack Accommodation Supplies Australia",
     "buyerEmail": "mark@lepack.com.au",
@@ -770,8 +770,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-25",
-    "buyerId": "buyer-hotel-ec21-25",
+    "id": "rfq-hotel-corp-25",
+    "buyerId": "buyer-hotel-corp-25",
     "buyerName": "Sammi",
     "buyerCompany": "Foshan Southbay Hotel Supply Limited",
     "buyerEmail": "sammi@southbayhotel.com",
@@ -802,8 +802,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-26",
-    "buyerId": "buyer-hotel-ec21-26",
+    "id": "rfq-hotel-corp-26",
+    "buyerId": "buyer-hotel-corp-26",
     "buyerName": "Mr. Liu",
     "buyerCompany": "Guangdong Teehoo Stainless Steel Co., Limited",
     "buyerEmail": "sales@teehoosteel.com",
@@ -834,8 +834,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-27",
-    "buyerId": "buyer-hotel-ec21-27",
+    "id": "rfq-hotel-corp-27",
+    "buyerId": "buyer-hotel-corp-27",
     "buyerName": "Andy Lu",
     "buyerCompany": "Guangzhou Willco Trading Co., Limited",
     "buyerEmail": "andy.lu@willcotrading.com",
@@ -866,8 +866,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-28",
-    "buyerId": "buyer-hotel-ec21-28",
+    "id": "rfq-hotel-corp-28",
+    "buyerId": "buyer-hotel-corp-28",
     "buyerName": "Kubajin",
     "buyerCompany": "Jinan Huayu Tianshun Hotel Supplies Co., Ltd.",
     "buyerEmail": "huayutianshun@jinanhotel.com",
@@ -898,8 +898,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-29",
-    "buyerId": "buyer-hotel-ec21-29",
+    "id": "rfq-hotel-corp-29",
+    "buyerId": "buyer-hotel-corp-29",
     "buyerName": "Naser Veli",
     "buyerCompany": "Food Technotic",
     "buyerEmail": "naser@foodtechnotic.com",
@@ -930,8 +930,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-30",
-    "buyerId": "buyer-hotel-ec21-30",
+    "id": "rfq-hotel-corp-30",
+    "buyerId": "buyer-hotel-corp-30",
     "buyerName": "Faruk Akil",
     "buyerCompany": "Aromach Gida Makine",
     "buyerEmail": "faruk@aromach.com.tr",
@@ -962,8 +962,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-31",
-    "buyerId": "buyer-hotel-ec21-31",
+    "id": "rfq-hotel-corp-31",
+    "buyerId": "buyer-hotel-corp-31",
     "buyerName": "Ali Hamdi",
     "buyerCompany": "Biscute Mak Sti",
     "buyerEmail": "ali.hamdi@biscutemak.com",
@@ -994,8 +994,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-32",
-    "buyerId": "buyer-hotel-ec21-32",
+    "id": "rfq-hotel-corp-32",
+    "buyerId": "buyer-hotel-corp-32",
     "buyerName": "Fatih Arslan",
     "buyerCompany": "Uniconcept Mutfak Ekipmanlari",
     "buyerEmail": "fatih@uniconceptkitchen.com",
@@ -1026,8 +1026,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-33",
-    "buyerId": "buyer-hotel-ec21-33",
+    "id": "rfq-hotel-corp-33",
+    "buyerId": "buyer-hotel-corp-33",
     "buyerName": "Yu",
     "buyerCompany": "Shanghai SCC Environmental Technology Co., Ltd.",
     "buyerEmail": "yu@scccooler.com",
@@ -1058,8 +1058,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-34",
-    "buyerId": "buyer-hotel-ec21-34",
+    "id": "rfq-hotel-corp-34",
+    "buyerId": "buyer-hotel-corp-34",
     "buyerName": "Edward Pi",
     "buyerCompany": "Shenzhen Younuo IET Technology Co., Ltd.",
     "buyerEmail": "edward@younuolock.com",
@@ -1090,8 +1090,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-35",
-    "buyerId": "buyer-hotel-ec21-35",
+    "id": "rfq-hotel-corp-35",
+    "buyerId": "buyer-hotel-corp-35",
     "buyerName": "Manoj Thakur",
     "buyerCompany": "K R Enterprise",
     "buyerEmail": "manoj@krenterprise.in",
@@ -1122,8 +1122,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-36",
-    "buyerId": "buyer-hotel-ec21-36",
+    "id": "rfq-hotel-corp-36",
+    "buyerId": "buyer-hotel-corp-36",
     "buyerName": "Bramantya Aldi",
     "buyerCompany": "PT Exentra Internasional Trade",
     "buyerEmail": "bramantya@exentratrade.com",
@@ -1154,8 +1154,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-37",
-    "buyerId": "buyer-hotel-ec21-37",
+    "id": "rfq-hotel-corp-37",
+    "buyerId": "buyer-hotel-corp-37",
     "buyerName": "Khalid Ait L",
     "buyerCompany": "Oriental International Business Group LLC",
     "buyerEmail": "khalid@orientalbiogroup.com",
@@ -1186,8 +1186,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-38",
-    "buyerId": "buyer-hotel-ec21-38",
+    "id": "rfq-hotel-corp-38",
+    "buyerId": "buyer-hotel-corp-38",
     "buyerName": "Thomas Nova",
     "buyerCompany": "Nova Global Trading GmbH",
     "buyerEmail": "thomas@novaglobaltrading.de",
@@ -1218,8 +1218,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-39",
-    "buyerId": "buyer-hotel-ec21-39",
+    "id": "rfq-hotel-corp-39",
+    "buyerId": "buyer-hotel-corp-39",
     "buyerName": "Alkemal Sourcing Desk",
     "buyerCompany": "Alkemal Foods Singapore",
     "buyerEmail": "sourcing@alkemalfoods.com.sg",
@@ -1250,8 +1250,8 @@ export const GLOBAL_HOTEL_SUPPLIES_RFQS: RfqRequirement[] = [
     "spamScore": 1
   },
   {
-    "id": "rfq-hotel-ec21-40",
-    "buyerId": "buyer-hotel-ec21-40",
+    "id": "rfq-hotel-corp-40",
+    "buyerId": "buyer-hotel-corp-40",
     "buyerName": "Bill Cai",
     "buyerCompany": "Shenzhen IBG Digital Technology Co., Ltd.",
     "buyerEmail": "bill.cai@ibgdigital.com",
