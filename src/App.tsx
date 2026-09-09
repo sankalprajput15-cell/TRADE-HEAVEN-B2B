@@ -27,6 +27,7 @@ import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveCh
 import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { SEOManager } from './components/common/SEOManager';
+import { BreadcrumbNavigation } from './components/common/BreadcrumbNavigation';
 import { NotFoundView } from './components/common/NotFoundView';
 import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
 
@@ -975,6 +976,33 @@ const MainApp: React.FC = () => {
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
       <main className="flex-1 w-full max-w-[1400px] overflow-x-hidden mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-[calc(100vh-200px)]">
+        {/* Lightweight, Schema-Compliant Breadcrumb Navigation (rendered on all views except homepage) */}
+        <BreadcrumbNavigation
+          activeView={activeView}
+          onNavigate={handleNavigate}
+          selectedProduct={selectedProduct}
+          selectedRfq={selectedRfqForModal}
+          catalogCategory={catalogCategory}
+          catalogSearch={catalogSearch}
+          storefrontCompanyId={storefrontCompanyId}
+          selectedBuyerId={selectedBuyerId}
+          onClearProduct={() => setSelectedProduct(null)}
+          onClearCategory={() => {
+            setCatalogCategory('ALL');
+            setCatalogSearch('');
+          }}
+          onBack={() => {
+            if (selectedProduct) {
+              setSelectedProduct(null);
+            } else if (catalogCategory && catalogCategory !== 'ALL') {
+              setCatalogCategory('ALL');
+              setCatalogSearch('');
+            } else {
+              handleNavigate('HOMEPAGE');
+            }
+          }}
+        />
+
         <GlobalErrorBoundary fallbackTitle="TradeHeaven Section View Recovery" onReset={() => setActiveView('HOMEPAGE')}>
           <React.Suspense fallback={
             <TradeHeavenDataLoader 

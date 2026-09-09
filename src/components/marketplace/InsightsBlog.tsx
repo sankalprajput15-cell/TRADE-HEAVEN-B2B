@@ -8,6 +8,47 @@ import {
 import blogImage from '../../assets/images/regenerated_image_1787916463995.jpg';
 import buyerNoMoneyImage from '../../assets/images/regenerated_image_1787986452542.jpg';
 import brokersImage from '../../assets/images/regenerated_image_1788177506942.jpg';
+import seriousSellerImage from '../../assets/images/regenerated_image_1788943920904.png';
+
+export const SERIOUS_SELLER_HASHTAGS = [
+  '#OilAndGas',
+  '#CommodityTrading',
+  '#FuelTrading',
+  '#EN590',
+  '#JetA1',
+  '#CrudeOil',
+  '#FOB',
+  '#CIF',
+  '#TradeHeaven',
+  '#B2BMarketplace',
+  '#InternationalTrade',
+  '#EnergyMarkets',
+  '#RiskManagement',
+  '#DueDiligence',
+  '#GlobalTrade',
+  '#SupplyChainLogistics'
+];
+
+export const SERIOUS_SELLER_SEO_TAGS = [
+  'Serious Seller',
+  'Commodity Trading',
+  'Fuel Trading',
+  'EN590 Diesel',
+  'Jet A1 Fuel',
+  'Crude Oil',
+  'FOB Procedure',
+  'CIF Procedure',
+  'Trade Heaven',
+  'B2B Marketplace',
+  'International Trade',
+  'Energy Markets',
+  'Risk Management',
+  'Due Diligence',
+  'Global Trade',
+  'Supply Chain Logistics',
+  'Transaction Procedures',
+  'Incoterms Verification'
+];
 
 export const DLC_HASHTAGS = [
   '#TradeHeaven',
@@ -62,6 +103,22 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
 
   const [comments, setComments] = useState<Record<string, Comment[]>>({
+    'serious-seller-article': [
+      {
+        id: 'ss-c1',
+        userId: 'u1',
+        userName: 'Capt. Viktor Lindqvist (Global Maritime Operations & Tanker Chartering)',
+        text: 'Every word of this is true. When a buyer asks to rewrite CIF injection or laytime terms without demonstrating active tank storage agreements or verifiable CPA rights, they do not understand marine logistics. Established procedures exist to protect multi-million dollar assets from demurrage disasters.',
+        timestamp: '35 minutes ago',
+      },
+      {
+        id: 'ss-c2',
+        userId: 'u2',
+        userName: 'Marcus Vance (Senior Energy Arbitrage Desk)',
+        text: 'A serious seller never negotiates against their own operational parameters. In EN590 and Jet A1 trade, flexibility on core incoterms is the fastest way to lose allocation and face unmitigated counterparty liability. Standardized frameworks on Trade Heaven eliminate 99% of this friction.',
+        timestamp: '2 hours ago',
+      }
+    ],
     'dlc-financeable-article': [
       {
         id: 'dlc-c1',
@@ -118,45 +175,82 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
   };
 
   useEffect(() => {
-    document.title = "Trade Finance, MT700 & Cargo Risk Insights | Trade Heaven";
+    document.title = "A Serious Seller Does Not Negotiate Against Themselves | Trade Heaven Insights";
 
     // Inject Rich Structured Data (Article + VideoObject + Breadcrumb) for SEO dominance
     const jsonLd = {
       "@context": "https://schema.org",
-      "@type": "Article",
-      "headline": "Is Your Cargo Truly Financeable? Why a Bankable MT700 DLC Doesn’t Guarantee Trade Execution",
-      "description": "In global B2B supply chains and bulk export transactions, cross-border deals often face the Three-Way Structural Collision between banking compliance, vessel risk, and documentation discrepancies. Learn how Trade Heaven bridges the gap.",
-      "image": [
-        "https://tradeheaven.net/tradeheavendlc.svg",
-        "https://tradeheaven.net/tradeheavendlc.jpeg"
-      ],
-      "datePublished": "2026-09-05T00:00:00+00:00",
-      "dateModified": "2026-09-05T00:00:00+00:00",
-      "author": {
-        "@type": "Organization",
-        "name": "Trade Heaven Editorial & Trade Finance Desk",
-        "url": "https://tradeheaven.net"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Trade Heaven",
-        "url": "https://tradeheaven.net",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://tradeheaven.net/logo.png"
+      "@graph": [
+        {
+          "@type": "Article",
+          "@id": "https://tradeheaven.net/?view=INSIGHTS#serious-seller",
+          "headline": "A Serious Seller Does Not Negotiate Against Themselves: Why Transaction Procedures Protect Real Commodity Deals",
+          "description": "In physical commodity and bulk fuel trading, flexibility is often confused with capability. Non-standard demands disrupt logistics, unbalance risk, and stall genuine business. Learn why procedures protect trade execution.",
+          "image": [
+            "https://tradeheaven.net/serious_seller_cif_trade.svg",
+            "https://tradeheaven.net/tradeheavenb2bbest.svg",
+            "https://tradeheaven.net/tradeheavendlc.jpeg"
+          ],
+          "datePublished": "2026-09-09T00:00:00+00:00",
+          "dateModified": "2026-09-09T00:00:00+00:00",
+          "author": {
+            "@type": "Organization",
+            "name": "Trade Heaven Editorial & Commodity Trading Desk",
+            "url": "https://tradeheaven.net"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trade Heaven",
+            "url": "https://tradeheaven.net",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://tradeheaven.net/logo.png"
+            }
+          },
+          "mainEntityOfPage": "https://tradeheaven.net/?view=INSIGHTS",
+          "keywords": SERIOUS_SELLER_SEO_TAGS.join(", "),
+          "video": {
+            "@type": "VideoObject",
+            "name": "A Serious Seller Does Not Negotiate Against Themselves",
+            "description": "In physical commodity and bulk fuel trading, flexibility is often confused with capability. Discover why procedures reflect asset realities and risk control.",
+            "thumbnailUrl": "https://tradeheaven.net/serious_seller_cif_trade.svg",
+            "uploadDate": "2026-09-09T00:00:00+00:00",
+            "embedUrl": "https://www.youtube.com/embed/LmmUPAcI-zg",
+            "contentUrl": "https://youtube.com/shorts/LmmUPAcI-zg"
+          }
+        },
+        {
+          "@type": "Article",
+          "@id": "https://tradeheaven.net/?view=INSIGHTS#cargo-financeable",
+          "headline": "Is Your Cargo Truly Financeable? Why a Bankable MT700 DLC Doesn’t Guarantee Trade Execution",
+          "description": "In global B2B supply chains and bulk export transactions, cross-border deals often face the Three-Way Structural Collision between banking compliance, vessel risk, and documentation discrepancies.",
+          "image": [
+            "https://tradeheaven.net/tradeheavendlc.svg",
+            "https://tradeheaven.net/tradeheavendlc.jpeg"
+          ],
+          "datePublished": "2026-09-05T00:00:00+00:00",
+          "dateModified": "2026-09-05T00:00:00+00:00",
+          "author": {
+            "@type": "Organization",
+            "name": "Trade Heaven Editorial & Trade Finance Desk",
+            "url": "https://tradeheaven.net"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Trade Heaven",
+            "url": "https://tradeheaven.net"
+          },
+          "video": {
+            "@type": "VideoObject",
+            "name": "Is Your Cargo Truly Financeable? MT700 DLC vs Physical Trade Reality",
+            "description": "Discover why bank-approved MT700 letters of credit still collapse due to vessel risk, sanctions screening, and documentation discrepancies.",
+            "thumbnailUrl": "https://tradeheaven.net/tradeheavendlc.svg",
+            "uploadDate": "2026-09-05T00:00:00+00:00",
+            "embedUrl": "https://www.youtube.com/embed/3qdz7biRT8A",
+            "contentUrl": "https://youtube.com/shorts/3qdz7biRT8A"
+          }
         }
-      },
-      "mainEntityOfPage": "https://tradeheaven.net/?view=INSIGHTS",
-      "keywords": DLC_SEO_TAGS.join(", "),
-      "video": {
-        "@type": "VideoObject",
-        "name": "Is Your Cargo Truly Financeable? MT700 DLC vs Physical Trade Reality",
-        "description": "Discover why bank-approved MT700 letters of credit still collapse due to vessel risk, sanctions screening, and documentation discrepancies.",
-        "thumbnailUrl": "https://tradeheaven.net/tradeheavendlc.svg",
-        "uploadDate": "2026-09-05T00:00:00+00:00",
-        "embedUrl": "https://www.youtube.com/embed/3qdz7biRT8A",
-        "contentUrl": "https://youtube.com/shorts/3qdz7biRT8A"
-      }
+      ]
     };
 
     let script = document.getElementById('tradeheaven-insights-jsonld') as HTMLScriptElement | null;
@@ -191,6 +285,190 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
 
       {/* Main Blog Feed */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        {/* Article: A Serious Seller Does Not Negotiate Against Themselves */}
+        <article className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12">
+          {/* Article Header / Meta */}
+          <div className="p-8 pb-6 border-b border-slate-100">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 mb-4">
+              <span className="flex items-center gap-1.5 font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                <TrendingUp className="w-4 h-4" /> Commodity &amp; Fuel Trading
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                <ShieldAlert className="w-4 h-4" /> Risk Control
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" /> September 9, 2026
+              </span>
+              <span className="flex items-center gap-1.5">
+                <User className="w-4 h-4" /> Trade Heaven Editorial
+              </span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-display leading-tight mb-4">
+              A Serious Seller Does Not Negotiate Against Themselves
+            </h2>
+            <p className="text-xl text-slate-600 leading-relaxed font-medium">
+              In physical commodity and bulk fuel trading, flexibility is often confused with capability. Non-standard demands disrupt logistics, unbalance risk, and stall genuine business.
+            </p>
+          </div>
+
+          {/* Article Media (Video + Image) */}
+          <div className="bg-slate-100 p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-b border-slate-100">
+            {/* YouTube Video Player */}
+            <div className="rounded-xl overflow-hidden shadow-md bg-slate-900 relative aspect-[9/16] md:aspect-auto md:h-[400px] flex items-center justify-center group w-full">
+              <iframe 
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/LmmUPAcI-zg?rel=0" 
+                title="A Serious Seller Does Not Negotiate Against Themselves" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+              ></iframe>
+            </div>
+
+            {/* Image Illustration */}
+            <div className="rounded-xl overflow-hidden shadow-md bg-slate-900 border border-slate-700/50 flex items-center justify-center">
+              <img 
+                src={seriousSellerImage} 
+                onError={(e) => {
+                  e.currentTarget.src = '/tradeheavenb2bbest.svg';
+                }}
+                alt="A Serious Seller Does Not Negotiate Against Themselves - Trade Heaven B2B Trading Procedures" 
+                className="w-full h-auto object-contain md:h-[400px] bg-slate-950"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+
+          {/* Article Body */}
+          <div className="p-8 prose prose-lg prose-slate max-w-none">
+            <p className="lead text-slate-700 text-lg sm:text-xl font-medium">
+              In physical commodity and bulk fuel trading, flexibility is often confused with capability.
+            </p>
+
+            <p className="text-slate-600">
+              When an inquiry enters the market demanding an overhaul of established incoterms, vessel chartering protocols, or settlement steps, the red flags go up immediately. A transaction procedure is not a casual negotiation tactic—it is a hardened operational blueprint that balances risk, capital allocation, and counterparty responsibility.
+            </p>
+
+            <div className="bg-amber-50 border-l-4 border-amber-600 p-6 rounded-r-xl my-8">
+              <p className="text-lg italic text-slate-800 font-medium m-0">
+                When parties spend weeks rewriting standard operational clauses instead of establishing proof of capability, real business stalls.
+              </p>
+            </div>
+
+            <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
+              The Reality Behind Non-Standard Demands
+            </h3>
+            
+            <ul className="list-disc pl-6 text-slate-600 space-y-3 mb-6">
+              <li>
+                <strong>Procedures Reflect Asset Realities:</strong> Tank storage, injection rights, refinery allocation schedules, and charter parties do not adapt to speculative revisions. A CIF or FOB procedure exists because the logistics chain behind it demands those exact checkpoints.
+              </li>
+              <li>
+                <strong>Risk Allocation is Not Optional:</strong> Every deviation from standard protocol transfers unmitigated counterparty exposure. Experienced operators understand that holding the line on standard terms isn't stubbornness—it’s baseline risk control.
+              </li>
+              <li>
+                <strong>Efficiency Separates Real Deals from Noise:</strong> Market participants who bring verified supply and genuine purchasing power do not waste cycles inventing novel procedures. They conduct rigorous due diligence, align on established frameworks, and execute.
+              </li>
+            </ul>
+
+            <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
+              Trade with Certainty on Trade Heaven
+            </h3>
+
+            <p className="text-slate-600">
+              The global commodity marketplace is crowded with noise, phantom allocations, and endless procedural friction.
+            </p>
+
+            <p className="text-slate-600">
+              <strong>Trade Heaven</strong> is built to cut through speculative back-and-forth. By connecting verified global buyers with established sellers across energy, commodities, and bulk goods, Trade Heaven provides the transparent ecosystem needed to execute international trade with confidence.
+            </p>
+
+            <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+              <li><strong>Verified counterparty networks</strong></li>
+              <li><strong>Standardized, professional B2B deal structures</strong></li>
+              <li><strong>Direct access to real commercial opportunities</strong></li>
+            </ul>
+
+            <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-r-xl my-8">
+              <p className="text-lg font-bold text-slate-900 m-0">
+                Stop negotiating against operational realities. Partner with serious traders who prioritize execution over procedural debate.
+              </p>
+            </div>
+
+            <p className="text-slate-800 font-semibold mt-4">
+              Explore verified listings and expand your international trading footprint at <strong>Trade Heaven</strong>.
+            </p>
+
+            {/* Read More Button */}
+            <div className="mt-8">
+              <button 
+                onClick={() => setSelectedArticleId('serious-seller-article')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-colors shadow-sm cursor-pointer"
+              >
+                Read Full Article &amp; Discussion <ExternalLink className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Tags / Hashtags */}
+            <div className="mt-10 pt-8 border-t border-slate-100 flex flex-wrap gap-2">
+              {SERIOUS_SELLER_HASHTAGS.map(tag => (
+                <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm font-medium hover:bg-slate-200 transition-colors cursor-pointer">
+                  <Tag className="w-3 h-3 text-amber-600" /> {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Article Footer */}
+          <div className="bg-slate-50 p-6 border-t border-slate-100 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mr-1 hidden sm:flex">
+                <Share2 className="w-4 h-4" /> Share:
+              </span>
+              <button 
+                onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-[#0A66C2] hover:text-white transition-colors cursor-pointer shadow-sm"
+                title="Share on LinkedIn"
+              >
+                <Linkedin className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent('A Serious Seller Does Not Negotiate Against Themselves - Check out this article on Trade Heaven!')}`, '_blank')}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-[#1DA1F2] hover:text-white transition-colors cursor-pointer shadow-sm"
+                title="Share on Twitter"
+              >
+                <Twitter className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('A Serious Seller Does Not Negotiate Against Themselves: ' + window.location.href)}`, '_blank')}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-[#25D366] hover:text-white transition-colors cursor-pointer shadow-sm"
+                title="Share on WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            {onNavigate && (
+              <button 
+                onClick={() => onNavigate('PRODUCT_DIRECTORY')}
+                className="flex items-center gap-2 text-amber-600 hover:text-amber-700 font-bold text-sm transition-colors"
+              >
+                Explore Marketplace <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </article>
         
         {/* Article: Is Your Cargo Truly Financeable? */}
         <article className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12">
@@ -797,7 +1075,113 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
             </div>
 
             <div className="overflow-y-auto p-8 sm:p-12">
-              {selectedArticleId === 'dlc-financeable-article' ? (
+              {selectedArticleId === 'serious-seller-article' ? (
+                <>
+                  <div className="mb-8">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm">
+                        <TrendingUp className="w-4 h-4" /> Commodity &amp; Fuel Trading
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-sm">
+                        <ShieldAlert className="w-4 h-4" /> Risk Control
+                      </span>
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-display leading-tight mb-6">
+                      A Serious Seller Does Not Negotiate Against Themselves
+                    </h2>
+                    <div className="flex items-center gap-4 text-sm text-slate-500 pb-8 border-b border-slate-100">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" /> September 9, 2026
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-4 h-4" /> Trade Heaven Editorial
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="prose prose-lg prose-slate max-w-none">
+                    <p className="lead text-slate-700 text-xl font-medium mb-8">
+                      In physical commodity and bulk fuel trading, flexibility is often confused with capability.
+                    </p>
+
+                    {/* YouTube Video Player Embed in Modal */}
+                    <div className="mb-8 rounded-2xl overflow-hidden shadow-lg bg-slate-900 aspect-video flex items-center justify-center">
+                      <iframe 
+                        className="w-full h-full"
+                        src="https://www.youtube.com/embed/LmmUPAcI-zg?rel=0" 
+                        title="A Serious Seller Does Not Negotiate Against Themselves" 
+                        frameBorder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+
+                    <img 
+                      src={seriousSellerImage} 
+                      onError={(e) => {
+                        e.currentTarget.src = '/tradeheavenb2bbest.svg';
+                      }}
+                      alt="A Serious Seller Does Not Negotiate Against Themselves - Trade Heaven B2B Trading Procedures" 
+                      className="w-full h-auto object-contain rounded-2xl mb-8 bg-slate-950 border border-slate-700/50"
+                      referrerPolicy="no-referrer"
+                    />
+
+                    <p className="text-slate-600">
+                      When an inquiry enters the market demanding an overhaul of established incoterms, vessel chartering protocols, or settlement steps, the red flags go up immediately. A transaction procedure is not a casual negotiation tactic—it is a hardened operational blueprint that balances risk, capital allocation, and counterparty responsibility.
+                    </p>
+
+                    <div className="bg-amber-50 border-l-4 border-amber-600 p-6 rounded-r-xl my-8">
+                      <p className="text-lg italic text-slate-800 font-medium m-0">
+                        When parties spend weeks rewriting standard operational clauses instead of establishing proof of capability, real business stalls.
+                      </p>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
+                      The Reality Behind Non-Standard Demands
+                    </h3>
+                    
+                    <ul className="list-disc pl-6 text-slate-600 space-y-3 mb-6">
+                      <li>
+                        <strong>Procedures Reflect Asset Realities:</strong> Tank storage, injection rights, refinery allocation schedules, and charter parties do not adapt to speculative revisions. A CIF or FOB procedure exists because the logistics chain behind it demands those exact checkpoints.
+                      </li>
+                      <li>
+                        <strong>Risk Allocation is Not Optional:</strong> Every deviation from standard protocol transfers unmitigated counterparty exposure. Experienced operators understand that holding the line on standard terms isn't stubbornness—it’s baseline risk control.
+                      </li>
+                      <li>
+                        <strong>Efficiency Separates Real Deals from Noise:</strong> Market participants who bring verified supply and genuine purchasing power do not waste cycles inventing novel procedures. They conduct rigorous due diligence, align on established frameworks, and execute.
+                      </li>
+                    </ul>
+
+                    <h3 className="text-2xl font-bold text-slate-900 mt-8 mb-4">
+                      Trade with Certainty on Trade Heaven
+                    </h3>
+
+                    <p className="text-slate-600">
+                      The global commodity marketplace is crowded with noise, phantom allocations, and endless procedural friction.
+                    </p>
+
+                    <p className="text-slate-600">
+                      <strong>Trade Heaven</strong> is built to cut through speculative back-and-forth. By connecting verified global buyers with established sellers across energy, commodities, and bulk goods, Trade Heaven provides the transparent ecosystem needed to execute international trade with confidence.
+                    </p>
+
+                    <ul className="list-disc pl-6 text-slate-600 space-y-2 mb-6">
+                      <li><strong>Verified counterparty networks:</strong> Comprehensive due diligence and authentic supply chain validation.</li>
+                      <li><strong>Standardized, professional B2B deal structures:</strong> Battle-tested incoterms (FOB, CIF, CFR) that protect buyers and sellers alike.</li>
+                      <li><strong>Direct access to real commercial opportunities:</strong> Direct counterparty communication that removes chain brokers and phantom allocations.</li>
+                    </ul>
+
+                    <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-r-xl my-8">
+                      <p className="text-lg font-bold text-slate-900 m-0">
+                        Stop negotiating against operational realities. Partner with serious traders who prioritize execution over procedural debate.
+                      </p>
+                    </div>
+
+                    <p className="text-slate-800 font-bold mt-8">
+                      Explore verified listings and expand your international trading footprint at <strong>Trade Heaven</strong>.
+                    </p>
+                  </div>
+                </>
+              ) : selectedArticleId === 'dlc-financeable-article' ? (
                 <>
                   <div className="mb-8">
                     <span className="inline-flex items-center gap-1.5 font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm mb-4">
