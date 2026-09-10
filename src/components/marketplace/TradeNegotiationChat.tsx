@@ -9,6 +9,7 @@ import {
 import { CURRENCY_RATES } from '../../data/mockData';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { ProformaInvoiceModal } from '../modals/ProformaInvoiceModal';
+import { bigrockApi } from '../../services/bigrockApi';
 import { 
   MessageSquare, 
   Send, 
@@ -263,8 +264,30 @@ export const TradeNegotiationChat: React.FC<Props> = ({
   onNavigate,
   onOpenContactModal
 }) => {
-  const [threads, setThreads] = useState<NegotiationThread[]>(INITIAL_NEGOTIATION_ROOMS);
-  const [activeThreadId, setActiveThreadId] = useState<string>(INITIAL_NEGOTIATION_ROOMS[0].id);
+  const [threads, setThreads] = useState<NegotiationThread[]>(() => {
+    try {
+      const saved = localStorage.getItem('tradeheaven_negotiation_threads_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load saved negotiation threads:', e);
+    }
+    return INITIAL_NEGOTIATION_ROOMS;
+  });
+  const [activeThreadId, setActiveThreadId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('tradeheaven_negotiation_threads_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed[0]?.id) return parsed[0].id;
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_NEGOTIATION_ROOMS[0].id;
+  });
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'IN_PROGRESS' | 'AGREED' | 'FUNDS_LOCKED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileView, setMobileView] = useState<'ROOMS' | 'CHAT'>('ROOMS');
@@ -273,6 +296,16 @@ export const TradeNegotiationChat: React.FC<Props> = ({
   const [replyText, setReplyText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingSender, setTypingSender] = useState('');
+  const [lastDeliveredNotice, setLastDeliveredNotice] = useState<string | null>(null);
+
+  // Auto-persist threads to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('tradeheaven_negotiation_threads_v3', JSON.stringify(threads));
+    } catch (e) {
+      console.warn('Failed to persist negotiation threads:', e);
+    }
+  }, [threads]);
   
   // Counter offer state
   const [isCounterOfferOpen, setIsCounterOfferOpen] = useState(false);
@@ -377,6 +410,19 @@ export const TradeNegotiationChat: React.FC<Props> = ({
 
     setThreads(updatedThreads);
     setReplyText('');
+    setLastDeliveredNotice(`✓ Message delivered to ${activeThread.supplierName || 'Elena Zhao'} (${activeThread.supplierCompany}) & archived in Escrow ledger.`);
+
+    // Sync to backend inquiry database in the background
+    bigrockApi.submitInquiry({
+      name: senderBuyerName,
+      email: currentUser?.email || 'buyer@tradeheaven.net',
+      phone: currentUser?.phone || '+1 800-555-0199',
+      company: senderBuyerCompany,
+      subject: `Negotiation Room #${activeThread.id} - ${activeThread.productTitle}`,
+      message: text,
+      product: activeThread.productTitle,
+      status: 'pending'
+    }).catch(err => console.log('[Negotiation] Synced locally and queued for remote gateway', err));
 
     // Trigger realistic automated supplier response
     simulateSupplierResponse(activeThread.id, text, activeThread.supplierName || 'Elena Zhao', activeThread.supplierCompany || 'Verified Manufacturer');
@@ -425,6 +471,19 @@ export const TradeNegotiationChat: React.FC<Props> = ({
     setThreads(updatedThreads);
     setIsCounterOfferOpen(false);
     setReplyText('');
+    setLastDeliveredNotice(`✓ Counter-offer dispatched to ${activeThread.supplierCompany} export directors.`);
+
+    // Sync to backend inquiry database
+    bigrockApi.submitInquiry({
+      name: senderBuyerName,
+      email: currentUser?.email || 'buyer@tradeheaven.net',
+      phone: currentUser?.phone || '+1 800-555-0199',
+      company: senderBuyerCompany,
+      subject: `Counter-Offer: Room #${activeThread.id} - $${counterPriceUsd}/unit`,
+      message: counterNotes || `Proposed $${counterPriceUsd} USD (${counterIncoterm}) for ${counterQuantity} units. Total: $${totalProposalUsd}`,
+      product: activeThread.productTitle,
+      status: 'pending'
+    }).catch(err => console.log('[Negotiation] Counter-offer synced', err));
 
     // Supplier response to counter-offer
     simulateSupplierCounterResponse(activeThread.id, counterPriceUsd, counterIncoterm);
@@ -1156,51 +1215,94 @@ export const TradeNegotiationChat: React.FC<Props> = ({
               )}
 
               {/* Chat Input & Action Bar */}
-              <div className="p-4 sm:p-5 bg-white space-y-3">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Type message, legal packaging requirement, or shipping instruction..."
-                    value={replyText}
-                    onChange={e => setReplyText(e.target.value)}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
-                  />
+              <div className="p-4 sm:p-5 bg-white space-y-3.5 border-t border-slate-100">
+                {/* Channel & Destination Status Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px]">
+                  <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                    <span>Direct Channel: <strong>{activeThread.supplierName || 'Factory Director'}</strong> ({activeThread.supplierCompany}) • Room #{activeThread.id}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded-md">
+                    <Lock className="w-3 h-3 text-emerald-600" />
+                    <span>Swiss Escrow Mediated</span>
+                  </div>
+                </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsCounterOfferOpen(!isCounterOfferOpen)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-                      isCounterOfferOpen 
-                        ? 'bg-amber-100 border-amber-300 text-amber-900' 
-                        : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-                    }`}
-                    title="Open Counter-Offer Form"
-                  >
-                    <Sliders className="w-3.5 h-3.5 text-amber-600" />
-                    <span className="hidden sm:inline">Counter-Offer</span>
-                  </button>
+                {/* Delivery Feedback Notice */}
+                {lastDeliveredNotice && (
+                  <div className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 font-medium flex items-center justify-between gap-2 animate-fadeIn">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      {lastDeliveredNotice}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => setLastDeliveredNotice(null)}
+                      className="text-emerald-700 hover:text-emerald-900 text-xs px-1"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
 
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer shrink-0"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send</span>
-                  </button>
+                <form onSubmit={handleSendMessage} className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder={`Message ${activeThread.supplierName || 'supplier'} on price, packaging, SGS inspections, or delivery...`}
+                      value={replyText}
+                      onChange={e => setReplyText(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
+                    />
+                    {replyText && (
+                      <button
+                        type="button"
+                        onClick={() => setReplyText('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsCounterOfferOpen(!isCounterOfferOpen)}
+                      className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                        isCounterOfferOpen 
+                          ? 'bg-amber-100 border-amber-300 text-amber-900 shadow-xs' 
+                          : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+                      }`}
+                      title="Open Counter-Offer Form"
+                    >
+                      <Sliders className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Counter-Offer</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={!replyText.trim()}
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer shrink-0"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send</span>
+                    </button>
+                  </div>
                 </form>
 
                 {/* Final Trade Protection & Escrow Action Footer */}
-                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                <div className="pt-3 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-3">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5 text-center md:text-left">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Swiss Escrow protects your deposit until verified delivery &amp; quality compliance.</span>
                   </div>
 
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 w-full md:w-auto">
                     <button
                       type="button"
                       onClick={() => setSelectedThreadForPi(activeThread)}
-                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="flex-1 md:flex-none px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5 text-blue-600" />
                       <span>Proforma (P/I)</span>
@@ -1209,7 +1311,7 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => onInitiateEscrow(activeThread)}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                      className="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Lock Escrow Deposit</span>

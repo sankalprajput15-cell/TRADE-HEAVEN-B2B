@@ -47,25 +47,63 @@ const ProductListingPolicyView = React.lazy(() => import('./components/services/
 const PrivacyPolicyView = React.lazy(() => import('./components/services/PrivacyPolicyView').then(m => ({ default: m.PrivacyPolicyView })));
 const TermsOfUseView = React.lazy(() => import('./components/services/TermsOfUseView').then(m => ({ default: m.TermsOfUseView })));
 const ClientAdminView = React.lazy(() => import('./components/services/ClientAdminView').then(m => ({ default: m.ClientAdminView })));
-const PlanPricingAdminModule = React.lazy(() => import('./components/admin/PlanPricingAdminModule').then(m => ({ default: m.PlanPricingAdminModule })));
-const BulkEntityCrmModule = React.lazy(() => import('./components/admin/BulkEntityCrmModule').then(m => ({ default: m.BulkEntityCrmModule })));
-const AdminDashboard = React.lazy(() => import('./components/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const OnboardWithUsPage = React.lazy(() => import('./components/marketplace/OnboardWithUsPage').then(m => ({ default: m.OnboardWithUsPage })));
-const AboutTradeHeavenView = React.lazy(() => import('./components/services/AboutTradeHeavenView').then(m => ({ default: m.AboutTradeHeavenView })));
-const LandingPageView = React.lazy(() => import('./components/marketplace/LandingPageView').then(m => ({ default: m.LandingPageView })));
-const VendorProfilePage = React.lazy(() => import('./components/vendor/VendorProfilePage').then(m => ({ default: m.VendorProfilePage })));
-const BuyerProfilePage = React.lazy(() => import('./components/buyer/BuyerProfilePage').then(m => ({ default: m.BuyerProfilePage })));
-const CountryTradeHubView = React.lazy(() => import('./components/marketplace/CountryTradeHubView').then(m => ({ default: m.CountryTradeHubView })));
+// Helper for retryable lazy loaded views
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  componentImport: () => Promise<{ default: T } | { [key: string]: T }>,
+  namedExport?: string
+) {
+  return React.lazy(async () => {
+    try {
+      const module = await componentImport();
+      if ('default' in module && module.default) {
+        return { default: module.default as T };
+      }
+      if (namedExport && (module as any)[namedExport]) {
+        return { default: (module as any)[namedExport] as T };
+      }
+      const firstKey = Object.keys(module)[0];
+      return { default: (module as any)[firstKey] as T };
+    } catch (error) {
+      console.warn('[lazyWithRetry] Retrying dynamic chunk load...', error);
+      try {
+        await new Promise(res => setTimeout(res, 250));
+        const module = await componentImport();
+        if ('default' in module && module.default) {
+          return { default: module.default as T };
+        }
+        if (namedExport && (module as any)[namedExport]) {
+          return { default: (module as any)[namedExport] as T };
+        }
+        const firstKey = Object.keys(module)[0];
+        return { default: (module as any)[firstKey] as T };
+      } catch (retryErr) {
+        console.error('[lazyWithRetry] Module failed to load after retry:', retryErr);
+        const FallbackView: React.FC<any> = () => null;
+        return { default: FallbackView as unknown as T };
+      }
+    }
+  });
+}
 
-// Modals
-const ProductDetailModal = React.lazy(() => import('./components/marketplace/ProductDetailModal').then(m => ({ default: m.ProductDetailModal })));
-const RfqDetailModal = React.lazy(() => import('./components/marketplace/RfqDetailModal').then(m => ({ default: m.RfqDetailModal })));
-const SupplierStorefrontModal = React.lazy(() => import('./components/marketplace/SupplierStorefrontModal').then(m => ({ default: m.SupplierStorefrontModal })));
-const RfqCreationModal = React.lazy(() => import('./components/marketplace/RfqCreationModal').then(m => ({ default: m.RfqCreationModal })));
-const UnifiedContactInquiryModal = React.lazy(() => import('./components/modals/UnifiedContactInquiryModal').then(m => ({ default: m.UnifiedContactInquiryModal })));
-const AuthModal = React.lazy(() => import('./components/modals/AuthModal').then(m => ({ default: m.AuthModal })));
-const PaymentCheckoutModal = React.lazy(() => import('./components/modals/PaymentCheckoutModal').then(m => ({ default: m.PaymentCheckoutModal })));
-const BackendDataManagementModal = React.lazy(() => import('./components/modals/BackendDataManagementModal').then(m => ({ default: m.BackendDataManagementModal })));
+const PlanPricingAdminModule = lazyWithRetry(() => import('./components/admin/PlanPricingAdminModule'), 'PlanPricingAdminModule');
+const BulkEntityCrmModule = lazyWithRetry(() => import('./components/admin/BulkEntityCrmModule'), 'BulkEntityCrmModule');
+const AdminDashboard = lazyWithRetry(() => import('./components/admin/AdminDashboard'), 'AdminDashboard');
+const OnboardWithUsPage = lazyWithRetry(() => import('./components/marketplace/OnboardWithUsPage'), 'OnboardWithUsPage');
+const AboutTradeHeavenView = lazyWithRetry(() => import('./components/services/AboutTradeHeavenView'), 'AboutTradeHeavenView');
+const LandingPageView = lazyWithRetry(() => import('./components/marketplace/LandingPageView'), 'LandingPageView');
+const VendorProfilePage = lazyWithRetry(() => import('./components/vendor/VendorProfilePage'), 'VendorProfilePage');
+const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerProfilePage'), 'BuyerProfilePage');
+const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
+
+// Core Interactive Modals (Direct imports ensure zero dynamic chunk fetch failures)
+import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
+import { RfqDetailModal } from './components/marketplace/RfqDetailModal';
+import { SupplierStorefrontModal } from './components/marketplace/SupplierStorefrontModal';
+import { RfqCreationModal } from './components/marketplace/RfqCreationModal';
+import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactInquiryModal';
+import { AuthModal } from './components/modals/AuthModal';
+const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/PaymentCheckoutModal'), 'PaymentCheckoutModal');
+const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
 
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';

@@ -812,7 +812,17 @@ let serverSiteSettingsStore: Record<string, string> = {
 };
 
 // BigRock PHP API Gateway (/api.php)
+app.options('/api.php', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.sendStatus(200);
+});
+
 app.get('/api.php', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.type('application/json');
   const action = String(req.query.action || '');
 
   if (action === 'get_rfqs' || action === 'rfqs') {
@@ -1044,7 +1054,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
 });
 
 app.post('/api.php', (req, res) => {
-  const action = String(req.query.action || '');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.type('application/json');
+  const action = String(req.query.action || req.body?.action || '');
   const input = req.body || {};
 
   // User Registration

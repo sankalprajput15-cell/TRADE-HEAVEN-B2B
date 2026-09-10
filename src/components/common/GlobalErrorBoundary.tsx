@@ -61,14 +61,9 @@ export class GlobalErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    // If we encountered an error, auto-reset state on next tick to allow rendering the home view smoothly
-    if (this.state.hasError && !prevState.hasError) {
-      if (this.props.onReset) {
-        this.props.onReset();
-      }
-      setTimeout(() => {
-        this.setState({ hasError: false, error: null });
-      }, 50);
+    // Reset error boundary if children or fallbackTitle props changed (e.g. user navigated to a different view)
+    if (this.state.hasError && prevProps.children !== this.props.children) {
+      this.setState({ hasError: false, error: null });
     }
   }
 
