@@ -14,7 +14,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5502 - $6813',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80&sig=1'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6500 - $8030',
     unit: 'MT',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80&sig=2'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5510 - $6821',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1543168256-418811576931?w=800&auto=format&fit=crop&q=80&sig=3'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5500 - $6812',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80&sig=4'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6508 - $8034',
     unit: 'MT',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=5'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6503 - $8046',
     unit: 'MT',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&auto=format&fit=crop&q=80&sig=6'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6509 - $8023',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=7'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$4003 - $5019',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1608755728617-aefab37d2edd?w=800&auto=format&fit=crop&q=80&sig=8'],
     specifications: [ { name: 'Grade', value: 'LWP' }, { name: 'Color', value: 'White' }, { name: 'Moisture', value: '<5%' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6005 - $7528',
     unit: 'MT',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&auto=format&fit=crop&q=80&sig=9'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6507 - $8013',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=800&auto=format&fit=crop&q=80&sig=10'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5508 - $6841',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1528751014936-863e6e7a319c?w=800&auto=format&fit=crop&q=80&sig=11'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6503 - $8028',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1587132137056-bfbf0166836e?w=800&auto=format&fit=crop&q=80&sig=12'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6010 - $7531',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=800&auto=format&fit=crop&q=80&sig=13'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5501 - $6823',
     unit: 'MT',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1596797038530-2c107229654b?w=800&auto=format&fit=crop&q=80&sig=14'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6509 - $8037',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518843875459-f738682238a6?w=800&auto=format&fit=crop&q=80&sig=15'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6001 - $7547',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1505253758473-96b46de82fe9?w=800&auto=format&fit=crop&q=80&sig=16'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6502 - $8013',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&auto=format&fit=crop&q=80&sig=17'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6501 - $8043',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=800&auto=format&fit=crop&q=80&sig=18'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6001 - $7541',
     unit: 'MT',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=800&auto=format&fit=crop&q=80&sig=19'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6001 - $7510',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80&sig=20'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5510 - $6808',
     unit: 'MT',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80&sig=21'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6501 - $8038',
     unit: 'MT',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=800&auto=format&fit=crop&q=80&sig=22'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5506 - $6825',
     unit: 'MT',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80&sig=23'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$1206 - $1821',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80&sig=24'],
     specifications: [ { name: 'KOR', value: '48-50 lbs' }, { name: 'Nut Count', value: '180-200/kg' }, { name: 'Moisture', value: '8% max' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6502 - $8018',
     unit: 'MT',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80&sig=25'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6008 - $7543',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80&sig=26'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$4009 - $5045',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80&sig=27'],
     specifications: [ { name: 'Grade', value: 'LWP' }, { name: 'Color', value: 'White' }, { name: 'Moisture', value: '<5%' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6005 - $7538',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80&sig=28'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$1201 - $1847',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80&sig=29'],
     specifications: [ { name: 'KOR', value: '48-50 lbs' }, { name: 'Nut Count', value: '180-200/kg' }, { name: 'Moisture', value: '8% max' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5506 - $6811',
     unit: 'MT',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80&sig=30'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6508 - $8011',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80&sig=31'],
     specifications: [ { name: 'Grade', value: 'W210' }, { name: 'Moisture', value: '<5%' }, { name: 'Defective', value: '<1%' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$4001 - $5009',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop&q=80&sig=32'],
     specifications: [ { name: 'Grade', value: 'LWP' }, { name: 'Color', value: 'White' }, { name: 'Moisture', value: '<5%' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$1203 - $1831',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800&auto=format&fit=crop&q=80&sig=33'],
     specifications: [ { name: 'KOR', value: '48-50 lbs' }, { name: 'Nut Count', value: '180-200/kg' }, { name: 'Moisture', value: '8% max' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$4006 - $5007',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&auto=format&fit=crop&q=80&sig=34'],
     specifications: [ { name: 'Grade', value: 'LWP' }, { name: 'Color', value: 'White' }, { name: 'Moisture', value: '<5%' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6001 - $7530',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&auto=format&fit=crop&q=80&sig=35'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6005 - $7539',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop&q=80&sig=36'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$1204 - $1810',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80&sig=37'],
     specifications: [ { name: 'KOR', value: '48-50 lbs' }, { name: 'Nut Count', value: '180-200/kg' }, { name: 'Moisture', value: '8% max' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5509 - $6804',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&auto=format&fit=crop&q=80&sig=38'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$5502 - $6827',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1540189549311-e6e99c3679fe?w=800&auto=format&fit=crop&q=80&sig=39'],
     specifications: [ { name: 'Grade', value: 'W320' }, { name: 'Processing', value: 'Raw' }, { name: 'Packing', value: '22.68kg Vacuum Tins' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_CASHEW_PRODUCTS: any[] = [
     priceRangeUsd: '$6007 - $7517',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80&sig=40'],
     specifications: [ { name: 'Grade', value: 'W240' }, { name: 'Aflatoxin', value: 'Free' }, { name: 'Origin', value: 'Vietnam' } ]
   }
 ];

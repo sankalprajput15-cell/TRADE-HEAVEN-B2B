@@ -14,7 +14,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$21 - $78',
     unit: 'Cartons',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80&sig=1'],
     specifications: [ { name: 'Ingredients', value: 'Mixed Berries, Sugar, Pectin' }, { name: 'Packaging', value: '300g Jars' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$24 - $36',
     unit: 'Cartons',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=2'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$25 - $31',
     unit: 'Cartons',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&auto=format&fit=crop&q=80&sig=3'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$24 - $75',
     unit: 'Cartons',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=4'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$13 - $56',
     unit: 'Pails',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80&sig=5'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$23 - $30',
     unit: 'Cartons',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1543168256-418811576931?w=800&auto=format&fit=crop&q=80&sig=6'],
     specifications: [ { name: 'Ingredients', value: 'Mixed Berries, Sugar, Pectin' }, { name: 'Packaging', value: '300g Jars' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$28 - $52',
     unit: 'Cartons',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80&sig=7'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$16 - $57',
     unit: 'Pails',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1608755728617-aefab37d2edd?w=800&auto=format&fit=crop&q=80&sig=8'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$24 - $66',
     unit: 'Cartons',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&auto=format&fit=crop&q=80&sig=9'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$15 - $26',
     unit: 'Cartons',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=800&auto=format&fit=crop&q=80&sig=10'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $50',
     unit: 'Cartons',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1528751014936-863e6e7a319c?w=800&auto=format&fit=crop&q=80&sig=11'],
     specifications: [ { name: 'Ingredients', value: 'Mixed Berries, Sugar, Pectin' }, { name: 'Packaging', value: '300g Jars' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$18 - $63',
     unit: 'Pails',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1587132137056-bfbf0166836e?w=800&auto=format&fit=crop&q=80&sig=12'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$30 - $37',
     unit: 'Cartons',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=800&auto=format&fit=crop&q=80&sig=13'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$23 - $51',
     unit: 'Cartons',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1596797038530-2c107229654b?w=800&auto=format&fit=crop&q=80&sig=14'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$18 - $35',
     unit: 'Pails',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518843875459-f738682238a6?w=800&auto=format&fit=crop&q=80&sig=15'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$16 - $61',
     unit: 'Cartons',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1505253758473-96b46de82fe9?w=800&auto=format&fit=crop&q=80&sig=16'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$19 - $29',
     unit: 'Cartons',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&auto=format&fit=crop&q=80&sig=17'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$13 - $38',
     unit: 'Pails',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=800&auto=format&fit=crop&q=80&sig=18'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $38',
     unit: 'Cartons',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=800&auto=format&fit=crop&q=80&sig=19'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$17 - $50',
     unit: 'Cartons',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80&sig=20'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$21 - $38',
     unit: 'Cartons',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80&sig=21'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$22 - $42',
     unit: 'Cartons',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=800&auto=format&fit=crop&q=80&sig=22'],
     specifications: [ { name: 'Ingredients', value: 'Mixed Berries, Sugar, Pectin' }, { name: 'Packaging', value: '300g Jars' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $27',
     unit: 'Pails',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80&sig=23'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$22 - $48',
     unit: 'Pails',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80&sig=24'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$14 - $32',
     unit: 'Pails',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80&sig=25'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $61',
     unit: 'Cartons',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80&sig=26'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$17 - $55',
     unit: 'Pails',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80&sig=27'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$25 - $83',
     unit: 'Cartons',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80&sig=28'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $36',
     unit: 'Cartons',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80&sig=29'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$17 - $59',
     unit: 'Pails',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80&sig=30'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$23 - $49',
     unit: 'Cartons',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80&sig=31'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$25 - $75',
     unit: 'Cartons',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop&q=80&sig=32'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$21 - $39',
     unit: 'Cartons',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800&auto=format&fit=crop&q=80&sig=33'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$23 - $36',
     unit: 'Cartons',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&auto=format&fit=crop&q=80&sig=34'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $54',
     unit: 'Cartons',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&auto=format&fit=crop&q=80&sig=35'],
     specifications: [ { name: 'Fruit Content', value: '55%' }, { name: 'Brix', value: '60-62' }, { name: 'Shelf Life', value: '24 Months' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$22 - $60',
     unit: 'Cartons',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop&q=80&sig=36'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$23 - $61',
     unit: 'Cartons',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80&sig=37'],
     specifications: [ { name: 'Ingredients', value: 'Mixed Berries, Sugar, Pectin' }, { name: 'Packaging', value: '300g Jars' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$26 - $31',
     unit: 'Cartons',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&auto=format&fit=crop&q=80&sig=38'],
     specifications: [ { name: 'Ingredients', value: 'Mixed Berries, Sugar, Pectin' }, { name: 'Packaging', value: '300g Jars' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$17 - $45',
     unit: 'Pails',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1540189549311-e6e99c3679fe?w=800&auto=format&fit=crop&q=80&sig=39'],
     specifications: [ { name: 'Form', value: 'Bake-Stable' }, { name: 'Packaging', value: '5kg Pails' }, { name: 'Brix', value: '65' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_JAM_PRODUCTS: any[] = [
     priceRangeUsd: '$20 - $65',
     unit: 'Cartons',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80&sig=40'],
     specifications: [ { name: 'Diet', value: 'Keto/Sugar-Free' }, { name: 'Fruit Content', value: '60%' } ]
   }
 ];

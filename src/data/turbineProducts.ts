@@ -21,9 +21,9 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 45,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80&sig=1',
+      'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=800&auto=format&fit=crop&q=80&sig=2',
+      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=3'
     ],
     description: 'Manufacturer of boiler, pressure vessels, power plant, EPC, ESP, turbine, generator, biomass boiler, MSW boiler, waste recovery boiler, CFB. High-efficiency condensing and extraction steam turbines designed for biomass, municipal solid waste, and industrial captive power plants. Grade A Boiler and ASME certified.',
     priceTiers: [
@@ -62,8 +62,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 450,
     images: [
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=4',
+      'https://images.unsplash.com/photo-1497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=5'
     ],
     description: 'Supplier of PLC module, DCS card, ESD system card, vibration monitoring module, turbine control parts. High reliability replacement control cards and vibration telemetry modules for steam turbine governors and emergency trip systems.',
     priceTiers: [
@@ -100,8 +100,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 150,
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=6',
+      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=7'
     ],
     description: 'Manufacturer of hydro turbines, filter elements, hydrogen oil water system, sealing compounds. Specialized in precision replacement parts for Francis, Pelton, and Kaplan hydro turbines, turbine lube oil filter elements, and hydrogen-oil-water sealing rings.',
     priceTiers: [
@@ -137,8 +137,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 3,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1519074069444-1ba4eae16e6e?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=8',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=9'
     ],
     description: 'Supplier of Aviation Insurance, FBO Insurance, Aerial Spraying Insurance, Small Jet Insurance, Helicopter Insurance, Aviation Repair Shop Insurance, Turbine Aircraft Insurance. Tailored comprehensive underwriting solutions for turboprop aircraft, corporate jet fleets, and aviation maintenance hubs.',
     priceTiers: [
@@ -175,8 +175,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 280,
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=10',
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=11'
     ],
     description: 'Manufacturer of Flowmeter, Water flow meter, Turbine flow meter, Oil flow meter. FLSTRONIC is a precision manufacturer specializing in Turbine Flow Meters and Positive Displacement Meters. Integrated production with digital pulse output, RS485 Modbus, and 4-20mA current loop.',
     priceTiers: [
@@ -213,8 +213,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 60,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=12',
+      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=13'
     ],
     description: 'Supplier of GAS TURBINE GENERATORS, KEROSENE, MAZUT, TIMBER, SUNFLOWER OIL, CRAB, SEAFOOD. Turnkey industrial gas turbine power generating applications for petroleum refineries, remote mining sites, and continuous baseline electrical grids.',
     priceTiers: [
@@ -250,8 +250,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 380,
     images: [
-      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=14',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=15'
     ],
     description: 'Manufacturer of wind turbine, wind generator. Low start-up wind speed (1.3 m/s), ultra-quiet helical 3-blade vertical wind turbine with three-phase coreless permanent magnet generator. Designed for residential rooftop, telecom station, and streetlighting hybrid systems.',
     priceTiers: [
@@ -289,8 +289,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 25,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=16',
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=17'
     ],
     description: 'Supplier of Sugar, Poultry, Chicken Meat, Renewable Energy, Solar Panels, Wind Turbines, Iron, Steel, Metal Products, Food Commodities, Grains. Turnkey utility and commercial-grade wind turbine farms coupled with high-output solar arrays and smart grid controllers.',
     priceTiers: [
@@ -327,8 +327,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 900,
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=18',
+      'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=19'
     ],
     description: 'Manufacturer of mechanical, wind turbine, Prefab house. Dalian Wills Machine specializes in ductile iron QT400-18AL / QT350-22L low-temperature impact resistant wind turbine rotor hubs, main frames, and CNC machined foundation flanges.',
     priceTiers: [
@@ -365,8 +365,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 4500,
     images: [
-      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=20',
+      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80&sig=21'
     ],
     description: 'Manufacturer of solar inverter, battery, solar panel, wind turbine, solar system, LiFePO4, generators. Smart grid-interactive power conditioning system that converts wild AC power from wind turbines into stabilized pure sine wave electricity while managing high-cycle LiFePO4 battery banks.',
     priceTiers: [
@@ -403,8 +403,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 200,
     images: [
-      'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?w=800&auto=format&fit=crop&q=80&sig=22',
+      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=23'
     ],
     description: 'Manufacturer of Solar Generation System, Solar Light, Solar Streetlighting system, wind turbine. Self-sustaining highway and municipal street lighting powered by an integrated vertical/horizontal low-wind turbine and monocrystalline solar module.',
     priceTiers: [
@@ -440,8 +440,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 30,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=24',
+      'https://images.unsplash.com/photo-1497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=25'
     ],
     description: 'Manufacturer of wind turbine, generator, solar panel, diesel generator, natural gas generator, controller, inverter, gasoline generator. Rapid-start industrial emergency backup generator system engineered for continuous power at industrial factories, hospitals, and mining sites.',
     priceTiers: [
@@ -478,8 +478,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 300,
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=26',
+      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=27'
     ],
     description: 'Manufacturer of ship building, machine tool, wind turbine, pump valve. KSK delivers high-specification ductile iron (GGG40 / EN-GJS-400-18U-LT) and copper alloy castings up to 25 tons per single piece for offshore wind turbine structures and marine pump assemblies.',
     priceTiers: [
@@ -516,8 +516,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 950,
     images: [
-      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=28',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=29'
     ],
     description: 'Manufacturer of wind turbine, wind generator, micro hydro turbine, solar power system. Over 25 years of proven reliability. Features pitch-control overspeed braking, neodymium permanent magnet direct-drive alternator, and weatherproof IP65 nacelle.',
     priceTiers: [
@@ -553,8 +553,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 50,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=30',
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=31'
     ],
     description: 'Manufacturer of Air Compressors, Steam Turbines, Blast Furnace Blowers, general mechanical components, turbine generator sets, desulfurization equipment, ventilators, and EPCC comprehensive contracting projects. Pioneering energy recovery from steel blast furnace exhaust gas.',
     priceTiers: [
@@ -589,8 +589,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 60,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=32',
+      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=33'
     ],
     description: 'Manufacturer of Air Compressors, Steam Turbines, Blast Furnace Blowers, general mechanical components, turbine generator sets, desulfurization equipment, ventilators, and EPCC comprehensive contracting projects. High efficiency thermal cycle with low emissions.',
     priceTiers: [
@@ -626,8 +626,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 220,
     images: [
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=34',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=35'
     ],
     description: 'Manufacturer of flowmeter, electromagnetic flowmeter, turbine flowmeter, vortex flowmeter. Turbine Flowmeter, Orifice Flowmeter, Metal Float Flowmeter, Ultrasonic Flowmeter, Swirlmeter. Designed for oil extraction, natural gas pipelines, and chemical batching.',
     priceTiers: [
@@ -664,8 +664,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 480,
     images: [
-      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=36',
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=37'
     ],
     description: 'Manufacturer of wind turbine, solar panels, water turbine, hydro turbine. Compact, high-efficiency Pelton wheel and Turgo runner micro hydro generators for rural streams, mountain homes, and off-grid eco lodges.',
     priceTiers: [
@@ -702,8 +702,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     sampleAvailable: true,
     samplePriceUsd: 50,
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=38',
+      'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=39'
     ],
     description: 'Manufacturer of Turbine Wheel Shaft. Precision vacuum investment casting using aerospace-grade Inconel 713C and 42CrMo high-tensile shaft, friction welded and dynamic high-speed VSR balanced up to 250,000 RPM.',
     priceTiers: [
@@ -739,8 +739,8 @@ export const GLOBAL_TURBINE_PRODUCTS: Product[] = [
     leadTimeDays: 14,
     sampleAvailable: false,
     images: [
-      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=40',
+      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80&sig=41'
     ],
     description: 'Supplier of Aviation Turbine Jet Fuel. Genuine refinery Soft Corporate Offer (SCO) for Aviation Turbine Fuel (Jet A-1, TS-1, Colonial Grade 54 JP54). Available for FOB Rotterdam, FOB Houston, FOB Fujairah, and CIF World Ports. Rigorous SGS testing at loading port.',
     priceTiers: [

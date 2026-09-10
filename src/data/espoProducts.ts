@@ -14,7 +14,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$81 - $98',
     unit: 'Barrels',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80&sig=1'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$77 - $120',
     unit: 'Barrels',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=2'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$75 - $131',
     unit: 'Barrels',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=3'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$80 - $119',
     unit: 'Barrels',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=4'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$75 - $130',
     unit: 'Barrels',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=5'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$83 - $111',
     unit: 'Barrels',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=6'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$75 - $144',
     unit: 'Barrels',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=7'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$77 - $137',
     unit: 'Barrels',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=8'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$76 - $114',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=9'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$79 - $135',
     unit: 'Barrels',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=10'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$77 - $105',
     unit: 'Barrels',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=11'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$79 - $125',
     unit: 'Barrels',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=12'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $116',
     unit: 'Barrels',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=13'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$74 - $100',
     unit: 'Barrels',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80&sig=14'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$80 - $94',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80&sig=15'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $125',
     unit: 'Barrels',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=16'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $106',
     unit: 'Barrels',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=17'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$82 - $95',
     unit: 'Barrels',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=18'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$83 - $142',
     unit: 'Barrels',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=19'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$83 - $101',
     unit: 'Barrels',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=20'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$84 - $115',
     unit: 'Barrels',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=21'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$85 - $130',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=22'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$84 - $135',
     unit: 'Barrels',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=23'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$78 - $104',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=24'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$80 - $116',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=25'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$81 - $141',
     unit: 'Barrels',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=26'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$75 - $135',
     unit: 'Barrels',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=27'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$80 - $114',
     unit: 'Barrels',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=28'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$74 - $97',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=29'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$80 - $128',
     unit: 'Barrels',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=30'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$74 - $136',
     unit: 'Barrels',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=31'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$76 - $113',
     unit: 'Barrels',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=32'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$80 - $132',
     unit: 'Barrels',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=33'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$81 - $143',
     unit: 'Barrels',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=34'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$76 - $122',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=35'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$81 - $114',
     unit: 'Barrels',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=36'],
     specifications: [ { name: 'API', value: '35.0' }, { name: 'Sulfur', value: '<0.6%' }, { name: 'BS&W', value: '<0.1%' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$78 - $100',
     unit: 'Barrels',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=37'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$77 - $96',
     unit: 'Barrels',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=38'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$81 - $129',
     unit: 'Barrels',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=39'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_ESPO_PRODUCTS: any[] = [
     priceRangeUsd: '$84 - $110',
     unit: 'Barrels',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=40'],
     specifications: [ { name: 'API', value: '34.8' }, { name: 'Sulfur', value: '0.54%' }, { name: 'Pour Point', value: '-21°C' } ]
   }
 ];

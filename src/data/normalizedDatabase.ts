@@ -1762,6 +1762,127 @@ export const NORMALIZED_B2B_DATABASE: NormalizedB2BDatabase = {
       products_offered: ["CONVEYOR BELT", "FRIDGE COMPRESSOR SCRAP", "RUBBER SCRAP", "ALUMINIUM UBC CAN SCRAP", "PET FLAKES", "HDPE MILK BOTTLES IN BALES", "HDPE GRANULES", "LDPE FILM IN ROLLS", "LDPE FILM IN BALES", "LDPE GRANULES", "HDPE ROLL", "Copper", "Abs", "PC"],
       year_established: 1997,
       employee_count: "51 - 100"
+    },
+    {
+      company_name: "Www Logistics Pty Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Shaik Faiza",
+      email: "faiza.shaik@logisticsptyltd.co.za",
+      phone: "+27-83-928-1192",
+      location: "South Africa - Gauteng",
+      products_offered: ["Copper cathode", "Copper wire", "Copper pipes", "Aluminum ingot", "Germanium ingot"],
+      year_established: 2021,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Standard A&M Solutions Limited",
+      business_type: "Supplier",
+      contact_person: "Hassana Audu",
+      email: "hassana.audu@standardamsolutions.ng",
+      phone: "+234-8089587091",
+      location: "Nigeria - Oyo",
+      products_offered: ["Germanium ingot (99.99% purity)", "Tin / Cassiterite (80%+ purity)", "Wolframite (65%+ purity)", "Graphite", "Tantalite", "Sputtering targets"],
+      year_established: 2023,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Zhengzhou Light Metal&Alloy Institute Co.,Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Jessica Wang",
+      email: "jessica.wang@zzlightmetal.cn",
+      phone: "+86-0371-67891234",
+      location: "China - Henan",
+      products_offered: ["Germanium", "Indium arsenide", "Lithium tetraborate", "Silicon wafer", "Sic Wafer", "InSb wafer", "Carbon nanotube", "Aluminum alloy", "Magnesium alloy", "Copper alloy"],
+      year_established: 2002,
+      employee_count: "101 - 500"
+    },
+    {
+      company_name: "Wuhan XinRong New Materials Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Flora Tu",
+      email: "flora.tu@xinrongmaterials.cn",
+      phone: "+86-027-86543210",
+      location: "China - Hubei",
+      products_offered: ["Tellurium", "Germanium", "Bismuth", "Indium", "High-purity metal materials"],
+      year_established: 2006,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Zegen Industrial Limited",
+      business_type: "Supplier",
+      contact_person: "Richard Castle",
+      email: "richard.castle@zegenindustrial.com",
+      phone: "+86-189-74905158",
+      location: "China - Hunan",
+      products_offered: ["Germanium", "Gallium", "Mercury", "Thallium", "Selenium", "Antimony", "Zirconium", "Cadmium", "Scandium", "Yttrium", "Tellurium dioxide", "Bismuth trioxide"],
+      year_established: 2013,
+      employee_count: "1 - 5"
+    },
+    {
+      company_name: "Changzhou Boyan Optical Co., Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Ada",
+      email: "ada.optical@boyanoptical.cn",
+      phone: "+86-0510-81603363",
+      location: "China - Jiangsu",
+      products_offered: ["Germanium wafer", "Silicon wafer", "Quartz plate", "Sapphire wafer", "Quartz tube", "Zinc selenide", "Zinc sulfide", "Optical materials"],
+      year_established: 2017,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Hunan Ginga Materials Co.,Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Ann Ou",
+      email: "ann.ou@gingamaterials.cn",
+      phone: "+86-731-18711318728",
+      location: "China - Hunan",
+      products_offered: ["Indium", "Germanium", "Lithium", "Rhenium powder", "Rhenium pellet", "Tantalum", "Niobium", "Hafnium", "Sputtering targets", "Ingot"],
+      year_established: 2017,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Biolife Green Technology",
+      business_type: "Manufacturer",
+      contact_person: "Zora Liu",
+      email: "zora.liu@biolifegreen.cn",
+      phone: "+86-132-12057565",
+      location: "China - Liaoning",
+      products_offered: ["Germanium mattress", "Jade stone mat", "Tourmaline mattress", "PEMF Amethyst mattress", "Tomalin mattress"],
+      year_established: 2017,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Tianjin Tengteng Optoelectronic Technology Co., Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Bill Li",
+      email: "bill.li@tengtengoptics.cn",
+      phone: "+86-157-10200841",
+      location: "China - Tianjin",
+      products_offered: ["Germanium optical lens", "Monocrystalline germanium", "Optical lenses", "Prisms", "Filters", "Windows", "Flats", "Waveplates", "Reflectors", "Infrared lenses", "Zinc selenide"],
+      year_established: 1995,
+      employee_count: "51 - 100"
+    },
+    {
+      company_name: "Opticreate Technology Co., Ltd.",
+      business_type: "Manufacturer",
+      contact_person: "Helen Wang",
+      email: "helen.wang@opticreate.cn",
+      phone: "+86-0431-86781769",
+      location: "China - Jilin",
+      products_offered: ["Germanium(Ge) optical lens", "Achromatic lens", "Aspherical lens", "Cylindrical lens", "IR window", "IR lens", "Off-axis aspheric mirror", "Prism", "Light guide"],
+      year_established: 2015,
+      employee_count: "11 - 50"
+    },
+    {
+      company_name: "Liaoyang Fanocare Technology Co.,Ltd",
+      business_type: "Manufacturer",
+      contact_person: "Julie Wang",
+      email: "julie.wang@fanocare.cn",
+      phone: "+86-156-41994109",
+      location: "China - Liaoning",
+      products_offered: ["Germanium stone mattresses", "Clay mattress", "Amethyst mattresses/biomat", "Tourmaline heating mattress", "Massage belt/pillow/cushion", "Car heating seat cushions"],
+      year_established: 2016,
+      employee_count: "51 - 100"
     }
   ]
 };

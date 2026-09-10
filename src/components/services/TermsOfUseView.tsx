@@ -422,48 +422,51 @@ export const TermsOfUseView: React.FC<Props> = ({
     {
       id: 'refund-cancellation',
       number: '10',
-      title: 'Refund & Cancellation Policy',
+      title: 'Refund, Investigation & Service Continuity Policy',
       category: 'Billing & IP',
       badge: 'Refund Terms',
       icon: CreditCard,
-      summary: '60-day satisfaction refund policy for qualifying 6+ month memberships paid via Credit/Debit Card/PayPal/Online Gateways.',
+      summary: 'Refunds are subject to formal investigation and Trade Heaven approval only. If rejected after investigation, no refund is granted and services continue without interruption.',
       content: (
         <div className="space-y-4 text-slate-700 leading-relaxed">
-          <div className="not-prose p-4.5 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
-            <div className="font-bold text-emerald-950 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>60-Day Satisfaction Refund Policy for 6+ Month Plans</span>
+          <div className="not-prose p-4.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2">
+            <div className="font-bold text-amber-950 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-amber-600" />
+              <span>Investigation-Based Refund Determination &amp; Service Continuity</span>
             </div>
-            <p className="text-xs sm:text-sm text-emerald-900 leading-relaxed">
-              This website operates under a <strong>60-day no-questions-asked refund policy</strong> for cases where a Paid Member, who has activated a membership of <strong>six (6) months or longer</strong>, is not satisfied with the services provided and files a written request for a refund.
+            <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+              Refunds on Trade Heaven are <strong>not automatic</strong> and are only available when formally approved by Trade Heaven following a comprehensive internal audit and investigation.
+            </p>
+            <p className="text-xs sm:text-sm text-amber-950 font-semibold leading-relaxed">
+              In the event that a refund request is investigated and <strong>rejected by Trade Heaven</strong>, there will be <u>no refund</u>, and the subscribed services will <strong>continue without disruption</strong> for the remaining term, as Trade Heaven has already invested substantial operational, technical, catalog publication, and matchmaking resources into delivering the services.
             </p>
           </div>
 
           <div className="not-prose space-y-2 text-xs sm:text-sm text-slate-700">
             <h4 className="font-bold text-slate-900 uppercase tracking-wider text-xs">
-              Refund Eligibility &amp; Method Conditions:
+              Key Policy Provisions:
             </h4>
             <ul className="space-y-1.5 pl-2">
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-                <span>Applies exclusively to payments made using <strong>Credit Card, Debit Card, or PayPal / Online Gateways</strong>.</span>
+                <span><strong>Incurred Operational Investment:</strong> Once an account is activated, Trade Heaven incurs non-recoverable operational costs in verification, cloud infrastructure, AI matching algorithms, and merchant directory indexing.</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-                <span>Payments made via Cheque, Demand Drafts, or Wire Transfers are not eligible for a refund under this policy.</span>
+                <span><strong>Investigation Scope:</strong> Trade Heaven examines platform delivery logs, buyer inquiries generated, and contracted deliverables before issuing any determination.</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-                <span>Monthly and quarterly payments (under 6 months duration) do not fall under this refund policy.</span>
+                <span><strong>Service Continuation Upon Rejection:</strong> If a refund claim is not approved, the member retains full uninterrupted access to all plan entitlements, verified badge status, and vendor directory tools.</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
-                <span>Pre-activation cancellation requests are refunded within <strong>7 working days</strong>.</span>
+                <span><strong>Pre-Activation Cancellations:</strong> Orders canceled prior to account provisioning and technical onboarding are processed within <strong>7 working days</strong>.</span>
               </li>
             </ul>
           </div>
           <p className="text-xs text-slate-500">
-            For additional details, visit our dedicated{' '}
+            For comprehensive terms and arbitration procedures, review our full{' '}
             <button
               onClick={() => onNavigate && onNavigate('REFUND_POLICY')}
               className="text-blue-600 font-bold hover:underline cursor-pointer"
@@ -779,7 +782,7 @@ export const TermsOfUseView: React.FC<Props> = ({
   }, [searchQuery, sections]);
 
   const handleCopyTerms = () => {
-    const textToCopy = `TRADE HEAVEN - TERMS OF USE AGREEMENT\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Office: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.net/?view=TERMS_OF_USE\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nImportant Highlights:\n- Consideration for access: acceptance of Terms of Use and Privacy Policy is required.\n- Trade Heaven is an independent B2B information & matchmaking platform.\n- Zero tolerance for fraudulent schemes, 419 sample scams, scraping, and prohibited items.\n- 60-day satisfaction refund policy applies to qualifying 6+ month memberships paid via Cards/PayPal/Online Gateways.\n- Single user account policy with strict geolocation verification.\n- Governing Law: Laws of India (Uttar Pradesh / New Delhi jurisdiction).`;
+    const textToCopy = `TRADE HEAVEN - TERMS OF USE AGREEMENT\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Office: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.net/?view=TERMS_OF_USE\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nImportant Highlights:\n- Consideration for access: acceptance of Terms of Use and Privacy Policy is required.\n- Trade Heaven is an independent B2B information & matchmaking platform.\n- Zero tolerance for fraudulent schemes, 419 sample scams, scraping, and prohibited items.\n- Refunds are available only upon formal investigation and explicit Trade Heaven approval. If rejected after investigation, no refund is granted and services continue as Trade Heaven has already invested in providing services.\n- Single user account policy with strict geolocation verification.\n- Governing Law: Laws of India (Uttar Pradesh / New Delhi jurisdiction).`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -931,9 +934,9 @@ export const TermsOfUseView: React.FC<Props> = ({
           <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
             <CreditCard className="w-4 h-4" />
           </div>
-          <h3 className="font-black text-slate-900 text-xs sm:text-sm">60-Day Refund Policy</h3>
+          <h3 className="font-black text-slate-900 text-xs sm:text-sm">Investigation Refund Policy</h3>
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Available on 6+ month memberships paid via card or authorized online payment gateways.
+            Refunds require formal investigation and Trade Heaven approval; if rejected, services continue with no refund.
           </p>
         </div>
 
@@ -1274,7 +1277,7 @@ export const TermsOfUseView: React.FC<Props> = ({
               </div>
               <h4 className="font-bold text-slate-900 text-xs sm:text-sm font-display">Return &amp; Refund Policy</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Learn about our 60-day satisfaction guarantee terms, payment methods, and cancellation procedures.
+                Review our investigation-based refund conditions, service continuation terms, and dispute procedures.
               </p>
             </div>
           </div>

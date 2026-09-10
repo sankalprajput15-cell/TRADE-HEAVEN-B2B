@@ -14,8 +14,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Inner Tubes & Accessories',
     images: [
-      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80&sig=1',
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80&sig=2'
     ],
     description: 'Manufactured with high-grade butyl rubber providing outstanding airtightness, elongation rate > 500%, and heat resistance for commercial truck tires, light vehicles, and agricultural tractors.',
     fobPriceUsd: 4.80,
@@ -53,8 +53,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Commercial Truck Tires (TBR)',
     images: [
-      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=3',
+      'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=4'
     ],
     description: 'SmartWay-verified low rolling resistance all-steel radial tire engineered for long-haul highway steering and trailer axles. Features 4-groove straight tread design for optimal water evacuation and high fuel efficiency.',
     fobPriceUsd: 135.00,
@@ -92,8 +92,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Recycled Materials & Scrap',
     subCategory: 'Scrap Tires & Crumb Rubber',
     images: [
-      'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=5',
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=6'
     ],
     description: 'Clean compressed scrap tire bales (approx. 100-110 tires per bale) packed with heavy steel wire binding. Average container payload 24-27 MT per 40ft High Cube container. Ideal for tyre oil pyrolysis, TDF cement kiln fuel, and crumb rubber milling.',
     fobPriceUsd: 45.00,
@@ -130,8 +130,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Used Tires & Casings',
     images: [
-      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=7',
+      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=8'
     ],
     description: 'Thoroughly pressure tested and visually inspected Korean brand used tires (Hankook, Kumho, Nexen). No sidewall damage, bead defects, or shoulder punctures. Available in singles, doubles, and triples nesting for container optimization.',
     fobPriceUsd: 14.50,
@@ -169,8 +169,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Tire Recycling Equipment',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=9',
+      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=10'
     ],
     description: 'High torque, low speed dual shaft shredder engineered specifically for car, truck, and tractor tires. Handles whole scrap tires up to 1200mm diameter, outputting 50mm x 50mm uniform rubber chips with magnetic steel separator.',
     fobPriceUsd: 38500.00,
@@ -207,8 +207,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Passenger Car Radial (PCR)',
     images: [
-      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=11',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=12'
     ],
     description: 'Asymmetric tread compound formulation engineered for superior wet grip, reduced road noise, and responsive dry cornering stability. Features reinforced belt structure and silica compounding for 60,000-mile treadwear warranty.',
     fobPriceUsd: 48.00,

@@ -14,8 +14,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Agriculture & Chemicals',
     subCategory: 'Fertilizers & Agro Chemicals',
     images: [
-      'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=1',
+      'https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80&sig=2'
     ],
     description: 'Fully water-soluble Mono Ammonium Phosphate (MAP) 12-61-0 fertilizer formulated for fertigation, foliar feeding, and high-efficiency crop nutrient uptake. Ideal for root development in fruit orchards, vegetables, and commercial greenhouse crops.',
     fobPriceUsd: 7.50,
@@ -60,8 +60,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Vehicles & Transportation',
     subCategory: 'Go-Karts & Recreational Vehicles',
     images: [
-      'https://images.unsplash.com/photo-1596568359553-a56de6970068?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1596568359553-a56de6970068?w=800&auto=format&fit=crop&q=80&sig=3',
+      'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&auto=format&fit=crop&q=80&sig=4'
     ],
     description: 'Off-road and tarmac recreational racing go-kart engineered with high-tensile seamless tubular steel frame, hydraulic rear disc braking, ergonomic racing bucket seat, and aggressive off-road knobby tires.',
     fobPriceUsd: 11.00,
@@ -106,8 +106,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Construction & Concrete Equipment',
     images: [
-      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=5',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=6'
     ],
     description: 'Bimetallic gear-driven JZC350 heavy-duty concrete mixer with reversing discharge drum. Features a self-falling double-cone reverse discharging mixing unit, suitable for construction sites, civil engineering, and road projects.',
     fobPriceUsd: 7.00,
@@ -152,8 +152,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Tools & Hardware',
     subCategory: 'Forestry & Garden Tools',
     images: [
-      'https://images.unsplash.com/photo-1508873696983-2df5293cb32f?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1508873696983-2df5293cb32f?w=800&auto=format&fit=crop&q=80&sig=7',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=8'
     ],
     description: 'Laser-cut laminated and solid alloy steel chainsaw guide bars engineered with sprocket nose bearings and induction-hardened rails for professional forestry, timber logging, and commercial landscaping.',
     fobPriceUsd: 5.50,
@@ -197,8 +197,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Electronics & Components',
     subCategory: 'Embedded Systems & Core Boards',
     images: [
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=9',
+      'https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=800&auto=format&fit=crop&q=80&sig=10'
     ],
     description: 'Industrial-grade MediaTek octa-core ARM processor core board running Android 12 / Linux OS. Equipped with 4G LTE, Dual-band WiFi, Bluetooth 5.0, GPS, MIPI DSI, and LVDS display interfaces for smart POS, kiosks, and IoT devices.',
     fobPriceUsd: 11.00,
@@ -242,8 +242,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Agriculture & Chemicals',
     subCategory: 'Fertilizers & Agro Chemicals',
     images: [
-      'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&auto=format&fit=crop&q=80&sig=11',
+      'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop&q=80&sig=12'
     ],
     description: 'High-concentration liquid NPK foliar fertilizer enriched with EDTA chelated micronutrients (Zinc, Iron, Boron, Manganese). Enhances chlorophyll synthesis, vegetative growth, and flower retention across commercial agriculture.',
     fobPriceUsd: 8.50,
@@ -287,8 +287,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Office & School Supplies',
     subCategory: 'Stationery & Educational Electronics',
     images: [
-      'https://images.unsplash.com/photo-1594980596870-8aa52a78d8cd?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1594980596870-8aa52a78d8cd?w=800&auto=format&fit=crop&q=80&sig=13',
+      'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=800&auto=format&fit=crop&q=80&sig=14'
     ],
     description: 'Professional 240-function scientific calculator with 10+2 digit two-line LCD screen, slide-on hard case, statistical calculations, permutations, combinations, trigonometric and exponential operations for schools and engineering.',
     fobPriceUsd: 11.00,
@@ -332,8 +332,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Lab Equipment & Supplies',
     subCategory: 'Diagnostic & Laboratory Chemicals',
     images: [
-      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=15',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=16'
     ],
     description: 'High-purity analytical grade laboratory chemicals, pH buffer standards, and diagnostic titrants certified for clinical laboratories, university research institutions, and industrial QA/QC testing.',
     fobPriceUsd: 5.50,
@@ -377,8 +377,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Food & Beverage',
     subCategory: 'Edible Oils & Fats',
     images: [
-      'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80&sig=17',
+      'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80&sig=18'
     ],
     description: '100% pure refined deodorized and winterized soybean cooking oil extracted from premium Non-GMO soybeans. Rich in Omega-3 and Omega-6 polyunsaturated fatty acids, excellent for deep frying, baking, and culinary packaging.',
     fobPriceUsd: 7.50,
@@ -423,8 +423,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Food & Beverage',
     subCategory: 'Fresh Fruit & Agricultural Produce',
     images: [
-      'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=800&auto=format&fit=crop&q=80&sig=19',
+      'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=800&auto=format&fit=crop&q=80&sig=20'
     ],
     description: 'Class A export-grade fresh green Cavendish bananas harvested at optimal maturity. Washed, treated, and vacuum-packed in temperature-controlled reefer containers to ensure fresh transit to European and international supermarkets.',
     fobPriceUsd: 5.50,
@@ -468,8 +468,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Plastics & Polymers',
     subCategory: 'Recycled Plastics & Raw Polymers',
     images: [
-      'https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1605600659908-0ef719419d41?w=800&auto=format&fit=crop&q=80&sig=21',
+      'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=22'
     ],
     description: 'Premium hot washed recycled clear transparent PET bottle flakes with low PVC and moisture content. Perfect for polyester staple fiber (PSF), PET strapping bands, thermoforming sheets, and bottle-to-bottle food grade extrusion.',
     fobPriceUsd: 11.00,
@@ -514,8 +514,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Building & Construction',
     subCategory: 'Cement & Raw Mineral Materials',
     images: [
-      'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=800&auto=format&fit=crop&q=80&sig=23',
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=24'
     ],
     description: 'Rotary-kiln sintered white Portland cement clinker characterized by high chemical purity, low iron oxide content, and superior whiteness index (≥ 88%). Specially formulated for white cement grinding, precast decorative panels, and tile adhesives.',
     fobPriceUsd: 7.50,
@@ -559,8 +559,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Food & Beverage',
     subCategory: 'Grains, Pulses & Cereals',
     images: [
-      'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80&sig=25',
+      'https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=800&auto=format&fit=crop&q=80&sig=26'
     ],
     description: 'Cleaned, sortex graded, and double-polished Chana Dal (Split Bengal Gram / Yellow Chickpeas). Free from foreign matters, stones, and weevils, rich in plant-based proteins, fiber, and iron.',
     fobPriceUsd: 3.50,
@@ -604,8 +604,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Food & Beverage',
     subCategory: 'Nuts & Dried Fruits',
     images: [
-      'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=800&auto=format&fit=crop&q=80&sig=27',
+      'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80&sig=28'
     ],
     description: 'Raw, unsalted, premium grade shelled whole almond kernels. Sorted by optical laser sorters for consistent size, moisture control, and immaculate flavor profile. Ideal for confectionery, roasting, and health snacking.',
     fobPriceUsd: 11.00,
@@ -649,8 +649,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Food & Beverage',
     subCategory: 'Poultry & Fresh Farm Produce',
     images: [
-      'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&auto=format&fit=crop&q=80&sig=29',
+      'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=800&auto=format&fit=crop&q=80&sig=30'
     ],
     description: 'Grade A fresh brown chicken table eggs from veterinary-certified biosecure poultry facilities. Candled, cleaned, and UV-sanitized with strong thick shells for commercial export across the Middle East, Africa, and Europe.',
     fobPriceUsd: 7.50,
@@ -694,8 +694,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Automotive & Parts',
     subCategory: 'Auto Spares & Replacement Components',
     images: [
-      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=800&auto=format&fit=crop&q=80&sig=31',
+      'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80&sig=32'
     ],
     description: 'Comprehensive line of OEM replacement automotive spare parts including ventilated brake rotors, ceramic brake pads, oil/air filtration modules, shock absorbers, control arms, and ball joints covering European, Asian, and American passenger vehicles.',
     fobPriceUsd: 11.00,
@@ -738,8 +738,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Automotive & Parts',
     subCategory: 'Car Engines & Transmission Units',
     images: [
-      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80&sig=33',
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80&sig=34'
     ],
     description: 'Precision-tested brand new and professionally remanufactured internal combustion engine assemblies (Petrol & Turbo-Diesel TDI/CDI). Dyno tested, compression tested, and cleaned with replacement gaskets, pistons, and timing gear.',
     fobPriceUsd: 5.50,
@@ -782,8 +782,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Agriculture & Food Commodities',
     subCategory: 'Oilseeds & Feed Commodities',
     images: [
-      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80&sig=35',
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80&sig=36'
     ],
     description: 'Clean yellow whole soybean grains suitable for soymilk, tofu production, animal feed meal, and crude soybean oil extraction. Graded according to strict international purity standards with low moisture and high protein.',
     fobPriceUsd: 11.00,
@@ -827,8 +827,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Pet Care & Animal Nutrition',
     subCategory: 'Dog & Cat Food Formulations',
     images: [
-      'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=800&auto=format&fit=crop&q=80&sig=37',
+      'https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?w=800&auto=format&fit=crop&q=80&sig=38'
     ],
     description: 'Veterinarian-formulated complete dry extruded pet food for puppies, adult dogs, and cats. Made with real poultry, salmon, wholesome whole grains, prebiotics, and essential vitamins for skin, coat, and digestive health. OEM private label packaging available.',
     fobPriceUsd: 8.00,
@@ -872,8 +872,8 @@ export const GLOBAL_EEC_POLAND_PRODUCTS: Product[] = [
     category: 'Food & Beverage',
     subCategory: 'Nuts, Seeds & Oilseeds',
     images: [
-      'https://images.unsplash.com/photo-1567892324421-1c667084e569?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1525904097878-94fb15835963?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1567892324421-1c667084e569?w=800&auto=format&fit=crop&q=80&sig=39',
+      'https://images.unsplash.com/photo-1525904097878-94fb15835963?w=800&auto=format&fit=crop&q=80&sig=40'
     ],
     description: 'Cleaned, sortex selected whole raw shelled red-skin peanut kernels (groundnuts). High oil content, sweet nutty flavor, strict low aflatoxin limits, ideal for peanut butter manufacturing, confectionery roasting, and snack packing.',
     fobPriceUsd: 7.50,

@@ -310,7 +310,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
           onClick: () => onNavigate('TERMS_OF_USE')
         });
         list.push({
-          name: 'Return & 60-Day Refund Policy',
+          name: 'Return & Refund Policy',
           url: 'https://tradeheaven.net/?view=REFUND_POLICY'
         });
         break;

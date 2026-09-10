@@ -16,9 +16,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Rice, Grains & Meat",
     "images": [
-      "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=1",
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=2",
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80&sig=3"
     ],
     "description": "Premium Premium 1121 Extra Long Grain Super Kernel Basmati Rice (Aged 2 Years, Steam/Sella) manufactured and supplied by The Fusion Flux (Karachi, Pakistan). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -107,9 +107,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Edible Oils & Cooking Fats",
     "images": [
-      "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&auto=format&fit=crop&q=80&sig=4",
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&auto=format&fit=crop&q=80&sig=5",
+      "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80&sig=6"
     ],
     "description": "Premium Refined 100% Pure Sunflower Cooking Oil in 5L / 20L PET Bottles & Jerry Cans manufactured and supplied by Crystal Globe Oil Trading (Johor Bahru, Malaysia). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -198,9 +198,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Ceramic & Porcelain Slabs",
     "images": [
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop&q=80&sig=7",
+      "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800&auto=format&fit=crop&q=80&sig=8",
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80&sig=9"
     ],
     "description": "Premium Large Format 1600x3200mm Sintered Porcelain Marble Slab for Hotel Lobby & Countertops manufactured and supplied by Monalisa Group Co., Ltd. (Foshan, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -289,9 +289,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Natural Sandstone & Carved Pillars",
     "images": [
-      "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80&sig=10",
+      "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&auto=format&fit=crop&q=80&sig=11",
+      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&auto=format&fit=crop&q=80&sig=12"
     ],
     "description": "Premium Hand-Carved Red & Teakwood Sandstone Architectural Pillars and Balustrades manufactured and supplied by Shri Krishna Stone Company (Jaipur, India). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -380,9 +380,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Commercial Kitchen & Hotel Tableware",
     "images": [
-      "https://images.unsplash.com/photo-1577100078279-b3445eaa827c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1563911302283-d2bc129e7570?w=800&auto=format&fit=crop&q=80&sig=13",
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=14",
+      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&auto=format&fit=crop&q=80&sig=15"
     ],
     "description": "Premium Heavy-Duty 304 Stainless Steel Buffet Chafing Dish & Roll-Top Food Warmer Set manufactured and supplied by CKI Industries (Mumbai, India). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -471,9 +471,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Apparel & Fashion Accessories",
     "subCategory": "Hotel & Hospitality Uniforms",
     "images": [
-      "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&auto=format&fit=crop&q=80&sig=16",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80&sig=17",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80&sig=18"
     ],
     "description": "Premium Breathable Poly-Cotton Chef Uniform Jacket & Apron Set with Mesh Vents manufactured and supplied by Maas Apparels (Chennai, India). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -562,9 +562,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "CCTV, IP Cameras & PoE Switches",
     "images": [
-      "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80&sig=19",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&auto=format&fit=crop&q=80&sig=20",
+      "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800&auto=format&fit=crop&q=80&sig=21"
     ],
     "description": "Premium 4K Ultra-HD POE Dome Security Camera with AI Human Motion & Face Recognition manufactured and supplied by Keyue Converge (Shenzhen) Technology Co., Ltd. (Shenzhen, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -653,9 +653,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Industrial Machinery & Plants",
     "subCategory": "Commercial Kitchen Gas Ranges & Ovens",
     "images": [
-      "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&auto=format&fit=crop&q=80&sig=22",
+      "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&auto=format&fit=crop&q=80&sig=23",
+      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&auto=format&fit=crop&q=80&sig=24"
     ],
     "description": "Premium Heavy-Duty 6-Burner Commercial Gas Range with Integrated Convection Oven manufactured and supplied by Mi Hwa Industrial Co., Ltd. (Goyang, South Korea). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -744,9 +744,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Business & Consulting Services",
     "subCategory": "Commercial Real Estate & Hotel Acquisitions",
     "images": [
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&auto=format&fit=crop&q=80&sig=25",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=26",
+      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=27"
     ],
     "description": "Premium Turnkey Luxury Resort Property Assessment & FF&E Procurement Advisory Services manufactured and supplied by The Biszantz Connection (Surprise, United States). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -835,9 +835,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Hotel Minibars, Safes & Bathroom Gear",
     "images": [
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=28",
+      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80&sig=29",
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=30"
     ],
     "description": "Premium Ultra-Quiet 40L Absorption Mini Bar Refrigerator (0dB Solid Door / Glass Door) manufactured and supplied by Ekipmer Hotel Equipment (Istanbul, Turkey). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -926,9 +926,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "Intelligent Hotel Locks & Keycards",
     "images": [
-      "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=31",
+      "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=32",
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=33"
     ],
     "description": "Premium ANSI Standard Stainless Steel 304 RFID Smart Hotel Keycard Door Lock System manufactured and supplied by Yongkang Huishuo Technology Co., Ltd. (Yongkang, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1017,9 +1017,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Spices, Seasonings & Coffee",
     "images": [
-      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=34",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=35",
+      "https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=36"
     ],
     "description": "Premium Gourmet Grade A Indonesian Bourbon Vanilla Beans & Organic Whole Nutmeg manufactured and supplied by Arjuna Company (Semarang, Indonesia). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1108,9 +1108,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Industrial Machinery & Plants",
     "subCategory": "Ice Makers & Commercial Water Treatment",
     "images": [
-      "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=37",
+      "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=38",
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=39"
     ],
     "description": "Premium Commercial Stainless Steel Cube Ice Maker Machine (500kg / 24 Hours Capacity) manufactured and supplied by Beijing Kameige Environmental Technology Co., Ltd. (Beijing, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1199,9 +1199,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "RFID Cards, NFC Keycards & Wristbands",
     "images": [
-      "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=40",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=41",
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=42"
     ],
     "description": "Premium Eco-Friendly FSC Certified Bamboo Wood RFID Hotel Room Keycards (Mifare 1k / Ultralight) manufactured and supplied by LS card Systems (Tel Aviv, Israel). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1290,9 +1290,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Furniture & Furnishings",
     "subCategory": "Outdoor Garden & Patio Furniture",
     "images": [
-      "https://images.unsplash.com/photo-1519974719765-e6559eac2575?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80&sig=43",
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&auto=format&fit=crop&q=80&sig=44",
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&auto=format&fit=crop&q=80&sig=45"
     ],
     "description": "Premium Commercial Powder-Coated Aluminum Poolside Sun Lounger with Textilene Mesh manufactured and supplied by Mixmadsan Outdoor & Hospitality Furniture (Kayseri, Turkey). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1381,9 +1381,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Commercial Kitchen Prep Tables & Shelving",
     "images": [
-      "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80&sig=46",
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop&q=80&sig=47",
+      "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800&auto=format&fit=crop&q=80&sig=48"
     ],
     "description": "Premium Commercial NSF Certified 304 Stainless Steel Kitchen Worktable with Undershelf manufactured and supplied by Beijing Mingxiang Gongfang Trade Co., Ltd. (Beijing, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1472,9 +1472,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Textiles & Leather Products",
     "subCategory": "Hotel Bath Towels, Robes & Mats",
     "images": [
-      "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80&sig=49",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80&sig=50",
+      "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&auto=format&fit=crop&q=80&sig=51"
     ],
     "description": "Premium Luxury 650 GSM 100% Combed Cotton White Hotel Bath Sheet & Hand Towel Sets manufactured and supplied by Decent Towels (Faisalabad, Pakistan). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1563,9 +1563,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Frozen Halal Beef & Lamb",
     "images": [
-      "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&auto=format&fit=crop&q=80&sig=52",
+      "https://images.unsplash.com/photo-1563911302283-d2bc129e7570?w=800&auto=format&fit=crop&q=80&sig=53",
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=54"
     ],
     "description": "Premium Premium Chilled Halal Black Angus Ribeye & Tenderloin Beef Cuts (Grain Fed) manufactured and supplied by Almeat Al Samaa for Food Trading (Amman, Jordan). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1654,9 +1654,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Furniture & Furnishings",
     "subCategory": "Dining Chairs, Barstools & Booths",
     "images": [
-      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&auto=format&fit=crop&q=80&sig=55",
+      "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&auto=format&fit=crop&q=80&sig=56",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80&sig=57"
     ],
     "description": "Premium Commercial Grade Cast Iron Base & Solid American Walnut Restaurant Dining Tables manufactured and supplied by Restaurant Patio Furniture (Atlanta, United States). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1745,9 +1745,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Chemicals & Allied Products",
     "subCategory": "Compound Fertilizers & Plant Nutrients",
     "images": [
-      "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80&sig=58",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80&sig=59",
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&auto=format&fit=crop&q=80&sig=60"
     ],
     "description": "Premium 100% Water Soluble High-Purity NPK 20-20-20 Compound Fertilizer with Trace Elements manufactured and supplied by Yonfer Agricultural Technology Co., Ltd. (Jingmen, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1836,9 +1836,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Health & Beauty",
     "subCategory": "Hotel Spa Amenities & Diffusers",
     "images": [
-      "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800&auto=format&fit=crop&q=80&sig=61",
+      "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&auto=format&fit=crop&q=80&sig=62",
+      "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&auto=format&fit=crop&q=80&sig=63"
     ],
     "description": "Premium Luxury Organic Mango Nectar & Plumeria Hotel Guestroom Amenity Toiletries Set (50ml) manufactured and supplied by Malie in the Shops At Kukui'ula (Koloa / Kauai, United States). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -1927,9 +1927,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Textiles & Leather Products",
     "subCategory": "Hotel Bedding, Sheets & Duvets",
     "images": [
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&auto=format&fit=crop&q=80&sig=64",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&auto=format&fit=crop&q=80&sig=65",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=66"
     ],
     "description": "Premium Commercial T-300 High-Density Cotton Rich Hotel Sateen Stripe Duvet Cover & Sheet Set manufactured and supplied by Dzee Textiles LLC (Orlando, United States). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2018,9 +2018,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Furniture & Furnishings",
     "subCategory": "Hotel Bedroom Suites & Headboards",
     "images": [
-      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=67",
+      "https://images.unsplash.com/photo-1502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=68",
+      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80&sig=69"
     ],
     "description": "Premium Modern Luxury 5-Star Hotel Bedroom Furniture Package (Headboard, Desk, Wardrobe, Nightstands) manufactured and supplied by GuangZhou Bianyi Hotel Supplies Co., Ltd. (Foshan / Guangzhou, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2109,9 +2109,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Minibar Kits & Guest Welcome Packs",
     "images": [
-      "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=70",
+      "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=71",
+      "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=72"
     ],
     "description": "Premium Hotel Minibar Guest Breakfast & Beverage Starter Kit Box (Tea, Coffee, Biscuits, Cereal) manufactured and supplied by LePack Accommodation Supplies Australia (Brisbane, Australia). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2200,9 +2200,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Housekeeping Carts & Lobby Bellman Posts",
     "images": [
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=73",
+      "https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=74",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=75"
     ],
     "description": "Premium Heavy-Duty Stainless Steel Hotel Housekeeping Service Trolley with Laundry Bags manufactured and supplied by Foshan Southbay Hotel Supply Limited (Foshan, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2291,9 +2291,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Stainless Steel Waste Bins & Furniture",
     "images": [
-      "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=76",
+      "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=77",
+      "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=78"
     ],
     "description": "Premium Fingerprint-Proof Brushed 304 Stainless Steel Hotel Lobby Waste Bin & Ash Urn manufactured and supplied by Guangdong Teehoo Stainless Steel Co., Limited (Jiangmen, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2382,9 +2382,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "Electric Kettles, Ironing Stations & Trays",
     "images": [
-      "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=79",
+      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=80",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=81"
     ],
     "description": "Premium Double-Wall Cool-Touch 0.8L Stainless Steel Hotel Guest Electric Water Kettle manufactured and supplied by Guangzhou Willco Trading Co., Limited (Guangzhou, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2473,9 +2473,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Packaging & Paper",
     "subCategory": "Disposable Paper Goods & Coasters",
     "images": [
-      "https://images.unsplash.com/photo-1526947425960-945c6e72858f?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=82",
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80&sig=83",
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&auto=format&fit=crop&q=80&sig=84"
     ],
     "description": "Premium Custom Embossed Multi-Ply Absorbent Paper Coasters for Hotel Bars & Banquets manufactured and supplied by Jinan Huayu Tianshun Hotel Supplies Co., Ltd. (Jinan, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2564,9 +2564,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Industrial Machinery & Plants",
     "subCategory": "Commercial Bakery Mixers & Rotisseries",
     "images": [
-      "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&auto=format&fit=crop&q=80&sig=85",
+      "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80&sig=86",
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop&q=80&sig=87"
     ],
     "description": "Premium Heavy-Duty 50kg Industrial Spiral Dough Mixer with Dual Speed Timer Control manufactured and supplied by Food Technotic (Istanbul, Turkey). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2655,9 +2655,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Industrial Machinery & Plants",
     "subCategory": "Food Processing Lines & Canteen Gear",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800&auto=format&fit=crop&q=80&sig=88",
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80&sig=89",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80&sig=90"
     ],
     "description": "Premium Industrial Multi-Function Vegetable Slicing, Dicing & Julienne Machine (500kg/h) manufactured and supplied by Aromach Gida Makine (Gebze, Turkey). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2746,9 +2746,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Industrial Machinery & Plants",
     "subCategory": "Confectionery & Biscuit Production Lines",
     "images": [
-      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&auto=format&fit=crop&q=80&sig=91",
+      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&auto=format&fit=crop&q=80&sig=92",
+      "https://images.unsplash.com/photo-1563911302283-d2bc129e7570?w=800&auto=format&fit=crop&q=80&sig=93"
     ],
     "description": "Premium Automated Stainless Steel Chocolate Tempering & Enrobing Machine (25kg Tank) manufactured and supplied by Biscute Mak Sti (Istanbul, Turkey). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2837,9 +2837,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Commercial Cooktops, Bain-Maries & Fryers",
     "images": [
-      "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=94",
+      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&auto=format&fit=crop&q=80&sig=95",
+      "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&auto=format&fit=crop&q=80&sig=96"
     ],
     "description": "Premium Heavy-Duty 900 Series Double-Well Commercial Electric Deep Fryer (2x18L) manufactured and supplied by Uniconcept Mutfak Ekipmanlari (Istanbul, Turkey). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -2928,9 +2928,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Insulated Food Pan Carriers & Ice Carts",
     "images": [
-      "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80&sig=97",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80&sig=98",
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80&sig=99"
     ],
     "description": "Premium Heavy-Duty Front Loading Rotomolded Insulated Food Pan Carrier Box (6 GN 1/1 Pans) manufactured and supplied by Shanghai SCC Environmental Technology Co., Ltd. (Shanghai, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3019,9 +3019,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "Face Recognition & Tuya Smart Locks",
     "images": [
-      "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&auto=format&fit=crop&q=80&sig=100",
+      "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800&auto=format&fit=crop&q=80&sig=101",
+      "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&auto=format&fit=crop&q=80&sig=102"
     ],
     "description": "Premium 3D Facial Recognition & Tuya WiFi Smart Keyless Hotel Entry Door Lock manufactured and supplied by Shenzhen Younuo IET Technology Co., Ltd. (Shenzhen, China). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3110,9 +3110,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Dehydrated Vegetables & Dry Mushrooms",
     "images": [
-      "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&auto=format&fit=crop&q=80&sig=103",
+      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&auto=format&fit=crop&q=80&sig=104",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&auto=format&fit=crop&q=80&sig=105"
     ],
     "description": "Premium Crispy Deep-Fried Golden Onion Flakes (Biryani Shallots in 1kg / 5kg Foil Pouches) manufactured and supplied by K R Enterprise (Kolkata, India). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3201,9 +3201,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Green Coffee Beans (Arabica & Robusta)",
     "images": [
-      "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=106",
+      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=107",
+      "https://images.unsplash.com/photo-1502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=108"
     ],
     "description": "Premium Specialty Grade 1 Sumatra Mandheling Green Arabica Coffee Beans (Wet Hulled) manufactured and supplied by PT Exentra Internasional Trade (Surabaya, Indonesia). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3292,9 +3292,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Health & Beauty",
     "subCategory": "Organic Argan Oil & Haircare",
     "images": [
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80&sig=109",
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=110",
+      "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=111"
     ],
     "description": "Premium 100% Pure Virgin Cold-Pressed Organic Moroccan Argan Oil (Bulk Liters & Spa Bottles) manufactured and supplied by Oriental International Business Group LLC (Scottsdale, United States). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3383,9 +3383,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Gourmet Beverages & Condiments",
     "images": [
-      "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=112",
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=113",
+      "https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=114"
     ],
     "description": "Premium German Natural Sparkling Artesian Mineral Water in 750ml Premium Glass Bottles manufactured and supplied by Nova Global Trading GmbH (Hamburg, Germany). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3474,9 +3474,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Food & Beverage",
     "subCategory": "Truffles, Caviar & Gourmet Dairy",
     "images": [
-      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=115",
+      "https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=116",
+      "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=117"
     ],
     "description": "Premium Fresh Italian Black Winter Truffles (Tuber Melanosporum Grade Extra Chilled) manufactured and supplied by Alkemal Foods Singapore (Singapore, Singapore). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [
@@ -3565,9 +3565,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "NFC Cards & Hotel Energy Saving Switches",
     "images": [
-      "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=118",
+      "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=119",
+      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=120"
     ],
     "description": "Premium Hotel Guestroom Intelligent RFID Card Key Power Energy Saving Switch (30A Relay) manufactured and supplied by Shenzhen IBG Digital Technology Co., Ltd. (Hong Kong, Hong Kong). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [

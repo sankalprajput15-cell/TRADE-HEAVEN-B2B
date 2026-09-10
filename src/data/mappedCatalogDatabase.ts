@@ -40,7 +40,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Pneumatic roller mills, high-efficiency plansifter, CE certified, 380V/50Hz 3-Phase",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=1",
     supplier_sample: {
       company_name: "Apex Agro Machinery Heavy Industries Ltd.",
       country: "Germany",
@@ -64,7 +64,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Residual oil <6%, hardened alloy steel screw shaft, includes de-gumming filter press",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=2",
     supplier_sample: {
       company_name: "Zhengzhou Industrial Press Corp",
       country: "China",
@@ -88,7 +88,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Minimum 5 years maturation in ex-bourbon white oak casks, Certificate of Origin required",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=800&auto=format&fit=crop&q=80&sig=3",
     supplier_sample: {
       company_name: "Highland Spirits Distillers Ltd.",
       country: "United Kingdom",
@@ -112,7 +112,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Nicotine 2.5-3.0%, reducing sugars >18%, moisture max 12%, packed in 200kg C-48 cardboard cartons",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?w=800&auto=format&fit=crop&q=80&sig=4",
     supplier_sample: {
       company_name: "Global Tobacco Leaf Growers Co.",
       country: "India",
@@ -136,7 +136,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "304 Stainless steel construction, R290 eco-refrigerant, ETL & NSF sanitation certified",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&auto=format&fit=crop&q=80&sig=5",
     supplier_sample: {
       company_name: "BarCraft Equipment Mfg.",
       country: "China",
@@ -160,7 +160,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Biuret max 1.0%, moisture max 0.5%, size 2.00-4.75mm min 90%, SGS inspection at loading",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80&sig=6",
     supplier_sample: {
       company_name: "Sudarshan Petrochem & Polymers Ltd.",
       country: "India",
@@ -184,7 +184,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Total nitrogen min 18%, available P2O5 min 46%, moisture max 1.5%, free flowing dark brown granules",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=7",
     supplier_sample: {
       company_name: "Apex Phosphate Chemicals",
       country: "Morocco",
@@ -208,7 +208,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Max 1% broken, moisture max 12.5%, purity 95%, packed in 25kg non-woven master bags",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80&sig=8",
     supplier_sample: {
       company_name: "Royal Heritage Agri Commodities",
       country: "India",
@@ -232,7 +232,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Protein min 35.5%, oil content min 18.5%, moisture max 13%, foreign matter max 1%",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80&sig=9",
     supplier_sample: {
       company_name: "AgriCorp South America S.A.",
       country: "Brazil",
@@ -256,7 +256,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "IQF, net weight 100% no glaze, HACCP & BRC certified, antibiotic-free test certificate",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80&sig=10",
     supplier_sample: {
       company_name: "Oceanic Harvest Vietnam Ltd.",
       country: "Vietnam",
@@ -280,7 +280,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Bud size 5.5cm+, cold-chain pre-cooled at 2°C, packaged in export telescopic cartons",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80&sig=11",
     supplier_sample: {
       company_name: "Equatorial Flora Farms",
       country: "Kenya",
@@ -304,7 +304,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Strict Halal slaughter certification, blast frozen -18°C, water content <4%, Grade A export",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=800&auto=format&fit=crop&q=80&sig=12",
     supplier_sample: {
       company_name: "Sadia Export Meat Co.",
       country: "Brazil",
@@ -328,7 +328,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "FFA as Palmitic max 0.1%, IV min 56, moisture & impurities max 0.1%, PORAM specifications",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80&sig=13",
     supplier_sample: {
       company_name: "Sime Global Oleo Chemical Ltd.",
       country: "Malaysia",
@@ -352,7 +352,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "6000+ cycle life @ 80% DoD, UN38.3, UL1973, matched internal resistance <0.2mΩ",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=14",
     supplier_sample: {
       company_name: "Shenzhen Apex Microelectronics Co., Ltd.",
       country: "China",
@@ -376,7 +376,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Length 12 meters, mill test certificates with heat numbers, ASTM & BS 4449 compliant",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=15",
     supplier_sample: {
       company_name: "Kobe Heavy Metal Corporation",
       country: "Japan",
@@ -400,7 +400,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "0.5mm (20mil) wear layer, UV coating, Unilin click lock system, FloorScore certified",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=800&auto=format&fit=crop&q=80&sig=16",
     supplier_sample: {
       company_name: "Changzhou DecoPlank Flooring",
       country: "China",
@@ -424,7 +424,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "BIFMA X5.1 pass certified, Class 4 gas lift cylinder, breathable fire-retardant mesh",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1580481077197-28d54238e8a9?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1580481077197-28d54238e8a9?w=800&auto=format&fit=crop&q=80&sig=17",
     supplier_sample: {
       company_name: "Foshan Zenith Office Ergonomics",
       country: "China",
@@ -448,7 +448,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Grade A auto-float quality, zero optical distortion, EN 572-2 standard",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=18",
     supplier_sample: {
       company_name: "Saint-Gobain / Asahi Float Glass Partner",
       country: "Turkey",
@@ -472,7 +472,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Size 44\" x 26.5\", weight 2.25 lbs, IJO 98/01 compliant, vegetable oil treated",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=800&auto=format&fit=crop&q=80&sig=19",
     supplier_sample: {
       company_name: "Bengal Jute Mills Consortium",
       country: "India",
@@ -496,7 +496,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Purity min 99.0%, Na2CO3 max 0.4%, NaCl max 0.03%, 25kg PP/PE woven bags with inner liner",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=20",
     supplier_sample: {
       company_name: "Sudarshan Petrochem & Polymers Ltd.",
       country: "India",
@@ -520,7 +520,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Thickness 18-35 micron, corona treated 38 dyne/cm, high clarity and tensile strength",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=21",
     supplier_sample: {
       company_name: "Treofan / Cosmo Films Global",
       country: "India",
@@ -544,7 +544,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Tier 3 / Stage IIIA turbo diesel engine, Kawasaki hydraulic pumps, enclosed ROPS/FOPS cabin",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80&sig=22",
     supplier_sample: {
       company_name: "Sany / XCMG Heavy Industries Exporter",
       country: "China",
@@ -568,7 +568,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "CCS & DNV-GL marine classification type approved, heat exchanger cooling, electric 24V starting",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&auto=format&fit=crop&q=80&sig=23",
     supplier_sample: {
       company_name: "Weichai / Cummins Marine Heavy Power",
       country: "China",
@@ -592,7 +592,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "BS EN 1978:1998 (Cu-ETP-2), non-radioactive, SGS inspection at port of discharge",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=24",
     supplier_sample: {
       company_name: "Zambia Copperbelt Smelters & Mining Corp",
       country: "Zambia",
@@ -616,7 +616,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Sulfur max 10 ppm, Cetane index min 46, Flash point min 55°C, SGS/Saybolt dip test prior to injection",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=25",
     supplier_sample: {
       company_name: "Gulf Energy Refinery Traders FZE",
       country: "United Arab Emirates",
@@ -640,7 +640,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "DEF STAN 91-091 & ASTM D1655 compliant, flash point min 38°C, freeze point max -47°C",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1519074069444-1ba4ea16e91f?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1519074069444-1ba4ea16e91f?w=800&auto=format&fit=crop&q=80&sig=26",
     supplier_sample: {
       company_name: "Houston Energy & Marine Terminals",
       country: "United States",
@@ -664,7 +664,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Homopolymer, high tensile tenacity, UV stabilized, packed in 25kg palletized bags",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800&auto=format&fit=crop&q=80&sig=27",
     supplier_sample: {
       company_name: "Sudarshan Petrochem & Polymers Ltd.",
       country: "India",
@@ -688,7 +688,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "ASTM D6319, EN 455 Parts 1-4, FDA 510(k), AQL 1.5, textured fingertips",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=28",
     supplier_sample: {
       company_name: "TopGlove / Hartalega Export Alliance",
       country: "Malaysia",
@@ -712,7 +712,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Sony STARVIS sensor, 50m IR night vision, IP67 weatherproof, IK10 vandal-proof, ONVIF Profile S/G/T",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&auto=format&fit=crop&q=80&sig=29",
     supplier_sample: {
       company_name: "HikVision / Dahua OEM Tech Hub",
       country: "China",
@@ -736,7 +736,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "EN3 / CE 0036 certified, 75% MAP powder, seamless deep-drawn steel cylinder with pressure gauge",
       status: "Active / Verified"
     },
-    product_image: "https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&auto=format&fit=crop&q=80",
+    product_image: "https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&auto=format&fit=crop&q=80&sig=30",
     supplier_sample: {
       company_name: "SafetyShield Fire Systems Co.",
       country: "Turkey",
@@ -837,7 +837,7 @@ export const MAPPED_CATALOG_DERIVED_PRODUCTS: Product[] = MAPPED_CATALOG_DATABAS
     title: item.product_name,
     category: item.main_category,
     subCategory: item.subcategory,
-    images: [item.product_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'],
+    images: [item.product_image || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=31'],
     description: `High specification ${item.product_name} suited for bulk commercial trading and industrial procurement. Meets international export standards: ${item.active_rfq_sample.specs_summary}. Active Trade Heaven inquiries: ${item.total_active_inquiries}.`,
     fobPriceUsd: item.supplier_sample?.unit_price_usd || 100,
     moq: item.supplier_sample?.moq || 10,

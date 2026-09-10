@@ -164,13 +164,13 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
     case 'TERMS_OF_USE':
       return <SEO 
         title="Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven"
-        description="Read Trade Heaven's terms of use, membership rights, 60-day refund policy, and trade dispute terms operated by Tradeheaven ECOM Solution LLP."
+        description="Read Trade Heaven's terms of use, membership rights, investigation-based refund policy, and trade dispute terms operated by Tradeheaven ECOM Solution LLP."
         canonicalUrl="https://tradeheaven.net/?view=TERMS_OF_USE"
       />;
     case 'REFUND_POLICY':
       return <SEO 
-        title="Return & Refund Policy | Trade Protection Guarantee | Trade Heaven"
-        description="Review Trade Heaven's refund conditions, milestone payment protections, and SGS dispute mediation terms."
+        title="Return & Refund Policy | Investigation & Dispute Terms | Trade Heaven"
+        description="Review Trade Heaven's investigation-based refund conditions, service continuation terms, and dispute mediation rules."
         canonicalUrl="https://tradeheaven.net/?view=REFUND_POLICY"
       />;
     default:

@@ -237,23 +237,23 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     heroHeadlineGradient: "Verified Global Buyers & Bulk RFQs",
     heroSubheadline: "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     heroTrustEyebrow: "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
-    heroBgImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=85",
+    heroBgImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=1",
     searchPlaceholder: "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     tradeSpecialist: {
       name: "Elena Rostova",
       title: "Global Sourcing Director",
       quote: "Assisting enterprise buyers with verified factory matchmaking & Incoterms CIF logistics.",
-      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80",
+      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80&sig=2",
       badge: "Verified Trade Specialist"
     },
-    bannerImageCol1: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80",
+    bannerImageCol1: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=3",
     bannerTitleCol1: "Verified Container Sourcing",
     bannerDescCol1: "Direct FOB / CIF container shipments with factory audit guarantee.",
-    bannerImageCol2: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80",
+    bannerImageCol2: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=4",
     bannerTitleCol2: "2026 Global Sourcing & Manufacturing Expo",
     bannerSubtitleCol2: "Connect directly with 10,000+ verified Asian & European production plants.",
     bannerBadgeCol2: "FEATURED GLOBAL TRADE EVENT",
-    bannerImageCol3: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&auto=format&fit=crop&q=80",
+    bannerImageCol3: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&auto=format&fit=crop&q=80&sig=5",
     bannerTitleCol3: "Gold Exporter Membership",
     bannerDescCol3: "Get 30 daily high-priority quotes and first-page catalog placement.",
     verifiedBuyersCount: "5,200,000+",
@@ -302,7 +302,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Machinery & Industrial Equipment",
         description: "CNC milling machines, packaging lines, hydraulic presses, automation.",
         iconName: "Cpu",
-        image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=6",
         badge: "Top Sourced",
         productCount: "48,200+ Products"
       },
@@ -311,7 +311,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Automotive & Electric Vehicles",
         description: "EV battery cells, charging stations, Tier-1 brake assemblies, alloy wheels.",
         iconName: "Car",
-        image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80&sig=7",
         badge: "High Growth",
         productCount: "32,900+ Products"
       },
@@ -320,7 +320,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Electronics & Semiconductors",
         description: "SMD microcontrollers, OLED display panels, power transformers, sensors.",
         iconName: "Radio",
-        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=8",
         badge: "Verified OEM",
         productCount: "64,100+ Products"
       },
@@ -329,7 +329,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Chemicals & Raw Polymers",
         description: "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         iconName: "FlaskConical",
-        image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=9",
         badge: "REACH Compliant",
         productCount: "28,500+ Products"
       },
@@ -338,7 +338,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Textiles, Garments & Fabrics",
         description: "Organic cotton yarns, waterproof technical outerwear, silk jacquard.",
         iconName: "Scissors",
-        image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80&sig=10",
         badge: "OEKO-TEX",
         productCount: "52,400+ Products"
       },
@@ -347,7 +347,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Renewable Energy & Solar",
         description: "Tier-1 N-Type TOPCon solar panels, commercial hybrid inverters, BESS.",
         iconName: "Sun",
-        image: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=11",
         badge: "CE / TÜV Certified",
         productCount: "19,800+ Products"
       },
@@ -356,7 +356,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Agriculture & Agro Commodities",
         description: "Refined ICUMSA 45 sugar, Non-GMO soy, Robusta coffee, cashew nuts.",
         iconName: "Wheat",
-        image: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80&sig=12",
         badge: "Phytosanitary Cert",
         productCount: "41,300+ Products"
       },
@@ -365,7 +365,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Medical & Diagnostic Supplies",
         description: "Nitrile examination gloves, hospital ICU patient monitors, surgical drape sets.",
         iconName: "Stethoscope",
-        image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80&sig=13",
         badge: "FDA 510(k) / CE",
         productCount: "15,700+ Products"
       },
@@ -374,7 +374,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Building & Construction Materials",
         description: "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         iconName: "Box",
-        image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80",
+        image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=14",
         badge: "ASTM / ISO",
         productCount: "37,000+ Products"
       }
@@ -391,7 +391,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         company: "Nordic Industrial Logistics AB",
         country: "Sweden",
         countryFlag: "🇸🇪",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80&sig=15",
         quote: "We sourced thirty 40HQ containers of high-purity industrial chemicals through Trade Heaven. The trade protection custody and third-party TÜV pre-shipment inspection gave our board 100% peace of mind.",
         rating: 5,
         verifiedDealSize: "$420,000 CIF Gothenburg",
@@ -404,7 +404,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         company: "Apex Solar & Infrastructure UK",
         country: "United Kingdom",
         countryFlag: "🇬🇧",
-        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80&sig=16",
         quote: "The H2H Key Account Manager assigned to our company coordinated daily with the Shanghai solar factory to streamline our customs proforma invoice and Bill of Lading.",
         rating: 5,
         verifiedDealSize: "$1,850,000 CIF Southampton",
@@ -417,7 +417,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         company: "MexAgro Importers S.A.",
         country: "Mexico",
         countryFlag: "🇲🇽",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80&sig=17",
         quote: "Zero broker markups and true factory direct pricing. We cut our raw material procurement lead time by 18 days and saved $64,000 on our first quarter orders.",
         rating: 5,
         verifiedDealSize: "$310,000 FOB Santos",
@@ -428,7 +428,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   productsPage: {
     title: "Global Wholesale Product Catalog",
     subtitle: "Explore verified industrial machinery, raw chemicals, electronics, textiles, and green energy products directly from audited production facilities.",
-    bannerImageUrl: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=1200&auto=format&fit=crop&q=80",
+    bannerImageUrl: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=18",
     badgeText: "Factory-Direct Wholesale Catalog",
     ctaBannerTitle: "Looking for Custom Specifications or OEM / ODM?",
     ctaBannerDesc: "Post a tailored Request for Quotation (RFQ) to receive competing proposals from verified manufacturers within 24 hours.",
@@ -437,7 +437,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   buyLeadsPage: {
     title: "Live Global Buy Leads & Purchasing RFQs",
     subtitle: "Real-time buying tenders broadcasted by verified international procurement managers seeking immediate container shipments.",
-    bannerImageUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&auto=format&fit=crop&q=80",
+    bannerImageUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=19",
     badgeText: "Real-Time Sourcing Tenders",
     urgentNoticeText: "🔥 24 Urgent Buy Leads Added in the Last 3 Hours from North America & EU Buyers",
     postRfqButtonText: "Post New Sourcing Tender"
@@ -445,14 +445,14 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   suppliersPage: {
     title: "Audited Global Exporters & Manufacturing Directory",
     subtitle: "Partner with ISO 9001, CE, and SGS audited production facilities across 180+ countries with verified export records.",
-    bannerImageUrl: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1200&auto=format&fit=crop&q=80",
+    bannerImageUrl: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=800&auto=format&fit=crop&q=80&sig=20",
     badgeText: "Vetted Manufacturing Facilities",
     auditGuaranteeText: "Every Gold and VIP supplier on Trade Heaven undergoes rigorous on-site factory verification, corporate registry audits, and financial solvency checks."
   },
   postRfqPage: {
     title: "Post Your Sourcing Requirement (RFQ)",
     subtitle: "Submit your product specifications, target volume, and preferred Incoterm to receive competitive quotes from verified global manufacturers.",
-    bannerImageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&auto=format&fit=crop&q=80",
+    bannerImageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80&sig=21",
     badgeText: "Zero Broker Fee Sourcing",
     step1Title: "1. Specify Product & Quantity",
     step2Title: "2. Delivery & Incoterms Requirements",
@@ -462,7 +462,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   postSellOfferPage: {
     title: "Post a Wholesale Product / Sell Offer",
     subtitle: "List your manufactured goods and container lots in Trade Heaven's global B2B directory to receive direct RFQ inquiries.",
-    bannerImageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&auto=format&fit=crop&q=80",
+    bannerImageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=22",
     badgeText: "Global Exporter Listing Suite",
     sellerNotice: "High-resolution product imagery, exact HS codes, and verified compliance certifications result in 4x higher buyer inquiry rates.",
     complianceTip: "Ensure your FOB / CIF price ranges and minimum order quantities (MOQ) accurately reflect current production capacity."
@@ -470,7 +470,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   premiumPlansPage: {
     title: "Trade Heaven Exporter Membership & Growth Plans",
     subtitle: "Accelerate your international trade revenue with high-priority buy lead quotes, dedicated Account Managers, and premier catalog positioning.",
-    bannerImageUrl: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1200&auto=format&fit=crop&q=80",
+    bannerImageUrl: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80&sig=23",
     annualDiscountBadge: "Save 20% with Annual B2B Exporter Billing",
     tiers: [],
     creditPacks: [],

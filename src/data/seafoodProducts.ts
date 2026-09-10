@@ -14,7 +14,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8004 - $12048',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80&sig=1'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8004 - $12015',
     unit: 'MT',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1559741072-4d0505b0487c?w=800&auto=format&fit=crop&q=80&sig=2'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5008 - $8506',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800&auto=format&fit=crop&q=80&sig=3'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3510 - $5532',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80&sig=4'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3508 - $5507',
     unit: 'MT',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1535400255456-984241443b29?w=800&auto=format&fit=crop&q=80&sig=5'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3507 - $5528',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80&sig=6'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5008 - $8513',
     unit: 'MT',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=800&auto=format&fit=crop&q=80&sig=7'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8002 - $12008',
     unit: 'MT',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&auto=format&fit=crop&q=80&sig=8'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5008 - $8548',
     unit: 'MT',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80&sig=9'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3501 - $5513',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80&sig=10'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5002 - $8507',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80&sig=11'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$6509 - $9038',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80&sig=12'],
     specifications: [ { name: 'Processing', value: 'Head On Gutted (HOG)' }, { name: 'Size', value: '4-5kg, 5-6kg' }, { name: 'Origin', value: 'Norway/Chile' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3509 - $5517',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80&sig=13'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5000 - $8537',
     unit: 'MT',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80&sig=14'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$6507 - $9043',
     unit: 'MT',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80&sig=15'],
     specifications: [ { name: 'Processing', value: 'Head On Gutted (HOG)' }, { name: 'Size', value: '4-5kg, 5-6kg' }, { name: 'Origin', value: 'Norway/Chile' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5003 - $8530',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop&q=80&sig=16'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8006 - $12042',
     unit: 'MT',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&auto=format&fit=crop&q=80&sig=17'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8003 - $12003',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&auto=format&fit=crop&q=80&sig=18'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8008 - $12045',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop&q=80&sig=19'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8006 - $12029',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&auto=format&fit=crop&q=80&sig=20'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5001 - $8516',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1540189549311-e6e99c3679fe?w=800&auto=format&fit=crop&q=80&sig=21'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3510 - $5522',
     unit: 'MT',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80&sig=22'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8004 - $12050',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1525351484163-7529414344d8?w=800&auto=format&fit=crop&q=80&sig=23'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3505 - $5544',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80&sig=24'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5005 - $8513',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80&sig=25'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5006 - $8515',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1543168256-418811576931?w=800&auto=format&fit=crop&q=80&sig=26'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8006 - $12005',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80&sig=27'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5009 - $8508',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=28'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8009 - $12001',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&auto=format&fit=crop&q=80&sig=29'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3507 - $5523',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=30'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3507 - $5548',
     unit: 'MT',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1608755728617-aefab37d2edd?w=800&auto=format&fit=crop&q=80&sig=31'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8003 - $12041',
     unit: 'MT',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&auto=format&fit=crop&q=80&sig=32'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8006 - $12014',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=800&auto=format&fit=crop&q=80&sig=33'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3506 - $5526',
     unit: 'MT',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1528751014936-863e6e7a319c?w=800&auto=format&fit=crop&q=80&sig=34'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$8001 - $12029',
     unit: 'MT',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1587132137056-bfbf0166836e?w=800&auto=format&fit=crop&q=80&sig=35'],
     specifications: [ { name: 'Grade', value: 'Sashimi (AAA)' }, { name: 'Treatment', value: 'CO Treated / Untreated' }, { name: 'Catch', value: 'Wild' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5002 - $8539',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=800&auto=format&fit=crop&q=80&sig=36'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$6508 - $9012',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1596797038530-2c107229654b?w=800&auto=format&fit=crop&q=80&sig=37'],
     specifications: [ { name: 'Processing', value: 'Head On Gutted (HOG)' }, { name: 'Size', value: '4-5kg, 5-6kg' }, { name: 'Origin', value: 'Norway/Chile' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3503 - $5505',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1518843875459-f738682238a6?w=800&auto=format&fit=crop&q=80&sig=38'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$3509 - $5516',
     unit: 'MT',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1505253758473-96b46de82fe9?w=800&auto=format&fit=crop&q=80&sig=39'],
     specifications: [ { name: 'Size', value: 'U5, U7, U10' }, { name: 'Glazing', value: '10-20%' }, { name: 'Processing', value: 'Skinless, Cleaned' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_SEAFOOD_PRODUCTS: any[] = [
     priceRangeUsd: '$5002 - $8541',
     unit: 'MT',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1579541300958-c0b7d3f114c0?w=600&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&auto=format&fit=crop&q=80&sig=40'],
     specifications: [ { name: 'Processing', value: 'HOSO / HLSO' }, { name: 'Size', value: '16/20, 21/25, 26/30' }, { name: 'Freezing', value: 'IQF/Block' } ]
   }
 ];

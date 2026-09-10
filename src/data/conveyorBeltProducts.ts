@@ -14,8 +14,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=1',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=2'
     ],
     description: 'High tensile strength wrapped V-belts, Poly-V serpentine belts, and raw-edge cogged drive belts designed for heavy conveyor drives, industrial power transmission, and vibration absorption.',
     fobPriceUsd: 12.50,
@@ -58,8 +58,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=3',
+      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=4'
     ],
     description: 'Direct-drive motorized pulleys and internal gear-reducer electric rollers engineered for high-throughput mining belt conveyors, aggregate transfer, and quarry installations.',
     fobPriceUsd: 850.00,
@@ -102,8 +102,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=5',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=6'
     ],
     description: 'Heavy duty plate and staple fasteners designed for rapid field splicing and emergency repairs of fabric and EP conveyor belts under high tension.',
     fobPriceUsd: 18.00,
@@ -145,8 +145,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Factory Automation & Assembly',
     images: [
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=7',
+      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=8'
     ],
     description: 'Fully automated chain plate and modular plastic belt conveyor designed for food packaging, beverage bottling lines, electronic assembly, and heavy logistics sorting.',
     fobPriceUsd: 2800.00,
@@ -188,8 +188,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=9',
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=10'
     ],
     description: 'High-capacity underground coal mine scraper transfer machines, hydraulic support conveyors, link rings, and heavy flame-retardant belt conveyors built for continuous 24/7 mine extraction.',
     fobPriceUsd: 15500.00,
@@ -231,8 +231,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=11',
+      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=12'
     ],
     description: 'DIN 22102 compliant multi-ply polyester/polyamide fabric rubber conveyor belt engineered for cement, quarry aggregates, grain terminals, and heavy steel mill handling.',
     fobPriceUsd: 38.00,
@@ -275,8 +275,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=13',
+      'https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=14'
     ],
     description: 'Precision engineered wire mesh, eye link belts, and flexible rod spiral grid conveyor belts ideal for food baking ovens, cryogenic freezing tunnels, frying lines, and heat treatment.',
     fobPriceUsd: 65.00,
@@ -319,8 +319,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=15',
+      'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=16'
     ],
     description: 'Premium quality nylon and polyester carcass rubber conveyor belts featuring molded edge protection, cut & gouge resistance, and high flex fatigue resistance.',
     fobPriceUsd: 42.00,
@@ -362,8 +362,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Filtration & Environmental Equipment',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=17',
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=18'
     ],
     description: 'High air permeability 100% monofilament polyester spiral press-filter fabrics, anti-static belts, and sludge dewatering vacuum belts for paper mills, wastewater treatment, and nonwoven plants.',
     fobPriceUsd: 28.50,
@@ -406,8 +406,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Factory Automation & Assembly',
     images: [
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=19',
+      'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=20'
     ],
     description: 'Digital DSP controlled conveyor belt metal detector featuring auto-reject arm, needle detection for garments, and multi-frequency food inspection for Ferrous, Non-Ferrous, and Stainless contaminants.',
     fobPriceUsd: 3600.00,
@@ -449,8 +449,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=21',
+      'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=22'
     ],
     description: 'V-pattern, Open-V, and Herringbone molded chevron cleated rubber conveyor belts engineered to transport loose materials at steep incline angles (up to 40°).',
     fobPriceUsd: 48.00,
@@ -492,8 +492,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=23',
+      'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=24'
     ],
     description: 'Extra-wide conveyor belt manufacturing up to 3.2m width for seaport bulk ship loaders, open-cast mines, steel slag plants, and high-capacity aggregate crushing lines.',
     fobPriceUsd: 78.00,
@@ -535,8 +535,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=25',
+      'https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=26'
     ],
     description: 'Specially compounded EPDM/SBR heat-resistant conveyor belts built to withstand temperatures of 180°C up to 250°C continuous for cement clinker, hot sinter, foundry sand, and chemical pellets.',
     fobPriceUsd: 55.00,
@@ -578,8 +578,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=27',
+      'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=28'
     ],
     description: 'Long-distance, high-strength galvanized steel cord conveyor belt with high dynamic splice efficiency, minimal elongation, and supreme tear and rip resistance.',
     fobPriceUsd: 110.00,
@@ -621,8 +621,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Heavy Engineering & Turnkey EPC',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=29',
+      'https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=30'
     ],
     description: 'EPC turn-key engineering design and construction of long-distance overland enclosed pipe conveyors, rotary kiln feeding systems, and grate coolers for cement and mineral plants.',
     fobPriceUsd: 85000.00,
@@ -663,8 +663,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=31',
+      'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=32'
     ],
     description: 'High-end smart steel cord conveyor belting embedded with real-time IoT wireless splice monitoring, rip detection coils, and ultra-low rolling resistance compound for deep mines and bulk terminals.',
     fobPriceUsd: 135.00,
@@ -706,8 +706,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Factory Automation & Assembly',
     images: [
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=33',
+      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80&sig=34'
     ],
     description: 'FDA certified antibacterial white PU conveyor belting suitable for medical device assembly, clean packaging lines, nonwoven processing, and pharmaceutical transfer.',
     fobPriceUsd: 22.00,
@@ -749,8 +749,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=35',
+      'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=36'
     ],
     description: 'Affiliated with Jizhong Energy Group, delivering synchronous permanent magnet direct-drive conveyor pulleys that eliminate mechanical gearboxes, boosting energy efficiency by 20-30%.',
     fobPriceUsd: 4200.00,
@@ -791,8 +791,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=37',
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80&sig=38'
     ],
     description: 'High tensile CC56 cotton canvas and EP100-EP400 polyester conveyor belting with excellent troughability, high impact resistance, and flame-retardant compound options.',
     fobPriceUsd: 34.00,
@@ -834,8 +834,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Factory Automation & Assembly',
     images: [
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80&sig=39',
+      'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=40'
     ],
     description: 'Complete bulk material handling systems incorporating high-lift vertical bucket elevators, enclosed scraper conveyors, and automated batching-mixing weighing controls.',
     fobPriceUsd: 4800.00,
@@ -876,8 +876,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Scrap & Recycled Materials',
     subCategory: 'Rubber & Plastic Waste Recycling',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=41',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=42'
     ],
     description: 'Bulk continuous supply of high grade used EP and steel-core rubber conveyor belt scrap, reclaimed rubber rolls, PET bottle flakes, and HDPE drum scrap for crumb rubber and flooring manufacturing.',
     fobPriceUsd: 220.00,
@@ -920,8 +920,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Conveyor Belts & Transmission',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=43',
+      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=44'
     ],
     description: 'Precision fabricated conveyor belting, hot-vulcanized endless belts, corrugated sidewalls, sheet rubber gaskets, and industrial adhesives designed for custom machinery.',
     fobPriceUsd: 68.00,
@@ -962,8 +962,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Mining & Bulk Material Handling',
     images: [
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=45',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=46'
     ],
     description: 'Heavy duty modular belt conveyors engineered to integrate directly with primary jaw crushers, cone crushers, vibrating screens, and industrial grinding ball mills.',
     fobPriceUsd: 9200.00,
@@ -1004,8 +1004,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Scrap & Recycled Materials',
     subCategory: 'Rubber & Plastic Waste Recycling',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=47',
+      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=48'
     ],
     description: 'Regular bulk export of inspected used heavy rubber conveyor belting, cured EPDM membrane scraps, unvulcanized tyre cord friction fabrics, and industrial foam scraps.',
     fobPriceUsd: 195.00,
@@ -1047,8 +1047,8 @@ export const GLOBAL_CONVEYOR_BELT_PRODUCTS: Product[] = [
     category: 'Scrap & Recycled Materials',
     subCategory: 'Rubber & Plastic Waste Recycling',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=49',
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=50'
     ],
     description: 'Complete range of brand new industrial conveyor belts alongside baled post-industrial rubber scrap, aluminium UBC can scrap, PET bottle flakes, and HDPE/LDPE regranulates.',
     fobPriceUsd: 240.00,

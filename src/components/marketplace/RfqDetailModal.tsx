@@ -170,27 +170,37 @@ export const RfqDetailModal: React.FC<Props> = ({
       >
         {/* Modal Header */}
         <div className="bg-slate-900 text-white p-5 sm:p-6 flex items-start justify-between gap-4 shrink-0">
-          <div className="space-y-1.5 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                {rfq.id}
-              </span>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                {rfq.category}
-              </span>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Active Sourcing Tender
-              </span>
+          <div className="flex items-start gap-4 min-w-0">
+            {(rfq.image || rfq.images?.[0]) && (
+              <img
+                src={rfq.image || rfq.images?.[0]}
+                alt={rfq.productName}
+                referrerPolicy="no-referrer"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-700 shrink-0 bg-slate-800 shadow-md"
+              />
+            )}
+            <div className="space-y-1.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                  {rfq.id}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                  {rfq.category}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Active Sourcing Tender
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white line-clamp-1">
+                {rfq.productName}
+              </h2>
+              <p className="text-xs text-slate-300 flex items-center gap-2 font-medium">
+                <span>Target Buyer: <strong>{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
+                <span>•</span>
+                <span>Posted: {getFreshRfqDate(rfq)}</span>
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white line-clamp-1">
-              {rfq.productName}
-            </h2>
-            <p className="text-xs text-slate-300 flex items-center gap-2 font-medium">
-              <span>Target Buyer: <strong>{rfq.buyerCompany}</strong> ({rfq.buyerCountry})</span>
-              <span>•</span>
-              <span>Posted: {getFreshRfqDate(rfq)}</span>
-            </p>
           </div>
 
           <button

@@ -26,7 +26,7 @@ export const GLOBAL_EEC_POLAND_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Klaus Lindemann',
     contactEmail: 'sourcing@agrarhandel-nord.de',
     contactPhone: '+49 40 8829 100',
-    logoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80&sig=1',
     activeRfqsCount: 3,
     completedOrdersCount: 29
   },
@@ -55,7 +55,7 @@ export const GLOBAL_EEC_POLAND_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Claire Dubois',
     contactEmail: 'procurement@apexpolymers.fr',
     contactPhone: '+33 4 72 49 18 00',
-    logoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80&sig=2',
     activeRfqsCount: 2,
     completedOrdersCount: 21
   }

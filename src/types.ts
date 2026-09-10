@@ -249,6 +249,8 @@ export interface RfqRequirement {
   paymentTerms: string; // e.g. 'L/C at sight', '30% T/T Deposit + 70% B/L', 'Trade Protection Certificate'
   detailedRequirements: string;
   detailedDescription?: string;
+  image?: string;
+  images?: string[];
   shippingMethod?: string;
   urgency: 'URGENT' | 'STANDARD' | 'LONG_TERM_CONTRACT';
   quotesCount: number;

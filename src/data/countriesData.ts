@@ -157,18 +157,18 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "ls9", name: "Premium Golf Carts UK", city: "London", country: "United Kingdom", tier: "Silver Member", verified: true, mainProduct: "Electric Golf Carts & Utility Buggies" }
     ],
     latestProducts: [
-      { id: "lp1", title: "Sub 4mm Glass Plate Fines", category: "Industrial Minerals", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400&q=80" },
-      { id: "lp2", title: "LNG (Liquefied Natural Gas)", category: "Energy & Petroleum", image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80" },
-      { id: "lp3", title: "QELVANT BSV-ND 300ml Unscented Home Odour Neutralizer", category: "Home & Garden", image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80" },
-      { id: "lp4", title: "Custom Frosted Plastic Zip Lock Garment Packaging", category: "Packaging & Printing", image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80" },
-      { id: "lp5", title: "Mist Spray Pump 24/410", category: "Cosmetic Packaging", image: "https://images.unsplash.com/photo-1608248597260-6521e102f97c?w=400&q=80" },
-      { id: "lp6", title: "Premium Quality Biomass Pellets For Efficient Eco Heating", category: "Renewable Energy", image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&q=80" },
-      { id: "lp7", title: "Basrah Medium Crude Oil", category: "Petroleum & Energy", image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&q=80" },
-      { id: "lp8", title: "Panasonic EY9L40 14.4V 3.0Ah Lithium Ion Battery", category: "Electronics & Batteries", image: "https://images.unsplash.com/photo-1619725002198-6a689b72f41d?w=400&q=80" },
-      { id: "lp9", title: "Chrome Ore Lumpy 42-44%", category: "Ores & Minerals", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" },
-      { id: "lp10", title: "Electric Forklift Trucks | Buy Direct", category: "Machinery & Equipment", image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400&q=80" },
-      { id: "lp11", title: "Palm Oil & Palm Kernel Cake", category: "Agriculture & Edible Oils", image: "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=400&q=80" },
-      { id: "lp12", title: "Bitter Kola Raw Bulk Export", category: "Agro Produce", image: "https://images.unsplash.com/photo-1509358217958-89c02ff5438a?w=400&q=80" }
+      { id: "lp1", title: "Sub 4mm Glass Plate Fines", category: "Industrial Minerals", image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80&sig=1" },
+      { id: "lp2", title: "LNG (Liquefied Natural Gas)", category: "Energy & Petroleum", image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80&sig=2" },
+      { id: "lp3", title: "QELVANT BSV-ND 300ml Unscented Home Odour Neutralizer", category: "Home & Garden", image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=3" },
+      { id: "lp4", title: "Custom Frosted Plastic Zip Lock Garment Packaging", category: "Packaging & Printing", image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=4" },
+      { id: "lp5", title: "Mist Spray Pump 24/410", category: "Cosmetic Packaging", image: "https://images.unsplash.com/photo-1608248597260-6521e102f97c?w=800&auto=format&fit=crop&q=80&sig=5" },
+      { id: "lp6", title: "Premium Quality Biomass Pellets For Efficient Eco Heating", category: "Renewable Energy", image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=6" },
+      { id: "lp7", title: "Basrah Medium Crude Oil", category: "Petroleum & Energy", image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=7" },
+      { id: "lp8", title: "Panasonic EY9L40 14.4V 3.0Ah Lithium Ion Battery", category: "Electronics & Batteries", image: "https://images.unsplash.com/photo-1619725002198-6a689b72f41d?w=800&auto=format&fit=crop&q=80&sig=8" },
+      { id: "lp9", title: "Chrome Ore Lumpy 42-44%", category: "Ores & Minerals", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80&sig=9" },
+      { id: "lp10", title: "Electric Forklift Trucks | Buy Direct", category: "Machinery & Equipment", image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=10" },
+      { id: "lp11", title: "Palm Oil & Palm Kernel Cake", category: "Agriculture & Edible Oils", image: "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80&sig=11" },
+      { id: "lp12", title: "Bitter Kola Raw Bulk Export", category: "Agro Produce", image: "https://images.unsplash.com/photo-1509358217958-89c02ff5438a?w=800&auto=format&fit=crop&q=80&sig=12" }
     ],
     latestBuyOffers: [
       { id: "bo1", title: "Looking For Wholesale Supplier Of Womens Sets & Casual Apparel", date: "26 Aug, 2026", quantity: "2,000 Sets", buyerCountry: "United Kingdom" },
@@ -229,9 +229,9 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "us_ls3", name: "Miami International Marine Spares", city: "Miami, FL", country: "United States", tier: "Silver Member", verified: true, mainProduct: "Outboard Engine Parts & Props" }
     ],
     latestProducts: [
-      { id: "us_lp1", title: "ULSD 10ppm Diesel Fuel Fuel Oil Grade A", category: "Petroleum", image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&q=80" },
-      { id: "us_lp2", title: "Nonpareil Supreme 23/25 Raw Shelled Almonds", category: "Agriculture", image: "https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=400&q=80" },
-      { id: "us_lp3", title: "Heavy Duty CNC Milling Machines 5-Axis", category: "Machinery", image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=400&q=80" }
+      { id: "us_lp1", title: "ULSD 10ppm Diesel Fuel Fuel Oil Grade A", category: "Petroleum", image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=13" },
+      { id: "us_lp2", title: "Nonpareil Supreme 23/25 Raw Shelled Almonds", category: "Agriculture", image: "https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=800&auto=format&fit=crop&q=80&sig=14" },
+      { id: "us_lp3", title: "Heavy Duty CNC Milling Machines 5-Axis", category: "Machinery", image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=15" }
     ],
     latestBuyOffers: [
       { id: "us_bo1", title: "Sourcing Certified PPE Nitrile Examination Gloves 100k Boxes", date: "27 Aug, 2026", quantity: "100,000 Boxes", buyerCountry: "United States" },
@@ -276,9 +276,9 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "in_ls3", name: "Varanasi Silk & Handloom Crafts", city: "Varanasi, UP", country: "India", tier: "Silver Member", verified: true, mainProduct: "Jacquard Silk Fabrics & Sarees" }
     ],
     latestProducts: [
-      { id: "in_lp1", title: "1121 Extra Long Grain Parboiled Basmati Rice", category: "Agro Foods", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80" },
-      { id: "in_lp2", title: "Handmade Organic Cotton Bedsheets 300 TC", category: "Textiles", image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&q=80" },
-      { id: "in_lp3", title: "Polished Black Galaxy Granite Slabs 20mm", category: "Stone & Marble", image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80" }
+      { id: "in_lp1", title: "1121 Extra Long Grain Parboiled Basmati Rice", category: "Agro Foods", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80&sig=16" },
+      { id: "in_lp2", title: "Handmade Organic Cotton Bedsheets 300 TC", category: "Textiles", image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&auto=format&fit=crop&q=80&sig=17" },
+      { id: "in_lp3", title: "Polished Black Galaxy Granite Slabs 20mm", category: "Stone & Marble", image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80&sig=18" }
     ],
     latestBuyOffers: [
       { id: "in_bo1", title: "Requirement for 250 MT High Grade Steam Coal 6000 GCV", date: "27 Aug, 2026", quantity: "250 MT", buyerCountry: "India" },
@@ -322,8 +322,8 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "de_ls3", name: "Dresden Solar Wafer Fabrication", city: "Dresden", country: "Germany", tier: "Silver Member", verified: true, mainProduct: "Silicon Ingots & Solar Cells" }
     ],
     latestProducts: [
-      { id: "de_lp1", title: "5-Axis High Precision CNC Vertical Machining Center", category: "Machinery", image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=400&q=80" },
-      { id: "de_lp2", title: "Industrial Polyurethane Sealants & Structural Adhesives", category: "Chemicals", image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80" }
+      { id: "de_lp1", title: "5-Axis High Precision CNC Vertical Machining Center", category: "Machinery", image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=19" },
+      { id: "de_lp2", title: "Industrial Polyurethane Sealants & Structural Adhesives", category: "Chemicals", image: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=20" }
     ],
     latestBuyOffers: [
       { id: "de_bo1", title: "Inquiry for High Precision Aluminium Die Castings", date: "27 Aug, 2026", quantity: "50,000 Units", buyerCountry: "Germany" },
@@ -356,8 +356,8 @@ export const COUNTRIES_DATA: Record<string, CountryData> = {
       { id: "ae_ls2", name: "Ras Al Khaimah Ceramic Works", city: "Ras Al Khaimah", country: "United Arab Emirates", tier: "Gold Member", verified: true, mainProduct: "Heavy Duty Vitrified Floor Tiles" }
     ],
     latestProducts: [
-      { id: "ae_lp1", title: "LBMA Certified 999.9 Gold Kilobar 1KG", category: "Precious Metals", image: "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=400&q=80" },
-      { id: "ae_lp2", title: "Concentrated Dehn Al Oud Fragrance Oil 100ml", category: "Perfumes", image: "https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=400&q=80" }
+      { id: "ae_lp1", title: "LBMA Certified 999.9 Gold Kilobar 1KG", category: "Precious Metals", image: "https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80&sig=21" },
+      { id: "ae_lp2", title: "Concentrated Dehn Al Oud Fragrance Oil 100ml", category: "Perfumes", image: "https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=800&auto=format&fit=crop&q=80&sig=22" }
     ],
     latestBuyOffers: [
       { id: "ae_bo1", title: "Procurement of 1121 Basmati Rice XXL Grain", date: "27 Aug, 2026", quantity: "20 Containers", buyerCountry: "United Arab Emirates" },
@@ -651,37 +651,37 @@ export function getCountryData(countryId: string): CountryData {
         id: `${foundItem.id}_lp1`,
         title: `High Grade Raw Material from ${name}`,
         category: "Raw Commodities",
-        image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&q=80"
+        image: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=23"
       },
       {
         id: `${foundItem.id}_lp2`,
         title: `Precision Engineered Equipment - ${name} Standard`,
         category: "Industrial Equipment",
-        image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=400&q=80"
+        image: "https://images.unsplash.com/photo-1582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80&sig=24"
       },
       {
         id: `${foundItem.id}_lp3`,
         title: `Bulk Organic Agricultural Produce from ${name}`,
         category: "Agro Produce",
-        image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&q=80"
+        image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=25"
       },
       {
         id: `${foundItem.id}_lp4`,
         title: `Heavy Duty Packaging Cartons & Pallets`,
         category: "Packaging",
-        image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80"
+        image: "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=26"
       },
       {
         id: `${foundItem.id}_lp5`,
         title: `High Output Solar Energy Inverters`,
         category: "Renewable Energy",
-        image: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=400&q=80"
+        image: "https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=27"
       },
       {
         id: `${foundItem.id}_lp6`,
         title: `Refined Petrochemical Olefins & Resins`,
         category: "Chemicals",
-        image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80"
+        image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=28"
       }
     ],
     latestBuyOffers: [

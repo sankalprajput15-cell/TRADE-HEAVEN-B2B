@@ -513,10 +513,22 @@ export const BuyLeadsView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Title */}
-                <h3 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
-                  {rfq.productName}
-                </h3>
+                {/* Title & Product Image */}
+                <div className="flex items-start gap-3">
+                  {(rfq.image || rfq.images?.[0]) && (
+                    <img
+                      src={rfq.image || rfq.images?.[0]}
+                      alt={rfq.productName}
+                      referrerPolicy="no-referrer"
+                      className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100 shadow-2xs"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
+                      {rfq.productName}
+                    </h3>
+                  </div>
+                </div>
 
                 {/* Volume & Destination Matrix */}
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
