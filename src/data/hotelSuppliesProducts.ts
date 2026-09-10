@@ -13,7 +13,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$920 - $1,350 / Metric Ton",
     "unit": "Metric Tons",
     "title": "Premium 1121 Extra Long Grain Super Kernel Basmati Rice (Aged 2 Years, Steam/Sella)",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Rice, Grains & Meat",
     "images": [
       "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=1",
@@ -104,7 +104,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$850 - $1,180 / Metric Ton",
     "unit": "Metric Tons",
     "title": "Refined 100% Pure Sunflower Cooking Oil in 5L / 20L PET Bottles & Jerry Cans",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Edible Oils & Cooking Fats",
     "images": [
       "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&auto=format&fit=crop&q=80&sig=4",
@@ -195,7 +195,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$24 - $65 / Square Meter",
     "unit": "Square Meters",
     "title": "Large Format 1600x3200mm Sintered Porcelain Marble Slab for Hotel Lobby & Countertops",
-    "category": "Building Materials & Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Ceramic & Porcelain Slabs",
     "images": [
       "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&auto=format&fit=crop&q=80&sig=7",
@@ -286,7 +286,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$150 - $650 / Set",
     "unit": "Sets",
     "title": "Hand-Carved Red & Teakwood Sandstone Architectural Pillars and Balustrades",
-    "category": "Building Materials & Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Natural Sandstone & Carved Pillars",
     "images": [
       "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80&sig=10",
@@ -377,7 +377,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$35 - $110 / Set",
     "unit": "Sets",
     "title": "Heavy-Duty 304 Stainless Steel Buffet Chafing Dish & Roll-Top Food Warmer Set",
-    "category": "Commercial & Industrial Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Commercial Kitchen & Hotel Tableware",
     "images": [
       "https://images.unsplash.com/photo-1563911302283-d2bc129e7570?w=800&auto=format&fit=crop&q=80&sig=13",
@@ -468,7 +468,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$8.50 - $24.00 / Set",
     "unit": "Sets",
     "title": "Breathable Poly-Cotton Chef Uniform Jacket & Apron Set with Mesh Vents",
-    "category": "Apparel & Fashion Accessories",
+    "category": "Hotel Supplies",
     "subCategory": "Hotel & Hospitality Uniforms",
     "images": [
       "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&auto=format&fit=crop&q=80&sig=16",
@@ -559,7 +559,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$28 - $85 / Piece",
     "unit": "Pieces",
     "title": "4K Ultra-HD POE Dome Security Camera with AI Human Motion & Face Recognition",
-    "category": "Electronic & Electrical Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "CCTV, IP Cameras & PoE Switches",
     "images": [
       "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop&q=80&sig=19",
@@ -650,7 +650,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$1,200 - $3,800 / Unit",
     "unit": "Units",
     "title": "Heavy-Duty 6-Burner Commercial Gas Range with Integrated Convection Oven",
-    "category": "Industrial Machinery & Plants",
+    "category": "Hotel Supplies",
     "subCategory": "Commercial Kitchen Gas Ranges & Ovens",
     "images": [
       "https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&auto=format&fit=crop&q=80&sig=22",
@@ -741,7 +741,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$4,500 - $35,000 / Advisory Package",
     "unit": "Packages",
     "title": "Turnkey Luxury Resort Property Assessment & FF&E Procurement Advisory Services",
-    "category": "Business & Consulting Services",
+    "category": "Hotel Supplies",
     "subCategory": "Commercial Real Estate & Hotel Acquisitions",
     "images": [
       "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800&auto=format&fit=crop&q=80&sig=25",
@@ -832,7 +832,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$110 - $240 / Unit",
     "unit": "Units",
     "title": "Ultra-Quiet 40L Absorption Mini Bar Refrigerator (0dB Solid Door / Glass Door)",
-    "category": "Commercial & Industrial Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Hotel Minibars, Safes & Bathroom Gear",
     "images": [
       "https://images.unsplash.com/photo-1502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=28",
@@ -923,7 +923,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$32 - $78 / Set",
     "unit": "Sets",
     "title": "ANSI Standard Stainless Steel 304 RFID Smart Hotel Keycard Door Lock System",
-    "category": "Electronic & Electrical Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Intelligent Hotel Locks & Keycards",
     "images": [
       "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=31",
@@ -1014,7 +1014,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$120 - $280 / Kilogram",
     "unit": "Kilograms",
     "title": "Gourmet Grade A Indonesian Bourbon Vanilla Beans & Organic Whole Nutmeg",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Spices, Seasonings & Coffee",
     "images": [
       "https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=34",
@@ -1105,7 +1105,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$850 - $2,800 / Unit",
     "unit": "Units",
     "title": "Commercial Stainless Steel Cube Ice Maker Machine (500kg / 24 Hours Capacity)",
-    "category": "Industrial Machinery & Plants",
+    "category": "Hotel Supplies",
     "subCategory": "Ice Makers & Commercial Water Treatment",
     "images": [
       "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=37",
@@ -1196,7 +1196,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$0.25 - $0.85 / Piece",
     "unit": "Pieces",
     "title": "Eco-Friendly FSC Certified Bamboo Wood RFID Hotel Room Keycards (Mifare 1k / Ultralight)",
-    "category": "Electronic & Electrical Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "RFID Cards, NFC Keycards & Wristbands",
     "images": [
       "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=40",
@@ -1287,7 +1287,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$65 - $190 / Piece",
     "unit": "Pieces",
     "title": "Commercial Powder-Coated Aluminum Poolside Sun Lounger with Textilene Mesh",
-    "category": "Furniture & Furnishings",
+    "category": "Hotel Supplies",
     "subCategory": "Outdoor Garden & Patio Furniture",
     "images": [
       "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80&sig=43",
@@ -1378,7 +1378,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$75 - $220 / Unit",
     "unit": "Units",
     "title": "Commercial NSF Certified 304 Stainless Steel Kitchen Worktable with Undershelf",
-    "category": "Building Materials & Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Commercial Kitchen Prep Tables & Shelving",
     "images": [
       "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80&sig=46",
@@ -1469,7 +1469,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$3.50 - $9.80 / Piece",
     "unit": "Pieces",
     "title": "Luxury 650 GSM 100% Combed Cotton White Hotel Bath Sheet & Hand Towel Sets",
-    "category": "Textiles & Leather Products",
+    "category": "Hotel Supplies",
     "subCategory": "Hotel Bath Towels, Robes & Mats",
     "images": [
       "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80&sig=49",
@@ -1560,7 +1560,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$14 - $38 / Kilogram",
     "unit": "Kilograms",
     "title": "Premium Chilled Halal Black Angus Ribeye & Tenderloin Beef Cuts (Grain Fed)",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Frozen Halal Beef & Lamb",
     "images": [
       "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&auto=format&fit=crop&q=80&sig=52",
@@ -1651,7 +1651,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$120 - $380 / Unit",
     "unit": "Units",
     "title": "Commercial Grade Cast Iron Base & Solid American Walnut Restaurant Dining Tables",
-    "category": "Furniture & Furnishings",
+    "category": "Hotel Supplies",
     "subCategory": "Dining Chairs, Barstools & Booths",
     "images": [
       "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&auto=format&fit=crop&q=80&sig=55",
@@ -1742,7 +1742,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$480 - $720 / Metric Ton",
     "unit": "Metric Tons",
     "title": "100% Water Soluble High-Purity NPK 20-20-20 Compound Fertilizer with Trace Elements",
-    "category": "Chemicals & Allied Products",
+    "category": "Hotel Supplies",
     "subCategory": "Compound Fertilizers & Plant Nutrients",
     "images": [
       "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80&sig=58",
@@ -1833,7 +1833,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$1.80 - $4.50 / Set",
     "unit": "Sets",
     "title": "Luxury Organic Mango Nectar & Plumeria Hotel Guestroom Amenity Toiletries Set (50ml)",
-    "category": "Health & Beauty",
+    "category": "Hotel Supplies",
     "subCategory": "Hotel Spa Amenities & Diffusers",
     "images": [
       "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800&auto=format&fit=crop&q=80&sig=61",
@@ -1924,7 +1924,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$18 - $48 / Set",
     "unit": "Sets",
     "title": "Commercial T-300 High-Density Cotton Rich Hotel Sateen Stripe Duvet Cover & Sheet Set",
-    "category": "Textiles & Leather Products",
+    "category": "Hotel Supplies",
     "subCategory": "Hotel Bedding, Sheets & Duvets",
     "images": [
       "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800&auto=format&fit=crop&q=80&sig=64",
@@ -2015,7 +2015,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$850 - $3,400 / Room Set",
     "unit": "Sets",
     "title": "Modern Luxury 5-Star Hotel Bedroom Furniture Package (Headboard, Desk, Wardrobe, Nightstands)",
-    "category": "Furniture & Furnishings",
+    "category": "Hotel Supplies",
     "subCategory": "Hotel Bedroom Suites & Headboards",
     "images": [
       "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=67",
@@ -2106,7 +2106,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$3.20 - $8.50 / Kit",
     "unit": "Kits",
     "title": "Hotel Minibar Guest Breakfast & Beverage Starter Kit Box (Tea, Coffee, Biscuits, Cereal)",
-    "category": "Commercial & Industrial Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Minibar Kits & Guest Welcome Packs",
     "images": [
       "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=70",
@@ -2197,7 +2197,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$160 - $420 / Unit",
     "unit": "Units",
     "title": "Heavy-Duty Stainless Steel Hotel Housekeeping Service Trolley with Laundry Bags",
-    "category": "Commercial & Industrial Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Housekeeping Carts & Lobby Bellman Posts",
     "images": [
       "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=73",
@@ -2288,7 +2288,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$35 - $95 / Piece",
     "unit": "Pieces",
     "title": "Fingerprint-Proof Brushed 304 Stainless Steel Hotel Lobby Waste Bin & Ash Urn",
-    "category": "Building Materials & Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Stainless Steel Waste Bins & Furniture",
     "images": [
       "https://images.unsplash.com/photo-1519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=76",
@@ -2379,7 +2379,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$9.50 - $22.00 / Piece",
     "unit": "Pieces",
     "title": "Double-Wall Cool-Touch 0.8L Stainless Steel Hotel Guest Electric Water Kettle",
-    "category": "Electronic & Electrical Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Electric Kettles, Ironing Stations & Trays",
     "images": [
       "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=79",
@@ -2470,7 +2470,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$0.012 - $0.035 / Piece",
     "unit": "Pieces",
     "title": "Custom Embossed Multi-Ply Absorbent Paper Coasters for Hotel Bars & Banquets",
-    "category": "Packaging & Paper",
+    "category": "Hotel Supplies",
     "subCategory": "Disposable Paper Goods & Coasters",
     "images": [
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=82",
@@ -2561,7 +2561,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$1,400 - $4,200 / Unit",
     "unit": "Units",
     "title": "Heavy-Duty 50kg Industrial Spiral Dough Mixer with Dual Speed Timer Control",
-    "category": "Industrial Machinery & Plants",
+    "category": "Hotel Supplies",
     "subCategory": "Commercial Bakery Mixers & Rotisseries",
     "images": [
       "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&auto=format&fit=crop&q=80&sig=85",
@@ -2652,7 +2652,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$950 - $2,800 / Unit",
     "unit": "Units",
     "title": "Industrial Multi-Function Vegetable Slicing, Dicing & Julienne Machine (500kg/h)",
-    "category": "Industrial Machinery & Plants",
+    "category": "Hotel Supplies",
     "subCategory": "Food Processing Lines & Canteen Gear",
     "images": [
       "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800&auto=format&fit=crop&q=80&sig=88",
@@ -2743,7 +2743,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$2,800 - $8,500 / Unit",
     "unit": "Units",
     "title": "Automated Stainless Steel Chocolate Tempering & Enrobing Machine (25kg Tank)",
-    "category": "Industrial Machinery & Plants",
+    "category": "Hotel Supplies",
     "subCategory": "Confectionery & Biscuit Production Lines",
     "images": [
       "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&auto=format&fit=crop&q=80&sig=91",
@@ -2834,7 +2834,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$650 - $1,800 / Unit",
     "unit": "Units",
     "title": "Heavy-Duty 900 Series Double-Well Commercial Electric Deep Fryer (2x18L)",
-    "category": "Commercial & Industrial Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Commercial Cooktops, Bain-Maries & Fryers",
     "images": [
       "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=94",
@@ -2925,7 +2925,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$120 - $280 / Unit",
     "unit": "Units",
     "title": "Heavy-Duty Front Loading Rotomolded Insulated Food Pan Carrier Box (6 GN 1/1 Pans)",
-    "category": "Commercial & Industrial Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Insulated Food Pan Carriers & Ice Carts",
     "images": [
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80&sig=97",
@@ -3016,7 +3016,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$65 - $160 / Set",
     "unit": "Sets",
     "title": "3D Facial Recognition & Tuya WiFi Smart Keyless Hotel Entry Door Lock",
-    "category": "Electronic & Electrical Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "Face Recognition & Tuya Smart Locks",
     "images": [
       "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&auto=format&fit=crop&q=80&sig=100",
@@ -3107,7 +3107,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$2.80 - $6.50 / Kilogram",
     "unit": "Kilograms",
     "title": "Crispy Deep-Fried Golden Onion Flakes (Biryani Shallots in 1kg / 5kg Foil Pouches)",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Dehydrated Vegetables & Dry Mushrooms",
     "images": [
       "https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&auto=format&fit=crop&q=80&sig=103",
@@ -3198,7 +3198,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$6.50 - $11.80 / Kilogram",
     "unit": "Kilograms",
     "title": "Specialty Grade 1 Sumatra Mandheling Green Arabica Coffee Beans (Wet Hulled)",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Green Coffee Beans (Arabica & Robusta)",
     "images": [
       "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=106",
@@ -3289,7 +3289,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$28 - $65 / Liter",
     "unit": "Liters",
     "title": "100% Pure Virgin Cold-Pressed Organic Moroccan Argan Oil (Bulk Liters & Spa Bottles)",
-    "category": "Health & Beauty",
+    "category": "Hotel Supplies",
     "subCategory": "Organic Argan Oil & Haircare",
     "images": [
       "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80&sig=109",
@@ -3380,7 +3380,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$0.85 - $2.20 / Bottle",
     "unit": "Bottles",
     "title": "German Natural Sparkling Artesian Mineral Water in 750ml Premium Glass Bottles",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Gourmet Beverages & Condiments",
     "images": [
       "https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=112",
@@ -3471,7 +3471,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$650 - $1,400 / Kilogram",
     "unit": "Kilograms",
     "title": "Fresh Italian Black Winter Truffles (Tuber Melanosporum Grade Extra Chilled)",
-    "category": "Food & Beverage",
+    "category": "Hotel Supplies",
     "subCategory": "Truffles, Caviar & Gourmet Dairy",
     "images": [
       "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=115",
@@ -3562,7 +3562,7 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "priceRangeUsd": "$4.50 - $12.00 / Piece",
     "unit": "Pieces",
     "title": "Hotel Guestroom Intelligent RFID Card Key Power Energy Saving Switch (30A Relay)",
-    "category": "Electronic & Electrical Supplies",
+    "category": "Hotel Supplies",
     "subCategory": "NFC Cards & Hotel Energy Saving Switches",
     "images": [
       "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=118",

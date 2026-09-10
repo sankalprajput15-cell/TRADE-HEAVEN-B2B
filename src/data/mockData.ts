@@ -69,6 +69,7 @@ import { TH_LOBSTER_SUPPLIERS, TH_LOBSTER_BUYERS, TH_LOBSTER_PRODUCTS, TH_LOBSTE
 import { TH_RICE_HUSK_SUPPLIERS, TH_RICE_HUSK_BUYERS, TH_RICE_HUSK_PRODUCTS, TH_RICE_HUSK_RFQS } from "./thRiceHuskBriquettesData";
 import { GLOBAL_TIRES_COMPANIES, GLOBAL_TIRES_BUYER_PROFILES, GLOBAL_TIRES_PRODUCTS, GLOBAL_TIRES_RFQS } from "./tiresData";
 import { GLOBAL_GERMANIUM_COMPANIES, GLOBAL_GERMANIUM_BUYER_PROFILES, GLOBAL_GERMANIUM_PRODUCTS, GLOBAL_GERMANIUM_RFQS } from "./germaniumData";
+import { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from "./procurementRfqsData";
 
 import { 
   CompanyProfile, 
@@ -161,7 +162,27 @@ export const CURRENCY_RATES: CurrencyRate[] = [
 ];
 
 export const CATEGORIES_TREE = [
-
+  {
+    id: 'cat-hotel-supplies',
+    name: 'Hotel Supplies',
+    icon: 'Building2',
+    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=54',
+    subcategories: [
+      'Hotel Amenities & Toiletries',
+      'Commercial Linens & Bedding',
+      'Restaurant & Kitchen Equipment',
+      'Janitorial & Housekeeping Supplies',
+      'Foodservice Disposables & Cutlery',
+      'Commercial Cookware & Gastronorm Pans',
+      'PPE Equipment & Safety',
+      'Hotel Cleaning Chemicals',
+      'Hotel Furniture & Banquet Seating',
+      'Emergency & Storm Supplies',
+      'Catering & Buffet Equipments',
+      'Hotel Back-Office & Stationery'
+    ],
+    count: '3,845+ Verified Suppliers | 2,190+ RFQs'
+  },
   {
     id: 'cat-construction-excavation',
     name: 'Construction & Excavation Machinery',
@@ -560,8 +581,21 @@ export const CATEGORIES_TREE = [
     name: 'Hotel & Restaurant - Equipments & Products',
     icon: 'UtensilsCrossed',
     image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80&sig=54',
-    subcategories: ['Catering Equipments'],
-    count: '285+ Verified Suppliers | 148+ RFQs'
+    subcategories: [
+      'PPE Equipment & Safety',
+      'Cleaning Supplies & Chemicals',
+      'Foodservice Disposables',
+      'Janitorial & Housekeeping',
+      'Restaurant & Kitchen Supplies',
+      'Office & Stationery Supplies',
+      'Storm & Emergency Supplies',
+      'Tactical & Duty Gear',
+      'Catering Equipments',
+      'Commercial Cookware & Gastronorm Pans',
+      'Hotel Amenities & Toiletries',
+      'Commercial Linens & Towels'
+    ],
+    count: '3,845+ Verified Suppliers | 2,190+ RFQs'
   },
   {
     id: 'cat-information-databases',
@@ -11650,6 +11684,7 @@ const RAW_UNORDERED_RFQS: RfqRequirement[] = [
   ...GLOBAL_HOTEL_SUPPLIES_RFQS,
   ...GLOBAL_TIRES_RFQS,
   ...GLOBAL_GERMANIUM_RFQS,
+  ...GLOBAL_SPECIALTY_PROCUREMENT_RFQS,
   ...MAPPED_CATALOG_DERIVED_RFQS,
   ...BASE_MOCK_RFQS,
   ...METRICS_DERIVED_RFQS
@@ -12252,6 +12287,7 @@ export { GLOBAL_B2B_TRADE_METRICS } from './b2bTradeMetrics';
 export { GLOBAL_TURBINE_COMPANIES, GLOBAL_TURBINE_BUYER_PROFILES, GLOBAL_TURBINE_PRODUCTS, GLOBAL_TURBINE_RFQS } from './turbineData';
 export { GLOBAL_US_ENTERPRISES_COMPANIES, GLOBAL_US_ENTERPRISES_PRODUCTS, GLOBAL_US_ENTERPRISES_BUYER_PROFILES, GLOBAL_US_ENTERPRISES_RFQS } from './usEnterprisesData';
 export { GLOBAL_HOTEL_SUPPLIES_COMPANIES, GLOBAL_HOTEL_SUPPLIES_PRODUCTS, GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES, GLOBAL_HOTEL_SUPPLIES_RFQS } from './hotelSuppliesData';
+export { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from './procurementRfqsData';
 
 
 

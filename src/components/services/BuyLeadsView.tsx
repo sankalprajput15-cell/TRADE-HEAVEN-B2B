@@ -618,55 +618,7 @@ export const BuyLeadsView: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="space-y-2 mt-2">
-                {/* 1 Free Buy Order Direct Pitch / Claim Action */}
-                {isClaimed ? (
-                  <button
-                    type="button"
-                    onClick={() => setPitchRfq(rfq)}
-                    className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
-                  >
-                    <Zap className="w-3.5 h-3.5 fill-slate-950" />
-                    <span>⚡ Pitch Buyer Directly</span>
-                  </button>
-                ) : !currentUser ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onOpenRegisterFree) onOpenRegisterFree();
-                      else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
-                    }}
-                    className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 animate-scale-pulse"
-                  >
-                    <UserPlus className="w-3.5 h-3.5 text-slate-950" />
-                    <span>⚡ Register Free to Claim Order</span>
-                  </button>
-                ) : freeLeadStatus.canClaim ? (
-                  <button
-                    type="button"
-                    onClick={() => handleClaimLead(rfq)}
-                    className="w-full py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-amber-700 fill-amber-700" />
-                    <span>⚡ Claim with 1 Free Daily Credit</span>
-                  </button>
-                ) : (
-                  <div className="text-[10px] text-slate-500 text-center py-1 bg-slate-50 rounded-lg border border-slate-200">
-                    Daily free buy order used •{' '}
-                    {onOpenUpgradeModal ? (
-                      <button
-                        type="button"
-                        onClick={onOpenUpgradeModal}
-                        className="text-blue-600 hover:underline font-bold cursor-pointer"
-                      >
-                        Upgrade to Basic or Establishment Plan
-                      </button>
-                    ) : (
-                      <span>Upgrade to Unlock</span>
-                    )}
-                  </div>
-                )}
-
+              <div className="mt-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     onClick={() => onSelectRfq(rfq)}

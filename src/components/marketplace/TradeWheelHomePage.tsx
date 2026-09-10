@@ -32,8 +32,6 @@ import {
   Headphones
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
-import { DailyFreeLeadBanner } from './DailyFreeLeadBanner';
-import { claimDailyFreeLead } from '../../services/freeLeadService';
 
 interface Props {
   products: Product[];
@@ -116,35 +114,6 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenStorefront={onOpenStorefront}
         onNavigate={onNavigate}
         onSelectRfq={onSelectRfq}
-      />
-
-      {/* HIGHLIGHTED 1 FREE BUY ORDER DAILY PROMOTION (Top of Homepage) */}
-      <DailyFreeLeadBanner
-        onUpgradeToPlans={() => onNavigate('PREMIUM_SERVICES')}
-        featuredRfq={activeRfqsPool[0] || null}
-        currentUser={currentUser}
-        onOpenRegisterFree={onOpenRegisterFree}
-        onClaimLead={(rfq) => {
-          if (!currentUser) {
-            if (onOpenRegisterFree) onOpenRegisterFree();
-            else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
-            return;
-          }
-          claimDailyFreeLead(rfq.id);
-          if (onSelectRfq) {
-            onSelectRfq(rfq);
-          } else {
-            onNavigate('BUY_LEADS');
-          }
-        }}
-        onSelectClaimedRfq={(rfqId) => {
-          const target = activeRfqsPool.find(r => r.id === rfqId);
-          if (target && onSelectRfq) {
-            onSelectRfq(target);
-          } else {
-            onNavigate('BUY_LEADS');
-          }
-        }}
       />
 
       {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}

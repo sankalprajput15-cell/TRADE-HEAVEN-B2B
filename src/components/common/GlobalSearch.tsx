@@ -47,6 +47,7 @@ interface CategoryMatch {
 }
 
 const TRENDING_CATEGORIES = [
+  'Hotel Supplies',
   'Construction & Excavation Machinery',
   'Industrial Machinery & Automation',
   'Electrical Household & Other Goods, Components',

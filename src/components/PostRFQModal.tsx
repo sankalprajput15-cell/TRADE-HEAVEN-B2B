@@ -39,6 +39,7 @@ interface PostRFQModalProps {
 const DRAFT_KEY = 'rfq_form_draft';
 
 const CATEGORIES = [
+  'Hotel Supplies',
   'Industrial Machinery & CNC',
   'Electronics & Semiconductors',
   'Apparel, Textiles & Fabrics',

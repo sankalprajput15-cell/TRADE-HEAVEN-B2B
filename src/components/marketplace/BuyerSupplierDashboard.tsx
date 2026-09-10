@@ -41,6 +41,7 @@ interface Props {
 }
 
 const AVAILABLE_CATEGORIES = [
+  'Hotel Supplies',
   'Agriculture, Spices & Food Commodities',
   'Automotive Parts & Transportation',
   'Chemicals, Polymers & Resins',
