@@ -394,6 +394,7 @@ const MainApp: React.FC = () => {
 
     let title = 'Trade Heaven | Global B2B Wholesale Marketplace';
     let description = 'Connect with verified global suppliers, compare live RFQs, and secure wholesale deals with Trade Heaven\'s secure B2B platform.';
+    let keywords = 'Trade Heaven, TradeHeaven, global B2B marketplace, international wholesale platform, verified factory manufacturers, direct factory sourcing, cross border trade portal, buy wholesale direct from factory, international exporter directory, global B2B procurement platform, escrow protected trade transactions, bulk purchase import export, verified global vendors';
     let canonical = 'https://tradeheaven.net';
     let ogType = 'website';
     let ogImage = '';
@@ -419,6 +420,22 @@ const MainApp: React.FC = () => {
       
       title = `${targetProduct.title} - Wholesale ${targetProduct.category} | Trade Heaven`;
       description = `${cleanDesc} Verified supplier ${targetProduct.supplierName} (${targetProduct.supplierCountry}). MOQ: ${moqText}. FOB: ${priceText}. 100% Escrow Trade Protection on Trade Heaven.`;
+      keywords = [
+        targetProduct.title,
+        `wholesale ${targetProduct.category}`,
+        targetProduct.subCategory ? `bulk ${targetProduct.subCategory}` : '',
+        `${targetProduct.supplierCountry} manufacturers`,
+        `factory direct ${targetProduct.title}`,
+        `custom OEM ${targetProduct.title}`,
+        `buy ${targetProduct.title} in bulk`,
+        `${targetProduct.title} supplier MOQ ${targetProduct.moq || 100}`,
+        `verified ${targetProduct.supplierName}`,
+        'international B2B sourcing',
+        'export container pricing',
+        'FOB wholesale rates',
+        'verified trade assurance supplier',
+        'Trade Heaven'
+      ].filter(Boolean).join(', ');
       canonical = `https://tradeheaven.net/?view=PRODUCT_DIRECTORY&productId=${encodeURIComponent(targetProduct.id)}`;
       ogType = 'product';
 
@@ -432,79 +449,140 @@ const MainApp: React.FC = () => {
       switch (activeView) {
         case 'HOMEPAGE':
         case 'LANDING_PAGE':
+        case 'MARKETPLACE_HOME':
           title = 'Trade Heaven | Secure Global B2B Wholesale Marketplace';
           description = 'Discover verified factory inventory, connect with global suppliers, and trade securely with Trade Heaven.';
+          keywords = 'Trade Heaven, TradeHeaven, global B2B marketplace, international wholesale platform, verified factory manufacturers, direct factory sourcing, cross border trade portal, buy wholesale direct from factory, international exporter directory, global B2B procurement platform, supply chain sourcing network, escrow protected trade transactions, bulk purchase import export, verified global vendors';
           canonical = 'https://tradeheaven.net';
           break;
         case 'PRODUCT_DIRECTORY':
           title = 'Global Product Catalog & Wholesale Directory | Trade Heaven';
           description = 'Browse verified factory inventory across industrial sectors. Compare tiered volume pricing and source high-quality products.';
+          keywords = 'wholesale product catalog, bulk industrial supplies, factory direct products, B2B wholesale marketplace, manufacturing inventory, wholesale electronics suppliers, industrial machinery exporters, chemical suppliers direct, raw materials wholesale, OEM ODM private label products, container load wholesale pricing, minimum order quantity MOQ sourcing, direct from manufacturer, bulk commercial supplies, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=PRODUCT_DIRECTORY';
           break;
         case 'RFQ_HUB':
           title = 'Live B2B RFQs & Tenders | Trade Heaven';
           description = 'View live Requests for Quotation (RFQs), submit wholesale quotes, and connect with verified buyers worldwide.';
+          keywords = 'live B2B RFQs, request for quotation tenders, active manufacturing tenders, global procurement tenders, wholesale buy leads, international sourcing requests, bulk buyer inquiries, contract manufacturing RFQ, government and enterprise trade tenders, supplier quote submissions, industrial supply RFQ, commercial procurement bids, Trade Heaven RFQ hub';
           canonical = 'https://tradeheaven.net/?view=RFQ_HUB';
           break;
         case 'SUPPLIERS_DIRECTORY':
           title = 'Verified Global Suppliers & Exporters | Trade Heaven';
           description = 'Find and partner with verified manufacturers, exporters, and wholesale suppliers from around the globe.';
+          keywords = 'verified global suppliers, international manufacturer directory, audited factory exporters, ISO certified manufacturers, OEM ODM custom manufacturing partners, top exporters directory, verified Chinese manufacturers, Indian export suppliers, European wholesale factories, verified African suppliers, North American manufacturing partners, factory audit reports, wholesale supplier directory, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=SUPPLIERS_DIRECTORY';
           break;
         case 'BUYERS_DIRECTORY':
           title = 'Verified Global Buyers & Importers | Trade Heaven';
           description = 'Connect with verified international buyers and importers actively seeking wholesale product sourcing.';
+          keywords = 'international importers directory, verified wholesale buyers, global procurement officers, corporate purchasing agents, vetted trade importers, commodity buyers list, retail chain sourcing buyers, distributor network directory, international purchasing consortiums, high volume procurement leads, verified trade buyers, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=BUYERS_DIRECTORY';
           break;
         case 'BUY_LEADS':
           title = 'Active Wholesale Buy Leads | Trade Heaven';
           description = 'Access active buy leads from verified global importers. Quote on RFQs and grow your export business.';
+          keywords = 'verified buy leads, urgent purchase orders, international buyer leads, active import requirements, wholesale purchase tenders, verified procurement managers, corporate purchase orders, bulk commodity buy leads, high volume sourcing inquiries, export leads for manufacturers, international buyers seeking suppliers, Trade Heaven buy leads';
           canonical = 'https://tradeheaven.net/?view=BUY_LEADS';
+          break;
+        case 'POST_BUY_REQUIREMENT':
+          title = 'Post Buy Requirement & Source Products | Trade Heaven';
+          description = 'Submit your bulk product sourcing requirements. Reach thousands of verified manufacturers and receive fast factory-direct quotes.';
+          keywords = 'post buy requirement, submit B2B sourcing request, create RFQ for manufacturers, request factory quotes, custom manufacturing quotes, find suppliers for my product, bulk procurement request, private label OEM inquiry, free RFQ submission, reverse auction sourcing, factory price discovery, Trade Heaven';
+          canonical = 'https://tradeheaven.net/?view=POST_BUY_REQUIREMENT';
+          break;
+        case 'POST_SELL_OFFER':
+          title = 'Post Sell Offer & Export Wholesale Cargo | Trade Heaven';
+          description = 'Broadcast your factory-direct inventory and ready-to-ship wholesale cargo offers to verified international buyers.';
+          keywords = 'post sell offer, list wholesale products, export products online, B2B product listing portal, find international buyers for my products, factory excess inventory sale, bulk stocklot offers, direct manufacturer catalog publishing, wholesale supply broadcasting, global trade leads, Trade Heaven';
+          canonical = 'https://tradeheaven.net/?view=POST_SELL_OFFER';
           break;
         case 'TRUST_SAFETY':
           title = 'Trust & Safety Center | Trade Heaven';
           description = 'Learn how Trade Heaven ensures secure international B2B transactions through supplier verification and escrow protection.';
+          keywords = 'B2B escrow protection, secure cross border payments, factory audit verification, fraud prevention in international trade, dispute resolution for exporters, supplier credit background check, trade assurance guarantee, secure letter of credit handling, cargo inspection SGS compliance, safe international trade, Trade Heaven trust safety';
           canonical = 'https://tradeheaven.net/?view=TRUST_SAFETY';
           break;
         case 'INSIGHTS':
           title = 'Trade Finance & MT700 DLC Risk Insights | Trade Heaven';
           description = 'Is your cargo truly financeable? Understand MT700 DLC bankability, vessel risk, trade compliance, sanctions screening, and bulk export financing with Trade Heaven.';
+          keywords = 'Trade Finance MT700, Letter of Credit DLC bankable, cargo financing risk, bulk export transaction compliance, vessel sanctions screening, OFAC maritime compliance, bill of lading discrepancies, UCP 600 banking rules, trade risk mitigation, shipping document compliance, cargo financibility, international trade execution platform, Trade Heaven insights';
           canonical = 'https://tradeheaven.net/?view=INSIGHTS';
           break;
         case 'PREMIUM_MEMBERSHIP':
+        case 'PREMIUM_SERVICES':
           title = 'Premium B2B Supplier Membership | Trade Heaven';
           description = 'Upgrade your supplier profile to access priority RFQs, verified buyer data, and enhanced storefront visibility.';
+          keywords = 'B2B premium supplier membership, verified exporter badge, priority RFQ access, top search ranking for manufacturers, global buyer contact reveals, trade matchmaking services, export marketing packages, verified trust seal certification, VIP supplier portal, high conversion B2B storefront, Trade Heaven Pro';
           canonical = 'https://tradeheaven.net/?view=PREMIUM_MEMBERSHIP';
           break;
         case 'INCOTERMS_CALCULATOR':
+        case 'TRADE_TOOLS':
           title = 'Incoterms Cost & Risk Calculator | Trade Heaven';
           description = 'Calculate shipping costs and understand risk transfers for global trade using our interactive Incoterms tool.';
+          keywords = 'Incoterms 2020 calculator, FOB vs CIF freight calculator, EXW DDP cost estimator, international shipping risk transfer, ocean freight cost calculator, air cargo tariff estimator, customs duty and freight estimator, landed cost calculation tool, container shipping volume calculator, port to port logistics estimator, Trade Heaven trade tools';
           canonical = 'https://tradeheaven.net/?view=INCOTERMS_CALCULATOR';
+          break;
+        case 'NEGOTIATION_ROOM':
+          title = 'B2B Trade Negotiation Room | Trade Heaven';
+          description = 'Negotiate wholesale trade terms, draft proforma invoices, and establish secure escrow payment milestones.';
+          keywords = 'B2B price negotiation, counter offer supplier room, formal proforma invoice generator, purchase contract drafting, escrow payment milestone tracking, international trade negotiation platform, wholesale order contract terms, trade milestone release, secure supplier messaging, Trade Heaven';
+          canonical = 'https://tradeheaven.net/?view=NEGOTIATION_ROOM';
+          break;
+        case 'COUNTRY_HUB':
+          title = 'Global Country Trade Hubs & Export Corridors | Trade Heaven';
+          description = 'Explore international manufacturing hubs, bilateral export corridors, and country-specific trade tariffs.';
+          keywords = 'country trade hubs, bilateral export corridors, import export directory by country, regional manufacturing clusters, free trade agreement FTAs, tariff rates by country, regional export promotion, cross border trade lanes, Trade Heaven';
+          canonical = 'https://tradeheaven.net/?view=COUNTRY_HUB';
           break;
         case 'ABOUT_US':
           title = 'About Trade Heaven | Verified B2B Marketplace';
           description = 'Learn about Trade Heaven\'s mission to connect global wholesale buyers and verified suppliers safely.';
+          keywords = 'about Trade Heaven, Tradeheaven ECOM Solution LLP, global trade facilitation platform, international B2B mission, cross-border commerce vision, world trade network, trusted B2B trade marketplace, international export ecosystem';
           canonical = 'https://tradeheaven.net/?view=ABOUT_US';
+          break;
+        case 'CONTACT_US':
+        case 'ONBOARD_WITH_US':
+          title = 'Contact & Onboard with Trade Heaven | Global Trade Desk';
+          description = 'Get in touch with Trade Heaven trade advisors for supplier verification, buyer onboarding, and wholesale sourcing support.';
+          keywords = 'contact Trade Heaven, B2B support helpdesk, supplier onboarding support, trade advisor consultation, international trade desk phone, WhatsApp trade support, register as global exporter, become verified buyer, supplier onboarding assistance';
+          canonical = 'https://tradeheaven.net/?view=CONTACT_US';
           break;
         case 'PRODUCT_LISTING_POLICY':
           title = 'Product Listing Policy & Prohibited Items | Trade Heaven';
           description = 'Review Trade Heaven\'s terms of listing products, restricted items, IPR compliance, and regulatory sanctions.';
+          keywords = 'product listing policy, prohibited B2B items, export compliance guidelines, restricted trade commodities, intellectual property rights IPR protection, anti-counterfeit policy, trade sanctions screening rules, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=PRODUCT_LISTING_POLICY';
           break;
         case 'PRIVACY_POLICY':
           title = 'Privacy Policy | Tradeheaven ECOM Solution LLP | Trade Heaven';
           description = 'Review Trade Heaven\'s privacy terms, data protection commitment, and B2B user rights managed by Tradeheaven ECOM Solution LLP.';
+          keywords = 'Trade Heaven privacy policy, Tradeheaven ECOM Solution LLP data protection, B2B corporate privacy, GDPR data subject rights, international business data security, secure user authentication, trade confidentiality';
           canonical = 'https://tradeheaven.net/?view=PRIVACY_POLICY';
           break;
         case 'TERMS_OF_USE':
           title = 'Terms of Use Agreement | Tradeheaven ECOM Solution LLP | Trade Heaven';
           description = 'Review Trade Heaven\'s user terms of use, membership rights, trade guidelines, and refund policy operated by Tradeheaven ECOM Solution LLP.';
+          keywords = 'Trade Heaven terms of use, B2B user agreement, membership rights, trade dispute mediation, commercial trade platform terms, Tradeheaven ECOM Solution LLP contract terms';
           canonical = 'https://tradeheaven.net/?view=TERMS_OF_USE';
+          break;
+        case 'REFUND_POLICY':
+          title = 'Return & Refund Policy | Dispute Terms | Trade Heaven';
+          description = 'Review Trade Heaven\'s investigation-based refund conditions, inspection failure terms, and dispute mediation rules.';
+          keywords = 'Trade Heaven refund policy, escrow dispute resolution terms, supplier cancellation policy, investigation-based refund conditions, inspection failure claims, trade assurance refund terms';
+          canonical = 'https://tradeheaven.net/?view=REFUND_POLICY';
           break;
         case 'VENDOR_PROFILE':
           title = 'Verified Supplier Storefront | Trade Heaven';
           description = 'View verified supplier profiles, browse product catalogs, and review manufacturing certifications on Trade Heaven.';
+          keywords = 'verified supplier storefront, audited factory profile, manufacturer catalog, factory facility inspection reports, supplier trust rating score, export transaction history, supplier MOQ and factory lead time, OEM ODM production capacity, certified manufacturer profile, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=VENDOR_PROFILE';
+          break;
+        case 'BUYER_PROFILE':
+          title = 'Verified Global Buyer Profile | Trade Heaven';
+          description = 'View verified buyer company profiles, procurement volume requirements, and sourcing history on Trade Heaven.';
+          keywords = 'verified buyer profile, importer purchasing history, corporate sourcing criteria, buyer credit rating, target procurement volume, annual import requirements, verified KYC importer, corporate purchasing profile, Trade Heaven';
+          canonical = 'https://tradeheaven.net/?view=BUYER_PROFILE';
           break;
       }
     }
@@ -586,7 +664,7 @@ const MainApp: React.FC = () => {
       setMetaTag('name', 'twitter:data1', priceVal > 0 ? `$${priceVal} USD` : 'Contact for Wholesale Price');
       setMetaTag('name', 'twitter:label2', 'Minimum Order (MOQ)');
       setMetaTag('name', 'twitter:data2', `${targetProduct.moq || targetProduct.minOrderQuantity || 100} ${targetProduct.moqUnit || 'units'}`);
-      setMetaTag('name', 'keywords', `${targetProduct.title}, wholesale ${targetProduct.category}, ${targetProduct.subCategory || ''}, ${targetProduct.supplierCountry} suppliers, factory direct, buy bulk, Trade Heaven`);
+      setMetaTag('name', 'keywords', keywords);
     } else {
       removeMetaTag('product:price:amount', true);
       removeMetaTag('product:price:currency', true);
@@ -602,7 +680,7 @@ const MainApp: React.FC = () => {
       removeMetaTag('twitter:data1', false);
       removeMetaTag('twitter:label2', false);
       removeMetaTag('twitter:data2', false);
-      setMetaTag('name', 'keywords', 'Trade Heaven, MT700, Trade Finance, Letter of Credit, DLC bankable, cargo financing, bulk export transactions, B2B supply chain, vessel risk, trade compliance, sanctions screening, export import business, cross border trade, banking standards trade, trade risk mitigation, shipping documentation discrepancies, cargo financibility, trade execution platform');
+      setMetaTag('name', 'keywords', keywords);
     }
 
     // 6. Update or create canonical link tag

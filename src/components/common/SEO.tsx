@@ -72,33 +72,126 @@ export const SEO: React.FC<SEOProps> = ({
     }
   };
 
-  // Construct structured data schema if not provided
-  const structuredData = jsonLd || (ogType === 'product' && productData ? {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": title,
-    "image": [ogImage],
-    "description": description,
-    "sku": productData.retailerItemId || undefined,
-    "category": productData.category || undefined,
-    "brand": {
-      "@type": "Brand",
-      "name": productData.brand || productData.seller || "Trade Heaven"
-    },
-    "offers": {
-      "@type": "Offer",
-      "url": canonicalUrl,
-      "priceCurrency": productData.currency || "USD",
-      "price": String(productData.price || "0.00"),
-      "priceValidUntil": "2027-12-31",
-      "itemCondition": "https://schema.org/NewCondition",
-      "availability": productData.availability === 'out of stock' ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-      "seller": {
-        "@type": "Organization",
-        "name": productData.seller || "Trade Heaven Verified Supplier"
+  // Construct comprehensive structured data schema
+  const officialSocials = [
+    "https://www.linkedin.com/in/trade-heaven-957bb633a/",
+    "https://www.youtube.com/@tradeheaven-ce1eo",
+    "https://www.instagram.com/tradeheavenb2b/",
+    "https://www.facebook.com/profile.php?id=61569916454663",
+    "https://twitter.com/tradeheaven",
+    "https://wa.me/918532934479"
+  ];
+
+  const baseOrganizationSchema = {
+    "@type": "Organization",
+    "@id": "https://tradeheaven.net/#organization",
+    "name": "Trade Heaven",
+    "alternateName": ["TradeHeaven", "Trade Heaven B2B", "tradeheaven.net"],
+    "url": "https://tradeheaven.net",
+    "logo": "https://tradeheaven.net/logo.png",
+    "image": "https://tradeheaven.net/og-image.png",
+    "sameAs": officialSocials,
+    "contactPoint": [
+      {
+        "@type": "ContactPoint",
+        "telephone": "+91-85329-34479",
+        "contactType": "customer service",
+        "areaServed": "Global",
+        "availableLanguage": ["English", "Hindi", "Spanish", "Chinese", "Arabic", "French", "German"]
       }
+    ]
+  };
+
+  const structuredData = jsonLd || (
+    ogType === 'product' && productData ? {
+      "@context": "https://schema.org/",
+      "@graph": [
+        baseOrganizationSchema,
+        {
+          "@type": "Product",
+          "name": title,
+          "image": [ogImage],
+          "description": description,
+          "sku": productData.retailerItemId || undefined,
+          "category": productData.category || undefined,
+          "brand": {
+            "@type": "Brand",
+            "name": productData.brand || productData.seller || "Trade Heaven"
+          },
+          "offers": {
+            "@type": "Offer",
+            "url": canonicalUrl,
+            "priceCurrency": productData.currency || "USD",
+            "price": String(productData.price || "0.00"),
+            "priceValidUntil": "2027-12-31",
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": productData.availability === 'out of stock' ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+            "seller": {
+              "@type": "Organization",
+              "name": productData.seller || "Trade Heaven Verified Supplier"
+            }
+          },
+          ...(productData.rating ? {
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": String(productData.rating),
+              "reviewCount": String(productData.reviewCount || 10),
+              "bestRating": "5",
+              "worstRating": "1"
+            }
+          } : {})
+        },
+        {
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Trade Heaven",
+              "item": "https://tradeheaven.net"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": productData.category || "Wholesale Products",
+              "item": `https://tradeheaven.net/?view=PRODUCT_DIRECTORY`
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": title,
+              "item": canonicalUrl
+            }
+          ]
+        }
+      ]
+    } : {
+      "@context": "https://schema.org/",
+      "@graph": [
+        baseOrganizationSchema,
+        {
+          "@type": "WebSite",
+          "@id": "https://tradeheaven.net/#website",
+          "url": "https://tradeheaven.net",
+          "name": "Trade Heaven",
+          "alternateName": "TradeHeaven",
+          "publisher": {
+            "@id": "https://tradeheaven.net/#organization"
+          },
+          "potentialAction": [
+            {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://tradeheaven.net/?search={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          ]
+        }
+      ]
     }
-  } : null);
+  );
 
   return (
     <Helmet htmlAttributes={{ lang: languageCode }}>

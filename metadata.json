@@ -1,6 +1,6 @@
 {
   "name": "Trade Heaven - B2B Marketplace",
-  "description": "International B2B trade marketplace, SaaS Plan & Pricing management engine with token quotas, rate limit overrides, Stripe syncing, and enterprise security architecture.",
+  "description": "Global B2B wholesale trade marketplace connecting verified manufacturers, exporters, and international buyers with escrow trade protection, live RFQ buy leads, and Incoterms logistics tools.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
