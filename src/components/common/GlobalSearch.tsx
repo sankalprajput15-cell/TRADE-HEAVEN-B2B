@@ -152,6 +152,17 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus mobile input when search modal opens on mobile
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        mobileInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Load recent searches from localStorage on mount
   useEffect(() => {
@@ -187,15 +198,19 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     } catch {}
   };
 
-  // Close dropdown on click outside
+  // Close dropdown on click/touch outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   // Format price in active currency
@@ -475,23 +490,73 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         )}
       </div>
 
+      {/* Mobile Backdrop to easily dismiss on phone */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-100"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Auto-Suggestion Floating Popup */}
       {isOpen && (
         <div 
           id="search-suggestions-popup"
           role="listbox"
-          className="absolute top-full right-0 mt-2 w-[calc(100vw-24px)] sm:w-[440px] md:w-[490px] max-w-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150 max-h-[82vh] flex flex-col"
+          className="fixed sm:absolute top-2 sm:top-full left-2 right-2 sm:left-auto sm:right-0 mt-0 sm:mt-2 w-auto sm:w-[440px] md:w-[490px] max-w-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-16px)] sm:max-h-[82vh] flex flex-col"
         >
+          {/* Mobile Dedicated Search Write Input Bar (Phone Screen Viewports) */}
+          <div className="sm:hidden p-2.5 bg-slate-900 border-b border-slate-800 flex items-center gap-2 shrink-0">
+            <div className="relative flex-1 flex items-center">
+              <Search className="absolute left-3 w-4 h-4 text-blue-400 pointer-events-none" />
+              <input
+                ref={mobileInputRef}
+                type="text"
+                id="mobile-search-write-input"
+                placeholder="Search products, suppliers, categories..."
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setSelectedIndex(-1);
+                }}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
+                className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-800 text-white placeholder-slate-400 text-xs font-medium border border-slate-700 focus:border-blue-500 focus:bg-slate-800 focus:ring-2 focus:ring-blue-500/30 outline-none"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    mobileInputRef.current?.focus();
+                  }}
+                  aria-label="Clear search input"
+                  className="absolute right-2.5 p-1 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold shrink-0 cursor-pointer transition-colors"
+            >
+              Done
+            </button>
+          </div>
+
           {/* TOP SECTION: WHEN QUERY IS TYPED */}
           {normalizedQuery.length > 0 ? (
             <>
               {/* Category & Filter Tabs Header */}
-              <div className="px-3 pt-2.5 pb-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-1 overflow-x-auto shrink-0 scrollbar-none">
-                <div className="flex items-center gap-1">
+              <div className="px-2.5 sm:px-3 pt-2 sm:pt-2.5 pb-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-1 overflow-x-auto shrink-0 scrollbar-none">
+                <div className="flex items-center gap-1 min-w-0 overflow-x-auto scrollbar-none py-0.5">
                   <button
                     type="button"
                     onClick={() => setActiveFilterTab('ALL')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                       activeFilterTab === 'ALL'
                         ? 'bg-blue-600 text-white shadow-2xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -504,7 +569,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilterTab('CATEGORIES')}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
                         activeFilterTab === 'CATEGORIES'
                           ? 'bg-emerald-700 text-white shadow-2xs'
                           : 'text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50'
@@ -519,7 +584,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilterTab('PRODUCTS')}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
                         activeFilterTab === 'PRODUCTS'
                           ? 'bg-blue-600 text-white shadow-2xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -534,7 +599,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilterTab('SUPPLIERS')}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                      className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                         activeFilterTab === 'SUPPLIERS'
                           ? 'bg-blue-600 text-white shadow-2xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -545,7 +610,9 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                   )}
                 </div>
 
-                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">Real-time</span>
+                <div className="flex items-center gap-1 shrink-0 ml-1">
+                  <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">Real-time</span>
+                </div>
               </div>
 
               {/* RESULTS LIST BODY */}
@@ -831,8 +898,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
             </>
           ) : (
             /* ZERO-QUERY INITIAL FOCUS STATE: Recent Searches & Trending Categories */
-            <div className="p-3 space-y-3 max-h-[75vh] overflow-y-auto">
-              
+            <div className="p-3 sm:p-3.5 space-y-3 max-h-[calc(100vh-130px)] sm:max-h-[75vh] overflow-y-auto overscroll-contain">
               {/* Recent Searches */}
               {recentSearches.length > 0 && (
                 <div>
@@ -874,7 +940,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                   Popular Sourcing Categories
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1.5">
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-1.5 mt-1.5">
                   {TRENDING_CATEGORIES.map((catName) => (
                     <button
                       key={catName}
