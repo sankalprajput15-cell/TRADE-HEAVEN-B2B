@@ -244,7 +244,7 @@ export const BuyLeadsView: React.FC<Props> = ({
             Global Buy Leads &amp; RFQ Tender Hub
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-normal leading-relaxed">
-            Direct buyer procurement requirements from verified international importers. Paid enterprise members receive unmasked buyer phone/email contacts for direct communication.
+            Direct buyer procurement requirements from verified international importers. Contact channels are protected to prevent spam—verify your business to connect directly for free.
           </p>
         </div>
 
@@ -275,33 +275,13 @@ export const BuyLeadsView: React.FC<Props> = ({
       />
 
       {/* Security & Access Clearance Notice */}
-      <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap ${
-        isUserPremium 
-          ? 'bg-amber-50/80 border-amber-200 text-amber-950' 
-          : 'bg-indigo-50/80 border-indigo-200 text-indigo-950'
-      }`}>
+      <div className="p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap bg-blue-50/80 border-blue-200 text-blue-950">
         <div className="flex items-center gap-2.5">
-          {isUserPremium ? (
-            <Crown className="w-4 h-4 text-amber-600 shrink-0" />
-          ) : (
-            <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
-          )}
+          <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
           <span className="font-semibold">
-            {isUserPremium 
-              ? 'Premium Sourcing Clearance Active: All buyer corporate contact channels are unmasked in real time.'
-              : 'Free Tier Clearance: Direct buyer corporate email and telephone contacts are securely masked.'}
+            Protected Business Verification Active: Direct buyer corporate email and telephone contacts are secured against automated scraping. Free one-click business verification available.
           </span>
         </div>
-
-        {!isUserPremium && onOpenUpgradeModal && (
-          <button
-            onClick={onOpenUpgradeModal}
-            className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 transition-all shadow-xs cursor-pointer"
-          >
-            <Crown className="w-3.5 h-3.5" />
-            <span>Upgrade to Gold Supplier Plan</span>
-          </button>
-        )}
       </div>
 
       {/* Filter and Search Bar Container */}
