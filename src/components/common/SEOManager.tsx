@@ -73,79 +73,79 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
     case 'HOMEPAGE':
     case 'MARKETPLACE_HOME':
       return <SEO 
-        title="Trade Heaven - Global B2B Wholesale Marketplace & Exporter Hub" 
-        description="Trade Heaven is the premier global B2B marketplace. Source wholesale products, find verified manufacturers, and securely trade across borders with 100% escrow protection."
-        keywords="Trade Heaven, TradeHeaven, global B2B marketplace, international wholesale platform, verified factory manufacturers, direct factory sourcing, cross border trade portal, buy wholesale direct from factory, international exporter directory, global B2B procurement platform, supply chain sourcing network, escrow protected trade transactions, bulk purchase import export, verified global vendors"
+        title="Trade Heaven - Global B2B Marketplace | 20+ Years Sourcing & Closing Real Deals Globally" 
+        description="Backed by 20+ years of international trade experience, Trade Heaven helps global clients close real multi-million dollar deals with verified manufacturers, live RFQs, and 100% escrow protection."
+        keywords="Trade Heaven, TradeHeaven, 20 years experience B2B trade, closing real deals globally, global B2B deal closing, international wholesale platform, verified factory manufacturers, direct factory sourcing, cross border trade portal, buy wholesale direct from factory, international exporter directory, global B2B procurement platform, supply chain sourcing network, escrow protected trade transactions, bulk purchase import export, verified global vendors"
       />;
     case 'PRODUCT_DIRECTORY':
       return <SEO 
-        title="Global Wholesale Products Directory | Trade Heaven"
-        description="Browse thousands of wholesale products from verified international suppliers. Get factory-direct pricing on electronics, apparel, machinery, and more."
-        keywords="wholesale product catalog, bulk industrial supplies, factory direct products, B2B wholesale marketplace, manufacturing inventory, wholesale electronics suppliers, industrial machinery exporters, chemical suppliers direct, raw materials wholesale, OEM ODM private label products, container load wholesale pricing, minimum order quantity MOQ sourcing, direct from manufacturer, bulk commercial supplies, Trade Heaven"
+        title="Global Wholesale Products Directory | 20+ Years Sourcing | Trade Heaven"
+        description="Browse thousands of wholesale products from verified international suppliers. Backed by 20+ years market experience helping clients close real factory-direct deals."
+        keywords="wholesale product catalog, bulk industrial supplies, factory direct products, 20 years trade experience, closing real deals globally, B2B wholesale marketplace, manufacturing inventory, wholesale electronics suppliers, industrial machinery exporters, chemical suppliers direct, raw materials wholesale, OEM ODM private label products, container load wholesale pricing, minimum order quantity MOQ sourcing, direct from manufacturer, bulk commercial supplies, Trade Heaven"
         canonicalUrl="https://tradeheaven.net/?view=PRODUCT_DIRECTORY"
       />;
     case 'SUPPLIERS_DIRECTORY':
       return <SEO 
-        title="Verified B2B Suppliers & Manufacturers Directory | Trade Heaven"
-        description="Find trusted, audited international suppliers and factories. View inspection reports, production capacities, and compliance certifications."
-        keywords="verified global suppliers, international manufacturer directory, audited factory exporters, ISO certified manufacturers, OEM ODM custom manufacturing partners, top exporters directory, verified Chinese manufacturers, Indian export suppliers, European wholesale factories, verified African suppliers, North American manufacturing partners, factory audit reports, wholesale supplier directory, Trade Heaven"
+        title="Verified B2B Suppliers & Manufacturers Directory | Real Deal Execution | Trade Heaven"
+        description="Find trusted, audited international suppliers and factories. Backed by 20+ years of trade experience in closing real cross-border manufacturing deals."
+        keywords="verified global suppliers, international manufacturer directory, audited factory exporters, 20 years trade experience, closing real deals globally, ISO certified manufacturers, OEM ODM custom manufacturing partners, top exporters directory, verified Chinese manufacturers, Indian export suppliers, European wholesale factories, verified African suppliers, North American manufacturing partners, factory audit reports, wholesale supplier directory, Trade Heaven"
         canonicalUrl="https://tradeheaven.net/?view=SUPPLIERS_DIRECTORY"
       />;
     case 'BUYERS_DIRECTORY':
       return <SEO 
-        title="Global Wholesale Buyers Directory | Trade Heaven"
-        description="Connect with active international wholesale buyers, importers, and procurement agents looking to source products."
-        keywords="international importers directory, verified wholesale buyers, global procurement officers, corporate purchasing agents, vetted trade importers, commodity buyers list, retail chain sourcing buyers, distributor network directory, international purchasing consortiums, high volume procurement leads, verified trade buyers, Trade Heaven"
+        title="Global Wholesale Buyers Directory | Enterprise Deals | Trade Heaven"
+        description="Connect with active international wholesale buyers, importers, and procurement agents looking to source products and close real high-volume deals."
+        keywords="international importers directory, verified wholesale buyers, global procurement officers, corporate purchasing agents, closing real deals globally, 20 years B2B experience, vetted trade importers, commodity buyers list, retail chain sourcing buyers, distributor network directory, international purchasing consortiums, high volume procurement leads, verified trade buyers, Trade Heaven"
         canonicalUrl="https://tradeheaven.net/?view=BUYERS_DIRECTORY"
       />;
     case 'BUY_LEADS':
     case 'RFQ_HUB':
       return <SEO 
-        title="Live B2B Buy Leads & RFQs | Trade Heaven"
-        description="Access real-time Request for Quotations (RFQs) and buy leads from active global importers. Quote directly and win international contracts."
-        keywords="live B2B RFQs, request for quotation tenders, active manufacturing tenders, global procurement tenders, wholesale buy leads, international sourcing requests, bulk buyer inquiries, contract manufacturing RFQ, government and enterprise trade tenders, supplier quote submissions, industrial supply RFQ, commercial procurement bids, Trade Heaven RFQ hub"
+        title="Live B2B Buy Leads & RFQs | Close Real Multi-Million Deals | Trade Heaven"
+        description="Access real-time Request for Quotations (RFQs) and buy leads from active global importers. Quote directly and win real international contracts backed by 20+ years of deal-closing experience."
+        keywords="live B2B RFQs, request for quotation tenders, active manufacturing tenders, global procurement tenders, closing real deals globally, 20 years trade experience, wholesale buy leads, international sourcing requests, bulk buyer inquiries, contract manufacturing RFQ, government and enterprise trade tenders, supplier quote submissions, industrial supply RFQ, commercial procurement bids, Trade Heaven RFQ hub"
         canonicalUrl="https://tradeheaven.net/?view=RFQ_HUB"
       />;
     case 'POST_BUY_REQUIREMENT':
       return <SEO 
-        title="Post a Sourcing RFQ | Trade Heaven"
-        description="Submit your product sourcing requirements. Reach thousands of verified manufacturers and get competitive factory-direct quotes."
-        keywords="post buy requirement, submit B2B sourcing request, create RFQ for manufacturers, request factory quotes, custom manufacturing quotes, find suppliers for my product, bulk procurement request, private label OEM inquiry, free RFQ submission, reverse auction sourcing, factory price discovery, Trade Heaven"
+        title="Post a Sourcing RFQ | Close Real Deals with Verified Factories | Trade Heaven"
+        description="Submit your product sourcing requirements. Reach thousands of verified manufacturers with 20+ years of trade facilitation support to close real deals."
+        keywords="post buy requirement, submit B2B sourcing request, create RFQ for manufacturers, request factory quotes, custom manufacturing quotes, closing real deals globally, find suppliers for my product, bulk procurement request, private label OEM inquiry, free RFQ submission, reverse auction sourcing, factory price discovery, Trade Heaven"
       />;
     case 'POST_SELL_OFFER':
       return <SEO 
-        title="Post B2B Cargo Offers | Trade Heaven"
-        description="Broadcast your ready-to-ship inventory and cargo offers to thousands of active wholesale buyers globally."
+        title="Post B2B Cargo Offers | Connect with Global Buyers | Trade Heaven"
+        description="Broadcast your ready-to-ship inventory and cargo offers to thousands of active wholesale buyers globally to close real deals."
         keywords="post sell offer, list wholesale products, export products online, B2B product listing portal, find international buyers for my products, factory excess inventory sale, bulk stocklot offers, direct manufacturer catalog publishing, wholesale supply broadcasting, global trade leads, Trade Heaven"
       />;
     case 'INCOTERMS_CALCULATOR':
     case 'TRADE_TOOLS':
       return <SEO 
         title="Incoterms 2020 Calculator & Trade Tools | Trade Heaven"
-        description="Calculate international shipping costs, FOB, CIF, EXW pricing, and manage your logistics with our B2B trade calculators."
+        description="Calculate international shipping costs, FOB, CIF, EXW pricing, and manage your logistics with our B2B trade calculators backed by 20+ years of logistics expertise."
         keywords="Incoterms 2020 calculator, FOB vs CIF freight calculator, EXW DDP cost estimator, international shipping risk transfer, ocean freight cost calculator, air cargo tariff estimator, customs duty and freight estimator, landed cost calculation tool, container shipping volume calculator, port to port logistics estimator, Trade Heaven trade tools"
         canonicalUrl="https://tradeheaven.net/?view=INCOTERMS_CALCULATOR"
       />;
     case 'PREMIUM_SERVICES':
     case 'PREMIUM_MEMBERSHIP':
       return <SEO 
-        title="Premium B2B Supplier Memberships | Trade Heaven"
-        description="Upgrade your supplier storefront. Get priority ranking, verified badges, and direct access to high-value RFQs."
+        title="Premium B2B Supplier Memberships | Priority Deal Access | Trade Heaven"
+        description="Upgrade your supplier storefront. Get priority ranking, verified badges, and direct access to high-value RFQs and real enterprise deal closures."
         keywords="B2B premium supplier membership, verified exporter badge, priority RFQ access, top search ranking for manufacturers, global buyer contact reveals, trade matchmaking services, export marketing packages, verified trust seal certification, VIP supplier portal, high conversion B2B storefront, Trade Heaven Pro"
         canonicalUrl="https://tradeheaven.net/?view=PREMIUM_MEMBERSHIP"
       />;
     case 'ABOUT_US':
       return <SEO 
-        title="About Trade Heaven | Global B2B Trade Engine"
-        description="Learn how Trade Heaven is digitizing cross-border trade with secure escrow, verified factory audits, and transparent supply chain tools."
-        keywords="about Trade Heaven, Tradeheaven ECOM Solution LLP, global trade facilitation platform, international B2B mission, cross-border commerce vision, world trade network, trusted B2B trade marketplace, international export ecosystem"
+        title="About Trade Heaven | 20+ Years Global B2B Trade & Real Deal Execution"
+        description="Discover how Trade Heaven leverages 20+ years of international trade experience to help clients worldwide close real multi-million dollar deals with verified manufacturers and escrow security."
+        keywords="about Trade Heaven, 20 years experience B2B trade, closing real deals globally, Tradeheaven ECOM Solution LLP, global trade facilitation platform, international B2B mission, cross-border commerce vision, world trade network, trusted B2B trade marketplace, international export ecosystem"
         canonicalUrl="https://tradeheaven.net/?view=ABOUT_US"
       />;
     case 'TRUST_SAFETY':
       return <SEO 
-        title="Trust & Safety | Escrow Protection | Trade Heaven"
-        description="Discover our 100% escrow protection, SGS factory audits, and secure payment rails protecting buyers and sellers in global trade."
-        keywords="B2B escrow protection, secure cross border payments, factory audit verification, fraud prevention in international trade, dispute resolution for exporters, supplier credit background check, trade assurance guarantee, secure letter of credit handling, cargo inspection SGS compliance, safe international trade, Trade Heaven trust safety"
+        title="Trust & Safety | 20+ Years Escrow Protection | Trade Heaven"
+        description="Discover our 100% escrow protection, SGS factory audits, and secure payment rails protecting buyers and sellers in closing real global deals."
+        keywords="B2B escrow protection, secure cross border payments, factory audit verification, fraud prevention in international trade, dispute resolution for exporters, supplier credit background check, trade assurance guarantee, secure letter of credit handling, cargo inspection SGS compliance, safe international trade, closing real deals globally, Trade Heaven trust safety"
         canonicalUrl="https://tradeheaven.net/?view=TRUST_SAFETY"
       />;
     case 'INSIGHTS':

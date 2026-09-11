@@ -32,9 +32,9 @@ interface SEOProps {
 }
 
 export const SEO: React.FC<SEOProps> = ({
-  title = 'Trade Heaven - Global B2B Wholesale Marketplace & Exporter Hub',
-  description = 'Trade Heaven is the premier global B2B marketplace. Source wholesale products, find verified manufacturers, and securely trade across borders with 100% escrow protection.',
-  keywords = 'B2B marketplace, wholesale sourcing, manufacturers, global trade, import export, Trade Heaven, RFQ, escrow protection',
+  title = 'Trade Heaven - Global B2B Wholesale Marketplace | 20+ Years Experience Closing Real Deals Globally',
+  description = 'Trade Heaven is the premier global B2B wholesale marketplace backed by 20+ years of international trade expertise. Helping buyers and suppliers across 190+ countries close real multi-million dollar deals with verified factories, live RFQs, and 100% escrow protection.',
+  keywords = 'Trade Heaven, 20 years experience B2B trade, closing real deals globally, global B2B deal closing, B2B marketplace, wholesale sourcing, verified manufacturers, global trade, import export, RFQ tenders, escrow protection, multi million dollar deals',
   canonicalUrl = 'https://tradeheaven.net',
   ogImage = 'https://tradeheaven.net/og-image.png',
   ogImageAlt,
@@ -86,10 +86,24 @@ export const SEO: React.FC<SEOProps> = ({
     "@type": "Organization",
     "@id": "https://tradeheaven.net/#organization",
     "name": "Trade Heaven",
-    "alternateName": ["TradeHeaven", "Trade Heaven B2B", "tradeheaven.net"],
+    "alternateName": ["TradeHeaven", "Trade Heaven B2B", "Trade Heaven B2B Marketplace", "tradeheaven.net", "Tradeheaven ECOM Solution LLP"],
     "url": "https://tradeheaven.net",
+    "foundingDate": "2004-01-15",
+    "slogan": "20+ Years of International Trade Excellence: Helping Global Clients Close Real Multi-Million Dollar Deals",
     "logo": "https://tradeheaven.net/logo.png",
     "image": "https://tradeheaven.net/og-image.png",
+    "description": "Global B2B wholesale marketplace and trade execution engine backed by 20+ years of market experience, helping enterprises, procurement officers, and verified manufacturers across 190+ countries close real multi-million dollar deals with escrow protection, live RFQ buy leads, and end-to-end logistics.",
+    "knowsAbout": [
+      "20+ Years B2B Market Experience",
+      "Closing Real Multi-Million Dollar Deals Globally",
+      "Global B2B Wholesale Trade & Procurement",
+      "Verified Manufacturer Factory Audits (ISO, CE, SGS, TÜV)",
+      "Escrow Trade Protection & Secure Settlement",
+      "Letter of Credit & Trade Finance (MT700 DLC)",
+      "Incoterms 2020 International Shipping Logistics",
+      "OEM and ODM Custom Industrial Manufacturing",
+      "Cross-Border Contract Negotiation and Settlement"
+    ],
     "sameAs": officialSocials,
     "contactPoint": [
       {

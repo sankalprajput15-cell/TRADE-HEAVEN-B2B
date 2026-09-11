@@ -137,20 +137,20 @@ export const TradeHeavenFooter: React.FC<Props> = ({
               <TradeHeavenLogo size="md" variant="light" showWordmark={true} />
             </div>
             <p className="text-slate-600 text-xs leading-relaxed max-w-sm">
-              {hf?.footerMission || "Trade Heaven is an international B2B marketplace and export portal connecting verified global buyers with vetted manufacturing plants across 180+ countries."}
+              {hf?.footerMission || "Backed by 20+ years of international trade experience, Trade Heaven connects verified global buyers with vetted manufacturing plants across 190+ countries, helping enterprises close real multi-million dollar deals with 100% escrow protection."}
             </p>
             <div className="space-y-2 text-[11px] text-slate-600">
               <div className="flex items-center gap-2">
+                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="font-semibold text-slate-900">20+ Years Sourcing &amp; Deal-Closing Experience</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <Globe2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Global Sourcing in Europe, Asia, Americas &amp; Middle East</span>
+                <span>Global Deal Execution in 190+ Countries</span>
               </div>
               <div className="flex items-center gap-2">
                 <HeartHandshake className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>IEM (International Export Manager) Strategic Services</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Verified Supplier Audits with SGS, Bureau Veritas &amp; TÜV</span>
+                <span>100% Escrow Trade Assurance &amp; Factory Inspections (SGS, TÜV)</span>
               </div>
             </div>
             {/* Official Social Badges */}

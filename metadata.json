@@ -1,6 +1,6 @@
 {
   "name": "Trade Heaven - B2B Marketplace",
-  "description": "Global B2B wholesale trade marketplace connecting verified manufacturers, exporters, and international buyers with escrow trade protection, live RFQ buy leads, and Incoterms logistics tools.",
+  "description": "Global B2B wholesale marketplace backed by 20+ years of market expertise, connecting verified manufacturers, exporters, and international buyers across 190+ countries to close real multi-million dollar deals with escrow protection, live RFQs, and logistics tools.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

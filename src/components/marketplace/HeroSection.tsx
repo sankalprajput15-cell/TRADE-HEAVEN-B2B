@@ -1169,17 +1169,21 @@ export const HeroSection: React.FC<Props> = ({
 
           {/* Trust Metrics */}
           <div className="mt-8 flex flex-wrap items-center gap-6 text-xs text-slate-300 font-medium">
+            <span className="flex items-center gap-1.5 font-bold text-amber-300">
+              <Award className="w-4 h-4 text-amber-400" />
+              20+ Years Market Experience
+            </span>
+            <span className="flex items-center gap-1.5 font-bold text-emerald-300">
+              <Globe2 className="w-4 h-4 text-emerald-400" />
+              Closing Real Deals in 190+ Countries
+            </span>
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
               100% Verified Manufacturers
             </span>
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-              Secure Cross-Border trade protection
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-              Zero Middleman Markup
+              Secure Escrow Trade Assurance
             </span>
           </div>
 
