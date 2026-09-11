@@ -69,6 +69,7 @@ import { TH_LOBSTER_SUPPLIERS, TH_LOBSTER_BUYERS, TH_LOBSTER_PRODUCTS, TH_LOBSTE
 import { TH_RICE_HUSK_SUPPLIERS, TH_RICE_HUSK_BUYERS, TH_RICE_HUSK_PRODUCTS, TH_RICE_HUSK_RFQS } from "./thRiceHuskBriquettesData";
 import { GLOBAL_TIRES_COMPANIES, GLOBAL_TIRES_BUYER_PROFILES, GLOBAL_TIRES_PRODUCTS, GLOBAL_TIRES_RFQS } from "./tiresData";
 import { GLOBAL_GERMANIUM_COMPANIES, GLOBAL_GERMANIUM_BUYER_PROFILES, GLOBAL_GERMANIUM_PRODUCTS, GLOBAL_GERMANIUM_RFQS } from "./germaniumData";
+import { FROZEN_BROCCOLI_COMPANIES, FROZEN_BROCCOLI_BUYERS, FROZEN_BROCCOLI_PRODUCTS, FROZEN_BROCCOLI_RFQS } from "./frozenBroccoliData";
 import { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from "./procurementRfqsData";
 
 import { 
@@ -245,7 +246,7 @@ export const CATEGORIES_TREE = [
     name: 'Farm Products - Grains, Fruits etc',
     icon: 'Wheat',
     image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80&sig=12',
-    subcategories: ['Sunflower Oil', 'Refined Sunflower Oil', '1121 Basmati Rice', 'Alfalfa Hay', 'Apples', 'Arabica Coffee', 'Avocados', 'Bananas', 'Barley', 'Basmati Rice', 'Black Pepper', 'Cashew Nuts'],
+    subcategories: ['Frozen Broccoli', 'IQF Vegetables', 'Frozen Strawberries', 'Frozen Cauliflower', 'Frozen Garlic', 'Sunflower Oil', 'Refined Sunflower Oil', '1121 Basmati Rice', 'Alfalfa Hay', 'Apples', 'Arabica Coffee', 'Avocados', 'Bananas', 'Barley', 'Basmati Rice', 'Black Pepper', 'Cashew Nuts'],
     count: '5,850+ Verified Suppliers | 4,120+ RFQs'
   },
   {
@@ -720,6 +721,7 @@ export const CATEGORIES_TREE = [
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
+  ...FROZEN_BROCCOLI_COMPANIES,
   ...TH_RICE_HUSK_SUPPLIERS,
   ...TH_LOBSTER_SUPPLIERS,
   ...GLOBAL_SUNFLOWER_OIL_COMPANIES,
@@ -4212,6 +4214,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
+  ...FROZEN_BROCCOLI_BUYERS,
   ...TH_RICE_HUSK_BUYERS,
   ...TH_LOBSTER_BUYERS,
   ...GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES,
@@ -7014,6 +7017,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  ...FROZEN_BROCCOLI_PRODUCTS,
   ...TH_RICE_HUSK_PRODUCTS,
   ...TH_LOBSTER_PRODUCTS,
   ...GLOBAL_SUNFLOWER_OIL_PRODUCTS,
@@ -11661,6 +11665,7 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
 ];
 
 const RAW_UNORDERED_RFQS: RfqRequirement[] = [
+  ...FROZEN_BROCCOLI_RFQS,
   ...TH_RICE_HUSK_RFQS,
   ...TH_LOBSTER_RFQS,
   ...GLOBAL_SUNFLOWER_OIL_RFQS,
@@ -12288,6 +12293,7 @@ export { GLOBAL_TURBINE_COMPANIES, GLOBAL_TURBINE_BUYER_PROFILES, GLOBAL_TURBINE
 export { GLOBAL_US_ENTERPRISES_COMPANIES, GLOBAL_US_ENTERPRISES_PRODUCTS, GLOBAL_US_ENTERPRISES_BUYER_PROFILES, GLOBAL_US_ENTERPRISES_RFQS } from './usEnterprisesData';
 export { GLOBAL_HOTEL_SUPPLIES_COMPANIES, GLOBAL_HOTEL_SUPPLIES_PRODUCTS, GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES, GLOBAL_HOTEL_SUPPLIES_RFQS } from './hotelSuppliesData';
 export { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from './procurementRfqsData';
+export { FROZEN_BROCCOLI_COMPANIES, FROZEN_BROCCOLI_BUYERS, FROZEN_BROCCOLI_PRODUCTS, FROZEN_BROCCOLI_RFQS } from './frozenBroccoliData';
 
 
 

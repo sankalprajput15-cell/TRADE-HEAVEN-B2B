@@ -144,6 +144,7 @@ export interface CompanyProfile {
   ownerUid?: string;
   companyName: string;
   legalRegistrationNumber: string;
+  taxId?: string;
   country: string;
   city: string;
   address: string;
@@ -233,6 +234,7 @@ export interface RfqRequirement {
   buyerEmail?: string;
   buyerPhone?: string;
   buyerCountry: string;
+  buyerCity?: string;
   buyerVerified: boolean;
   isContactMasked?: boolean;
   title?: string;
