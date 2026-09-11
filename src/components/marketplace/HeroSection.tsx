@@ -438,17 +438,17 @@ export const HeroSection: React.FC<Props> = ({
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">
         <div className="max-w-3xl">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 backdrop-blur-md mb-6 shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 mb-6 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
               {t('heroBadge')}
             </span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15] mb-6 flex flex-wrap items-center gap-2.5 drop-shadow-md">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15] mb-6 flex flex-wrap items-center gap-2.5">
             <EditableText contentKey="homepage.heroHeadline" defaultText={t('heroTitle1')} />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 drop-shadow-sm">
+            <span className="text-amber-400 underline decoration-amber-500/40 underline-offset-8">
               <EditableText contentKey="homepage.heroHeadlineGradient" defaultText={t('heroTitleGradient')} />
             </span>
             <EditableText contentKey="homepage.heroHeadlineSuffix" defaultText={t('heroTitle2')} />
