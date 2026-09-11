@@ -31,22 +31,6 @@ import { BreadcrumbNavigation } from './components/common/BreadcrumbNavigation';
 import { NotFoundView } from './components/common/NotFoundView';
 import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
 
-// Views
-const ProductCatalog = React.lazy(() => import('./components/marketplace/ProductCatalog').then(m => ({ default: m.ProductCatalog })));
-const RfqComparisonView = React.lazy(() => import('./components/marketplace/RfqComparisonView').then(m => ({ default: m.RfqComparisonView })));
-const TradeNegotiationChat = React.lazy(() => import('./components/marketplace/TradeNegotiationChat').then(m => ({ default: m.TradeNegotiationChat })));
-const BuyerSupplierDashboard = React.lazy(() => import('./components/marketplace/BuyerSupplierDashboard').then(m => ({ default: m.BuyerSupplierDashboard })));
-const IncotermsCalculator = React.lazy(() => import('./components/tools/IncotermsCalculator').then(m => ({ default: m.IncotermsCalculator })));
-const PremiumServicesView = React.lazy(() => import('./components/services/PremiumServicesView').then(m => ({ default: m.PremiumServicesView })));
-const PostSellOfferView = React.lazy(() => import('./components/services/PostSellOfferView').then(m => ({ default: m.PostSellOfferView })));
-const BuyLeadsView = React.lazy(() => import('./components/services/BuyLeadsView').then(m => ({ default: m.BuyLeadsView })));
-const SuppliersDirectoryView = React.lazy(() => import('./components/services/SuppliersDirectoryView').then(m => ({ default: m.SuppliersDirectoryView })));
-const BuyersDirectoryView = React.lazy(() => import('./components/services/BuyersDirectoryView').then(m => ({ default: m.BuyersDirectoryView })));
-const RefundPolicyView = React.lazy(() => import('./components/services/RefundPolicyView').then(m => ({ default: m.RefundPolicyView })));
-const ProductListingPolicyView = React.lazy(() => import('./components/services/ProductListingPolicyView').then(m => ({ default: m.ProductListingPolicyView })));
-const PrivacyPolicyView = React.lazy(() => import('./components/services/PrivacyPolicyView').then(m => ({ default: m.PrivacyPolicyView })));
-const TermsOfUseView = React.lazy(() => import('./components/services/TermsOfUseView').then(m => ({ default: m.TermsOfUseView })));
-const ClientAdminView = React.lazy(() => import('./components/services/ClientAdminView').then(m => ({ default: m.ClientAdminView })));
 // Helper for retryable lazy loaded views
 function lazyWithRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T } | { [key: string]: T }>,
@@ -66,7 +50,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
     } catch (error) {
       console.warn('[lazyWithRetry] Retrying dynamic chunk load...', error);
       try {
-        await new Promise(res => setTimeout(res, 250));
+        await new Promise(res => setTimeout(res, 300));
         const module = await componentImport();
         if ('default' in module && module.default) {
           return { default: module.default as T };
@@ -78,12 +62,37 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
         return { default: (module as any)[firstKey] as T };
       } catch (retryErr) {
         console.error('[lazyWithRetry] Module failed to load after retry:', retryErr);
+        if (typeof window !== 'undefined') {
+          const reloadKey = 'chunk_reload_' + (namedExport || 'view');
+          const hasReloaded = sessionStorage.getItem(reloadKey);
+          if (!hasReloaded) {
+            sessionStorage.setItem(reloadKey, 'true');
+            window.location.reload();
+          }
+        }
         const FallbackView: React.FC<any> = () => null;
         return { default: FallbackView as unknown as T };
       }
     }
   });
 }
+
+// Views
+const ProductCatalog = lazyWithRetry(() => import('./components/marketplace/ProductCatalog'), 'ProductCatalog');
+const RfqComparisonView = lazyWithRetry(() => import('./components/marketplace/RfqComparisonView'), 'RfqComparisonView');
+const TradeNegotiationChat = lazyWithRetry(() => import('./components/marketplace/TradeNegotiationChat'), 'TradeNegotiationChat');
+const BuyerSupplierDashboard = lazyWithRetry(() => import('./components/marketplace/BuyerSupplierDashboard'), 'BuyerSupplierDashboard');
+const IncotermsCalculator = lazyWithRetry(() => import('./components/tools/IncotermsCalculator'), 'IncotermsCalculator');
+const PremiumServicesView = lazyWithRetry(() => import('./components/services/PremiumServicesView'), 'PremiumServicesView');
+const PostSellOfferView = lazyWithRetry(() => import('./components/services/PostSellOfferView'), 'PostSellOfferView');
+const BuyLeadsView = lazyWithRetry(() => import('./components/services/BuyLeadsView'), 'BuyLeadsView');
+const SuppliersDirectoryView = lazyWithRetry(() => import('./components/services/SuppliersDirectoryView'), 'SuppliersDirectoryView');
+const BuyersDirectoryView = lazyWithRetry(() => import('./components/services/BuyersDirectoryView'), 'BuyersDirectoryView');
+const RefundPolicyView = lazyWithRetry(() => import('./components/services/RefundPolicyView'), 'RefundPolicyView');
+const ProductListingPolicyView = lazyWithRetry(() => import('./components/services/ProductListingPolicyView'), 'ProductListingPolicyView');
+const PrivacyPolicyView = lazyWithRetry(() => import('./components/services/PrivacyPolicyView'), 'PrivacyPolicyView');
+const TermsOfUseView = lazyWithRetry(() => import('./components/services/TermsOfUseView'), 'TermsOfUseView');
+const ClientAdminView = lazyWithRetry(() => import('./components/services/ClientAdminView'), 'ClientAdminView');
 
 const PlanPricingAdminModule = lazyWithRetry(() => import('./components/admin/PlanPricingAdminModule'), 'PlanPricingAdminModule');
 const BulkEntityCrmModule = lazyWithRetry(() => import('./components/admin/BulkEntityCrmModule'), 'BulkEntityCrmModule');
