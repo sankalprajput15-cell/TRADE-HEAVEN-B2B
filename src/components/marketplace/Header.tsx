@@ -262,7 +262,7 @@ export const Header: React.FC<Props> = ({
             
             
             {/* Secondary Utility Navigation */}
-            <nav aria-label="Utility Navigation" className="hidden xl:flex items-center gap-3 mr-2 text-[11px] font-medium text-slate-300">
+            <nav aria-label="Utility Navigation" className="hidden lg:flex items-center gap-3 mr-2 text-[11px] font-medium text-slate-300">
               <button onClick={() => handleNavClick('ABOUT_US')} aria-label={getTxt('aboutUs')} className="hover:text-white transition-colors">{getTxt('aboutUs')}</button>
               <button onClick={() => handleNavClick('TRUST_SAFETY')} aria-label={getTxt('trustSafety')} className="hover:text-emerald-400 transition-colors">{getTxt('trustSafety')}</button>
               <button onClick={() => handleNavClick('INSIGHTS')} aria-label={getTxt('newsInsights')} className="hover:text-amber-400 transition-colors">{getTxt('newsInsights')}</button>
@@ -374,7 +374,7 @@ export const Header: React.FC<Props> = ({
           </div>
 
           {/* Center: Desktop Nav Links (Streamlined) */}
-          <nav aria-label="Primary Navigation" className="hidden xl:flex items-center flex-1 justify-center gap-0.5 xl:gap-1 min-w-0">
+          <nav aria-label="Primary Navigation" className="hidden lg:flex items-center flex-1 justify-center gap-0.5 xl:gap-1 min-w-0">
             <button
               onClick={() => handleNavClick('HOMEPAGE')}
               aria-label={getTxt('home')}
@@ -466,7 +466,7 @@ export const Header: React.FC<Props> = ({
 
               {servicesMenuOpen && (
                 <div 
-                  className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-2 w-[580px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-120px)] overflow-y-auto" 
+                  className="absolute right-0 lg:right-auto lg:left-1/2 lg:-translate-x-1/2 mt-2 w-[580px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-120px)] overflow-y-auto" 
                   role="menu" 
                   aria-label="Services Menu"
                 >
@@ -865,7 +865,7 @@ export const Header: React.FC<Props> = ({
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
-              className="xl:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
