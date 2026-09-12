@@ -874,7 +874,7 @@ export const Header: React.FC<Props> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="xl:hidden bg-white border-b border-slate-200 px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-150 shadow-lg">
+        <div className="lg:hidden absolute top-full left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-4 space-y-2 flex flex-col shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-80px)] overflow-y-auto">
           {/* User Status Bar */}
           <div className="p-3 bg-slate-50 rounded-xl mb-3 flex items-center justify-between">
             {currentUser ? (
