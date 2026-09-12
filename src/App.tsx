@@ -15,7 +15,8 @@ import {
 } from './types';
 import { api } from './services/apiService';
 import { apiClient } from './services/apiClient';
-import { MOCK_PRODUCTS, MOCK_RFQS } from './data/mockData';
+import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE } from './data/mockData';
+import { ALL_COUNTRY_ITEMS } from './data/countriesData';
 
 // Common Components
 import { Header } from './components/marketplace/Header';
@@ -179,6 +180,24 @@ const MainApp: React.FC = () => {
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
+
+  // Pre-fetch core static data like categories and country lists on the very first render,
+  // before the initializeData deferred hydration block runs, to reduce time-to-interactive for dynamic menus.
+  const [prefetchedCategories, setPrefetchedCategories] = useState<any[]>(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? sessionStorage.getItem('th_prefetched_categories') : null;
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return CATEGORIES_TREE || [];
+  });
+
+  const [prefetchedCountryLists, setPrefetchedCountryLists] = useState<any[]>(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? sessionStorage.getItem('th_prefetched_countries') : null;
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return ALL_COUNTRY_ITEMS || [];
+  });
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -344,6 +363,26 @@ const MainApp: React.FC = () => {
 
   // Async Initialization on Mount with Deferred Data Hydration strategy
   useEffect(() => {
+    // Pre-fetch core static data like categories and country lists immediately on the very first render,
+    // before the initializeData deferred hydration block runs, to reduce time-to-interactive for dynamic menus.
+    const preFetchStaticData = () => {
+      try {
+        const categoriesData = CATEGORIES_TREE;
+        const countryData = ALL_COUNTRY_ITEMS;
+        setPrefetchedCategories(categoriesData);
+        setPrefetchedCountryLists(countryData);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('th_prefetched_categories', JSON.stringify(categoriesData));
+          sessionStorage.setItem('th_prefetched_countries', JSON.stringify(countryData));
+          (window as any).__TRADEHEAVEN_PREFETCHED_CATEGORIES = categoriesData;
+          (window as any).__TRADEHEAVEN_PREFETCHED_COUNTRIES = countryData;
+        }
+      } catch (err) {
+        console.warn('[Static Data Pre-fetch Warning]:', err);
+      }
+    };
+    preFetchStaticData();
+
     // Defer the hydration process to allow initial UI mounting instantly and smoothly
     const deferTimer = setTimeout(() => {
       initializeData();
