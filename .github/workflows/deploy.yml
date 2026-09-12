@@ -28,8 +28,6 @@ jobs:
         run: |
           cp api.php dist/ 2>/dev/null || true
           cp .htaccess dist/ 2>/dev/null || true
-          # Remove server bundle from static Apache/PHP hosting upload to save space & quota
-          rm -f dist/server.cjs dist/server.cjs.map
 
       - name: Sanitize FTP Server Host
         run: |
@@ -55,5 +53,3 @@ jobs:
             **/node_modules/**
             site_content.json
             error_log
-            server.cjs
-            server.cjs.map
