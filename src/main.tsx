@@ -11,6 +11,7 @@ localStorage.removeItem('th_rfqs_store');
 localStorage.removeItem('th_quotes_store');
 localStorage.removeItem('th_registered_users_store');
 localStorage.removeItem('th_companies');
+localStorage.removeItem('cached_products');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

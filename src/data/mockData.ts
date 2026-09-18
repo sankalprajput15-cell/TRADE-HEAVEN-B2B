@@ -72,6 +72,7 @@ import { GLOBAL_GERMANIUM_COMPANIES, GLOBAL_GERMANIUM_BUYER_PROFILES, GLOBAL_GER
 import { FROZEN_BROCCOLI_COMPANIES, FROZEN_BROCCOLI_BUYERS, FROZEN_BROCCOLI_PRODUCTS, FROZEN_BROCCOLI_RFQS } from "./frozenBroccoliData";
 import { GLOBAL_RICE_COMPANIES, GLOBAL_RICE_BUYERS, GLOBAL_RICE_PRODUCTS, GLOBAL_RICE_RFQS } from "./riceData";
 import { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from "./procurementRfqsData";
+import { GLOBAL_BAMBOO_STICKS_COMPANIES, GLOBAL_BAMBOO_STICKS_BUYER_PROFILES, GLOBAL_BAMBOO_STICKS_PRODUCTS, GLOBAL_BAMBOO_STICKS_RFQS } from "./bambooSticksData";
 
 import { 
   CompanyProfile, 
@@ -164,6 +165,25 @@ export const CURRENCY_RATES: CurrencyRate[] = [
 ];
 
 export const CATEGORIES_TREE = [
+  {
+    id: 'cat-bamboo-wood-products',
+    name: 'Bamboo & Wood Products',
+    icon: 'Trees',
+    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop&q=80&sig=99',
+    subcategories: [
+      'Bamboo Sticks & Skewers',
+      'Incense Raw Materials',
+      'Hospitality Tableware',
+      'Natural Bamboo Skewers',
+      'Teppo Skewers',
+      'Raw Bamboo-Core Incense Sticks',
+      'Disposable Bamboo Bowls',
+      'Chopsticks & Toothpicks',
+      'Wooden Ice Cream Sticks',
+      'Bamboo Poles & Fencing'
+    ],
+    count: '1,450+ Verified Suppliers | 890+ RFQs'
+  },
   {
     id: 'cat-hotel-supplies',
     name: 'Hotel Supplies',
@@ -747,6 +767,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ...GLOBAL_HOTEL_SUPPLIES_COMPANIES,
   ...GLOBAL_TIRES_COMPANIES,
   ...GLOBAL_GERMANIUM_COMPANIES,
+  ...GLOBAL_BAMBOO_STICKS_COMPANIES,
   {
   "id": "comp-ext2026-0",
   "ownerUid": "user-ext-supplier-0",
@@ -4241,6 +4262,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   ...GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES,
   ...GLOBAL_TIRES_BUYER_PROFILES,
   ...GLOBAL_GERMANIUM_BUYER_PROFILES,
+  ...GLOBAL_BAMBOO_STICKS_BUYER_PROFILES,
   {
   "id": "buyer-ext2026-0",
   "companyName": "UKKL Company Limited",
@@ -7045,6 +7067,7 @@ export const MOCK_PRODUCTS: Product[] = [
   ...GLOBAL_HOTEL_SUPPLIES_PRODUCTS,
   ...GLOBAL_TIRES_PRODUCTS,
   ...GLOBAL_GERMANIUM_PRODUCTS,
+  ...GLOBAL_BAMBOO_STICKS_PRODUCTS,
   {
   "id": "prod-ext2026-0-0",
   "title": "Sunflower oil (Bulk Wholesale)",
@@ -11694,6 +11717,7 @@ const RAW_UNORDERED_RFQS: RfqRequirement[] = [
   ...GLOBAL_HOTEL_SUPPLIES_RFQS,
   ...GLOBAL_TIRES_RFQS,
   ...GLOBAL_GERMANIUM_RFQS,
+  ...GLOBAL_BAMBOO_STICKS_RFQS,
   ...GLOBAL_SPECIALTY_PROCUREMENT_RFQS,
   ...MAPPED_CATALOG_DERIVED_RFQS,
   ...BASE_MOCK_RFQS,
@@ -12299,6 +12323,7 @@ export { GLOBAL_US_ENTERPRISES_COMPANIES, GLOBAL_US_ENTERPRISES_PRODUCTS, GLOBAL
 export { GLOBAL_HOTEL_SUPPLIES_COMPANIES, GLOBAL_HOTEL_SUPPLIES_PRODUCTS, GLOBAL_HOTEL_SUPPLIES_BUYER_PROFILES, GLOBAL_HOTEL_SUPPLIES_RFQS } from './hotelSuppliesData';
 export { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from './procurementRfqsData';
 export { FROZEN_BROCCOLI_COMPANIES, FROZEN_BROCCOLI_BUYERS, FROZEN_BROCCOLI_PRODUCTS, FROZEN_BROCCOLI_RFQS } from './frozenBroccoliData';
+export { GLOBAL_BAMBOO_STICKS_COMPANIES, GLOBAL_BAMBOO_STICKS_BUYER_PROFILES, GLOBAL_BAMBOO_STICKS_PRODUCTS, GLOBAL_BAMBOO_STICKS_RFQS } from './bambooSticksData';
 
 
 
