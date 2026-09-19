@@ -872,63 +872,68 @@ export const Header: React.FC<Props> = ({
           </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer Menu & Backdrop */}
       {mobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-4 space-y-2 flex flex-col shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-80px)] overflow-y-auto">
-          {/* User Status Bar */}
-          <div className="p-3 bg-slate-50 rounded-xl mb-3 flex items-center justify-between">
-            {currentUser ? (
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full overflow-hidden bg-slate-200">
-                  <SafeImage src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-slate-900">{currentUser.name}</div>
-                  <div className={`inline-block mt-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border tracking-wider ${roleStyles[currentUser.role]?.badge || 'bg-amber-950/90 text-amber-300 border-amber-500/90'}`}>
-                    [{currentUser.role}]
+        <>
+          <div 
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-40 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="lg:hidden fixed top-[110px] sm:top-[124px] left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-4 space-y-3 flex flex-col shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-130px)] overflow-y-auto">
+            {/* User Status Bar */}
+            <div className="p-3 bg-slate-50 rounded-xl mb-3 flex items-center justify-between gap-2 overflow-hidden border border-slate-200/80">
+              {currentUser ? (
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0 border border-slate-300">
+                    <SafeImage src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</div>
+                    <div className={`inline-block mt-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border tracking-wider ${roleStyles[currentUser.role]?.badge || 'bg-amber-950/90 text-amber-300 border-amber-500/90'}`}>
+                      [{currentUser.role}]
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-xs text-slate-600">Not signed in</div>
-            )}
-            {currentUser ? (
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setMobileMenuOpen(false);
-                }}
-                aria-label={getTxt('signOut')}
-                className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
-              >
-                Sign Out
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
+              ) : (
+                <div className="text-xs text-slate-600 font-medium">Not signed in</div>
+              )}
+              {currentUser ? (
                 <button
                   onClick={() => {
-                    onOpenAuthModal();
+                    handleLogout();
                     setMobileMenuOpen(false);
                   }}
-                  aria-label={getTxt('signIn')}
-                  className="text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
+                  aria-label={getTxt('signOut')}
+                  className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 shrink-0 transition-all cursor-pointer"
                 >
-                  Sign In
+                  Sign Out
                 </button>
-                <button
-                  onClick={() => {
-                    if (onOpenRegisterFree) onOpenRegisterFree();
-                    else onOpenAuthModal();
-                    setMobileMenuOpen(false);
-                  }}
-                  aria-label={getTxt('registerFree')}
-                  className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 cursor-pointer"
-                >
-                  Register Free
-                </button>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      onOpenAuthModal();
+                      setMobileMenuOpen(false);
+                    }}
+                    aria-label={getTxt('signIn')}
+                    className="text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer px-2 py-1"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onOpenRegisterFree) onOpenRegisterFree();
+                      else onOpenAuthModal();
+                      setMobileMenuOpen(false);
+                    }}
+                    aria-label={getTxt('registerFree')}
+                    className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 cursor-pointer shadow-2xs"
+                  >
+                    Register Free
+                  </button>
+                </div>
+              )}
+            </div>
 
           <nav aria-label="Mobile Navigation" className="space-y-2">
             {currentUser && (
@@ -1175,6 +1180,7 @@ export const Header: React.FC<Props> = ({
             </button>
           </nav>
         </div>
+        </>
       )}
     </header>
   );

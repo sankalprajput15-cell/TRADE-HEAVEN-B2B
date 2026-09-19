@@ -80,7 +80,7 @@ export const GLOBAL_BAMBOO_STICKS_BUYERS: BuyerProfile[] = [
     city: "Sydney",
     address: "100 Harbour Street, Sydney, NSW, Australia",
     establishedYear: 2012,
-    businessType: "Wholesaler / Distributor",
+    businessType: "Wholesale Distributor",
     tier: "VIP",
     isVerifiedKYC: true,
     kycVerificationDate: "2025-01-25",
