@@ -293,6 +293,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
       const cat = (p.category || '').toLowerCase();
       const sub = (p.subCategory || '').toLowerCase();
       const sup = (p.supplierName || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const specsStr = p.specifications 
+        ? (typeof p.specifications === 'object' 
+            ? Object.entries(p.specifications).map(([k, v]) => `${k} ${v}`).join(' ').toLowerCase() 
+            : String(p.specifications).toLowerCase())
+        : '';
 
       let score = 0;
       if (title === normalizedQuery) score += 100;
@@ -304,6 +310,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
 
       if (cat.includes(normalizedQuery)) score += 20;
       if (sup.includes(normalizedQuery)) score += 15;
+      if (desc.includes(normalizedQuery)) score += 25;
+      if (specsStr.includes(normalizedQuery)) score += 20;
 
       if (score > 0) {
         scored.push({ product: p, score });
@@ -376,14 +384,18 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   };
 
   const handleSelectProduct = (product: Product) => {
-    saveRecentSearch(product.title);
+    if (!product || !product.id) {
+      console.warn('Navigation aborted: invalid product selected', product);
+      return;
+    }
+    saveRecentSearch(product.title || '');
     setIsOpen(false);
     if (onSelectProduct) {
       onSelectProduct(product);
     } else {
       onNavigate('PRODUCT_DIRECTORY', { 
         productId: product.id, 
-        search: product.title 
+        search: product.title || '' 
       });
     }
   };

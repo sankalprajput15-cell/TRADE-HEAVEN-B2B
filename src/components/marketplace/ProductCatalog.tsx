@@ -33,6 +33,10 @@ interface Props {
   initialCategory?: string;
   initialSearch?: string;
   isLoading?: boolean;
+  selectedSupplierTiers?: string[];
+  onSupplierTiersChange?: (tiers: string[]) => void;
+  selectedCountries?: string[];
+  onCountriesChange?: (countries: string[]) => void;
 }
 
 export const ProductCatalog: React.FC<Props> = ({
@@ -45,12 +49,25 @@ export const ProductCatalog: React.FC<Props> = ({
   onCategoryChange,
   initialCategory,
   initialSearch,
-  isLoading = false
+  isLoading = false,
+  selectedSupplierTiers: propSupplierTiers,
+  onSupplierTiersChange,
+  selectedCountries: propCountries,
+  onCountriesChange
 }) => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [internalCategory, setInternalCategory] = useState<string>(initialCategory || propCategory || 'ALL');
-  const [selectedTier, setSelectedTier] = useState<string>('ALL');
+  
+  const [internalSupplierTiers, setInternalSupplierTiers] = useState<string[]>([]);
+  const [internalCountries, setInternalCountries] = useState<string[]>([]);
+
+  const activeSupplierTiers = propSupplierTiers !== undefined ? propSupplierTiers : internalSupplierTiers;
+  const setActiveSupplierTiers = onSupplierTiersChange || setInternalSupplierTiers;
+
+  const activeCountries = propCountries !== undefined ? propCountries : internalCountries;
+  const setActiveCountries = onCountriesChange || setInternalCountries;
+
   const [selectedIncoterm, setSelectedIncoterm] = useState<string>('ALL');
   const [maxMoq, setMaxMoq] = useState<number>(50000);
   const [viewMode, setViewMode] = useState<'GRID' | 'LIST'>('GRID');
@@ -188,7 +205,8 @@ export const ProductCatalog: React.FC<Props> = ({
       p.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
       activeCategory.toLowerCase().includes(p.category.toLowerCase());
       
-    const matchesTier = selectedTier === 'ALL' || p.supplierTier === selectedTier;
+    const matchesTier = activeSupplierTiers.length === 0 || activeSupplierTiers.includes('ALL') || activeSupplierTiers.includes(p.supplierTier);
+    const matchesCountry = activeCountries.length === 0 || activeCountries.includes('ALL') || activeCountries.some(c => (p.supplierCountry || '').toLowerCase().includes(c.toLowerCase()));
     const matchesIncoterm = selectedIncoterm === 'ALL' || p.supportedIncoterms.includes(selectedIncoterm as Incoterm);
     const matchesMoq = maxMoq >= 50000 || p.moq <= maxMoq;
 
@@ -196,8 +214,12 @@ export const ProductCatalog: React.FC<Props> = ({
       (ownershipFilter === 'MINE' && user && (p.ownerEmail === user.email || p.ownerId === user.id)) ||
       (ownershipFilter === 'OTHERS' && (!user || (p.ownerEmail !== user.email && p.ownerId !== user.id)));
 
-    return matchesSearch && matchesCat && matchesTier && matchesIncoterm && matchesMoq && matchesOwnership;
+    return matchesSearch && matchesCat && matchesTier && matchesCountry && matchesIncoterm && matchesMoq && matchesOwnership;
   });
+
+  React.useEffect(() => {
+    console.log('[ProductCatalog Investigation] Search term:', searchTerm, '| Total products:', cachedProducts.length, '| Filtered results:', filtered.length);
+  }, [searchTerm, cachedProducts.length, filtered.length]);
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(12); // 3x4 / 4x3 product grid (12 items per page default)
@@ -205,7 +227,7 @@ export const ProductCatalog: React.FC<Props> = ({
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeCategory, selectedTier, selectedIncoterm, maxMoq, ownershipFilter]);
+  }, [searchTerm, activeCategory, activeSupplierTiers, activeCountries, selectedIncoterm, maxMoq, ownershipFilter]);
 
   // Paginated subset
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -289,9 +311,10 @@ export const ProductCatalog: React.FC<Props> = ({
             <button
               onClick={() => {
                 handleCategorySelect('ALL');
-                setSelectedTier('ALL');
+                setActiveSupplierTiers([]);
+                setActiveCountries([]);
                 setSelectedIncoterm('ALL');
-                setMaxMoq(5000);
+                setMaxMoq(50000);
                 setSearchTerm('');
                 setOwnershipFilter('ALL');
               }}
@@ -374,22 +397,57 @@ export const ProductCatalog: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Supplier Membership Tier */}
+          {/* Supplier Membership Tier (Multi-select) */}
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Supplier Verification Tier</label>
             <div className="space-y-1 text-xs">
-              {['ALL', 'VIP', 'GOLD', 'SILVER'].map(tier => (
-                <label key={tier} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                  <input
-                    type="radio"
-                    name="tier"
-                    checked={selectedTier === tier}
-                    onChange={() => setSelectedTier(tier)}
-                    className="accent-blue-600"
-                  />
-                  <span>{tier === 'ALL' ? 'All Suppliers' : `${tier} Verified`}</span>
-                </label>
-              ))}
+              {['VIP', 'GOLD', 'SILVER'].map(tier => {
+                const isChecked = activeSupplierTiers.includes(tier);
+                return (
+                  <label key={tier} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        if (isChecked) {
+                          setActiveSupplierTiers(activeSupplierTiers.filter(t => t !== tier));
+                        } else {
+                          setActiveSupplierTiers([...activeSupplierTiers, tier]);
+                        }
+                      }}
+                      className="accent-blue-600 rounded"
+                    />
+                    <span>{tier} Verified</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Country of Origin (Multi-select) */}
+          <div>
+            <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Country of Origin</label>
+            <div className="space-y-1 text-xs max-h-40 overflow-y-auto pr-1">
+              {['China', 'United States', 'Saudi Arabia', 'UAE', 'Singapore', 'Germany', 'Poland', 'South Korea', 'India', 'Vietnam'].map(country => {
+                const isChecked = activeCountries.includes(country);
+                return (
+                  <label key={country} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        if (isChecked) {
+                          setActiveCountries(activeCountries.filter(c => c !== country));
+                        } else {
+                          setActiveCountries([...activeCountries, country]);
+                        }
+                      }}
+                      className="accent-blue-600 rounded"
+                    />
+                    <span>{country}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -445,7 +503,7 @@ export const ProductCatalog: React.FC<Props> = ({
         {/* Product Results Grid/List */}
         <div className="lg:col-span-3 space-y-4 min-w-0 w-full">
           {/* Active Filter Chips */}
-          {(activeCategory !== 'ALL' || searchTerm.trim() !== '' || selectedTier !== 'ALL' || selectedIncoterm !== 'ALL') && (
+          {(activeCategory !== 'ALL' || searchTerm.trim() !== '' || activeSupplierTiers.length > 0 || activeCountries.length > 0 || selectedIncoterm !== 'ALL') && (
             <div className="flex flex-wrap items-center gap-2 bg-blue-50/70 border border-blue-200/80 rounded-xl p-2.5 sm:p-3 text-xs">
               <span className="text-slate-600 font-bold text-[11px] flex items-center gap-1">
                 <Filter className="w-3.5 h-3.5 text-blue-600" /> Active Filters:
@@ -474,18 +532,30 @@ export const ProductCatalog: React.FC<Props> = ({
                   </button>
                 </span>
               )}
-              {selectedTier !== 'ALL' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs">
-                  <span>Tier: {selectedTier}</span>
+              {activeSupplierTiers.map(tier => (
+                <span key={tier} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs">
+                  <span>Tier: {tier}</span>
                   <button
                     type="button"
-                    onClick={() => setSelectedTier('ALL')}
+                    onClick={() => setActiveSupplierTiers(activeSupplierTiers.filter(t => t !== tier))}
                     className="hover:text-amber-700 font-black cursor-pointer"
                   >
                     ×
                   </button>
                 </span>
-              )}
+              ))}
+              {activeCountries.map(country => (
+                <span key={country} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs">
+                  <span>Country: {country}</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveCountries(activeCountries.filter(c => c !== country))}
+                    className="hover:text-emerald-700 font-black cursor-pointer"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
               {selectedIncoterm !== 'ALL' && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-800 font-bold text-xs">
                   <span>Incoterm: {selectedIncoterm}</span>
@@ -503,7 +573,8 @@ export const ProductCatalog: React.FC<Props> = ({
                 onClick={() => {
                   handleCategorySelect('ALL');
                   setSearchTerm('');
-                  setSelectedTier('ALL');
+                  setActiveSupplierTiers([]);
+                  setActiveCountries([]);
                   setSelectedIncoterm('ALL');
                 }}
                 className="ml-auto text-[11px] text-blue-700 hover:text-blue-900 font-bold underline cursor-pointer"
@@ -550,7 +621,8 @@ export const ProductCatalog: React.FC<Props> = ({
                 <button 
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedTier('ALL');
+                    setActiveSupplierTiers([]);
+                    setActiveCountries([]);
                     setSelectedIncoterm('ALL');
                     setOwnershipFilter('ALL');
                     setMaxMoq(50000);

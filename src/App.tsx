@@ -1,5 +1,5 @@
 import { NotificationProvider } from "./context/NotificationContext";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
@@ -207,6 +207,23 @@ const MainApp: React.FC = () => {
   const [isCreateRfqOpen, setIsCreateRfqOpen] = useState(false);
   const [catalogCategory, setCatalogCategory] = useState<string>('ALL');
   const [catalogSearch, setCatalogSearch] = useState<string>('');
+  const [selectedSupplierTiers, setSelectedSupplierTiers] = useState<string[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const handleDebouncedSearch = useCallback((query: string, immediate = false) => {
+    if (searchTimer) clearTimeout(searchTimer);
+    if (immediate) {
+      setCatalogSearch(query);
+      console.log('[Debounced Search] Immediate catalogSearch update:', query);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCatalogSearch(query);
+      console.log('[Debounced Search] Debounced catalogSearch applied after delay:', query);
+    }, 350);
+    setSearchTimer(timer);
+  }, [searchTimer]);
 
   // Listen for browser back/forward buttons
   useEffect(() => {
@@ -922,7 +939,7 @@ const MainApp: React.FC = () => {
       setCatalogCategory(options.category);
     }
     if (options?.search !== undefined) {
-      setCatalogSearch(options.search);
+      handleDebouncedSearch(options.search, false);
     }
     if (options?.productId) {
       const prod = products.find(p => p.id === options.productId);
@@ -1130,8 +1147,9 @@ const MainApp: React.FC = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onNavigateToSearch={(query) => {
+          console.log('[Search Investigation] handleNavigateToSearch (onNavigateToSearch) triggered with query:', query);
           setCatalogCategory('ALL');
-          setCatalogSearch(query);
+          handleDebouncedSearch(query, true);
           setSelectedProduct(null);
           setActiveView('PRODUCT_DIRECTORY');
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1221,7 +1239,7 @@ const MainApp: React.FC = () => {
                 return <InsightsBlog onNavigate={handleNavigate} currentUser={currentUser} onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
               case 'PRODUCT_DIRECTORY':
                 return (
-                  <div id="product-catalog-section" className="space-y-6">
+                  <div id="product-directory-wrapper" className="space-y-6">
                     <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
                       <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
                         Global Product Catalog &amp; Wholesale Directory
@@ -1241,6 +1259,10 @@ const MainApp: React.FC = () => {
                       onCategoryChange={setCatalogCategory}
                       initialSearch={catalogSearch}
                       isLoading={isLoadingInitialData}
+                      selectedSupplierTiers={selectedSupplierTiers}
+                      onSupplierTiersChange={setSelectedSupplierTiers}
+                      selectedCountries={selectedCountries}
+                      onCountriesChange={setSelectedCountries}
                     />
                   </div>
                 );
