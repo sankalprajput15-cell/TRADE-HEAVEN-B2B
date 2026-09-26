@@ -85,12 +85,20 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
 
   return (
     <div
-      className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between group shadow-2xs min-w-0 w-full"
+      onClick={() => {
+        console.log('[PRODUCT_CARD_CONTAINER_CLICK] Clicked product ID:', product.id);
+      }}
+      className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between group shadow-2xs min-w-0 w-full cursor-pointer"
     >
       <div className="min-w-0">
         {/* Image Thumbnail */}
         <div 
-          onClick={() => onSelectProduct(product)}
+          onClick={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('product', product.id);
+            window.history.pushState({}, '', url);
+            onSelectProduct(product);
+          }}
           className="relative h-40 sm:h-44 md:h-48 w-full bg-slate-100 overflow-hidden cursor-pointer"
         >
           {(() => {
@@ -122,7 +130,12 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
         {/* Content Body */}
         <div className="p-3 sm:p-4 space-y-2.5 min-w-0">
           <div 
-            onClick={() => onSelectProduct(product)}
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('product', product.id);
+              window.history.pushState({}, '', url);
+              onSelectProduct(product);
+            }}
             className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 cursor-pointer leading-snug"
           >
             {product.title}
@@ -246,16 +259,19 @@ export const ProductCatalogGrid: React.FC<Props> = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
-      {products.map(product => (
-        <ProductCardItem
-          key={product.id}
-          product={product}
-          onSelectProduct={onSelectProduct}
-          onOpenStorefront={onOpenStorefront}
-          onContactSupplier={onContactSupplier}
-          getTierBadge={getTierBadge}
-        />
-      ))}
+      {products.map(product => {
+        console.log(product.id, product.images?.[0]);
+        return (
+          <ProductCardItem
+            key={product.id}
+            product={product}
+            onSelectProduct={onSelectProduct}
+            onOpenStorefront={onOpenStorefront}
+            onContactSupplier={onContactSupplier}
+            getTierBadge={getTierBadge}
+          />
+        );
+      })}
     </div>
   );
 };
