@@ -267,7 +267,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     return list.length > 0 ? list : FALLBACK_SEEDS;
   }, [src, fallbackSrc, alt, category, productId, isLogoOrAvatar]);
 
-  const currentCandidate = candidates[attemptIndex] || FALLBACK_SEEDS[0];
+  const currentCandidate = useMemo(() => {
+    const raw = candidates[attemptIndex] || FALLBACK_SEEDS[0];
+    if (!raw) return raw;
+    const sep = raw.includes('?') ? '&' : '?';
+    return `${raw}${sep}v=1`;
+  }, [candidates, attemptIndex]);
 
   useEffect(() => {
     setAttemptIndex(0);

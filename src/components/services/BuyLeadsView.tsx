@@ -498,12 +498,18 @@ export const BuyLeadsView: React.FC<Props> = ({
                     <div className="flex items-center gap-3 h-13">
                       <div className="w-12 h-12 rounded-lg border border-slate-200 shrink-0 bg-slate-100 shadow-2xs flex items-center justify-center overflow-hidden">
                         {(rfq.image || rfq.images?.[0]) ? (
-                          <img
-                            src={rfq.image || rfq.images?.[0]}
-                            alt={rfq.productName}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover"
-                          />
+                          (() => {
+                            const rawImg = rfq.image || rfq.images?.[0];
+                            const cbImg = rawImg ? `${rawImg}${rawImg.includes('?') ? '&' : '?'}v=1` : '';
+                            return (
+                              <img
+                                src={cbImg}
+                                alt={rfq.productName}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                            );
+                          })()
                         ) : (
                           <Package className="w-6 h-6 text-slate-400" />
                         )}

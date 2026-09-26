@@ -795,9 +795,9 @@ export const api = {
           description: l.description || l.title
         }));
 
-        const existingIds = new Set(baseProducts.map(p => p.id));
-        const newDb = convertedListings.filter(p => !existingIds.has(p.id));
-        baseProducts = [...newDb, ...baseProducts];
+        const mockProdIds = new Set(MOCK_PRODUCTS.map(p => p.id));
+        const newDb = convertedListings.filter(p => !mockProdIds.has(p.id));
+        baseProducts = [...MOCK_PRODUCTS, ...newDb];
       }
     } catch (e) {
       console.warn('[BigRock listings fetch]:', e);
