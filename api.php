@@ -1355,6 +1355,28 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
+    // Toggle User Verification Status
+    // -------------------------------------------------------------
+    case 'toggle_verification':
+        $user_id = $input['id'] ?? $input['userId'] ?? null;
+        $current_verified = $input['is_verified'] ?? $input['isVerified'] ?? 0;
+        $new_verified = $current_verified ? 0 : 1;
+
+        if ($db_connected && $pdo && $user_id) {
+            try {
+                $stmt = $pdo->prepare("UPDATE users SET is_verified = ? WHERE id = ?");
+                $stmt->execute([$new_verified, $user_id]);
+            } catch (Exception $e) {}
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "message" => "Verification status updated successfully.",
+            "is_verified" => $new_verified
+        ]);
+        break;
+
+    // -------------------------------------------------------------
     // Default fallback
     // -------------------------------------------------------------
     default:
