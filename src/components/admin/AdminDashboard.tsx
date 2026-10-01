@@ -13,6 +13,7 @@ import {
 } from '../../data/countriesData';
 import { ActivityLogAdminModule } from './ActivityLogAdminModule';
 import { DatabaseDiagnosticTool } from '../tools/DatabaseDiagnosticTool';
+import { RegisteredSuppliersAdmin } from './RegisteredSuppliersAdmin';
 import { 
   Layout, 
   Database, 
@@ -32,11 +33,12 @@ import {
   CheckCircle2,
   FileText,
   Activity,
-  Terminal
+  Terminal,
+  Building2
 } from 'lucide-react';
 
 interface AdminDashboardProps {
-  initialTab?: 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS';
+  initialTab?: 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS';
   currentUser: AuthUser | null;
   onNavigate: (view: any) => void;
   selectedCurrency: Currency;
@@ -52,7 +54,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenPaymentCheckout,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS'>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Sync tab if initialTab prop changes
@@ -267,6 +269,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
     { id: 'DIAGNOSTICS', label: '🔬 Registration Diagnostics', icon: Terminal },
+    { id: 'REGISTERED_SUPPLIERS', label: '🏭 Registered Suppliers', icon: Building2 },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
@@ -408,6 +411,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'DIAGNOSTICS' && (
           <div className="space-y-4">
             <DatabaseDiagnosticTool />
+          </div>
+        )}
+
+        {activeTab === 'REGISTERED_SUPPLIERS' && (
+          <div className="space-y-4">
+            <RegisteredSuppliersAdmin />
           </div>
         )}
 
