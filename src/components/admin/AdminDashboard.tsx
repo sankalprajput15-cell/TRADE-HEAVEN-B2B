@@ -12,6 +12,7 @@ import {
   loadCountriesFromStorage
 } from '../../data/countriesData';
 import { ActivityLogAdminModule } from './ActivityLogAdminModule';
+import { DatabaseDiagnosticTool } from '../tools/DatabaseDiagnosticTool';
 import { 
   Layout, 
   Database, 
@@ -30,11 +31,12 @@ import {
   Info,
   CheckCircle2,
   FileText,
-  Activity
+  Activity,
+  Terminal
 } from 'lucide-react';
 
 interface AdminDashboardProps {
-  initialTab?: 'CMS' | 'DATABASE' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS';
+  initialTab?: 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS';
   currentUser: AuthUser | null;
   onNavigate: (view: any) => void;
   selectedCurrency: Currency;
@@ -50,7 +52,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenPaymentCheckout,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS'>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Sync tab if initialTab prop changes
@@ -264,6 +266,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const navigationItems = [
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
+    { id: 'DIAGNOSTICS', label: '🔬 Registration Diagnostics', icon: Terminal },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
@@ -399,6 +402,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               currentUser={currentUser}
               onUpdateCurrentUser={onUpdateCurrentUser}
             />
+          </div>
+        )}
+
+        {activeTab === 'DIAGNOSTICS' && (
+          <div className="space-y-4">
+            <DatabaseDiagnosticTool />
           </div>
         )}
 
