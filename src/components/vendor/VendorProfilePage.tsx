@@ -1028,3 +1028,5 @@ export const VendorProfilePage: React.FC<Props> = ({
     </div>
   );
 };
+
+export default VendorProfilePage;

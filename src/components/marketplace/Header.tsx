@@ -1,52 +1,22 @@
-import { LanguageRegionSelector } from './LanguageRegionSelector';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Currency, UserRole, ActiveView, AuthUser, Product } from '../../types';
-import { CURRENCY_RATES } from '../../data/mockData';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { GlobalSearch } from '../common/GlobalSearch';
 import { NotificationBell } from './NotificationBell';
 import { SafeImage } from '../common/SafeImage';
-import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
-import { useSiteContent } from '../../context/SiteContentContext';
-import { useLanguage } from '../../context/LanguageContext';
 import { 
-  Globe2, 
-  ShieldCheck, 
-  MessageSquare, 
-  LayoutDashboard, 
+  ShoppingBag, 
+  Building2, 
   FileText, 
   Calculator, 
   PlusCircle, 
-  Search, 
-  ShoppingBag, 
-  Building2, 
-  Lock, 
-  Workflow, 
-  Menu, 
-  X, 
-  PackagePlus, 
-  Factory, 
-  ChevronDown, 
-  Crown, 
-  Landmark, 
-  Database,
-  FileSpreadsheet,
-  LogIn,
-  LogOut,
-  UserCheck,
-  User,
-  UserPlus,
-  ShieldAlert,
-  Ban,
-  Sliders,
-  SlidersHorizontal,
-  ExternalLink,
-  MessageCircle,
-  PhoneCall,
-  Mail,
-  BadgeCheck,
-  Layers,
-  Zap
+  LogIn, 
+  UserPlus, 
+  User, 
+  LayoutDashboard, 
+  ShieldCheck, 
+  LogOut, 
+  ChevronDown 
 } from 'lucide-react';
 
 interface Props {
@@ -84,726 +54,108 @@ export const Header: React.FC<Props> = ({
   currentUser,
   currentUserRole = currentUser?.role || 'BUYER',
   setCurrentUserRole,
-  onOpenCreateRfq = () => {},
+  onOpenCreateRfq,
   onOpenBackendManager,
   onOpenDbModal,
   onOpenAuthModal,
   onOpenRegisterFree,
   onOpenOnboardModal,
   onOpenContactModal,
-  onLogout = () => {},
-  unreadMessagesCount = 2,
-  products,
+  onLogout,
+  unreadMessagesCount = 0,
+  products = [],
   onSelectProduct,
   onNavigateToCategory,
   onNavigateToSearch
 }) => {
-  const { setCurrentUser, isUserAuthorized } = useSiteContent();
-  const { languageCode } = useLanguage();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const auth = isUserAuthorized(currentUser);
-  const isAdmin = auth.isAuthorized;
-
-  const navDict = {
-    home: { en: 'Home', zh: '首页', es: 'Inicio', ar: 'الرئيسية', de: 'Startseite', fr: 'Accueil', pt: 'Início', ru: 'Главная', ja: 'ホーム', hi: 'होम', tr: 'Ana Sayfa', vi: 'Trang chủ' },
-    aboutUs: { en: 'About Us', zh: '关于我们', es: 'Sobre Nosotros', ar: 'معلومات عنا', de: 'Über uns', fr: 'À propos', pt: 'Sobre Nós', ru: 'О нас', ja: '会社概要', hi: 'हमारे बारे में', tr: 'Hakkımızda', vi: 'Về chúng tôi' },
-    trustSafety: { en: 'Trust & Safety', zh: '安全信保', es: 'Seguridad', ar: 'الأمان والثقة', de: 'Sicherheit', fr: 'Sécurité', pt: 'Segurança', ru: 'Безопасность', ja: '信頼と安全', hi: 'सुरक्षा और विश्वास', tr: 'Güvenlik', vi: 'An toàn & Tin cậy' },
-    newsInsights: { en: 'News & Insights', zh: '行业资讯', es: 'Noticias', ar: 'الأخبار', de: 'Nachrichten', fr: 'Actualités', pt: 'Notícias', ru: 'Новости', ja: 'ニュース', hi: 'समाचार', tr: 'Haberler', vi: 'Tin tức' },
-    premiumServices: { en: 'Premium Services', zh: '尊享服务', es: 'Servicios Premium', ar: 'خدمات متميزة', de: 'Premium-Dienste', fr: 'Services Premium', pt: 'Serviços Premium', ru: 'Премиум', ja: 'プレミアム', hi: 'प्रीमियम सेवाएं', tr: 'Premium Hizmetler', vi: 'Dịch vụ cao cấp' },
-    buyLeads: { en: 'Buy Leads', zh: '采购需求', es: 'Demandas de Compra', ar: 'طلبات الشراء', de: 'Kaufanfragen', fr: 'Demandes d\'achat', pt: 'Demandas de Compra', ru: 'Запросы покупателей', ja: '購買リード', hi: 'बाय लीड्स', tr: 'Alım Talepleri', vi: 'Yêu cầu mua hàng' },
-    buyers: { en: 'Buyers', zh: '采购买家', es: 'Compradores', ar: 'المشترون', de: 'Käufer', fr: 'Acheteurs', pt: 'Compradores', ru: 'Покупатели', ja: 'バイヤー', hi: 'खरीदार', tr: 'Alıcılar', vi: 'Người mua' },
-    suppliers: { en: 'Suppliers', zh: '认证供应商', es: 'Proveedores', ar: 'الموردون', de: 'Lieferanten', fr: 'Fournisseurs', pt: 'Fornecedores', ru: 'Поставщики', ja: 'サプライヤー', hi: 'आपूर्तिकर्ता', tr: 'Tedarikçiler', vi: 'Nhà cung cấp' },
-    menu: { en: 'Menu', zh: '全站菜单', es: 'Menú', ar: 'القائمة', de: 'Menü', fr: 'Menu', pt: 'Menu', ru: 'Меню', ja: 'メニュー', hi: 'मेन्यू', tr: 'Menü', vi: 'Menu' },
-    postBuyRfq: { en: 'Post Buy RFQ', zh: '发布采购需求', es: 'Publicar RFQ', ar: 'نشر طلب RFQ', de: 'RFQ erstellen', fr: 'Publier RFQ', pt: 'Publicar RFQ', ru: 'Разместить RFQ', ja: '調達案件投稿', hi: 'खरीद मांग दर्ज करें', tr: 'RFQ Oluştur', vi: 'Đăng RFQ' },
-    signIn: { en: 'Sign In', zh: '登录', es: 'Iniciar Sesión', ar: 'تسجيل الدخول', de: 'Anmelden', fr: 'Connexion', pt: 'Entrar', ru: 'Войти', ja: 'ログイン', hi: 'साइन इन', tr: 'Giriş Yap', vi: 'Đăng nhập' },
-    registerFree: { en: 'Register Free', zh: '免费注册', es: 'Registro Gratis', ar: 'تسجيل مجاني', de: 'Kostenlos registrieren', fr: 'Inscription Gratuite', pt: 'Cadastre-se', ru: 'Регистрация', ja: '無料会員登録', hi: 'मुफ़्त पंजीकरण', tr: 'Ücretsiz Kayıt', vi: 'Đăng ký miễn phí' },
-    signOut: { en: 'Sign Out', zh: '退出', es: 'Cerrar Sesión', ar: 'خروج', de: 'Abmelden', fr: 'Déconnexion', pt: 'Sair', ru: 'Выйти', ja: 'ログアウト', hi: 'साइन आउट', tr: 'Çıkış', vi: 'Đăng xuất' },
-    tradeAssurance: { en: '100% trade protection & Trade Assurance', zh: '100% 资金托管与信保体系', es: '100% Protección Comercial', ar: 'حماية وضمان تجاري 100%', de: '100% Handelsschutz', fr: '100% Protection commerciale', pt: '100% Proteção Comercial', ru: '100% Защита сделок', ja: '100% 取引保証・エスクロー', hi: '100% व्यापार सुरक्षा', tr: '%100 Ticaret Güvencesi', vi: '100% Bảo vệ giao dịch' }
+  const handleNavClick = (view: ActiveView | string) => {
+    if (onNavigate) {
+      onNavigate(view);
+    } else if (setActiveView) {
+      setActiveView(view as ActiveView);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const getTxt = (key: keyof typeof navDict): string => {
-    const entry = navDict[key] as Record<string, string>;
-    return entry[languageCode] || entry.en || '';
-  };
-
-  // Automatically close open dropdown menus when clicking outside or pressing Escape
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('#nav-link-admin-dropdown') && !target.closest('#nav-link-services-dropdown')) {
-        setServicesMenuOpen(false);
-        setAdminMenuOpen(false);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setServicesMenuOpen(false);
-        setAdminMenuOpen(false);
-        setMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('click', handleGlobalClick);
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('click', handleGlobalClick);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem('tradeheaven_user');
-      localStorage.removeItem('th_session_user');
-      localStorage.removeItem('th_session_jwt_token');
-      localStorage.removeItem('tradeheaven_auth_user');
-    } catch {}
-    if (setCurrentUser) {
-      setCurrentUser(null);
-    }
-    if (onLogout) {
-      onLogout();
-    }
+    if (onLogout) onLogout();
   };
 
-  const navigate = (view: ActiveView | string, options?: any) => {
-    if (onNavigate) onNavigate(view, options);
-    else if (setActiveView) setActiveView(view as ActiveView);
-  };
-
-  const handleNavClick = (view: ActiveView | string, options?: any) => {
-    navigate(view, options);
-    setMobileMenuOpen(false);
-    setServicesMenuOpen(false);
-    setAdminMenuOpen(false);
-  };
-
-  const isServicesActive = [
-    'LANDING_PAGE',
-    'POST_SELL_OFFER',
-    'TRADE_TOOLS',
-    'INCOTERMS_CALCULATOR',
-    'REFUND_POLICY',
-    'PRODUCT_LISTING_POLICY',
-    'PRIVACY_POLICY',
-    'ARCHITECTURE_BLUEPRINT'
-  ].includes(activeView);
-
-  const isAdminActive = [
-    'CLIENT_ADMIN',
-    'CMS_MANAGEMENT',
-    'PLAN_PRICING_ADMIN',
-    'BULK_ENTITY_CRM'
-  ].includes(activeView);
-
-  const roleStyles: Record<UserRole, { badge: string; label: string }> = {
-    BUYER: { badge: 'bg-blue-900/60 text-blue-300 border-blue-700/60 font-bold', label: 'BUYER' },
-    SUPPLIER: { badge: 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 font-bold', label: 'SUPPLIER' },
-    VERIFIER: { badge: 'bg-purple-900/60 text-purple-300 border-purple-700/60 font-bold', label: 'VERIFIER' },
-    ADMIN: { badge: 'bg-amber-500/20 text-amber-300 border-amber-500/60 font-black tracking-wider shadow-2xs', label: 'ADMIN' }
-  };
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUserRole === 'ADMIN';
 
   return (
-    <header id="trade-heaven-header" className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-800 shadow-xs w-full max-w-full">
-      {/* 1. TOP UTILITY BAR (Fixed, Zero Scroll, High-Contrast Precision) */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-slate-200 border-b border-indigo-900/60 shadow-xs px-2 sm:px-6 lg:px-8 py-1.5 text-xs w-full max-w-full">
-        <div className="max-w-[1400px] mx-auto flex flex-row items-center justify-between gap-2 w-full">
-          
-          {/* Left: Security & Direct Assistance */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px] sm:text-xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden sm:inline">{getTxt('tradeAssurance')}</span>
-            </span>
-
-            <span className="hidden md:inline-block text-slate-700">|</span>
-
-            {/* Direct Official WhatsApp Desk Link */}
-            <a
-              id="top-bar-whatsapp-btn"
-              href={OFFICIAL_WHATSAPP_DATA.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={`WhatsApp Trade Desk (${OFFICIAL_WHATSAPP_DATA.phone})`}
-              aria-label={`WhatsApp Trade Desk ${OFFICIAL_WHATSAPP_DATA.phone}`}
-              className="hidden sm:flex items-center gap-1 bg-[#25D366]/15 hover:bg-[#25D366] text-emerald-300 hover:text-white px-2 py-0.5 rounded-md border border-[#25D366]/30 transition-all text-[11px] font-medium group cursor-pointer"
-            >
-              <MessageCircle className="w-3 h-3 text-[#25D366] group-hover:text-white shrink-0" />
-              <span>WhatsApp Desk</span>
-            </a>
-
-            <span className="text-slate-700">|</span>
-
-            {/* 1 Free Buy Order Quick Pill */}
-            <button
-              id="top-bar-free-lead-pill"
-              onClick={() => {
-                if (!currentUser) {
-                  if (onOpenRegisterFree) onOpenRegisterFree();
-                  else handleNavClick('BUY_LEADS');
-                } else {
-                  handleNavClick('BUY_LEADS');
-                }
-              }}
-              aria-label="1 Free Buy Order"
-              className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 px-2.5 py-0.5 rounded-full text-[11px] font-black shadow-xs transition-all cursor-pointer active:scale-95 hover:shadow-md animate-scale-pulse hover:animate-none"
-            >
-              <Zap className="w-3 h-3 fill-slate-950 shrink-0" />
-              <span>1 Free Buy Order</span>
-            </button>
-          </div>
-
-          {/* Right: FX Selector + Language/Region + Authentication State */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto justify-end">
-            
-            
-            {/* Secondary Utility Navigation */}
-            <nav aria-label="Utility Navigation" className="hidden lg:flex items-center gap-3 mr-2 text-[11px] font-medium text-slate-300">
-              <button onClick={() => handleNavClick('ABOUT_US')} aria-label={getTxt('aboutUs')} className="hover:text-white transition-colors">{getTxt('aboutUs')}</button>
-              <button onClick={() => handleNavClick('TRUST_SAFETY')} aria-label={getTxt('trustSafety')} className="hover:text-emerald-400 transition-colors">{getTxt('trustSafety')}</button>
-              <button onClick={() => handleNavClick('INSIGHTS')} aria-label={getTxt('newsInsights')} className="hover:text-amber-400 transition-colors">{getTxt('newsInsights')}</button>
-            </nav>
-            {/* Compact Language & Region Selector */}
-            {/* Custom Styled Language & Region Selector */}
-            <LanguageRegionSelector variant="compact" />
-            
-
-            {/* Currency FX Selector */}
-            <div className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 px-2 py-0.5 sm:py-1 rounded-lg border border-slate-700/80 shadow-2xs transition-colors">
-              <span className="text-[9px] text-amber-400 font-bold uppercase">FX</span>
-              <select
-                id="currency-selector"
-                value={selectedCurrency}
-                onChange={e => {
-                  const val = e.target.value as Currency;
-                  if (onCurrencyChange) onCurrencyChange(val);
-                  else if (setSelectedCurrency) setSelectedCurrency(val);
-                }}
-                className="bg-transparent text-[11px] text-slate-200 font-bold font-mono focus:outline-none cursor-pointer pr-1"
-              >
-                {CURRENCY_RATES.map(c => (
-                  <option key={c.code} value={c.code} className="bg-slate-900 text-white">
-                    {c.code} ({c.symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* AUTHENTICATION CONTROL SECTION */}
-            <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
-            {currentUser ? (
-              // LOGGED IN SESSION
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button
-                  id="header-user-profile-btn"
-                  onClick={onOpenAuthModal}
-                  aria-label={`User Profile: ${currentUser.name}`}
-                  className="flex items-center gap-1.5 sm:gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/50 rounded-lg px-2 sm:px-2.5 py-0.5 sm:py-1 transition-all text-left group cursor-pointer"
-                  title="Account Profile & Credentials"
-                >
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full overflow-hidden border border-white/20 bg-slate-700 shrink-0">
-                    <SafeImage src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex items-center gap-1.5 max-w-[90px] sm:max-w-[140px] truncate">
-                    <span className="text-[11px] sm:text-xs font-bold text-white truncate group-hover:text-blue-300 transition-colors">
-                      {currentUser.name}
-                    </span>
-                    <span className={`text-[8px] sm:text-[9px] font-black uppercase px-1.5 py-0.5 rounded border tracking-wider ${roleStyles[currentUser.role]?.badge || 'bg-amber-950/90 text-amber-300 border-amber-500/90'}`}>
-                      [{currentUser.role}]
-                    </span>
-                  </div>
-                </button>
-
-                {/* Sign Out Button */}
-                <button
-                  id="header-logout-btn"
-                  onClick={handleLogout}
-                  aria-label={getTxt('signOut')}
-                  className="flex items-center gap-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 border border-rose-500/30 px-2 py-0.5 sm:py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer"
-                  title="Sign out of current account"
-                >
-                  <LogOut className="w-3 h-3 text-rose-400 shrink-0" />
-                  <span className="hidden sm:inline">{getTxt('signOut')}</span>
-                </button>
-              </div>
-            ) : (
-              // LOGGED OUT STATE: SIGN IN + REGISTER FREE
-              <div className="flex items-center gap-1.5">
-                <button
-                  id="header-login-btn"
-                  onClick={onOpenAuthModal}
-                  aria-label={getTxt('signIn')}
-                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition-all shadow-xs cursor-pointer border border-slate-700/80"
-                >
-                  <LogIn className="w-3.5 h-3.5 text-slate-300" />
-                  <span>{getTxt('signIn')}</span>
-                </button>
-                <button
-                  id="header-register-free-btn"
-                  onClick={onOpenRegisterFree || onOpenAuthModal}
-                  aria-label={getTxt('registerFree')}
-                  className="flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs transition-all shadow-xs cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5 text-emerald-100" />
-                  <span>{getTxt('registerFree')}</span>
-                </button>
-              </div>
-            )}
-            </div>
-            </div>
+    <header className="w-full bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        
+        {/* Left: Logo */}
+        <div className="flex items-center shrink-0">
+          <button
+            onClick={() => handleNavClick('HOMEPAGE')}
+            className="text-left focus:outline-none cursor-pointer flex items-center gap-2"
+          >
+            <TradeHeavenLogo size="sm" subtitle="B2B Marketplace" />
+          </button>
         </div>
-      </div>
 
-      {/* 2. MAIN NAVIGATION BAR (Proportional, Clean Hierarchy, No Multi-line Wrapping) */}
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-2 w-full max-w-full flex items-center justify-between gap-2 lg:gap-3 xl:gap-4 min-w-0">
-          
-          {/* Left: Brand Identity */}
-          <div className="flex items-center shrink-0 min-w-0">
-            <button
-              id="header-logo-home-btn"
-              onClick={() => handleNavClick('HOMEPAGE')}
-              aria-label="Trade Heaven B2B Marketplace Home"
-              className="text-left focus:outline-none cursor-pointer truncate"
-            >
-              <TradeHeavenLogo size="md" subtitle="B2B Marketplace" />
-            </button>
-          </div>
+        {/* Center: Navigation Links */}
+        <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+          <button
+            onClick={() => handleNavClick('HOMEPAGE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
+                ? 'bg-blue-50 text-blue-600'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            Home
+          </button>
+          <button
+            onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              activeView === 'PRODUCT_DIRECTORY'
+                ? 'bg-blue-50 text-blue-600'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            Products
+          </button>
+          <button
+            onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              activeView === 'SUPPLIERS_DIRECTORY'
+                ? 'bg-blue-50 text-blue-600'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            Suppliers
+          </button>
+          <button
+            onClick={() => handleNavClick('BUY_LEADS')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              activeView === 'BUY_LEADS'
+                ? 'bg-blue-50 text-blue-600'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            Buy Leads
+          </button>
+          <button
+            onClick={() => handleNavClick('TRADE_TOOLS')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              activeView === 'TRADE_TOOLS' || activeView === 'INCOTERMS_CALCULATOR'
+                ? 'bg-blue-50 text-blue-600'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            Calculators
+          </button>
+        </nav>
 
-          {/* Center: Desktop Nav Links (Streamlined) */}
-          <nav aria-label="Primary Navigation" className="hidden lg:flex items-center flex-1 justify-center gap-0.5 xl:gap-1 min-w-0">
-            <button
-              onClick={() => handleNavClick('HOMEPAGE')}
-              aria-label={getTxt('home')}
-              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('home')}
-            </button>
-
-
-            {/* Premium Services (Top Nav Button) */}
-            <button
-              id="nav-link-premium-services"
-              onClick={() => handleNavClick('PREMIUM_SERVICES')}
-              aria-label={getTxt('premiumServices')}
-              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-xs ${
-                activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
-                  ? 'bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-sm'
-                  : 'bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 border border-amber-500/30'
-              }`}
-            >
-              <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>{getTxt('premiumServices')}</span>
-            </button>
-
-            <button
-              id="nav-link-buy-leads"
-              onClick={() => handleNavClick('BUY_LEADS')}
-              aria-label={getTxt('buyLeads')}
-              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'BUY_LEADS'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('buyLeads')}
-            </button>
-
-            <button
-              id="nav-link-buyers"
-              onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-              aria-label={getTxt('buyers')}
-              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'BUYERS_DIRECTORY'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('buyers')}
-            </button>
-
-            <button
-              id="nav-link-suppliers"
-              onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-              aria-label={getTxt('suppliers')}
-              className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                activeView === 'SUPPLIERS_DIRECTORY'
-                  ? 'bg-blue-50 text-blue-600 font-extrabold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {getTxt('suppliers')}
-            </button>
-
-            {/* Dropdown: Menu (Contains all other options) */}
-            <div className="relative shrink-0">
-              <button
-                id="nav-link-services-dropdown"
-                onClick={() => {
-                  setServicesMenuOpen(!servicesMenuOpen);
-                  setAdminMenuOpen(false);
-                }}
-                aria-label={`${getTxt('menu')} Menu`}
-                aria-expanded={servicesMenuOpen}
-                aria-haspopup="true"
-                className={`px-1.5 xl:px-2 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                  isServicesActive
-                    ? 'bg-blue-50 text-blue-600 font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>{getTxt('menu')}</span>
-                <ChevronDown className="w-3 h-3 shrink-0" />
-              </button>
-
-              {servicesMenuOpen && (
-                <div 
-                  className="absolute right-0 lg:right-auto lg:left-1/2 lg:-translate-x-1/2 mt-2 w-[580px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-120px)] overflow-y-auto" 
-                  role="menu" 
-                  aria-label="Services Menu"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Left Column (Line 1): Sourcing & Trade Hubs */}
-                    <div className="space-y-1">
-                      <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-b border-slate-100 pb-1 mb-1">
-                        <Globe2 className="w-3 h-3 text-blue-600" />
-                        <span>Trade &amp; Sourcing Hubs</span>
-                      </div>
-                      
-                      <button
-                        onClick={() => handleNavClick('LANDING_PAGE')}
-                        aria-label="Global Trade Hub"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-blue-50/80 rounded-xl flex items-center gap-2.5 text-slate-900 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
-                          <Globe2 className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 font-bold text-blue-700">
-                            <span className="truncate">Global Trade Hub</span>
-                            <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[8px] font-black uppercase shrink-0">
-                              NEW
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 font-normal truncate">Corridors, Sectors, Live Tickers &amp; RFQ</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
-                        aria-label="Products Catalog"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
-                          <ShoppingBag className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Products Catalog</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Browse verified export inventory</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('COUNTRY_HUB')}
-                        aria-label="Country Hub Portals"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 text-amber-600">
-                          <Landmark className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Country Hub Portals</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Explore 34 regional trade hubs</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('RFQ_HUB')}
-                        aria-label="RFQ Marketplace"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center shrink-0 text-sky-600">
-                          <FileText className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">RFQ Marketplace</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Live buyer quote requests</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('BUY_LEADS')}
-                        aria-label="Buy Leads & Inquiries"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600">
-                          <Workflow className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Buy Leads &amp; Inquiries</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Verified international trade leads</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('VENDOR_PROFILE')}
-                        aria-label="Verified Vendor Profile"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
-                          <Building2 className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Verified Vendor Profile</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Factory dossier &amp; ISO certs</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('BUYER_PROFILE')}
-                        aria-label="Corporate Buyer Profile"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
-                          <BadgeCheck className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Corporate Buyer Profile</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">D&amp;B audited dossier</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('POST_SELL_OFFER')}
-                        aria-label="Post Product / Sell Offer"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-emerald-50/80 bg-emerald-50/40 rounded-xl flex items-center gap-2.5 text-emerald-950 transition-colors cursor-pointer border border-emerald-100"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-700">
-                          <PackagePlus className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-emerald-900 truncate">Post Product / Sell Offer</div>
-                          <div className="text-[10px] text-emerald-700 font-normal truncate">Direct Factory Listing</div>
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* Right Column (Line 2): Tools, Policies & Company */}
-                    <div className="space-y-1">
-                      <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 border-b border-slate-100 pb-1 mb-1">
-                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                        <span>Tools, Policies &amp; Company</span>
-                      </div>
-
-                      <button
-                        onClick={() => handleNavClick('TRADE_TOOLS')}
-                        aria-label="Trade Calculators & Incoterms"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 text-blue-600">
-                          <Calculator className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Trade Calculators &amp; Incoterms</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Landed Cost &amp; CIF/FOB Rules</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('ABOUT_US')}
-                        aria-label="About Trade Heaven"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">About Trade Heaven</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Company mission &amp; guarantees</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('PRODUCT_LISTING_POLICY')}
-                        aria-label="Product Listing Policy"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
-                          <Ban className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Product Listing Policy</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Prohibited items &amp; compliance</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('TERMS_OF_USE')}
-                        aria-label="Terms of Use"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 text-slate-600">
-                          <FileText className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Terms of Use</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Platform agreement &amp; terms</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('PRIVACY_POLICY')}
-                        aria-label="Privacy Policy"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Privacy Policy</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Tradeheaven ECOM Solution LLP</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('ONBOARD_WITH_US')}
-                        aria-label="Work With Us / Onboard"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-slate-50 rounded-xl flex items-center gap-2.5 text-slate-800 transition-colors cursor-pointer"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
-                          <UserPlus className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate">Work With Us / Onboard</div>
-                          <div className="text-[10px] text-slate-400 font-normal truncate">Partner program &amp; verification</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => handleNavClick('CONTACT_US')}
-                        aria-label="Contact Assistance Desk"
-                        className="w-full px-2.5 py-1.5 text-left text-xs font-bold hover:bg-blue-50/80 bg-blue-50/40 rounded-xl flex items-center gap-2.5 text-blue-950 transition-colors cursor-pointer border border-blue-100"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 text-blue-600">
-                          <Mail className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-blue-900 truncate">Contact Assistance Desk</div>
-                          <div className="text-[10px] text-blue-700 font-normal truncate">24/7 Global Support</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-
-
-            {/* Admin Management Dropdown (Visible for Admins / Authenticated Staff) */}
-            {isAdmin ? (
-              <div className="relative shrink-0">
-                <button
-                  id="nav-link-admin-dropdown"
-                  onClick={() => {
-                    setAdminMenuOpen(!adminMenuOpen);
-                    setServicesMenuOpen(false);
-                  }}
-                  aria-label="Admin Hub Menu"
-                  aria-expanded={adminMenuOpen}
-                  aria-haspopup="true"
-                  className={`px-2 xl:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
-                    isAdminActive
-                      ? 'bg-amber-100 text-amber-950 font-extrabold border border-amber-300'
-                      : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200/80'
-                  }`}
-                >
-                  <Landmark className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>Admin Hub</span>
-                  <ChevronDown className="w-3 h-3 shrink-0" />
-                </button>
-
-                {adminMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-72 max-w-[90vw] bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100vh-100px)] overflow-y-auto" role="menu" aria-label="Admin Hub Menu">
-                    <button
-                      onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
-                      aria-label="Plan & Pricing Engine"
-                      className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
-                    >
-                      <Layers className="w-4 h-4 text-blue-600" />
-                      <div>
-                        <div className="text-amber-900 font-bold flex items-center gap-1.5">
-                          <span>Plan &amp; Pricing Engine</span>
-                          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[9px] font-black uppercase">SaaS</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-normal">Quotas, rate limits, models &amp; Stripe</div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleNavClick('BULK_ENTITY_CRM')}
-                      aria-label="Bulk Lead & Entity CRM"
-                      className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-amber-600" />
-                      <div>
-                        <div className="text-amber-900 font-bold">Bulk Lead &amp; Entity CRM</div>
-                        <div className="text-[10px] text-slate-500 font-normal">Excel/CSV uploader, validation &amp; IEM sync</div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleNavClick('CLIENT_ADMIN')}
-                      aria-label="Admin & Treasury Portal"
-                      className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
-                    >
-                      <Landmark className="w-4 h-4 text-amber-600" />
-                      <div>
-                        <div className="text-amber-900 font-bold">Admin &amp; Treasury Portal</div>
-                        <div className="text-[10px] text-slate-500 font-normal">trade protection releases &amp; user control</div>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => handleNavClick('CMS_MANAGEMENT')}
-                      aria-label="Full Site CMS Editor"
-                      className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 border-b border-slate-100 cursor-pointer"
-                    >
-                      <SlidersHorizontal className="w-4 h-4 text-amber-600" />
-                      <div>
-                        <div className="text-amber-900 font-bold">Full Site CMS Editor</div>
-                        <div className="text-[10px] text-slate-500 font-normal">Edit copy, hero banners, &amp; sections</div>
-                      </div>
-                    </button>
-                    {onOpenBackendManager && (
-                      <button
-                        onClick={() => {
-                          setAdminMenuOpen(false);
-                          onOpenBackendManager();
-                        }}
-                        aria-label="Database Management"
-                        className="w-full px-4 py-2.5 text-left text-xs font-bold hover:bg-amber-50 flex items-center gap-2.5 text-slate-800 cursor-pointer"
-                      >
-                        <Database className="w-4 h-4 text-amber-600" />
-                        <div>
-                          <div className="text-amber-900 font-bold">Database Management</div>
-                          <div className="text-[10px] text-slate-500 font-normal">Live mock products &amp; API state</div>
-                        </div>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </nav>
-
-          {/* Right: Key Direct Action Cluster */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Right: Search Bar & Action Buttons */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden xl:block w-64">
             <GlobalSearch 
               onNavigate={handleNavClick} 
               products={products}
@@ -812,376 +164,92 @@ export const Header: React.FC<Props> = ({
               onNavigateToCategory={onNavigateToCategory}
               onNavigateToSearch={onNavigateToSearch}
             />
-            <NotificationBell onNavigate={handleNavClick} />
-            {/* Post RFQ Button */}
-            <button
-              id="header-post-rfq-btn"
-              onClick={onOpenCreateRfq}
-              aria-label={getTxt('postBuyRfq')}
-              className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs transition-all shadow-xs whitespace-nowrap shrink-0 cursor-pointer active:scale-95"
-            >
-              <PlusCircle className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">{getTxt('postBuyRfq')}</span>
-            </button>
-
-            {/* Messages / Negotiation Room */}
-            <button
-              id="header-negotiation-btn"
-              onClick={() => handleNavClick('NEGOTIATION_ROOM')}
-              aria-label="Negotiation Room & Inquiries"
-              className={`p-1.5 sm:p-2 rounded-xl border relative transition-all shrink-0 cursor-pointer ${
-                activeView === 'NEGOTIATION_ROOM'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-              title="Negotiation Room &amp; Inquiries"
-            >
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              {unreadMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-rose-500 text-white text-[8px] sm:text-[9px] font-bold flex items-center justify-center">
-                  {unreadMessagesCount}
-                </span>
-              )}
-            </button>
-
-            {/* Dashboard Link */}
-            <button
-              id="header-dashboard-btn"
-              onClick={() => handleNavClick('DASHBOARD')}
-              aria-label="Trade Dashboard"
-              className={`hidden sm:flex p-1.5 sm:p-2 rounded-xl border transition-all shrink-0 cursor-pointer ${
-                activeView === 'DASHBOARD'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-              title="Trade Dashboard"
-            >
-              <LayoutDashboard className="w-4 h-4 shrink-0" />
-            </button>
-
-            {/* Mobile Menu Hamburger */}
-            <button
-              id="header-mobile-menu-btn"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileMenuOpen}
-              className="lg:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 shrink-0 cursor-pointer"
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
           </div>
-      </div>
 
-      {/* Mobile Drawer Menu & Backdrop */}
-      {mobileMenuOpen && (
-        <>
-          <div 
-            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-40 lg:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="lg:hidden fixed top-[110px] sm:top-[124px] left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-4 space-y-3 flex flex-col shadow-2xl animate-in slide-in-from-top-2 duration-150 max-h-[calc(100vh-130px)] overflow-y-auto">
-            {/* User Status Bar */}
-            <div className="p-3 bg-slate-50 rounded-xl mb-3 flex items-center justify-between gap-2 overflow-hidden border border-slate-200/80">
-              {currentUser ? (
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0 border border-slate-300">
-                    <SafeImage src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</div>
-                    <div className={`inline-block mt-0.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border tracking-wider ${roleStyles[currentUser.role]?.badge || 'bg-amber-950/90 text-amber-300 border-amber-500/90'}`}>
-                      [{currentUser.role}]
-                    </div>
-                  </div>
+          <NotificationBell onNavigate={handleNavClick} />
+
+          {/* Post RFQ Button */}
+          <button
+            onClick={onOpenCreateRfq}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-colors shadow-xs shrink-0 cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Post RFQ</span>
+          </button>
+
+          {/* Authentication State */}
+          {currentUser ? (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl px-2.5 py-1.5 transition-colors text-left cursor-pointer"
+              >
+                <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-300 shrink-0">
+                  <SafeImage src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
                 </div>
-              ) : (
-                <div className="text-xs text-slate-600 font-medium">Not signed in</div>
-              )}
-              {currentUser ? (
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  aria-label={getTxt('signOut')}
-                  className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 shrink-0 transition-all cursor-pointer"
-                >
-                  Sign Out
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-bold text-slate-800 hidden md:inline truncate max-w-[100px]">
+                  {currentUser.name}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 text-slate-800">
+                  <div className="p-2.5 bg-slate-50 rounded-xl mb-1 border border-slate-100">
+                    <div className="font-bold text-xs text-slate-900 truncate">{currentUser.name}</div>
+                    <div className="text-[10px] text-slate-500 font-mono truncate">{currentUser.email}</div>
+                  </div>
                   <button
                     onClick={() => {
-                      onOpenAuthModal();
-                      setMobileMenuOpen(false);
+                      setUserMenuOpen(false);
+                      handleNavClick(currentUser.role === 'SUPPLIER' ? 'VENDOR_PROFILE' : 'BUYER_PROFILE');
                     }}
-                    aria-label={getTxt('signIn')}
-                    className="text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer px-2 py-1"
+                    className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-100 rounded-xl flex items-center gap-2 text-slate-700 cursor-pointer"
                   >
-                    Sign In
+                    <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                    <span>Dashboard</span>
                   </button>
-                  <button
-                    onClick={() => {
-                      if (onOpenRegisterFree) onOpenRegisterFree();
-                      else onOpenAuthModal();
-                      setMobileMenuOpen(false);
-                    }}
-                    aria-label={getTxt('registerFree')}
-                    className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 cursor-pointer shadow-2xs"
-                  >
-                    Register Free
-                  </button>
-                </div>
-              )}
-            </div>
-
-          <nav aria-label="Mobile Navigation" className="space-y-2">
-            {currentUser && (
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <button
-                  onClick={() => { handleNavClick('DASHBOARD'); setMobileMenuOpen(false); }}
-                  aria-label="Dashboard"
-                  className="p-2.5 rounded-xl text-xs font-bold bg-blue-600 text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Dashboard</span>
-                </button>
-                <button
-                  onClick={() => { handleNavClick('NEGOTIATION_ROOM'); setMobileMenuOpen(false); }}
-                  aria-label="Messages & Negotiation Room"
-                  className="p-2.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-900 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs relative"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Messages</span>
-                  {unreadMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
-                      {unreadMessagesCount}
-                    </span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleNavClick('CLIENT_ADMIN');
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-100 rounded-xl flex items-center gap-2 text-purple-700 cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-purple-600" />
+                      <span>Admin Control Center</span>
+                    </button>
                   )}
-                </button>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => handleNavClick('BUY_LEADS')}
-                aria-label={getTxt('buyLeads')}
-                className={`p-2.5 rounded-xl text-left text-xs font-bold cursor-pointer col-span-2 sm:col-span-1 ${
-                  activeView === 'BUY_LEADS'
-                    ? 'bg-blue-50 text-blue-600 font-extrabold'
-                    : 'bg-slate-50 text-slate-800'
-                }`}
-              >
-                {getTxt('buyLeads')}
-              </button>
-              <button
-                onClick={() => handleNavClick('HOMEPAGE')}
-                aria-label="Home Marketplace"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Home Marketplace
-              </button>
-              <button
-                onClick={() => handleNavClick('ABOUT_US')}
-                aria-label="About Us"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                About Us
-              </button>
-              <button
-                onClick={() => handleNavClick('TRUST_SAFETY')}
-                aria-label="Security & Trust Center"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-700 cursor-pointer col-span-2 text-center"
-              >
-                Security &amp; Trust Center
-              </button>
-              <button
-                onClick={() => handleNavClick('INSIGHTS')}
-                aria-label="News & Insights"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-700 cursor-pointer col-span-2 text-center"
-              >
-                News &amp; Insights
-              </button>
-              <button
-                onClick={() => handleNavClick('LANDING_PAGE')}
-                aria-label="Global Hub"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Globe2 className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Global Hub</span>
-                </div>
-                <span className="text-[9px] font-black uppercase px-1 py-0.2 rounded bg-blue-600 text-white">NEW</span>
-              </button>
-              <button
-                onClick={() => handleNavClick('ONBOARD_WITH_US')}
-                aria-label="Work With Us"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center justify-between cursor-pointer"
-              >
-                <span>Work With Us</span>
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              </button>
-              <button
-                onClick={() => handleNavClick('PRODUCT_DIRECTORY')}
-                aria-label="Find Products"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Find Products
-              </button>
-              <button
-                onClick={() => handleNavClick('SUPPLIERS_DIRECTORY')}
-                aria-label="Verified Suppliers"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Verified Suppliers
-              </button>
-              <button
-                onClick={() => handleNavClick('BUYERS_DIRECTORY')}
-                aria-label="Verified Buyers"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50/70 text-blue-900 border border-blue-200/60 flex items-center justify-between cursor-pointer"
-              >
-                <span>Verified Buyers</span>
-                <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
-              </button>
-              <button
-                onClick={() => handleNavClick('VENDOR_PROFILE')}
-                aria-label="Vendor Profile (Demo)"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between cursor-pointer"
-              >
-                <span>Vendor Profile (Demo)</span>
-                <Building2 className="w-3.5 h-3.5 text-blue-600" />
-              </button>
-              <button
-                onClick={() => handleNavClick('BUYER_PROFILE')}
-                aria-label="Buyer Profile (Demo)"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 border border-slate-200 flex items-center justify-between cursor-pointer"
-              >
-                <span>Buyer Profile (Demo)</span>
-                <BadgeCheck className="w-3.5 h-3.5 text-blue-600" />
-              </button>
-              <button
-                onClick={() => handleNavClick('RFQ_HUB')}
-                aria-label="RFQ Hub"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                RFQ Hub
-              </button>
-              <button
-                onClick={() => handleNavClick('BUY_LEADS')}
-                aria-label="Buy Leads Feed"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Buy Leads Feed
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => handleNavClick('PLAN_PRICING_ADMIN')}
-                  aria-label="Plan & Pricing Engine"
-                  className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-950 border border-blue-200 flex items-center justify-between cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Plan &amp; Pricing Engine</span>
+                  <div className="border-t border-slate-100 my-1 pt-1">
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-rose-50 text-rose-600 rounded-xl flex items-center gap-2 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <span>Sign Out</span>
+                    </button>
                   </div>
-                  <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">SaaS</span>
-                </button>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={() => handleNavClick('CLIENT_ADMIN')}
-                  aria-label="Admin Suite"
-                  className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-between cursor-pointer"
-                >
-                  <span>Admin Suite</span>
-                </button>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={() => handleNavClick('CMS_MANAGEMENT')}
-                  aria-label="Edit Site CMS"
-                  className="p-2.5 rounded-xl text-left text-xs font-bold bg-amber-50 text-amber-950 border border-amber-200 flex items-center justify-between cursor-pointer"
-                >
-                  <span>Edit Site CMS</span>
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600" />
-                </button>
-              )}
-              <button
-                onClick={() => handleNavClick('PREMIUM_SERVICES')}
-                aria-label="Premium Services & Memberships"
-                className={`p-2.5 rounded-xl text-left text-xs font-black flex items-center justify-between col-span-2 cursor-pointer ${
-                  activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
-                    ? 'bg-amber-400 text-slate-950 shadow-xs'
-                    : 'bg-amber-500/10 text-amber-900 border border-amber-500/30'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-amber-600" />
-                  <span>Premium Services &amp; Memberships</span>
                 </div>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400/30 text-amber-950">Plans</span>
-              </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
               <button
-                onClick={() => handleNavClick('TRADE_TOOLS')}
-                aria-label="Trade Tools"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
+                onClick={onOpenAuthModal}
+                className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer"
               >
-                Trade Tools
-              </button>
-              <button
-                onClick={() => handleNavClick('POST_SELL_OFFER')}
-                aria-label="Post Sell Offer"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Post Sell Offer
-              </button>
-              <button
-                onClick={() => handleNavClick('REFUND_POLICY')}
-                aria-label="Refund Policy"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Refund Policy
-              </button>
-              <button
-                onClick={() => handleNavClick('PRODUCT_LISTING_POLICY')}
-                aria-label="Listing Policy"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Listing Policy
-              </button>
-              <button
-                onClick={() => handleNavClick('PRIVACY_POLICY')}
-                aria-label="Privacy Policy"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-slate-50 text-slate-800 cursor-pointer"
-              >
-                Privacy Policy
-              </button>
-              <button
-                onClick={() => handleNavClick('CONTACT_US')}
-                aria-label="Contact Help Desk"
-                className="p-2.5 rounded-xl text-left text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-between col-span-2 cursor-pointer"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Contact Help Desk</span>
-                </div>
-                <span className="text-[10px] font-mono text-blue-600">help@tradeheaven.net</span>
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
               </button>
             </div>
-
-            <button
-              onClick={() => {
-                onOpenCreateRfq();
-                setMobileMenuOpen(false);
-              }}
-              aria-label={getTxt('postBuyRfq')}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Post Buy RFQ</span>
-            </button>
-          </nav>
+          )}
         </div>
-        </>
-      )}
+
+      </div>
     </header>
   );
 };

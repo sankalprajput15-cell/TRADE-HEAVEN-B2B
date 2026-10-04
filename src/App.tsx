@@ -1157,7 +1157,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
-      <main className="flex-1 w-full max-w-[1400px] overflow-x-hidden mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 min-h-[calc(100vh-200px)]">
+      <main className="flex-1 w-full overflow-x-hidden px-4 sm:px-6 lg:px-10 xl:px-12 py-2 sm:py-3 min-h-[calc(100vh-160px)]">
         {/* Lightweight, Schema-Compliant Breadcrumb Navigation (rendered on all views except homepage) */}
         <BreadcrumbNavigation
           activeView={activeView}
@@ -1608,7 +1608,7 @@ const MainApp: React.FC = () => {
       </main>
 
       {/* 4. OFFICIAL SOCIAL & WHATSAPP NETWORK BAR */}
-      <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-12 pb-8">
         <TradeHeavenSocialBar onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
       </div>
 
