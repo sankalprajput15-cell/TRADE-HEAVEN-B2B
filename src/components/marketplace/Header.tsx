@@ -142,14 +142,14 @@ export const Header: React.FC<Props> = ({
             Buy Leads
           </button>
           <button
-            onClick={() => handleNavClick('TRADE_TOOLS')}
+            onClick={() => handleNavClick('PREMIUM_SERVICES')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-              activeView === 'TRADE_TOOLS' || activeView === 'INCOTERMS_CALCULATOR'
+              activeView === 'PREMIUM_SERVICES' || activeView === 'PREMIUM_MEMBERSHIP'
                 ? 'bg-blue-50 text-blue-600'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            Calculators
+            Services
           </button>
         </nav>
 
