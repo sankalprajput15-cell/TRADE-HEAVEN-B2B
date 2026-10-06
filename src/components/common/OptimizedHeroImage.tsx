@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { OptimizedHeroImageData, createSvgBlurPlaceholder } from '../../utils/heroImageOptimization';
 
 interface OptimizedHeroImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -31,6 +31,8 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
+  const [isInView, setIsInView] = useState<boolean>(eager);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const finalSrc = src || imageData?.url || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80';
   const finalBlur = blurDataUrl || imageData?.blurDataUrl || createSvgBlurPlaceholder(1200, 675, dominantColor || imageData?.themeColor || '#0f172a');
@@ -39,14 +41,55 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
   const finalSrcSet = restProps.srcSet || imageData?.srcSet;
   const finalSizes = restProps.sizes || imageData?.sizes || '100vw';
 
+  // IntersectionObserver for below-the-fold lazy loading
+  useEffect(() => {
+    if (eager) {
+      setIsInView(true);
+      return;
+    }
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      setIsInView(true);
+      return;
+    }
+
+    const currentRef = containerRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting || entry.intersectionRatio > 0) {
+            setIsInView(true);
+            obs.unobserve(entry.target);
+            obs.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: '200px 0px', // start loading slightly before scrolling into view
+        threshold: 0.01
+      }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [eager]);
+
   // Reset loading state when source changes
   useEffect(() => {
-    setIsLoaded(false);
-    setHasError(false);
-  }, [finalSrc]);
+    if (isInView) {
+      setIsLoaded(false);
+      setHasError(false);
+    }
+  }, [finalSrc, isInView]);
 
   return (
     <div
+      ref={containerRef}
       className={`relative overflow-hidden bg-slate-950 ${className}`}
       style={{ aspectRatio: finalAspect }}
     >
@@ -68,8 +111,8 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
         }`}
       />
 
-      {/* 3. Full Resolution Image with Crossfade */}
-      {!hasError ? (
+      {/* 3. Full Resolution Image with Crossfade (Loaded only when in view or eager) */}
+      {isInView && !hasError ? (
         <img
           src={finalSrc}
           srcSet={finalSrcSet}
@@ -88,14 +131,14 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
           } ${imgClassName}`}
           {...restProps}
         />
-      ) : (
+      ) : isInView && hasError ? (
         /* Graceful Fallback if Network Drop occurs */
         <img
           src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80"
           alt={finalAlt}
           className="absolute inset-0 w-full h-full object-cover object-center opacity-90 z-[1]"
         />
-      )}
+      ) : null}
 
       {/* Optional Gradient Overlay for High Text Readability */}
       {showGradientOverlay && (

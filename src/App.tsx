@@ -341,47 +341,40 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Fetch live RFQs from BigRock PHP API (GET /api.php?action=get_rfqs) with exponential backoff failsafes
+  // Fetch live RFQs from BigRock PHP API non-blocking in background
   const fetchRFQs = async () => {
     try {
-      const loadedRfqs = await fetchWithRetry(() => apiClient.getRfqs(), 3, 1000, 2);
+      const loadedRfqs = await apiClient.getRfqs();
       const mockIds = new Set(MOCK_RFQS.map(r => r.id));
       const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs.filter(r => !mockIds.has(r.id)) : [];
       const mergedRfqs = [...MOCK_RFQS, ...extraLoaded];
       setRfqs(mergedRfqs as any);
       setSelectedRfqId(prev => (prev && mergedRfqs.some(r => r.id === prev)) ? prev : mergedRfqs[0].id);
     } catch (err) {
-      console.error('[Failed to load BigRock rfqs after retries]:', err);
       setRfqs(MOCK_RFQS as any);
     }
   };
 
-  // Fetch live Products/Listings with exponential backoff failsafes
+  // Fetch live Products/Listings non-blocking in background
   const fetchProducts = async () => {
     try {
-      const prods = await fetchWithRetry(() => api.getProducts(), 3, 1000, 2);
+      const prods = await api.getProducts();
       if (Array.isArray(prods) && prods.length > 0) {
         setProducts(prods);
       }
-    } catch (err) {
-      console.error('[Failed to load products after retries]:', err);
-    }
+    } catch (err) {}
   };
 
-  // 1. Fetch live data with Promise.allSettled to guarantee UI never hangs
-  const initializeData = async () => {
-    setIsLoadingInitialData(true);
-    await Promise.allSettled([
+  // 1. Fetch live data asynchronously in background without blocking UI
+  const initializeData = () => {
+    Promise.allSettled([
       fetchProducts(),
       fetchRFQs()
     ]);
-    setIsLoadingInitialData(false);
   };
 
-  // Async Initialization on Mount with Deferred Data Hydration strategy
+  // Async Initialization on Mount with instant non-blocking background hydration
   useEffect(() => {
-    // Pre-fetch core static data like categories and country lists immediately on the very first render,
-    // before the initializeData deferred hydration block runs, to reduce time-to-interactive for dynamic menus.
     const preFetchStaticData = () => {
       try {
         const categoriesData = CATEGORIES_TREE;
@@ -394,25 +387,19 @@ const MainApp: React.FC = () => {
           (window as any).__TRADEHEAVEN_PREFETCHED_CATEGORIES = categoriesData;
           (window as any).__TRADEHEAVEN_PREFETCHED_COUNTRIES = countryData;
         }
-      } catch (err) {
-        console.warn('[Static Data Pre-fetch Warning]:', err);
-      }
+      } catch (err) {}
     };
     preFetchStaticData();
 
-    // Defer the hydration process to allow initial UI mounting instantly and smoothly
-    const deferTimer = setTimeout(() => {
-      initializeData();
-    }, 400);
+    // Run background fetch immediately without delay
+    initializeData();
 
-    // 2. Listen for custom RFQ creation / refresh triggers
     const handleRfqRefresh = () => {
       fetchRFQs();
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
 
     return () => {
-      clearTimeout(deferTimer);
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     };
   }, []);
