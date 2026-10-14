@@ -70,9 +70,9 @@ export const Header: React.FC<Props> = ({
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const handleNavClick = (view: ActiveView | string) => {
+  const handleNavClick = (view: ActiveView | string, options?: any) => {
     if (onNavigate) {
-      onNavigate(view);
+      onNavigate(view, options);
     } else if (setActiveView) {
       setActiveView(view as ActiveView);
     }

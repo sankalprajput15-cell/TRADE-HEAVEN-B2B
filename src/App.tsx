@@ -1136,7 +1136,7 @@ const MainApp: React.FC = () => {
         onNavigateToSearch={(query) => {
           console.log('[Search Investigation] handleNavigateToSearch (onNavigateToSearch) triggered with query:', query);
           setCatalogCategory('ALL');
-          handleDebouncedSearch(query, true);
+          setCatalogSearch(query);
           setSelectedProduct(null);
           setActiveView('PRODUCT_DIRECTORY');
           window.scrollTo({ top: 0, behavior: 'smooth' });

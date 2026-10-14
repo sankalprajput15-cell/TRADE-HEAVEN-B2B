@@ -455,15 +455,23 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
   return (
     <div className="relative z-50 shrink-0" ref={wrapperRef}>
       {/* Search Input Bar */}
-      <div 
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleExecuteFullSearch(query);
+        }}
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         className="relative group flex items-center"
       >
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none">
+        <button
+          type="submit"
+          aria-label="Submit search"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer z-10"
+        >
           <Search className="w-4 h-4" />
-        </div>
+        </button>
         
         <input
           ref={inputRef}
@@ -501,7 +509,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
             <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px]">↵</kbd>
           </div>
         )}
-      </div>
+      </form>
 
       {/* Mobile Backdrop to easily dismiss on phone */}
       {isOpen && (
