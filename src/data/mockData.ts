@@ -12237,9 +12237,14 @@ const RAW_UNORDERED_RFQS: RfqRequirement[] = [
 
 // Group by category and round-robin interleave so every page displays a diverse cross-section of global trade
 function interleaveRfqsByIndustry(rfqList: RfqRequirement[]): RfqRequirement[] {
+  // Deduplicate by ID first to guarantee unique keys
+  const uniqueMap = new Map<string, RfqRequirement>();
+  rfqList.forEach(r => uniqueMap.set(r.id, r));
+  const distinctRfqs = Array.from(uniqueMap.values());
+
   const buckets = new Map<string, RfqRequirement[]>();
   
-  rfqList.forEach((r, i) => {
+  distinctRfqs.forEach((r, i) => {
     // Ensure 100% complete contact details
     if (!r.buyerEmail || r.buyerEmail === 'undefined' || !r.buyerPhone || r.buyerPhone === 'undefined') {
       const cleanName = (r.buyerName || 'Buyer Contact').toLowerCase().replace(/[^a-z]/g, '.');

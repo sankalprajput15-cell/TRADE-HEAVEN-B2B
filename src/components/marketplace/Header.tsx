@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Currency, UserRole, ActiveView, AuthUser, Product } from '../../types';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
-import { GlobalSearch } from '../common/GlobalSearch';
 import { NotificationBell } from './NotificationBell';
 import { SafeImage } from '../common/SafeImage';
 import { 
@@ -153,19 +152,10 @@ export const Header: React.FC<Props> = ({
           </button>
         </nav>
 
-        {/* Right: Search Bar & Action Buttons */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden xl:block w-64">
-            <GlobalSearch 
-              onNavigate={handleNavClick} 
-              products={products}
-              selectedCurrency={selectedCurrency}
-              onSelectProduct={onSelectProduct}
-              onNavigateToCategory={onNavigateToCategory}
-              onNavigateToSearch={onNavigateToSearch}
-            />
-          </div>
 
+
+          {/* Right: Action Buttons */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <NotificationBell onNavigate={handleNavClick} />
 
           {/* Post RFQ Button */}
