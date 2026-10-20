@@ -16,7 +16,7 @@ import {
 import { api } from './services/apiService';
 import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
-import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE } from './data/mockData';
+import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES } from './data/mockData';
 import { ALL_COUNTRY_ITEMS } from './data/countriesData';
 
 // Common Components
@@ -394,6 +394,18 @@ const MainApp: React.FC = () => {
     };
     preFetchStaticData();
 
+    let isMounted = true;
+    productImageManagerService.ensureHydrated().then(() => {
+      if (isMounted) {
+        setProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+        setSelectedProduct(prev => {
+          if (!prev) return null;
+          const [updated] = productImageManagerService.applyOverridesToProductList([prev]);
+          return updated || prev;
+        });
+      }
+    });
+
     // Run background fetch immediately without delay
     initializeData();
 
@@ -412,6 +424,7 @@ const MainApp: React.FC = () => {
     window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
 
     return () => {
+      isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
       window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
     };

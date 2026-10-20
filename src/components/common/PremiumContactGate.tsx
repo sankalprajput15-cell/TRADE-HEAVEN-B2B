@@ -32,7 +32,7 @@ export const PremiumContactGate: React.FC<Props> = ({
     currentUser?.isVerifiedAdmin === true ||
     currentUser?.isPremium === true || 
     currentUser?.membershipStatus === 'paid' ||
-    currentUser?.membershipStatus === 'basic' ||
+    (currentUser?.membershipStatus as string) === 'basic' ||
     String(currentUser?.tier || '').toLowerCase().includes('basic') ||
     String(currentUser?.tier || '').toLowerCase().includes('vip') ||
     String(currentUser?.tier || '').toLowerCase().includes('gold');

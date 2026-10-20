@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, Currency, SupplierTier, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { getAllSuppliersWithUsers } from '../../services/apiService';
+import { productImageManagerService } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -98,11 +99,36 @@ export const ProductCatalog: React.FC<Props> = ({
     };
   }, []);
 
+  // Listen for product image overrides updates and ensure server hydration (crucial for Incognito mode)
+  useEffect(() => {
+    let isMounted = true;
+    const handleUpdate = () => {
+      if (isMounted) {
+        setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+      }
+    };
+
+    productImageManagerService.ensureHydrated().then(() => {
+      if (isMounted) {
+        setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+      }
+    });
+
+    window.addEventListener('tradeheaven_product_images_updated', handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
+    };
+  }, []);
+
   // Cache products to localStorage when they update
   useEffect(() => {
     if (products.length > 0) {
-      localStorage.setItem('cached_products', JSON.stringify(products));
-      setCachedProducts(products);
+      const overridden = productImageManagerService.applyOverridesToProductList(products);
+      try {
+        localStorage.setItem('cached_products', JSON.stringify(overridden));
+      } catch {}
+      setCachedProducts(overridden);
       setIsUsingCache(false);
     }
   }, [products]);
@@ -112,11 +138,16 @@ export const ProductCatalog: React.FC<Props> = ({
     if (products.length === 0 || isOffline) {
       const cached = localStorage.getItem('cached_products');
       if (cached) {
-        setCachedProducts(JSON.parse(cached));
-        setIsUsingCache(true);
+          const parsed = JSON.parse(cached) as Product[];
+          if (Array.isArray(parsed)) {
+            const overridden = productImageManagerService.applyOverridesToProductList<Product>(parsed);
+            setCachedProducts(overridden);
+            setIsUsingCache(true);
+          }
       }
     } else if (products.length > 0) {
-      setCachedProducts(products);
+      const overridden = productImageManagerService.applyOverridesToProductList(products);
+      setCachedProducts(overridden);
       setIsUsingCache(false);
     }
   }, [products, isOffline]);

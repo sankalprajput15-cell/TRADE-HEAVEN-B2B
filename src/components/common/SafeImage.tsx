@@ -235,13 +235,28 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [overrideVersion, setOverrideVersion] = useState(0);
 
   useEffect(() => {
+    let isMounted = true;
+    // When opening in incognito mode, wait for server hydration to complete and re-evaluate
+    productImageManagerService.ensureHydrated().then(() => {
+      if (isMounted) {
+        setOverrideVersion(v => v + 1);
+        setAttemptIndex(0);
+        setHasError(false);
+      }
+    });
+
     const handleImageOverrideUpdate = () => {
-      setOverrideVersion(v => v + 1);
-      setAttemptIndex(0);
-      setHasError(false);
+      if (isMounted) {
+        setOverrideVersion(v => v + 1);
+        setAttemptIndex(0);
+        setHasError(false);
+      }
     };
     window.addEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
-    return () => window.removeEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
+    };
   }, []);
 
   // 2. Build prioritized candidate URLs list
@@ -320,7 +335,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     setAttemptIndex(0);
     setIsLoaded(false);
     setHasError(false);
-  }, [src, fallbackSrc, category, productId]);
+  }, [src, fallbackSrc, category, productId, overrideVersion]);
 
   // Check if cached image loaded synchronously
   useEffect(() => {

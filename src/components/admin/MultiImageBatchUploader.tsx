@@ -59,7 +59,7 @@ export interface QueuedBulkImageItem {
   rotationDegrees: number;
   filters: ImageEditFilters;
   assignedProductId: string;
-  matchType: 'exact-id' | 'partial-id' | 'title-match' | 'manual' | 'sequential' | 'unmapped';
+  matchType: 'exact-id' | 'partial-id' | 'title-match' | 'manual' | 'sequential' | 'unmapped' | 'none';
   placementMode: 'primary' | 'gallery';
   status: 'ready' | 'unmapped' | 'uploading' | 'saved' | 'error';
   savedUrl?: string;

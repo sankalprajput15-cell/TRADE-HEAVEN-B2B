@@ -677,14 +677,16 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       isVerified: true,
       responseTime: '< 1 hour'
     },
-    certificates: [
+    complianceCertificates: [
       {
         id: 'cert-mp-1',
         name: 'Australian ASIC Corporate & Fuel Brokerage Registration',
-        issuer: 'Australian Securities & Investments Commission (ASIC)',
+        category: 'TRADE',
+        issuingAuthority: 'Australian Securities & Investments Commission (ASIC)',
         issueDate: '2016-04-12',
         expiryDate: '2029-04-12',
         certificateNumber: 'ABN-61-648-291-004',
+        type: 'IMAGE',
         verified: true,
         thumbnailUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=400&auto=format&fit=crop&q=80',
         documentUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80'
@@ -692,29 +694,15 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       {
         id: 'cert-mp-2',
         name: 'SGS Petroleum & Fuel Dip Test Quality Assurance (ISO 9001:2015)',
-        issuer: 'SGS Australia Pty Ltd',
+        category: 'QUALITY',
+        issuingAuthority: 'SGS Australia Pty Ltd',
         issueDate: '2024-02-01',
         expiryDate: '2027-02-01',
         certificateNumber: 'AU-SGS-FUEL-88412',
+        type: 'IMAGE',
         verified: true,
         thumbnailUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=400&auto=format&fit=crop&q=80',
         documentUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800&auto=format&fit=crop&q=80'
-      }
-    ],
-    factoryTourImages: [
-      {
-        id: 'tour-mp-1',
-        title: 'Bulk Fuel Tank Farm & Petroleum Loading Terminal',
-        department: 'Fuel Storage & Tanker Dispatch',
-        imageUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-        caption: 'Bulk fuel storage tanks and marine tanker loading terminal in Sydney, Australia.'
-      },
-      {
-        id: 'tour-mp-2',
-        title: 'SGS Fuel Assay, Octane & Sulfur Content Testing Lab',
-        department: 'Petroleum Quality Control',
-        imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-        caption: 'Pre-shipment SGS dip test and ASTM D975 / EN590 laboratory certification.'
       }
     ],
     factoryDetails: {

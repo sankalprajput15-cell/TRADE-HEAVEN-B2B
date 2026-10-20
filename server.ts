@@ -175,6 +175,16 @@ const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Explicitly serve /assets/uploads directory for uploaded product images with CORS
+const uploadsStaticDir = path.join(process.cwd(), 'public', 'assets', 'uploads');
+app.use('/assets/uploads', express.static(uploadsStaticDir, {
+  maxAge: '1h',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
+
 // Explicitly serve public directory static assets (logo.png, favicons, robots.txt, sitemap.xml, etc.) with CORS and headers
 app.use(express.static(path.join(process.cwd(), 'public'), {
   maxAge: '1d',
@@ -1746,6 +1756,9 @@ function saveServerProductImageState() {
 // GET /api/v1/admin/product-images - Fetch all product image overrides & server media library
 app.get('/api/v1/admin/product-images', (req, res) => {
   serverProductImageState = loadServerProductImageState();
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.json({
     success: true,
     data: serverProductImageState
@@ -1847,8 +1860,12 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
         format: ext.toUpperCase(),
         updatedAt: nowIso
       };
+      serverProductsStore = serverProductsStore.map(p =>
+        p.id === productId ? { ...p, image: uploadedUrl, images: gallery } : p
+      );
     }
     if (Array.isArray(productIds)) {
+      const pidSet = new Set(productIds.filter(Boolean));
       for (const pid of productIds) {
         if (!pid) continue;
         const existing = serverProductImageState.overrides[pid];
@@ -1860,6 +1877,9 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
           updatedAt: nowIso
         };
       }
+      serverProductsStore = serverProductsStore.map(p =>
+        pidSet.has(p.id) ? { ...p, image: uploadedUrl, images: [uploadedUrl] } : p
+      );
     }
 
     saveServerProductImageState();

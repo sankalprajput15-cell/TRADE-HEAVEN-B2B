@@ -85,12 +85,28 @@ const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
 class ProductImageManagerService {
   private state: ProductImageSystemState;
   private isHydratedFromServer = false;
+  private hydrationPromise: Promise<ProductImageSystemState> | null = null;
 
   constructor() {
     this.state = this.loadFromLocalStorage();
     if (typeof window !== 'undefined') {
-      this.syncFromServer();
+      this.hydrationPromise = this.syncFromServer();
     }
+  }
+
+  public isHydrated(): boolean {
+    return this.isHydratedFromServer;
+  }
+
+  public async ensureHydrated(): Promise<ProductImageSystemState> {
+    if (this.isHydratedFromServer) return this.state;
+    if (this.hydrationPromise) {
+      await this.hydrationPromise;
+    } else if (typeof window !== 'undefined') {
+      this.hydrationPromise = this.syncFromServer();
+      await this.hydrationPromise;
+    }
+    return this.state;
   }
 
   private getInitialEmptyState(): ProductImageSystemState {
@@ -176,6 +192,15 @@ class ProductImageManagerService {
           localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(updated));
         }
       }
+      // Also sync cached_products used by ProductCatalog
+      const rawCatProducts = localStorage.getItem('cached_products');
+      if (rawCatProducts) {
+        const parsedCat = JSON.parse(rawCatProducts);
+        if (Array.isArray(parsedCat)) {
+          const updatedCat = this.applyOverridesToProductList(parsedCat);
+          localStorage.setItem('cached_products', JSON.stringify(updatedCat));
+        }
+      }
     } catch {}
   }
 
@@ -205,7 +230,9 @@ class ProductImageManagerService {
 
   public async syncFromServer(): Promise<ProductImageSystemState> {
     try {
-      const res = await fetch('/api/v1/admin/product-images');
+      const res = await fetch(`/api/v1/admin/product-images?_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (res.ok) {
         const json = await res.json();
         if (json?.success && json?.data) {

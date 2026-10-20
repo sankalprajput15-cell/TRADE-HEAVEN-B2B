@@ -3,7 +3,7 @@
  * Base Endpoint: ./api.php (or configured VITE_API_URL)
  */
 
-import { RfqRequirement, AuthUser } from '../types';
+import { RfqRequirement, AuthUser, SupplierTier, MembershipStatus } from '../types';
 import { MOCK_RFQS } from '../data/mockData';
 
 export const BIGROCK_API_URL = '/api.php';
@@ -355,8 +355,8 @@ export const bigrockApi = {
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
       const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm');
       const country = isAdmin ? 'United Kingdom' : (isMelissa ? 'Australia' : 'United States');
-      const tier = isAdmin ? 'VIP' : (isSupplier ? 'Basic Plan' : 'FREE');
-      const membershipStatus = (isAdmin || isMelissa) ? 'paid' : (isSupplier ? 'basic' : 'free');
+      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? 'SILVER' : 'FREE');
+      const membershipStatus: MembershipStatus = (isAdmin || isMelissa) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
         id: isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`,
@@ -385,8 +385,8 @@ export const bigrockApi = {
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
       const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm');
       const country = isAdmin ? 'United Kingdom' : (isMelissa ? 'Australia' : 'United States');
-      const tier = isAdmin ? 'VIP' : (isSupplier ? 'Basic Plan' : 'FREE');
-      const membershipStatus = (isAdmin || isMelissa) ? 'paid' : (isSupplier ? 'basic' : 'free');
+      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? 'SILVER' : 'FREE');
+      const membershipStatus: MembershipStatus = (isAdmin || isMelissa) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
         id: isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`,
@@ -833,6 +833,36 @@ export const bigrockApi = {
 
   // File Upload Helper
   async uploadFile(file: File, _folder: string = 'uploads'): Promise<{ success: boolean; url?: string; publicUrl?: string; error?: string }> {
+    try {
+      // 1. Convert to Base64 and upload to persistent server uploads directory
+      const reader = new FileReader();
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch('/api/v1/admin/upload-product-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type || 'image/jpeg',
+          base64Data
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.success && json?.url) {
+          return { success: true, url: json.url, publicUrl: json.url };
+        }
+      }
+    } catch (err) {
+      console.warn('[bigrockApi.uploadFile] Backend upload fallback:', err);
+    }
+
+    // 2. Fallback to local DataURL
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {

@@ -224,7 +224,7 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
       establishedYear: 2018,
       businessType: 'Trading Company',
       tier: (u.tier as any) || 'SILVER',
-      status: u.status || 'ACTIVE',
+      status: u.status === 'SUSPENDED' ? 'SUSPENDED' : (u.status === 'PENDING' || (u.status as string) === 'PENDING_REVIEW') ? 'PENDING_REVIEW' : 'ACTIVE',
       isVerifiedKYC: u.isVerified ?? true,
       trustScore: 95,
       responseRate: '98%',
@@ -850,6 +850,11 @@ export const api = {
   // PRODUCTS & LISTINGS (BIGROCK MYSQL + REST + SEEDED FALLBACK)
   // ==========================================
   async getProducts(params?: { category?: string; country?: string; keyword?: string; tier?: string }): Promise<Product[]> {
+    // CRITICAL: Ensure server image overrides are hydrated from backend (especially for Incognito visitors)
+    try {
+      await productImageManagerService.ensureHydrated();
+    } catch {}
+
     let baseProducts: Product[] = [...MOCK_PRODUCTS];
 
     // 1. Fetch dynamic listings from BigRock PHP MySQL database
@@ -1202,13 +1207,13 @@ export const api = {
                 name: dbu.name || dbu.email.split('@')[0],
                 email: dbu.email,
                 role: 'SUPPLIER',
-                companyName: (dbu as any).company_name || dbu.companyName || `${dbu.name} Trading`,
+                companyName: (dbu as any).company_name || (dbu as any).companyName || `${dbu.name} Trading`,
                 country: dbu.country || 'Global',
                 status: 'ACTIVE',
-                isVerified: Boolean((dbu as any).is_verified ?? dbu.isVerified ?? true),
-                isPremium: Boolean((dbu as any).is_premium ?? dbu.isPremium ?? false),
-                membershipStatus: 'basic',
-                tier: (dbu.tier as any) || 'Basic Plan'
+                isVerified: Boolean((dbu as any).is_verified ?? (dbu as any).isVerified ?? true),
+                isPremium: Boolean((dbu as any).is_premium ?? (dbu as any).isPremium ?? false),
+                membershipStatus: 'paid',
+                tier: (dbu.tier as any) || 'VIP'
               };
             }
           }
