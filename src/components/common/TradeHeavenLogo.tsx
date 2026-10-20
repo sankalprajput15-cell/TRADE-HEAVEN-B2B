@@ -89,16 +89,13 @@ export const TradeHeavenLogo: React.FC<Props> = ({
       {/* Brand Wordmark & Subtitle */}
       {showWordmark && (
         <div className="leading-tight hidden sm:block">
-          <div className={`font-black ${currentSize.title} tracking-tight flex items-center gap-1.5 text-black`}>
+          <div className={`font-black ${currentSize.title} tracking-tight flex items-center gap-1 text-slate-900`}>
             <span className={wmStyle.trade}>TRADE</span>
             <span className={wmStyle.heaven}>HEAVEN</span>
-            <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold uppercase tracking-wider border ${wmStyle.badge}`}>
-              B2B
-            </span>
           </div>
           {subtitle && (
-            <div className={`${currentSize.sub} ${wmStyle.sub} tracking-wider uppercase font-bold mt-0.5 hidden sm:block truncate max-w-[140px] md:max-w-none`}>
-              {typeof subtitle === 'string' ? subtitle : 'Global Sourcing & Trade Directory'}
+            <div className={`${currentSize.sub} text-slate-500 tracking-wide font-medium mt-0.5 hidden sm:block truncate max-w-[150px] lg:max-w-none`}>
+              {typeof subtitle === 'string' ? subtitle : 'Global B2B Trade Directory'}
             </div>
           )}
         </div>
