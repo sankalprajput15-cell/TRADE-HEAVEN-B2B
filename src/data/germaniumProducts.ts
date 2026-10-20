@@ -19,8 +19,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '10 Kg',
     unit: 'Kg',
     images: [
-      'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80&sig=201',
-      'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80&sig=202'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80&sig=201',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Zone-refined high-purity Germanium ingot with 99.999% to 99.9999% purity. Ideal for infrared optics manufacturing, semiconductor substrate synthesis, and fiber optic dopants.',
     specifications: [
@@ -57,8 +57,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '25 Kg',
     unit: 'Kg',
     images: [
-      'https://images.unsplash.com/photo-1624365168968-f283d5162df9?w=800&auto=format&fit=crop&q=80&sig=203',
-      'https://images.unsplash.com/photo-1618403088890-3d9fb6f4c8b1?w=800&auto=format&fit=crop&q=80&sig=204'
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80624365168968-f283d5162df9?w=800&auto=format&fit=crop&q=80&sig=203',
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80618403088890-3d9fb6f4c8b1?w=800&auto=format&fit=crop&q=80&sig=204'
     ],
     description: 'High-density 4N Germanium ingots and vacuum-melted sputtering raw material. Rigorously tested for minimal oxide inclusions and consistent thermal expansion properties.',
     specifications: [
@@ -94,8 +94,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '20 Pieces',
     unit: 'Pieces',
     images: [
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=205',
-      'https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=206'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=205',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=206'
     ],
     description: 'Ultra-flat monocrystalline Germanium wafers polished single or double-sided (SSP/DSP). Engineered for triple-junction space solar cells, optoelectronic sensors, and epitaxial growth.',
     specifications: [
@@ -133,8 +133,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '5 Kg',
     unit: 'Kg',
     images: [
-      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=207',
-      'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=208'
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=207',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=208'
     ],
     description: 'Pure white crystalline Germanium Dioxide (GeO2) powder with 99.999% purity. Premium raw material for PET bottle resin polymerization catalysts, bismuth germanate scintillation crystals, and specialty optical glass.',
     specifications: [
@@ -171,8 +171,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '10 Pieces',
     unit: 'Pieces',
     images: [
-      'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=209',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=210'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=210'
     ],
     description: 'Precision CNC generated and diamond turned Germanium optical blanks and windows with high infrared transmission across the 8-12 μm thermal imaging spectrum.',
     specifications: [
@@ -209,8 +209,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '2 Kg',
     unit: 'Kg',
     images: [
-      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=211',
-      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=212'
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=211',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=212'
     ],
     description: 'High-density vacuum hot-pressed Germanium sputtering targets bonded with copper backing plates. Designed for thin-film phase change memory (GST), optical disc storage, and infrared anti-reflective coatings.',
     specifications: [
@@ -247,8 +247,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '5 Sets',
     unit: 'Sets',
     images: [
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=213',
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=214'
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=213',
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=214'
     ],
     description: 'Therapeutic heated wellness mattress inlaid with natural Germanium stones, Jade, and Tourmaline. Features programmable far-infrared heat (30°C - 70°C), PEMF pulsed magnetic field, and photon red light therapy.',
     specifications: [
@@ -285,8 +285,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '5 Pieces',
     unit: 'Pieces',
     images: [
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=215',
-      'https://images.unsplash.com/photo-1581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=216'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=215',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Precision single-point diamond turned monocrystalline Germanium aspherical lens coated with Hard Carbon DLC (Diamond-Like Carbon) coating on outer surface and BBAR on inner surface for extreme environmental resistance.',
     specifications: [
@@ -323,8 +323,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '2 Pieces',
     unit: 'Pieces',
     images: [
-      'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=217',
-      'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=218'
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=217',
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=218'
     ],
     description: 'Custom manufactured hemispherical Germanium optical domes and large-aperture IR flat windows engineered for airborne thermal pods, naval FLIR systems, and remote sensing equipment.',
     specifications: [
@@ -360,8 +360,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '20 Sets',
     unit: 'Sets',
     images: [
-      'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80&sig=219',
-      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&auto=format&fit=crop&q=80&sig=220'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80&sig=219',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80578683010236-d716f9a3f461?w=800&auto=format&fit=crop&q=80&sig=220'
     ],
     description: 'Ergonomic heated seat cushion and lumbar belt embedded with Germanium mineral stones. Emits deep-penetrating far-infrared rays to relieve muscular fatigue and improve blood circulation during travel or office work.',
     specifications: [
@@ -397,8 +397,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '50 Kg',
     unit: 'Kg',
     images: [
-      'https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80&sig=221',
-      'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80&sig=222'
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80&sig=221',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80&sig=222'
     ],
     description: 'Electronic-grade Germanium Tetrachloride (GeCl4) ultra-pure clear liquid used as the essential core index modifier in chemical vapor deposition (MCVD/OVD/VAD) for telecommunication optical fiber manufacturing.',
     specifications: [
@@ -435,8 +435,8 @@ export const GLOBAL_GERMANIUM_PRODUCTS: Product[] = [
     minOrderQuantity: '2 Kg',
     unit: 'Kg',
     images: [
-      'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=800&auto=format&fit=crop&q=80&sig=223',
-      'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80&sig=224'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80&sig=224'
     ],
     description: 'Detector-grade High-Purity Germanium (HPGe) single crystals with net carrier concentration below 10¹⁰ cm⁻³. Specifically manufactured for gamma-ray spectroscopy detectors in nuclear medicine, astrophysics, and environmental monitoring.',
     specifications: [

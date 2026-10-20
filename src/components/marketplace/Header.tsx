@@ -15,7 +15,8 @@ import {
   LayoutDashboard, 
   ShieldCheck, 
   LogOut, 
-  ChevronDown 
+  ChevronDown,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface Props {
@@ -150,6 +151,19 @@ export const Header: React.FC<Props> = ({
           >
             Services
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => handleNavClick('PRODUCT_IMAGE_ADMIN')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeView === 'PRODUCT_IMAGE_ADMIN'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Product Images</span>
+            </button>
+          )}
         </nav>
 
 
@@ -200,16 +214,28 @@ export const Header: React.FC<Props> = ({
                     <span>Dashboard</span>
                   </button>
                   {isAdmin && (
-                    <button
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        handleNavClick('CLIENT_ADMIN');
-                      }}
-                      className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-100 rounded-xl flex items-center gap-2 text-purple-700 cursor-pointer"
-                    >
-                      <ShieldCheck className="w-4 h-4 text-purple-600" />
-                      <span>Admin Control Center</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleNavClick('PRODUCT_IMAGE_ADMIN');
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-blue-50 rounded-xl flex items-center gap-2 text-blue-700 cursor-pointer"
+                      >
+                        <ImageIcon className="w-4 h-4 text-blue-600" />
+                        <span>Product Image System</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleNavClick('CLIENT_ADMIN');
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-100 rounded-xl flex items-center gap-2 text-purple-700 cursor-pointer"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-purple-600" />
+                        <span>Admin Control Center</span>
+                      </button>
+                    </>
                   )}
                   <div className="border-t border-slate-100 my-1 pt-1">
                     <button

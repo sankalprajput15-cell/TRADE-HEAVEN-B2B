@@ -4,6 +4,8 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { SafeImage } from '../common/SafeImage';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { bigrockApi } from '../../services/bigrockApi';
+import { useAuth } from '../../context/AuthContext';
+import { QuickProductImageModal } from '../admin/DedicatedProductImageSystem';
 import { 
   X, 
   ShieldCheck, 
@@ -39,6 +41,8 @@ export const ProductDetailModal: React.FC<Props> = ({
   onOpenStorefront,
   onStartNegotiation
 }) => {
+  const { isAdmin } = useAuth();
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedIncoterm, setSelectedIncoterm] = useState<Incoterm>(product?.supportedIncoterms?.[0] || 'FOB');
   const [orderQuantity, setOrderQuantity] = useState<number>(product?.moq || 1);
@@ -137,7 +141,22 @@ export const ProductDetailModal: React.FC<Props> = ({
                   totalImages={product?.images?.length}
                   className="w-full h-full"
                 />
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setIsImageModalOpen(true)}
+                    className="absolute bottom-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Change / Upload Image (JPG/Any)</span>
+                  </button>
+                )}
               </div>
+              {isImageModalOpen && (
+                <QuickProductImageModal
+                  product={product}
+                  onClose={() => setIsImageModalOpen(false)}
+                />
+              )}
 
               {/* Thumbnails */}
               {(product?.images?.length ?? 0) > 1 && (

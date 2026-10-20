@@ -14,6 +14,10 @@ import {
 import { ActivityLogAdminModule } from './ActivityLogAdminModule';
 import { DatabaseDiagnosticTool } from '../tools/DatabaseDiagnosticTool';
 import { RegisteredSuppliersAdmin } from './RegisteredSuppliersAdmin';
+import { BulkCsvProductImporter } from './BulkCsvProductImporter';
+import { BatchImageCsvImporter } from './BatchImageCsvImporter';
+import { MultiImageBatchUploader } from './MultiImageBatchUploader';
+import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
 import { 
   Layout, 
   Database, 
@@ -34,11 +38,14 @@ import {
   FileText,
   Activity,
   Terminal,
-  Building2
+  Building2,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
 
 interface AdminDashboardProps {
-  initialTab?: 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS';
+  initialTab?: 'PRODUCT_IMAGE_SYSTEM' | 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS' | 'BULK_CSV_IMPORT' | 'BATCH_IMAGE_IMPORT' | 'MULTI_FILE_UPLOAD';
   currentUser: AuthUser | null;
   onNavigate: (view: any) => void;
   selectedCurrency: Currency;
@@ -47,14 +54,14 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  initialTab = 'CMS',
+  initialTab = 'PRODUCT_IMAGE_SYSTEM',
   currentUser,
   onNavigate,
   selectedCurrency,
   onOpenPaymentCheckout,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'PRODUCT_IMAGE_SYSTEM' | 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS' | 'BULK_CSV_IMPORT' | 'BATCH_IMAGE_IMPORT' | 'MULTI_FILE_UPLOAD'>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Sync tab if initialTab prop changes
@@ -266,8 +273,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
 
   const navigationItems = [
+    { id: 'PRODUCT_IMAGE_SYSTEM', label: '📸 Product Image System (All)', icon: ImageIcon },
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
+    { id: 'BULK_CSV_IMPORT', label: '📥 Bulk CSV Product Import', icon: FileSpreadsheet },
+    { id: 'BATCH_IMAGE_IMPORT', label: '🖼️ Batch Image URL Import', icon: ImageIcon },
+    { id: 'MULTI_FILE_UPLOAD', label: '📂 Multi-File Image Uploader', icon: Upload },
     { id: 'DIAGNOSTICS', label: '🔬 Registration Diagnostics', icon: Terminal },
     { id: 'REGISTERED_SUPPLIERS', label: '🏭 Registered Suppliers', icon: Building2 },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
@@ -391,6 +402,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* VIEW CONDITIONAL RENDERING */}
+        {activeTab === 'PRODUCT_IMAGE_SYSTEM' && (
+          <div className="space-y-4">
+            <DedicatedProductImageSystem />
+          </div>
+        )}
+
+        {activeTab === 'BULK_CSV_IMPORT' && (
+          <div className="space-y-4">
+            <BulkCsvProductImporter onImportSuccess={(count) => triggerToast('success', `Successfully imported ${count} products into supplier catalog!`)} />
+          </div>
+        )}
+
+        {activeTab === 'MULTI_FILE_UPLOAD' && (
+          <div className="space-y-4">
+            <MultiImageBatchUploader onAssignImages={(assignments) => triggerToast('success', `Successfully assigned and saved ${assignments.length} product images!`)} />
+          </div>
+        )}
+
+        {activeTab === 'BATCH_IMAGE_IMPORT' && (
+          <div className="space-y-4">
+            <BatchImageCsvImporter onUpdateSuccess={(count) => triggerToast('success', `Successfully updated ${count} product image URLs!`)} />
+          </div>
+        )}
+
         {activeTab === 'CMS' && (
           <div className="space-y-4">
             <SiteContentCmsEditor />

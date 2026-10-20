@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES, GLOBAL_B2B_TRADE_METRICS } from '../../data/mockData';
+import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -37,7 +38,7 @@ import { OptimizedHeroImage } from '../common/OptimizedHeroImage';
 import { getDynamicHeroImageForView } from '../../utils/heroImageOptimization';
 
 interface Props {
-  onSearch: (query: string, category: string) => void;
+  onSearch: (query: string, category: string, targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS') => void;
   onOpenCreateRfq: () => void;
   onOpenLiveTool: (tool: 'incoterms' | 'rfq_checker' | 'api_sandbox') => void;
   products?: Product[];
@@ -209,7 +210,28 @@ export const HeroSection: React.FC<Props> = ({
       };
     }
 
-    // 1. Match Products
+    const allSuppliersPool = getAllSuppliersWithUsers();
+
+    // 1. Match Verified Suppliers & Manufacturers first (by Supplier Name, Company Name, Email, Country, etc.)
+    const matchedSuppliers = allSuppliersPool.filter(c => {
+      if (!c) return false;
+      return (
+        (c.companyName && c.companyName.toLowerCase().includes(q)) ||
+        (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
+        (c.contactEmail && c.contactEmail.toLowerCase().includes(q)) ||
+        (c.country && c.country.toLowerCase().includes(q)) ||
+        (c.city && c.city.toLowerCase().includes(q)) ||
+        (c.businessType && c.businessType.toLowerCase().includes(q)) ||
+        (c.contactPhone && c.contactPhone.toLowerCase().includes(q)) ||
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        ((c.certifications || []).some(cert => cert && typeof cert === 'string' && cert.toLowerCase().includes(q)))
+      );
+    }).slice(0, 16);
+
+    const matchedSupplierIds = new Set(matchedSuppliers.map(s => s.id));
+    const matchedSupplierNames = new Set(matchedSuppliers.map(s => (s.companyName || '').toLowerCase()).filter(Boolean));
+
+    // 2. Match Products (including products belonging to matched Supplier Name or Company Name)
     const matchedProducts = products.filter(p => {
       if (!p) return false;
       const cat = p.category || '';
@@ -219,38 +241,35 @@ export const HeroSection: React.FC<Props> = ({
       const sName = p.supplierName || '';
       const sCountry = p.supplierCountry || '';
       const desc = p.description || '';
-      const hasSpecMatch = Array.isArray(p.specifications) && p.specifications.some((s: any) => {
-        if (!s) return false;
-        if (typeof s === 'string') return (s as string).toLowerCase().includes(q);
-        return (
-          (typeof s.name === 'string' && s.name.toLowerCase().includes(q)) ||
-          (s.value !== undefined && String(s.value).toLowerCase().includes(q)) ||
-          (typeof s.key === 'string' && s.key.toLowerCase().includes(q))
+      const belongsToMatchedSupplier =
+        (p.supplierId && matchedSupplierIds.has(p.supplierId)) ||
+        (sName && matchedSupplierNames.has(sName.toLowerCase()));
+
+      let hasSpecMatch = false;
+      if (Array.isArray(p.specifications)) {
+        hasSpecMatch = p.specifications.some((s: any) => {
+          if (!s) return false;
+          if (typeof s === 'string') return (s as string).toLowerCase().includes(q);
+          return (
+            (typeof s.name === 'string' && s.name.toLowerCase().includes(q)) ||
+            (s.value !== undefined && String(s.value).toLowerCase().includes(q)) ||
+            (typeof s.key === 'string' && s.key.toLowerCase().includes(q))
+          );
+        });
+      } else if (p.specifications && typeof p.specifications === 'object') {
+        hasSpecMatch = Object.entries(p.specifications).some(
+          ([k, v]) => k.toLowerCase().includes(q) || String(v ?? '').toLowerCase().includes(q)
         );
-      });
+      }
 
       return (
+        belongsToMatchedSupplier ||
         title.toLowerCase().includes(q) ||
         cat.toLowerCase().includes(q) ||
         sName.toLowerCase().includes(q) ||
         sCountry.toLowerCase().includes(q) ||
         desc.toLowerCase().includes(q) ||
-        Boolean(hasSpecMatch)
-      );
-    }).slice(0, 16);
-
-    // 2. Match Verified Suppliers & Manufacturers
-    const matchedSuppliers = MOCK_COMPANIES.filter(c => {
-      if (!c) return false;
-      return (
-        (c.companyName && c.companyName.toLowerCase().includes(q)) ||
-        (c.country && c.country.toLowerCase().includes(q)) ||
-        (c.city && c.city.toLowerCase().includes(q)) ||
-        (c.businessType && c.businessType.toLowerCase().includes(q)) ||
-        (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
-        (c.contactPhone && c.contactPhone.toLowerCase().includes(q)) ||
-        (c.description && c.description.toLowerCase().includes(q)) ||
-        ((c.certifications || []).some(cert => cert && typeof cert === 'string' && cert.toLowerCase().includes(q)))
+        hasSpecMatch
       );
     }).slice(0, 16);
 
@@ -322,11 +341,15 @@ export const HeroSection: React.FC<Props> = ({
     e.preventDefault();
     setIsSearchPopoverOpen(false);
     setIsCategoryMenuOpen(false);
-    onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat);
+    const effectiveMode =
+      searchTargetMode === 'SUPPLIERS' || (searchQuery.trim() && searchResults.suppliers.length > 0 && searchResults.products.length === 0)
+        ? 'SUPPLIERS'
+        : searchTargetMode;
+    onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat, effectiveMode);
     if (onNavigate) {
-      if (searchTargetMode === 'RFQS') {
+      if (effectiveMode === 'RFQS') {
         onNavigate('BUY_LEADS');
-      } else if (searchTargetMode === 'SUPPLIERS') {
+      } else if (effectiveMode === 'SUPPLIERS') {
         onNavigate('SUPPLIERS_DIRECTORY');
       } else {
         onNavigate('PRODUCT_DIRECTORY');
@@ -424,15 +447,19 @@ export const HeroSection: React.FC<Props> = ({
       <div className="absolute inset-0 z-0">
         <OptimizedHeroImage
           imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1920, 85)}
-          src={hp.heroBgImage && hp.heroBgImage.trim() ? hp.heroBgImage.trim() : undefined}
-          alt="Global B2B Logistics and Trade Shipping Port"
+          src={
+            hp.heroBgImage && hp.heroBgImage.trim() && !hp.heroBgImage.includes('unsplash.com')
+              ? hp.heroBgImage.trim()
+              : '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+          }
+          alt="Cargo Tanker Ship Marine Vessel Docking at Oversea Berth"
           aspectRatio="16/9"
           className="w-full h-full"
           imgClassName="w-full h-full object-cover object-center"
           eager={true}
         />
-        {/* Balanced gradient overlay ensuring high text readability while keeping port colors luminous */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/50 to-slate-900/25 pointer-events-none z-[2]"></div>
+        {/* Balanced gradient overlay ensuring high text readability while keeping tanker and ocean berth colors clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-900/45 to-slate-900/15 pointer-events-none z-[2]"></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">
@@ -448,7 +475,7 @@ export const HeroSection: React.FC<Props> = ({
           {/* Main Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15] mb-6 flex flex-wrap items-center gap-2.5">
             <EditableText contentKey="homepage.heroHeadline" defaultText={t('heroTitle1')} />
-            <span className="text-amber-400 underline decoration-amber-500/40 underline-offset-8">
+            <span className="text-amber-400">
               <EditableText contentKey="homepage.heroHeadlineGradient" defaultText={t('heroTitleGradient')} />
             </span>
             <EditableText contentKey="homepage.heroHeadlineSuffix" defaultText={t('heroTitle2')} />
@@ -967,14 +994,14 @@ export const HeroSection: React.FC<Props> = ({
                     )}
 
                     {/* SECTION 3: MATCHED SUPPLIERS & FACTORIES */}
-                    {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS') && searchResults.suppliers.length > 0 && (
+                    {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS' || searchQuery.trim().length > 0) && searchResults.suppliers.length > 0 && (
                       <div className="space-y-2.5">
                         <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
                           <span className="flex items-center gap-2">
                             <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
                               <Building2 className="w-3.5 h-3.5" />
                             </span>
-                            <span>Audited Manufacturers</span>
+                            <span>Verified Suppliers &amp; Companies</span>
                             <span className="text-[10px] font-semibold bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
                               {searchResults.suppliers.length}
                             </span>
@@ -983,6 +1010,7 @@ export const HeroSection: React.FC<Props> = ({
                             type="button"
                             onClick={() => {
                               setIsSearchPopoverOpen(false);
+                              onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat, 'SUPPLIERS');
                               onNavigate?.('SUPPLIERS_DIRECTORY');
                             }}
                             className="text-[11px] text-amber-700 hover:text-amber-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
@@ -993,7 +1021,7 @@ export const HeroSection: React.FC<Props> = ({
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {(activeFilter === 'ALL' ? searchResults.suppliers.slice(0, 4) : searchResults.suppliers).map(supp => (
+                          {(activeFilter === 'SUPPLIERS' ? searchResults.suppliers : searchResults.suppliers.slice(0, 6)).map(supp => (
                             <div
                               key={supp.id}
                               onClick={() => handleSupplierClick(supp.id)}
@@ -1007,6 +1035,11 @@ export const HeroSection: React.FC<Props> = ({
                                   <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
                                     {supp.companyName}
                                   </div>
+                                  {supp.contactPerson && (
+                                    <div className="text-[11px] font-semibold text-blue-600 truncate">
+                                      Supplier: {supp.contactPerson}
+                                    </div>
+                                  )}
                                   <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
                                     <span className="truncate">{supp.country}</span>
                                     <span>•</span>

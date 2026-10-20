@@ -24,8 +24,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 22000', 'HACCP', 'BRC Global Standard', 'GLOBAL G.A.P.', 'HALAL'],
     factorySizeSqM: 6500,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     description: 'Supplier of frozen, IQF, mango, artichoke, and broccoli. Granova Foods offers a full range of natural IQF products from premium Green Okra (Excellent Grade) to Minced Mulukhiyah, Strawberry, Apricot, Cauliflower, and Broccoli, processed with advanced continuous IQF spiral freezing tunnel systems.',
     contactPerson: 'Mohamed',
     contactEmail: 'mohamed.export@granovafoods-eg.com',
@@ -57,8 +57,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'ISO 22000', 'FSSC 22000', 'HACCP', 'FDA Registered', 'HALAL'],
     factorySizeSqM: 18000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1506617420156-8e4536971650?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80506617420156-8e4536971650?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=1200&auto=format&fit=crop&q=80',
     description: '[Global Frozen Food Company] One of the companies of SAKR Agricultural Products Factory, located in Alexandria, Egypt. We produce frozen vegetables and fruits under our brand name (HUB GREEN): okra, green peas, green beans, spinach, molokhia, artichoke, taro, cauliflower, sweet corn, pomegranate, apricot, broccoli, broad beans, grape leaves, strawberries, and mango.',
     contactPerson: 'Marwa Hozayen',
     contactEmail: 'marwa.hozayen@sakragri-hubgreen.com',
@@ -90,8 +90,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 22000', 'HACCP', 'KOSHER', 'HALAL', 'FDA Registered'],
     factorySizeSqM: 12500,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80542838132-92c53300491e?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=1200&auto=format&fit=crop&q=80',
     description: 'Cairo Food is a family-owned company and a trusted supplier of frozen fruits and IQF vegetables with extensive experience in international trade. Over the years, we have proudly supplied premium IQF broccoli florets, mixed vegetables, strawberry halves, and citrus pulp to leading retailers and distributors worldwide.',
     contactPerson: 'Ahmed Kareem',
     contactEmail: 'ahmed.kareem@cairofood-eg.com',
@@ -123,8 +123,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['FSSAI', 'ISO 22000', 'HACCP', 'APEDA Registered', 'HALAL'],
     factorySizeSqM: 9800,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1534939561126-855b8675edd7?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80534939561126-855b8675edd7?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80551754655-cd27e38d2076?w=1200&auto=format&fit=crop&q=80',
     description: 'Hindam Global offers top quality frozen foods especially green peas, sweetcorn, babycorn, broccoli, cauliflower, mix veg, soy sticks, french fries, and other fresh vegetables like green chilli and onion, sourced from pristine Himalayan foothills.',
     contactPerson: 'Mohammad Shamee',
     contactEmail: 'mohammad.shamee@hindamglobal.com',
@@ -156,8 +156,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['BRC Global Standard', 'ISO 22000', 'Red Tractor Assured', 'HACCP', 'Sedex Audited'],
     factorySizeSqM: 11000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    bannerUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80464965911861-746a04b4bca6?w=1200&auto=format&fit=crop&q=80',
     description: 'Based in Alexandria, Egypt and headquartered in the United Kingdom, Yhbs specializes in the production and export of high-quality frozen fruits and vegetables: strawberries, mangos, broccoli florets, cauliflower, and green beans directly compliant with strict British Retail Consortium guidelines.',
     contactPerson: 'Yulia Howie',
     contactEmail: 'yulia.howie@yhbs-international.co.uk',
@@ -189,8 +189,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'ISO 22000:2018', 'BRC Grade AA', 'IFS Food', 'FDA', 'HALAL', 'KOSHER'],
     factorySizeSqM: 26000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80590779033100-9f60a05a013d?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80518977676601-b53f82aba655?w=1200&auto=format&fit=crop&q=80',
     description: 'Established in 1991, Egyfald (Egy Field) is a veteran agricultural processor and exporter of frozen vegetables: broccoli florets, cauliflower, bell peppers, green beans, peas, carrots, and potatoes, frozen using the latest quick-freezing technology to ensure pristine texture and nutritional retention. Also active buyers and processors of fresh artichoke and orange crops.',
     contactPerson: 'Amirsaad',
     contactEmail: 'amirsaad@egyfield-agri.com',
@@ -222,8 +222,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 22000', 'HACCP', 'BRC Food', 'FDA Food Facility Registration', 'KOSHER', 'HALAL'],
     factorySizeSqM: 35000,
     productionLines: 10,
-    logoUrl: 'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1540148426945-6cf22a6b2383?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80518843875459-f738682238a6?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80540148426945-6cf22a6b2383?w=1200&auto=format&fit=crop&q=80',
     description: 'Hangzhou Molai Biotech Co., Ltd is a manufacturer of button mushroom (champignon, Agaricus Bisporus), IQF salted/peeled garlic cloves/granules/flakes/crushed, green and white broccoli florets, green beans, chili pepper, ginger, strawberry, and blackberry. Regular large-scale exporter to Russia, South Korea, Europe, and North America.',
     contactPerson: 'Fenia Fang',
     contactEmail: 'fenia.fang@molaibiotech.com',
@@ -255,8 +255,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['BRC Global Standard', 'ISO 22000', 'HACCP', 'FDA Registered', 'KOSHER'],
     factorySizeSqM: 30000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1629853488219-c02052174c8b?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80629853488219-c02052174c8b?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     description: 'Manufacturer of frozen fruit, frozen vegetable, IQF strawberry, and frozen yellow peach. Our 30+ product range includes frozen dragon fruit, frozen apple, frozen strawberry, frozen apricot, frozen yellow peach, frozen grape, and frozen broccoli with 25,000 MT annual processing capacity.',
     contactPerson: 'Joan Ma',
     contactEmail: 'joan.ma@heze-shangqingfoods.com',
@@ -288,8 +288,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['BRC Grade AA', 'IFS Food', 'ISO 22000', 'HACCP', 'FDA Registered', 'Sedex SMETA'],
     factorySizeSqM: 42000,
     productionLines: 12,
-    logoUrl: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80598170845058-32b9d6a5da37?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=1200&auto=format&fit=crop&q=80',
     description: 'Established in 1996 and officially incorporated in 1998, Laiyang YaFuRui Import & Export Co., Ltd is specialized in processing and exporting fresh and frozen vegetables and fruits. IQF products include broccoli florets, cauliflower, green beans, peeled garlic, frozen strawberries, peach dices/slices, pear dices/halves, apricot dices, apple dices, asparagus, and sugar snap peas.',
     contactPerson: 'Vicky Zhang',
     contactEmail: 'vicky.zhang@yafurui-foods.com',
@@ -321,8 +321,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 22000', 'HACCP', 'GLOBAL G.A.P.', 'HALAL', 'FDA Registered'],
     factorySizeSqM: 14000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80519996529931-28324d5a630e?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80464965911861-746a04b4bca6?w=1200&auto=format&fit=crop&q=80',
     description: 'Snow Fresh Egypt is a direct factory manufacturer of IQF frozen products, not an agent or trader company. We export 100% of our products under the SNOW FRESH EGYPT brand name. We own state-of-the-art strawberry, broccoli florets, cauliflower, and green beans processing facilities in Alexandria.',
     contactPerson: 'Nevine Yakout',
     contactEmail: 'nevine.yakout@snowfresh-egypt.com',
@@ -354,8 +354,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['CIQ System Certified', 'BRC Food', 'ISO 22000', 'HACCP', 'KOSHER', 'HALAL'],
     factorySizeSqM: 32000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80540420773420-3366772f4999?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=1200&auto=format&fit=crop&q=80',
     description: 'Operates under strict CIQ supervision system. Manufacturer of frozen garlic cloves/granules/flakes/crushed, green and white broccoli, bell peppers, strawberries, blackberries, and champignon mushrooms. Our products are regular, long-standing exports to Russia, South Korea, and European food distributors.',
     contactPerson: 'Gloria',
     contactEmail: 'gloria.export@qingguofoods.com',
@@ -387,8 +387,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'ISO 22000', 'HACCP', 'BRC Global Standard', 'FDA Registered'],
     factorySizeSqM: 22000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1515471209610-dae1c92d8777?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    bannerUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=1200&auto=format&fit=crop&q=80',
     description: 'Manufacturer of sugar, canned vegetables, and deep-frozen IQF produce: 1) green/white asparagus spears (t/c, c/c), 2) peapods (snow peas, mange tout), 3) green beans (whole/cut), 4) water chestnuts (whole/piece), 5) broccoli florets (IQF/BQF), and 6) sugar snap peas.',
     contactPerson: 'Zhijun Xia',
     contactEmail: 'zhijun.xia@dongtai-hongda.com',
@@ -420,8 +420,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['HACCP', 'ISO 22000', 'FDA Registered', 'CIQ Inspected'],
     factorySizeSqM: 5000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80590779033100-9f60a05a013d?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=1200&auto=format&fit=crop&q=80',
     description: 'Top Source Co., Ltd is an export trading and sourcing hub located in Fujian. Our leading products are frozen vegetables and fruits such as frozen water chestnuts, green beans, edamame soy beans, broccoli florets, cauliflower, golden pineapples, and mango slices with strict export batch testing.',
     contactPerson: 'David Liu',
     contactEmail: 'david.liu@topsource-trade.com',
@@ -453,8 +453,8 @@ export const FROZEN_BROCCOLI_COMPANIES: CompanyProfile[] = [
     certifications: ['BRC Global Standards AA+', 'IFS Food v7', 'ISO 22000', 'HACCP', 'FDA Registered', 'KOSHER', 'HALAL'],
     factorySizeSqM: 38000,
     productionLines: 10,
-    logoUrl: 'https://images.unsplash.com/photo-1540148426945-6cf22a6b2383?w=200&auto=format&fit=crop&q=80',
-    bannerUrl: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=1200&auto=format&fit=crop&q=80',
+    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80540148426945-6cf22a6b2383?w=200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=1200&auto=format&fit=crop&q=80',
     description: 'Leading manufacturer and global exporter of high-spec IQF vegetables and fruits with listed contract capacity: FROZEN GARLIC 6,000 TONS, IQF Garlic Puree 1kgx10 ($1,000/MT), IQF Strawberry ($1,200/MT), IQF Broccoli 4-6cm 1kgx10 ($1,100/MT), IQF Cauliflower 3-5cm ($880/MT), IQF Onion Dice 10x10 ($550/MT), and IQF Red Bell Pepper.',
     contactPerson: 'James Lee',
     contactEmail: 'james.lee@poloma-iqf.com',
@@ -921,8 +921,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Premium Egyptian IQF Frozen Broccoli Florets (Grade A, size 30-50mm), individually quick frozen immediately after hand harvesting in Alexandria. Vibrant natural green color, pesticide residue tested, zero additives, 100% natural.',
     priceTiers: [
@@ -964,8 +964,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Export-grade IQF Green Okra (Zero, One, Two classification) and finely minced fresh green Mulukhiyah leaves, nitrogen sealed in retail and foodservice packaging.',
     priceTiers: [
@@ -1003,8 +1003,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 12,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Produced by SAKR Agricultural Products Factory under brand HUB GREEN. Individually quick frozen broccoli florets (3-6cm) and cauliflower florets with pristine color, firm texture, and strict microbiological compliance.',
     priceTiers: [
@@ -1043,8 +1043,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 15,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80551754655-cd27e38d2076?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-yield sweet corn kernels, tender garden green peas, and whole/cut green beans. Blanching and IQF technology locks in sweet taste and natural chlorophyll.',
     priceTiers: [
@@ -1082,8 +1082,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Family-owned producer with over 15 years of international trade export. Sourced from clean Egyptian Nile delta farms, washed, blanched, and quick frozen for global catering, supermarket, and wholesale distributors.',
     priceTiers: [
@@ -1121,8 +1121,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 8,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-altitude agro produce cultivated in the Himalayan foothills of Uttarakhand. Hand-trimmed broccoli florets, tender sweet baby corn, and farm-fresh green peas processed in a modern IQF plant.',
     priceTiers: [
@@ -1160,8 +1160,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Supermarket-grade IQF broccoli florets adhering strictly to British Retail Consortium (BRC) specifications. High density, compact heads, calibrated stalk length, and full cold-chain traceability.',
     priceTiers: [
@@ -1199,8 +1199,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 12,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Quick-frozen with advanced IQF fluidized bed technology. High-grade broccoli florets (3-5cm), artichoke bottoms (size 3-5cm, 5-7cm, 7-9cm), and tricolor bell pepper strips. Established in 1991 with 35+ years of agricultural excellence.',
     priceTiers: [
@@ -1238,8 +1238,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 15,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1540148426945-6cf22a6b2383?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80540148426945-6cf22a6b2383?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Industrial IQF green and white broccoli florets (20-40mm, 30-50mm, 40-60mm) and IQF peeled garlic cloves, garlic puree, and champignon button mushrooms for North American and European food processors.',
     priceTiers: [
@@ -1277,8 +1277,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80464965911861-746a04b4bca6?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Processed from over 30 varieties of fresh fruits and vegetables. IQF broccoli florets (3-5cm), whole frozen strawberries (Senga Sengana / Camarosa), and yellow peach dices (10x10mm) for commercial food manufacturing.',
     priceTiers: [
@@ -1316,8 +1316,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 15,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Operating since 1996 in Shandong, Laiyang YaFuRui is a premier producer of IQF broccoli florets (3-5cm), cauliflower florets (3-5cm), sugar snap peas, green beans, and peeled garlic for top Japanese and European supermarket brands.',
     priceTiers: [
@@ -1355,8 +1355,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&auto=format&fit=crop&q=80'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80464965911861-746a04b4bca6?w=800&auto=format&fit=crop&q=80'
     ],
     description: '100% direct factory production under SNOW FRESH EGYPT brand. Fresh hand-picked Alexandria broccoli florets (4-6cm) and whole sweet strawberries (Camarosa / Festival), blast frozen at -38°C for perfect freshness.',
     priceTiers: [
@@ -1394,8 +1394,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 12,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'CIQ quality inspection verified export supply. Individually quick frozen green/white broccoli florets (2-4cm, 4-6cm), sliced Agaricus Bisporus button mushrooms, and IQF crushed garlic paste.',
     priceTiers: [
@@ -1433,8 +1433,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1515471209610-dae1c92d8777?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80515471209610-dae1c92d8777?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Specialized producer of deep-frozen IQF green and white asparagus spears (t/c, c/c), snow peas (mange tout), water chestnuts, and broccoli florets (IQF/BQF standards) with 30 years of export experience.',
     priceTiers: [
@@ -1472,8 +1472,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 10,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592417817098-8f3d6ef231d8?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Fujian export hub delivering high-grade IQF broccoli florets, whole/diced peeled water chestnuts, edamame pods, and tropical fruit dices (pineapple, mango) with competitive container pricing.',
     priceTiers: [
@@ -1511,8 +1511,8 @@ export const FROZEN_BROCCOLI_PRODUCTS: Product[] = [
     moq: 20,
     moqUnit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1540148426945-6cf22a6b2383?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80540148426945-6cf22a6b2383?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Poloma standard price list contract capacity: 6,000 Tons IQF Garlic Puree (1kg x 10, $1,000/MT), IQF Strawberry ($1,200/MT), IQF Broccoli 4-6cm (1kg x 10, $1,100/MT), IQF Cauliflower 3-5cm ($880/MT), and IQF Onion Dice 10x10 ($550/MT).',
     priceTiers: [

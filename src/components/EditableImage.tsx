@@ -17,7 +17,7 @@ export const EditableImage: React.FC<Props> = ({ contentKey, defaultSrc, alt, cl
   const rawSrc = contentKey.split('.').reduce((o, i) => (o ? o[i] : null), siteContent);
   const src = (rawSrc && typeof rawSrc === 'string' && rawSrc.trim()) 
     ? rawSrc.trim() 
-    : (defaultSrc && defaultSrc.trim() ? defaultSrc.trim() : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800');
+    : (defaultSrc && defaultSrc.trim() ? defaultSrc.trim() : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800');
 
   const handleClick = () => {
     if (!canEdit) return;

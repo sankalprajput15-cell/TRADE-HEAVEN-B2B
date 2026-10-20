@@ -31,7 +31,7 @@ export const AstraProductGrid: React.FC<Props> = ({
             className="h-44 w-full bg-slate-100 overflow-hidden cursor-pointer relative"
           >
             <SafeImage
-              src={product.images?.[0] || 'https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=400'}
+              src={product.images?.[0] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80577962917302-cd874c4e31d2?w=400'}
               alt={product.title}
               category={product.category}
               productId={product.id}

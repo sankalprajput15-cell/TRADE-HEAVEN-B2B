@@ -119,8 +119,30 @@ interface SiteContentContextType {
   rejectAccessRequest: (id: string, adminUser?: AuthUser | null) => Promise<{ success: boolean; message?: string }>;
 }
 
-const LOCAL_STORAGE_KEY = 'trade_heaven_site_content_v1';
+const LOCAL_STORAGE_KEY = 'trade_heaven_site_content_v2';
 const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
+const HERO_TANKER_IMAGE = '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
+
+function normalizeHeroImage(content: SiteContent): SiteContent {
+  if (!content?.homepage) return content;
+  const currentBg = content.homepage.heroBgImage;
+  if (
+    !currentBg ||
+    currentBg === 'vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034.jpg' ||
+    currentBg.includes('unsplash.com') ||
+    currentBg.includes('1542601906990') ||
+    currentBg.includes('1578575437130')
+  ) {
+    return {
+      ...content,
+      homepage: {
+        ...content.homepage,
+        heroBgImage: HERO_TANKER_IMAGE
+      }
+    };
+  }
+  return content;
+}
 
 const SiteContentContext = createContext<SiteContentContextType | undefined>(undefined);
 
@@ -158,7 +180,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
-        return { ...DEFAULT_SITE_CONTENT, ...parsed };
+        return normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...parsed });
       }
     } catch {
       // Fallback
@@ -174,7 +196,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const res = await apiClient.getSiteContent();
         if (res.success && res.data && isMounted) {
           // Merge with default to ensure no missing keys
-          const merged = { ...DEFAULT_SITE_CONTENT, ...res.data };
+          const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...res.data });
           setSiteContent(merged);
           try {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));

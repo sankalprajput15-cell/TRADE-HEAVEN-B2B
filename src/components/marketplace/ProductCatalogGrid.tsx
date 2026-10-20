@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
-import { MessageCircle, Building, Lock, ShieldCheck, Award } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { QuickProductImageModal } from '../admin/DedicatedProductImageSystem';
+import { MessageCircle, Building, Lock, ShieldCheck, Award, Image as ImageIcon } from 'lucide-react';
 
 export const ProductCardSkeleton: React.FC = () => {
   return (
@@ -68,6 +70,8 @@ interface ProductCardItemProps {
   onOpenStorefront: (supplierId: string) => void;
   onContactSupplier: (product: Product) => void;
   getTierBadge: (tier?: string) => React.ReactNode;
+  isAdmin?: boolean;
+  onEditProductImage?: (product: Product) => void;
 }
 
 const ProductCardItem: React.FC<ProductCardItemProps> = ({
@@ -75,7 +79,9 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
   onSelectProduct,
   onOpenStorefront,
   onContactSupplier,
-  getTierBadge
+  getTierBadge,
+  isAdmin = false,
+  onEditProductImage
 }) => {
   React.useEffect(() => {
     console.log(`[PRODUCT_CATALOG_RENDER_EFFECT] Product ID: ${product.id} | Assigned Image URL: ${product.images?.[0] || 'NONE'}`);
@@ -102,11 +108,13 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
           className="relative h-40 sm:h-44 md:h-48 w-full bg-slate-100 overflow-hidden cursor-pointer"
         >
           {(() => {
-            const rawImg = product.images?.[0] || 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80';
-            const cacheBustedImg = rawImg + '?v=' + Date.now();
+            const rawImg = product.images?.[0] || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
+            const normalizedImg = rawImg.includes('1518709268805') || rawImg.includes('518709268805')
+              ? '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+              : rawImg;
             return (
               <SafeImage
-                src={cacheBustedImg}
+                src={normalizedImg}
                 alt={product.title}
                 productTitle={product.title}
                 supplierName={product.supplierName}
@@ -119,6 +127,20 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
           <div className="absolute top-2.5 left-2.5">
             {getTierBadge(product.supplierTier)}
           </div>
+          {isAdmin && onEditProductImage && (
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                onEditProductImage(product);
+              }}
+              className="absolute top-2.5 right-2.5 z-20 px-2.5 py-1 rounded-lg bg-blue-600/95 hover:bg-blue-700 text-white text-[10px] font-bold shadow-md flex items-center gap-1 cursor-pointer transition-colors"
+              title="Admin: Change or Upload Product Image (JPG / Any Format)"
+            >
+              <ImageIcon className="w-3 h-3" />
+              <span>Change Image</span>
+            </button>
+          )}
           <div className="absolute bottom-2.5 right-2.5">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
               <Lock className="w-2.5 h-2.5 text-amber-400" />
@@ -247,6 +269,9 @@ export const ProductCatalogGrid: React.FC<Props> = ({
   isLoading = false,
   skeletonCount = 12
 }) => {
+  const { isAdmin } = useAuth();
+  const [editingImageProduct, setEditingImageProduct] = useState<Product | null>(null);
+
   if (isLoading) {
     return (
       <div id="product-grid-loading-skeletons" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
@@ -258,10 +283,9 @@ export const ProductCatalogGrid: React.FC<Props> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
-      {products.map(product => {
-        console.log(product.id, product.images?.[0]);
-        return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
+        {products.map(product => (
           <ProductCardItem
             key={product.id}
             product={product}
@@ -269,9 +293,18 @@ export const ProductCatalogGrid: React.FC<Props> = ({
             onOpenStorefront={onOpenStorefront}
             onContactSupplier={onContactSupplier}
             getTierBadge={getTierBadge}
+            isAdmin={isAdmin}
+            onEditProductImage={prod => setEditingImageProduct(prod)}
           />
-        );
-      })}
-    </div>
+        ))}
+      </div>
+
+      {editingImageProduct && (
+        <QuickProductImageModal
+          product={editingImageProduct}
+          onClose={() => setEditingImageProduct(null)}
+        />
+      )}
+    </>
   );
 };

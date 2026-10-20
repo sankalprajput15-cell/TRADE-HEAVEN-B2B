@@ -88,7 +88,7 @@ export const ClientAdminView: React.FC<Props> = ({
   const [newListingPrice, setNewListingPrice] = useState('1200');
   const [newListingMoq, setNewListingMoq] = useState(10);
   const [newListingSupplier, setNewListingSupplier] = useState('Trade Heaven Verified Supplier');
-  const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
+  const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
   const [isUploadingListingImage, setIsUploadingListingImage] = useState(false);
 
   // 4. FAQs State (Secure Database)
@@ -889,8 +889,8 @@ export const ClientAdminView: React.FC<Props> = ({
                     <th className="p-3">User &amp; Organization</th>
                     <th className="p-3">UID</th>
                     <th className="p-3">Assigned Role</th>
-                    <th className="p-3">Account Status</th>
-                    <th className="p-3">Membership Tier</th>
+                    <th className="p-3">Account Status (Approval)</th>
+                    <th className="p-3">Supplier &amp; Membership Status</th>
                     <th className="p-3 text-right">Admin Controls</th>
                   </tr>
                 </thead>
@@ -930,28 +930,37 @@ export const ClientAdminView: React.FC<Props> = ({
                       </td>
 
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          user.status === 'ACTIVE'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {user.status || 'ACTIVE'}
-                        </span>
+                        <select
+                          value={user.status || 'ACTIVE'}
+                          onChange={(e) => handleAdminPrivilegeToggle(user.id, 'status', e.target.value)}
+                          className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-bold text-[11px] cursor-pointer focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="PENDING">Pending Approval</option>
+                          <option value="ACTIVE">Active</option>
+                          <option value="SUSPENDED">Suspended</option>
+                        </select>
                       </td>
 
                       <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => handleAdminPrivilegeToggle(user.id, 'isPremium', !user.isPremium)}
-                          className={`px-3 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                            user.isPremium
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
-                          }`}
+                        <select
+                          value={user.membershipStatus || user.tier || 'free'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handleAdminPrivilegeToggle(user.id, 'membershipStatus', val);
+                            if (val === 'verified') handleAdminPrivilegeToggle(user.id, 'isVerified', true);
+                            if (val === 'paid') handleAdminPrivilegeToggle(user.id, 'isPremium', true);
+                            if (val === 'basic' || val === 'free' || val === 'pending') {
+                              handleAdminPrivilegeToggle(user.id, 'isPremium', false);
+                            }
+                          }}
+                          className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-bold text-[11px] cursor-pointer focus:outline-none focus:border-blue-500"
                         >
-                          <Crown className={`w-3.5 h-3.5 ${user.isPremium ? 'text-amber-600' : 'text-slate-400'}`} />
-                          <span>{user.isPremium ? 'Paid VIP Member' : 'Free Tier'}</span>
-                        </button>
+                          <option value="pending">Pending</option>
+                          <option value="basic">Basic Plan</option>
+                          <option value="verified">Verified Supplier</option>
+                          <option value="paid">VIP Paid</option>
+                          <option value="free">Free Tier</option>
+                        </select>
                       </td>
 
                       <td className="p-3 text-right">
@@ -1106,7 +1115,7 @@ export const ClientAdminView: React.FC<Props> = ({
                     <div className="space-y-2">
                       <div className="w-full h-36 rounded-xl overflow-hidden bg-white border border-slate-200 relative">
                         <img
-                          src={l.image_url && l.image_url.trim() ? l.image_url.trim() : 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'}
+                          src={l.image_url && l.image_url.trim() ? l.image_url.trim() : '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
                           alt={l.title}
                           className="w-full h-full object-cover"
                         />

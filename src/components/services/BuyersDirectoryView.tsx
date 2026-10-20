@@ -207,7 +207,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                   className="relative h-36 w-full bg-slate-100 overflow-hidden cursor-pointer group"
                 >
                   <SafeImage
-                    src={buyer.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'}
+                    src={buyer.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'}
                     alt={buyer.companyName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

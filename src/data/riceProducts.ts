@@ -14,7 +14,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$420 - $490',
     unit: 'MT',
     minOrderQuantity: '25',
-    images: ['https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Broken', value: '5% Max' },
       { name: 'Moisture', value: '14% Max' },
@@ -35,7 +35,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$12,500 - $35,000',
     unit: 'Set',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [
       { name: 'Capacity', value: '1-5 T/H' },
       { name: 'Power', value: '37kW' },
@@ -56,7 +56,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$2.50 - $4.80',
     unit: 'Carton',
     minOrderQuantity: '100',
-    images: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Shelf Life', value: '12 Months' },
       { name: 'Storage', value: 'Frozen / Ambient' },
@@ -76,7 +76,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$3.20 - $6.50',
     unit: 'Kg',
     minOrderQuantity: '50',
-    images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Ingredients', value: 'Rice Flour 99%' },
       { name: 'Type', value: 'Fresh & Frozen' }
@@ -95,7 +95,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$4.50 - $9.00',
     unit: 'Box',
     minOrderQuantity: '50',
-    images: ['https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Packaging', value: '20 Tea Bags / Box' },
       { name: 'Origin', value: 'South Korea' }
@@ -114,7 +114,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$950 - $1,250',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1516684732162-798a0062be99?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80516684732162-798a0062be99?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Grain Length', value: '8.3mm Min' },
       { name: 'Aroma', value: 'Strong Natural Fragrance' },
@@ -134,7 +134,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$2,100 - $2,800',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1543168256-418811576931?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80543168256-418811576931?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Calories', value: '9 kcal per 100g' },
       { name: 'Fiber', value: 'High Glucomannan' },
@@ -154,7 +154,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$480 - $620',
     unit: 'MT',
     minOrderQuantity: '25',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Variety', value: 'Jasmine ST25' },
       { name: 'Moisture', value: '14% Max' },
@@ -174,7 +174,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$650 - $880',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [
       { name: 'Processing', value: 'Steam Parboiled' },
       { name: 'Purity', value: '98%' }
@@ -193,7 +193,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$720 - $890',
     unit: 'MT',
     minOrderQuantity: '25',
-    images: ['https://images.unsplash.com/photo-1516684732162-798a0062be99?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80516684732162-798a0062be99?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Purity', value: '92% Min Hom Mali' },
       { name: 'Crop', value: 'New Harvest' }
@@ -212,7 +212,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$28 - $65',
     unit: 'Piece',
     minOrderQuantity: '200',
-    images: ['https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80556911220-e15b29be8c8f?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Capacity', value: '4.0 Liters' },
       { name: 'Voltage', value: '220V / 110V' },
@@ -232,7 +232,7 @@ export const GLOBAL_RICE_PRODUCTS: Product[] = [
     priceRangeUsd: '$390 - $460',
     unit: 'MT',
     minOrderQuantity: '50',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Variety', value: 'Irri-6 Long Grain' },
       { name: 'Broken', value: '5% / 25%' },

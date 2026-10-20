@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product, Currency, SupplierTier, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
+import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -191,24 +192,59 @@ export const ProductCatalog: React.FC<Props> = ({
   // Available unique categories extracted from products
   const availableCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
-  // Filter logic (Robust matching)
+  // Match Suppliers by Supplier Name (contactPerson), Company Name, or Email when searching
+  const matchedSuppliers = React.useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return [];
+    const allSuppliers = getAllSuppliersWithUsers();
+    return allSuppliers.filter(s => {
+      if (!s) return false;
+      return (
+        (s.companyName && s.companyName.toLowerCase().includes(term)) ||
+        (s.contactPerson && s.contactPerson.toLowerCase().includes(term)) ||
+        (s.contactEmail && s.contactEmail.toLowerCase().includes(term))
+      );
+    }).slice(0, 6);
+  }, [searchTerm]);
+
+  const matchedSupplierIds = React.useMemo(() => new Set(matchedSuppliers.map(s => s.id)), [matchedSuppliers]);
+  const matchedSupplierCompanyNames = React.useMemo(
+    () => new Set(matchedSuppliers.map(s => (s.companyName || '').toLowerCase()).filter(Boolean)),
+    [matchedSuppliers]
+  );
+
+  // Filter logic (Robust matching including Supplier Name & Company Name)
   const filtered = cachedProducts.filter(p => {
     const term = searchTerm.trim().toLowerCase();
+    const belongsToMatchedSupplier =
+      term !== '' &&
+      ((p.supplierId && matchedSupplierIds.has(p.supplierId)) ||
+        (p.supplierName && matchedSupplierCompanyNames.has(p.supplierName.toLowerCase())));
+
+    const specString = p.specifications
+      ? typeof p.specifications === 'object'
+        ? Object.entries(p.specifications).map(([k, v]) => `${k} ${v}`).join(' ').toLowerCase()
+        : String(p.specifications).toLowerCase()
+      : '';
+
     const matchesSearch = term === '' || 
-      p.title.toLowerCase().includes(term) ||
-      p.supplierName.toLowerCase().includes(term) ||
-      p.category.toLowerCase().includes(term) ||
-      (p.description && p.description.toLowerCase().includes(term));
+      belongsToMatchedSupplier ||
+      (p.title || '').toLowerCase().includes(term) ||
+      (p.supplierName || '').toLowerCase().includes(term) ||
+      (p.category || '').toLowerCase().includes(term) ||
+      (p.subCategory && p.subCategory.toLowerCase().includes(term)) ||
+      (p.description && p.description.toLowerCase().includes(term)) ||
+      (specString && specString.includes(term));
       
     const matchesCat = activeCategory === 'ALL' || 
       p.category === activeCategory ||
-      p.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
-      activeCategory.toLowerCase().includes(p.category.toLowerCase());
+      (p.category || '').toLowerCase().includes(activeCategory.toLowerCase()) ||
+      activeCategory.toLowerCase().includes((p.category || '').toLowerCase());
       
     const matchesTier = activeSupplierTiers.length === 0 || activeSupplierTiers.includes('ALL') || activeSupplierTiers.includes(p.supplierTier);
     const matchesCountry = activeCountries.length === 0 || activeCountries.includes('ALL') || activeCountries.some(c => (p.supplierCountry || '').toLowerCase().includes(c.toLowerCase()));
-    const matchesIncoterm = selectedIncoterm === 'ALL' || p.supportedIncoterms.includes(selectedIncoterm as Incoterm);
-    const matchesMoq = maxMoq >= 50000 || p.moq <= maxMoq;
+    const matchesIncoterm = selectedIncoterm === 'ALL' || (p.supportedIncoterms || []).includes(selectedIncoterm as Incoterm);
+    const matchesMoq = maxMoq >= 50000 || (p.moq || 0) <= maxMoq;
 
     const matchesOwnership = ownershipFilter === 'ALL' ||
       (ownershipFilter === 'MINE' && user && (p.ownerEmail === user.email || p.ownerId === user.id)) ||
@@ -260,7 +296,7 @@ export const ProductCatalog: React.FC<Props> = ({
           <input
             id="catalog-search-input"
             type="text"
-            placeholder="Filter keywords, category, or supplier..."
+            placeholder="Search products, supplier name (e.g. Melissa Prezios), or company name..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl pl-9 sm:pl-10 pr-3 py-1.5 sm:py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
@@ -300,6 +336,53 @@ export const ProductCatalog: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Matched Suppliers & Companies Banner when searching by Supplier Name or Company Name */}
+      {matchedSuppliers.length > 0 && (
+        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+              <Building className="w-4 h-4 text-amber-600" />
+              <span>Matched Suppliers &amp; Companies ({matchedSuppliers.length})</span>
+            </h4>
+            <span className="text-[11px] text-amber-800 font-medium">
+              Click any supplier to open their storefront profile
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {matchedSuppliers.map(supp => (
+              <div
+                key={supp.id}
+                onClick={() => onOpenStorefront(supp.id)}
+                className="bg-white border border-amber-200/90 hover:border-blue-500 rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer shadow-2xs hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <SafeImage
+                    src={supp.logoUrl}
+                    alt={supp.companyName}
+                    type="logo"
+                    className="w-11 h-11 rounded-lg object-cover border border-slate-200 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 truncate">
+                      {supp.companyName}
+                    </div>
+                    {supp.contactPerson && (
+                      <div className="text-[11px] font-semibold text-blue-700 truncate">
+                        Supplier: {supp.contactPerson}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-slate-500 truncate">
+                      {supp.country} • {supp.tier || 'VERIFIED'} Exporter
+                    </div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 items-start min-w-0 w-full">
         {/* Faceted Filter Sidebar (Collapsible on mobile) */}

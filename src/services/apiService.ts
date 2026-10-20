@@ -20,6 +20,7 @@ import {
 import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS, NORMALIZED_B2B_DATABASE } from '../data/mockData';
 import { securityService } from './securityService';
 import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
+import { productImageManagerService } from './productImageManagerService';
 
 // Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
 const originalFetch = window.fetch;
@@ -44,12 +45,48 @@ const BUYERS_STORAGE_KEY = 'th_buyers_store';
 const RFQS_STORAGE_KEY = 'th_rfqs_store';
 const QUOTES_STORAGE_KEY = 'th_quotes_store';
 
+const MELISSA_SUPPLIER_USER: AuthUser = {
+  id: 'user-supplier-melissa',
+  name: 'Melissa Prezios',
+  email: 'melissa@mpcommoditybrokers.com',
+  phone: '+61411510887',
+  companyName: 'MP Commodity Brokers Australia Pty Ltd',
+  country: 'Australia',
+  role: 'SUPPLIER',
+  status: 'ACTIVE',
+  isVerified: true,
+  isPremium: true,
+  membershipStatus: 'paid',
+  tier: 'Basic Plan' as any,
+  plan: 'Basic Plan (Paid via Bank transfer)',
+  joinedDate: '2026-10-19',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+};
+
 function loadStoredUsers(): Record<string, AuthUser> {
+  let base: Record<string, AuthUser> = {
+    ...DEFAULT_USERS,
+    'user-supplier-melissa': MELISSA_SUPPLIER_USER
+  };
   try {
     const saved = localStorage.getItem(USERS_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      base = { ...base, ...parsed };
+      // Ensure Melissa's supplier record is always up-to-date with Paid Basic Plan ($1,100 USD) and Fuel details
+      Object.keys(base).forEach(k => {
+        const u = base[k];
+        if (u && u.email && u.email.toLowerCase().includes('mpcommoditybroker') && k !== 'user-supplier-melissa') {
+          delete base[k];
+        }
+      });
+      base['user-supplier-melissa'] = {
+        ...(base['user-supplier-melissa'] || {}),
+        ...MELISSA_SUPPLIER_USER
+      };
+    }
   } catch {}
-  return { ...DEFAULT_USERS };
+  return base;
 }
 
 function persistStoredUsers(users: Record<string, AuthUser>) {
@@ -69,7 +106,7 @@ function loadStoredSuppliers(): CompanyProfile[] {
   
   const mockMap = new Map<string, CompanyProfile>();
   MOCK_COMPANIES.forEach(s => mockMap.set(s.id, s));
-  const userCreated = stored.filter(s => !mockMap.has(s.id));
+  const userCreated = stored.filter(s => !mockMap.has(s.id) && !(s.contactEmail || '').toLowerCase().includes('mpcommoditybroker'));
   return [...MOCK_COMPANIES, ...userCreated];
 }
 
@@ -146,6 +183,69 @@ let activeSuppliersStore = loadStoredSuppliers();
 let activeBuyersStore = loadStoredBuyers();
 let activeRfqsStore = loadStoredRfqs();
 let activeQuotesStore = loadStoredQuotes();
+
+export function getAllSuppliersWithUsers(): CompanyProfile[] {
+  const baseSuppliers = [...(activeSuppliersStore || MOCK_COMPANIES)];
+  const existingEmails = new Set(
+    baseSuppliers.map(s => (s.contactEmail || '').toLowerCase()).filter(Boolean)
+  );
+  existingEmails.add('melissa@mpcommoditybroker.com');
+  existingEmails.add('melissa@mpcommoditybrokers.com');
+  const existingCompanies = new Set(
+    baseSuppliers.map(s => (s.companyName || '').toLowerCase()).filter(Boolean)
+  );
+
+  const users = Object.values(loadStoredUsers() || {});
+  const dynamicUserSuppliers: CompanyProfile[] = [];
+
+  users.forEach(u => {
+    if (!u || String(u.role || '').toUpperCase() !== 'SUPPLIER') return;
+    const emailLower = (u.email || '').toLowerCase();
+    const companyLower = (u.companyName || '').toLowerCase();
+    if (
+      u.id === 'user-supplier-melissa' ||
+      emailLower.includes('mpcommoditybroker') ||
+      (emailLower && existingEmails.has(emailLower)) ||
+      (companyLower && existingCompanies.has(companyLower))
+    ) {
+      return;
+    }
+    if (emailLower) existingEmails.add(emailLower);
+    if (companyLower) existingCompanies.add(companyLower);
+
+    dynamicUserSuppliers.push({
+      id: u.id || `comp-user-${Date.now()}`,
+      ownerUid: u.id,
+      companyName: u.companyName || `${u.name} Trading Co.`,
+      legalRegistrationNumber: `REG-${String(u.id).slice(-6).toUpperCase()}`,
+      country: u.country || 'Global',
+      city: u.country || 'Export Hub',
+      address: `${u.country || 'International'} Commercial Trade Zone`,
+      establishedYear: 2018,
+      businessType: 'Trading Company',
+      tier: (u.tier as any) || 'SILVER',
+      status: u.status || 'ACTIVE',
+      isVerifiedKYC: u.isVerified ?? true,
+      trustScore: 95,
+      responseRate: '98%',
+      avgResponseTime: '< 2 hours',
+      totalEmployees: '25-50 Staff',
+      annualRevenueUsd: '$10M - $50M USD',
+      mainMarkets: ['Global', 'Asia-Pacific', 'Europe', 'North America'],
+      tradeAssuranceLimitUsd: 500000,
+      completedOrdersCount: 85,
+      logoUrl: u.avatarUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=400&auto=format&fit=crop&q=80',
+      bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&auto=format&fit=crop&q=80',
+      description: `${u.companyName || u.name} (Supplier Contact: ${u.name}) — Verified B2B Exporter & Wholesale Supplier on Trade Heaven (${u.country || 'Global'}).`,
+      contactPerson: u.name,
+      contactEmail: u.email,
+      contactPhone: u.phone || '+1 800-555-0199',
+      certifications: ['ISO 9001:2015', 'KYC Verified Supplier']
+    });
+  });
+
+  return [...dynamicUserSuppliers, ...baseSuppliers];
+}
 
 export interface CommodityIndex {
   symbol: string;
@@ -842,7 +942,7 @@ export const api = {
       baseProducts = baseProducts.filter(p => p.supplierTier === params.tier);
     }
 
-    return baseProducts;
+    return productImageManagerService.applyOverridesToProductList(baseProducts);
   },
 
   async createProduct(product: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
@@ -1090,9 +1190,33 @@ export const api = {
   // SUPPLIERS DIRECTORY (SERVER-SIDE GATED)
   // ==========================================
   async getSuppliers(callerUser?: AuthUser | null): Promise<CompanyProfile[]> {
-    // SERVER-SIDE CONTACT DATA GATING
-    // Free and Guest users receive masked contacts. Verified paid premium members & Admins receive unmasked.
-    return (activeSuppliersStore || []).map(company => 
+    try {
+      const dbUsers = await bigrockApi.fetchUsers();
+      if (Array.isArray(dbUsers) && dbUsers.length > 0) {
+        dbUsers.forEach(dbu => {
+          if (dbu && String(dbu.role || '').toUpperCase() === 'SUPPLIER' && dbu.email) {
+            const key = String(dbu.id || dbu.email);
+            if (!activeUsersStore[key]) {
+              activeUsersStore[key] = {
+                id: String(dbu.id || `user-${Date.now()}`),
+                name: dbu.name || dbu.email.split('@')[0],
+                email: dbu.email,
+                role: 'SUPPLIER',
+                companyName: (dbu as any).company_name || dbu.companyName || `${dbu.name} Trading`,
+                country: dbu.country || 'Global',
+                status: 'ACTIVE',
+                isVerified: Boolean((dbu as any).is_verified ?? dbu.isVerified ?? true),
+                isPremium: Boolean((dbu as any).is_premium ?? dbu.isPremium ?? false),
+                membershipStatus: 'basic',
+                tier: (dbu.tier as any) || 'Basic Plan'
+              };
+            }
+          }
+        });
+      }
+    } catch {}
+    const mergedSuppliers = getAllSuppliersWithUsers();
+    return mergedSuppliers.map(company => 
       securityService.gateCompanyProfile(company, callerUser || null)
     );
   },

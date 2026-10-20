@@ -155,7 +155,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
         issueDate: new Date().toISOString().split('T')[0],
         expiryDate: newCertExpiry || '2027-12-31',
         documentUrl: dataUrl,
-        thumbnailUrl: isPdf ? 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=300&auto=format&fit=crop&q=80' : dataUrl,
+        thumbnailUrl: isPdf ? 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80554224155-8d04cb21cd6c?w=300&auto=format&fit=crop&q=80' : dataUrl,
         type: isPdf ? 'PDF' : 'IMAGE',
         verified: true,
         fileSizeMb: parseFloat((file.size / (1024 * 1024)).toFixed(2))
@@ -668,7 +668,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
                       <div>
                         <div className="relative h-32 rounded-xl overflow-hidden bg-slate-100 mb-3 border border-slate-100">
                           <img
-                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400'}
+                            src={cert.thumbnailUrl || cert.documentUrl || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
                             alt={cert.name}
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
@@ -816,7 +816,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
                     <div>
                       <div className="relative h-36 rounded-xl overflow-hidden bg-slate-100 mb-2 border border-slate-100">
                         <img
-                          src={img.imageUrl || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600'}
+                          src={img.imageUrl || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=600'}
                           alt={img.title}
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-cover"

@@ -337,7 +337,7 @@ export const LandingPageView: React.FC<Props> = ({
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-300">
                       Global B2B Marketplace
                     </span> <br />
-                    &amp; Cross-Border Sourcing Platform.
+                    &amp; Cross-Border Sourcing Platform
                   </>
                 )}
               </h1>

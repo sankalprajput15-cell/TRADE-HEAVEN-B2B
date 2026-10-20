@@ -14,7 +14,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$185 - $359',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80&sig=1'],
+    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$255 - $486',
     unit: 'KG',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=2'],
+    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Tahitensis' }, { name: 'Length', value: '14cm+' }, { name: 'Moisture', value: '35%' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$302 - $610',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=800&auto=format&fit=crop&q=80&sig=3'],
+    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$251 - $465',
     unit: 'KG',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=4'],
+    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Tahitensis' }, { name: 'Length', value: '14cm+' }, { name: 'Moisture', value: '35%' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$305 - $620',
     unit: 'KG',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80&sig=5'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$188 - $353',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1543168256-418811576931?w=800&auto=format&fit=crop&q=80&sig=6'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$121 - $262',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80&sig=7'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$124 - $241',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1608755728617-aefab37d2edd?w=800&auto=format&fit=crop&q=80&sig=8'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$180 - $363',
     unit: 'KG',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=800&auto=format&fit=crop&q=80&sig=9'],
+    images: ['https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$130 - $245',
     unit: 'KG',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1514733670139-4d87a1941d55?w=800&auto=format&fit=crop&q=80&sig=10'],
+    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$305 - $603',
     unit: 'KG',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1528751014936-863e6e7a319c?w=800&auto=format&fit=crop&q=80&sig=11'],
+    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$129 - $235',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1587132137056-bfbf0166836e?w=800&auto=format&fit=crop&q=80&sig=12'],
+    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$122 - $262',
     unit: 'KG',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=800&auto=format&fit=crop&q=80&sig=13'],
+    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$184 - $388',
     unit: 'KG',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1596797038530-2c107229654b?w=800&auto=format&fit=crop&q=80&sig=14'],
+    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$303 - $636',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1518843875459-f738682238a6?w=800&auto=format&fit=crop&q=80&sig=15'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$189 - $352',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1505253758473-96b46de82fe9?w=800&auto=format&fit=crop&q=80&sig=16'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$122 - $226',
     unit: 'KG',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=800&auto=format&fit=crop&q=80&sig=17'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$121 - $246',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=800&auto=format&fit=crop&q=80&sig=18'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$183 - $357',
     unit: 'KG',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=800&auto=format&fit=crop&q=80&sig=19'],
+    images: ['https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$253 - $484',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80&sig=20'],
+    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Tahitensis' }, { name: 'Length', value: '14cm+' }, { name: 'Moisture', value: '35%' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$181 - $369',
     unit: 'KG',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80&sig=21'],
+    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$129 - $229',
     unit: 'KG',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=800&auto=format&fit=crop&q=80&sig=22'],
+    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$183 - $376',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80&sig=23'],
+    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$125 - $247',
     unit: 'KG',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop&q=80&sig=24'],
+    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$127 - $226',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80&sig=25'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$127 - $240',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80&sig=26'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$250 - $475',
     unit: 'KG',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80&sig=27'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Tahitensis' }, { name: 'Length', value: '14cm+' }, { name: 'Moisture', value: '35%' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$122 - $232',
     unit: 'KG',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&auto=format&fit=crop&q=80&sig=28'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$128 - $236',
     unit: 'KG',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80&sig=29'],
+    images: ['https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$300 - $631',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80&sig=30'],
+    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$129 - $258',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80&sig=31'],
+    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$306 - $618',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop&q=80&sig=32'],
+    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$188 - $398',
     unit: 'KG',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=800&auto=format&fit=crop&q=80&sig=33'],
+    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$183 - $369',
     unit: 'KG',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&auto=format&fit=crop&q=80&sig=34'],
+    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$121 - $249',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&auto=format&fit=crop&q=80&sig=35'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$185 - $394',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&auto=format&fit=crop&q=80&sig=36'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$127 - $243',
     unit: 'KG',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80&sig=37'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$123 - $233',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&auto=format&fit=crop&q=80&sig=38'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$253 - $493',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1540189549311-e6e99c3679fe?w=800&auto=format&fit=crop&q=80&sig=39'],
+    images: ['https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Tahitensis' }, { name: 'Length', value: '14cm+' }, { name: 'Moisture', value: '35%' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$300 - $610',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80&sig=40'],
+    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   }
 ];

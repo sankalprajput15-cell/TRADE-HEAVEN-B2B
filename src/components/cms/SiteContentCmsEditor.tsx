@@ -134,7 +134,7 @@ export const SiteContentCmsEditor: React.FC = () => {
       name: 'New Industrial Category',
       description: 'Custom industrial raw materials and factory supplies.',
       iconName: 'Box',
-      image: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
       badge: 'Verified',
       productCount: '10,000+ Products'
     };
@@ -166,7 +166,7 @@ export const SiteContentCmsEditor: React.FC = () => {
       company: 'Pacific Trade Dynamics Corp.',
       country: 'United States',
       countryFlag: '🇺🇸',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      avatar: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
       quote: 'Seamless FOB cargo dispatch with reliable trade protection release. Trade Heaven solved our tier-1 supplier discovery bottleneck.',
       rating: 5,
       verifiedDealSize: '$550,000 CIF Long Beach',

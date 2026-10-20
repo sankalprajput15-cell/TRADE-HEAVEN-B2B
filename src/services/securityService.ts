@@ -169,7 +169,9 @@ class SecurityService {
 
     const header = { alg: 'HS256', typ: 'JWT' };
     const encodedHeader = btoa(JSON.stringify(header)).replace(/=+$/, '');
-    const encodedPayload = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))).replace(/=+$/, '');
+    const jsonBytes = new TextEncoder().encode(JSON.stringify(payload));
+    const binString = Array.from(jsonBytes, (byte) => String.fromCodePoint(byte)).join("");
+    const encodedPayload = btoa(binString).replace(/=+$/, '');
     
     // Pseudo-signature using secret salt for client-side verifiable simulation
     const signature = btoa(`${encodedHeader}.${encodedPayload}.${JWT_SECRET_SALT}`).replace(/=+$/, '');
@@ -210,7 +212,9 @@ class SecurityService {
         return null;
       }
 
-      const decodedPayloadStr = decodeURIComponent(escape(atob(encodedPayload)));
+      const binString = atob(encodedPayload);
+      const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0)!);
+      const decodedPayloadStr = new TextDecoder().decode(bytes);
       const payload: JWTPayload = JSON.parse(decodedPayloadStr);
 
       const nowSec = Math.floor(Date.now() / 1000);
@@ -336,30 +340,30 @@ class SecurityService {
 
   public isAllowedToViewContacts(caller: AuthUser | JWTPayload | null): boolean {
     if (!caller) return false;
-    if (caller.role === 'ADMIN') return true;
+    if (caller.role === 'ADMIN' || (caller as any).isVerifiedAdmin === true) return true;
     
-    // Check if user is approved paid member
-    const isPaid = caller.isPremium === true || caller.membershipStatus === 'paid';
+    // Check if user is approved paid member (including Basic Plan $1,100 USD, Gold, Platinum, VIP)
+    const tierStr = String(caller.tier || '').toLowerCase();
+    const isPaid =
+      caller.isPremium === true ||
+      caller.membershipStatus === 'paid' ||
+      (caller.membershipStatus as string) === 'basic' ||
+      tierStr.includes('basic') ||
+      tierStr.includes('vip') ||
+      tierStr.includes('gold') ||
+      tierStr.includes('silver') ||
+      tierStr.includes('platinum');
     const isActive = (caller.status || 'ACTIVE') === 'ACTIVE';
     return isPaid && isActive;
   }
 
   public maskPhoneNumber(phone?: string): string {
     if (!phone) return '••••••••••';
-    
-    // Simple approach: Keep first part (dial code) and last 4 digits, mask middle
-    const parts = phone.split(' ');
-    if (parts.length < 2) return '••••••••••';
-    
-    const dialCode = parts[0];
-    const number = parts.slice(1).join('').replace(/[-]/g, '');
-    
-    if (number.length <= 4) return `${dialCode} ••••`;
-    
-    const masked = number.substring(0, number.length - 4).replace(/./g, '•');
-    const lastDigits = number.substring(number.length - 4);
-    
-    return `${dialCode} ${masked} ${lastDigits}`;
+    const trimmed = phone.trim();
+    if (trimmed.length <= 6) return '••••••••••';
+    const prefix = trimmed.slice(0, 3);
+    const suffix = trimmed.slice(-4);
+    return `${prefix} ••••• ${suffix}`;
   }
 
   public maskEmailAddress(email?: string): string {

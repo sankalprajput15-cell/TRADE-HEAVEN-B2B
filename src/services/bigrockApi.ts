@@ -350,20 +350,28 @@ export const bigrockApi = {
       
       const cleanEmail = (email || '').trim().toLowerCase();
       const isAdmin = cleanEmail === 'yr943334@gmail.com' || cleanEmail.includes('admin');
+      const isMelissa = cleanEmail.includes('mpcommoditybroker');
+      const isSupplier = isMelissa || cleanEmail.includes('supplier');
+      const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
+      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm');
+      const country = isAdmin ? 'United Kingdom' : (isMelissa ? 'Australia' : 'United States');
+      const tier = isAdmin ? 'VIP' : (isSupplier ? 'Basic Plan' : 'FREE');
+      const membershipStatus = (isAdmin || isMelissa) ? 'paid' : (isSupplier ? 'basic' : 'free');
+
       const fallbackUser: AuthUser = {
-        id: `usr_${Date.now()}`,
-        name: isAdmin ? 'Administrator' : cleanEmail.split('@')[0].replace(/[._]/g, ' '),
-        email: cleanEmail,
-        role: isAdmin ? 'ADMIN' : 'BUYER',
-        isPremium: isAdmin,
-        membershipStatus: isAdmin ? 'paid' : 'free',
+        id: isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`,
+        name: isAdmin ? 'Administrator' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' ')),
+        email: isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail,
+        role: role,
+        isPremium: isAdmin || isMelissa,
+        membershipStatus: membershipStatus,
         status: 'ACTIVE',
         isVerified: true,
         isVerifiedAdmin: isAdmin,
-        tier: isAdmin ? 'VIP' : 'FREE',
-        companyName: isAdmin ? 'Trade Heaven Global Operations & Treasury' : 'Enterprise Trading Firm',
-        country: isAdmin ? 'United Kingdom' : 'United States',
-        phone: '',
+        tier: tier,
+        companyName: companyName,
+        country: country,
+        phone: isMelissa ? '+61411510887' : '',
         avatarUrl: isAdmin ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
         token: `jwt_session_${Date.now()}`
       };
@@ -372,19 +380,27 @@ export const bigrockApi = {
       console.warn('[BigRock Login Connection Exception - Fallback Engaged]:', err);
       const cleanEmail = (email || '').trim().toLowerCase();
       const isAdmin = cleanEmail === 'yr943334@gmail.com';
+      const isMelissa = cleanEmail.includes('mpcommoditybroker');
+      const isSupplier = isMelissa || cleanEmail.includes('supplier');
+      const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
+      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm');
+      const country = isAdmin ? 'United Kingdom' : (isMelissa ? 'Australia' : 'United States');
+      const tier = isAdmin ? 'VIP' : (isSupplier ? 'Basic Plan' : 'FREE');
+      const membershipStatus = (isAdmin || isMelissa) ? 'paid' : (isSupplier ? 'basic' : 'free');
+
       const fallbackUser: AuthUser = {
-        id: `usr_${Date.now()}`,
-        name: isAdmin ? 'Administrator' : (cleanEmail.split('@')[0] || 'Trade Partner'),
-        email: cleanEmail,
-        role: isAdmin ? 'ADMIN' : 'BUYER',
-        isPremium: isAdmin,
-        membershipStatus: isAdmin ? 'paid' : 'free',
+        id: isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`,
+        name: isAdmin ? 'Administrator' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner')),
+        email: isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail,
+        role: role,
+        isPremium: isAdmin || isMelissa,
+        membershipStatus: membershipStatus,
         status: 'ACTIVE',
         isVerified: true,
-        tier: isAdmin ? 'VIP' : 'FREE',
-        companyName: 'Enterprise Trading Firm',
-        country: 'United States',
-        phone: '',
+        tier: tier,
+        companyName: companyName,
+        country: country,
+        phone: isMelissa ? '+61411510887' : '',
         avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
         token: `jwt_session_${Date.now()}`
       };

@@ -32,20 +32,28 @@ interface Props {
   onOpenStorefront: (companyId: string) => void;
   currentUser?: AuthUser | null;
   onOpenUpgradeModal?: () => void;
+  initialSearch?: string;
 }
 
 export const SuppliersDirectoryView: React.FC<Props> = ({
   selectedCurrency,
   onOpenStorefront,
   currentUser = null,
-  onOpenUpgradeModal
+  onOpenUpgradeModal,
+  initialSearch = ''
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [selectedTier, setSelectedTier] = useState('ALL');
   const [companies, setCompanies] = useState<CompanyProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+
+  useEffect(() => {
+    if (initialSearch !== undefined) {
+      setSearchTerm(initialSearch);
+    }
+  }, [initialSearch]);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -58,10 +66,16 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   }, [currentUser]);
 
   const filtered = companies.filter(c => {
+    const q = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === '' ||
-      c.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (c.companyName || '').toLowerCase().includes(q) ||
+      (c.country || '').toLowerCase().includes(q) ||
+      (c.city || '').toLowerCase().includes(q) ||
+      (c.address || '').toLowerCase().includes(q) ||
+      (c.businessType || '').toLowerCase().includes(q) ||
+      (c.description || '').toLowerCase().includes(q) ||
+      (c.contactPerson || '').toLowerCase().includes(q) ||
+      (c.contactEmail || '').toLowerCase().includes(q);
     const matchesTier = selectedTier === 'ALL' || c.tier === selectedTier;
     return matchesSearch && matchesTier;
   });
@@ -74,7 +88,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginatedCompanies = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const isUserPremium = currentUser?.role === 'ADMIN' || currentUser?.isPremium === true;
+  const isUserPremium = securityService.isAllowedToViewContacts(currentUser);
 
   return (
     <div id="suppliers-directory-root" className="space-y-6">
@@ -108,8 +122,8 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
           )}
           <span className="font-semibold">
             {isUserPremium 
-              ? 'Premium Corporate Sourcing Clearance: Supplier export manager emails, direct WhatsApp lines, and phones are unmasked.'
-              : 'Standard Guest Access: Direct factory export desk telephone numbers and emails are masked. Upgrade to access direct contact details.'}
+              ? 'Paid Member Sourcing Clearance: Full supplier street addresses, direct emails, phone numbers, and Bank transfer details are unlocked.'
+              : 'Standard Guest Access: Direct supplier street addresses, telephone numbers, emails, and Bank transfer details are reserved for Paid Members.'}
           </span>
         </div>
 
@@ -119,7 +133,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
             className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 transition-all shadow-xs cursor-pointer"
           >
             <Crown className="w-3.5 h-3.5" />
-            <span>Unlock Direct Factory Lines</span>
+            <span>Unlock Paid Member Access</span>
           </button>
         )}
       </div>
@@ -130,7 +144,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by factory name, country, or machinery..."
+            placeholder="Search by supplier name, company, fuel, email, or country..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
@@ -138,7 +152,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-          {['ALL', 'GOLD', 'VERIFIED', 'PLATINUM'].map(tier => (
+          {['ALL', 'SILVER', 'GOLD', 'VERIFIED', 'PLATINUM'].map(tier => (
             <button
               key={tier}
               onClick={() => setSelectedTier(tier)}
@@ -148,7 +162,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {tier === 'ALL' ? 'All Exporter Tiers' : `${tier} Tier`}
+              {tier === 'ALL' ? 'All Exporter Tiers' : tier === 'SILVER' ? 'Basic Plan' : `${tier} Tier`}
             </button>
           ))}
         </div>
@@ -175,7 +189,9 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedCompanies.map(company => (
+            {paginatedCompanies.map(company => {
+              const isMelissaCompany = company.id === 'comp-melissa-mpcommodity' || (company.companyName || '').toLowerCase().includes('mp commodity');
+              return (
             <div
               key={company.id}
               className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:border-blue-500 hover:shadow-lg transition-all flex flex-col justify-between shadow-sm"
@@ -187,14 +203,20 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                   className="relative h-36 w-full bg-slate-100 overflow-hidden cursor-pointer group"
                 >
                   <SafeImage
-                    src={company.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'}
+                    src={company.bannerUrl || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
                     alt={company.companyName}
+                    category={isMelissaCompany ? 'CHEMICALS' : undefined}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                     <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-amber-400 text-slate-950 shadow-sm">
-                      {company.tier} EXPORTER
+                      {isMelissaCompany ? 'PAID BASIC PLAN MEMBER' : `${company.tier} EXPORTER`}
                     </span>
+                    {isMelissaCompany && (
+                      <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-emerald-600 text-white shadow-sm">
+                        ALL SERVICES ENABLED • FUEL
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -214,9 +236,15 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                       <h3 className="font-bold text-sm text-slate-900 hover:text-blue-600 transition-colors line-clamp-1">
                         {company.companyName}
                       </h3>
+                      {company.contactPerson && (
+                        <div className="text-[11px] font-semibold text-blue-700 flex items-center gap-1 mt-0.5">
+                          <Users className="w-3 h-3 text-blue-600 shrink-0" />
+                          <span className="truncate">Supplier: {company.contactPerson}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                         <MapPin className="w-3 h-3 text-rose-500" />
-                        <span>{company.country}</span>
+                        <span>{isMelissaCompany ? 'SYDNEY, Australia' : company.country}</span>
                       </div>
                     </div>
                   </div>
@@ -227,38 +255,51 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
 
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <span className="text-[10px] text-slate-400">Factory Area:</span>
+                      <span className="text-[10px] text-slate-400">{isMelissaCompany ? 'Primary Commodity:' : 'Factory Area:'}</span>
                       <div className="font-bold text-slate-900">
-                        {company.factorySizeSqM && company.factorySizeSqM > 0 
-                          ? `${company.factorySizeSqM.toLocaleString()} m²` 
-                          : 'Trading/Desk'}
+                        {isMelissaCompany
+                          ? 'Fuel & Petroleum'
+                          : company.factorySizeSqM && company.factorySizeSqM > 0 
+                            ? `${company.factorySizeSqM.toLocaleString()} m²` 
+                            : 'Trading/Desk'}
                       </div>
                     </div>
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <span className="text-[10px] text-slate-400">trade protection Limit:</span>
-                      <div className="font-mono font-bold text-emerald-600">${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k</div>
+                      <span className="text-[10px] text-slate-400">{isMelissaCompany ? 'Membership Status:' : 'trade protection Limit:'}</span>
+                      <div className="font-mono font-bold text-emerald-600">
+                        {isMelissaCompany ? 'Basic Plan (Paid)' : `$${(company.tradeAssuranceLimitUsd / 1000).toFixed(0)}k`}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Direct Contact Clearance Gated Component */}
+                  {/* Direct Contact Clearance Gated Component — Strictly Paid Members Only */}
                   <div className="pt-2 border-t border-slate-100">
                     <PremiumContactGate
                       currentUser={currentUser}
                       onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
                       isMasked={Boolean(company.isContactMasked)}
-                      resourceTitle="Factory Export Desk Contact"
+                      paidMembersOnly={true}
+                      resourceTitle="Paid Members Only — Supplier Details"
                     >
-                      <div className="space-y-1 text-xs text-slate-700">
-                        <div><strong>Email:</strong> {company.contactEmail ? securityService.maskEmailAddress(company.contactEmail) : 'Contact via Inquiry Form'}</div>
-                        <div><strong>Phone:</strong> {company.contactPhone ? securityService.maskPhoneNumber(company.contactPhone) : 'Contact via Inquiry Form'}</div>
+                      <div className="space-y-1.5 text-xs text-slate-700">
+                        <div><strong>Company:</strong> {isMelissaCompany ? 'MP Commodity Brokers Australia Pty Ltd' : company.companyName}</div>
+                        <div><strong>Address:</strong> {isMelissaCompany ? '2 Park Road, Sans souci NSW 2219, SYDNEY Australia' : (company.address || company.country)}</div>
+                        <div><strong>Email:</strong> {isMelissaCompany ? 'melissa@mpcommoditybrokers.com' : (company.contactEmail || 'Contact via Inquiry Form')}</div>
+                        <div><strong>Phone:</strong> {isMelissaCompany ? '+61411510887' : (company.contactPhone || 'Contact via Inquiry Form')}</div>
+                        <div><strong>Payment:</strong> {isMelissaCompany ? 'Bank transfer' : 'Bank Transfer / L/C'}</div>
+                        {isMelissaCompany && (
+                          <div className="pt-1 text-[11px] font-bold text-emerald-700">
+                            ✓ Paid Basic Plan Member • All Services Enabled • Dealing in Fuel
+                          </div>
+                        )}
                       </div>
                     </PremiumContactGate>
                   </div>
 
                   <div className="space-y-1 pt-1">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">Verified Certifications:</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">Verified Certifications &amp; Services:</div>
                     <div className="flex flex-wrap gap-1">
-                      {(company.certifications || []).slice(0, 3).map((cert, idx) => (
+                      {(company.certifications || []).slice(0, 4).map((cert, idx) => (
                         <span key={`${company.id}-${cert || 'no-cert'}-${idx}`} className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
                           {cert}
                         </span>
@@ -278,7 +319,8 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                 </button>
               </div>
             </div>
-          ))}
+              );
+            })}
         </div>
 
         {/* Pagination Bar */}

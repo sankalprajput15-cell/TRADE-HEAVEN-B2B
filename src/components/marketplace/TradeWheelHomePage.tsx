@@ -84,9 +84,14 @@ export const TradeWheelHomePage: React.FC<Props> = ({
     return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const handleHeroSearch = (query: string, category: string) => {
+  const handleHeroSearch = (query: string, category: string, targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS') => {
     if (category) {
       setSelectedCategory(category);
+    }
+    if (targetMode === 'SUPPLIERS' && onNavigateToSuppliers) {
+      onNavigateToSuppliers(query);
+    } else if (onNavigateToCategory) {
+      onNavigateToCategory(category || 'ALL', query);
     }
   };
 

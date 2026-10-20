@@ -19,7 +19,7 @@ export const GLOBAL_GERMANIUM_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Dr. Markus Lindner',
     contactEmail: 'm.lindner@optikphotonics-jena.de',
     contactPhone: '+49 3641 650000',
-    logoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80&sig=301',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80&sig=301',
     description: 'Premier European precision optical manufacturing group sourcing high-purity Germanium ingots and optical blanks for aerospace and thermal vision systems.'
   },
   {
@@ -40,7 +40,7 @@ export const GLOBAL_GERMANIUM_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Takashi Yamamoto',
     contactEmail: 't.yamamoto@yamamoto-semicon.co.jp',
     contactPhone: '+81 6 6203 1122',
-    logoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80&sig=302',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     description: 'High-tech electronics substrate distributor and manufacturer of multi-junction photovoltaic cells.'
   },
   {
@@ -61,7 +61,7 @@ export const GLOBAL_GERMANIUM_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Sarah Jenkins',
     contactEmail: 'sjenkins@apexdefensethermal.com',
     contactPhone: '+1 256 555 0192',
-    logoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80&sig=303',
+    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80&sig=303',
     description: 'Defense and aerospace contractor specializing in electro-optical infrared systems and diamond-coated Germanium optics.'
   },
   {
@@ -82,7 +82,7 @@ export const GLOBAL_GERMANIUM_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Jean-Luc Moreau',
     contactEmail: 'jl.moreau@moreau-optique.fr',
     contactPhone: '+33 2 96 05 80 00',
-    logoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&auto=format&fit=crop&q=80&sig=304',
+    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80472099645785-5658abf4ff4e?w=800&auto=format&fit=crop&q=80&sig=304',
     description: 'Telecom hardware and optical preform engineering group procuring electronic-grade Germanium Tetrachloride.'
   },
   {
@@ -103,7 +103,7 @@ export const GLOBAL_GERMANIUM_BUYER_PROFILES: DetailedBuyerProfile[] = [
     contactPerson: 'Clara Van Der Meer',
     contactEmail: 'c.vandermeer@eurotherapy-health.nl',
     contactPhone: '+31 30 241 5500',
-    logoUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=800&auto=format&fit=crop&q=80&sig=305',
+    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80580489944761-15a19d654956?w=800&auto=format&fit=crop&q=80&sig=305',
     description: 'European distributor of certified medical-grade far-infrared thermal therapy mattresses and Germanium stone mats.'
   }
 ];

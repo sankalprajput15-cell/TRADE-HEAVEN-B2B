@@ -478,7 +478,8 @@ export type ActiveView =
   | 'BUYER_PROFILE'
   | 'COUNTRY_HUB'
   | 'TRUST_SAFETY'
-  | 'INSIGHTS';
+  | 'INSIGHTS'
+  | 'PRODUCT_IMAGE_ADMIN';
 
 export * from './types/planPricingTypes';
 

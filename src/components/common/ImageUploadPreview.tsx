@@ -72,10 +72,10 @@ export const ImageUploadPreview: React.FC<ImageUploadPreviewProps> = ({
               <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
               <span className="text-[9px] font-medium">Reading...</span>
             </div>
-          ) : displayUrl ? (
+          ) : (displayUrl && displayUrl.trim()) ? (
             <>
               <img
-                src={displayUrl}
+                src={displayUrl.trim()}
                 alt="Product Preview"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 referrerPolicy="no-referrer"

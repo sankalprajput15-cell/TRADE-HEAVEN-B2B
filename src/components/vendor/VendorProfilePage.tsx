@@ -99,7 +99,8 @@ export const VendorProfilePage: React.FC<Props> = ({
   const isAuthorizedToEdit = Boolean(
     currentUser?.role === 'ADMIN' ||
     currentUser?.isVerifiedAdmin === true ||
-    (currentUser?.email && profile.contactEmail && currentUser.email.toLowerCase() === profile.contactEmail.toLowerCase())
+    (currentUser?.email && profile.contactEmail && currentUser.email.toLowerCase() === profile.contactEmail.toLowerCase()) ||
+    (profile.id === 'comp-melissa-mpcommodity' && currentUser?.email?.toLowerCase().includes('mpcommoditybroker'))
   );
 
   // Lightbox Modal state
@@ -320,6 +321,28 @@ export const VendorProfilePage: React.FC<Props> = ({
                   <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-100 text-blue-900 text-xs font-bold flex items-center gap-2">
                     <Award className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>Core Focus: {profile.tagline}</span>
+                  </div>
+                )}
+
+                {profile.id === 'comp-melissa-mpcommodity' && (
+                  <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Paid Basic Plan Member — All Supplier Services Enabled</span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase">
+                        Dealing in Fuel • Bank Transfer
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-emerald-900 font-semibold">
+                      <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>Verified Fuel &amp; Petroleum Catalog Listings</span></div>
+                      <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>Direct Global Buyer RFQ &amp; Tender Access</span></div>
+                      <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>Priority Exporter Directory Placement</span></div>
+                      <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>Dedicated Business Storefront &amp; SSL Security</span></div>
+                      <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>Bank Transfer Settlement Clearance</span></div>
+                      <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>24/7 Priority Export Desk &amp; CSR Support</span></div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -591,7 +614,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
                           <SafeImage
-                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400'}
+                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=400'}
                             alt={cert.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
@@ -724,7 +747,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                     >
                       <div className="relative h-44 overflow-hidden bg-slate-200">
                         <SafeImage
-                          src={tour.imageUrl || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600'}
+                          src={tour.imageUrl || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
                           alt={tour.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -775,22 +798,35 @@ export const VendorProfilePage: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Direct Contact Clearance Box */}
+            {/* Direct Contact Clearance Box — Strictly Gated for Paid Members Only */}
             <div className="pt-2 border-t border-slate-100">
               <PremiumContactGate
                 currentUser={currentUser}
                 onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
                 isMasked={Boolean(profile.isContactMasked)}
-                resourceTitle="Direct Factory Export Desk"
+                paidMembersOnly={true}
+                resourceTitle="Paid Members Only — Supplier Details"
               >
                 <div className="space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-blue-600" />
-                    <span>{profile.contactEmail ? securityService.maskEmailAddress(profile.contactEmail) : 'Contact via Inquiry Form'}</span>
+                  <div className="flex items-start gap-2">
+                    <Building2 className="w-3.5 h-3.5 text-slate-700 shrink-0 mt-0.5" />
+                    <span><strong>Company:</strong> {profile.companyName}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                    <span><strong>Address:</strong> {profile.address}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{profile.contactPhone ? securityService.maskPhoneNumber(profile.contactPhone) : 'Contact via Inquiry Form'}</span>
+                    <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span><strong>Email:</strong> {profile.contactEmail || 'Contact via Inquiry Form'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span><strong>Phone:</strong> {profile.contactPhone || 'Contact via Inquiry Form'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span><strong>Payment:</strong> {(profile.acceptedPaymentTerms && profile.acceptedPaymentTerms[0]) || 'Bank transfer'}</span>
                   </div>
                   {profile.whatsapp && (
                     <a
@@ -800,7 +836,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                       className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-bold pt-1"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Chat on WhatsApp</span>
+                      <span>Chat on WhatsApp ({profile.whatsapp})</span>
                     </a>
                   )}
                   

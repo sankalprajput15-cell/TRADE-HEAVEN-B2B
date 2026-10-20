@@ -172,7 +172,8 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Explicitly serve public directory static assets (logo.png, favicons, robots.txt, sitemap.xml, etc.) with CORS and headers
 app.use(express.static(path.join(process.cwd(), 'public'), {
@@ -371,6 +372,21 @@ const serverUsersStore: ServerUserRecord[] = [
     membershipStatus: 'paid',
     tier: 'VIP',
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'user-supplier-melissa',
+    email: 'melissa@mpcommoditybrokers.com',
+    passwordHash: 'Password@123',
+    name: 'Melissa Prezios',
+    role: 'SUPPLIER',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd',
+    country: 'Australia',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: true,
+    membershipStatus: 'paid',
+    tier: 'Basic Plan',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
   }
 ];
 
@@ -1621,6 +1637,378 @@ app.delete('/api/v1/products/:id', (req, res) => {
   });
 
   res.json({ success: true, message: 'Product deleted successfully' });
+});
+
+// -------------------------------------------------------------
+// DEDICATED ADMIN PRODUCT IMAGE MANAGEMENT & UPLOAD SYSTEM
+// -------------------------------------------------------------
+interface ProductImageOverrideEntry {
+  primary: string;
+  gallery: string[];
+  format?: string;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+interface ProductImageSystemState {
+  overrides: Record<string, ProductImageOverrideEntry>;
+  globalDefaultImage: string | null;
+  categoryOverrides: Record<string, string>;
+  urlReplacements: Record<string, string>;
+  mediaLibrary: Array<{
+    id: string;
+    url: string;
+    name: string;
+    format: string;
+    sizeBytes?: number;
+    uploadedAt: string;
+  }>;
+}
+
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'assets', 'uploads');
+const AISTUDIO_ASSETS_DIR = path.join(process.cwd(), 'public', 'assets', 'aistudio');
+const IMAGE_OVERRIDES_FILE = path.join(UPLOADS_DIR, 'product-image-overrides.json');
+
+function ensureUploadsDir() {
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('[ProductImageSystem] Could not create uploads dir:', err);
+  }
+}
+
+function loadServerProductImageState(): ProductImageSystemState {
+  ensureUploadsDir();
+  const defaultState: ProductImageSystemState = {
+    overrides: {},
+    globalDefaultImage: null,
+    categoryOverrides: {},
+    urlReplacements: {},
+    mediaLibrary: []
+  };
+
+  try {
+    if (fs.existsSync(IMAGE_OVERRIDES_FILE)) {
+      const raw = fs.readFileSync(IMAGE_OVERRIDES_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      Object.assign(defaultState, parsed);
+    }
+  } catch (err) {
+    console.warn('[ProductImageSystem] Error reading overrides file:', err);
+  }
+
+  // Also scan public/assets/aistudio and public/assets/uploads to populate mediaLibrary with real local image files
+  const existingUrls = new Set(defaultState.mediaLibrary.map(m => m.url));
+  const scanDirForImages = (dirPath: string, urlPrefix: string) => {
+    try {
+      if (!fs.existsSync(dirPath)) return;
+      const files = fs.readdirSync(dirPath);
+      for (const file of files) {
+        const ext = path.extname(file).toLowerCase().replace('.', '');
+        if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp'].includes(ext)) {
+          const url = `${urlPrefix}/${file}`;
+          if (!existingUrls.has(url)) {
+            const stat = fs.statSync(path.join(dirPath, file));
+            defaultState.mediaLibrary.unshift({
+              id: `media-${file}`,
+              url,
+              name: file,
+              format: ext.toUpperCase(),
+              sizeBytes: stat.size,
+              uploadedAt: stat.mtime.toISOString()
+            });
+            existingUrls.add(url);
+          }
+        }
+      }
+    } catch {}
+  };
+
+  scanDirForImages(UPLOADS_DIR, '/assets/uploads');
+  scanDirForImages(AISTUDIO_ASSETS_DIR, '/assets/aistudio');
+
+  return defaultState;
+}
+
+let serverProductImageState: ProductImageSystemState = loadServerProductImageState();
+
+function saveServerProductImageState() {
+  ensureUploadsDir();
+  try {
+    fs.writeFileSync(IMAGE_OVERRIDES_FILE, JSON.stringify(serverProductImageState, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[ProductImageSystem] Error saving overrides file:', err);
+  }
+}
+
+// GET /api/v1/admin/product-images - Fetch all product image overrides & server media library
+app.get('/api/v1/admin/product-images', (req, res) => {
+  serverProductImageState = loadServerProductImageState();
+  res.json({
+    success: true,
+    data: serverProductImageState
+  });
+});
+
+// POST /api/v1/admin/upload-product-image - Upload an image in JPG or any format to /public/assets/uploads
+app.post('/api/v1/admin/upload-product-image', (req, res) => {
+  try {
+    ensureUploadsDir();
+    const {
+      fileName,
+      mimeType,
+      base64Data,
+      targetFormat,
+      autoWebpLossless,
+      losslessCompression,
+      originalSizeBytes,
+      productId,
+      productIds,
+      category,
+      applyToAll,
+      oldUrlToReplace
+    } = req.body || {};
+
+    if (!base64Data || typeof base64Data !== 'string') {
+      return res.status(400).json({ success: false, message: 'Missing base64Data payload.' });
+    }
+
+    // Strip data URL prefix if present (e.g., "data:image/webp;base64,...")
+    const matches = base64Data.match(/^data:([A-Za-z0-9-+/.]+);base64,(.+)$/);
+    const detectedMime = matches ? matches[1] : (mimeType || 'image/jpeg');
+    const rawBase64 = matches ? matches[2] : base64Data;
+    const buffer = Buffer.from(rawBase64, 'base64');
+
+    // Determine file extension
+    let ext = 'jpg';
+    if (autoWebpLossless || targetFormat === 'webp' || detectedMime.includes('webp')) {
+      ext = 'webp';
+    } else if (targetFormat && targetFormat !== 'original') {
+      ext = String(targetFormat).toLowerCase().replace('.', '');
+    } else if (fileName && fileName.includes('.')) {
+      ext = fileName.split('.').pop()!.toLowerCase();
+    } else if (detectedMime.includes('png')) {
+      ext = 'png';
+    } else if (detectedMime.includes('svg')) {
+      ext = 'svg';
+    } else if (detectedMime.includes('gif')) {
+      ext = 'gif';
+    } else if (detectedMime.includes('avif')) {
+      ext = 'avif';
+    }
+    if (ext === 'jpeg') ext = 'jpg';
+
+    const baseName = (fileName ? path.basename(fileName, path.extname(fileName)) : 'product-image')
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 50) || 'product-image';
+
+    const finalFileName = `${baseName}-${Date.now()}.${ext}`;
+    const filePath = path.join(UPLOADS_DIR, finalFileName);
+    fs.writeFileSync(filePath, buffer);
+
+    const uploadedUrl = `/assets/uploads/${finalFileName}`;
+    const nowIso = new Date().toISOString();
+
+    const mediaEntry = {
+      id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      url: uploadedUrl,
+      name: finalFileName,
+      format: ext.toUpperCase(),
+      sizeBytes: buffer.length,
+      originalSizeBytes: typeof originalSizeBytes === 'number' ? originalSizeBytes : buffer.length,
+      losslessCompression: Boolean(autoWebpLossless || losslessCompression),
+      uploadedAt: nowIso
+    };
+
+    serverProductImageState.mediaLibrary = [
+      mediaEntry,
+      ...serverProductImageState.mediaLibrary.filter(m => m.url !== uploadedUrl)
+    ];
+
+    // Optional immediate assignment
+    if (applyToAll) {
+      serverProductImageState.globalDefaultImage = uploadedUrl;
+    }
+    if (category) {
+      serverProductImageState.categoryOverrides[category] = uploadedUrl;
+    }
+    if (oldUrlToReplace) {
+      serverProductImageState.urlReplacements[oldUrlToReplace] = uploadedUrl;
+    }
+    if (productId) {
+      const existing = serverProductImageState.overrides[productId];
+      const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u !== uploadedUrl)] : [uploadedUrl];
+      serverProductImageState.overrides[productId] = {
+        primary: uploadedUrl,
+        gallery,
+        format: ext.toUpperCase(),
+        updatedAt: nowIso
+      };
+    }
+    if (Array.isArray(productIds)) {
+      for (const pid of productIds) {
+        if (!pid) continue;
+        const existing = serverProductImageState.overrides[pid];
+        const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u !== uploadedUrl)] : [uploadedUrl];
+        serverProductImageState.overrides[pid] = {
+          primary: uploadedUrl,
+          gallery,
+          format: ext.toUpperCase(),
+          updatedAt: nowIso
+        };
+      }
+    }
+
+    saveServerProductImageState();
+
+    return res.json({
+      success: true,
+      url: uploadedUrl,
+      mediaEntry,
+      state: serverProductImageState,
+      message: `Image uploaded and saved as ${ext.toUpperCase()}`
+    });
+  } catch (err: any) {
+    console.error('[ProductImageSystem] Upload error:', err);
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to upload product image'
+    });
+  }
+});
+
+// PUT /api/v1/admin/product-images - Update product image assignments (single, bulk, category, global, or URL replacement)
+app.put('/api/v1/admin/product-images', (req, res) => {
+  try {
+    const {
+      productId,
+      productIds,
+      primaryUrl,
+      galleryUrls,
+      format,
+      category,
+      applyToAll,
+      oldUrlToReplace,
+      fullOverridesMap
+    } = req.body || {};
+
+    const nowIso = new Date().toISOString();
+
+    if (fullOverridesMap && typeof fullOverridesMap === 'object') {
+      serverProductImageState.overrides = {
+        ...serverProductImageState.overrides,
+        ...fullOverridesMap
+      };
+    }
+
+    if (applyToAll && primaryUrl !== undefined) {
+      serverProductImageState.globalDefaultImage = primaryUrl || null;
+      // Also update serverProductsStore if populated
+      serverProductsStore = serverProductsStore.map(p => ({
+        ...p,
+        image: primaryUrl || p.image,
+        images: primaryUrl ? [primaryUrl, ...(p.images || []).slice(1)] : p.images
+      }));
+    }
+
+    if (category && primaryUrl) {
+      serverProductImageState.categoryOverrides[category] = primaryUrl;
+    }
+
+    if (oldUrlToReplace && primaryUrl) {
+      serverProductImageState.urlReplacements[oldUrlToReplace] = primaryUrl;
+    }
+
+    if (productId && primaryUrl) {
+      const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
+        ? galleryUrls
+        : [primaryUrl];
+      serverProductImageState.overrides[productId] = {
+        primary: primaryUrl,
+        gallery: resolvedGallery,
+        format: format || (primaryUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
+        updatedAt: nowIso
+      };
+      serverProductsStore = serverProductsStore.map(p =>
+        p.id === productId
+          ? { ...p, image: primaryUrl, images: resolvedGallery }
+          : p
+      );
+    }
+
+    if (Array.isArray(productIds) && primaryUrl) {
+      for (const pid of productIds) {
+        if (!pid) continue;
+        const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
+          ? galleryUrls
+          : [primaryUrl];
+        serverProductImageState.overrides[pid] = {
+          primary: primaryUrl,
+          gallery: resolvedGallery,
+          format: format || (primaryUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
+          updatedAt: nowIso
+        };
+      }
+      const idSet = new Set(productIds);
+      serverProductsStore = serverProductsStore.map(p =>
+        idSet.has(p.id)
+          ? { ...p, image: primaryUrl, images: [primaryUrl, ...(p.images || []).filter((u: string) => u !== primaryUrl)] }
+          : p
+      );
+    }
+
+    saveServerProductImageState();
+
+    return res.json({
+      success: true,
+      data: serverProductImageState,
+      message: 'Product image configuration updated successfully.'
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to update product images'
+    });
+  }
+});
+
+// DELETE /api/v1/admin/product-images - Reset or bulk-delete product image associations
+app.delete('/api/v1/admin/product-images', (req, res) => {
+  const { productId, productIds, category, clearGlobal, resetAll } = req.body || req.query || {};
+
+  if (resetAll) {
+    serverProductImageState.overrides = {};
+    serverProductImageState.globalDefaultImage = null;
+    serverProductImageState.categoryOverrides = {};
+    serverProductImageState.urlReplacements = {};
+  } else {
+    if (productId) {
+      delete serverProductImageState.overrides[String(productId)];
+    }
+    if (Array.isArray(productIds)) {
+      for (const pid of productIds) {
+        if (pid) {
+          delete serverProductImageState.overrides[String(pid)];
+        }
+      }
+    }
+    if (category) {
+      delete serverProductImageState.categoryOverrides[String(category)];
+    }
+    if (clearGlobal) {
+      serverProductImageState.globalDefaultImage = null;
+    }
+  }
+
+  saveServerProductImageState();
+  return res.json({
+    success: true,
+    data: serverProductImageState,
+    message: 'Product image association(s) deleted successfully.'
+  });
 });
 
 // CMS Site Content in-memory cache on server

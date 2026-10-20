@@ -17,8 +17,8 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Bamboo Sticks & Skewers",
     images: [
-      "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop&q=80&sig=10",
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80&sig=1"
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80540555700478-4be289fbecef?w=800&auto=format&fit=crop&q=80&sig=10",
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
     ],
     description: "Premium natural bamboo skewers, Teppo skewers, knotted skewers, plant supporters, garden canes, and fruit sticks manufactured by Ganzhou Haicheng Bamboo Industry Co., Ltd.",
     priceTiers: [
@@ -55,8 +55,8 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Incense & Raw Materials",
     images: [
-      "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=800&auto=format&fit=crop&q=80&sig=12",
-      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=13"
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80512496015851-a90fb38ba796?w=800&auto=format&fit=crop&q=80&sig=12",
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=13"
     ],
     description: "High-grade bamboo-core incense sticks, cone incense, incense sachet, and burners in Floral, Fruity, Woody, and Oriental fragrance families from Jiangsu Honorscent Industrial Development Co., Ltd.",
     priceTiers: [
@@ -92,7 +92,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Incense Raw Materials",
     images: [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=14"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=14"
     ],
     description: "Raw INCENSE STICK, Joss powder, wood powder, and bamboo sticks manufactured by Gmex Import Export Joint Stock Company in Hanoi, Vietnam.",
     priceTiers: [
@@ -128,7 +128,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Bamboo & Joss Powder",
     images: [
-      "https://images.unsplash.com/photo-1516455207990-7a41ce80f7ee?w=800&auto=format&fit=crop&q=80&sig=16"
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80516455207990-7a41ce80f7ee?w=800&auto=format&fit=crop&q=80&sig=16"
     ],
     description: "Export quality Joss Powder, Bamboo Sticks, and Broom Sticks produced by Global Dream in Yen Bai Province, Vietnam with 10 years manufacturing expertise.",
     priceTiers: [
@@ -162,7 +162,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Kitchen & Tableware",
     images: [
-      "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&auto=format&fit=crop&q=80&sig=18"
+      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80583394838336-acd977736f90?w=800&auto=format&fit=crop&q=80&sig=18"
     ],
     description: "Assorted bamboo sticks, chopsticks, toothpicks, fruit picks, skewers, incense sticks, bamboo bowls, trays, grinders, and scoop spoons from Fuzhou Sweety Bamboo.",
     priceTiers: [
@@ -196,7 +196,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Garden & Construction Bamboo",
     images: [
-      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80&sig=20"
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80509316975850-ff9c5deb0cd9?w=800&auto=format&fit=crop&q=80&sig=20"
     ],
     description: "Durable round bamboo sticks, bamboo mats, poles, and garden fences from Ecol Bamboo (Zhejiang, China).",
     priceTiers: [
@@ -230,7 +230,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Agricultural",
     subCategory: "Incense & Spices",
     images: [
-      "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80&sig=22"
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
     ],
     description: "Premium agarbatti, incense, bamboo sticks, powder, alongside high-grade Cinnamon and lotus seeds from Bui Thi Agriculture Import Export Processing Company Limited.",
     priceTiers: [
@@ -264,7 +264,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Garden",
     subCategory: "Garden & Agriculture",
     images: [
-      "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=80&sig=24"
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=80&sig=24"
     ],
     description: "Bamboo canes, wire baskets, bamboo flower sticks, fencing, edging hanging baskets, garden products, bamboo trellises, and bamboo furnitures from Win-win Bamboo Manufacturing Co., Ltd.",
     priceTiers: [
@@ -298,7 +298,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Textiles",
     subCategory: "Bamboo & Household",
     images: [
-      "https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80&sig=26"
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80544816155-12df9643f363?w=800&auto=format&fit=crop&q=80&sig=26"
     ],
     description: "Manufacturer of towels, bamboo sticks, incense sticks, bamboo poles, and bamboo products from MIT Vietnam Co., Ltd.",
     priceTiers: [
@@ -332,7 +332,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Bamboo & Wood Products",
     subCategory: "Toothpicks & Food Sticks",
     images: [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=28"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=28"
     ],
     description: "High-tech manufactured bamboo food sticks and toothpicks from Jiangxi Jinzhu Industrial Co. Ltd.",
     priceTiers: [
@@ -366,7 +366,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Wood & Bamboo Products",
     subCategory: "Ice Cream Sticks & Tableware",
     images: [
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80&sig=30"
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80&sig=30"
     ],
     description: "Wooden ice cream sticks, coffee stirrers, tongue depressors, paper bowls, bamboo skewers, and decorative toothpicks from Yantai Vinzor Wood Products Co., Ltd.",
     priceTiers: [
@@ -400,7 +400,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Wood & Bamboo Products",
     subCategory: "Disposable Tableware & Skewers",
     images: [
-      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80&sig=32"
+      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80&sig=32"
     ],
     description: "Manufacturer and exporter of wooden and bamboo toothpicks, bamboo and wooden skewers, wooden ice cream sticks, spoons, paper doilies, paper baking cups, and cocktail picks from Hongchang Industry Co. Ltd.",
     priceTiers: [
@@ -434,7 +434,7 @@ export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
     category: "Wood & Bamboo Products",
     subCategory: "Wooden & Bamboo Housewares",
     images: [
-      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=34"
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=34"
     ],
     description: "Ice cream sticks, wooden dowel pin, wooden dowel rod, wooden skewer, knife holder, cutting board, flag stick, wooden cigarette holder, wooden box, chopping board, kitchen knife holder, coffee stick from DaLian YiChun GuoFeng Trading Co.,Ltd.",
     priceTiers: [

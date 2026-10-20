@@ -40,8 +40,8 @@ export const GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES: DetailedBuyerProfile[] = [
       'USDA Certified Purchaser',
       'Global Grain & Oil Trade Association'
     ],
-    logoUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80&sig=1',
-    bannerUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80&sig=2',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80&sig=1',
+    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     description: 'Buyer of sunflower oil. Established in 1908. Trading is our goal, building longtime relationships in international agri-food trade and maintaining continuous corporate procurement of refined cooking oils.',
     contactPerson: 'Brandy Morgan',
     contactDesignation: 'Global Head of Agri Procurement',
@@ -94,8 +94,8 @@ export const GLOBAL_SUNFLOWER_OIL_BUYER_PROFILES: DetailedBuyerProfile[] = [
       'ISO 9001 Certified Importer',
       'International Chamber of Commerce Member'
     ],
-    logoUrl: 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=800&auto=format&fit=crop&q=80&sig=3',
-    bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=4',
+    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80534483509719-3feaee7c30da?w=800&auto=format&fit=crop&q=80&sig=3',
+    bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=4',
     description: 'Buyer of TEXTILE MATERIAL, RICE, CANNED FOOD, VEGETABLE OIL, REFINED SUNFLOWER OIL, WHEAT FLOUR, POWDERED MILK, AGRICULTURAL TRACTORS, SOLAR STREET LIGHTS, SOLAR PANELS. Mofep Ventures Trading manages global supply lines and long-term procurement programs.',
     contactPerson: 'Kengen Jakor',
     contactDesignation: 'Director of Strategic Commodities',

@@ -103,8 +103,8 @@ export const buildOptimizedUnsplashUrl = (
  * Generate responsive srcset for modern viewport breakpoints
  */
 export const generateSrcSet = (rawUrl: string, aspectConfig: AspectRatioDimensions): string => {
-  if (!rawUrl.includes('unsplash.com')) {
-    return `${rawUrl} 1x`;
+  if (!rawUrl || !rawUrl.includes('unsplash.com')) {
+    return '';
   }
 
   const widths = [640, 960, 1200, 1600, 2000];
@@ -126,87 +126,87 @@ interface ViewHeroConfig {
 
 const VIEW_HERO_CATALOG: Record<string, ViewHeroConfig> = {
   HOMEPAGE: {
-    baseImage: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec',
+    baseImage: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     alt: 'Global B2B Logistics and Maritime Container Port Hub',
     themeColor: '#0f172a'
   },
   LANDING_PAGE: {
-    baseImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
+    baseImage: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
     alt: 'International Corporate Trade and Cross-Border B2B Negotiation',
     themeColor: '#0f172a'
   },
   PRODUCT_DIRECTORY: {
-    baseImage: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d',
+    baseImage: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80',
     alt: 'Modern Automated Industrial Warehouse and Global Distribution Center',
     themeColor: '#1e293b'
   },
   RFQ_HUB: {
-    baseImage: 'https://images.unsplash.com/photo-1450133064473-71024230f91b',
+    baseImage: 'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80',
     alt: 'Global Procurement Contracts and Live Sourcing Tenders',
     themeColor: '#091e3a'
   },
   SUPPLIERS_DIRECTORY: {
-    baseImage: 'https://images.unsplash.com/photo-1565891741441-64926e441838',
+    baseImage: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     alt: 'Verified Advanced Manufacturing Facility and OEM Production Line',
     themeColor: '#111827'
   },
   BUYERS_DIRECTORY: {
-    baseImage: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7',
+    baseImage: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     alt: 'Verified International Importers and Procurement Directors',
     themeColor: '#0f172a'
   },
   BUY_LEADS: {
-    baseImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f',
+    baseImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     alt: 'High Volume Commercial Buy Leads and Export Demand Analytics',
     themeColor: '#1e1b4b'
   },
   TRUST_SAFETY: {
-    baseImage: 'https://images.unsplash.com/photo-1563986768609-322da13575f3',
+    baseImage: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
     alt: 'Encrypted Escrow Protection and Verified Supplier Due Diligence',
     themeColor: '#064e3b'
   },
   INSIGHTS: {
-    baseImage: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c',
+    baseImage: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
     alt: 'Global Commodity Trade Intelligence and Export Market Analysis',
     themeColor: '#0f172a'
   },
   PREMIUM_MEMBERSHIP: {
-    baseImage: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e',
+    baseImage: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
     alt: 'Premium Gold Exporter Membership Tier and Sourcing Acceleration',
     themeColor: '#1e293b'
   },
   INCOTERMS_CALCULATOR: {
-    baseImage: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec',
+    baseImage: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
     alt: 'Incoterms 2020 Freight Shipping and Customs Risk Assessment',
     themeColor: '#0f172a'
   },
   ABOUT_US: {
-    baseImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c',
+    baseImage: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
     alt: 'Global Trade Heaven Operations Team and International Trade Network',
     themeColor: '#0f172a'
   },
   PRODUCT_LISTING_POLICY: {
-    baseImage: 'https://images.unsplash.com/photo-1450133064473-71024230f91b',
+    baseImage: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80',
     alt: 'International Trade Regulations and Export Compliance Framework',
     themeColor: '#0f172a'
   },
   PRIVACY_POLICY: {
-    baseImage: 'https://images.unsplash.com/photo-1450133064473-71024230f91b',
+    baseImage: 'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80',
     alt: 'Enterprise Data Protection and Privacy Compliance',
     themeColor: '#0f172a'
   },
   TERMS_OF_USE: {
-    baseImage: 'https://images.unsplash.com/photo-1450133064473-71024230f91b',
+    baseImage: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     alt: 'Trade Heaven Enterprise User Agreement and Legal Terms',
     themeColor: '#0f172a'
   },
   VENDOR_PROFILE: {
-    baseImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab',
+    baseImage: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     alt: 'Verified Manufacturer Corporate Headquarters and Storefront',
     themeColor: '#0f172a'
   },
   DEFAULT: {
-    baseImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40',
+    baseImage: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     alt: 'Trade Heaven Global B2B Wholesale Marketplace',
     themeColor: '#0f172a'
   }
@@ -231,6 +231,9 @@ export const getDynamicHeroImageForView = (
   let rawBaseUrl = '';
   if ((view === 'HOMEPAGE' || view === 'LANDING_PAGE') && siteContent?.homepage?.heroBgImage?.trim()) {
     rawBaseUrl = siteContent.homepage.heroBgImage.trim();
+    if (rawBaseUrl === 'vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034.jpg') {
+      rawBaseUrl = '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
+    }
   }
 
   const catalogEntry = VIEW_HERO_CATALOG[view] || VIEW_HERO_CATALOG.DEFAULT;

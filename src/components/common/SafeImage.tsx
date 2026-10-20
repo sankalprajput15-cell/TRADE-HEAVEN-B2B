@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors } from 'lucide-react';
 import { getAutoAltText } from '../../utils/imageSeo';
+import { productImageManagerService } from '../../services/productImageManagerService';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string | undefined;
@@ -19,93 +20,65 @@ interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   type?: 'product' | 'logo' | 'avatar' | 'category' | 'rfq';
 }
 
-// 100% verified, highly accessible Unsplash industrial photos
+// 100% verified, highly accessible cargo and oil ships port image
+const EVENING_TANKER_PORT_IMAGE = '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
+
 const FALLBACK_SEEDS: string[] = [
-  'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80'
+  EVENING_TANKER_PORT_IMAGE,
+  'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
 ];
 
 const CATEGORY_POOLS: Record<string, string[]> = {
   GOLD: [
-    'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
   ],
   COAL: [
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
   ],
   SEAFOOD: [
-    'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80'
   ],
   CHEMICALS: [
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
   ],
   AGRICULTURE: [
-    'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
   ],
   MACHINERY: [
-    'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1563770660941-20978e870e26?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE
   ],
   TEXTILES: [
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1524295988350-dfa806967073?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1605697319999-e686c5f949dc?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
   ],
   CONSTRUCTION: [
-    'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
   ],
   MEDICAL: [
-    'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1581093588401-f3c22d745e53?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
   ],
   ELECTRONICS: [
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
   ],
   AUTOMOTIVE: [
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
   ],
   RENEWABLE: [
-    'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80'
   ],
   INDUSTRIAL: [
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
+    EVENING_TANKER_PORT_IMAGE,
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
   ]
 };
 
@@ -181,10 +154,52 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   type = 'product',
   ...props
 }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const [hasIntersected, setHasIntersected] = useState<boolean>(false);
   const [attemptIndex, setAttemptIndex] = useState<number>(0);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setHasIntersected(true);
+      return;
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      setHasIntersected(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting || entry.intersectionRatio > 0) {
+            setHasIntersected(true);
+            if (containerRef.current) {
+              observer.unobserve(containerRef.current);
+            }
+          }
+        });
+      },
+      {
+        rootMargin: '250px', // Load 250px before entering viewport
+        threshold: 0.01,
+      }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
 
   // Automatically compute descriptive, WCAG and SEO-optimized alt text
   const resolvedAlt = useMemo(() => {
@@ -217,13 +232,40 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     );
   }, [src, alt, resolvedAlt, type]);
 
+  const [overrideVersion, setOverrideVersion] = useState(0);
+
+  useEffect(() => {
+    const handleImageOverrideUpdate = () => {
+      setOverrideVersion(v => v + 1);
+      setAttemptIndex(0);
+      setHasError(false);
+    };
+    window.addEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
+    return () => window.removeEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
+  }, []);
+
   // 2. Build prioritized candidate URLs list
   const candidates = useMemo(() => {
     const list: string[] = [];
 
-    // Prioritize passed src if non-empty and not a known generic broken string
-    if (src && typeof src === 'string' && src.trim() && !src.includes('1579541300958-c0b7d3f114c0')) {
-      list.push(src.trim());
+    const effectiveSrc = !isLogoOrAvatar
+      ? productImageManagerService.resolveImageSrc({
+          src,
+          productId,
+          productTitle,
+          category,
+          imageIndex
+        })
+      : src;
+
+    // Prioritize effectiveSrc if non-empty and not a known generic broken string
+    if (effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim() && !effectiveSrc.includes('1579541300958-c0b7d3f114c0')) {
+      const cleanSrc = effectiveSrc.trim();
+      if (cleanSrc.includes('1518709268805') || cleanSrc.includes('518709268805')) {
+        list.push(EVENING_TANKER_PORT_IMAGE);
+      } else {
+        list.push(cleanSrc);
+      }
     }
 
     if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim()) {
@@ -232,8 +274,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
     if (isLogoOrAvatar) {
       // Add reliable generic business avatar / logo seeds
-      list.push('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80');
-      list.push('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80');
+      list.push(EVENING_TANKER_PORT_IMAGE);
+      list.push('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80');
       return list;
     }
 
@@ -265,11 +307,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     return list.length > 0 ? list : FALLBACK_SEEDS;
-  }, [src, fallbackSrc, alt, category, productId, isLogoOrAvatar]);
+  }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion]);
 
   const currentCandidate = useMemo(() => {
     const raw = candidates[attemptIndex] || FALLBACK_SEEDS[0];
-    if (!raw) return raw;
+    if (!raw || raw.startsWith('/assets/') || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
     const sep = raw.includes('?') ? '&' : '?';
     return `${raw}${sep}v=1`;
   }, [candidates, attemptIndex]);
@@ -286,7 +328,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       setIsLoaded(true);
       setHasError(false);
     }
-  }, [currentCandidate]);
+  }, [currentCandidate, hasIntersected]);
 
   const handleError = () => {
     if (attemptIndex < candidates.length - 1) {
@@ -303,9 +345,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   };
 
   return (
-    <div className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
+    <div ref={containerRef} className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
       {/* Subtle loader skeleton */}
-      {!isLoaded && !hasError && (
+      {(!isLoaded && !hasError) || !hasIntersected ? (
         <div className="absolute inset-0 bg-slate-200/60 animate-pulse flex items-center justify-center z-1">
           {isLogoOrAvatar ? (
             <Building2 className="w-5 h-5 text-slate-400" />
@@ -313,30 +355,34 @@ export const SafeImage: React.FC<SafeImageProps> = ({
             <Package className="w-5 h-5 text-slate-400" />
           )}
         </div>
-      )}
+      ) : null}
 
-      {hasError ? (
-        <div className="w-full h-full min-h-[44px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950 p-2 text-white text-center select-none">
-          <Factory className="w-4 h-4 text-amber-400 shrink-0 mb-0.5" />
-          <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
-            {resolvedAlt || alt || 'Verified Industrial Export'}
-          </span>
-          <span className="text-[8px] text-amber-400/90 font-mono uppercase tracking-wider">
-            Audited Exporter
-          </span>
-        </div>
-      ) : (
-        <img
-          ref={imgRef}
-          src={currentCandidate}
-          alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
-          referrerPolicy="no-referrer"
-          loading={props.loading || (props.fetchPriority === 'high' ? 'eager' : 'lazy')}
-          onLoad={handleLoad}
-          onError={handleError}
-          className={`w-full h-full object-cover transition-opacity duration-200 ${imgClassName}`}
-          {...props}
-        />
+      {hasIntersected && (
+        <>
+          {hasError ? (
+            <div className="w-full h-full min-h-[44px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950 p-2 text-white text-center select-none">
+              <Factory className="w-4 h-4 text-amber-400 shrink-0 mb-0.5" />
+              <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
+                {resolvedAlt || alt || 'Verified Industrial Export'}
+              </span>
+              <span className="text-[8px] text-amber-400/90 font-mono uppercase tracking-wider">
+                Audited Exporter
+              </span>
+            </div>
+          ) : (
+            <img
+              ref={imgRef}
+              src={currentCandidate}
+              alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
+              referrerPolicy="no-referrer"
+              loading={props.loading || 'lazy'}
+              onLoad={handleLoad}
+              onError={handleError}
+              className={`w-full h-full object-cover transition-opacity duration-200 ${imgClassName}`}
+              {...props}
+            />
+          )}
+        </>
       )}
     </div>
   );

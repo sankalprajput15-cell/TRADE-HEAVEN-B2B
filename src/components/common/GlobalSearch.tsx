@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { SafeImage } from './SafeImage';
 import { MOCK_PRODUCTS, MOCK_COMPANIES, MOCK_RFQS, CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
+import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { ActiveView, Product, Currency } from '../../types';
 
 export interface GlobalSearchProps {
@@ -322,15 +323,38 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
     return scored.map(s => s.product).slice(0, 6);
   }, [normalizedQuery, products]);
 
-  // 3. Real-time Suppliers Matches
+  // 3. Real-time Suppliers Matches (Matches by Supplier Name, Company Name, Email, Country, or Description)
   const supplierResults = useMemo(() => {
     if (!normalizedQuery) return [];
-    return MOCK_COMPANIES.filter(c => {
+    const allSuppliers = getAllSuppliersWithUsers();
+    const scored: { company: typeof allSuppliers[0]; score: number }[] = [];
+
+    allSuppliers.forEach(c => {
+      if (!c) return;
       const companyName = (c.companyName || '').toLowerCase();
+      const contactPerson = (c.contactPerson || '').toLowerCase();
+      const contactEmail = (c.contactEmail || '').toLowerCase();
       const businessType = (c.businessType || '').toLowerCase();
       const country = (c.country || '').toLowerCase();
-      return companyName.includes(normalizedQuery) || businessType.includes(normalizedQuery) || country.includes(normalizedQuery);
-    }).slice(0, 3);
+      const description = (c.description || '').toLowerCase();
+
+      let score = 0;
+      if (companyName === normalizedQuery || contactPerson === normalizedQuery) score += 100;
+      else if (companyName.startsWith(normalizedQuery) || contactPerson.startsWith(normalizedQuery)) score += 70;
+      else if (companyName.includes(normalizedQuery) || contactPerson.includes(normalizedQuery)) score += 50;
+
+      if (contactEmail.includes(normalizedQuery)) score += 45;
+      if (country.includes(normalizedQuery)) score += 20;
+      if (businessType.includes(normalizedQuery)) score += 15;
+      if (description.includes(normalizedQuery)) score += 10;
+
+      if (score > 0) {
+        scored.push({ company: c, score });
+      }
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map(s => s.company).slice(0, 6);
   }, [normalizedQuery]);
 
   // 4. Real-time RFQs Matches
@@ -788,12 +812,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                   </div>
                 )}
 
-                {/* 3. SUPPLIER AUTO-SUGGESTIONS (Optional/Secondary) */}
-                {(activeFilterTab === 'ALL' || activeFilterTab === 'SUPPLIERS') && supplierResults.length > 0 && (
+                {/* 3. SUPPLIER & COMPANY MATCHES */}
+                {supplierResults.length > 0 && (
                   <div className="px-2 py-1.5">
                     <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-wider mb-1.5 px-2 flex items-center gap-1.5">
-                      <Factory className="w-3 h-3 text-slate-500" />
-                      <span>Verified Suppliers ({supplierResults.length})</span>
+                      <Factory className="w-3 h-3 text-amber-600" />
+                      <span>Verified Suppliers &amp; Companies ({supplierResults.length})</span>
                     </h4>
 
                     <div className="space-y-1">
@@ -807,18 +831,27 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
                             type="button"
                             onClick={() => handleSelectSupplier(company.companyName)}
                             onMouseEnter={() => setSelectedIndex(itemIndex)}
-                            className={`w-full text-left p-2 rounded-xl transition-all flex items-center justify-between group cursor-pointer border ${
+                            className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center justify-between group cursor-pointer border ${
                               isSelected 
                                 ? 'bg-amber-50/90 border-amber-300 shadow-2xs' 
-                                : 'hover:bg-slate-50 border-transparent'
+                                : 'hover:bg-amber-50/40 border-transparent hover:border-amber-200'
                             }`}
                           >
-                            <div className="min-w-0 pr-2">
-                              <p className="text-xs font-bold text-slate-900 truncate">
+                            <div className="min-w-0 pr-2 space-y-0.5">
+                              <p className="text-xs font-bold text-slate-900 truncate flex items-center gap-1.5">
                                 <HighlightText text={company.companyName} highlight={query} />
+                                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                                  {company.tier || 'VERIFIED'}
+                                </span>
                               </p>
-                              <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                                {company.businessType} • {company.country} • Verified Supplier
+                              {company.contactPerson && (
+                                <p className="text-[11px] font-semibold text-blue-700 truncate">
+                                  Supplier Name: <HighlightText text={company.contactPerson} highlight={query} />
+                                  {company.contactEmail ? ` (${company.contactEmail})` : ''}
+                                </p>
+                              )}
+                              <p className="text-[10px] text-slate-500 truncate">
+                                {company.businessType} • {company.country} • Verified B2B Exporter
                               </p>
                             </div>
                             <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-amber-600 shrink-0" />

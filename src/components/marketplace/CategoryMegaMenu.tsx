@@ -146,7 +146,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
         description: (c.subcategories || []).join(', '),
         subcategories: c.subcategories || [],
         iconName: c.icon,
-        image: (c as any).image || 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
+        image: (c as any).image || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
         badge: 'Verified',
         productCount: c.count || '25,000+ Items'
       }));
@@ -261,7 +261,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categoriesToRender.map(cat => {
           const isSelected = selectedCategory === cat.name;
-          const catImage = cat.image || 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80';
+          const catImage = cat.image || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
           
           // Parse subcategories into array
           const rawSubcats = (cat as any).subcategories && Array.isArray((cat as any).subcategories) && (cat as any).subcategories.length > 0

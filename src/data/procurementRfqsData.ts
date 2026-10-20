@@ -27,10 +27,10 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "100% Irrevocable DLC at Sight / Trade Escrow",
     detailedRequirements: "Direct procurement from active international distributor supplying healthcare systems, hotel hospitality, and food processing plants across the US Midwest.\n\nSpecifications:\n- Material: 100% Synthetic Nitrile (Latex-Free, Powder-Free)\n- Thickness: 5.0 Mil finger thickness, textured fingertips\n- Standard: EN 455 Parts 1-4, ASTM D6319, FDA 510(k) clearance required\n- Packaging: 100 pcs/dispenser box, 10 boxes/master carton\n- Sizes: S (15%), M (40%), L (35%), XL (10%)\n- Required Documents: COA, ISO 13485 certificate, CE/FDA declarations.\n\nTargeting monthly contract supply of 3-5 40ft HQ containers upon successful trial inspection.",
-    image: "https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584744982491-665216d95f8b?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800&auto=format&fit=crop&q=80"
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80603398938378-e54eab446dde?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "URGENT",
     quotesCount: 7,
@@ -64,9 +64,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United Kingdom",
     paymentTerms: "30% T/T Advance + 70% against Bill of Lading (B/L) copy",
     detailedRequirements: "We represent Tier-1 automotive and construction engineering contractors throughout Great Britain. Seeking verified OEM manufacturers for continuous supply.\n\nSpecs:\n- Standard: EN 388:2016 rating 4X43D / ANSI Cut Level A5\n- Liner: 13-Gauge HPPE + Kevlar seamless knitted yarn\n- Coating: Micro-foam sandy nitrile palm coating for oily grip\n- Touchscreen compatible index and thumb tips\n- Custom branding: Vanguard embossed logo on cuff band\n- Samples required before PO confirmation.",
-    image: "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80590402494682-cd3fb53b1f70?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1590402494682-cd3fb53b1f70?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80590402494682-cd3fb53b1f70?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "STANDARD",
     quotesCount: 5,
@@ -100,9 +100,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Saudi Arabia",
     paymentTerms: "LC at Sight 100% issued by top-tier Saudi bank",
     detailedRequirements: "Direct requirement for infrastructure and hotel resort development project under Vision 2030.\n\nSpecifications:\n- Material: High-Density Polyethylene (HDPE) shell, UV-resistant\n- Suspension: 6-point ratchet suspension with sweatband\n- Certification: ANSI/ISEA Z89.1-2014 Type I, Class E (electrical rated 20,000V)\n- Colors: White (60%), Yellow (25%), Blue (10%), Orange (5%)\n- Custom reflective stripe stickers and front logo silkscreen.",
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "LONG_TERM_CONTRACT",
     quotesCount: 8,
@@ -140,9 +140,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Sweden",
     paymentTerms: "Escrow Deposit 30% + 70% against SGS loading inspection certificate",
     detailedRequirements: "We distribute hygiene chemicals to hotel chains, municipal transit systems, hospital networks, and facilities across Scandinavia.\n\nSpecs:\n- Bio-degradable, non-toxic, solvent-free heavy-duty alkaline formula\n- pH 10.5 - 11.5 concentrated\n- Dilution ratio 1:50 to 1:200 with water\n- Packing: UN-certified 200-liter HDPE heavy-duty blue drums with double bung caps\n- Reach compliance and full MSDS / Safety Data Sheet in English required.",
-    image: "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584820927498-cfe5211fd8bf?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=800&auto=format&fit=crop&q=80"
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
     ],
     urgency: "STANDARD",
     quotesCount: 4,
@@ -176,9 +176,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Australia",
     paymentTerms: "30% T/T Advance + 70% against B/L and Fumigation Certificate",
     detailedRequirements: "High volume recurring procurement for nationwide hotel housekeeping and commercial janitorial service contractors.\n\nSpecs:\n- Composition: 80% Polyester, 20% Polyamide\n- Weight: 300 GSM (+/- 5g)\n- Size: 40cm x 40cm (16 x 16 inch) ultrasonic cut edgeless\n- Color coding: Blue (30%), Yellow (30%), Green (20%), Red (20%)\n- Packaging: 50 pieces per heavy polybag with barcode inlay, 10 packs per master carton\n- Initial order: 1x 40ft High Cube container.",
-    image: "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80563453392212-326f5e854473?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80563453392212-326f5e854473?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "URGENT",
     quotesCount: 9,
@@ -216,9 +216,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Canada",
     paymentTerms: "Trade Heaven 100% Escrow Protection / LC at Sight",
     detailedRequirements: "We service over 450 hotel restaurant chains and catering operators across Eastern Canada under strict single-use plastic ban regulations.\n\nSpecs:\n- Material: 100% Natural Sugarcane Pulp / Bagasse fiber (Tree-free, PFAS-free certified)\n- Dimensions: 9\" x 9\" x 3\" (3-compartment hinged lid)\n- Performance: Microwave-safe, freezer-safe, water-resistant up to 100°C, oil-resistant up to 120°C\n- Certifications: BPI Certified Compostable, EN 13432, FDA Food Contact Safe\n- Packing: 50 pcs/poly sleeve, 4 sleeves (200 pcs)/carton.\n- Long-term bi-monthly supply contract.",
-    image: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "LONG_TERM_CONTRACT",
     quotesCount: 11,
@@ -252,9 +252,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Germany",
     paymentTerms: "30% T/T Advance, 70% on Original B/L and FSC Certificate",
     detailedRequirements: "Procurement for major European hotel catering, airline services, and hospitality events.\n\nSpecs:\n- 100% Natural FSC-Certified White Birchwood\n- Smooth machine-polished edges, splinter-free, heat-pressed surface\n- Length: 160mm (Fork, Knife, Spoon), 1-ply recycled kraft napkin (24x24cm)\n- Wrapped in sealed recycled kraft paper pouch with bio-based ink logo print\n- LFGB and EU 1935/2004 compliance test reports mandatory.",
-    image: "https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "STANDARD",
     quotesCount: 6,
@@ -292,9 +292,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "30% Deposit + 70% against SGS Inspection & B/L",
     detailedRequirements: "OEM manufacturing tender for security, hospitality resort staff, and duty personnel gear.\n\nSpecs:\n- Fabric: Genuine 500D / 1000D Cordura Nylon with PU 2x water-repellent coating\n- Capacity: 45 Liters expandable multi-tier compartments\n- Zippers: YKK heavy-duty double sliders with paracord quiet pulls\n- Hardware: UTX-Duraflex nylon quick-release buckles\n- Features: Laser-cut MOLLE webbing on front & sides, padded breathable mesh back panel, internal padded laptop sleeve up to 17\", 3L hydration bladder compartment\n- Branding: Custom woven tactical rubberized PVC patch on loop Velcro front panel\n- Colors: Ranger Green (35%), Coyote Brown (35%), Matte Black (20%), Multicam pattern (10%).",
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80",
+    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     images: [
-      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "URGENT",
     quotesCount: 8,
@@ -328,9 +328,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "100% Confirmed DLC / Escrow Settlement",
     detailedRequirements: "High output tactical lighting contract for hotel security and facility maintenance teams.\n\nSpecs:\n- Emitter: High-intensity Luminus SST-40 / Cree XHP50.2 LED\n- Output: 2,000 True ANSI Lumens (5 modes: Turbo, High, Med, Low, Tactical Strobe)\n- Body: Aircraft-grade 6061-T6 aluminum with Type III military hard-anodized finish\n- Battery: Rechargeable 21700 5000mAh Li-ion with built-in USB-C fast charging port\n- Ingress: IPX8 submersible up to 2 meters, 1.5m drop-proof strike bezel\n- Laser etching: Custom logo and serial number on barrel.",
-    image: "https://images.unsplash.com/photo-1517420879524-86d64ac2f339?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80517420879524-86d64ac2f339?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1517420879524-86d64ac2f339?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80517420879524-86d64ac2f339?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "STANDARD",
     quotesCount: 7,
@@ -368,9 +368,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "30% T/T Advance + 70% against Shipping Docs (B/L, Packing List)",
     detailedRequirements: "We furnish over 3,000 hotels, public venues, commercial office towers, and airport terminals across the Tri-State area.\n\nSpecs:\n- Capacity: 36 Quart (34 Liter) high-grade molded polyethylene bucket\n- Wringer: High-efficiency downpress wringer mechanism rated for 50,000 cycles\n- Wheels: 4x 3-inch non-marking thermoplastic rubber swivel casters with bumper guards\n- Color: Safety Yellow with Caution wet floor imprint in English & Spanish\n- Packaging: KD (Knocked Down) flat-pack 1 unit/carton to maximize container volume loading.",
-    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "STANDARD",
     quotesCount: 6,
@@ -404,9 +404,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United Arab Emirates",
     paymentTerms: "100% LC at Sight / Escrow Release upon Port Inspection",
     detailedRequirements: "Procurement on behalf of luxury hotel resorts, convention centers, and Dubai International Airport maintenance teams.\n\nSpecs:\n- Size: 38\" x 58\" (fits standard 55-60 Gallon round and rectangular brute cans)\n- Material: Heavy-duty Linear Low-Density Polyethylene (LLDPE) recycled resin blend\n- Thickness: True 1.5 Mil (38 Micron) puncture-resistant\n- Seal: Star-bottom seal to eliminate bottom leaks and evenly distribute weight\n- Color: Opaque Jet Black\n- Packing: Coreless rolls, 100 bags per corrugated master carton.",
-    image: "https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80618477461853-cf6ed80faba5?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?w=800&auto=format&fit=crop&q=80"
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
     ],
     urgency: "URGENT",
     quotesCount: 8,
@@ -444,9 +444,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "30% Advance + 70% against B/L and NSF Certification",
     detailedRequirements: "We supply major cruise ship lines, resort chains, and commercial restaurant kitchens across Florida and the Caribbean.\n\nSpecs:\n- Standard: European Standard EN 631-1 Gastronorm Specifications\n- Material: Food-Grade AISI 304 (18/10 Stainless Steel), thickness 0.8mm\n- Anti-Jam stacking lugs around exterior rims to prevent sticking\n- Sizes:\n  * GN 1/1 (530x325mm) Depth 65mm & 100mm (40%)\n  * GN 1/2 (325x265mm) Depth 65mm & 100mm (35%)\n  * GN 1/3 (325x176mm) Depth 100mm & 150mm (25%)\n- NSF Sanitation certification or equivalent mandatory.",
-    image: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80556910103-1c02745aae4d?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80556910103-1c02745aae4d?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "LONG_TERM_CONTRACT",
     quotesCount: 7,
@@ -480,9 +480,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Japan",
     paymentTerms: "100% LC at Sight issued by Japanese Tier-1 Bank",
     detailedRequirements: "High volume supply contract for restaurant chains, bakery networks, and hotel kitchen food processing facilities.\n\nSpecs:\n- Material: Ultra-durable crystal clear polycarbonate (virtually unbreakable, temperature -40°C to 99°C)\n- Size: 18\" x 26\" (Depth 6\", 9\", 15\" assorted)\n- Molded-in measurement graduations (Quarts and Liters) that will not rub off\n- Lids: Snap-tight polyethylene color-coded lids (Red, Green, Blue, Yellow)\n- BPA-free, NSF certified, dishwasher safe.",
-    image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80544816155-12df9643f363?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1544816155-12df9643f363?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80544816155-12df9643f363?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "STANDARD",
     quotesCount: 5,
@@ -520,9 +520,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Singapore",
     paymentTerms: "100% Confirmed Irrevocable DLC at Sight",
     detailedRequirements: "We distribute office paper and stationery to hotels, government ministries, universities, and commercial business centers across ASEAN.\n\nSpecs:\n- Size: A4 (210mm x 297mm international standard)\n- Substance: 80 GSM (+/- 2 gsm) 100% Virgin Wood Pulp\n- Brightness: 98% - 102% ISO Brightness, High Whiteness (CIE 165)\n- Moisture: 4.0% - 4.5%, Smoothness: 170 Smoothness / Bendtsen\n- Packaging: Moisture-proof color-printed poly wrapper 500 sheets/ream, 5 reams per sturdy corrugated box (2,500 sheets total per box)\n- Monthly recurring orders of 4 to 8 containers.",
-    image: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "URGENT",
     quotesCount: 12,
@@ -556,9 +556,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "France",
     paymentTerms: "Trade Escrow / 30% T/T Advance + 70% against B/L",
     detailedRequirements: "Turnkey hotel back-office and conference fit-out contractor furnishing corporate headquarters across France, Belgium, and Luxembourg.\n\nSpecs:\n- Backrest: Breathable Korean-imported tensile mesh with dynamic adaptive lumbar support\n- Mechanism: Heavy-duty synchronized tilt mechanism with 4-position angle lock (90°-135°)\n- Armrests: 3D adjustable armrests (Height, Angle, Fore/Aft) with soft PU pads\n- Gas Lift: Class 4 TÜV certified pneumatic cylinder (BIFMA standard)\n- Base: 350mm reinforced die-cast aluminum alloy 5-star base with 60mm silent PU nylon casters\n- Warranty: 3-year commercial warranty guarantee.",
-    image: "https://images.unsplash.com/photo-1580481077197-2a13f707f18c?w=800&auto=format&fit=crop&q=80",
+    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     images: [
-      "https://images.unsplash.com/photo-1580481077197-2a13f707f18c?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80580481077197-2a13f707f18c?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "LONG_TERM_CONTRACT",
     quotesCount: 8,
@@ -596,9 +596,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "100% Escrow via Trade Heaven / DLC at Sight",
     detailedRequirements: "Urgent staging stock for hotel resort protection and hurricane relief operations across Florida, Texas, Louisiana, and the Caribbean basin.\n\nSpecs:\n- Material: 100% Virgin High-Density Polyethylene (HDPE) core with LDPE dual-sided lamination\n- Thickness: 10 Mil (230 GSM), 12x12 cross-woven mesh count\n- UV Protection: Anti-UV stabilizers incorporated into both film and yarn (UV resistant up to 3 years outdoor exposure)\n- Grommets: Heavy-duty rust-proof solid brass or aluminum grommets spaced every 18 inches (45cm) with reinforced plastic triangle corners\n- Color: Reversible Silver / Blue or Silver / Brown\n- Sizes: 20ft x 30ft (50%), 30ft x 40ft (30%), 12ft x 16ft (20%).",
-    image: "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "URGENT",
     quotesCount: 14,
@@ -632,9 +632,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "Puerto Rico",
     paymentTerms: "100% Letter of Credit / UN-backed escrow funding",
     detailedRequirements: "Emergency backup power equipment for coastal hotel resorts, emergency shelters, and critical municipal telecommunications.\n\nSpecs:\n- Engine: 224cc 4-Stroke OHV air-cooled engine with low-oil automatic shutdown\n- Power Output: 4500 Peak Watts / 3700 Running Watts (Gasoline), 4000 Peak / 3300 Running (LPG / Propane)\n- Inverter Tech: Pure Sine Wave Output (THD < 3%) safe for sensitive hotel electronics and POS terminals\n- Noise Level: Ultra-quiet 58 dBA at 25% load (7 meters)\n- Starting: Electric Push-Button Start + Wireless Remote Fob + Recoil Backup\n- Outlets: 1x 120V 30A RV-ready (TT-30R), 2x 120V 20A Household (5-20R), 2x USB-A Fast Charge, 1x 12V DC\n- Certifications: EPA III, CARB compliant, CE certification.",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80"
     ],
     urgency: "URGENT",
     quotesCount: 9,
@@ -668,9 +668,9 @@ export const GLOBAL_SPECIALTY_PROCUREMENT_RFQS: RfqRequirement[] = [
     destinationCountry: "United States",
     paymentTerms: "30% Advance + 70% against B/L",
     detailedRequirements: "Hotel resort shoreline protection and municipal flood protection inventory.\n\nSpecs:\n- Size: 14\" x 26\" (holds up to 50 lbs of sand or gravel)\n- Material: Heavy-duty 850 Denier woven polypropylene with hemmed top\n- UV Protection: Enhanced 1,600-hour UV inhibitor rating (6+ months under intense direct sun)\n- Closure: Attached heavy-duty yellow tie strings on each bag\n- Packing: Bundles of 50 pieces, 1,000 pieces per master bale.",
-    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
     images: [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
     ],
     urgency: "URGENT",
     quotesCount: 10,

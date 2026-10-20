@@ -57,13 +57,13 @@
       "type": "string",
       "format": "uri",
       "description": "1:1 aspect ratio company logo",
-      "example": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=400&auto=format&fit=crop&q=80"
+      "example": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80580273916550-e323be2ae537?w=400&auto=format&fit=crop&q=80"
     },
     "bannerUrl": {
       "type": "string",
       "format": "uri",
       "description": "16:9 panoramic cover banner",
-      "example": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=1600&auto=format&fit=crop&q=80"
+      "example": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
     },
     "tagline": {
       "type": "string",
@@ -129,7 +129,7 @@
         "email": { "type": "string", "example": "b.vance@apexdynamics-racing.com" },
         "phone": { "type": "string", "example": "+1 (317) 890-4420" },
         "whatsapp": { "type": "string", "example": "+13178904420" },
-        "avatarUrl": { "type": "string", "example": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80" },
+        "avatarUrl": { "type": "string", "example": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80" },
         "languages": { "type": "array", "items": { "type": "string" }, "example": ["English", "German", "Mandarin"] },
         "timezone": { "type": "string", "example": "EST (UTC-5) / Business Hours 08:00 - 18:00" },
         "isVerified": { "type": "boolean", "example": true }

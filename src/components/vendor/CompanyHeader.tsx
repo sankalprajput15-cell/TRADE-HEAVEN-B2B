@@ -23,7 +23,7 @@ export const CompanyHeader: React.FC<Props> = ({
       {/* Panoramic 16:9 Cover Banner */}
       <div className="relative h-56 sm:h-72 md:h-80 w-full bg-slate-900">
         <SafeImage
-          src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80'}
+          src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80'}
           alt={`${profile.companyName} Factory Banner`}
           className="w-full h-full object-cover"
         />

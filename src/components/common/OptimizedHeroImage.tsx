@@ -29,17 +29,23 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
   children,
   ...restProps
 }) => {
-  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const resolvedSrc = src === 'vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034.jpg'
+    ? '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+    : src;
+  const finalSrc = resolvedSrc || imageData?.url || '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
+  const isLocalAsset = finalSrc.startsWith('/assets/') || finalSrc.startsWith('/');
+  const [isLoaded, setIsLoaded] = useState<boolean>(isLocalAsset);
   const [hasError, setHasError] = useState<boolean>(false);
   const [isInView, setIsInView] = useState<boolean>(eager);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  const finalSrc = src || imageData?.url || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1600&q=80';
   const finalBlur = blurDataUrl || imageData?.blurDataUrl || createSvgBlurPlaceholder(1200, 675, dominantColor || imageData?.themeColor || '#0f172a');
   const finalAlt = alt || imageData?.alt || 'Trade Heaven B2B Wholesale Hero';
   const finalAspect = aspectRatio || imageData?.aspectRatio || '16/9';
-  const finalSrcSet = restProps.srcSet || imageData?.srcSet;
-  const finalSizes = restProps.sizes || imageData?.sizes || '100vw';
+  const rawSrcSet = restProps.srcSet || imageData?.srcSet;
+  const finalSrcSet = rawSrcSet && rawSrcSet.trim() !== '' && !rawSrcSet.endsWith(' 1x') ? rawSrcSet : undefined;
+  const finalSizes = finalSrcSet ? (restProps.sizes || imageData?.sizes || '100vw') : undefined;
 
   // IntersectionObserver for below-the-fold lazy loading
   useEffect(() => {
@@ -79,13 +85,17 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
     };
   }, [eager]);
 
-  // Reset loading state when source changes
+  // Reset loading state when source changes, or mark loaded if already complete
   useEffect(() => {
     if (isInView) {
-      setIsLoaded(false);
       setHasError(false);
+      if (isLocalAsset || imgRef.current?.complete) {
+        setIsLoaded(true);
+      } else {
+        setIsLoaded(false);
+      }
     }
-  }, [finalSrc, isInView]);
+  }, [finalSrc, isInView, isLocalAsset]);
 
   return (
     <div
@@ -102,18 +112,21 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
       />
 
       {/* 2. Blur-up Low-Resolution Placeholder Layer */}
-      <img
-        src={finalBlur}
-        alt=""
-        aria-hidden="true"
-        className={`absolute inset-0 w-full h-full object-cover object-center transform scale-105 filter blur-xl transition-opacity duration-700 ease-out z-0 pointer-events-none ${
-          isLoaded ? 'opacity-0' : 'opacity-100'
-        }`}
-      />
+      {!isLocalAsset && (
+        <img
+          src={finalBlur}
+          alt=""
+          aria-hidden="true"
+          className={`absolute inset-0 w-full h-full object-cover object-center transform scale-105 filter blur-xl transition-opacity duration-700 ease-out z-0 pointer-events-none ${
+            isLoaded ? 'opacity-0' : 'opacity-100'
+          }`}
+        />
+      )}
 
       {/* 3. Full Resolution Image with Crossfade (Loaded only when in view or eager) */}
       {isInView && !hasError ? (
         <img
+          ref={imgRef}
           src={finalSrc}
           srcSet={finalSrcSet}
           sizes={finalSizes}
@@ -126,7 +139,7 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
             setHasError(true);
             setIsLoaded(true);
           }}
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-in-out z-[1] ${
+          className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-500 ease-in-out z-[1] ${
             isLoaded ? 'opacity-100 scale-100 filter-none' : 'opacity-0 scale-[1.02] filter blur-sm'
           } ${imgClassName}`}
           {...restProps}
@@ -134,7 +147,7 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
       ) : isInView && hasError ? (
         /* Graceful Fallback if Network Drop occurs */
         <img
-          src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=80"
+          src="/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
           alt={finalAlt}
           className="absolute inset-0 w-full h-full object-cover object-center opacity-90 z-[1]"
         />

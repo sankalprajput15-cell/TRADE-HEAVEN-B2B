@@ -15,6 +15,7 @@ import {
 } from './types';
 import { api } from './services/apiService';
 import { apiClient } from './services/apiClient';
+import { productImageManagerService } from './services/productImageManagerService';
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE } from './data/mockData';
 import { ALL_COUNTRY_ITEMS } from './data/countriesData';
 
@@ -112,8 +113,8 @@ import { SupplierStorefrontModal } from './components/marketplace/SupplierStoref
 import { RfqCreationModal } from './components/marketplace/RfqCreationModal';
 import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactInquiryModal';
 import { AuthModal } from './components/modals/AuthModal';
-const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/PaymentCheckoutModal'), 'PaymentCheckoutModal');
-const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
+import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
+import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
 
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
@@ -175,8 +176,10 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener('tradeheaven_database_error', handleDbError);
   }, []);
 
-  // Products and entities initialized with default rich marketplace dataset
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  // Products and entities initialized with default rich marketplace dataset + active image overrides
+  const [products, setProducts] = useState<Product[]>(() =>
+    productImageManagerService.applyOverridesToProductList(MOCK_PRODUCTS)
+  );
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
@@ -397,10 +400,20 @@ const MainApp: React.FC = () => {
     const handleRfqRefresh = () => {
       fetchRFQs();
     };
+    const handleProductImagesUpdated = () => {
+      setProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+      setSelectedProduct(prev => {
+        if (!prev) return null;
+        const [updated] = productImageManagerService.applyOverridesToProductList([prev]);
+        return updated || prev;
+      });
+    };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
+    window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
 
     return () => {
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
+      window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
     };
   }, []);
 
@@ -420,7 +433,7 @@ const MainApp: React.FC = () => {
 
   // Guard against unauthenticated visitors accessing admin views directly
   useEffect(() => {
-    const adminViews: ActiveView[] = ['CLIENT_ADMIN', 'PLAN_PRICING_ADMIN', 'CMS_MANAGEMENT', 'BULK_ENTITY_CRM'];
+    const adminViews: ActiveView[] = ['CLIENT_ADMIN', 'PLAN_PRICING_ADMIN', 'CMS_MANAGEMENT', 'BULK_ENTITY_CRM', 'PRODUCT_IMAGE_ADMIN'];
     if (adminViews.includes(activeView) && (!currentUser || !isAdmin)) {
       setActiveView('HOMEPAGE');
       setAuthModalMode('LOGIN');
@@ -1065,6 +1078,16 @@ const MainApp: React.FC = () => {
       setActiveView('CMS_MANAGEMENT');
       return;
     }
+    if (target === 'PRODUCT_IMAGE_ADMIN' || target === 'PRODUCT_IMAGES' || target === 'IMAGE_MANAGER') {
+      if (!currentUser || !isAdmin) {
+        setActiveView('HOMEPAGE');
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
+      setActiveView('PRODUCT_IMAGE_ADMIN');
+      return;
+    }
 
     setActiveView(view as ActiveView);
   };
@@ -1205,6 +1228,9 @@ const MainApp: React.FC = () => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     onNavigateToSuppliers={(sector) => {
+                      if (sector !== undefined) {
+                        setCatalogSearch(sector);
+                      }
                       setActiveView('SUPPLIERS_DIRECTORY');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
@@ -1350,6 +1376,7 @@ const MainApp: React.FC = () => {
                     onOpenStorefront={handleOpenStorefront}
                     currentUser={currentUser}
                     onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                    initialSearch={catalogSearch}
                   />
                 );
 
@@ -1430,10 +1457,20 @@ const MainApp: React.FC = () => {
                   />
                 );
 
-              case 'VENDOR_PROFILE':
+              case 'VENDOR_PROFILE': {
+                const resolvedVendorCompanyId = storefrontCompanyId || (
+                  currentUser?.email?.toLowerCase().includes('mpcommoditybroker')
+                    ? 'comp-melissa-mpcommodity'
+                    : (currentUser?.role === 'SUPPLIER'
+                        ? (MOCK_COMPANIES.find(c =>
+                            (c.contactEmail && currentUser.email && c.contactEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+                            (c.companyName && currentUser.companyName && c.companyName.toLowerCase() === currentUser.companyName.toLowerCase())
+                          )?.id || 'comp-melissa-mpcommodity')
+                        : 'comp-melissa-mpcommodity')
+                );
                 return (
                   <VendorProfilePage
-                    companyId={storefrontCompanyId || 'comp-apex-motorsport'}
+                    companyId={resolvedVendorCompanyId}
                     products={products}
                     selectedCurrency={selectedCurrency}
                     onSelectProduct={handleSelectProduct}
@@ -1443,6 +1480,7 @@ const MainApp: React.FC = () => {
                     onNavigate={handleNavigate}
                   />
                 );
+              }
 
               case 'COUNTRY_HUB':
                 return (
@@ -1544,6 +1582,27 @@ const MainApp: React.FC = () => {
                   >
                     <AdminDashboard
                       initialTab="CMS"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      onUpdateCurrentUser={setCurrentUser}
+                    />
+                  </AdminRouteGuard>
+                );
+
+              case 'PRODUCT_IMAGE_ADMIN':
+                return (
+                  <AdminRouteGuard
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Dedicated Product Image Management & Upload System"
+                    description="Change or upload new images in JPG or any format for all listed products across the marketplace."
+                    targetViewName="PRODUCT_IMAGE_ADMIN"
+                  >
+                    <AdminDashboard
+                      initialTab="PRODUCT_IMAGE_SYSTEM"
                       currentUser={currentUser}
                       onNavigate={handleNavigate}
                       selectedCurrency={selectedCurrency}
