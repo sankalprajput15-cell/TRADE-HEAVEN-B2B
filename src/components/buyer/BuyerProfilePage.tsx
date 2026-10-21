@@ -81,7 +81,16 @@ export const BuyerProfilePage: React.FC<Props> = ({
   isModalView = false,
   onCloseModal
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SOURCING_DEMANDS' | 'WAREHOUSES' | 'COMPLIANCE'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SOURCING_DEMANDS' | 'WAREHOUSES' | 'COMPLIANCE'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const t = (params.get('buyerTab') || '').toUpperCase();
+      if (t === 'OVERVIEW' || t === 'SOURCING_DEMANDS' || t === 'WAREHOUSES' || t === 'COMPLIANCE') {
+        return t as 'OVERVIEW' | 'SOURCING_DEMANDS' | 'WAREHOUSES' | 'COMPLIANCE';
+      }
+    }
+    return 'OVERVIEW';
+  });
   const [profile, setProfile] = useState<DetailedBuyerProfile>(() => {
     if (initialBuyer) return initialBuyer;
     const found = MOCK_BUYER_PROFILES.find(b => b.id === buyerId);
@@ -92,6 +101,20 @@ export const BuyerProfilePage: React.FC<Props> = ({
   const [editFormData, setEditFormData] = useState<Partial<DetailedBuyerProfile>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (activeTab && activeTab !== 'OVERVIEW') {
+        url.searchParams.set('buyerTab', activeTab);
+      } else {
+        url.searchParams.delete('buyerTab');
+      }
+      if (url.toString() !== window.location.href) {
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [activeTab]);
 
   // STRICT ACCESS CONTROL LOCKDOWN:
   // Only the creator/owner (by UID or contactEmail) or authorized Admin can view/use the edit buttons
@@ -274,6 +297,27 @@ export const BuyerProfilePage: React.FC<Props> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_open_share', {
+                      detail: {
+                        type: 'BUYER',
+                        id: profile.id,
+                        buyerTab: activeTab,
+                        title: profile.companyName,
+                        subtitle: `${profile.city}, ${profile.country} • ${profile.businessType} • Annual Vol: ${profile.annualPurchasingVolumeUsd}`
+                      }
+                    })
+                  );
+                }}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all border border-slate-200 cursor-pointer"
+                title="Share Custom Link to this Buyer Profile"
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Share Buyer Profile</span>
+              </button>
               <button
                 onClick={() => onNavigate ? onNavigate('NEGOTIATION_ROOM') : null}
                 className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
@@ -609,19 +653,41 @@ export const BuyerProfilePage: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (onOpenRfqModal) {
-                        onOpenRfqModal(rfq);
-                      } else if (onNavigate) {
-                        onNavigate('RFQ_HUB');
-                      }
-                    }}
-                    className="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                  >
-                    <span>Inspect Tender &amp; Submit Bid</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (onOpenRfqModal) {
+                          onOpenRfqModal(rfq);
+                        } else if (onNavigate) {
+                          onNavigate('RFQ_HUB');
+                        }
+                      }}
+                      className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <span>Inspect Tender &amp; Submit Bid</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(
+                          new CustomEvent('tradeheaven_open_share', {
+                            detail: {
+                              type: 'RFQ',
+                              id: rfq.id,
+                              title: rfq.productName,
+                              subtitle: `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: $${rfq.targetPriceUsd}/unit`
+                            }
+                          })
+                        );
+                      }}
+                      className="p-2 rounded-xl bg-white hover:bg-blue-50 hover:text-blue-600 text-slate-700 border border-slate-200 transition-colors cursor-pointer shrink-0"
+                      title={`Share direct link to RFQ ${rfq.id}`}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -27,7 +27,8 @@ import {
   Lock,
   Crown,
   Search,
-  X
+  X,
+  Share2
 } from 'lucide-react';
 
 interface Props {
@@ -451,6 +452,27 @@ export const RfqComparisonView: React.FC<Props> = ({
                         <PlusCircle className="w-3 h-3" />
                         <span>Quote Bid</span>
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.dispatchEvent(
+                            new CustomEvent('tradeheaven_open_share', {
+                              detail: {
+                                type: 'RFQ',
+                                id: rfq.id,
+                                title: rfq.productName,
+                                subtitle: `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: ${rfq.targetQuantity?.toLocaleString()} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd}/unit`
+                              }
+                            })
+                          );
+                        }}
+                        className="py-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 border border-slate-200 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
+                        title={`Share direct link to RFQ ${rfq.id}`}
+                      >
+                        <Share2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -539,7 +561,28 @@ export const RfqComparisonView: React.FC<Props> = ({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent('tradeheaven_open_share', {
+                              detail: {
+                                type: 'RFQ',
+                                id: activeRfq.id,
+                                title: activeRfq.productName,
+                                subtitle: `Buyer: ${activeRfq.buyerCompany} (${activeRfq.buyerCountry}) • Target: $${activeRfq.targetPriceUsd}/unit`
+                              }
+                            })
+                          );
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 text-slate-800 border border-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Share Direct Link to this RFQ Tender"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Share This RFQ</span>
+                      </button>
+
                       {onOpenRfqModal && (
                         <button
                           onClick={() => onOpenRfqModal(activeRfq)}

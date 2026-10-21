@@ -23,7 +23,8 @@ import {
   AlertCircle,
   MessageCircle,
   ExternalLink,
-  Lock
+  Lock,
+  Share2
 } from 'lucide-react';
 
 interface Props {
@@ -115,14 +116,37 @@ export const ProductDetailModal: React.FC<Props> = ({
       }}
     >
       <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-5xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col overflow-hidden shadow-2xl relative text-slate-900 animate-in fade-in zoom-in-95 duration-150">
-        {/* Modal Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white/90 hover:text-white transition-colors cursor-pointer shadow-md"
-          title="Close Modal"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Modal Action Buttons */}
+        <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('tradeheaven_open_share', {
+                  detail: {
+                    type: 'PRODUCT',
+                    id: product.id,
+                    title: product.title,
+                    subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${product.moq || 100} ${product.moqUnit || 'units'}`
+                  }
+                })
+              );
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer hover:scale-105"
+            title="Share Direct Link to this Product"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Share Product</span>
+          </button>
+
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white/90 hover:text-white transition-colors cursor-pointer shadow-md"
+            title="Close Modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div ref={modalScrollRef} className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Top Section: Media + Pricing & Inquiry Form */}

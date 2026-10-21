@@ -24,7 +24,8 @@ import {
   Crown,
   Lock,
   Mail,
-  Phone
+  Phone,
+  Share2
 } from 'lucide-react';
 
 interface Props {
@@ -309,13 +310,34 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="p-5 pt-0">
+              <div className="p-5 pt-0 flex items-center gap-2">
                 <button 
                   onClick={() => onOpenStorefront(company.id)}
-                  className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>View Full Storefront &amp; Audit</span>
                   <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.dispatchEvent(
+                      new CustomEvent('tradeheaven_open_share', {
+                        detail: {
+                          type: 'SUPPLIER',
+                          id: company.id,
+                          title: company.companyName,
+                          subtitle: `${isMelissaCompany ? 'SYDNEY, Australia' : company.country} • ${company.tier} Exporter`
+                        }
+                      })
+                    );
+                  }}
+                  className="p-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 border border-slate-200 transition-all cursor-pointer shrink-0"
+                  title={`Share direct link to ${company.companyName}`}
+                  aria-label="Share supplier storefront"
+                >
+                  <Share2 className="w-4 h-4" />
                 </button>
               </div>
             </div>

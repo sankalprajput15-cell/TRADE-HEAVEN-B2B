@@ -29,7 +29,8 @@ import {
   Box,
   Check,
   Zap,
-  UserPlus
+  UserPlus,
+  Share2
 } from 'lucide-react';
 import { isRfqClaimedFree, claimDailyFreeLead, getFreeLeadStatus, FreeLeadState } from '../../services/freeLeadService';
 import { PitchBuyerModal } from './PitchBuyerModal';
@@ -57,7 +58,16 @@ export const RfqDetailModal: React.FC<Props> = ({
   onAcceptQuote,
   onOpenRegisterFree
 }) => {
-  const [activeTab, setActiveTab] = useState<'DETAILS' | 'QUOTES' | 'SUBMIT_QUOTE'>('DETAILS');
+  const [activeTab, setActiveTab] = useState<'DETAILS' | 'QUOTES' | 'SUBMIT_QUOTE'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const t = (params.get('rfqTab') || '').toUpperCase();
+      if (t === 'DETAILS' || t === 'QUOTES' || t === 'SUBMIT_QUOTE') {
+        return t as 'DETAILS' | 'QUOTES' | 'SUBMIT_QUOTE';
+      }
+    }
+    return 'DETAILS';
+  });
   const [quotes, setQuotes] = useState<SupplierQuote[]>([]);
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +75,34 @@ export const RfqDetailModal: React.FC<Props> = ({
   const [showPitchModal, setShowPitchModal] = useState(false);
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
   const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
+
+  // Sync activeTab to URL rfqTab parameter
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (activeTab && activeTab !== 'DETAILS') {
+        url.searchParams.set('rfqTab', activeTab);
+      } else {
+        url.searchParams.delete('rfqTab');
+      }
+      if (url.toString() !== window.location.href) {
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [activeTab]);
+
+  // Clean up rfqTab param when modal closes
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('rfqTab')) {
+          url.searchParams.delete('rfqTab');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleFreeLeadUpdated = () => {
@@ -203,13 +241,37 @@ export const RfqDetailModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors shrink-0 cursor-pointer"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent('tradeheaven_open_share', {
+                    detail: {
+                      type: 'RFQ',
+                      id: rfq.id,
+                      rfqTab: activeTab,
+                      title: rfq.productName,
+                      subtitle: `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: $${rfq.targetPriceUsd}/unit`
+                    }
+                  })
+                );
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              title="Share Direct Link to this RFQ Tender"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Share RFQ</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs */}

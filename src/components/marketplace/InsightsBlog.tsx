@@ -100,7 +100,29 @@ interface InsightsBlogProps {
 }
 
 export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentUser, onOpenAuthModal }) => {
-  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const art = params.get('article') || params.get('post');
+      if (art) return art;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (selectedArticleId) {
+        url.searchParams.set('article', selectedArticleId);
+      } else {
+        url.searchParams.delete('article');
+        url.searchParams.delete('post');
+      }
+      if (url.toString() !== window.location.href) {
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [selectedArticleId]);
 
   const [comments, setComments] = useState<Record<string, Comment[]>>({
     'serious-seller-article': [
@@ -400,13 +422,32 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
               Explore verified listings and expand your international trading footprint at <strong>Trade Heaven</strong>.
             </p>
 
-            {/* Read More Button */}
-            <div className="mt-8">
+            {/* Read More & Custom Share Buttons */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <button 
                 onClick={() => setSelectedArticleId('serious-seller-article')}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-colors shadow-sm cursor-pointer"
               >
                 Read Full Article &amp; Discussion <ExternalLink className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_open_share', {
+                      detail: {
+                        type: 'ARTICLE',
+                        articleId: 'serious-seller-article',
+                        title: 'A Serious Seller Does Not Negotiate Against Themselves | Trade Heaven Insights',
+                        subtitle: 'Why transaction procedures protect real physical commodity & bulk fuel deals.'
+                      }
+                    })
+                  );
+                }}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-800 border border-slate-200 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-blue-600" />
+                <span>Share Direct Link</span>
               </button>
             </div>
 
@@ -551,13 +592,32 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
               Don't let vessel risk or compliance mismatches derail your export deals. Connect with <strong>Trade Heaven</strong> to secure execution and take your business online.
             </p>
 
-            {/* Read More Button */}
-            <div className="mt-8">
+            {/* Read More & Custom Share Buttons */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <button 
                 onClick={() => setSelectedArticleId('dlc-financeable-article')}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
               >
                 Read Full Article <ExternalLink className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_open_share', {
+                      detail: {
+                        type: 'ARTICLE',
+                        articleId: 'dlc-financeable-article',
+                        title: 'Is Your Cargo Truly Financeable? MT700 DLC vs Physical Trade Reality | Trade Heaven',
+                        subtitle: 'Understanding the Three-Way Structural Collision between banking compliance, vessel risk, and documentation.'
+                      }
+                    })
+                  );
+                }}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-800 border border-slate-200 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-blue-600" />
+                <span>Share Direct Link</span>
               </button>
             </div>
 
@@ -681,13 +741,32 @@ export const InsightsBlog: React.FC<InsightsBlogProps> = ({ onNavigate, currentU
             </p>
 
             
-            {/* Read More Button */}
-            <div className="mt-8">
+            {/* Read More & Custom Share Buttons */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <button 
                 onClick={() => setSelectedArticleId('brokers-article')}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
               >
                 Read Full Article <ExternalLink className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_open_share', {
+                      detail: {
+                        type: 'ARTICLE',
+                        articleId: 'brokers-article',
+                        title: 'Why Too Many Intermediaries Kill Commodity Deals | Trade Heaven Insights',
+                        subtitle: 'How direct B2B counterparty access eliminates long broker chains and deal fatigue.'
+                      }
+                    })
+                  );
+                }}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-800 border border-slate-200 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-blue-600" />
+                <span>Share Direct Link</span>
               </button>
             </div>
 

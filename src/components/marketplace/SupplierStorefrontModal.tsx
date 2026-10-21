@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { CompanyProfile, Product, Currency, AuthUser, DetailedVendorProfile } from '../../types';
 import { MOCK_PRODUCTS } from '../../data/mockData';
 import { VendorProfilePage } from '../vendor/VendorProfilePage';
-import { X } from 'lucide-react';
+import { X, Share2 } from 'lucide-react';
 
 interface Props {
   companyId?: string;
@@ -49,14 +49,36 @@ export const SupplierStorefrontModal: React.FC<Props> = ({
       }}
     >
       <div className="bg-slate-50 border border-slate-200 rounded-3xl w-full max-w-6xl max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden shadow-2xl relative text-slate-900">
-        {/* Floating Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-40 p-2 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-md transition-all shadow-lg cursor-pointer"
-          title="Close Vendor Profile"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Floating Action Buttons */}
+        <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('tradeheaven_open_share', {
+                  detail: {
+                    type: 'STOREFRONT',
+                    id: companyId || company?.id || 'comp-melissa-mpcommodity',
+                    title: (company as any)?.companyName || 'Verified Supplier Storefront'
+                  }
+                })
+              );
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs backdrop-blur-md shadow-lg transition-all cursor-pointer hover:scale-105"
+            title="Share Direct Link to this Storefront"
+          >
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Share</span>
+          </button>
+
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-md transition-all shadow-lg cursor-pointer"
+            title="Close Vendor Profile"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         {/* Scrollable Modal Content */}
         <div ref={modalContainerRef} className="overflow-y-auto p-4 sm:p-6 flex-1">

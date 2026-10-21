@@ -1,6 +1,6 @@
 import React from 'react';
 import { DetailedVendorProfile } from '../../types';
-import { SlidersHorizontal, MapPin, Building2, TrendingUp, X, ShieldCheck } from 'lucide-react';
+import { SlidersHorizontal, MapPin, Building2, TrendingUp, X, ShieldCheck, Share2 } from 'lucide-react';
 import { SafeImage } from '../common/SafeImage';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   onOpenMediaStudio: () => void;
   isModalView?: boolean;
   onCloseModal?: () => void;
+  activeTab?: 'OVERVIEW' | 'CATALOG' | 'COMPLIANCE' | 'FACTORY_QC';
 }
 
 export const CompanyHeader: React.FC<Props> = ({
@@ -17,7 +18,22 @@ export const CompanyHeader: React.FC<Props> = ({
   onOpenMediaStudio,
   isModalView,
   onCloseModal,
+  activeTab = 'OVERVIEW'
 }) => {
+  const handleShareClick = () => {
+    window.dispatchEvent(
+      new CustomEvent('tradeheaven_open_share', {
+        detail: {
+          type: 'STOREFRONT',
+          id: profile.id,
+          tab: activeTab,
+          title: profile.companyName,
+          subtitle: `${profile.city}, ${profile.country} • ${profile.businessType} • ${profile.responseRate} Response Rate`
+        }
+      })
+    );
+  };
+
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
       {/* Panoramic 16:9 Cover Banner */}
@@ -30,6 +46,15 @@ export const CompanyHeader: React.FC<Props> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/10" />
 
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleShareClick}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600/90 hover:bg-blue-600 text-white font-bold text-xs backdrop-blur-md border border-blue-400/40 shadow-lg transition-all cursor-pointer hover:scale-105"
+            title="Share Direct Link to this Storefront"
+          >
+            <Share2 className="w-3.5 h-3.5 text-blue-200" />
+            <span>Share Storefront</span>
+          </button>
           {isAuthorizedToEdit && (
             <button
               onClick={onOpenMediaStudio}

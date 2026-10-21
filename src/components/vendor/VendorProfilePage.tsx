@@ -80,8 +80,35 @@ export const VendorProfilePage: React.FC<Props> = ({
   isModalView = false,
   onCloseModal
 }) => {
-  // Tab navigation state
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CATALOG' | 'COMPLIANCE' | 'FACTORY_QC'>('OVERVIEW');
+  // Tab navigation state initialized from URL if present
+  const getInitialTab = (): 'OVERVIEW' | 'CATALOG' | 'COMPLIANCE' | 'FACTORY_QC' => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam && ['OVERVIEW', 'CATALOG', 'COMPLIANCE', 'FACTORY_QC'].includes(tabParam.toUpperCase())) {
+        return tabParam.toUpperCase() as any;
+      }
+    }
+    return 'OVERVIEW';
+  };
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CATALOG' | 'COMPLIANCE' | 'FACTORY_QC'>(getInitialTab);
+
+  // Sync activeTab with URL & ensure supplier id is retained
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (companyId) {
+        url.searchParams.set('supplier', companyId);
+      }
+      if (activeTab === 'OVERVIEW') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', activeTab);
+      }
+      if (url.toString() !== window.location.href) {
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [activeTab, companyId]);
   
   // Active Profile state
   const [profile, setProfile] = useState<DetailedVendorProfile>(() => {
@@ -190,6 +217,7 @@ export const VendorProfilePage: React.FC<Props> = ({
         onOpenMediaStudio={() => setIsMediaStudioOpen(true)}
         isModalView={isModalView}
         onCloseModal={onCloseModal}
+        activeTab={activeTab}
       />
 
       {/* 2. STICKY NAVIGATION TAB BAR */}
@@ -243,15 +271,39 @@ export const VendorProfilePage: React.FC<Props> = ({
           </button>
         </div>
 
-        {isAuthorizedToEdit && (
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
-            onClick={() => setIsMediaStudioOpen(true)}
-            className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('tradeheaven_open_share', {
+                  detail: {
+                    type: 'STOREFRONT',
+                    id: profile.id,
+                    tab: activeTab,
+                    title: profile.companyName,
+                    subtitle: `${profile.city}, ${profile.country} • ${profile.businessType}`
+                  }
+                })
+              );
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            title="Share custom link to this specific tab"
           >
-            <Layers className="w-3 h-3 text-amber-600" />
-            <span>Edit Assets</span>
+            <Share2 className="w-3 h-3 text-blue-600" />
+            <span className="hidden sm:inline">Share Link</span>
           </button>
-        )}
+
+          {isAuthorizedToEdit && (
+            <button
+              onClick={() => setIsMediaStudioOpen(true)}
+              className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+            >
+              <Layers className="w-3 h-3 text-amber-600" />
+              <span>Edit Assets</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 3. MAIN BODY WITH STICKY SIDEBAR LEAD GENERATOR */}

@@ -16,7 +16,7 @@ import {
 import { api } from './services/apiService';
 import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
-import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES } from './data/mockData';
+import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
 import { ALL_COUNTRY_ITEMS } from './data/countriesData';
 
 // Common Components
@@ -115,11 +115,24 @@ import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactIn
 import { AuthModal } from './components/modals/AuthModal';
 import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
 import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
+import { CustomShareModal } from './components/modals/CustomShareModal';
+import { 
+  CustomLinkTarget, 
+  resolveSupplierId, 
+  resolveProduct, 
+  resolveRfq, 
+  resolveBuyerId, 
+  VIEW_ALIASES, 
+  SupplierTab, 
+  RfqModalTab, 
+  BuyerModalTab 
+} from './utils/customLinkService';
+import { DETAILED_VENDOR_PROFILES } from './data/detailedVendorProfiles';
 
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
-import { Loader2, Mail, CheckCircle2, AlertCircle, Send } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, AlertCircle, Send, Sparkles, X } from 'lucide-react';
 import { TradeHeavenDataLoader } from './components/common/TradeHeavenDataLoader';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
@@ -149,8 +162,17 @@ const MainApp: React.FC = () => {
   const getInitialView = (): ActiveView => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const view = params.get('view');
-      if (view) return view as ActiveView;
+      const rawView = params.get('view');
+      if (rawView) {
+        const lower = rawView.toLowerCase();
+        if (VIEW_ALIASES[lower]) return VIEW_ALIASES[lower];
+        return rawView as ActiveView;
+      }
+      if (params.get('article') || params.get('post')) return 'INSIGHTS';
+      if (params.get('buyer') || params.get('buyerId')) return 'BUYER_PROFILE';
+      // Check action param
+      const action = params.get('action');
+      if (action === 'post-sell') return 'POST_SELL_OFFER';
     }
     return 'HOMEPAGE';
   };
@@ -202,28 +224,106 @@ const MainApp: React.FC = () => {
     return ALL_COUNTRY_ITEMS || [];
   });
 
-  // Modals state
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedRfqForModal, setSelectedRfqForModal] = useState<RfqRequirement | null>(null);
-  const [storefrontCompanyId, setStorefrontCompanyId] = useState<string | null>(null);
-  const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-001');
-  const [isCreateRfqOpen, setIsCreateRfqOpen] = useState(false);
-  const [catalogCategory, setCatalogCategory] = useState<string>('ALL');
-  const [catalogSearch, setCatalogSearch] = useState<string>('');
+  // Modals & Deep-Linked Entities state initialized directly from URL
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const prodId = params.get('product') || params.get('productId');
+      if (prodId) {
+        return resolveProduct(prodId, MOCK_PRODUCTS);
+      }
+    }
+    return null;
+  });
+
+  const [selectedRfqForModal, setSelectedRfqForModal] = useState<RfqRequirement | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const rfqId = params.get('rfq') || params.get('rfqId') || params.get('lead');
+      if (rfqId) {
+        return resolveRfq(rfqId, MOCK_RFQS);
+      }
+    }
+    return null;
+  });
+
+  const [storefrontCompanyId, setStorefrontCompanyId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sup = params.get('supplier') || params.get('supplierId') || params.get('company') || params.get('vendor');
+      if (sup) {
+        return resolveSupplierId(sup);
+      }
+    }
+    return null;
+  });
+
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const buyer = params.get('buyer') || params.get('buyerId');
+      if (buyer) return resolveBuyerId(buyer) || buyer;
+    }
+    return 'buyer-001';
+  });
+
+  const [sharedNote, setSharedNote] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const note = params.get('note');
+      if (note && note.trim()) return note.trim();
+    }
+    return null;
+  });
+
+  const [isCreateRfqOpen, setIsCreateRfqOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      return action === 'post-rfq' || action === 'create-rfq';
+    }
+    return false;
+  });
+
+  const [catalogCategory, setCatalogCategory] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category') || params.get('cat');
+      if (cat) return decodeURIComponent(cat);
+    }
+    return 'ALL';
+  });
+
+  const [catalogSearch, setCatalogSearch] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || params.get('search') || params.get('query');
+      if (q) return decodeURIComponent(q);
+    }
+    return '';
+  });
+
   const [selectedSupplierTiers, setSelectedSupplierTiers] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Share Modal state
+  const [shareModalConfig, setShareModalConfig] = useState<{
+    isOpen: boolean;
+    target: CustomLinkTarget | null;
+  }>({
+    isOpen: false,
+    target: null
+  });
 
   const handleDebouncedSearch = useCallback((query: string, immediate = false) => {
     if (searchTimer) clearTimeout(searchTimer);
     if (immediate) {
       setCatalogSearch(query);
-      console.log('[Debounced Search] Immediate catalogSearch update:', query);
       return;
     }
     const timer = setTimeout(() => {
       setCatalogSearch(query);
-      console.log('[Debounced Search] Debounced catalogSearch applied after delay:', query);
     }, 350);
     setSearchTimer(timer);
   }, [searchTimer]);
@@ -232,38 +332,89 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
-      const view = params.get('view');
-      const prodId = params.get('productId') || params.get('product');
+      const rawView = params.get('view');
+      const prodId = params.get('product') || params.get('productId');
+      const supId = params.get('supplier') || params.get('supplierId') || params.get('company') || params.get('vendor');
+      const rfqId = params.get('rfq') || params.get('rfqId') || params.get('lead');
+      const buyerIdParam = params.get('buyer') || params.get('buyerId');
+      const cat = params.get('category') || params.get('cat');
+      const q = params.get('q') || params.get('search') || params.get('query');
+      const note = params.get('note');
 
-      if (view) setActiveView(view as ActiveView);
-      else setActiveView('HOMEPAGE');
+      if (note && note.trim()) {
+        setSharedNote(note.trim());
+      } else {
+        setSharedNote(null);
+      }
+
+      if (rawView) {
+        const lower = rawView.toLowerCase();
+        setActiveView(VIEW_ALIASES[lower] || (rawView as ActiveView));
+      } else if (params.get('article') || params.get('post')) {
+        setActiveView('INSIGHTS');
+      } else if (buyerIdParam) {
+        setActiveView('BUYER_PROFILE');
+      } else {
+        setActiveView('HOMEPAGE');
+      }
+
+      if (buyerIdParam) {
+        setSelectedBuyerId(resolveBuyerId(buyerIdParam) || buyerIdParam);
+      }
+
+      if (supId) {
+        setStorefrontCompanyId(resolveSupplierId(supId));
+      } else {
+        setStorefrontCompanyId(null);
+      }
 
       if (prodId && products.length > 0) {
-        const found = products.find(p => p.id === prodId);
+        const found = resolveProduct(prodId, products);
         if (found) setSelectedProduct(found);
       } else if (!prodId) {
         setSelectedProduct(null);
       }
+
+      if (rfqId && rfqs.length > 0) {
+        const found = resolveRfq(rfqId, rfqs);
+        if (found) setSelectedRfqForModal(found);
+      } else if (!rfqId) {
+        setSelectedRfqForModal(null);
+      }
+
+      if (cat) setCatalogCategory(decodeURIComponent(cat));
+      else setCatalogCategory('ALL');
+
+      if (q) setCatalogSearch(decodeURIComponent(q));
+      else setCatalogSearch('');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [products]);
+  }, [products, rfqs]);
 
-  // Sync selectedProduct with URL on mount / when products update
+  // Sync selectedProduct & selectedRfqForModal with URL when products/rfqs update
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const prodId = params.get('productId') || params.get('product');
+      const prodId = params.get('product') || params.get('productId');
       if (prodId && products.length > 0) {
-        const found = products.find(p => p.id === prodId);
+        const found = resolveProduct(prodId, products);
         if (found && (!selectedProduct || selectedProduct.id !== found.id)) {
           setSelectedProduct(found);
         }
       }
+      const rfqId = params.get('rfq') || params.get('rfqId') || params.get('lead');
+      if (rfqId && rfqs.length > 0) {
+        const found = resolveRfq(rfqId, rfqs);
+        if (found && (!selectedRfqForModal || selectedRfqForModal.id !== found.id)) {
+          setSelectedRfqForModal(found);
+          setSelectedRfqId(found.id);
+        }
+      }
     }
-  }, [products]);
+  }, [products, rfqs]);
 
-  // Update URL when activeView or selectedProduct changes
+  // Update URL when activeView, storefrontCompanyId, selectedProduct, selectedRfqForModal, selectedBuyerId, category, or search changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -273,11 +424,62 @@ const MainApp: React.FC = () => {
         url.searchParams.set('view', activeView);
       }
 
-      if (selectedProduct) {
-        url.searchParams.set('productId', selectedProduct.id);
+      if (activeView === 'BUYER_PROFILE' && selectedBuyerId) {
+        url.searchParams.set('buyer', selectedBuyerId);
+        url.searchParams.delete('buyerId');
       } else {
+        url.searchParams.delete('buyer');
+        url.searchParams.delete('buyerId');
+        url.searchParams.delete('buyerTab');
+      }
+
+      if (storefrontCompanyId) {
+        url.searchParams.set('supplier', storefrontCompanyId);
+        url.searchParams.delete('supplierId');
+        url.searchParams.delete('company');
+      } else {
+        url.searchParams.delete('supplier');
+        url.searchParams.delete('supplierId');
+        url.searchParams.delete('company');
+        url.searchParams.delete('vendor');
+        url.searchParams.delete('tab');
+      }
+
+      if (selectedProduct) {
+        url.searchParams.set('product', selectedProduct.id);
         url.searchParams.delete('productId');
+      } else {
         url.searchParams.delete('product');
+        url.searchParams.delete('productId');
+      }
+
+      if (selectedRfqForModal) {
+        url.searchParams.set('rfq', selectedRfqForModal.id);
+        url.searchParams.delete('rfqId');
+      } else {
+        url.searchParams.delete('rfq');
+        url.searchParams.delete('rfqId');
+        url.searchParams.delete('lead');
+      }
+
+      if (activeView === 'PRODUCT_DIRECTORY') {
+        if (catalogCategory && catalogCategory !== 'ALL') {
+          url.searchParams.set('category', catalogCategory);
+        } else {
+          url.searchParams.delete('category');
+          url.searchParams.delete('cat');
+        }
+        if (catalogSearch && catalogSearch.trim()) {
+          url.searchParams.set('q', catalogSearch.trim());
+        } else {
+          url.searchParams.delete('q');
+          url.searchParams.delete('search');
+        }
+      } else {
+        url.searchParams.delete('category');
+        url.searchParams.delete('cat');
+        url.searchParams.delete('q');
+        url.searchParams.delete('search');
       }
 
       // Only push if the URL actually changed to prevent infinite loops with popstate
@@ -285,7 +487,181 @@ const MainApp: React.FC = () => {
         window.history.pushState({}, '', url.toString());
       }
     }
-  }, [activeView, selectedProduct]);
+  }, [activeView, storefrontCompanyId, selectedProduct, selectedRfqForModal, selectedBuyerId, catalogCategory, catalogSearch]);
+
+  // Global listener for tradeheaven_open_share custom event
+  useEffect(() => {
+    const handleOpenShare = (e: Event) => {
+      const customEvent = e as CustomEvent<any>;
+      const detail = customEvent?.detail;
+      if (!detail || (detail.type === 'PAGE' && !detail.id)) {
+        // Context-aware fallback when clicking global Share button in Header
+        if (selectedProduct) {
+          setShareModalConfig({
+            isOpen: true,
+            target: {
+              type: 'PRODUCT',
+              productId: selectedProduct.id,
+              title: selectedProduct.title,
+              subtitle: `${selectedProduct.supplierName} (${selectedProduct.supplierCountry})`,
+              imageUrl: selectedProduct.images?.[0]
+            }
+          });
+          return;
+        }
+        if (selectedRfqForModal) {
+          setShareModalConfig({
+            isOpen: true,
+            target: {
+              type: 'RFQ',
+              rfqId: selectedRfqForModal.id,
+              title: selectedRfqForModal.productName,
+              subtitle: `Buyer: ${selectedRfqForModal.buyerCompany} (${selectedRfqForModal.buyerCountry}) • Target: $${selectedRfqForModal.targetPriceUsd}/unit`,
+              imageUrl: selectedRfqForModal.image || selectedRfqForModal.images?.[0]
+            }
+          });
+          return;
+        }
+        if (storefrontCompanyId || activeView === 'VENDOR_PROFILE') {
+          const supId = storefrontCompanyId || 'comp-melissa-mpcommodity';
+          const vendorProfile = DETAILED_VENDOR_PROFILES[supId];
+          setShareModalConfig({
+            isOpen: true,
+            target: {
+              type: 'SUPPLIER',
+              supplierId: supId,
+              title: vendorProfile?.companyName,
+              subtitle: vendorProfile ? `${vendorProfile.city}, ${vendorProfile.country}` : undefined,
+              imageUrl: vendorProfile?.logoUrl || vendorProfile?.bannerUrl
+            }
+          });
+          return;
+        }
+        if (activeView === 'BUYER_PROFILE' && selectedBuyerId) {
+          const buyerProfile = MOCK_BUYER_PROFILES.find(b => b.id === selectedBuyerId) || MOCK_BUYER_PROFILES[0];
+          setShareModalConfig({
+            isOpen: true,
+            target: {
+              type: 'BUYER',
+              buyerId: buyerProfile.id,
+              title: buyerProfile.companyName,
+              subtitle: `${buyerProfile.city}, ${buyerProfile.country} • ${buyerProfile.businessType}`,
+              imageUrl: buyerProfile.logoUrl || buyerProfile.bannerUrl
+            }
+          });
+          return;
+        }
+        if (activeView === 'PRODUCT_DIRECTORY' && catalogSearch && catalogSearch.trim()) {
+          setShareModalConfig({
+            isOpen: true,
+            target: {
+              type: 'SEARCH',
+              searchQuery: catalogSearch.trim(),
+              category: catalogCategory !== 'ALL' ? catalogCategory : undefined,
+              title: `"${catalogSearch.trim()}" Wholesale Suppliers & Products`
+            }
+          });
+          return;
+        }
+        if (activeView === 'PRODUCT_DIRECTORY' && catalogCategory && catalogCategory !== 'ALL') {
+          setShareModalConfig({
+            isOpen: true,
+            target: {
+              type: 'CATEGORY',
+              category: catalogCategory,
+              title: `${catalogCategory} Wholesale Suppliers & Products`
+            }
+          });
+          return;
+        }
+        setShareModalConfig({
+          isOpen: true,
+          target: {
+            type: 'PAGE',
+            view: (detail?.view as ActiveView) || activeView,
+            title: detail?.title || document.title,
+            subtitle: detail?.subtitle
+          }
+        });
+        return;
+      }
+
+      let formattedTarget: CustomLinkTarget;
+      if (detail.type === 'STOREFRONT' || detail.type === 'SUPPLIER') {
+        const supId = resolveSupplierId(detail.id || detail.supplierId || storefrontCompanyId) || 'comp-melissa-mpcommodity';
+        const vendorProfile = DETAILED_VENDOR_PROFILES[supId];
+        formattedTarget = {
+          type: 'SUPPLIER',
+          supplierId: supId,
+          supplierTab: (detail.tab as SupplierTab) || 'OVERVIEW',
+          title: detail.title || vendorProfile?.companyName,
+          subtitle: detail.subtitle || (vendorProfile ? `${vendorProfile.city}, ${vendorProfile.country}` : undefined),
+          imageUrl: vendorProfile?.logoUrl || vendorProfile?.bannerUrl
+        };
+      } else if (detail.type === 'PRODUCT') {
+        const prodId = detail.id || detail.productId || selectedProduct?.id;
+        const prod = resolveProduct(prodId, products) || selectedProduct;
+        formattedTarget = {
+          type: 'PRODUCT',
+          productId: prod?.id || prodId,
+          title: detail.title || prod?.title,
+          subtitle: detail.subtitle || (prod ? `${prod.supplierName} • MOQ: ${prod.moq || 100} ${prod.moqUnit || 'units'}` : undefined),
+          imageUrl: prod?.images?.[0]
+        };
+      } else if (detail.type === 'RFQ') {
+        const rfqId = detail.id || detail.rfqId || selectedRfqForModal?.id;
+        const rfq = resolveRfq(rfqId, rfqs) || selectedRfqForModal;
+        formattedTarget = {
+          type: 'RFQ',
+          rfqId: rfq?.id || rfqId,
+          rfqTab: (detail.rfqTab as RfqModalTab) || 'DETAILS',
+          title: detail.title || rfq?.productName,
+          subtitle: detail.subtitle || (rfq ? `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: $${rfq.targetPriceUsd}/unit` : undefined),
+          imageUrl: rfq?.image || rfq?.images?.[0]
+        };
+      } else if (detail.type === 'BUYER') {
+        const bId = resolveBuyerId(detail.id || detail.buyerId || selectedBuyerId) || 'buyer-001';
+        const bProf = MOCK_BUYER_PROFILES.find(b => b.id === bId) || MOCK_BUYER_PROFILES[0];
+        formattedTarget = {
+          type: 'BUYER',
+          buyerId: bId,
+          buyerTab: (detail.buyerTab as BuyerModalTab) || 'OVERVIEW',
+          title: detail.title || bProf?.companyName,
+          subtitle: detail.subtitle || (bProf ? `${bProf.city}, ${bProf.country} • ${bProf.businessType}` : undefined),
+          imageUrl: bProf?.logoUrl || bProf?.bannerUrl
+        };
+      } else if (detail.type === 'ARTICLE') {
+        formattedTarget = {
+          type: 'ARTICLE',
+          articleId: detail.articleId || detail.id,
+          view: 'INSIGHTS',
+          title: detail.title || 'Trade Heaven Editorial Insight',
+          subtitle: detail.subtitle
+        };
+      } else if (detail.type === 'CATEGORY') {
+        formattedTarget = {
+          type: 'CATEGORY',
+          category: detail.category || catalogCategory,
+          title: detail.title || `${detail.category || catalogCategory} Wholesale Suppliers & Products`
+        };
+      } else {
+        formattedTarget = {
+          type: 'PAGE',
+          view: activeView,
+          title: detail.title || document.title,
+          subtitle: detail.subtitle
+        };
+      }
+
+      setShareModalConfig({
+        isOpen: true,
+        target: formattedTarget
+      });
+    };
+
+    window.addEventListener('tradeheaven_open_share', handleOpenShare);
+    return () => window.removeEventListener('tradeheaven_open_share', handleOpenShare);
+  }, [activeView, storefrontCompanyId, selectedProduct, selectedRfqForModal, selectedBuyerId, catalogCategory, catalogSearch, products, rfqs]);
   const [contactModalConfig, setContactModalConfig] = useState<{
     isOpen: boolean;
     targetType: 'RFQ' | 'PRODUCT' | 'SUPPLIER' | 'GENERAL';
@@ -523,6 +899,23 @@ const MainApp: React.FC = () => {
         ogImageWidth = '800';
         ogImageHeight = '800';
       }
+    } else if (storefrontCompanyId) {
+      const supProfile = DETAILED_VENDOR_PROFILES[storefrontCompanyId];
+      const supCompany = MOCK_COMPANIES.find(c => c.id === storefrontCompanyId);
+      const cName = supProfile?.companyName || supCompany?.companyName || 'Verified Global Supplier';
+      const cCountry = supProfile?.country || supCompany?.country || 'International';
+      const cType = supProfile?.businessType || supCompany?.businessType || 'Wholesale Manufacturer';
+      title = `${cName} (${cCountry}) — Verified ${cType} | Trade Heaven`;
+      description = supProfile?.description?.slice(0, 160) || `View verified factory profile, product catalog, and compliance certificates for ${cName} on Trade Heaven.`;
+      canonical = `https://tradeheaven.net/?supplier=${encodeURIComponent(storefrontCompanyId)}`;
+      if (supProfile?.bannerUrl || supProfile?.logoUrl) {
+        ogImage = supProfile.bannerUrl || supProfile.logoUrl;
+        ogImageAlt = `${cName} Storefront`;
+      }
+    } else if (selectedRfqForModal) {
+      title = `Live RFQ Tender: ${selectedRfqForModal.productName} | Trade Heaven`;
+      description = `Buyer: ${selectedRfqForModal.buyerCompany} (${selectedRfqForModal.buyerCountry}). Target Qty: ${selectedRfqForModal.targetQuantity} ${selectedRfqForModal.quantityUnit}. Submit your factory quote directly.`;
+      canonical = `https://tradeheaven.net/?rfq=${encodeURIComponent(selectedRfqForModal.id)}`;
     } else {
       switch (activeView) {
         case 'HOMEPAGE':
@@ -819,7 +1212,7 @@ const MainApp: React.FC = () => {
         ldScript.remove();
       }
     }
-  }, [activeView, selectedProduct, products, siteContent]);
+  }, [activeView, selectedProduct, storefrontCompanyId, selectedRfqForModal, products, siteContent]);
 
   // Handlers
   const handleSelectProduct = (product: Product) => {
@@ -1181,6 +1574,38 @@ const MainApp: React.FC = () => {
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
       <main className="flex-1 w-full overflow-x-hidden px-4 sm:px-6 lg:px-10 xl:px-12 py-2 sm:py-3 min-h-[calc(100vh-160px)]">
+        {/* Shared Custom Note Banner when ?note=... is present in the URL */}
+        {sharedNote && (
+          <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-lg border border-blue-500/30 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-start sm:items-center gap-3 min-w-0">
+              <span className="p-2 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[10px] font-black uppercase tracking-wider text-blue-300">
+                  Shared Link Note / Instruction
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-white break-words">
+                  "{sharedNote}"
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSharedNote(null);
+                const url = new URL(window.location.href);
+                url.searchParams.delete('note');
+                window.history.replaceState({}, '', url.toString());
+              }}
+              className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+              title="Dismiss note"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Lightweight, Schema-Compliant Breadcrumb Navigation (rendered on all views except homepage) */}
         <BreadcrumbNavigation
           activeView={activeView}
@@ -1736,7 +2161,7 @@ const MainApp: React.FC = () => {
           />
         )}
 
-        {storefrontCompanyId && (
+        {storefrontCompanyId && activeView !== 'VENDOR_PROFILE' && (
           <SupplierStorefrontModal
             companyId={storefrontCompanyId}
             isOpen={Boolean(storefrontCompanyId)}
@@ -1809,6 +2234,12 @@ const MainApp: React.FC = () => {
             setAuthModalMode('LOGIN');
             setIsAuthModalOpen(true);
           }}
+        />
+
+        <CustomShareModal
+          isOpen={shareModalConfig.isOpen}
+          onClose={() => setShareModalConfig(prev => ({ ...prev, isOpen: false }))}
+          target={shareModalConfig.target}
         />
 
         {/* Floating SMTP Test Sandbox Widget (Publicly Accessible) - REMOVED */}

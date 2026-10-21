@@ -31,7 +31,8 @@ import {
   SlidersHorizontal,
   Tag,
   X,
-  Package
+  Package,
+  Share2
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
@@ -250,6 +251,27 @@ export const BuyLeadsView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('tradeheaven_open_share', {
+                  detail: {
+                    type: 'PAGE',
+                    view: 'BUY_LEADS',
+                    title: 'Global Buy Leads & RFQ Tender Hub | Trade Heaven',
+                    subtitle: 'Live international purchase requests and verified importer sourcing tenders.'
+                  }
+                })
+              );
+            }}
+            className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-2 border border-slate-200 transition-all cursor-pointer"
+            title="Share Custom Link to Buy Leads Hub"
+          >
+            <Share2 className="w-4 h-4 text-blue-600" />
+            <span>Share Hub</span>
+          </button>
+
           <button
             onClick={onOpenCreateRfq}
             className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
@@ -617,10 +639,10 @@ export const BuyLeadsView: React.FC<Props> = ({
 
                   {/* Actions Bar */}
                   <div className="pt-4 mt-3 border-t border-slate-100">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => onSelectRfq(rfq)}
-                        className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                        className="flex-1 py-2 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-sm cursor-pointer"
                       >
                         <span>Quote Tender</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -630,11 +652,33 @@ export const BuyLeadsView: React.FC<Props> = ({
                         href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm text-center"
+                        className="py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-sm text-center shrink-0"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span>WhatsApp</span>
                       </a>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.dispatchEvent(
+                            new CustomEvent('tradeheaven_open_share', {
+                              detail: {
+                                type: 'RFQ',
+                                id: rfq.id,
+                                title: rfq.productName,
+                                subtitle: `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: ${rfq.targetQuantity?.toLocaleString()} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd}/unit`
+                              }
+                            })
+                          );
+                        }}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 border border-slate-200 transition-colors cursor-pointer shrink-0"
+                        title={`Share direct link to RFQ ${rfq.id}: ${rfq.productName}`}
+                        aria-label="Share this RFQ"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 </div>

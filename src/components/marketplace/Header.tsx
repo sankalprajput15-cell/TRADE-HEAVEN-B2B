@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   Database,
-  ArrowUpRight
+  ArrowUpRight,
+  Share2
 } from 'lucide-react';
 
 interface Props {
@@ -315,6 +316,27 @@ export const Header: React.FC<Props> = ({
           >
             <PlusCircle className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Post RFQ</span>
+          </button>
+
+          {/* Quick Custom Link Share Button */}
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent('tradeheaven_open_share', {
+                  detail: {
+                    type: 'PAGE',
+                    view: activeView,
+                    title: document.title
+                  }
+                })
+              );
+            }}
+            className="h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-2xs"
+            title="Share custom link to this page with anyone"
+          >
+            <Share2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="hidden md:inline">Share</span>
           </button>
 
           {/* Divider */}

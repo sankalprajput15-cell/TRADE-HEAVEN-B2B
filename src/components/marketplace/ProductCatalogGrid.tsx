@@ -3,7 +3,7 @@ import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
 import { QuickProductImageModal } from '../admin/DedicatedProductImageSystem';
-import { MessageCircle, Building, Lock, ShieldCheck, Award, Image as ImageIcon } from 'lucide-react';
+import { MessageCircle, Building, Lock, ShieldCheck, Award, Image as ImageIcon, Share2 } from 'lucide-react';
 
 export const ProductCardSkeleton: React.FC = () => {
   return (
@@ -199,19 +199,40 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
       </div>
 
       {/* Card Action Buttons */}
-      <div className="p-3 sm:p-4 pt-0 grid grid-cols-2 gap-2 min-w-0">
+      <div className="p-3 sm:p-4 pt-0 flex items-center gap-1.5 min-w-0">
         <button
           onClick={() => onContactSupplier(product)}
-          className="w-full py-2 px-1.5 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition-colors border border-slate-200 min-h-[38px] cursor-pointer min-w-0"
+          className="flex-1 py-2 px-1.5 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition-colors border border-slate-200 min-h-[38px] cursor-pointer min-w-0"
         >
           <MessageCircle className="w-3.5 h-3.5 text-blue-600 shrink-0" />
           <span className="truncate">Contact</span>
         </button>
         <button
           onClick={() => onSelectProduct(product)}
-          className="w-full py-2 px-1.5 rounded-lg sm:rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-bold transition-colors shadow-2xs min-h-[38px] flex items-center justify-center text-center cursor-pointer min-w-0"
+          className="flex-1 py-2 px-1.5 rounded-lg sm:rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-bold transition-colors shadow-2xs min-h-[38px] flex items-center justify-center text-center cursor-pointer min-w-0"
         >
           <span className="truncate">Get Price</span>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(
+              new CustomEvent('tradeheaven_open_share', {
+                detail: {
+                  type: 'PRODUCT',
+                  id: product.id,
+                  title: product.title,
+                  subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${(product.moq || 100).toLocaleString()} ${product.moqUnit || 'Units'}`
+                }
+              })
+            );
+          }}
+          className="p-2 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 border border-slate-200 transition-colors min-h-[38px] flex items-center justify-center cursor-pointer shrink-0"
+          title={`Share direct link to ${product.title}`}
+          aria-label="Share product"
+        >
+          <Share2 className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
