@@ -5,6 +5,7 @@ import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { NotificationBell } from './NotificationBell';
 import { LanguageRegionSelector } from './LanguageRegionSelector';
 import { HeaderWalletBalance } from './HeaderWalletBalance';
+import { LiveCurrencyExchangeWidget } from './LiveCurrencyExchangeWidget';
 import { SafeImage } from '../common/SafeImage';
 import {
   PlusCircle,
@@ -370,6 +371,12 @@ export const Header: React.FC<Props> = ({
 
         {/* Zone 3: Wallet Balance, Primary CTA & Account Menu */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Live Currency Exchange & Real-Time Market Rates Converter */}
+          <LiveCurrencyExchangeWidget
+            selectedCurrency={selectedCurrency}
+            onCurrencySelect={handleCurrencySelect}
+          />
+
           {/* Authenticated User Wallet Balance (available_balance & locked_balance) + Top-Up */}
           {currentUser && (
             <HeaderWalletBalance

@@ -391,6 +391,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
               alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
               referrerPolicy="no-referrer"
               loading={props.loading || 'lazy'}
+              decoding={props.decoding || 'async'}
               onLoad={handleLoad}
               onError={handleError}
               className={`w-full h-full object-cover transition-opacity duration-200 ${imgClassName}`}

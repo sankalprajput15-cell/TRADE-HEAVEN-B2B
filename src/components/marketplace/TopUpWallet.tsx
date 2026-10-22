@@ -24,6 +24,8 @@ import {
   FileCheck2,
   Zap
 } from 'lucide-react';
+import { addTopUpRequest } from './TopUpRequestsList';
+import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
 
 interface TopUpWalletProps {
   onSuccess?: (updatedState: MediationSystemState) => void;
@@ -31,7 +33,7 @@ interface TopUpWalletProps {
 }
 
 interface GatewayOption {
-  id: 'RAZORPAY_X' | 'CASHFREE_B2B' | 'STRIPE_TREASURY' | 'HDFC_RTGS';
+  id: 'CURRENCY_CLOUD_SWIFT' | 'RAZORPAY_X' | 'CASHFREE_B2B' | 'STRIPE_TREASURY' | 'HDFC_RTGS';
   name: string;
   subtitle: string;
   prefix: string;
@@ -40,7 +42,19 @@ interface GatewayOption {
   badge: string;
 }
 
+export { OFFICIAL_SWIFT_BANK_DETAILS } from '../../constants/swiftBankDetails';
+import { OFFICIAL_SWIFT_BANK_DETAILS } from '../../constants/swiftBankDetails';
+
 const GATEWAY_OPTIONS: GatewayOption[] = [
+  {
+    id: 'CURRENCY_CLOUD_SWIFT',
+    name: 'The Currency Cloud Limited (Official SWIFT)',
+    subtitle: 'Direct International Wire (IBAN: GB81TCCL04140453340868)',
+    prefix: 'GW-SWIFT',
+    railLabel: 'SWIFT / BIC: TCCLGB3L',
+    settlementTime: 'Official Direct Wire',
+    badge: 'Primary Account'
+  },
   {
     id: 'RAZORPAY_X',
     name: 'RazorpayX Corporate Collect',
@@ -98,12 +112,35 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-titan-01');
   const [amountInr, setAmountInr] = useState<string>('500000');
-  const [selectedGatewayId, setSelectedGatewayId] = useState<GatewayOption['id']>('RAZORPAY_X');
-  const [gatewayTxId, setGatewayTxId] = useState<string>(() => `GW-RZP-${Math.floor(1000000 + Math.random() * 9000000)}`);
+  const [selectedGatewayId, setSelectedGatewayId] = useState<GatewayOption['id']>('CURRENCY_CLOUD_SWIFT');
+  const [gatewayTxId, setGatewayTxId] = useState<string>(() => `GW-SWIFT-${Math.floor(1000000 + Math.random() * 9000000)}`);
   const [simStep, setSimStep] = useState<GatewaySimulationStep>('CONFIGURE');
   const [otpCode, setOtpCode] = useState<string>('849201');
   const [copiedTxId, setCopiedTxId] = useState<boolean>(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleCopyField = (fieldName: string, text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleCopyAllSwiftDetails = () => {
+    const fullText = `Account holder name: ${OFFICIAL_SWIFT_BANK_DETAILS.accountHolderName}
+Payment method: ${OFFICIAL_SWIFT_BANK_DETAILS.paymentMethod}
+IBAN (Account number): ${OFFICIAL_SWIFT_BANK_DETAILS.iban}
+BIC/SWIFT code: ${OFFICIAL_SWIFT_BANK_DETAILS.bicSwift}
+Bank name: ${OFFICIAL_SWIFT_BANK_DETAILS.bankName}
+Beneficiary address: ${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress}
+Beneficiary bank country: ${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry}
+
+When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark}`;
+
+    navigator.clipboard?.writeText(fullText);
+    setCopiedField('ALL_SWIFT');
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   const [lastReceipt, setLastReceipt] = useState<{
     buyerName: string;
@@ -231,6 +268,26 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
           timestamp: new Date().toLocaleTimeString()
         });
 
+        addTopUpRequest({
+          id: `REQ-TOPUP-${Date.now().toString().slice(-4)}`,
+          referenceId: finalTxId,
+          buyerId: selectedWallet.entity_id,
+          buyerName: selectedWallet.entity_name,
+          companyName: selectedWallet.company_name,
+          amountPaise,
+          amountInr: parsedInr,
+          paymentRail: selectedGateway.name,
+          status: 'VERIFIED',
+          createdAt: new Date().toISOString(),
+          verifiedAt: new Date().toISOString(),
+          bankName: OFFICIAL_SWIFT_BANK_DETAILS.bankName,
+          ibanOrAccount: OFFICIAL_SWIFT_BANK_DETAILS.iban,
+          bicOrIfsc: OFFICIAL_SWIFT_BANK_DETAILS.bicSwift,
+          remark: OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark,
+          notes: `Simulated gateway credit via ${selectedGateway.name}.`,
+          proofDocumentName: 'Gateway_Verification_Receipt.pdf'
+        });
+
         setSimStep('CONFIRMED');
         if (onSuccess) {
           onSuccess(updatedState);
@@ -287,47 +344,58 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
           </div>
 
           {/* Active Buyer Balance Card */}
-          {selectedWallet && (
-            <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 min-w-[280px] sm:min-w-[320px] shrink-0 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Selected Buyer Wallet
-                  </div>
-                  <div className="text-sm font-black text-white truncate">
-                    {selectedWallet.company_name}
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px] font-bold">
-                  {selectedWallet.id}
-                </span>
-              </div>
+          {selectedWallet && (() => {
+            const buyerCurrency = getEntityCurrency(selectedWallet);
+            const buyerAvail = formatBalanceInNativeCurrency(selectedWallet.available_balance, selectedWallet);
+            const buyerLocked = formatBalanceInNativeCurrency(selectedWallet.locked_balance, selectedWallet);
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/60">
-                  <div className="text-[10px] text-slate-400 font-semibold">Available Balance</div>
-                  <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5">
-                    {formatInrFromPaise(selectedWallet.available_balance)}
+            return (
+              <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 min-w-[280px] sm:min-w-[320px] shrink-0 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <span>Selected Buyer Wallet</span>
+                      <span className="text-emerald-400 font-mono">({buyerCurrency.flag} {buyerCurrency.currencyCode})</span>
+                    </div>
+                    <div className="text-sm font-black text-white truncate">
+                      {selectedWallet.company_name}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    {Number(selectedWallet.available_balance).toLocaleString('en-IN')} paise
-                  </div>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px] font-bold">
+                    {buyerCurrency.country}
+                  </span>
                 </div>
 
-                <div className="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/60">
-                  <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-amber-400" /> In Escrow Lock
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/60">
+                    <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-between">
+                      <span>Available</span>
+                      <span className="text-[9px] font-mono text-emerald-400">{buyerCurrency.currencyCode}</span>
+                    </div>
+                    <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5 truncate">
+                      {buyerAvail.primary}
+                    </div>
+                    <div className="text-[10px] text-slate-300 font-mono">
+                      {buyerAvail.secondary}
+                    </div>
                   </div>
-                  <div className="text-base sm:text-lg font-black text-amber-300 font-mono mt-0.5">
-                    {formatInrFromPaise(selectedWallet.locked_balance)}
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    {Number(selectedWallet.locked_balance).toLocaleString('en-IN')} paise
+
+                  <div className="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/60">
+                    <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-1"><Lock className="w-3 h-3 text-amber-400" /> In Escrow</span>
+                      <span className="text-[9px] font-mono text-amber-400">{buyerCurrency.currencyCode}</span>
+                    </div>
+                    <div className="text-base sm:text-lg font-black text-amber-300 font-mono mt-0.5 truncate">
+                      {buyerLocked.primary}
+                    </div>
+                    <div className="text-[10px] text-slate-300 font-mono">
+                      {buyerLocked.secondary}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 
@@ -403,7 +471,201 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
 
           {/* STEP 1: CONFIGURE TOP-UP AMOUNT & GATEWAY */}
           {simStep === 'CONFIGURE' && (
-            <form onSubmit={handleProceedToGatewayModal} className="space-y-6">
+            <div className="space-y-6">
+              {/* Official Bank Account Details for Customer Balance Top-Up */}
+              <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 border border-blue-500/30 shadow-md space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-blue-900/60 pb-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-600/30 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner">
+                      <Landmark className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-sm text-white">Official Bank Account for Wallet Top-Up</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                          SWIFT Wire
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300">
+                        Transfer funds from your bank to top up your corporate balance directly via international wire
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyAllSwiftDetails}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                      copiedField === 'ALL_SWIFT'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-xs'
+                    }`}
+                  >
+                    {copiedField === 'ALL_SWIFT' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>All Details Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy All Account Details</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Bank Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
+                  {/* Account Holder Name */}
+                  <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Account Holder Name</div>
+                      <div className="font-bold text-white mt-0.5 text-xs sm:text-sm">
+                        {OFFICIAL_SWIFT_BANK_DETAILS.accountHolderName}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('HOLDER', OFFICIAL_SWIFT_BANK_DETAILS.accountHolderName)}
+                      className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      title="Copy Account Holder Name"
+                    >
+                      {copiedField === 'HOLDER' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* Bank Name */}
+                  <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Bank Name</div>
+                      <div className="font-bold text-white mt-0.5 text-xs sm:text-sm">
+                        {OFFICIAL_SWIFT_BANK_DETAILS.bankName}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('BANK', OFFICIAL_SWIFT_BANK_DETAILS.bankName)}
+                      className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      title="Copy Bank Name"
+                    >
+                      {copiedField === 'BANK' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* IBAN (Account Number) */}
+                  <div className="p-3 rounded-2xl bg-blue-900/20 border border-blue-500/40 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider">IBAN (Account Number)</div>
+                      <div className="font-mono font-black text-white mt-0.5 text-xs sm:text-sm tracking-wider select-all">
+                        {OFFICIAL_SWIFT_BANK_DETAILS.iban}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('IBAN', OFFICIAL_SWIFT_BANK_DETAILS.iban)}
+                      className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedField === 'IBAN' ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-200" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* BIC / SWIFT */}
+                  <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">BIC / SWIFT Code</div>
+                      <div className="font-mono font-bold text-white mt-0.5 text-xs sm:text-sm select-all">
+                        {OFFICIAL_SWIFT_BANK_DETAILS.bicSwift}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('BIC', OFFICIAL_SWIFT_BANK_DETAILS.bicSwift)}
+                      className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      title="Copy BIC/SWIFT Code"
+                    >
+                      {copiedField === 'BIC' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* Beneficiary Address */}
+                  <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Beneficiary Address</div>
+                      <div className="text-slate-200 mt-0.5 text-xs">
+                        {OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyField('ADDR', OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress)}
+                      className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      title="Copy Address"
+                    >
+                      {copiedField === 'ADDR' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* Beneficiary Bank Country & Payment Method */}
+                  <div className="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Bank Country &amp; Method</div>
+                      <div className="text-slate-200 mt-0.5 text-xs">
+                        {OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry} • {OFFICIAL_SWIFT_BANK_DETAILS.paymentMethod}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                      UK Wire
+                    </span>
+                  </div>
+                </div>
+
+                {/* CRITICAL MANDATORY REMARK BOX */}
+                <div className="bg-amber-500/15 border border-amber-400/40 rounded-2xl p-3.5 sm:p-4 text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Mandatory Transfer Remark</span>
+                    </div>
+                    <div className="text-xs text-amber-100">
+                      When initiating this transfer, please add the following remark:
+                    </div>
+                    <div className="font-mono font-black text-white text-sm sm:text-base tracking-wider bg-slate-950/90 px-3 py-1.5 rounded-xl border border-amber-400/40 inline-block mt-1 select-all">
+                      {OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCopyField('REMARK', OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark)}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm"
+                  >
+                    {copiedField === 'REMARK' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Remark Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Remark</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleProceedToGatewayModal} className="space-y-6">
               {/* 1. Buyer Entity Selector */}
               <div className="space-y-2">
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
@@ -412,6 +674,8 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {buyerWallets.map(w => {
                     const isSelected = w.entity_id === selectedWallet?.entity_id;
+                    const entityCurrency = getEntityCurrency(w.entity_id);
+                    const formattedNative = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
                     return (
                       <button
                         type="button"
@@ -424,16 +688,23 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
-                            {w.entity_id}
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 flex items-center gap-1">
+                            <span>{entityCurrency.flag}</span>
+                            <span>{entityCurrency.currency}</span>
                           </span>
                           {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
                         </div>
                         <div className="font-bold text-xs text-slate-900 mt-2 truncate">
                           {w.company_name}
                         </div>
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          {entityCurrency.country}
+                        </div>
                         <div className="text-[11px] font-mono font-bold text-emerald-700 mt-1">
-                          Avail: {formatInrFromPaise(w.available_balance)}
+                          Avail: {formattedNative.nativeAmount}
+                        </div>
+                        <div className="text-[9.5px] font-mono text-slate-400">
+                          {formattedNative.inrAmount}
                         </div>
                       </button>
                     );
@@ -574,6 +845,7 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
+          </div>
           )}
 
           {/* STEP 2: INTERACTIVE PAYMENT GATEWAY CONFIRMATION MOCKUP */}
@@ -583,13 +855,13 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
               <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-black text-sm">
-                    PG
+                    {selectedGateway.id === 'CURRENCY_CLOUD_SWIFT' ? 'SWIFT' : 'PG'}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-black text-sm">{selectedGateway.name}</span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-mono">
-                        256-BIT TLS SANDBOX
+                        {selectedGateway.id === 'CURRENCY_CLOUD_SWIFT' ? 'OFFICIAL WIRE RAIL' : '256-BIT TLS SANDBOX'}
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-400 font-mono">
@@ -607,6 +879,88 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
 
               {/* Mock Gateway Body */}
               <div className="p-6 space-y-5">
+                {/* Specialized SWIFT Wire Settlement Details Card if Currency Cloud */}
+                {selectedGateway.id === 'CURRENCY_CLOUD_SWIFT' && (
+                  <div className="bg-gradient-to-br from-blue-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 border border-blue-500/30 space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-blue-900 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Landmark className="w-4 h-4 text-blue-400" />
+                        <span className="font-bold text-xs uppercase tracking-wider text-blue-200">
+                          Official Settlement Wire Details
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyAllSwiftDetails}
+                        className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        {copiedField === 'ALL_SWIFT' ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedField === 'ALL_SWIFT' ? 'Copied All' : 'Copy All'}</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block uppercase font-semibold">Account Holder Name</span>
+                        <span className="font-bold text-white text-xs mt-0.5 block">{OFFICIAL_SWIFT_BANK_DETAILS.accountHolderName}</span>
+                      </div>
+                      <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block uppercase font-semibold">Bank Name</span>
+                        <span className="font-bold text-white text-xs mt-0.5 block">{OFFICIAL_SWIFT_BANK_DETAILS.bankName}</span>
+                      </div>
+                      <div className="p-2.5 bg-blue-900/20 rounded-xl border border-blue-500/40 sm:col-span-2 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-blue-300 block uppercase font-semibold">IBAN (Account Number)</span>
+                          <span className="font-mono font-black text-white text-xs sm:text-sm tracking-wider select-all">
+                            {OFFICIAL_SWIFT_BANK_DETAILS.iban}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyField('IBAN_STEP2', OFFICIAL_SWIFT_BANK_DETAILS.iban)}
+                          className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] cursor-pointer"
+                        >
+                          {copiedField === 'IBAN_STEP2' ? 'Copied' : 'Copy IBAN'}
+                        </button>
+                      </div>
+                      <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block uppercase font-semibold">BIC / SWIFT Code</span>
+                          <span className="font-mono font-bold text-white text-xs select-all">{OFFICIAL_SWIFT_BANK_DETAILS.bicSwift}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyField('BIC_STEP2', OFFICIAL_SWIFT_BANK_DETAILS.bicSwift)}
+                          className="p-1 rounded hover:bg-slate-800 text-slate-300 cursor-pointer"
+                        >
+                          {copiedField === 'BIC_STEP2' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                      <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block uppercase font-semibold">Beneficiary Bank Country</span>
+                        <span className="text-white text-xs mt-0.5 block">{OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry}</span>
+                      </div>
+                    </div>
+
+                    {/* Critical Mandatory Remark Box */}
+                    <div className="p-3 bg-amber-500/15 border border-amber-400/40 rounded-xl text-amber-200 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-amber-300 block">Mandatory Transfer Remark:</span>
+                        <span className="font-mono font-black text-white text-xs sm:text-sm tracking-wider select-all">
+                          {OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyField('REMARK_STEP2', OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark)}
+                        className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] cursor-pointer shrink-0"
+                      >
+                        {copiedField === 'REMARK_STEP2' ? 'Copied!' : 'Copy Remark'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white rounded-2xl p-4 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2.5">
                     <span className="text-slate-500 font-semibold">Beneficiary Buyer Wallet:</span>
@@ -865,9 +1219,12 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-xs text-slate-900">{w.company_name}</div>
+                        <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                          <span>{getEntityCurrency(w.entity_id).flag}</span>
+                          <span>{w.company_name}</span>
+                        </div>
                         <div className="text-[10px] text-slate-500 font-mono">
-                          {w.entity_name} • {w.entity_id}
+                          {w.entity_name} • {getEntityCurrency(w.entity_id).country} ({getEntityCurrency(w.entity_id).currency})
                         </div>
                       </div>
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -878,14 +1235,20 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
                     <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-slate-100 text-xs">
                       <div>
                         <span className="text-[10px] text-slate-400 block">Available Balance</span>
-                        <span className="font-mono font-black text-emerald-600">
-                          {formatInrFromPaise(w.available_balance)}
+                        <span className="font-mono font-black text-emerald-600 block">
+                          {formatBalanceInNativeCurrency(w.available_balance, w.entity_id).nativeAmount}
+                        </span>
+                        <span className="text-[9.5px] font-mono text-slate-400 block">
+                          {formatBalanceInNativeCurrency(w.available_balance, w.entity_id).inrAmount}
                         </span>
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-400 block">Locked in Escrow</span>
-                        <span className="font-mono font-bold text-amber-600">
-                          {formatInrFromPaise(w.locked_balance)}
+                        <span className="font-mono font-bold text-amber-600 block">
+                          {formatBalanceInNativeCurrency(w.locked_balance, w.entity_id).nativeAmount}
+                        </span>
+                        <span className="text-[9.5px] font-mono text-slate-400 block">
+                          {formatBalanceInNativeCurrency(w.locked_balance, w.entity_id).inrAmount}
                         </span>
                       </div>
                     </div>

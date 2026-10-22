@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { TopUpWallet } from './TopUpWallet';
 import { TransactionLedgerView } from './TransactionLedgerView';
+import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
 
 interface Props {
   embedded?: boolean;
@@ -818,11 +819,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     onChange={e => setTopupBuyerId(e.target.value)}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
                   >
-                    {buyerWallets.map(w => (
-                      <option key={w.id} value={w.entity_id}>
-                        {w.company_name} ({w.entity_id}) — Avail: {formatAmount(w.available_balance)}
-                      </option>
-                    ))}
+                    {buyerWallets.map(w => {
+                      const native = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
+                      return (
+                        <option key={w.id} value={w.entity_id}>
+                          {native.flag} {w.company_name} ({native.country}) — Avail: {native.nativeAmount} ({native.inrAmount})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -905,11 +909,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     onChange={e => setLockBuyerId(e.target.value)}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
                   >
-                    {buyerWallets.map(w => (
-                      <option key={w.id} value={w.entity_id}>
-                        {w.company_name} — Avail: {formatAmount(w.available_balance)}
-                      </option>
-                    ))}
+                    {buyerWallets.map(w => {
+                      const native = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
+                      return (
+                        <option key={w.id} value={w.entity_id}>
+                          {native.flag} {w.company_name} ({native.country}) — Avail: {native.nativeAmount}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -955,11 +962,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     onChange={e => setLockSupplierId(e.target.value)}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
                   >
-                    {supplierWallets.map(w => (
-                      <option key={w.id} value={w.entity_id}>
-                        {w.company_name} ({w.entity_id})
-                      </option>
-                    ))}
+                    {supplierWallets.map(w => {
+                      const info = getEntityCurrency(w.entity_id);
+                      return (
+                        <option key={w.id} value={w.entity_id}>
+                          {info.flag} {w.company_name} ({info.country} - {info.currency})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -1040,11 +1050,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       onChange={e => setReleaseBuyerId(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
                     >
-                      {buyerWallets.map(w => (
-                        <option key={w.id} value={w.entity_id}>
-                          {w.company_name} (Locked: {formatAmount(w.locked_balance)})
-                        </option>
-                      ))}
+                      {buyerWallets.map(w => {
+                        const native = formatBalanceInNativeCurrency(w.locked_balance, w.entity_id);
+                        return (
+                          <option key={w.id} value={w.entity_id}>
+                            {native.flag} {w.company_name} ({native.country}) — Locked: {native.nativeAmount}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -1159,11 +1172,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                   >
                     {(state?.wallets || [])
                       .filter(w => w.wallet_type !== 'PLATFORM_REVENUE')
-                      .map(w => (
-                        <option key={w.id} value={w.entity_id}>
-                          [{w.wallet_type}] {w.company_name} — Avail: {formatAmount(w.available_balance)}
-                        </option>
-                      ))}
+                      .map(w => {
+                        const native = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
+                        return (
+                          <option key={w.id} value={w.entity_id}>
+                            {native.flag} [{w.wallet_type}] {w.company_name} ({native.country}) — Avail: {native.nativeAmount} ({native.inrAmount})
+                          </option>
+                        );
+                      })}
                   </select>
                 </div>
 
@@ -1293,22 +1309,34 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                      <th className="py-2.5 pr-4">Entity / Wallet ID</th>
+                      <th className="py-2.5 pr-4">Entity / Country</th>
                       <th className="py-2.5 px-3">Role</th>
-                      <th className="py-2.5 px-3 text-right">Available Balance</th>
+                      <th className="py-2.5 px-3 text-right">Available Balance (Native)</th>
                       <th className="py-2.5 px-3 text-right">Locked in Escrow</th>
                       <th className="py-2.5 pl-3 text-right">Quick Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs">
-                    {filteredWallets.map((w: WalletRecord) => (
+                    {filteredWallets.map((w: WalletRecord) => {
+                      const entityCurrency = getEntityCurrency(w.entity_id);
+                      const availNative = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
+                      const lockedNative = formatBalanceInNativeCurrency(w.locked_balance, w.entity_id);
+                      const isLockedPositive = Number(w.locked_balance) > 0;
+                      return (
                       <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 pr-4">
-                          <div className="font-semibold text-slate-900">{w.company_name}</div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                            <span className="text-base shrink-0">{entityCurrency.flag}</span>
+                            <span className="truncate">{w.company_name}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
                             <span className="font-mono">{w.id}</span>
                             <span aria-hidden="true">·</span>
                             <span className="font-mono">{w.entity_id}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="font-medium text-slate-600">
+                              {entityCurrency.country} ({entityCurrency.currency})
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 px-3">
@@ -1321,14 +1349,30 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                                 : 'text-indigo-600'
                             }`}
                           >
-                            {w.wallet_type}
+                            {w.wallet_type === 'PLATFORM_REVENUE' ? 'TREASURY' : w.wallet_type}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-right font-mono tabular-nums font-semibold text-slate-900">
-                          {formatAmount(w.available_balance)}
+                        <td className="py-3 px-3 text-right tabular-nums">
+                          <div className="font-mono font-bold text-slate-900">
+                            {availNative.nativeAmount}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            {availNative.inrAmount}
+                          </div>
                         </td>
-                        <td className="py-3 px-3 text-right font-mono tabular-nums text-amber-700 font-medium">
-                          {Number(w.locked_balance) > 0 ? formatAmount(w.locked_balance) : '—'}
+                        <td className="py-3 px-3 text-right tabular-nums">
+                          {isLockedPositive ? (
+                            <div>
+                              <div className="font-mono font-bold text-amber-700">
+                                {lockedNative.nativeAmount}
+                              </div>
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                {lockedNative.inrAmount}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-slate-400">—</span>
+                          )}
                         </td>
                         <td className="py-3 pl-3 text-right">
                           {w.wallet_type === 'BUYER' && (
@@ -1361,7 +1405,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                           )}
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>
@@ -1415,8 +1460,13 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     </div>
 
                     <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
-                      <div className="text-sm font-bold font-mono tabular-nums text-slate-900">
-                        {formatAmount(order.total_amount_paise)}
+                      <div className="text-right">
+                        <div className="text-sm font-bold font-mono tabular-nums text-slate-900">
+                          {formatBalanceInNativeCurrency(order.total_amount_paise, order.buyer_id).nativeAmount}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {formatBalanceInNativeCurrency(order.total_amount_paise, order.buyer_id).inrAmount}
+                        </div>
                       </div>
                       {order.status === 'LOCKED_IN_ESCROW' && (
                         <button

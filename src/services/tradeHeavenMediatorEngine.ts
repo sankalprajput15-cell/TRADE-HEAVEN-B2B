@@ -21,6 +21,9 @@ export interface WalletRecord {
   available_balance: string; // Stored in paise (100 paise = ₹1.00) as string for BigInt safety
   locked_balance: string;    // Stored in paise as string for BigInt safety
   currency: string;
+  country?: string;
+  native_currency?: string;
+  native_symbol?: string;
   updated_at: string;
 }
 
@@ -343,6 +346,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '185000000', // ₹18,50,000.00 (185,000,000 paise)
         locked_balance: '92000000',     // ₹9,20,000.00 locked in active escrow
         currency: 'INR',
+        country: 'United States',
+        native_currency: 'USD',
+        native_symbol: '$',
         updated_at: new Date(Date.now() - 3600 * 1000 * 5).toISOString()
       },
       {
@@ -354,6 +360,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '340000000', // ₹34,00,000.00
         locked_balance: '64000000',     // ₹6,40,000.00 locked in escrow
         currency: 'INR',
+        country: 'Germany',
+        native_currency: 'EUR',
+        native_symbol: '€',
         updated_at: new Date(Date.now() - 3600 * 1000 * 8).toISOString()
       },
       {
@@ -365,6 +374,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '125000000', // ₹12,50,000.00
         locked_balance: '0',
         currency: 'INR',
+        country: 'India',
+        native_currency: 'INR',
+        native_symbol: '₹',
         updated_at: new Date(Date.now() - 3600 * 1000 * 12).toISOString()
       },
       {
@@ -376,6 +388,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '248500000', // ₹24,85,000.00 available for bank payout
         locked_balance: '0',
         currency: 'INR',
+        country: 'Australia',
+        native_currency: 'AUD',
+        native_symbol: 'A$',
         updated_at: new Date(Date.now() - 3600 * 1000 * 3).toISOString()
       },
       {
@@ -387,6 +402,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '162000000', // ₹16,20,000.00
         locked_balance: '0',
         currency: 'INR',
+        country: 'China',
+        native_currency: 'CNY',
+        native_symbol: '¥',
         updated_at: new Date(Date.now() - 3600 * 1000 * 6).toISOString()
       },
       {
@@ -398,6 +416,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '95000000',  // ₹9,50,000.00
         locked_balance: '0',
         currency: 'INR',
+        country: 'India',
+        native_currency: 'INR',
+        native_symbol: '₹',
         updated_at: new Date(Date.now() - 3600 * 1000 * 10).toISOString()
       },
       {
@@ -409,6 +430,9 @@ export class TradeHeavenSqlPoolAdapter {
         available_balance: '18450000',  // ₹1,84,500.00 accumulated platform commission
         locked_balance: '0',
         currency: 'INR',
+        country: 'United Kingdom',
+        native_currency: 'GBP',
+        native_symbol: '£',
         updated_at: new Date(Date.now() - 3600 * 1000 * 1).toISOString()
       }
     ];

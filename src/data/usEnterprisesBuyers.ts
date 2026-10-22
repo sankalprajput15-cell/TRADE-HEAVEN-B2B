@@ -5760,5 +5760,63 @@ export const GLOBAL_US_ENTERPRISES_BUYER_PROFILES: BuyerProfile[] = [
   "whatsapp": "+15084404105",
   "isContactMasked": true,
   "description": "Procurement division of Pro Tool & Supply and Pro Equipment Rental. Active commercial entity sourcing certified Mini Excavator machinery and parts with Trade Protection."
+},
+  {
+  "id": "buyer-girlsenberries-01",
+  "companyName": "Girlsenberries",
+  "legalRegistrationNumber": "US-BUYER-EIN-9136201",
+  "country": "United States",
+  "city": "Westlake Village",
+  "address": "4219 Par Five Dr., Westlake Village, California 91362 USA",
+  "establishedYear": 2021,
+  "businessType": "Merchant Exporter",
+  "tier": "VIP",
+  "isVerifiedKYC": true,
+  "kycVerificationDate": "2026-01-15",
+  "trustScore": 98,
+  "responseRate": "99.5%",
+  "avgResponseTime": "< 30 mins",
+  "totalEmployees": "5 - 15",
+  "annualPurchasingVolumeUsd": "$5M - $25M",
+  "annualRevenueUsd": "$10M - $50M",
+  "importFrequency": "Weekly FCL / Bulk Exporter Shipments",
+  "targetCategories": [
+    "Agricultural Commodities",
+    "Food & Beverage",
+    "Specialty Goods",
+    "Merchant Export Commodities"
+  ],
+  "preferredIncoterms": [
+    "FOB",
+    "CIF",
+    "DDP"
+  ],
+  "preferredPaymentTerms": [
+    "Trade Assurance Escrow",
+    "Letter of Credit (L/C at sight)",
+    "T/T 30% Deposit + 70% B/L"
+  ],
+  "activeRfqsCount": 2,
+  "completedImportsCount": 65,
+  "tradeAssuranceEscrowSecuredUsd": 2500000,
+  "mainMarkets": [
+    "United States",
+    "European Union",
+    "Asia Pacific",
+    "Middle East"
+  ],
+  "certifications": [
+    "US Customs C-TPAT Certified",
+    "Dun & Bradstreet Verified Exporter",
+    "ISO 9001:2015 Compliant"
+  ],
+  "contactPerson": "Donald Sorkin",
+  "contactDesignation": "Managing Director & Merchant Exporter",
+  "contactEmail": "mail-sorkindon@gmail.com",
+  "contactPhone": "+1 (681) 277-2492",
+  "whatsapp": "+16812772492",
+  "isContactMasked": false,
+  "description": "Girlsenberries is an elite US-based merchant exporter and international trade corporation specializing in cross-border commodity supply, agricultural produce, and wholesale distribution under Swiss Escrow Trade Protection.",
+  "logoUrl": "/assets/aistudio/WhatsApp_Image_2026-10-11_at_3.06.55_AM__1__dd0d83ec.jpeg"
 }
 ];

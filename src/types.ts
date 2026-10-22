@@ -406,7 +406,7 @@ export interface DetailedBuyerProfile {
   city: string;
   address: string;
   establishedYear: number;
-  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House' | 'Trading Company' | 'Supplier' | 'Exporter' | 'Manufacturer' | 'Service Provider';
+  businessType: 'Corporate Importer' | 'Wholesale Distributor' | 'Retail Chain' | 'OEM Brand' | 'Government Contractor' | 'Trade House' | 'Trading Company' | 'Supplier' | 'Exporter' | 'Manufacturer' | 'Service Provider' | 'Merchant Exporter';
   tier: BuyerTier;
   isVerifiedKYC: boolean;
   kycVerificationDate?: string;

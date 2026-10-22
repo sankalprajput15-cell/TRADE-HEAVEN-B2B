@@ -501,18 +501,90 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
             )}
 
             {paymentMethod === 'SWIFT' && (
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                <div className="font-bold text-slate-800">Bank Transfer Instructions:</div>
-                <div className="p-3.5 bg-white rounded-xl border border-slate-200 font-sans text-[12px] space-y-2 leading-relaxed">
-                  <div><strong>Beneficiary Account Name:</strong> TRADEHEAVEN ECOM SOLUTION LLP</div>
-                  <div><strong>Account Number (A/c No):</strong> 44153189222</div>
-                  <div><strong>Account Type:</strong> Current account Bank Account</div>
-                  <div><strong>Bank Name:</strong> State Bank Of India</div>
-                  <div><strong>Branch Name &amp; Address:</strong> State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244</div>
-                  <div><strong>SWIFT CODE:</strong> SBININBB124</div>
-                  <div><strong>IFSC Code:</strong> SBIN0010346</div>
-                  <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-mono">
-                    <strong>Reference Code:</strong> TH-{checkoutData.planId || 'DIRECT'}-{Date.now().toString().slice(-4)}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                    <Landmark className="w-4 h-4 text-blue-600" />
+                    <span>Official SWIFT (International Wire) Account Details:</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                    Direct Wire
+                  </span>
+                </div>
+
+                <div className="p-4 bg-white rounded-xl border border-slate-200 font-sans text-[12px] space-y-2.5 leading-relaxed shadow-2xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Account Holder Name:</span>
+                    <strong className="text-slate-900 font-semibold">TRADEHEAVEN ECOM SOLUTION LLP</strong>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Payment Method:</span>
+                    <span className="font-semibold text-slate-800">SWIFT (International wire)</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 bg-blue-50/50 p-2 rounded-lg">
+                    <span className="text-blue-900 font-bold">IBAN (Account Number):</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-blue-950 text-xs sm:text-sm select-all">
+                        GB81TCCL04140453340868
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText('GB81TCCL04140453340868')}
+                        className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">BIC / SWIFT Code:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 select-all">TCCLGB3L</span>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText('TCCLGB3L')}
+                        className="px-2 py-0.5 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 text-[10px] font-semibold transition-colors cursor-pointer"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Bank Name:</span>
+                    <strong className="text-slate-900">The Currency Cloud Limited</strong>
+                  </div>
+                  <div className="flex items-start justify-between pb-2 border-b border-slate-100 gap-4">
+                    <span className="text-slate-500 font-medium shrink-0">Beneficiary Address:</span>
+                    <span className="text-right text-slate-700">1 Sheldon Square, London, W2 6TT, United Kingdom</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Beneficiary Bank Country:</span>
+                    <span className="font-semibold text-slate-800">United Kingdom</span>
+                  </div>
+
+                  {/* Mandatory Remark Notice */}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 space-y-1">
+                    <div className="font-bold flex items-center justify-between gap-1 text-[11px]">
+                      <span>Mandatory Transfer Remark:</span>
+                      <button
+                        type="button"
+                        onClick={() => navigator.clipboard.writeText('DO NOT CONVERT TO GBP')}
+                        className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold cursor-pointer"
+                      >
+                        Copy Remark
+                      </button>
+                    </div>
+                    <div className="font-mono font-extrabold text-amber-950 text-xs bg-amber-100/70 p-1.5 rounded select-all">
+                      DO NOT CONVERT TO GBP
+                    </div>
+                    <p className="text-[10px] text-amber-800">
+                      When initiating this transfer with your bank, please add the above remark to preserve original currency value.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 text-[10px] text-slate-500 font-mono flex items-center justify-between">
+                    <span>Reference / Memo Code:</span>
+                    <strong>TH-{checkoutData.planId || 'DIRECT'}-{Date.now().toString().slice(-4)}</strong>
                   </div>
                 </div>
               </div>

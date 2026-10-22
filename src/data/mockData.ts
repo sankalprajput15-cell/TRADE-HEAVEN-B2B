@@ -12702,29 +12702,31 @@ export const MOCK_KYC_RECORDS: KycVerificationRecord[] = [
 
 export const MOCK_BANK_ACCOUNTS: BankAccountDetails[] = [
   {
-    id: 'bank-sbi-current',
-    label: 'TRADEHEAVEN ECOM SOLUTION LLP - Current Account',
+    id: 'bank-currencycloud-swift',
+    label: 'TRADEHEAVEN ECOM SOLUTION LLP - SWIFT International Wire',
     currency: 'USD',
-    bankName: 'State Bank Of India',
-    swiftBic: 'SBININBB124',
-    ibanAccountNumber: '44153189222',
+    bankName: 'The Currency Cloud Limited',
+    swiftBic: 'TCCLGB3L',
+    ibanAccountNumber: 'GB81TCCL04140453340868',
     beneficiaryName: 'TRADEHEAVEN ECOM SOLUTION LLP',
-    routingCode: 'IFSC: SBIN0010346',
-    branchAddress: 'State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244',
+    routingCode: 'SWIFT/BIC: TCCLGB3L',
+    branchAddress: '1 Sheldon Square, London, W2 6TT, United Kingdom',
+    intermediaryBank: 'Beneficiary Bank Country: United Kingdom (Remark: DO NOT CONVERT TO GBP)',
     isPrimaryForCurrency: true,
     status: 'ACTIVE'
   },
   {
-    id: 'bank-sbi-inr',
-    label: 'TRADEHEAVEN ECOM SOLUTION LLP - INR Settlement',
-    currency: 'INR',
-    bankName: 'State Bank Of India',
-    swiftBic: 'SBININBB124',
-    ibanAccountNumber: '44153189222',
+    id: 'bank-currencycloud-global',
+    label: 'TRADEHEAVEN ECOM SOLUTION LLP - Cross-Border Multi-Currency Wire',
+    currency: 'EUR',
+    bankName: 'The Currency Cloud Limited',
+    swiftBic: 'TCCLGB3L',
+    ibanAccountNumber: 'GB81TCCL04140453340868',
     beneficiaryName: 'TRADEHEAVEN ECOM SOLUTION LLP',
-    routingCode: 'IFSC: SBIN0010346',
-    branchAddress: 'State Bank of India NTPC dibiyapur auraiya, Uttar Pradesh, 206244',
-    isPrimaryForCurrency: true,
+    routingCode: 'SWIFT/BIC: TCCLGB3L',
+    branchAddress: '1 Sheldon Square, London, W2 6TT, United Kingdom',
+    intermediaryBank: 'Beneficiary Bank Country: United Kingdom (Remark: DO NOT CONVERT TO GBP)',
+    isPrimaryForCurrency: false,
     status: 'ACTIVE'
   }
 ];

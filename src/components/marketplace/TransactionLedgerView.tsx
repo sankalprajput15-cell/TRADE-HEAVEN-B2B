@@ -27,6 +27,7 @@ import {
   Sparkles,
   Database
 } from 'lucide-react';
+import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
 
 interface TransactionLedgerViewProps {
   onNavigateToTopUp?: () => void;
@@ -334,17 +335,20 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         ? 'text-emerald-600'
         : 'text-indigo-600';
 
+    const entityCurrency = getEntityCurrency(w.entity_id);
+
     return (
       <div className="space-y-0.5">
-        <div className="text-xs font-semibold text-slate-900 truncate max-w-[200px]" title={w.company_name}>
-          {w.company_name}
+        <div className="text-xs font-semibold text-slate-900 truncate max-w-[200px] flex items-center gap-1.5" title={w.company_name}>
+          <span className="shrink-0">{entityCurrency.flag}</span>
+          <span className="truncate">{w.company_name}</span>
         </div>
         <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-mono">
           <span className={`font-semibold ${roleColor}`}>
             {w.wallet_type === 'PLATFORM_REVENUE' ? 'TREASURY' : w.wallet_type}
           </span>
           <span aria-hidden="true">·</span>
-          <span>{w.id}</span>
+          <span>{entityCurrency.country} ({entityCurrency.currency})</span>
         </div>
       </div>
     );
@@ -672,6 +676,12 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                       ? { label: 'External Beneficiary Bank', sub: 'IMPS / NEFT / SWIFT Rail' }
                       : { label: 'System Settlement Account', sub: 'Internal Ledger' };
 
+                  const relWallet =
+                    entry.destination_wallet_id && walletMap.get(entry.destination_wallet_id)?.wallet_type !== 'PLATFORM_REVENUE'
+                      ? walletMap.get(entry.destination_wallet_id)
+                      : (entry.source_wallet_id ? walletMap.get(entry.source_wallet_id) : null);
+                  const nativeFormatted = relWallet ? formatBalanceInNativeCurrency(entry.amount, relWallet.entity_id) : null;
+
                   return (
                     <tr
                       key={entry.id}
@@ -735,10 +745,11 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className={`text-sm font-bold font-mono tabular-nums ${meta.amountClass}`}>
                           {meta.prefix}
-                          {formatInrFromPaise(entry.amount)}
+                          {nativeFormatted ? nativeFormatted.nativeAmount : formatInrFromPaise(entry.amount)}
                         </div>
-                        <div className="text-[11px] font-mono text-slate-400 tabular-nums">
-                          {Number(entry.amount).toLocaleString()} paise · {formatUsdEquivalent(entry.amount)}
+                        <div className="text-[11px] font-mono text-slate-400 tabular-nums flex items-center justify-end gap-1">
+                          {nativeFormatted && <span>{nativeFormatted.flag}</span>}
+                          <span>{formatInrFromPaise(entry.amount)}</span>
                         </div>
                       </td>
 
@@ -794,26 +805,50 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             </div>
 
             {/* Key Monetary Breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <div>
-                <div className="text-[11px] font-medium text-slate-500">Amount (INR)</div>
-                <div className="text-lg font-bold font-mono tabular-nums text-slate-900 mt-0.5">
-                  {formatInrFromPaise(selectedEntry.amount)}
+            {(() => {
+              const selRelWallet =
+                selectedEntry.destination_wallet_id && walletMap.get(selectedEntry.destination_wallet_id)?.wallet_type !== 'PLATFORM_REVENUE'
+                  ? walletMap.get(selectedEntry.destination_wallet_id)
+                  : (selectedEntry.source_wallet_id ? walletMap.get(selectedEntry.source_wallet_id) : null);
+              const selNative = selRelWallet ? formatBalanceInNativeCurrency(selectedEntry.amount, selRelWallet.entity_id) : null;
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500">
+                      Native Country Currency
+                    </div>
+                    <div className="text-base font-bold font-mono tabular-nums text-slate-900 mt-0.5 flex items-center gap-1.5 truncate">
+                      {selNative ? (
+                        <>
+                          <span className="shrink-0">{selNative.flag}</span>
+                          <span className="truncate">{selNative.nativeAmount}</span>
+                        </>
+                      ) : (
+                        <span>—</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500">Amount (INR Ledger)</div>
+                    <div className="text-base font-bold font-mono tabular-nums text-slate-900 mt-0.5">
+                      {formatInrFromPaise(selectedEntry.amount)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500">BigInt Paise Value</div>
+                    <div className="text-xs font-semibold font-mono tabular-nums text-indigo-700 mt-1">
+                      {Number(selectedEntry.amount).toLocaleString()} paise
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500">Reference Key</div>
+                    <div className="text-xs font-semibold font-mono text-slate-800 mt-1 break-all">
+                      {selectedEntry.reference_id}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="text-[11px] font-medium text-slate-500">BigInt Paise Value</div>
-                <div className="text-sm font-semibold font-mono tabular-nums text-indigo-700 mt-1">
-                  {Number(selectedEntry.amount).toLocaleString()} paise
-                </div>
-              </div>
-              <div>
-                <div className="text-[11px] font-medium text-slate-500">Reference Key</div>
-                <div className="text-xs font-semibold font-mono text-slate-800 mt-1 break-all">
-                  {selectedEntry.reference_id}
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Double-Entry Flow */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

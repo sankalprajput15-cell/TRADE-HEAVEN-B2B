@@ -23,9 +23,7 @@ import { ALL_COUNTRY_ITEMS } from './data/countriesData';
 import { Header } from './components/marketplace/Header';
 import { LiveRfqTicker } from './components/marketplace/LiveRfqTicker';
 import { TradeHeavenSocialBar } from './components/common/TradeHeavenSocialBar';
-import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenFooter } from './components/common/TradeHeavenFooter';
-import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { GlobalErrorBoundary } from './components/common/GlobalErrorBoundary';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { SEOManager } from './components/common/SEOManager';
@@ -107,17 +105,19 @@ const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerPro
 const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
 const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
+const CustomerReviews = lazyWithRetry(() => import('./components/marketplace/CustomerReviews'), 'CustomerReviews');
+const TradeHeavenLiveChatWidget = lazyWithRetry(() => import('./components/common/TradeHeavenLiveChatWidget'), 'TradeHeavenLiveChatWidget');
 
-// Core Interactive Modals (Direct imports ensure zero dynamic chunk fetch failures)
-import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
-import { RfqDetailModal } from './components/marketplace/RfqDetailModal';
-import { SupplierStorefrontModal } from './components/marketplace/SupplierStorefrontModal';
-import { RfqCreationModal } from './components/marketplace/RfqCreationModal';
-import { UnifiedContactInquiryModal } from './components/modals/UnifiedContactInquiryModal';
-import { AuthModal } from './components/modals/AuthModal';
-import { PaymentCheckoutModal } from './components/modals/PaymentCheckoutModal';
-import { BackendDataManagementModal } from './components/modals/BackendDataManagementModal';
-import { CustomShareModal } from './components/modals/CustomShareModal';
+// Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
+const ProductDetailModal = lazyWithRetry(() => import('./components/marketplace/ProductDetailModal'), 'ProductDetailModal');
+const RfqDetailModal = lazyWithRetry(() => import('./components/marketplace/RfqDetailModal'), 'RfqDetailModal');
+const SupplierStorefrontModal = lazyWithRetry(() => import('./components/marketplace/SupplierStorefrontModal'), 'SupplierStorefrontModal');
+const RfqCreationModal = lazyWithRetry(() => import('./components/marketplace/RfqCreationModal'), 'RfqCreationModal');
+const UnifiedContactInquiryModal = lazyWithRetry(() => import('./components/modals/UnifiedContactInquiryModal'), 'UnifiedContactInquiryModal');
+const AuthModal = lazyWithRetry(() => import('./components/modals/AuthModal'), 'AuthModal');
+const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/PaymentCheckoutModal'), 'PaymentCheckoutModal');
+const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
+const CustomShareModal = lazyWithRetry(() => import('./components/modals/CustomShareModal'), 'CustomShareModal');
 import { 
   CustomLinkTarget, 
   resolveSupplierId, 
@@ -1697,7 +1697,7 @@ const MainApp: React.FC = () => {
               case 'TRUST_SAFETY':
                 return <TrustAndSafety />;
               case 'MEDIATOR_ENGINE':
-                return <TradeHeavenMediatorView />;
+                return <TradeHeavenMediatorView embedded={false} />;
               case 'INSIGHTS':
                 return <InsightsBlog onNavigate={handleNavigate} currentUser={currentUser} onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
               case 'PRODUCT_DIRECTORY':
@@ -2060,11 +2060,6 @@ const MainApp: React.FC = () => {
                       onUpdateCurrentUser={setCurrentUser}
                     />
                   </AdminRouteGuard>
-                );
-
-              case 'MEDIATOR_ENGINE':
-                return (
-                  <TradeHeavenMediatorView embedded={false} />
                 );
 
               case 'WALLET_TOPUP':

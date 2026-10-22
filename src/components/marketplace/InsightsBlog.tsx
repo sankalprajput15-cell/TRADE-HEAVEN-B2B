@@ -8,7 +8,7 @@ import {
 import blogImage from '../../assets/images/regenerated_image_1787916463995.jpg';
 import buyerNoMoneyImage from '../../assets/images/regenerated_image_1787986452542.jpg';
 import brokersImage from '../../assets/images/regenerated_image_1788177506942.jpg';
-import seriousSellerImage from '../../assets/images/regenerated_image_1788943920904.png';
+import seriousSellerImage from '../../assets/images/regenerated_image_1788943920904.webp';
 
 export const SERIOUS_SELLER_HASHTAGS = [
   '#OilAndGas',
