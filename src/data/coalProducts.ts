@@ -2,6 +2,54 @@ import { Product } from '../types';
 
 export const GLOBAL_COAL_PRODUCTS: any[] = [
   {
+    id: 'prod-zac-coal-thermal-01',
+    supplierId: 'comp-zac-importation-fadetech',
+    supplierName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    supplierCountry: 'Australia',
+    supplierTier: 'GOLD',
+    title: 'Australian High-CV Thermal Export Coal (GAR 6000 - 6500 kcal/kg)',
+    description: 'Premium Australian high-calorific thermal export coal sourced from Newcastle / Gladstone basins. Low ash (<9%), low sulfur (<0.5%), high GCV suitable for power utilities, cement kilns, and industrial boilers under Trade Protection Escrow.',
+    category: 'Energy & Minerals',
+    subCategory: 'Coal & Solid Fuels',
+    priceRangeUsd: '$120 - $145',
+    unit: 'MT',
+    minOrderQuantity: '5000',
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    specifications: [
+      { name: 'Gross Calorific Value (GCV)', value: '6000-6500 kcal/kg GAR' },
+      { name: 'Total Moisture', value: '8% - 12%' },
+      { name: 'Ash Content', value: '7.5% - 9.5%' },
+      { name: 'Volatile Matter', value: '30% - 35%' },
+      { name: 'Sulfur Content', value: '< 0.5% max' },
+      { name: 'Origin', value: 'Newcastle, NSW Australia' },
+      { name: 'Payment Terms', value: 'Irrevocable L/C at Sight / Trade Protection Escrow' }
+    ]
+  },
+  {
+    id: 'prod-zac-coal-coking-02',
+    supplierId: 'comp-zac-importation-fadetech',
+    supplierName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    supplierCountry: 'Australia',
+    supplierTier: 'GOLD',
+    title: 'Australian Premium Hard Coking Coal (CSR 68-72%) for Metallurgical Steelworks',
+    description: 'High-grade Australian metallurgical hard coking coal (HCC) with high CSR (Coke Strength after Reaction), low fluidity, low alkali and low phosphorus. Essential feedstock for blast furnaces and integrated steelworks worldwide.',
+    category: 'Energy & Minerals',
+    subCategory: 'Coal & Solid Fuels',
+    priceRangeUsd: '$210 - $265',
+    unit: 'MT',
+    minOrderQuantity: '10000',
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    specifications: [
+      { name: 'Coke Strength (CSR)', value: '68% - 72%' },
+      { name: 'Volatile Matter', value: '19.5% - 21.5%' },
+      { name: 'Ash Content', value: '8.5% - 9.5%' },
+      { name: 'Total Moisture', value: '9.0% max' },
+      { name: 'Sulfur', value: '0.55% max' },
+      { name: 'Phosphorus', value: '0.025% max' },
+      { name: 'Origin', value: 'Gladstone, QLD Australia' }
+    ]
+  },
+  {
     id: 'prod-coal-0',
     supplierId: 'comp-coal-0',
     supplierName: 'Global Resources LLC',

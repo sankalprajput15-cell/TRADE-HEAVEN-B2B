@@ -5,7 +5,6 @@ import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { NotificationBell } from './NotificationBell';
 import { LanguageRegionSelector } from './LanguageRegionSelector';
 import { HeaderWalletBalance } from './HeaderWalletBalance';
-import { LiveCurrencyExchangeWidget } from './LiveCurrencyExchangeWidget';
 import { SafeImage } from '../common/SafeImage';
 import {
   PlusCircle,
@@ -95,7 +94,7 @@ export const Header: React.FC<Props> = ({
   onSelectProduct,
   onNavigateToSearch
 }) => {
-  const { setCurrentUser } = useAuth();
+  const { setCurrentUser, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -161,7 +160,12 @@ export const Header: React.FC<Props> = ({
 
   const handleLogout = () => {
     setUserMenuOpen(false);
-    if (onLogout) onLogout();
+    if (onLogout) {
+      onLogout();
+    } else {
+      logout();
+      setCurrentUser(null);
+    }
   };
 
   const handleQuickDemoSession = (role: 'BUYER' | 'SUPPLIER') => {
@@ -258,10 +262,10 @@ export const Header: React.FC<Props> = ({
   const visibleMenuOptions = accountMenuOptions.filter(item => !item.authOnly || Boolean(currentUser));
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-[1440px] mx-auto w-full px-3 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-2.5 sm:gap-4">
+    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
+      <div className="max-w-[1440px] mx-auto w-full px-2.5 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
         {/* Zone 1: Brand Identity & Primary Navigation */}
-        <div className="flex items-center gap-3 lg:gap-5 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-5 shrink-0">
           <button
             type="button"
             onClick={() => handleNavClick('HOMEPAGE')}
@@ -271,7 +275,7 @@ export const Header: React.FC<Props> = ({
           </button>
 
           {/* Primary Inline Navigation Links */}
-          <nav aria-label="Main Navigation" className="hidden xl:flex items-center gap-1 h-16 shrink-0">
+          <nav aria-label="Main Navigation" className="hidden xl:flex items-center gap-1.5 h-16 shrink-0">
             {primaryNavItems.map(item => {
               const isActive = item.activeMatch.includes(activeView);
               return (
@@ -298,10 +302,10 @@ export const Header: React.FC<Props> = ({
         {/* Zone 2: Global Product & Supplier Search Bar */}
         <div
           ref={searchWrapperRef}
-          className="hidden md:block relative flex-1 min-w-[140px] max-w-[260px] lg:max-w-[320px] xl:max-w-[360px]"
+          className="relative flex-1 min-w-[90px] max-w-[160px] sm:max-w-[260px] lg:max-w-[340px] xl:max-w-[420px]"
         >
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
@@ -310,17 +314,17 @@ export const Header: React.FC<Props> = ({
                 setSearchTerm(e.target.value);
                 setSearchFocused(true);
               }}
-              placeholder="Search products, suppliers..."
-              className="w-full h-9 pl-8 pr-7 rounded-lg bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-600 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all"
+              placeholder="Search..."
+              className="w-full h-8 sm:h-9 pl-7 sm:pl-8 pr-6 rounded-lg bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-600 text-[11px] sm:text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="absolute right-1.5 p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
                 title="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             )}
           </form>
@@ -340,10 +344,10 @@ export const Header: React.FC<Props> = ({
                       handleNavClick('PRODUCT_DIRECTORY', { productId: prod.id });
                     }
                   }}
-                  className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
                       <SafeImage
                         src={prod.images?.[0]}
                         alt={prod.title}
@@ -354,15 +358,15 @@ export const Header: React.FC<Props> = ({
                       />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-900 truncate">
+                      <div className="text-[11px] sm:text-xs font-semibold text-slate-900 truncate">
                         {prod.title}
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate">
+                      <div className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                         {prod.category} · <span className="font-mono">{prod.id}</span>
                       </div>
                     </div>
                   </div>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <ArrowUpRight className="w-3 h-3 text-slate-400 shrink-0" />
                 </button>
               ))}
             </div>
@@ -370,13 +374,7 @@ export const Header: React.FC<Props> = ({
         </div>
 
         {/* Zone 3: Wallet Balance, Primary CTA & Account Menu */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Live Currency Exchange & Real-Time Market Rates Converter */}
-          <LiveCurrencyExchangeWidget
-            selectedCurrency={selectedCurrency}
-            onCurrencySelect={handleCurrencySelect}
-          />
-
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Authenticated User Wallet Balance (available_balance & locked_balance) + Top-Up */}
           {currentUser && (
             <HeaderWalletBalance
@@ -391,10 +389,11 @@ export const Header: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenCreateRfq}
-            className="h-9 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+            className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-            <span>Post RFQ</span>
+            <span className="hidden sm:inline">Post RFQ</span>
+            <span className="sm:hidden">RFQ</span>
           </button>
 
           <NotificationBell onNavigate={handleNavClick} />
@@ -402,42 +401,57 @@ export const Header: React.FC<Props> = ({
           {/* Account Toggle Dropdown */}
           <div className="relative shrink-0" ref={userMenuRef}>
             {currentUser ? (
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(prev => !prev)}
-                className="h-9 pl-2 pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-2 transition-colors text-left cursor-pointer shrink-0"
-              >
-                <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0">
-                  <SafeImage
-                    src={currentUser.avatarUrl}
-                    alt={currentUser.name}
-                    className="w-full h-full object-cover"
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(prev => !prev)}
+                  className="h-8 sm:h-9 pl-1.5 sm:pl-2 pr-2 sm:pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-1.5 sm:gap-2 transition-colors text-left cursor-pointer shrink-0"
+                  title="Open Account Menu"
+                >
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0">
+                    <SafeImage
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="hidden lg:block leading-none max-w-[96px]">
+                    <div className="text-xs font-semibold text-slate-900 truncate">
+                      {currentUser.name.split(' ')[0]}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-medium mt-0.5 truncate">
+                      {currentUser.role}
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0 transition-transform duration-150 ${
+                      userMenuOpen ? 'rotate-180' : ''
+                    }`}
                   />
-                </div>
-                <div className="hidden lg:block leading-none max-w-[96px]">
-                  <div className="text-xs font-semibold text-slate-900 truncate">
-                    {currentUser.name.split(' ')[0]}
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-medium mt-0.5 truncate">
-                    {currentUser.role}
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-500 shrink-0 transition-transform duration-150 ${
-                    userMenuOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+                </button>
+
+                {/* Direct Logout Button */}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
+                  title="Sign Out / Logout"
+                  data-testid="header-logout-button"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </div>
             ) : (
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(prev => !prev)}
-                className="h-9 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 <User className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                <span>Account</span>
+                <span className="hidden sm:inline">Account</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
+                  className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
                     userMenuOpen ? 'rotate-180' : ''
                   }`}
                 />
@@ -446,7 +460,7 @@ export const Header: React.FC<Props> = ({
 
             {/* Account Toggle Menu Dropdown */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-1.25rem)] sm:w-96 max-w-sm max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
                 {/* User Identity or Sign In Header */}
                 {currentUser ? (
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 flex items-center justify-between gap-2">

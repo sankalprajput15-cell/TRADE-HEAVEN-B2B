@@ -80,7 +80,7 @@ export const PremiumServicesView: React.FC<Props> = ({
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
   const [supportType, setSupportType] = useState('Payment Link Request');
-  const [customAmount, setCustomAmount] = useState(4100);
+  const [customAmount, setCustomAmount] = useState(6100);
   const [supportNotes, setSupportNotes] = useState('');
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportSuccess, setSupportSuccess] = useState(false);
@@ -529,7 +529,7 @@ export const PremiumServicesView: React.FC<Props> = ({
                   <th className="p-4 sm:p-6 text-sm font-black text-slate-900 w-1/4">Feature Capability</th>
                   <th className="p-4 sm:p-6 text-sm font-black text-emerald-700 w-1/4 text-center border-l border-emerald-100 bg-emerald-50/50">Basic Business ($1100/yr)</th>
                   <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/4 text-center border-l border-blue-100 bg-blue-50/50">Premium Partner ($2100/yr)</th>
-                  <th className="p-4 sm:p-6 text-sm font-black text-amber-700 w-1/4 text-center border-l border-amber-100 bg-amber-50/50">VIP Business ($4100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-amber-700 w-1/4 text-center border-l border-amber-100 bg-amber-50/50">VIP Business ($6100/yr)</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -653,7 +653,7 @@ export const PremiumServicesView: React.FC<Props> = ({
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="p-4 sm:p-6 text-sm font-black text-slate-900 w-1/3">Feature Capability</th>
                   <th className="p-4 sm:p-6 text-sm font-black text-slate-500 w-1/3 text-center border-l border-slate-200">Standard Access (Free)</th>
-                  <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/3 text-center border-l border-blue-100 bg-blue-50/50">Advance Buyer Plan ($4100/yr)</th>
+                  <th className="p-4 sm:p-6 text-sm font-black text-blue-700 w-1/3 text-center border-l border-blue-100 bg-blue-50/50">Advance Buyer Plan ($6100/yr)</th>
                 </tr>
               </thead>
               <tbody className="text-sm">

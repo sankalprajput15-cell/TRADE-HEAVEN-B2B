@@ -1583,7 +1583,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
-      <main className="flex-1 w-full overflow-x-hidden px-4 sm:px-6 lg:px-10 xl:px-12 py-2 sm:py-3 min-h-[calc(100vh-160px)]">
+      <main className="flex-1 w-full max-w-[1600px] 2xl:max-w-[1800px] mx-auto overflow-x-hidden px-3 sm:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 min-h-[calc(100vh-160px)]">
         {/* Shared Custom Note Banner when ?note=... is present in the URL */}
         {sharedNote && (
           <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-lg border border-blue-500/30 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">

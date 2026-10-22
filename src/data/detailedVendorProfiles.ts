@@ -625,6 +625,93 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       monthlyCapacity: '10,000 Metric Tons & Units / Month'
     }
   },
+  'comp-zac-importation-fadetech': {
+    id: 'comp-zac-importation-fadetech',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    tradeName: 'IMPORTATION FADE-TECH',
+    legalRegistrationNumber: 'TRD-INV-27-0004',
+    country: 'Australia',
+    city: 'Hurstville, NSW',
+    address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+    establishedYear: 2018,
+    yearsInBusiness: 8,
+    businessType: 'Australian Coal Exporter & Energy Commodities Merchant',
+    tier: 'GOLD',
+    memberTierLabel: 'Trade Heaven Basic Business Plan (Premium Seller Services) • Invoice TRD-INV-27-0004',
+    isVerifiedKYC: true,
+    kycVerificationDate: '2026-09-04',
+    trustScore: 99,
+    responseRate: '99.8%',
+    avgResponseTime: '< 30 mins',
+    totalEmployees: '50-100 Staff',
+    annualRevenueUsd: '$35M - $70M USD',
+    tradeAssuranceLimitUsd: 1500000,
+    completedOrdersCount: 215,
+    factorySizeSqM: 45000,
+    productionLines: 8,
+    logoUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
+    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80',
+    tagline: 'Verified Australian Thermal & Coking Coal Exporter • Premium Seller Services Member',
+    description: 'IMPORTATION FADE-TECH (42a Bassett street hurstville, Australia | Zac@otec.ltd) is a verified Trade Heaven Basic Business Plan (Premium Seller Services) member with invoice TRD-INV-27-0004. Specializing in high-calorific Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal for steelworks, and High-Carbon PCI Coal. Authorized Representative: Zachary Aldin (+61 424 854 899). Accepted Payment: Bank Wire Transfer, L/C at sight, Trade Protection Escrow.',
+    acceptedPaymentTerms: ['Bank Wire Transfer', 'Irrevocable L/C at Sight', 'Trade Protection Escrow', 'SBLC / DLC'],
+    supportedIncotermsList: ['FOB', 'CIF', 'CFR'],
+    portsOfDispatch: ['Port of Newcastle, NSW Australia', 'Port of Gladstone, QLD Australia', 'Hay Point Coal Terminal, QLD Australia'],
+    marketDistribution: [
+      { market: 'Asia-Pacific & Japan', percentage: 50 },
+      { market: 'South Asia & India', percentage: 25 },
+      { market: 'Europe & UK', percentage: 15 },
+      { market: 'Middle East', percentage: 10 }
+    ],
+    contactPerson: 'Zachary Aldin',
+    contactEmail: 'Zac@otec.ltd',
+    contactPhone: '+61 424 854 899',
+    whatsapp: '+61424854899',
+    contactPersonDetails: {
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+      name: 'Zachary Aldin',
+      designation: 'Authorized Representative / Managing Director — Coal Export Division',
+      email: 'Zac@otec.ltd',
+      phone: '+61 424 854 899',
+      whatsapp: '+61424854899',
+      languages: ['English'],
+      isVerified: true,
+      responseTime: '< 30 mins'
+    },
+    complianceCertificates: [
+      {
+        id: 'cert-th-sow-01',
+        name: 'Trade Heaven B2B Service Agreement & Statement of Work',
+        category: 'COMPLIANCE',
+        certificateNumber: 'TRD-INV-27-0004',
+        issuingAuthority: 'Trade Heaven Ecom Solution',
+        issueDate: '2026-09-04',
+        expiryDate: '2027-09-04',
+        documentUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
+        thumbnailUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
+        type: 'PDF',
+        verified: true
+      },
+      {
+        id: 'cert-aus-coal-02',
+        name: 'SGS Australian Coal Quality Inspection & Calorific Value Certificate',
+        category: 'QUALITY',
+        certificateNumber: 'SGS-AU-COAL-2026-88',
+        issuingAuthority: 'SGS Australia Inspection Services',
+        issueDate: '2026-08-15',
+        expiryDate: '2027-08-14',
+        documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+        type: 'IMAGE',
+        verified: true
+      }
+    ],
+    factoryDetails: {
+      factorySizeSqM: 45000,
+      productionLines: 8,
+      annualOutputUnits: '2,500,000 Metric Tons / Year',
+      monthlyCapacity: '210,000 Metric Tons / Month'
+    }
+  },
   'comp-melissa-mpcommodity': {
     id: 'comp-melissa-mpcommodity',
     companyName: 'MP Commodity Brokers Australia Pty Ltd',

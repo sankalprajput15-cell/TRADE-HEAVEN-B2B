@@ -173,76 +173,40 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
   return (
     <>
       <div className="relative flex items-center shrink-0" ref={containerRef}>
-        {/* Unified Header Wallet Balance Bar + Top-Up Button */}
-        <div
-          className={`h-9 rounded-lg border flex items-center transition-colors shrink-0 overflow-hidden bg-white ${
+        {/* Compact Toggle Pill Button */}
+        <button
+          type="button"
+          onClick={() => setPopoverOpen(prev => !prev)}
+          className={`h-8 sm:h-9 p-1 pr-2.5 rounded-full border flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shadow-2xs group active:scale-95 bg-white ${
             pulseHighlight
               ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-              : isActiveView
-              ? 'border-emerald-500/70'
-              : 'border-slate-200 hover:border-slate-300'
+              : isActiveView || popoverOpen
+              ? 'border-emerald-500 bg-emerald-50/40'
+              : 'border-slate-200 hover:border-emerald-400 hover:bg-slate-50'
           }`}
+          title={`Toggle Wallet Balance (${walletCurrency.country} • ${walletCurrency.currencyCode})`}
+          aria-expanded={popoverOpen}
+          data-testid="header-wallet-toggle-button"
         >
-          {/* Balance Trigger (Available + Locked) in Native Country Currency */}
-          <button
-            type="button"
-            onClick={() => setPopoverOpen(prev => !prev)}
-            className="h-full px-2.5 flex items-center gap-2 hover:bg-slate-50 transition-colors cursor-pointer text-left shrink-0 whitespace-nowrap"
-            title={`View Available & Escrow Locked Wallet Balances (${walletCurrency.country} • ${walletCurrency.currencyCode})`}
-          >
-            <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          {/* Left Emerald Icon Pill */}
+          <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-mono font-bold text-[10px] flex items-center gap-1 shadow-2xs group-hover:bg-emerald-700 transition-colors shrink-0">
+            <Wallet className="w-3 h-3 text-white shrink-0" />
+            <span className="hidden sm:inline">Wallet</span>
+          </span>
 
-            {/* Available Balance in Country Currency */}
-            <div className="flex items-center gap-1 whitespace-nowrap">
-              <span className="text-[11px] font-medium text-slate-500">
-                Avail
-              </span>
-              <span
-                className="text-xs font-bold font-mono tabular-nums text-emerald-700"
-                data-testid="header-available-balance"
-              >
-                {nativeAvailCompact.primary}
-              </span>
-            </div>
+          {/* Compact Available Balance Readout */}
+          <div className="flex items-center gap-1 leading-none whitespace-nowrap font-mono text-xs font-bold text-slate-900">
+            <span className="text-emerald-700 font-mono font-bold" data-testid="header-available-balance">
+              {nativeAvailCompact.primary}
+            </span>
+          </div>
 
-            <span className="h-3.5 w-px bg-slate-200 shrink-0" aria-hidden="true" />
-
-            {/* Locked Balance in Country Currency */}
-            <div className="hidden sm:flex items-center gap-1 whitespace-nowrap">
-              <Lock className="w-3 h-3 text-amber-600 shrink-0" />
-              <span className="text-[11px] font-medium text-slate-500 hidden lg:inline">
-                Locked
-              </span>
-              <span
-                className="text-xs font-semibold font-mono tabular-nums text-amber-700"
-                data-testid="header-locked-balance"
-              >
-                {nativeLockedCompact.primary}
-              </span>
-            </div>
-
-            <ChevronDown
-              className={`w-3 h-3 text-slate-400 transition-transform duration-150 shrink-0 ${
-                popoverOpen ? 'rotate-180' : ''
-              }`}
-            />
-          </button>
-
-          {/* Direct Top-Up Action Button inside the Wallet Component */}
-          <button
-            type="button"
-            onClick={() => {
-              setPopoverOpen(false);
-              onOpenTopUp();
-            }}
-            className="h-full px-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            title="Open Dedicated Top-Up Wallet Page"
-            data-testid="header-topup-button"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-            <span>Top-Up</span>
-          </button>
-        </div>
+          <ChevronDown
+            className={`w-3 h-3 text-slate-400 group-hover:text-emerald-700 transition-transform duration-200 shrink-0 ${
+              popoverOpen ? 'rotate-180 text-emerald-700' : ''
+            }`}
+          />
+        </button>
 
         {/* Wallet Breakdown Dropdown Popover */}
         {popoverOpen && (
