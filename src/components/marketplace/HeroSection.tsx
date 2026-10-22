@@ -490,57 +490,64 @@ export const HeroSection: React.FC<Props> = ({
         {/* ------------------------------------------------------------- */}
         <div ref={containerRef} className="relative max-w-4xl">
 
-          {/* Search Target Mode Switcher Pills */}
-          <div className="flex items-center gap-2 mb-2.5 overflow-x-auto no-scrollbar">
+          {/* Search Target Mode Segmented Tab Bar */}
+          <div
+            role="tablist"
+            aria-label="Search Target Mode"
+            className="inline-flex items-center gap-1 p-1 mb-3 rounded-xl bg-slate-900/85 border border-slate-700/80 backdrop-blur-md overflow-x-auto max-w-full"
+          >
             <button
+              role="tab"
+              aria-selected={searchTargetMode === 'PRODUCTS'}
               type="button"
               onClick={() => {
                 setSearchTargetMode('PRODUCTS');
                 setActiveFilter('PRODUCTS');
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 searchTargetMode === 'PRODUCTS'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 border border-slate-700/80'
+                  ? 'bg-white text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
               }`}
             >
-              <Package className="w-3.5 h-3.5" />
+              <Package className={`w-3.5 h-3.5 shrink-0 ${searchTargetMode === 'PRODUCTS' ? 'text-blue-600' : 'text-slate-400'}`} />
               <span>{t('searchProductsTab')}</span>
             </button>
 
             <button
+              role="tab"
+              aria-selected={searchTargetMode === 'RFQS'}
               type="button"
               onClick={() => {
                 setSearchTargetMode('RFQS');
                 setActiveFilter('RFQS');
                 setIsSearchPopoverOpen(true);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 searchTargetMode === 'RFQS'
-                  ? 'bg-emerald-500 text-slate-950 font-black shadow-md ring-2 ring-emerald-400/50'
-                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-emerald-300 border border-emerald-500/50'
+                  ? 'bg-white text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
               }`}
             >
-              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <FileText className={`w-3.5 h-3.5 shrink-0 ${searchTargetMode === 'RFQS' ? 'text-emerald-600' : 'text-slate-400'}`} />
               <span>{t('searchRfqsTab')}</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black uppercase tracking-wider animate-pulse">
-                LIVE
-              </span>
             </button>
 
             <button
+              role="tab"
+              aria-selected={searchTargetMode === 'SUPPLIERS'}
               type="button"
               onClick={() => {
                 setSearchTargetMode('SUPPLIERS');
                 setActiveFilter('SUPPLIERS');
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                 searchTargetMode === 'SUPPLIERS'
-                  ? 'bg-amber-500 text-slate-950 font-black shadow-md'
-                  : 'bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 border border-slate-700/80'
+                  ? 'bg-white text-slate-950 shadow-2xs'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
               }`}
             >
-              <Building2 className="w-3.5 h-3.5 text-amber-400" />
+              <Building2 className={`w-3.5 h-3.5 shrink-0 ${searchTargetMode === 'SUPPLIERS' ? 'text-blue-600' : 'text-slate-400'}`} />
               <span>{t('searchSuppliersTab')}</span>
             </button>
           </div>
@@ -720,18 +727,18 @@ export const HeroSection: React.FC<Props> = ({
                   </span>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0 text-[11px] font-bold">
+                {/* Segmented Filter Tabs */}
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-800/90 border border-slate-700/80 overflow-x-auto text-[11px] font-semibold">
                   <button
                     type="button"
                     onClick={() => setActiveFilter('ALL')}
-                    className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                       activeFilter === 'ALL'
-                        ? 'bg-amber-400 text-slate-950 font-black shadow-xs'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+                        ? 'bg-white text-slate-950 font-semibold shadow-2xs'
+                        : 'text-slate-300 hover:text-white'
                     }`}
                   >
-                    <LayoutGrid className="w-3 h-3 text-amber-500 shrink-0" />
+                    <LayoutGrid className="w-3 h-3 shrink-0" />
                     <span>All</span>
                   </button>
 
@@ -739,13 +746,13 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('RFQS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'RFQS'
-                          ? 'bg-emerald-400 text-slate-950 font-black shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700/60'
+                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
+                          : 'text-slate-300 hover:text-white'
                       }`}
                     >
-                      <FileText className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <FileText className="w-3 h-3 shrink-0" />
                       <span>RFQs</span>
                     </button>
                   )}
@@ -754,13 +761,13 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('PRODUCTS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'PRODUCTS'
-                          ? 'bg-sky-400 text-slate-950 font-black shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700/60'
+                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
+                          : 'text-slate-300 hover:text-white'
                       }`}
                     >
-                      <Package className="w-3 h-3 text-sky-400 shrink-0" />
+                      <Package className="w-3 h-3 shrink-0" />
                       <span>Products</span>
                     </button>
                   )}
@@ -769,13 +776,13 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('SUPPLIERS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'SUPPLIERS'
-                          ? 'bg-purple-400 text-slate-950 font-black shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700/60'
+                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
+                          : 'text-slate-300 hover:text-white'
                       }`}
                     >
-                      <Building2 className="w-3 h-3 text-purple-400 shrink-0" />
+                      <Building2 className="w-3 h-3 shrink-0" />
                       <span>Suppliers</span>
                     </button>
                   )}
@@ -784,13 +791,13 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('TOOLS')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'TOOLS'
-                          ? 'bg-indigo-400 text-slate-950 font-black shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/60'
+                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
+                          : 'text-slate-300 hover:text-white'
                       }`}
                     >
-                      <Wrench className="w-3 h-3 text-indigo-400 shrink-0" />
+                      <Wrench className="w-3 h-3 shrink-0" />
                       <span>Tools</span>
                     </button>
                   )}
@@ -799,13 +806,13 @@ export const HeroSection: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={() => setActiveFilter('CATEGORIES')}
-                      className={`px-2.5 py-1 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'CATEGORIES'
-                          ? 'bg-blue-400 text-slate-950 font-black shadow-xs'
-                          : 'bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700/60'
+                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
+                          : 'text-slate-300 hover:text-white'
                       }`}
                     >
-                      <Layers className="w-3 h-3 text-blue-400 shrink-0" />
+                      <Layers className="w-3 h-3 shrink-0" />
                       <span>Trade Metrics</span>
                     </button>
                   )}

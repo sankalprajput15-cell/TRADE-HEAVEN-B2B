@@ -99,7 +99,7 @@ export const VIEW_ALIASES: Record<string, ActiveView> = {
   plans: 'PREMIUM_SERVICES',
   about: 'ABOUT_US',
   'about-us': 'ABOUT_US',
-  'about-trade-heaven': 'ABOUT_TRADE_HEAVEN',
+  'about-trade-heaven': 'ABOUT_US',
   trust: 'TRUST_SAFETY',
   'trust-safety': 'TRUST_SAFETY',
   safety: 'TRUST_SAFETY',

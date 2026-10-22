@@ -11,7 +11,6 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Lock,
-  CheckCircle2,
   ShieldCheck,
   Landmark,
   Search,
@@ -21,13 +20,10 @@ import {
   Terminal,
   Copy,
   Check,
-  Building2,
   CreditCard,
-  ArrowRight,
   Layers,
   Eye,
   X,
-  FileText,
   Sparkles,
   Database
 } from 'lucide-react';
@@ -159,7 +155,6 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
     if (!state?.ledgerEntries) return [];
 
     return state.ledgerEntries.filter(entry => {
-      // Category filter
       if (categoryFilter === 'DEPOSIT' && entry.transaction_type !== 'WALLET_TOPUP') {
         return false;
       }
@@ -173,12 +168,10 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         return false;
       }
 
-      // Exact transaction_type filter
       if (exactTypeFilter !== 'ALL' && entry.transaction_type !== exactTypeFilter) {
         return false;
       }
 
-      // Wallet filter
       if (
         walletFilter !== 'ALL' &&
         entry.source_wallet_id !== walletFilter &&
@@ -187,7 +180,6 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         return false;
       }
 
-      // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const srcWallet = entry.source_wallet_id ? walletMap.get(entry.source_wallet_id) : null;
@@ -266,52 +258,52 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
     document.body.removeChild(link);
   };
 
-  const getTransactionTypeBadge = (type: LedgerTransactionType) => {
+  const getTransactionTypeMeta = (type: LedgerTransactionType) => {
     switch (type) {
       case 'WALLET_TOPUP':
         return {
           label: 'WALLET_TOPUP',
           categoryLabel: 'Deposit',
-          badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          textClass: 'text-emerald-700',
           amountClass: 'text-emerald-600',
           prefix: '+',
-          icon: <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+          icon: <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
         };
       case 'ORDER_LOCK_ESCROW':
         return {
           label: 'ORDER_LOCK_ESCROW',
           categoryLabel: 'Escrow Hold',
-          badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+          textClass: 'text-amber-700',
           amountClass: 'text-amber-700',
-          prefix: '🔒 ',
-          icon: <Lock className="w-3.5 h-3.5 text-amber-600" />
+          prefix: '',
+          icon: <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
         };
       case 'ESCROW_RELEASE':
         return {
           label: 'ESCROW_RELEASE',
           categoryLabel: 'Escrow Payout',
-          badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+          textClass: 'text-blue-700',
           amountClass: 'text-blue-600',
-          prefix: '→ ',
-          icon: <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+          prefix: '',
+          icon: <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
         };
       case 'PLATFORM_FEE':
         return {
           label: 'PLATFORM_FEE',
           categoryLabel: 'Mediation Fee',
-          badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+          textClass: 'text-indigo-700',
           amountClass: 'text-indigo-600',
           prefix: '+',
-          icon: <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+          icon: <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
         };
       case 'SUPPLIER_PAYOUT':
         return {
           label: 'SUPPLIER_PAYOUT',
           categoryLabel: 'Bank Withdrawal',
-          badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+          textClass: 'text-purple-700',
           amountClass: 'text-purple-700',
           prefix: '-',
-          icon: <ArrowUpRight className="w-3.5 h-3.5 text-purple-600" />
+          icon: <ArrowUpRight className="w-3.5 h-3.5 text-purple-600 shrink-0" />
         };
     }
   };
@@ -320,8 +312,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
     if (!walletId) {
       return (
         <div className="text-xs">
-          <div className="font-semibold text-slate-600">{fallbackLabel}</div>
-          <div className="text-[10px] font-mono text-slate-400">{fallbackSub}</div>
+          <div className="font-medium text-slate-700">{fallbackLabel}</div>
+          <div className="text-[11px] font-mono text-slate-400">{fallbackSub}</div>
         </div>
       );
     }
@@ -330,30 +322,29 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
     if (!w) {
       return (
         <div className="text-xs">
-          <div className="font-mono font-bold text-slate-700">{walletId}</div>
+          <div className="font-mono font-semibold text-slate-700">{walletId}</div>
         </div>
       );
     }
 
     const roleColor =
       w.wallet_type === 'BUYER'
-        ? 'bg-blue-50 text-blue-700 border-blue-200'
+        ? 'text-blue-600'
         : w.wallet_type === 'SUPPLIER'
-        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-        : 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        ? 'text-emerald-600'
+        : 'text-indigo-600';
 
     return (
       <div className="space-y-0.5">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border uppercase ${roleColor}`}>
+        <div className="text-xs font-semibold text-slate-900 truncate max-w-[200px]" title={w.company_name}>
+          {w.company_name}
+        </div>
+        <div className="text-[11px] text-slate-500 flex items-center gap-1.5 font-mono">
+          <span className={`font-semibold ${roleColor}`}>
             {w.wallet_type === 'PLATFORM_REVENUE' ? 'TREASURY' : w.wallet_type}
           </span>
-          <span className="text-xs font-bold text-slate-900 truncate max-w-[170px]" title={w.company_name}>
-            {w.company_name}
-          </span>
-        </div>
-        <div className="text-[10px] font-mono text-slate-500">
-          {w.id} • {w.entity_name}
+          <span aria-hidden="true">·</span>
+          <span>{w.id}</span>
         </div>
       </div>
     );
@@ -361,201 +352,187 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-slate-700/60">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold border border-indigo-400/30">
-              <Database className="w-3.5 h-3.5" />
-              <span>Immutable Double-Entry SQL Ledger (`ledger_entries`)</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
-              Transaction Ledger &amp; Audit History
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Real-time feed of all database ledger records across gateway deposits (<code className="text-emerald-300 font-mono">WALLET_TOPUP</code>),
-              escrow locks &amp; mediated supplier settlements (<code className="text-amber-300 font-mono">ORDER_LOCK_ESCROW</code>, <code className="text-blue-300 font-mono">ESCROW_RELEASE</code>, <code className="text-indigo-300 font-mono">PLATFORM_FEE</code>),
-              and bank withdrawals (<code className="text-purple-300 font-mono">SUPPLIER_PAYOUT</code>).
-            </p>
+      {/* Header Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div className="space-y-1.5 max-w-2xl">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600">
+            <Database className="w-3.5 h-3.5" />
+            <span>Double-Entry SQL Ledger (`ledger_entries`)</span>
+            <span aria-hidden="true">·</span>
+            <span className="text-slate-500 font-mono">{metrics.totalCount} Committed Records</span>
           </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            Transaction Ledger &amp; Audit History
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Real-time database feed of buyer gateway deposits (<code className="text-slate-800 font-mono">WALLET_TOPUP</code>),
+            escrow locks and mediated supplier settlements (<code className="text-slate-800 font-mono">ORDER_LOCK_ESCROW</code>, <code className="text-slate-800 font-mono">ESCROW_RELEASE</code>, <code className="text-slate-800 font-mono">PLATFORM_FEE</code>),
+            and bank withdrawals (<code className="text-slate-800 font-mono">SUPPLIER_PAYOUT</code>).
+          </p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {onNavigateToTopUp && (
-              <button
-                type="button"
-                onClick={onNavigateToTopUp}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm cursor-pointer"
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>+ Top-Up Deposit</span>
-              </button>
-            )}
-            {onNavigateToMediationEngine && (
-              <button
-                type="button"
-                onClick={onNavigateToMediationEngine}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm cursor-pointer"
-              >
-                <Layers className="w-4 h-4" />
-                <span>Escrow &amp; Payout Console</span>
-              </button>
-            )}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {onNavigateToTopUp && (
             <button
               type="button"
-              onClick={handleExportCsv}
-              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-2 border border-white/15 transition-all cursor-pointer"
+              onClick={onNavigateToTopUp}
+              className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Top-Up Deposit</span>
             </button>
+          )}
+          {onNavigateToMediationEngine && (
             <button
               type="button"
-              onClick={loadLedgerState}
-              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all cursor-pointer"
-              title="Refresh Database Ledger"
+              onClick={onNavigateToMediationEngine}
+              className="h-9 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <Layers className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Escrow Console</span>
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="h-9 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={loadLedgerState}
+            className="h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+            title="Refresh Database Ledger"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
         </div>
       </div>
 
       {/* Summary KPI Cards by Transaction Category */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div
+        <button
+          type="button"
           onClick={() => {
             setCategoryFilter('DEPOSIT');
             setExactTypeFilter('ALL');
           }}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
+          className={`p-5 rounded-xl border text-left transition-colors cursor-pointer ${
             categoryFilter === 'DEPOSIT'
-              ? 'bg-emerald-50/70 border-emerald-400 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-emerald-300 shadow-sm'
+              ? 'bg-emerald-50/50 border-emerald-400'
+              : 'bg-white border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Gateway Deposits (Top-Ups)</span>
-            <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
-              <ArrowDownLeft className="w-4 h-4" />
-            </span>
+            <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-slate-900 font-mono">
+          <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
             {formatInrFromPaise(metrics.totalDepositsPaise)}
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px]">
-            <span className="font-mono text-emerald-700 font-bold">
-              {metrics.depositCount} WALLET_TOPUP entries
+          <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
+            <span className="text-emerald-700 font-medium">
+              {metrics.depositCount} WALLET_TOPUP
             </span>
-            <span className="text-slate-400 font-mono">
-              ≈ {formatUsdEquivalent(metrics.totalDepositsPaise)}
-            </span>
+            <span>≈ {formatUsdEquivalent(metrics.totalDepositsPaise)}</span>
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => {
             setCategoryFilter('ESCROW');
             setExactTypeFilter('ALL');
           }}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
-            categoryFilter === 'ESCROW'
-              ? 'bg-amber-50/70 border-amber-400 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-amber-300 shadow-sm'
+          className={`p-5 rounded-xl border text-left transition-colors cursor-pointer ${
+            categoryFilter === 'ESCROW' && exactTypeFilter === 'ALL'
+              ? 'bg-amber-50/50 border-amber-400'
+              : 'bg-white border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Escrow Locked &amp; Settled</span>
-            <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
-              <Lock className="w-4 h-4" />
-            </span>
+            <Lock className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-slate-900 font-mono">
+          <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
             {formatInrFromPaise(metrics.totalEscrowLockedPaise + metrics.totalEscrowReleasedPaise)}
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px]">
-            <span className="font-mono text-amber-700 font-bold">
-              Locked: {formatInrFromPaise(metrics.totalEscrowLockedPaise)}
-            </span>
-            <span className="text-blue-600 font-mono font-bold">
-              Released: {formatInrFromPaise(metrics.totalEscrowReleasedPaise)}
-            </span>
+          <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
+            <span>Hold: {formatInrFromPaise(metrics.totalEscrowLockedPaise)}</span>
+            <span>Paid: {formatInrFromPaise(metrics.totalEscrowReleasedPaise)}</span>
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => {
             setCategoryFilter('ESCROW');
             setExactTypeFilter('PLATFORM_FEE');
           }}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
+          className={`p-5 rounded-xl border text-left transition-colors cursor-pointer ${
             exactTypeFilter === 'PLATFORM_FEE'
-              ? 'bg-indigo-50/70 border-indigo-400 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-indigo-300 shadow-sm'
+              ? 'bg-indigo-50/50 border-indigo-400'
+              : 'bg-white border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Platform Mediation Fees</span>
-            <span className="p-2 rounded-xl bg-indigo-100 text-indigo-700">
-              <ShieldCheck className="w-4 h-4" />
-            </span>
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-slate-900 font-mono">
+          <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
             {formatInrFromPaise(metrics.totalPlatformFeesPaise)}
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px]">
-            <span className="font-mono text-indigo-700 font-bold">
-              PLATFORM_FEE (2.5% Comm.)
-            </span>
-            <span className="text-slate-400 font-mono">
-              ≈ {formatUsdEquivalent(metrics.totalPlatformFeesPaise)}
-            </span>
+          <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
+            <span className="text-indigo-700 font-medium">PLATFORM_FEE (2.5%)</span>
+            <span>≈ {formatUsdEquivalent(metrics.totalPlatformFeesPaise)}</span>
           </div>
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => {
             setCategoryFilter('WITHDRAWAL');
             setExactTypeFilter('ALL');
           }}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer ${
+          className={`p-5 rounded-xl border text-left transition-colors cursor-pointer ${
             categoryFilter === 'WITHDRAWAL'
-              ? 'bg-purple-50/70 border-purple-400 shadow-sm'
-              : 'bg-white border-slate-200 hover:border-purple-300 shadow-sm'
+              ? 'bg-purple-50/50 border-purple-400'
+              : 'bg-white border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-500">
             <span>Bank Payout Withdrawals</span>
-            <span className="p-2 rounded-xl bg-purple-100 text-purple-700">
-              <Landmark className="w-4 h-4" />
-            </span>
+            <Landmark className="w-4 h-4 text-purple-600" />
           </div>
-          <div className="mt-2 text-xl sm:text-2xl font-black text-slate-900 font-mono">
+          <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
             {formatInrFromPaise(metrics.totalWithdrawalsPaise)}
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px]">
-            <span className="font-mono text-purple-700 font-bold">
-              {metrics.withdrawalCount} SUPPLIER_PAYOUT entries
+          <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
+            <span className="text-purple-700 font-medium">
+              {metrics.withdrawalCount} SUPPLIER_PAYOUT
             </span>
-            <span className="text-slate-400 font-mono">
-              IMPS / NEFT / SWIFT
-            </span>
+            <span>IMPS · NEFT · SWIFT</span>
           </div>
-        </div>
+        </button>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Category Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            {(
-              [
-                { id: 'ALL', label: `All Transactions (${metrics.totalCount})` },
-                { id: 'DEPOSIT', label: `Deposits (${metrics.depositCount})` },
-                { id: 'ESCROW', label: `Escrow & Fees (${metrics.escrowCount})` },
-                { id: 'WITHDRAWAL', label: `Withdrawals (${metrics.withdrawalCount})` }
-              ] as Array<{ id: CategoryFilter; label: string }>
-            ).map(tab => (
+      {/* Filter & Search Toolbar */}
+      <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        {/* Segmented Category Tabs */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200/80 overflow-x-auto">
+          {(
+            [
+              { id: 'ALL', label: `All Entries (${metrics.totalCount})` },
+              { id: 'DEPOSIT', label: `Deposits (${metrics.depositCount})` },
+              { id: 'ESCROW', label: `Escrow & Fees (${metrics.escrowCount})` },
+              { id: 'WITHDRAWAL', label: `Withdrawals (${metrics.withdrawalCount})` }
+            ] as Array<{ id: CategoryFilter; label: string }>
+          ).map(tab => {
+            const isActive = categoryFilter === tab.id && exactTypeFilter === 'ALL';
+            return (
               <button
                 key={tab.id}
                 type="button"
@@ -563,95 +540,93 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                   setCategoryFilter(tab.id);
                   setExactTypeFilter('ALL');
                 }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  categoryFilter === tab.id && exactTypeFilter === 'ALL'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {tab.label}
               </button>
+            );
+          })}
+        </div>
+
+        {/* Right Filters: Exact Type + Wallet + Search */}
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label="Filter by SQL Transaction Type"
+            value={exactTypeFilter}
+            onChange={e => setExactTypeFilter(e.target.value as LedgerTransactionType | 'ALL')}
+            className="h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 cursor-pointer"
+          >
+            <option value="ALL">All SQL Types</option>
+            <option value="WALLET_TOPUP">WALLET_TOPUP (Deposit)</option>
+            <option value="ORDER_LOCK_ESCROW">ORDER_LOCK_ESCROW (Escrow Hold)</option>
+            <option value="ESCROW_RELEASE">ESCROW_RELEASE (Settlement)</option>
+            <option value="PLATFORM_FEE">PLATFORM_FEE (Commission)</option>
+            <option value="SUPPLIER_PAYOUT">SUPPLIER_PAYOUT (Withdrawal)</option>
+          </select>
+
+          <select
+            aria-label="Filter by Wallet"
+            value={walletFilter}
+            onChange={e => setWalletFilter(e.target.value)}
+            className="h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 max-w-[220px] cursor-pointer"
+          >
+            <option value="ALL">All Wallets ({state?.wallets.length || 0})</option>
+            {state?.wallets.map(w => (
+              <option key={w.id} value={w.id}>
+                {w.company_name} ({w.wallet_type})
+              </option>
             ))}
-          </div>
+          </select>
 
-          {/* Right Filters: Exact Type + Wallet + Search */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative">
-              <select
-                value={exactTypeFilter}
-                onChange={e => setExactTypeFilter(e.target.value as LedgerTransactionType | 'ALL')}
-                className="pl-3 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500"
+          <div className="relative flex-1 min-w-[210px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search Tx ID, Ref, Wallet..."
+              className="w-full h-9 pl-8 pr-8 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-600"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                <option value="ALL">All SQL Transaction Types</option>
-                <option value="WALLET_TOPUP">WALLET_TOPUP (Deposit)</option>
-                <option value="ORDER_LOCK_ESCROW">ORDER_LOCK_ESCROW (Escrow Hold)</option>
-                <option value="ESCROW_RELEASE">ESCROW_RELEASE (Supplier Settlement)</option>
-                <option value="PLATFORM_FEE">PLATFORM_FEE (Commission)</option>
-                <option value="SUPPLIER_PAYOUT">SUPPLIER_PAYOUT (Bank Withdrawal)</option>
-              </select>
-            </div>
-
-            <div className="relative">
-              <select
-                value={walletFilter}
-                onChange={e => setWalletFilter(e.target.value)}
-                className="pl-3 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 max-w-[230px]"
-              >
-                <option value="ALL">All Wallets ({state?.wallets.length || 0})</option>
-                {state?.wallets.map(w => (
-                  <option key={w.id} value={w.id}>
-                    [{w.wallet_type}] {w.company_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search Tx ID, Ref, Wallet, Notes..."
-                className="w-full pl-8 pr-8 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Ledger Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50/60">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-indigo-600" />
-            <h3 className="text-sm font-black text-slate-900">
-              Database Ledger Entries (`SELECT * FROM ledger_entries ORDER BY created_at DESC`)
+            <h3 className="text-sm font-bold text-slate-900">
+              Ledger Entries (`SELECT * FROM ledger_entries ORDER BY created_at DESC`)
             </h3>
           </div>
-          <div className="text-xs font-mono text-slate-500">
-            Showing <span className="font-bold text-slate-900">{filteredEntries.length}</span> of{' '}
-            <span className="font-bold text-slate-900">{state?.ledgerEntries.length || 0}</span> rows
+          <div className="text-xs font-mono text-slate-500 tabular-nums">
+            Showing <span className="font-semibold text-slate-900">{filteredEntries.length}</span> of{' '}
+            <span className="font-semibold text-slate-900">{state?.ledgerEntries.length || 0}</span> rows
           </div>
         </div>
 
         {filteredEntries.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-              <Filter className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <Filter className="w-5 h-5" />
             </div>
             <div className="text-sm font-bold text-slate-800">No matching ledger transactions found</div>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Try clearing your active search query or switching the transaction type filter to view all deposit, escrow, and withdrawal entries.
+              Clear your search query or reset the transaction type filter to view all deposit, escrow, and withdrawal entries.
             </p>
             <button
               type="button"
@@ -661,28 +636,28 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                 setWalletFilter('ALL');
                 setSearchQuery('');
               }}
-              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all cursor-pointer"
+              className="h-9 px-4 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
             >
-              Reset All Filters
+              Reset Filters
             </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  <th className="py-3.5 px-4">Ledger ID &amp; Time</th>
-                  <th className="py-3.5 px-4">Transaction Type</th>
-                  <th className="py-3.5 px-4">Reference ID</th>
-                  <th className="py-3.5 px-4">Source Wallet (Debit)</th>
-                  <th className="py-3.5 px-4">Destination Wallet (Credit)</th>
-                  <th className="py-3.5 px-4 text-right">Amount (INR / Paise)</th>
-                  <th className="py-3.5 px-4 text-right">Audit</th>
+                <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-3 px-4">Ledger ID &amp; Time</th>
+                  <th className="py-3 px-4">Transaction Type</th>
+                  <th className="py-3 px-4">Reference ID</th>
+                  <th className="py-3 px-4">Source Wallet (Debit)</th>
+                  <th className="py-3 px-4">Destination Wallet (Credit)</th>
+                  <th className="py-3 px-4 text-right">Amount (INR / Paise)</th>
+                  <th className="py-3 px-4 text-right">Record</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {filteredEntries.map(entry => {
-                  const badge = getTransactionTypeBadge(entry.transaction_type);
+                  const meta = getTransactionTypeMeta(entry.transaction_type);
                   const isSelected = selectedEntry?.id === entry.id;
 
                   const sourceFallback =
@@ -702,33 +677,31 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                       key={entry.id}
                       onClick={() => setSelectedEntry(entry)}
                       className={`transition-colors cursor-pointer ${
-                        isSelected ? 'bg-indigo-50/70' : 'hover:bg-slate-50/90'
+                        isSelected ? 'bg-indigo-50/60' : 'hover:bg-slate-50/80'
                       }`}
                     >
                       {/* Ledger ID & Timestamp */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="font-mono font-bold text-slate-900 flex items-center gap-1.5">
-                          <span>{entry.id}</span>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="font-mono font-semibold text-slate-900 tabular-nums">
+                          {entry.id}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono">
+                        <div className="text-[11px] text-slate-400 font-mono tabular-nums">
                           {new Date(entry.created_at).toLocaleString()}
                         </div>
                       </td>
 
                       {/* Transaction Type */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold ${badge.badgeClass}`}
-                        >
-                          {badge.icon}
-                          <span>{badge.label}</span>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className={`flex items-center gap-1.5 font-mono text-xs font-semibold ${meta.textClass}`}>
+                          {meta.icon}
+                          <span>{meta.label}</span>
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">{entry.notes}</div>
                       </td>
 
                       {/* Reference ID */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 font-mono text-[11px] font-bold">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-slate-800">
                           <span>{entry.reference_id}</span>
                           <button
                             type="button"
@@ -749,37 +722,37 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                       </td>
 
                       {/* Source Wallet */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         {renderWalletCell(entry.source_wallet_id, sourceFallback.label, sourceFallback.sub)}
                       </td>
 
                       {/* Destination Wallet */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-4">
                         {renderWalletCell(entry.destination_wallet_id, destFallback.label, destFallback.sub)}
                       </td>
 
                       {/* Amount */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className={`text-sm font-black font-mono ${badge.amountClass}`}>
-                          {badge.prefix}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className={`text-sm font-bold font-mono tabular-nums ${meta.amountClass}`}>
+                          {meta.prefix}
                           {formatInrFromPaise(entry.amount)}
                         </div>
-                        <div className="text-[10px] font-mono text-slate-400">
-                          {Number(entry.amount).toLocaleString()} paise • {formatUsdEquivalent(entry.amount)}
+                        <div className="text-[11px] font-mono text-slate-400 tabular-nums">
+                          {Number(entry.amount).toLocaleString()} paise · {formatUsdEquivalent(entry.amount)}
                         </div>
                       </td>
 
                       {/* Inspect Action */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={e => {
                             e.stopPropagation();
                             setSelectedEntry(entry);
                           }}
-                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-300 bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-bold text-[11px] inline-flex items-center gap-1 transition-all cursor-pointer"
+                          className="h-7 px-2.5 rounded-md border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-3 h-3 text-slate-500" />
                           <span>Inspect</span>
                         </button>
                       </td>
@@ -792,58 +765,60 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         )}
       </div>
 
-      {/* Selected Ledger Entry Inspector Drawer / Modal */}
+      {/* Selected Ledger Entry Inspector Modal */}
       {selectedEntry && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-xl space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-mono font-bold border border-indigo-200">
+                <div className="flex items-center gap-2 text-xs font-mono font-semibold text-indigo-600">
                   <Terminal className="w-3.5 h-3.5" />
-                  <span>LEDGER RECORD INSPECTOR • {selectedEntry.id}</span>
+                  <span>LEDGER RECORD INSPECTOR</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{selectedEntry.id}</span>
                 </div>
-                <h3 className="text-lg font-black text-slate-900 mt-1.5">
+                <h3 className="text-lg font-bold text-slate-900 mt-1">
                   {selectedEntry.notes}
                 </h3>
-                <p className="text-xs text-slate-500 font-mono">
+                <p className="text-xs text-slate-500 font-mono tabular-nums">
                   Recorded at {new Date(selectedEntry.created_at).toLocaleString()}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedEntry(null)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Key Monetary Breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Amount (INR)</div>
-                <div className="text-lg font-black font-mono text-slate-900 mt-0.5">
+                <div className="text-[11px] font-medium text-slate-500">Amount (INR)</div>
+                <div className="text-lg font-bold font-mono tabular-nums text-slate-900 mt-0.5">
                   {formatInrFromPaise(selectedEntry.amount)}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">BigInt Paise Value</div>
-                <div className="text-sm font-bold font-mono text-indigo-700 mt-1">
+                <div className="text-[11px] font-medium text-slate-500">BigInt Paise Value</div>
+                <div className="text-sm font-semibold font-mono tabular-nums text-indigo-700 mt-1">
                   {Number(selectedEntry.amount).toLocaleString()} paise
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Reference Key</div>
-                <div className="text-xs font-bold font-mono text-slate-800 mt-1 break-all">
+                <div className="text-[11px] font-medium text-slate-500">Reference Key</div>
+                <div className="text-xs font-semibold font-mono text-slate-800 mt-1 break-all">
                   {selectedEntry.reference_id}
                 </div>
               </div>
             </div>
 
-            {/* Double-Entry Flow Diagram */}
+            {/* Double-Entry Flow */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-black uppercase text-rose-600">
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+                <div className="text-[11px] font-semibold text-rose-600">
                   Source Wallet (Debit / Origin)
                 </div>
                 {renderWalletCell(
@@ -852,8 +827,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                   'Buyer Deposit Collection Webhook'
                 )}
               </div>
-              <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-1">
-                <div className="text-[10px] font-black uppercase text-emerald-600">
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+                <div className="text-[11px] font-semibold text-emerald-600">
                   Destination Wallet (Credit / Target)
                 </div>
                 {renderWalletCell(
@@ -870,20 +845,20 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
 
             {/* Raw Database Row JSON */}
             <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5 text-indigo-600" />
-                <span>PostgreSQL `ledger_entries` Row Representation</span>
+                <span>PostgreSQL `ledger_entries` Row</span>
               </div>
-              <pre className="p-4 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-xs overflow-x-auto leading-relaxed">
+              <pre className="p-4 rounded-xl bg-slate-950 text-emerald-400 font-mono text-xs overflow-x-auto leading-relaxed">
                 {JSON.stringify(selectedEntry, null, 2)}
               </pre>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => handleCopy(JSON.stringify(selectedEntry, null, 2))}
-                className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer"
+                className="h-9 px-4 rounded-lg border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-700 flex items-center gap-1.5 cursor-pointer"
               >
                 {copiedId === JSON.stringify(selectedEntry, null, 2) ? (
                   <>
@@ -900,9 +875,9 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedEntry(null)}
-                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer"
+                className="h-9 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer"
               >
-                Close Inspector
+                Close
               </button>
             </div>
           </div>

@@ -859,6 +859,13 @@ export interface MediationSystemState {
   sqlLogs: SqlTransactionLog[];
 }
 
+const notifyMediationStateUpdated = (state: MediationSystemState): MediationSystemState => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tradeheaven_mediation_updated', { detail: state }));
+  }
+  return state;
+};
+
 export const tradeHeavenMediationService = {
   async getState(): Promise<MediationSystemState> {
     try {
@@ -888,7 +895,7 @@ export const tradeHeavenMediationService = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data?.state) return data.state;
+        if (data?.state) return notifyMediationStateUpdated(data.state);
       } else {
         const errData = await res.json().catch(() => ({}));
         if (errData?.error) throw new Error(errData.error);
@@ -898,7 +905,8 @@ export const tradeHeavenMediationService = {
     }
 
     await localMediatorEngine.creditBuyerDeposit(buyerId, amountPaise, gatewayTxId);
-    return this.getState();
+    const updatedState = await this.getState();
+    return notifyMediationStateUpdated(updatedState);
   },
 
   async lockOrderFundsInEscrow(
@@ -916,7 +924,7 @@ export const tradeHeavenMediationService = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data?.state) return data.state;
+        if (data?.state) return notifyMediationStateUpdated(data.state);
       } else {
         const errData = await res.json().catch(() => ({}));
         if (errData?.error) throw new Error(errData.error);
@@ -927,7 +935,8 @@ export const tradeHeavenMediationService = {
 
     await localMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, totalAmountPaise);
     localPool.markOrderLocked(orderId, buyerId, totalAmountPaise, supplierId, productTitle);
-    return this.getState();
+    const updatedState = await this.getState();
+    return notifyMediationStateUpdated(updatedState);
   },
 
   async releaseEscrowToSupplier(params: {
@@ -945,7 +954,7 @@ export const tradeHeavenMediationService = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data?.state) return data.state;
+        if (data?.state) return notifyMediationStateUpdated(data.state);
       } else {
         const errData = await res.json().catch(() => ({}));
         if (errData?.error) throw new Error(errData.error);
@@ -956,7 +965,8 @@ export const tradeHeavenMediationService = {
 
     await localMediatorEngine.releaseEscrowToSupplier(params);
     localPool.markOrderSettled(params.orderId);
-    return this.getState();
+    const updatedState = await this.getState();
+    return notifyMediationStateUpdated(updatedState);
   },
 
   async requestBankPayout(
@@ -972,7 +982,10 @@ export const tradeHeavenMediationService = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data?.state && data?.payoutResult) return data;
+        if (data?.state && data?.payoutResult) {
+          notifyMediationStateUpdated(data.state);
+          return data;
+        }
       } else {
         const errData = await res.json().catch(() => ({}));
         if (errData?.error) throw new Error(errData.error);
@@ -987,6 +1000,8 @@ export const tradeHeavenMediationService = {
       destinationBankDetails
     );
     const state = await this.getState();
+    notifyMediationStateUpdated(state);
     return { payoutResult, state };
   }
 };
+

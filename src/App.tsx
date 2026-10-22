@@ -557,7 +557,7 @@ const MainApp: React.FC = () => {
             isOpen: true,
             target: {
               type: 'SEARCH',
-              searchQuery: catalogSearch.trim(),
+              search: catalogSearch.trim(),
               category: catalogCategory !== 'ALL' ? catalogCategory : undefined,
               title: `"${catalogSearch.trim()}" Wholesale Suppliers & Products`
             }
@@ -1427,6 +1427,10 @@ const MainApp: React.FC = () => {
       setActiveView('DASHBOARD');
       return;
     }
+    if (target === 'MEDIATOR_ENGINE' || target === 'MEDIATION_WALLET' || target === 'MEDIATION' || target === 'ESCROW_MEDIATOR' || target === 'WALLET_TOPUP' || target === 'TOPUP') {
+      setActiveView('MEDIATOR_ENGINE');
+      return;
+    }
     if (target === 'SELLER_OFFER' || target === 'POST_SELL_OFFER' || target === 'SELL') {
       setActiveView('POST_SELL_OFFER');
       return;
@@ -2051,6 +2055,11 @@ const MainApp: React.FC = () => {
                       onUpdateCurrentUser={setCurrentUser}
                     />
                   </AdminRouteGuard>
+                );
+
+              case 'MEDIATOR_ENGINE':
+                return (
+                  <TradeHeavenMediatorView embedded={false} />
                 );
 
               default:

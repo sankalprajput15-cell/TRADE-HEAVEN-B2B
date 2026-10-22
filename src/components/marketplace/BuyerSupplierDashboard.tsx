@@ -42,6 +42,7 @@ interface Props {
   rfqs?: RfqRequirement[];
   onOpenCreateRfq: () => void;
   onOpenStorefront: (companyId: string) => void;
+  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS';
 }
 
 const AVAILABLE_CATEGORIES = [
@@ -77,9 +78,33 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   selectedCurrency,
   rfqs = MOCK_RFQS,
   onOpenCreateRfq,
-  onOpenStorefront
+  onOpenStorefront,
+  initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS'>('TRANSACTION_LEDGER');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS'>(
+    initialTab || 'TRANSACTION_LEDGER'
+  );
+
+  useEffect(() => {
+    const handleDashboardTab = (e: Event) => {
+      const custom = e as CustomEvent<{ tab?: string }>;
+      if (custom?.detail?.tab) {
+        setActiveTab(custom.detail.tab as any);
+      }
+    };
+    const handleMediationStage = (e: Event) => {
+      const custom = e as CustomEvent<{ stage?: string }>;
+      if (custom?.detail?.stage === 'TOPUP') {
+        setActiveTab('TOPUP_WALLET');
+      }
+    };
+    window.addEventListener('tradeheaven_open_dashboard_tab', handleDashboardTab);
+    window.addEventListener('tradeheaven_open_mediation_stage', handleMediationStage);
+    return () => {
+      window.removeEventListener('tradeheaven_open_dashboard_tab', handleDashboardTab);
+      window.removeEventListener('tradeheaven_open_mediation_stage', handleMediationStage);
+    };
+  }, []);
   const handleDownloadTemplate = (title: string) => {
     const link = document.createElement('a');
     link.href = 'data:application/pdf;base64,JVBERi0xLjAKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqIDIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iaiAzIDAgb2JqPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMTAgMDAwMDAgbgowMDAwMDAwMDUzIDAwMDAwIG4KMDAwMDAwMDEwMiAwMDAwMCBuCnRyYWlsZXI8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxNDkKJUVPRgo=';
@@ -313,42 +338,39 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   };
 
   return (
-    <div id="buyer-supplier-dashboard" className="space-y-6">
+    <div id="buyer-supplier-dashboard" className="max-w-[1440px] mx-auto space-y-6">
       {/* Top Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Enterprise B2B Trade &amp; trade protection Center</span>
+            <span>Enterprise B2B Trade &amp; Escrow Protection Center</span>
+            <span aria-hidden="true">·</span>
+            <span className="text-slate-500 font-mono">KYC Level 3 Verified</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-            {currentUserRole === 'SUPPLIER' ? 'Manufacturer & Exporter Console' : 'Global Procurement & Sourcing Dashboard'}
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            {currentUserRole === 'SUPPLIER'
+              ? 'Manufacturer & Exporter Console'
+              : 'Global Procurement & Treasury Dashboard'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-normal">
-            Track live Swiss trade protection milestones, active RFQ bids, factory production progress, and commercial Proforma Invoices (P/I).
+          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+            Manage wallet deposits, inspect double-entry transaction ledger records, track mediated escrow milestones, and respond to global RFQ tenders.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('TOPUP_WALLET')}
-            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+            className="h-10 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
           >
-            <CreditCard className="w-4 h-4" />
-            <span>+ Top-Up Wallet</span>
+            <CreditCard className="w-4 h-4 text-emerald-600" />
+            <span>Top-Up Wallet</span>
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('TRANSACTION_LEDGER')}
-            className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Transaction Ledger</span>
-          </button>
-          <button
             onClick={onOpenCreateRfq}
-            className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+            className="h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Post New RFQ</span>
@@ -357,148 +379,136 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
             href={OFFICIAL_WHATSAPP_DATA.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
+            className="h-10 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-2 transition-colors whitespace-nowrap"
           >
-            <MessageCircle className="w-4 h-4" />
-            <span>Trade Desk WhatsApp</span>
+            <MessageCircle className="w-4 h-4 text-emerald-600" />
+            <span>Trade Desk</span>
           </a>
         </div>
       </div>
 
       {/* Metric Counters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
-            <span>Total trade protection Value</span>
+        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Total Protected Trade Volume</span>
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
+          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
             {formatPrice(349000)}
           </div>
-          <div className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> 100% Capital Guaranteed
+          <div className="text-xs text-slate-500">
+            100% Escrow Capital Guaranteed
           </div>
         </div>
 
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>Active RFQ Inquiries</span>
             <FileText className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
-            18 Tenders
+          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+            {rfqs.length} Tenders
           </div>
-          <div className="text-[11px] text-blue-600 font-bold flex items-center gap-1">
-            <Clock className="w-3 h-3" /> 6 pending factory quotes
+          <div className="text-xs text-slate-500">
+            6 pending verified factory quotes
           </div>
         </div>
 
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>Verified Orders In-Transit</span>
-            <Package className="w-4 h-4 text-purple-600" />
+            <Package className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900 font-mono">
+          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
             4 Shipments
           </div>
-          <div className="text-[11px] text-purple-600 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> SGS Pre-Shipment Passed
+          <div className="text-xs text-slate-500">
+            SGS Pre-Shipment Inspection Passed
           </div>
         </div>
 
-        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
             <span>KYC Compliance Status</span>
-            <ShieldCheck className="w-4 h-4 text-amber-600" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-emerald-600">
-            Level 3 (Verified)
+          <div className="text-2xl font-bold text-slate-900">
+            Level 3 Verified
           </div>
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-xs text-slate-500 font-mono tabular-nums">
             Audit ID: TH-CORP-98421
           </div>
         </div>
       </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex flex-wrap border-b border-slate-200 gap-4 text-xs font-bold">
-        <button
-          onClick={() => setActiveTab('TRANSACTION_LEDGER')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'TRANSACTION_LEDGER'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
+      {/* Unified Single-Line Segmented Tab Interface */}
+      <div className="bg-white border border-slate-200 rounded-xl p-1.5 overflow-x-auto">
+        <div
+          role="tablist"
+          aria-label="Dashboard Sections"
+          className="flex items-center gap-1 min-w-max"
         >
-          <BookOpen className="w-3.5 h-3.5" />
-          <span>Transaction Ledger</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('TOPUP_WALLET')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'TOPUP_WALLET'
-              ? 'border-b-2 border-emerald-600 text-emerald-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <CreditCard className="w-3.5 h-3.5" />
-          <span>Top-Up Wallet (Gateway Deposit)</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('OVERVIEW')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'OVERVIEW'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Active Contracts ({MOCK_ESCROWS.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('MEDIATION_WALLET')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'MEDIATION_WALLET'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Full Escrow Mediation Engine</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('RFQS')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'RFQS'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>My Sourcing Requirements ({MOCK_RFQS.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('SETTINGS')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'SETTINGS'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Settings className="w-3.5 h-3.5" />
-          <span>RFQ Sourcing Alerts &amp; Settings</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('DOCUMENTS')}
-          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'DOCUMENTS'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Document Library</span>
-        </button>
+          {(
+            [
+              {
+                id: 'TRANSACTION_LEDGER',
+                label: 'Transaction Ledger',
+                icon: BookOpen
+              },
+              {
+                id: 'TOPUP_WALLET',
+                label: 'Top-Up Wallet',
+                icon: CreditCard
+              },
+              {
+                id: 'MEDIATION_WALLET',
+                label: 'Escrow Mediation Engine',
+                icon: Layers
+              },
+              {
+                id: 'OVERVIEW',
+                label: `Active Contracts (${MOCK_ESCROWS.length})`,
+                icon: ShieldCheck
+              },
+              {
+                id: 'RFQS',
+                label: `Sourcing RFQs (${rfqs.length})`,
+                icon: FileText
+              },
+              {
+                id: 'SETTINGS',
+                label: 'Alerts & Settings',
+                icon: Settings
+              },
+              {
+                id: 'DOCUMENTS',
+                label: 'Documents',
+                icon: Download
+              }
+            ] as const
+          ).map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`h-9 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Tab Content: Transaction Ledger */}

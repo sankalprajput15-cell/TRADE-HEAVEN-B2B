@@ -21,8 +21,13 @@ import {
   Landmark,
   FileSpreadsheet,
   ArrowRight,
-  Search
+  Search,
+  BookOpen,
+  CreditCard,
+  Layers
 } from 'lucide-react';
+import { TopUpWallet } from './TopUpWallet';
+import { TransactionLedgerView } from './TransactionLedgerView';
 
 interface Props {
   embedded?: boolean;
@@ -30,11 +35,13 @@ interface Props {
 
 type ActiveStage = 'TOPUP' | 'LOCK_ESCROW' | 'RELEASE_SETTLEMENT' | 'BANK_PAYOUT';
 type ActiveLedgerFilter = 'ALL' | LedgerTransactionType;
+type ActiveSectionTab = 'WORKBENCH' | 'TOPUP_SIMULATOR' | 'LEDGER_VIEW';
 
 export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) => {
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [activeSectionTab, setActiveSectionTab] = useState<ActiveSectionTab>('WORKBENCH');
   const [activeStage, setActiveStage] = useState<ActiveStage>('TOPUP');
   const [ledgerFilter, setLedgerFilter] = useState<ActiveLedgerFilter>('ALL');
   const [walletSearch, setWalletSearch] = useState<string>('');
@@ -101,9 +108,15 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   useEffect(() => {
     loadMediationState();
     const handleStageEvent = (e: Event) => {
-      const custom = e as CustomEvent<{ stage?: ActiveStage }>;
+      const custom = e as CustomEvent<{ stage?: ActiveStage; sectionTab?: ActiveSectionTab }>;
       if (custom?.detail?.stage) {
         setActiveStage(custom.detail.stage);
+        if (custom.detail.stage === 'TOPUP') {
+          setActiveSectionTab('TOPUP_SIMULATOR');
+        }
+      }
+      if (custom?.detail?.sectionTab) {
+        setActiveSectionTab(custom.detail.sectionTab);
       }
     };
     window.addEventListener('tradeheaven_open_mediation_stage', handleStageEvent);
@@ -494,16 +507,87 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
           </div>
         </div>
 
-        {/* Treasury & Escrow Summary Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Buyer Available Liquidity</span>
-              <Wallet className="w-4 h-4 text-blue-600" />
+        {/* Top-Level Segmented Tab Bar (when standalone) */}
+        {!embedded && (
+          <div className="bg-white border border-slate-200 rounded-xl p-1.5 overflow-x-auto">
+            <div role="tablist" aria-label="Mediation Engine Views" className="flex items-center gap-1 min-w-max">
+              <button
+                role="tab"
+                aria-selected={activeSectionTab === 'WORKBENCH'}
+                type="button"
+                onClick={() => setActiveSectionTab('WORKBENCH')}
+                className={`h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeSectionTab === 'WORKBENCH'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                }`}
+              >
+                <Layers className={`w-3.5 h-3.5 shrink-0 ${activeSectionTab === 'WORKBENCH' ? 'text-white' : 'text-slate-400'}`} />
+                <span>Escrow Mediation Workbench</span>
+              </button>
+
+              <button
+                role="tab"
+                aria-selected={activeSectionTab === 'TOPUP_SIMULATOR'}
+                type="button"
+                onClick={() => setActiveSectionTab('TOPUP_SIMULATOR')}
+                className={`h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeSectionTab === 'TOPUP_SIMULATOR'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                }`}
+              >
+                <CreditCard className={`w-3.5 h-3.5 shrink-0 ${activeSectionTab === 'TOPUP_SIMULATOR' ? 'text-white' : 'text-slate-400'}`} />
+                <span>Top-Up Wallet (Gateway Deposit)</span>
+              </button>
+
+              <button
+                role="tab"
+                aria-selected={activeSectionTab === 'LEDGER_VIEW'}
+                type="button"
+                onClick={() => setActiveSectionTab('LEDGER_VIEW')}
+                className={`h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeSectionTab === 'LEDGER_VIEW'
+                    ? 'bg-slate-900 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                }`}
+              >
+                <BookOpen className={`w-3.5 h-3.5 shrink-0 ${activeSectionTab === 'LEDGER_VIEW' ? 'text-white' : 'text-slate-400'}`} />
+                <span>Transaction Ledger ({state?.ledgerEntries?.length || 0})</span>
+              </button>
             </div>
-            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-              {formatAmount(metrics.totalBuyerAvailablePaise)}
-            </div>
+          </div>
+        )}
+
+        {!embedded && activeSectionTab === 'TOPUP_SIMULATOR' && (
+          <TopUpWallet
+            onSuccess={updated => setState(updated)}
+            onNavigateToFullEngine={() => {
+              setActiveSectionTab('WORKBENCH');
+              setActiveStage('LOCK_ESCROW');
+            }}
+          />
+        )}
+
+        {!embedded && activeSectionTab === 'LEDGER_VIEW' && (
+          <TransactionLedgerView
+            onNavigateToTopUp={() => setActiveSectionTab('TOPUP_SIMULATOR')}
+            onNavigateToMediationEngine={() => setActiveSectionTab('WORKBENCH')}
+          />
+        )}
+
+        {(embedded || activeSectionTab === 'WORKBENCH') && (
+          <>
+            {/* Treasury & Escrow Summary Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+                  <span>Buyer Available Liquidity</span>
+                  <Wallet className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+                  {formatAmount(metrics.totalBuyerAvailablePaise)}
+                </div>
             <div className="text-xs text-slate-500">
               {buyerWallets.length} active buyer wallets · Ready for escrow lock
             </div>
@@ -651,8 +735,10 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
             </div>
 
             {/* Interactive Stage Selector Tabs */}
-            <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200/80">
+            <div role="tablist" aria-label="Mediation Stages" className="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200/80">
               <button
+                role="tab"
+                aria-selected={activeStage === 'TOPUP'}
                 type="button"
                 onClick={() => setActiveStage('TOPUP')}
                 className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
@@ -661,11 +747,13 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <div className="text-[11px] font-semibold text-blue-600">01. Top-Up</div>
-                <div className="text-xs font-bold truncate">creditBuyerDeposit</div>
+                <div className="text-[11px] font-semibold text-blue-600">01. Top-Up Deposit</div>
+                <div className="text-xs font-semibold text-slate-700 truncate">Credit Buyer Wallet</div>
               </button>
 
               <button
+                role="tab"
+                aria-selected={activeStage === 'LOCK_ESCROW'}
                 type="button"
                 onClick={() => setActiveStage('LOCK_ESCROW')}
                 className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
@@ -675,10 +763,12 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 }`}
               >
                 <div className="text-[11px] font-semibold text-amber-600">02. Hold in Escrow</div>
-                <div className="text-xs font-bold truncate">lockOrderFundsInEscrow</div>
+                <div className="text-xs font-semibold text-slate-700 truncate">Lock Order Funds</div>
               </button>
 
               <button
+                role="tab"
+                aria-selected={activeStage === 'RELEASE_SETTLEMENT'}
                 type="button"
                 onClick={() => setActiveStage('RELEASE_SETTLEMENT')}
                 className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
@@ -688,10 +778,12 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 }`}
               >
                 <div className="text-[11px] font-semibold text-emerald-600">03. Settlement</div>
-                <div className="text-xs font-bold truncate">releaseEscrowToSupplier</div>
+                <div className="text-xs font-semibold text-slate-700 truncate">Release to Supplier</div>
               </button>
 
               <button
+                role="tab"
+                aria-selected={activeStage === 'BANK_PAYOUT'}
                 type="button"
                 onClick={() => setActiveStage('BANK_PAYOUT')}
                 className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
@@ -701,7 +793,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 }`}
               >
                 <div className="text-[11px] font-semibold text-indigo-600">04. Bank Payout</div>
-                <div className="text-xs font-bold truncate">requestBankPayout</div>
+                <div className="text-xs font-semibold text-slate-700 truncate">Withdraw to Bank</div>
               </button>
             </div>
 
@@ -1474,6 +1566,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
             </table>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

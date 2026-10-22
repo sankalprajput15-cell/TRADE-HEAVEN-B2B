@@ -174,7 +174,8 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
   // Filter recent WALLET_TOPUP ledger entries
   const recentTopUps: LedgerEntryRecord[] = useMemo(() => {
     if (!state) return [];
-    return state.ledger_entries
+    const entries = state.ledgerEntries || (state as any).ledger_entries || [];
+    return entries
       .filter(entry => entry.transaction_type === 'WALLET_TOPUP')
       .slice(0, 6);
   }, [state]);
@@ -211,7 +212,7 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
         );
         setState(updatedState);
 
-        const updatedBuyerWallet = updatedState.wallets.find(
+        const updatedBuyerWallet = (updatedState?.wallets || []).find(
           w => w.entity_id === selectedWallet.entity_id && w.wallet_type === 'BUYER'
         );
         const newBalancePaise = Number(

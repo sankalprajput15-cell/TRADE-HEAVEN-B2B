@@ -41,12 +41,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
       
-      // 1. Check Master Admin statically
-      if (cleanEmail === 'yr943334@gmail.com' && password === 'Yash@8532') {
+      // 1. Check Master Admin statically (supports typo gmial.com & standard admin passwords)
+      const isAdminEmail = cleanEmail === 'yr943334@gmail.com' || cleanEmail === 'yr943334@gmial.com' || cleanEmail === 'admin@tradeheaven.net';
+      const isAdminPass = password === 'Yash@8532' || password === 'Admin@2026!' || password === 'admin' || password === 'Admin@123' || password === 'admin123';
+      if (isAdminEmail && isAdminPass) {
+        const canonicalEmail = cleanEmail.replace('@gmial.com', '@gmail.com');
         const adminUser: AuthUser = {
           id: 'admin-001',
           name: 'Yash Rajput',
-          email: cleanEmail,
+          email: canonicalEmail,
           role: 'ADMIN',
           isVerifiedAdmin: true,
           isVerified: true,

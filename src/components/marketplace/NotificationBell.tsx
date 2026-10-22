@@ -43,13 +43,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
   return (
     <div className="relative shrink-0" ref={wrapperRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-1.5 sm:p-2 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 transition-all shrink-0 cursor-pointer"
+        className="relative h-9 w-9 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
         title="Notifications"
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="w-4 h-4 shrink-0" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white shadow-xs">
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
