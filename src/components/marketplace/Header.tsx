@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Currency, UserRole, ActiveView, AuthUser, Product } from '../../types';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { NotificationBell } from './NotificationBell';
+import { LanguageRegionSelector } from './LanguageRegionSelector';
 import { SafeImage } from '../common/SafeImage';
 import {
   PlusCircle,
@@ -14,11 +15,26 @@ import {
   Image as ImageIcon,
   Search,
   Globe,
-  Menu,
   X,
   Database,
   ArrowUpRight,
-  Share2
+  Share2,
+  PackagePlus,
+  Headphones,
+  Edit3,
+  User,
+  Building2,
+  Users,
+  FileText,
+  Calculator,
+  BookOpen,
+  Briefcase,
+  MessageSquare,
+  Info,
+  Sparkles,
+  Package,
+  Home,
+  Wallet
 } from 'lucide-react';
 
 interface Props {
@@ -69,13 +85,14 @@ export const Header: React.FC<Props> = ({
   onOpenDbModal,
   onOpenAuthModal,
   onOpenRegisterFree,
+  onOpenOnboardModal,
+  onOpenContactModal,
   onLogout,
   products = [],
   onSelectProduct,
   onNavigateToSearch
 }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -96,7 +113,7 @@ export const Header: React.FC<Props> = ({
   }, []);
 
   const handleNavClick = (view: ActiveView | string, options?: any) => {
-    setMobileMenuOpen(false);
+    setUserMenuOpen(false);
     if (onNavigate) {
       onNavigate(view, options);
     } else if (setActiveView) {
@@ -117,7 +134,7 @@ export const Header: React.FC<Props> = ({
     e.preventDefault();
     const trimmed = searchTerm.trim();
     setSearchFocused(false);
-    setMobileMenuOpen(false);
+    setUserMenuOpen(false);
     if (onNavigateToSearch) {
       onNavigateToSearch(trimmed);
     } else {
@@ -140,43 +157,83 @@ export const Header: React.FC<Props> = ({
 
   const handleLogout = () => {
     setUserMenuOpen(false);
-    setMobileMenuOpen(false);
     if (onLogout) onLogout();
   };
 
   const isAdmin = currentUser?.role === 'ADMIN' || currentUserRole === 'ADMIN';
 
-  const navItems: { label: string; view: ActiveView; activeMatch: ActiveView[] }[] = [
-    { label: 'Home', view: 'HOMEPAGE', activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME'] },
+  const handleOpenFundsTopUp = () => {
+    setUserMenuOpen(false);
+    handleNavClick('MEDIATOR_ENGINE');
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('tradeheaven_open_mediation_stage', {
+          detail: { stage: 'TOPUP' }
+        })
+      );
+    }, 60);
+  };
+
+  // Primary inline top-bar links
+  const primaryNavItems: { label: string; view: ActiveView; activeMatch: ActiveView[] }[] = [
+    { label: 'Home', view: 'HOMEPAGE', activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
     { label: 'Products', view: 'PRODUCT_DIRECTORY', activeMatch: ['PRODUCT_DIRECTORY'] },
-    { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY'] },
+    { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', activeMatch: ['BUY_LEADS', 'RFQ_HUB'] },
     { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] }
   ];
 
+  // Marketplace & directory options inside the Account Toggle menu
+  const accountMenuOptions: {
+    label: string;
+    view: ActiveView;
+    icon: React.ComponentType<{ className?: string }>;
+    activeMatch: ActiveView[];
+    authOnly?: boolean;
+  }[] = [
+    { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
+    { label: 'Wallet Funds Top-Up', view: 'MEDIATOR_ENGINE', icon: Wallet, activeMatch: ['MEDIATOR_ENGINE'], authOnly: true },
+    { label: 'Products Catalog', view: 'PRODUCT_DIRECTORY', icon: Package, activeMatch: ['PRODUCT_DIRECTORY'] },
+    { label: 'Verified Suppliers', view: 'SUPPLIERS_DIRECTORY', icon: Building2, activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
+    { label: 'Verified Buyers', view: 'BUYERS_DIRECTORY', icon: Users, activeMatch: ['BUYERS_DIRECTORY', 'BUYER_PROFILE'] },
+    { label: 'Buy Leads', view: 'BUY_LEADS', icon: Sparkles, activeMatch: ['BUY_LEADS'] },
+    { label: 'RFQ Hub & Tenders', view: 'RFQ_HUB', icon: FileText, activeMatch: ['RFQ_HUB'] },
+    { label: 'Country Trade Hubs', view: 'COUNTRY_HUB', icon: Globe, activeMatch: ['COUNTRY_HUB'] },
+    { label: 'Incoterms Calculator', view: 'INCOTERMS_CALCULATOR', icon: Calculator, activeMatch: ['INCOTERMS_CALCULATOR', 'TRADE_TOOLS'] },
+    { label: 'News & Insights', view: 'INSIGHTS', icon: BookOpen, activeMatch: ['INSIGHTS'] },
+    { label: 'Trust & Safety', view: 'TRUST_SAFETY', icon: ShieldCheck, activeMatch: ['TRUST_SAFETY'] },
+    { label: 'Services & Plans', view: 'PREMIUM_SERVICES', icon: Briefcase, activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] },
+    { label: 'Negotiation Room', view: 'NEGOTIATION_ROOM', icon: MessageSquare, activeMatch: ['NEGOTIATION_ROOM'] },
+    { label: 'Post Sell Offer', view: 'POST_SELL_OFFER', icon: PackagePlus, activeMatch: ['POST_SELL_OFFER'] },
+    { label: 'About Us', view: 'ABOUT_US', icon: Info, activeMatch: ['ABOUT_US'] },
+    { label: 'Work With Us', view: 'ONBOARD_WITH_US', icon: UserPlus, activeMatch: ['ONBOARD_WITH_US'] }
+  ];
+
+  const visibleMenuOptions = accountMenuOptions.filter(item => !item.authOnly || Boolean(currentUser));
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 h-16 flex items-center justify-between gap-2.5 lg:gap-4 xl:gap-6">
-        {/* Left: Brand Identity & Primary Navigation */}
-        <div className="flex items-center gap-3 lg:gap-4 xl:gap-7 shrink-0">
+    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90">
+      <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4 lg:gap-6">
+        {/* Zone 1: Brand Identity & Primary Navigation */}
+        <div className="flex items-center gap-4 lg:gap-7 shrink-0">
           <button
             type="button"
             onClick={() => handleNavClick('HOMEPAGE')}
             className="text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded-lg cursor-pointer flex items-center shrink-0 group"
           >
-            <TradeHeavenLogo size="sm" subtitle="Global B2B Marketplace" />
+            <TradeHeavenLogo size="sm" subtitle={false} />
           </button>
 
-          {/* Desktop Editorial Navigation Links */}
-          <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-0.5 xl:gap-1 h-16 shrink-0">
-            {navItems.map(item => {
+          {/* Primary Inline Navigation Links */}
+          <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-1 lg:gap-1.5 h-16 shrink-0">
+            {primaryNavItems.map(item => {
               const isActive = item.activeMatch.includes(activeView);
               return (
                 <button
                   key={item.view}
                   type="button"
                   onClick={() => handleNavClick(item.view)}
-                  className={`relative h-full px-2 xl:px-3 text-xs xl:text-[13px] font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap ${
+                  className={`relative h-full px-3 text-[13px] font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'text-blue-600'
                       : 'text-slate-600 hover:text-slate-950'
@@ -184,37 +241,18 @@ export const Header: React.FC<Props> = ({
                 >
                   <span>{item.label}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 inset-x-2 xl:inset-x-3 h-0.5 bg-blue-600 rounded-full" />
+                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
               );
             })}
-
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => handleNavClick('PRODUCT_IMAGE_ADMIN')}
-                className={`relative h-full px-2 xl:px-3 text-xs xl:text-[13px] font-semibold tracking-tight transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                  activeView === 'PRODUCT_IMAGE_ADMIN'
-                    ? 'text-blue-600'
-                    : 'text-slate-600 hover:text-slate-950'
-                }`}
-              >
-                <ImageIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span className="hidden 2xl:inline">Product Images</span>
-                <span className="2xl:hidden">Images</span>
-                {activeView === 'PRODUCT_IMAGE_ADMIN' && (
-                  <span className="absolute bottom-0 inset-x-2 xl:inset-x-3 h-0.5 bg-blue-600 rounded-full" />
-                )}
-              </button>
-            )}
           </nav>
         </div>
 
-        {/* Center: Global Product & Supplier Search Bar */}
+        {/* Zone 2: Global Product & Supplier Search Bar */}
         <div
           ref={searchWrapperRef}
-          className="hidden md:block relative flex-1 min-w-[170px] lg:min-w-[200px] xl:min-w-[280px] max-w-sm lg:max-w-md xl:max-w-xl 2xl:max-w-2xl mx-1 lg:mx-2"
+          className="hidden sm:block relative flex-1 min-w-[180px] max-w-md lg:max-w-lg"
         >
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
@@ -227,13 +265,13 @@ export const Header: React.FC<Props> = ({
                 setSearchFocused(true);
               }}
               placeholder="Search products, HS codes, or verified suppliers..."
-              className="w-full h-9 pl-9 pr-16 rounded-lg bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200/90 focus:border-blue-600 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all"
+              className="w-full h-9 pl-9 pr-16 rounded-lg bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-slate-200/90 focus:border-blue-600 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/15 transition-all"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-12 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="absolute right-14 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -241,9 +279,9 @@ export const Header: React.FC<Props> = ({
             )}
             <button
               type="submit"
-              className="absolute right-1 top-1 bottom-1 px-2.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200/80 text-[11px] font-semibold text-slate-700 hover:text-blue-600 transition-colors cursor-pointer"
+              className="absolute right-1 top-1 bottom-1 px-3 rounded-md bg-white hover:bg-slate-50 border border-slate-200/80 text-[11px] font-semibold text-slate-700 hover:text-blue-600 transition-colors cursor-pointer whitespace-nowrap"
             >
-              Find
+              Search
             </button>
           </form>
 
@@ -262,7 +300,7 @@ export const Header: React.FC<Props> = ({
                       handleNavClick('PRODUCT_DIRECTORY', { productId: prod.id });
                     }
                   }}
-                  className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                  className="w-full px-3.5 py-2.5 text-left hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
@@ -291,23 +329,25 @@ export const Header: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Right: Currency, Notifications, Primary CTA & User Account */}
-        <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 shrink-0">
-          {/* Currency Selector */}
-          <div className="hidden md:flex items-center h-9 px-2 xl:px-2.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 transition-colors shrink-0">
-            <Globe className="w-3.5 h-3.5 text-slate-500 mr-1 xl:mr-1.5 shrink-0" />
-            <select
-              aria-label="Select Currency"
-              value={selectedCurrency}
-              onChange={e => handleCurrencySelect(e.target.value as Currency)}
-              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-0.5"
-            >
-              {CURRENCY_OPTIONS.map(c => (
-                <option key={c.code} value={c.code}>
-                  {c.code} ({c.symbol})
-                </option>
-              ))}
-            </select>
+        {/* Zone 3: Essential Controls, Primary CTA & Account Menu */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Compact Language & Currency Group */}
+          <div className="hidden xl:flex items-center gap-1.5 shrink-0">
+            <LanguageRegionSelector variant="compact" />
+            <div className="flex items-center h-9 px-2.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 transition-colors shrink-0">
+              <select
+                aria-label="Select Currency"
+                value={selectedCurrency}
+                onChange={e => handleCurrencySelect(e.target.value as Currency)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer tabular-nums"
+              >
+                {CURRENCY_OPTIONS.map(c => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} ({c.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <NotificationBell onNavigate={handleNavClick} />
@@ -316,39 +356,32 @@ export const Header: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenCreateRfq}
-            className="h-9 px-3 xl:px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+            className="h-9 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Post RFQ</span>
+            <span>Post RFQ</span>
           </button>
 
-          {/* Quick Custom Link Share Button */}
-          <button
-            type="button"
-            onClick={() => {
-              window.dispatchEvent(
-                new CustomEvent('tradeheaven_open_share', {
-                  detail: {
-                    type: 'PAGE',
-                    view: activeView,
-                    title: document.title
-                  }
-                })
-              );
-            }}
-            className="h-9 px-2.5 xl:px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-2xs whitespace-nowrap"
-            title="Share custom link to this page with anyone"
-          >
-            <Share2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="hidden xl:inline">Share</span>
-          </button>
+          {/* Direct Wallet Funds Top-Up Button (Visible only to logged-in users) */}
+          {currentUser && (
+            <button
+              type="button"
+              onClick={handleOpenFundsTopUp}
+              className={`h-9 px-3 rounded-lg border font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap ${
+                activeView === 'MEDIATOR_ENGINE'
+                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                  : 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800'
+              }`}
+              title="Top-Up Buyer Wallet Funds & Escrow Mediation"
+            >
+              <Wallet className={`w-3.5 h-3.5 shrink-0 ${activeView === 'MEDIATOR_ENGINE' ? 'text-white' : 'text-emerald-600'}`} />
+              <span className="hidden md:inline">Top-Up Funds</span>
+            </button>
+          )}
 
-          {/* Divider */}
-          <div className="hidden sm:block h-5 w-px bg-slate-200 mx-0.5 shrink-0" />
-
-          {/* User Profile or Auth Controls */}
-          {currentUser ? (
-            <div className="relative shrink-0" ref={userMenuRef}>
+          {/* Account Toggle Dropdown */}
+          <div className="relative shrink-0" ref={userMenuRef}>
+            {currentUser ? (
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(prev => !prev)}
@@ -361,7 +394,7 @@ export const Header: React.FC<Props> = ({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="hidden 2xl:block leading-none max-w-[110px]">
+                <div className="hidden sm:block leading-none max-w-[115px]">
                   <div className="text-xs font-semibold text-slate-900 truncate">
                     {currentUser.name}
                   </div>
@@ -375,59 +408,239 @@ export const Header: React.FC<Props> = ({
                   }`}
                 />
               </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen(prev => !prev)}
+                className="h-9 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <User className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                <span>Account</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
+                    userMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+            )}
 
-              {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50 text-slate-800">
-                  <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
-                    <div className="font-semibold text-xs text-slate-900 truncate">
-                      {currentUser.name}
+            {/* Account Toggle Menu Dropdown */}
+            {userMenuOpen && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
+                {/* User Identity or Sign In Header */}
+                {currentUser ? (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-slate-900 truncate">
+                        {currentUser.name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {currentUser.email}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                        {currentUser.companyName || 'Verified Account'} · {currentUser.role}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                      {currentUser.email}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleNavClick(
+                          currentUser.role === 'SUPPLIER' ? 'VENDOR_PROFILE' : 'BUYER_PROFILE'
+                        )
+                      }
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5" />
+                      <span>Dashboard</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">
+                        Trade Heaven Account
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Sign in to manage RFQs &amp; orders
+                      </div>
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-1">
-                      {currentUser.companyName || 'Verified Account'} · {currentUser.role}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          onOpenAuthModal();
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                      >
+                        <LogIn className="w-3.5 h-3.5" />
+                        <span>Sign In</span>
+                      </button>
+                      {onOpenRegisterFree && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            onOpenRegisterFree();
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer whitespace-nowrap"
+                        >
+                          Join Free
+                        </button>
+                      )}
                     </div>
+                  </div>
+                )}
+
+                {/* Dedicated Wallet Funds Top-Up & Escrow Mediation Strip (Only for signed-in users) */}
+                {currentUser && (
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl mb-2.5 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Wallet &amp; Escrow Mediation</span>
+                      </div>
+                      <div className="text-[11px] text-emerald-700 truncate mt-0.5">
+                        Deposit funds, lock escrow, or view ledger
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenFundsTopUp}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
+                    >
+                      <PlusCircle className="w-3 h-3" />
+                      <span>Top-Up</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* All Marketplace & Directory Options */}
+                <div className="pt-1 pb-1">
+                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                    Marketplace &amp; Directories
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {visibleMenuOptions.map(item => {
+                      const Icon = item.icon;
+                      const isActive = item.activeMatch.includes(activeView);
+                      return (
+                        <button
+                          key={item.view}
+                          type="button"
+                          onClick={() => {
+                            if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                              setUserMenuOpen(false);
+                              onOpenOnboardModal();
+                            } else {
+                              handleNavClick(item.view);
+                            }
+                          }}
+                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-600 font-semibold'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                          }`}
+                        >
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        if (onOpenContactModal) {
+                          onOpenContactModal();
+                        } else {
+                          handleNavClick('CONTACT_US');
+                        }
+                      }}
+                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                        activeView === 'CONTACT_US'
+                          ? 'bg-blue-50 text-blue-600 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
+                    >
+                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">Contact Desk</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Utilities: Currency & Share Page */}
+                <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <select
+                      aria-label="Select Currency"
+                      value={selectedCurrency}
+                      onChange={e => handleCurrencySelect(e.target.value as Currency)}
+                      className="bg-slate-100 hover:bg-slate-200/70 rounded-md px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer tabular-nums"
+                    >
+                      {CURRENCY_OPTIONS.map(c => (
+                        <option key={c.code} value={c.code}>
+                          {c.code} ({c.symbol})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => {
                       setUserMenuOpen(false);
-                      handleNavClick(
-                        currentUser.role === 'SUPPLIER' ? 'VENDOR_PROFILE' : 'BUYER_PROFILE'
+                      window.dispatchEvent(
+                        new CustomEvent('tradeheaven_open_share', {
+                          detail: {
+                            type: 'PAGE',
+                            view: activeView,
+                            title: document.title
+                          }
+                        })
                       );
                     }}
-                    className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2.5 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
+                    className="px-2.5 py-1 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                   >
-                    <LayoutDashboard className="w-4 h-4 text-slate-500" />
-                    <span>Account Dashboard</span>
+                    <Share2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>Share Page / QR</span>
                   </button>
+                </div>
 
-                  {isAdmin && (
-                    <>
+                {/* Admin Control Options */}
+                {isAdmin && (
+                  <div className="border-t border-slate-100 mt-2 pt-2 px-2">
+                    <div className="text-[11px] font-semibold text-slate-400 mb-1">
+                      Admin Controls
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
                       <button
                         type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          handleNavClick('PRODUCT_IMAGE_ADMIN');
-                        }}
-                        className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2.5 text-slate-700 hover:text-blue-600 transition-colors cursor-pointer"
+                        onClick={() => handleNavClick('PRODUCT_IMAGE_ADMIN')}
+                        className="px-2.5 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2 text-slate-700 hover:text-blue-600 transition-colors cursor-pointer"
                       >
-                        <ImageIcon className="w-4 h-4 text-blue-600" />
-                        <span>Product Image System</span>
+                        <ImageIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">Product Images</span>
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          handleNavClick('CLIENT_ADMIN');
-                        }}
-                        className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2.5 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
+                        onClick={() => handleNavClick('CLIENT_ADMIN')}
+                        className="px-2.5 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2 text-slate-700 hover:text-indigo-600 transition-colors cursor-pointer"
                       >
-                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                        <span>Admin Control Center</span>
+                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span className="truncate">Admin Portal</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleNavClick('CMS_MANAGEMENT')}
+                        className="px-2.5 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2 text-slate-700 hover:text-amber-700 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="truncate">CMS Editor</span>
                       </button>
 
                       {onOpenDbModal && (
@@ -437,118 +650,34 @@ export const Header: React.FC<Props> = ({
                             setUserMenuOpen(false);
                             onOpenDbModal();
                           }}
-                          className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2.5 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
+                          className="px-2.5 py-2 text-left text-xs font-medium hover:bg-slate-50 rounded-lg flex items-center gap-2 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
                         >
-                          <Database className="w-4 h-4 text-slate-500" />
-                          <span>Database &amp; Backups</span>
+                          <Database className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="truncate">DB &amp; Backups</span>
                         </button>
                       )}
-                    </>
-                  )}
+                    </div>
+                  </div>
+                )}
 
-                  <div className="border-t border-slate-100 my-1 pt-1">
+                {currentUser && (
+                  <div className="border-t border-slate-100 mt-2 pt-2 px-2">
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full px-3 py-2 text-left text-xs font-medium hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                      className="w-full px-2.5 py-2 text-left text-xs font-semibold hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <LogOut className="w-3.5 h-3.5 text-rose-500" />
                       <span>Sign Out</span>
                     </button>
                   </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={onOpenAuthModal}
-                className="h-9 px-3 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <LogIn className="w-3.5 h-3.5 text-slate-600" />
-                <span>Sign In</span>
-              </button>
-              {onOpenRegisterFree && (
-                <button
-                  type="button"
-                  onClick={onOpenRegisterFree}
-                  className="hidden sm:flex h-9 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Join Free</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Mobile Navigation Menu Button */}
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(prev => !prev)}
-            aria-label="Toggle Navigation Menu"
-            className="lg:hidden h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-700 cursor-pointer"
-          >
-            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Responsive Mobile & Tablet Navigation Drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-4 space-y-3 shadow-md">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Search products, categories, or suppliers..."
-              className="w-full h-9 pl-9 pr-16 rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="absolute right-1.5 px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold cursor-pointer"
-            >
-              Search
-            </button>
-          </form>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            {navItems.map(item => {
-              const isActive = item.activeMatch.includes(activeView);
-              return (
-                <button
-                  key={item.view}
-                  type="button"
-                  onClick={() => handleNavClick(item.view)}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold text-left transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => handleNavClick('PRODUCT_IMAGE_ADMIN')}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold text-left flex items-center gap-1.5 transition-colors cursor-pointer ${
-                  activeView === 'PRODUCT_IMAGE_ADMIN'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <ImageIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Product Images</span>
-              </button>
+                )}
+              </div>
             )}
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 };
+

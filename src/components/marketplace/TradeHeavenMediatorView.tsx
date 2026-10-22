@@ -1,0 +1,1482 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  tradeHeavenMediationService,
+  MediationSystemState,
+  WalletRecord,
+  LedgerTransactionType,
+  BankTransferResult
+} from '../../services/tradeHeavenMediatorEngine';
+import {
+  Wallet,
+  Lock,
+  CheckCircle2,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Building2,
+  ShieldCheck,
+  RefreshCw,
+  Download,
+  AlertCircle,
+  Database,
+  Landmark,
+  FileSpreadsheet,
+  ArrowRight,
+  Search
+} from 'lucide-react';
+
+interface Props {
+  embedded?: boolean;
+}
+
+type ActiveStage = 'TOPUP' | 'LOCK_ESCROW' | 'RELEASE_SETTLEMENT' | 'BANK_PAYOUT';
+type ActiveLedgerFilter = 'ALL' | LedgerTransactionType;
+
+export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) => {
+  const [state, setState] = useState<MediationSystemState | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [activeStage, setActiveStage] = useState<ActiveStage>('TOPUP');
+  const [ledgerFilter, setLedgerFilter] = useState<ActiveLedgerFilter>('ALL');
+  const [walletSearch, setWalletSearch] = useState<string>('');
+  const [displayUnit, setDisplayUnit] = useState<'INR' | 'PAISE' | 'USD'>('INR');
+  const [showSqlInspector, setShowSqlInspector] = useState<boolean>(false);
+
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  } | null>(null);
+
+  // Stage 1 Form: creditBuyerDeposit
+  const [topupBuyerId, setTopupBuyerId] = useState<string>('buyer-titan-01');
+  const [topupAmountInr, setTopupAmountInr] = useState<string>('500000'); // ₹5,00,000 = 50,000,000 paise
+  const [topupGatewayTxId, setTopupGatewayTxId] = useState<string>(
+    () => `GW-RZP-${Math.floor(1000000 + Math.random() * 9000000)}`
+  );
+
+  // Stage 2 Form: lockOrderFundsInEscrow
+  const [lockBuyerId, setLockBuyerId] = useState<string>('buyer-apex-03');
+  const [lockSupplierId, setLockSupplierId] = useState<string>('comp-bharat-steel');
+  const [lockOrderId, setLockOrderId] = useState<string>('ORD-ESC-2026-9102');
+  const [lockProductTitle, setLockProductTitle] = useState<string>(
+    'Hot-Dip Galvanized Structural Steel Coils S355JR (120 MT)'
+  );
+  const [lockAmountInr, setLockAmountInr] = useState<string>('550000'); // ₹5,50,000 = 55,000,000 paise
+
+  // Stage 3 Form: releaseEscrowToSupplier
+  const [releaseOrderId, setReleaseOrderId] = useState<string>('ORD-ESC-2026-8841');
+  const [releaseBuyerId, setReleaseBuyerId] = useState<string>('buyer-titan-01');
+  const [releaseSupplierId, setReleaseSupplierId] = useState<string>('comp-melissa-mpcommodity');
+  const [releaseTotalAmountInr, setReleaseTotalAmountInr] = useState<string>('920000');
+  const [releaseFeePercent, setReleaseFeePercent] = useState<string>('2.5');
+
+  // Stage 4 Form: requestBankPayout
+  const [payoutEntityId, setPayoutEntityId] = useState<string>('comp-melissa-mpcommodity');
+  const [payoutAmountInr, setPayoutAmountInr] = useState<string>('400000');
+  const [beneficiaryName, setBeneficiaryName] = useState<string>(
+    'MP Commodity Brokers Australia Pty Ltd'
+  );
+  const [beneficiaryAccount, setBeneficiaryAccount] = useState<string>('50200048192041');
+  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState<string>('HDFC0000241');
+  const [beneficiaryBank, setBeneficiaryBank] = useState<string>('HDFC Bank Corporate Treasury');
+  const [beneficiaryRail, setBeneficiaryRail] = useState<'IMPS' | 'NEFT' | 'RTGS' | 'ACH' | 'SWIFT'>('IMPS');
+  const [lastPayoutResult, setLastPayoutResult] = useState<BankTransferResult | null>(null);
+
+  const loadMediationState = async () => {
+    setLoading(true);
+    try {
+      const data = await tradeHeavenMediationService.getState();
+      setState(data);
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Failed to load mediation state',
+        message: err?.message || 'Unable to connect to mediation engine.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMediationState();
+    const handleStageEvent = (e: Event) => {
+      const custom = e as CustomEvent<{ stage?: ActiveStage }>;
+      if (custom?.detail?.stage) {
+        setActiveStage(custom.detail.stage);
+      }
+    };
+    window.addEventListener('tradeheaven_open_mediation_stage', handleStageEvent);
+    return () => window.removeEventListener('tradeheaven_open_mediation_stage', handleStageEvent);
+  }, []);
+
+  const buyerWallets = useMemo(
+    () => (state?.wallets || []).filter(w => w.wallet_type === 'BUYER'),
+    [state]
+  );
+
+  const supplierWallets = useMemo(
+    () => (state?.wallets || []).filter(w => w.wallet_type === 'SUPPLIER'),
+    [state]
+  );
+
+  const platformWallet = useMemo(
+    () => (state?.wallets || []).find(w => w.wallet_type === 'PLATFORM_REVENUE'),
+    [state]
+  );
+
+  const lockedOrders = useMemo(
+    () => (state?.orders || []).filter(o => o.status === 'LOCKED_IN_ESCROW'),
+    [state]
+  );
+
+  // Format paise according to selected unit (INR, PAISE, or USD)
+  const formatAmount = (paiseVal: string | number | bigint): string => {
+    const numPaise = Number(paiseVal);
+    if (displayUnit === 'PAISE') {
+      return `${numPaise.toLocaleString('en-IN')} paise`;
+    }
+    const inr = numPaise / 100;
+    if (displayUnit === 'USD') {
+      const usd = inr / 83.5;
+      return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `₹${inr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Aggregate metrics
+  const metrics = useMemo(() => {
+    if (!state) {
+      return {
+        totalBuyerAvailablePaise: 0,
+        totalLockedEscrowPaise: 0,
+        totalSupplierAvailablePaise: 0,
+        platformRevenuePaise: 0
+      };
+    }
+    let totalBuyerAvailablePaise = 0;
+    let totalLockedEscrowPaise = 0;
+    let totalSupplierAvailablePaise = 0;
+    let platformRevenuePaise = 0;
+
+    state.wallets.forEach(w => {
+      const avail = Number(w.available_balance || 0);
+      const locked = Number(w.locked_balance || 0);
+      totalLockedEscrowPaise += locked;
+      if (w.wallet_type === 'BUYER') totalBuyerAvailablePaise += avail;
+      if (w.wallet_type === 'SUPPLIER') totalSupplierAvailablePaise += avail;
+      if (w.wallet_type === 'PLATFORM_REVENUE') platformRevenuePaise += avail;
+    });
+
+    return {
+      totalBuyerAvailablePaise,
+      totalLockedEscrowPaise,
+      totalSupplierAvailablePaise,
+      platformRevenuePaise
+    };
+  }, [state]);
+
+  // Auto-populate Stage 3 fields when selecting a locked order
+  const handleSelectLockedOrder = (orderId: string) => {
+    setReleaseOrderId(orderId);
+    const found = (state?.orders || []).find(o => o.order_id === orderId);
+    if (found) {
+      setReleaseBuyerId(found.buyer_id);
+      setReleaseSupplierId(found.supplier_id);
+      setReleaseTotalAmountInr(String(found.total_amount_paise / 100));
+    }
+  };
+
+  // Stage 1 Handler: creditBuyerDeposit
+  const handleCreditDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    const inr = parseFloat(topupAmountInr);
+    if (isNaN(inr) || inr <= 0) {
+      setFeedback({
+        type: 'error',
+        title: 'Invalid Deposit Amount',
+        message: 'Please enter a valid positive deposit amount.'
+      });
+      return;
+    }
+    const amountPaise = Math.round(inr * 100);
+    setSubmitting(true);
+    try {
+      const updated = await tradeHeavenMediationService.creditBuyerDeposit(
+        topupBuyerId,
+        amountPaise,
+        topupGatewayTxId.trim() || `GW-RZP-${Date.now()}`
+      );
+      setState(updated);
+      setTopupGatewayTxId(`GW-RZP-${Math.floor(1000000 + Math.random() * 9000000)}`);
+      setFeedback({
+        type: 'success',
+        title: 'Buyer Deposit Credited (WALLET_TOPUP)',
+        message: `Credited ${formatAmount(amountPaise)} (${amountPaise.toLocaleString()} paise) to buyer wallet ${topupBuyerId}.`
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Transaction Rolled Back',
+        message: err?.message || 'Could not credit buyer deposit.'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Stage 2 Handler: lockOrderFundsInEscrow
+  const handleLockEscrow = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    const inr = parseFloat(lockAmountInr);
+    if (isNaN(inr) || inr <= 0) {
+      setFeedback({
+        type: 'error',
+        title: 'Invalid Order Amount',
+        message: 'Please enter a positive order amount to lock in escrow.'
+      });
+      return;
+    }
+    const totalAmountPaise = Math.round(inr * 100);
+    setSubmitting(true);
+    try {
+      const updated = await tradeHeavenMediationService.lockOrderFundsInEscrow(
+        lockBuyerId,
+        lockOrderId.trim() || `ORD-ESC-${Date.now().toString().slice(-5)}`,
+        totalAmountPaise,
+        lockSupplierId,
+        lockProductTitle
+      );
+      setState(updated);
+      setFeedback({
+        type: 'success',
+        title: 'Order Funds Locked in Escrow (ORDER_LOCK_ESCROW)',
+        message: `Moved ${formatAmount(totalAmountPaise)} from ${lockBuyerId} available_balance into locked_balance for order ${lockOrderId}.`
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Escrow Lock Rolled Back',
+        message: err?.message || 'Insufficient available wallet funds to lock in escrow.'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Stage 3 Handler: releaseEscrowToSupplier
+  const handleReleaseEscrow = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    const totalInr = parseFloat(releaseTotalAmountInr);
+    const feePct = parseFloat(releaseFeePercent);
+    if (isNaN(totalInr) || totalInr <= 0) {
+      setFeedback({
+        type: 'error',
+        title: 'Invalid Settlement Amount',
+        message: 'Please enter a positive total settlement amount.'
+      });
+      return;
+    }
+    const totalAmountPaise = Math.round(totalInr * 100);
+    const platformFeePaise = Math.round(totalAmountPaise * ((isNaN(feePct) ? 2.5 : feePct) / 100));
+    const netSupplierPaise = totalAmountPaise - platformFeePaise;
+
+    setSubmitting(true);
+    try {
+      const updated = await tradeHeavenMediationService.releaseEscrowToSupplier({
+        orderId: releaseOrderId.trim(),
+        buyerId: releaseBuyerId,
+        supplierId: releaseSupplierId,
+        totalAmountPaise,
+        platformFeePaise
+      });
+      setState(updated);
+      setFeedback({
+        type: 'success',
+        title: 'Serializable Mediated Settlement Committed (ESCROW_RELEASE + PLATFORM_FEE)',
+        message: `Settled ${releaseOrderId}: Net ${formatAmount(netSupplierPaise)} credited to supplier (${releaseSupplierId}) and ${formatAmount(platformFeePaise)} platform commission credited to Trade Heaven Treasury.`
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Serializable Settlement Rolled Back',
+        message: err?.message || 'Locked balance is less than settlement amount.'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Stage 4 Handler: requestBankPayout
+  const handleBankPayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    const inr = parseFloat(payoutAmountInr);
+    if (isNaN(inr) || inr <= 0) {
+      setFeedback({
+        type: 'error',
+        title: 'Invalid Withdrawal Amount',
+        message: 'Please enter a positive withdrawal amount.'
+      });
+      return;
+    }
+    const amountPaise = Math.round(inr * 100);
+    setSubmitting(true);
+    try {
+      const { payoutResult, state: updated } = await tradeHeavenMediationService.requestBankPayout(
+        payoutEntityId,
+        amountPaise,
+        {
+          accountHolderName: beneficiaryName,
+          accountNumber: beneficiaryAccount,
+          ifscOrSwift: beneficiaryIfsc,
+          bankName: beneficiaryBank,
+          rail: beneficiaryRail
+        }
+      );
+      setState(updated);
+      setLastPayoutResult(payoutResult);
+      setFeedback({
+        type: 'success',
+        title: `Bank Payout ${payoutResult.status} (${payoutResult.payoutId})`,
+        message: `Withdrew ${formatAmount(amountPaise)} from ${payoutEntityId} via ${beneficiaryRail} to ${beneficiaryBank} (${beneficiaryAccount}).`
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        title: 'Bank Withdrawal Rolled Back',
+        message: err?.message || 'Insufficient funds available for bank withdrawal.'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Filtered ledger entries
+  const filteredLedger = useMemo(() => {
+    const list = state?.ledgerEntries || [];
+    if (ledgerFilter === 'ALL') return list;
+    return list.filter(entry => entry.transaction_type === ledgerFilter);
+  }, [state, ledgerFilter]);
+
+  // Filtered wallets
+  const filteredWallets = useMemo(() => {
+    const list = state?.wallets || [];
+    const q = walletSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      w =>
+        w.company_name.toLowerCase().includes(q) ||
+        w.entity_name.toLowerCase().includes(q) ||
+        w.entity_id.toLowerCase().includes(q) ||
+        w.id.toLowerCase().includes(q)
+    );
+  }, [state, walletSearch]);
+
+  const resolveWalletLabel = (walletId: string | null) => {
+    if (!walletId) return 'External Gateway / Bank Rail';
+    const w = state?.wallets.find(item => item.id === walletId);
+    if (!w) return walletId;
+    return `${w.company_name} (${w.id})`;
+  };
+
+  const handleExportLedgerCsv = () => {
+    if (!state?.ledgerEntries.length) return;
+    const headers = [
+      'Entry ID',
+      'Reference ID',
+      'Transaction Type',
+      'Source Wallet',
+      'Destination Wallet',
+      'Amount (Paise)',
+      'Amount (INR)',
+      'Notes',
+      'Created At'
+    ];
+    const rows = state.ledgerEntries.map(e => [
+      e.id,
+      e.reference_id,
+      e.transaction_type,
+      e.source_wallet_id || 'EXTERNAL_SOURCE',
+      e.destination_wallet_id || 'EXTERNAL_BANK',
+      e.amount,
+      (Number(e.amount) / 100).toFixed(2),
+      `"${(e.notes || '').replace(/"/g, '""')}"`,
+      e.created_at
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tradeheaven_mediation_ledger_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const feePaisePreview = useMemo(() => {
+    const totalPaise = Math.round((parseFloat(releaseTotalAmountInr) || 0) * 100);
+    const pct = parseFloat(releaseFeePercent) || 0;
+    const fee = Math.round(totalPaise * (pct / 100));
+    return {
+      totalPaise,
+      feePaise: fee,
+      netPaise: Math.max(0, totalPaise - fee)
+    };
+  }, [releaseTotalAmountInr, releaseFeePercent]);
+
+  return (
+    <div className={embedded ? 'space-y-8' : 'bg-slate-50 min-h-screen py-10'}>
+      <div className={embedded ? 'space-y-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8'}>
+        {/* Header Bar */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-3xl">
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
+              <ShieldCheck className="w-4 h-4" />
+              <span>TradeHeavenMediatorEngine</span>
+              <span aria-hidden="true">·</span>
+              <span>ACID Double-Entry Escrow &amp; Settlement Rails</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Escrow Mediation, Wallet Custody &amp; Bank Payout Engine
+            </h1>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Execute atomic PostgreSQL row-locked wallet top-ups, order escrow holds, serializable supplier settlements with automated platform fee splits, and direct IMPS/NEFT/SWIFT bank withdrawals.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {/* Unit Switcher */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
+              {(['INR', 'PAISE', 'USD'] as const).map(unit => (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => setDisplayUnit(unit)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                    displayUnit === unit
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {unit === 'INR' ? '₹ INR' : unit === 'PAISE' ? 'Paise (BigInt)' : '$ USD'}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowSqlInspector(prev => !prev)}
+              className={`h-9 px-3.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                showSqlInspector
+                  ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>SQL Inspector ({state?.sqlLogs?.length || 0})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={loadMediationState}
+              disabled={loading}
+              className="h-9 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Treasury & Escrow Summary Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+              <span>Buyer Available Liquidity</span>
+              <Wallet className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+              {formatAmount(metrics.totalBuyerAvailablePaise)}
+            </div>
+            <div className="text-xs text-slate-500">
+              {buyerWallets.length} active buyer wallets · Ready for escrow lock
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+              <span>Locked in Escrow Mediation</span>
+              <Lock className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+              {formatAmount(metrics.totalLockedEscrowPaise)}
+            </div>
+            <div className="text-xs text-slate-500">
+              {lockedOrders.length} active mediated orders · Held under FOR UPDATE lock
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+              <span>Supplier Settled Balance</span>
+              <Building2 className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+              {formatAmount(metrics.totalSupplierAvailablePaise)}
+            </div>
+            <div className="text-xs text-slate-500">
+              {supplierWallets.length} verified suppliers · Available for bank withdrawal
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+              <span>Platform Revenue Vault</span>
+              <Landmark className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+              {formatAmount(metrics.platformRevenuePaise)}
+            </div>
+            <div className="text-xs text-slate-500">
+              Wallet ID: <span className="font-mono">{platformWallet?.id || 'wal-platform-rev'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Feedback Banner */}
+        {feedback && (
+          <div
+            className={`rounded-xl border p-4 flex items-start justify-between gap-4 ${
+              feedback.type === 'success'
+                ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                : 'bg-red-50/70 border-red-200 text-red-900'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              {feedback.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <div className="text-sm font-semibold">{feedback.title}</div>
+                <div className="text-xs mt-0.5 opacity-90">{feedback.message}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFeedback(null)}
+              className="text-xs font-semibold underline opacity-75 hover:opacity-100 cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* SQL Transaction Log Inspector */}
+        {showSqlInspector && (
+          <div className="bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  PostgreSQL Transaction &amp; Row-Level Lock Inspector
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Real-time execution log of BEGIN, SELECT ... FOR UPDATE, SERIALIZABLE isolation, and COMMIT/ROLLBACK statements
+                </p>
+              </div>
+              <span className="text-xs font-mono text-emerald-400">
+                {(state?.sqlLogs || []).length} transactions recorded
+              </span>
+            </div>
+
+            {(state?.sqlLogs || []).length === 0 ? (
+              <div className="text-xs text-slate-400 py-4">
+                Execute any mediation stage below (Top-Up, Lock Escrow, Release Settlement, or Bank Payout) to inspect the live SQL transaction queries.
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {(state?.sqlLogs || []).map(tx => (
+                  <div
+                    key={tx.id}
+                    className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-blue-400 font-semibold">{tx.operation}()</span>
+                        <span aria-hidden="true" className="text-slate-600">·</span>
+                        <span className="text-slate-400">Isolation: {tx.isolationLevel}</span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono text-[11px]">
+                        <span
+                          className={
+                            tx.status === 'COMMITTED' ? 'text-emerald-400' : 'text-red-400'
+                          }
+                        >
+                          {tx.status}
+                        </span>
+                        <span aria-hidden="true" className="text-slate-600">·</span>
+                        <span className="text-slate-500">
+                          {new Date(tx.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                    <pre className="text-[11px] font-mono text-slate-300 overflow-x-auto leading-relaxed">
+                      {tx.queries.join('\n')}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main 4-Stage Mediation Engine Workbench */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left 5 Columns: 4-Stage Interactive Execution Panel */}
+          <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-6 space-y-6">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                4-Stage Mediation Workflow Execution
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select a lifecycle operation to execute against the wallet &amp; ledger tables
+              </p>
+            </div>
+
+            {/* Interactive Stage Selector Tabs */}
+            <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setActiveStage('TOPUP')}
+                className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
+                  activeStage === 'TOPUP'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <div className="text-[11px] font-semibold text-blue-600">01. Top-Up</div>
+                <div className="text-xs font-bold truncate">creditBuyerDeposit</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveStage('LOCK_ESCROW')}
+                className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
+                  activeStage === 'LOCK_ESCROW'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <div className="text-[11px] font-semibold text-amber-600">02. Hold in Escrow</div>
+                <div className="text-xs font-bold truncate">lockOrderFundsInEscrow</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveStage('RELEASE_SETTLEMENT')}
+                className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
+                  activeStage === 'RELEASE_SETTLEMENT'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <div className="text-[11px] font-semibold text-emerald-600">03. Settlement</div>
+                <div className="text-xs font-bold truncate">releaseEscrowToSupplier</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveStage('BANK_PAYOUT')}
+                className={`px-3 py-2 text-left rounded-lg transition-colors cursor-pointer ${
+                  activeStage === 'BANK_PAYOUT'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <div className="text-[11px] font-semibold text-indigo-600">04. Bank Payout</div>
+                <div className="text-xs font-bold truncate">requestBankPayout</div>
+              </button>
+            </div>
+
+            {/* STAGE 1 FORM: creditBuyerDeposit */}
+            {activeStage === 'TOPUP' && (
+              <form onSubmit={handleCreditDeposit} className="space-y-4">
+                <div className="pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    01. Buyer Wallet Top-Up (creditBuyerDeposit)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Locks the buyer wallet row (`FOR UPDATE`), increments `available_balance`, and records a `WALLET_TOPUP` ledger entry.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Buyer Entity (`buyerId`)
+                  </label>
+                  <select
+                    value={topupBuyerId}
+                    onChange={e => setTopupBuyerId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                  >
+                    {buyerWallets.map(w => (
+                      <option key={w.id} value={w.entity_id}>
+                        {w.company_name} ({w.entity_id}) — Avail: {formatAmount(w.available_balance)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Deposit Amount (INR ₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={topupAmountInr}
+                      onChange={e => setTopupAmountInr(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                    <div className="text-[11px] text-slate-500 font-mono mt-1">
+                      = {Math.round((parseFloat(topupAmountInr) || 0) * 100).toLocaleString()} paise
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Gateway Webhook Reference (`gatewayTxId`)
+                    </label>
+                    <input
+                      type="text"
+                      value={topupGatewayTxId}
+                      onChange={e => setTopupGatewayTxId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-slate-500 mr-1">Quick Add:</span>
+                  {[100000, 500000, 1000000, 2500000].map(preset => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setTopupAmountInr(String(preset))}
+                      className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-[11px] font-mono font-semibold text-slate-700 hover:text-blue-700 transition-colors cursor-pointer"
+                    >
+                      +₹{preset.toLocaleString('en-IN')}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <ArrowDownLeft className="w-4 h-4" />
+                  <span>{submitting ? 'Committing Top-Up...' : 'Credit Buyer Wallet Deposit (Funds Top-Up)'}</span>
+                </button>
+              </form>
+            )}
+
+            {/* STAGE 2 FORM: lockOrderFundsInEscrow */}
+            {activeStage === 'LOCK_ESCROW' && (
+              <form onSubmit={handleLockEscrow} className="space-y-4">
+                <div className="pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    02. Hold in Mediation (lockOrderFundsInEscrow)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Verifies `BigInt(available_balance) &gt;= BigInt(totalAmountPaise)`, moves funds from `available_balance` to `locked_balance`, and writes `ORDER_LOCK_ESCROW`.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Buyer Wallet (`buyerId`)
+                  </label>
+                  <select
+                    value={lockBuyerId}
+                    onChange={e => setLockBuyerId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                  >
+                    {buyerWallets.map(w => (
+                      <option key={w.id} value={w.entity_id}>
+                        {w.company_name} — Avail: {formatAmount(w.available_balance)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Order Reference ID (`orderId`)
+                    </label>
+                    <input
+                      type="text"
+                      value={lockOrderId}
+                      onChange={e => setLockOrderId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Escrow Lock Amount (INR ₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={lockAmountInr}
+                      onChange={e => setLockAmountInr(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                    <div className="text-[11px] text-slate-500 font-mono mt-1">
+                      = {Math.round((parseFloat(lockAmountInr) || 0) * 100).toLocaleString()} paise
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Counterparty Supplier (`supplierId`)
+                  </label>
+                  <select
+                    value={lockSupplierId}
+                    onChange={e => setLockSupplierId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                  >
+                    {supplierWallets.map(w => (
+                      <option key={w.id} value={w.entity_id}>
+                        {w.company_name} ({w.entity_id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Contract Commodity / Description
+                  </label>
+                  <input
+                    type="text"
+                    value={lockProductTitle}
+                    onChange={e => setLockProductTitle(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-10 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{submitting ? 'Locking Funds...' : 'Lock Order Funds in Escrow'}</span>
+                </button>
+              </form>
+            )}
+
+            {/* STAGE 3 FORM: releaseEscrowToSupplier */}
+            {activeStage === 'RELEASE_SETTLEMENT' && (
+              <form onSubmit={handleReleaseEscrow} className="space-y-4">
+                <div className="pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    03. Mediated Settlement (releaseEscrowToSupplier)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Runs under `SERIALIZABLE` isolation: deducts buyer `locked_balance`, credits net payout to supplier, and credits commission to `PLATFORM_REVENUE`.
+                  </p>
+                </div>
+
+                {lockedOrders.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Quick-Fill from Active Locked Escrow Order
+                    </label>
+                    <select
+                      value={releaseOrderId}
+                      onChange={e => handleSelectLockedOrder(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                    >
+                      {lockedOrders.map(o => (
+                        <option key={o.order_id} value={o.order_id}>
+                          {o.order_id} · {formatAmount(o.total_amount_paise)} · {o.product_title.slice(0, 38)}...
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Order ID (`orderId`)
+                    </label>
+                    <input
+                      type="text"
+                      value={releaseOrderId}
+                      onChange={e => setReleaseOrderId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Buyer Entity (`buyerId`)
+                    </label>
+                    <select
+                      value={releaseBuyerId}
+                      onChange={e => setReleaseBuyerId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                    >
+                      {buyerWallets.map(w => (
+                        <option key={w.id} value={w.entity_id}>
+                          {w.company_name} (Locked: {formatAmount(w.locked_balance)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Beneficiary Supplier (`supplierId`)
+                  </label>
+                  <select
+                    value={releaseSupplierId}
+                    onChange={e => setReleaseSupplierId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                  >
+                    {supplierWallets.map(w => (
+                      <option key={w.id} value={w.entity_id}>
+                        {w.company_name} ({w.entity_id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Total Settlement (INR ₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={releaseTotalAmountInr}
+                      onChange={e => setReleaseTotalAmountInr(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Platform Commission (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="25"
+                      step="0.1"
+                      value={releaseFeePercent}
+                      onChange={e => setReleaseFeePercent(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Settlement Split Breakdown */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Buyer Locked Deduction:</span>
+                    <span className="font-mono font-semibold text-slate-900">
+                      -{formatAmount(feePaisePreview.totalPaise)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-emerald-700">
+                    <span>Net Supplier Payout (`ESCROW_RELEASE`):</span>
+                    <span className="font-mono font-semibold">
+                      +{formatAmount(feePaisePreview.netPaise)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-indigo-700">
+                    <span>Trade Heaven Fee (`PLATFORM_FEE`):</span>
+                    <span className="font-mono font-semibold">
+                      +{formatAmount(feePaisePreview.feePaise)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{submitting ? 'Settling Escrow...' : 'Release Escrow & Settle Supplier'}</span>
+                </button>
+              </form>
+            )}
+
+            {/* STAGE 4 FORM: requestBankPayout */}
+            {activeStage === 'BANK_PAYOUT' && (
+              <form onSubmit={handleBankPayout} className="space-y-4">
+                <div className="pb-3 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    04. Real Bank Withdrawal (requestBankPayout)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Deducts `available_balance` before invoking `bankRails.sendPayout()`, then writes `SUPPLIER_PAYOUT` with the returned `payoutId`.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Wallet Entity (`entityId`)
+                  </label>
+                  <select
+                    value={payoutEntityId}
+                    onChange={e => {
+                      setPayoutEntityId(e.target.value);
+                      const found = state?.wallets.find(w => w.entity_id === e.target.value);
+                      if (found) setBeneficiaryName(found.company_name);
+                    }}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                  >
+                    {(state?.wallets || [])
+                      .filter(w => w.wallet_type !== 'PLATFORM_REVENUE')
+                      .map(w => (
+                        <option key={w.id} value={w.entity_id}>
+                          [{w.wallet_type}] {w.company_name} — Avail: {formatAmount(w.available_balance)}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Withdrawal Amount (INR ₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={payoutAmountInr}
+                      onChange={e => setPayoutAmountInr(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Banking Partner Rail
+                    </label>
+                    <select
+                      value={beneficiaryRail}
+                      onChange={e => setBeneficiaryRail(e.target.value as any)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+                    >
+                      <option value="IMPS">IMPS (Instant Settled)</option>
+                      <option value="NEFT">NEFT (Batch Initiated)</option>
+                      <option value="RTGS">RTGS (High-Value Treasury)</option>
+                      <option value="SWIFT">SWIFT (Cross-Border Wire)</option>
+                      <option value="ACH">ACH (US Clearing House)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Beneficiary Account / IBAN
+                    </label>
+                    <input
+                      type="text"
+                      value={beneficiaryAccount}
+                      onChange={e => setBeneficiaryAccount(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      IFSC / SWIFT BIC
+                    </label>
+                    <input
+                      type="text"
+                      value={beneficiaryIfsc}
+                      onChange={e => setBeneficiaryIfsc(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Receiving Bank Name
+                  </label>
+                  <input
+                    type="text"
+                    value={beneficiaryBank}
+                    onChange={e => setBeneficiaryBank(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-600"
+                    required
+                  />
+                </div>
+
+                {lastPayoutResult && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono flex items-center justify-between">
+                    <span className="text-slate-600">Last BankTransferResult:</span>
+                    <span className="text-slate-900 font-semibold">
+                      {lastPayoutResult.payoutId} · {lastPayoutResult.status}
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-10 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  <span>{submitting ? 'Dispatching Bank Payout...' : 'Initiate Bank Withdrawal'}</span>
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Right 7 Columns: Live Wallets Table & Active Escrow Contracts */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Wallets Table (`wallets`) */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Custodial Wallets Table (`wallets`)
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Row-locked balances stored in integer paise (`BigInt` safe) across Buyer, Supplier, and Platform Revenue accounts
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-56">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={walletSearch}
+                    onChange={e => setWalletSearch(e.target.value)}
+                    placeholder="Filter wallets..."
+                    className="w-full h-8 pl-8 pr-3 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="py-2.5 pr-4">Entity / Wallet ID</th>
+                      <th className="py-2.5 px-3">Role</th>
+                      <th className="py-2.5 px-3 text-right">Available Balance</th>
+                      <th className="py-2.5 px-3 text-right">Locked in Escrow</th>
+                      <th className="py-2.5 pl-3 text-right">Quick Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {filteredWallets.map((w: WalletRecord) => (
+                      <tr key={w.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 pr-4">
+                          <div className="font-semibold text-slate-900">{w.company_name}</div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <span className="font-mono">{w.id}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="font-mono">{w.entity_id}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`text-[11px] font-mono font-semibold ${
+                              w.wallet_type === 'BUYER'
+                                ? 'text-blue-600'
+                                : w.wallet_type === 'SUPPLIER'
+                                ? 'text-emerald-600'
+                                : 'text-indigo-600'
+                            }`}
+                          >
+                            {w.wallet_type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono tabular-nums font-semibold text-slate-900">
+                          {formatAmount(w.available_balance)}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono tabular-nums text-amber-700 font-medium">
+                          {Number(w.locked_balance) > 0 ? formatAmount(w.locked_balance) : '—'}
+                        </td>
+                        <td className="py-3 pl-3 text-right">
+                          {w.wallet_type === 'BUYER' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTopupBuyerId(w.entity_id);
+                                setActiveStage('TOPUP');
+                              }}
+                              className="text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                            >
+                              Top-Up
+                            </button>
+                          )}
+                          {w.wallet_type === 'SUPPLIER' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPayoutEntityId(w.entity_id);
+                                setBeneficiaryName(w.company_name);
+                                setActiveStage('BANK_PAYOUT');
+                              }}
+                              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                            >
+                              Withdraw
+                            </button>
+                          )}
+                          {w.wallet_type === 'PLATFORM_REVENUE' && (
+                            <span className="text-[11px] text-slate-400">Treasury</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mediated Escrow Orders Pipeline */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Active Mediated Contracts &amp; Escrow Holds
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Click any locked contract to pre-fill Stage 03 (`releaseEscrowToSupplier`) or pending contract for Stage 02 (`lockOrderFundsInEscrow`)
+                  </p>
+                </div>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {(state?.orders || []).map(order => (
+                  <div
+                    key={order.order_id}
+                    className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <span className="font-mono font-semibold text-slate-800">{order.order_id}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>Incoterm {order.incoterm}</span>
+                        <span aria-hidden="true">·</span>
+                        <span
+                          className={
+                            order.status === 'LOCKED_IN_ESCROW'
+                              ? 'text-amber-700 font-semibold'
+                              : order.status === 'SETTLED_TO_SUPPLIER'
+                              ? 'text-emerald-700 font-semibold'
+                              : 'text-slate-600 font-semibold'
+                          }
+                        >
+                          {order.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="text-sm font-semibold text-slate-900 truncate">
+                        {order.product_title}
+                      </div>
+                      <div className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5">
+                        <span>Buyer: {order.buyer_name}</span>
+                        <ArrowRight className="w-3 h-3 text-slate-400" />
+                        <span>Supplier: {order.supplier_name}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                      <div className="text-sm font-bold font-mono tabular-nums text-slate-900">
+                        {formatAmount(order.total_amount_paise)}
+                      </div>
+                      {order.status === 'LOCKED_IN_ESCROW' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSelectLockedOrder(order.order_id);
+                            setActiveStage('RELEASE_SETTLEMENT');
+                          }}
+                          className="h-7 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold transition-colors cursor-pointer"
+                        >
+                          Release &amp; Settle
+                        </button>
+                      )}
+                      {order.status === 'PENDING_LOCK' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLockBuyerId(order.buyer_id);
+                            setLockSupplierId(order.supplier_id);
+                            setLockOrderId(order.order_id);
+                            setLockProductTitle(order.product_title);
+                            setLockAmountInr(String(order.total_amount_paise / 100));
+                            setActiveStage('LOCK_ESCROW');
+                          }}
+                          className="h-7 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold transition-colors cursor-pointer"
+                        >
+                          Lock Escrow Funds
+                        </button>
+                      )}
+                      {order.status === 'SETTLED_TO_SUPPLIER' && (
+                        <span className="text-[11px] text-emerald-600 font-medium">
+                          Settled &amp; Audited
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Double-Entry Immutable Ledger Table (`ledger_entries`) */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Immutable Double-Entry Ledger (`ledger_entries`)
+              </h2>
+              <p className="text-xs text-slate-500">
+                Complete audit trail of all mediated wallet credits, escrow locks, supplier settlements, platform commissions, and bank payouts
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Interactive Filter Controls */}
+              <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                {(
+                  [
+                    { id: 'ALL', label: 'All Entries' },
+                    { id: 'WALLET_TOPUP', label: 'Top-Ups' },
+                    { id: 'ORDER_LOCK_ESCROW', label: 'Escrow Locks' },
+                    { id: 'ESCROW_RELEASE', label: 'Releases' },
+                    { id: 'PLATFORM_FEE', label: 'Platform Fees' },
+                    { id: 'SUPPLIER_PAYOUT', label: 'Bank Payouts' }
+                  ] as const
+                ).map(tab => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setLedgerFilter(tab.id)}
+                    className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                      ledgerFilter === tab.id
+                        ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleExportLedgerCsv}
+                className="h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-2.5 pr-4">Ledger ID / Timestamp</th>
+                  <th className="py-2.5 px-3">Reference ID</th>
+                  <th className="py-2.5 px-3">Transaction Type</th>
+                  <th className="py-2.5 px-3">Source Wallet</th>
+                  <th className="py-2.5 px-3">Destination Wallet</th>
+                  <th className="py-2.5 px-3 text-right">Amount</th>
+                  <th className="py-2.5 pl-3">Notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {filteredLedger.map(entry => (
+                  <tr key={entry.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 pr-4">
+                      <div className="font-mono font-semibold text-slate-900">{entry.id}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-slate-800">{entry.reference_id}</td>
+                    <td className="py-3 px-3">
+                      <span
+                        className={`font-mono font-semibold text-[11px] ${
+                          entry.transaction_type === 'WALLET_TOPUP'
+                            ? 'text-blue-600'
+                            : entry.transaction_type === 'ORDER_LOCK_ESCROW'
+                            ? 'text-amber-600'
+                            : entry.transaction_type === 'ESCROW_RELEASE'
+                            ? 'text-emerald-600'
+                            : entry.transaction_type === 'PLATFORM_FEE'
+                            ? 'text-indigo-600'
+                            : 'text-purple-600'
+                        }`}
+                      >
+                        {entry.transaction_type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate">
+                      {resolveWalletLabel(entry.source_wallet_id)}
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 max-w-[200px] truncate">
+                      {resolveWalletLabel(entry.destination_wallet_id)}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono tabular-nums font-bold text-slate-900">
+                      {formatAmount(entry.amount)}
+                    </td>
+                    <td className="py-3 pl-3 text-slate-500">{entry.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TradeHeavenMediatorView;

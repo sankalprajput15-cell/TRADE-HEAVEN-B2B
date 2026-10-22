@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { ShieldCheck, Lock, Verified, Search, FileText, Anchor } from 'lucide-react';
+import { ShieldCheck, Lock, Verified, Search, Anchor } from 'lucide-react';
+import { TradeHeavenMediatorView } from './TradeHeavenMediatorView';
 
 export const TrustAndSafety: React.FC = () => {
   useEffect(() => {
@@ -8,22 +9,25 @@ export const TrustAndSafety: React.FC = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
         
-        <div className="text-center mb-16 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold text-sm mb-6">
+        <div className="text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 text-blue-700 font-semibold text-sm mb-4">
             <ShieldCheck className="w-5 h-5" />
-            Official Security & Trust Center
+            <span>Official Security &amp; Escrow Mediation Center</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 font-display tracking-tight">
             Secure, Verified, and Transparent Global Trade
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed">
-            At Trade Heaven, our mission is to eliminate the risks of cross-border commerce. We are strictly a physical goods B2B marketplace, dedicated to connecting legitimate manufacturers with serious global buyers.
+            At Trade Heaven, our mission is to eliminate the risks of cross-border commerce. We are strictly a physical goods B2B marketplace, dedicated to connecting legitimate manufacturers with serious global buyers through ACID-compliant escrow mediation.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+        {/* Interactive TradeHeavenMediatorEngine Console */}
+        <TradeHeavenMediatorView embedded={true} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
             <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
               <Verified className="w-7 h-7" />
@@ -48,9 +52,9 @@ export const TrustAndSafety: React.FC = () => {
             <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-6">
               <Lock className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-3">Transparent & Secure</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">Transparent &amp; Secure Escrow</h3>
             <p className="text-slate-600 leading-relaxed">
-              We operate on a transparent subscription and lead-generation model. There are no hidden certificate fees or unauthorized charges. What you see is what you get: a pure B2B networking engine.
+              Funds deposited by buyers are held in row-locked escrow wallets until delivery and inspection milestones are confirmed, then settled atomically to verified supplier bank accounts.
             </p>
           </div>
         </div>
@@ -81,3 +85,4 @@ export const TrustAndSafety: React.FC = () => {
     </div>
   );
 };
+

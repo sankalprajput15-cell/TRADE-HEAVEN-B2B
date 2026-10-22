@@ -5,6 +5,11 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import {
+  TradeHeavenMediatorEngine,
+  TradeHeavenSqlPoolAdapter,
+  TradeHeavenBankRailsClient
+} from './src/services/tradeHeavenMediatorEngine';
 
 dotenv.config();
 
@@ -2803,6 +2808,147 @@ app.post('/api/v1/admin/audit-logs/clear', (req, res) => {
     success: true,
     message: 'Audit logs cleared successfully.'
   });
+});
+
+const serverMediationPool = new TradeHeavenSqlPoolAdapter();
+const serverBankRails = new TradeHeavenBankRailsClient([
+  {
+    payoutId: 'PAYOUT-IMPS-748291-402',
+    entityId: 'comp-shenzhen-solar',
+    walletId: 'wal-supp-shenzhen',
+    amountPaise: 45000000,
+    status: 'SETTLED',
+    beneficiary: {
+      accountHolderName: 'Shenzhen Lumina New Energy Tech Co., Ltd.',
+      accountNumber: '8829-0019-4482-1102',
+      ifscOrSwift: 'HSBCHKHHHKH',
+      bankName: 'HSBC Corporate Trade Banking',
+      rail: 'SWIFT'
+    },
+    createdAt: new Date(Date.now() - 3600 * 1000 * 4).toISOString()
+  }
+]);
+const serverMediatorEngine = new TradeHeavenMediatorEngine(serverMediationPool, serverBankRails);
+
+const getServerMediationState = () => ({
+  wallets: serverMediationPool.getWallets(),
+  ledgerEntries: serverMediationPool.getLedgerEntries(),
+  orders: serverMediationPool.getOrders(),
+  payouts: serverBankRails.getPayouts(),
+  sqlLogs: serverMediationPool.getSqlLogs()
+});
+
+// GET /api/v1/mediation/state - Get live wallets, double-entry ledger, escrow orders, and bank payouts
+app.get('/api/v1/mediation/state', (_req, res) => {
+  res.json(getServerMediationState());
+});
+
+// POST /api/v1/mediation/topup - 1. TOP-UP: Buyer adds money to Trade Heaven wallet
+app.post('/api/v1/mediation/topup', async (req, res) => {
+  try {
+    const { buyerId, amountPaise, gatewayTxId } = req.body;
+    if (!buyerId || !amountPaise || Number(amountPaise) <= 0) {
+      return res.status(400).json({ error: 'Valid buyerId and positive amountPaise are required.' });
+    }
+    const txId = gatewayTxId || `GW-TX-${Date.now()}`;
+    await serverMediatorEngine.creditBuyerDeposit(buyerId, Math.round(Number(amountPaise)), txId);
+    logServerActivity(
+      req,
+      'WALLET_TOPUP',
+      buyerId,
+      'BUYER',
+      '/api/v1/mediation/topup',
+      `Credited buyer wallet (${buyerId}) with ${amountPaise} paise via gateway ref ${txId}`,
+      'SUCCESS'
+    );
+    res.json({ success: true, state: getServerMediationState() });
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message || 'Failed to credit buyer deposit.' });
+  }
+});
+
+// POST /api/v1/mediation/lock-escrow - 2. HOLD IN MEDIATION: Lock buyer funds in escrow
+app.post('/api/v1/mediation/lock-escrow', async (req, res) => {
+  try {
+    const { buyerId, orderId, totalAmountPaise, supplierId, productTitle } = req.body;
+    if (!buyerId || !orderId || !totalAmountPaise || Number(totalAmountPaise) <= 0) {
+      return res.status(400).json({ error: 'Valid buyerId, orderId, and totalAmountPaise are required.' });
+    }
+    const amount = Math.round(Number(totalAmountPaise));
+    await serverMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, amount);
+    serverMediationPool.markOrderLocked(orderId, buyerId, amount, supplierId, productTitle);
+    logServerActivity(
+      req,
+      'ORDER_LOCK_ESCROW',
+      buyerId,
+      'BUYER',
+      '/api/v1/mediation/lock-escrow',
+      `Locked ${amount} paise in Trade Heaven escrow for order ${orderId}`,
+      'SUCCESS'
+    );
+    res.json({ success: true, state: getServerMediationState() });
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message || 'Failed to lock order funds in escrow.' });
+  }
+});
+
+// POST /api/v1/mediation/release-escrow - 3. MEDIATED SETTLEMENT: Release escrow to supplier + platform commission
+app.post('/api/v1/mediation/release-escrow', async (req, res) => {
+  try {
+    const { orderId, buyerId, supplierId, totalAmountPaise, platformFeePaise } = req.body;
+    if (!orderId || !buyerId || !supplierId || !totalAmountPaise || Number(totalAmountPaise) <= 0) {
+      return res.status(400).json({ error: 'orderId, buyerId, supplierId, and totalAmountPaise are required.' });
+    }
+    const total = Math.round(Number(totalAmountPaise));
+    const fee = Math.round(Number(platformFeePaise || 0));
+    await serverMediatorEngine.releaseEscrowToSupplier({
+      orderId,
+      buyerId,
+      supplierId,
+      totalAmountPaise: total,
+      platformFeePaise: fee
+    });
+    serverMediationPool.markOrderSettled(orderId);
+    logServerActivity(
+      req,
+      'ESCROW_RELEASE',
+      buyerId,
+      'BUYER',
+      '/api/v1/mediation/release-escrow',
+      `Settled order ${orderId}: Net ${total - fee} paise to supplier ${supplierId}, ${fee} paise platform commission`,
+      'SUCCESS'
+    );
+    res.json({ success: true, state: getServerMediationState() });
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message || 'Failed to release escrow to supplier.' });
+  }
+});
+
+// POST /api/v1/mediation/payout - 4. PAYOUT / WITHDRAWAL: Withdraw available balance to real bank account
+app.post('/api/v1/mediation/payout', async (req, res) => {
+  try {
+    const { entityId, amountPaise, destinationBankDetails } = req.body;
+    if (!entityId || !amountPaise || Number(amountPaise) <= 0) {
+      return res.status(400).json({ error: 'Valid entityId and positive amountPaise are required.' });
+    }
+    const amount = Math.round(Number(amountPaise));
+    const payoutResult = await serverMediatorEngine.requestBankPayout(entityId, amount, {
+      ...destinationBankDetails,
+      entityId
+    });
+    logServerActivity(
+      req,
+      'SUPPLIER_PAYOUT',
+      entityId,
+      'SUPPLIER',
+      '/api/v1/mediation/payout',
+      `Initiated bank withdrawal ${payoutResult.payoutId} (${payoutResult.status}) for ${amount} paise`,
+      'SUCCESS'
+    );
+    res.json({ success: true, payoutResult, state: getServerMediationState() });
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message || 'Failed to process bank payout.' });
+  }
 });
 
 // -------------------------------------------------------------

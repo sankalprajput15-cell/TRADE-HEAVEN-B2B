@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { UserRole, Currency, EscrowTransaction, RfqRequirement, Product, AuthUser } from '../../types';
 import { CURRENCY_RATES, MOCK_ESCROWS, MOCK_RFQS, MOCK_PRODUCTS } from '../../data/mockData';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
+import { TradeHeavenMediatorView } from './TradeHeavenMediatorView';
+import { TopUpWallet } from './TopUpWallet';
+import { TransactionLedgerView } from './TransactionLedgerView';
 import { 
   LayoutDashboard, 
   ShieldCheck, 
@@ -28,7 +31,8 @@ import {
   Eye,
   X,
   Send,
-  Activity
+  Activity,
+  BookOpen
 } from 'lucide-react';
 
 interface Props {
@@ -75,7 +79,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenCreateRfq,
   onOpenStorefront
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS'>('TRANSACTION_LEDGER');
   const handleDownloadTemplate = (title: string) => {
     const link = document.createElement('a');
     link.href = 'data:application/pdf;base64,JVBERi0xLjAKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqIDIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iaiAzIDAgb2JqPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMTAgMDAwMDAgbgowMDAwMDAwMDUzIDAwMDAwIG4KMDAwMDAwMDEwMiAwMDAwMCBuCnRyYWlsZXI8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxNDkKJUVPRgo=';
@@ -327,6 +331,22 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
 
         <div className="flex flex-col sm:flex-row gap-2.5 shrink-0">
           <button
+            type="button"
+            onClick={() => setActiveTab('TOPUP_WALLET')}
+            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>+ Top-Up Wallet</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('TRANSACTION_LEDGER')}
+            className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Transaction Ledger</span>
+          </button>
+          <button
             onClick={onOpenCreateRfq}
             className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
           >
@@ -401,7 +421,29 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex border-b border-slate-200 gap-4 text-xs font-bold">
+      <div className="flex flex-wrap border-b border-slate-200 gap-4 text-xs font-bold">
+        <button
+          onClick={() => setActiveTab('TRANSACTION_LEDGER')}
+          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'TRANSACTION_LEDGER'
+              ? 'border-b-2 border-indigo-600 text-indigo-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          <span>Transaction Ledger</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('TOPUP_WALLET')}
+          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'TOPUP_WALLET'
+              ? 'border-b-2 border-emerald-600 text-emerald-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          <span>Top-Up Wallet (Gateway Deposit)</span>
+        </button>
         <button
           onClick={() => setActiveTab('OVERVIEW')}
           className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
@@ -412,6 +454,17 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         >
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>Active Contracts ({MOCK_ESCROWS.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('MEDIATION_WALLET')}
+          className={`pb-3 cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'MEDIATION_WALLET'
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Full Escrow Mediation Engine</span>
         </button>
         <button
           onClick={() => setActiveTab('RFQS')}
@@ -434,9 +487,6 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         >
           <Settings className="w-3.5 h-3.5" />
           <span>RFQ Sourcing Alerts &amp; Settings</span>
-          <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] bg-blue-100 text-blue-800 font-black animate-pulse">
-            NEW
-          </span>
         </button>
         <button
           onClick={() => setActiveTab('DOCUMENTS')}
@@ -450,6 +500,35 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           <span>Document Library</span>
         </button>
       </div>
+
+      {/* Tab Content: Transaction Ledger */}
+      {activeTab === 'TRANSACTION_LEDGER' && (
+        <TransactionLedgerView
+          onNavigateToTopUp={() => setActiveTab('TOPUP_WALLET')}
+          onNavigateToMediationEngine={() => setActiveTab('MEDIATION_WALLET')}
+        />
+      )}
+
+      {/* Tab Content: Top-Up Wallet */}
+      {activeTab === 'TOPUP_WALLET' && (
+        <TopUpWallet
+          onNavigateToFullEngine={() => {
+            setActiveTab('MEDIATION_WALLET');
+            setTimeout(() => {
+              window.dispatchEvent(
+                new CustomEvent('tradeheaven_open_mediation_stage', {
+                  detail: { stage: 'LOCK_ESCROW' }
+                })
+              );
+            }, 60);
+          }}
+        />
+      )}
+
+      {/* Tab Content: TradeHeavenMediatorEngine */}
+      {activeTab === 'MEDIATION_WALLET' && (
+        <TradeHeavenMediatorView embedded={true} />
+      )}
 
       {/* Tab Content: Escrows */}
       {activeTab === 'OVERVIEW' && (

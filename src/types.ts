@@ -479,7 +479,8 @@ export type ActiveView =
   | 'COUNTRY_HUB'
   | 'TRUST_SAFETY'
   | 'INSIGHTS'
-  | 'PRODUCT_IMAGE_ADMIN';
+  | 'PRODUCT_IMAGE_ADMIN'
+  | 'MEDIATOR_ENGINE';
 
 export * from './types/planPricingTypes';
 

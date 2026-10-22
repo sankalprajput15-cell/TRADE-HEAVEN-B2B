@@ -105,6 +105,7 @@ const LandingPageView = lazyWithRetry(() => import('./components/marketplace/Lan
 const VendorProfilePage = lazyWithRetry(() => import('./components/vendor/VendorProfilePage'), 'VendorProfilePage');
 const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerProfilePage'), 'BuyerProfilePage');
 const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
+const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
 
 // Core Interactive Modals (Direct imports ensure zero dynamic chunk fetch failures)
 import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
@@ -1686,6 +1687,8 @@ const MainApp: React.FC = () => {
                 return <AboutUs onNavigate={handleNavigate} />;
               case 'TRUST_SAFETY':
                 return <TrustAndSafety />;
+              case 'MEDIATOR_ENGINE':
+                return <TradeHeavenMediatorView />;
               case 'INSIGHTS':
                 return <InsightsBlog onNavigate={handleNavigate} currentUser={currentUser} onOpenAuthModal={() => setIsAuthModalOpen(true)} />;
               case 'PRODUCT_DIRECTORY':
@@ -2221,6 +2224,7 @@ const MainApp: React.FC = () => {
           onClose={() => setCheckoutData(null)}
           checkoutData={checkoutData}
           selectedCurrency={selectedCurrency}
+          onNavigate={handleNavigate}
           onPaymentSuccess={orderId => {
             // Success
           }}

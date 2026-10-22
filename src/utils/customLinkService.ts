@@ -121,7 +121,11 @@ export const VIEW_ALIASES: Record<string, ActiveView> = {
   'client-admin': 'CLIENT_ADMIN',
   chat: 'NEGOTIATION_ROOM',
   'negotiation-room': 'NEGOTIATION_ROOM',
-  'country-hub': 'COUNTRY_HUB'
+  'country-hub': 'COUNTRY_HUB',
+  'mediator-engine': 'MEDIATOR_ENGINE',
+  mediation: 'MEDIATOR_ENGINE',
+  'escrow-engine': 'MEDIATOR_ENGINE',
+  wallets: 'MEDIATOR_ENGINE'
 };
 
 /**

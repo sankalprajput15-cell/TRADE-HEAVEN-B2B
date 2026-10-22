@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PaymentCheckoutData, Currency } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { 
@@ -11,9 +11,13 @@ import {
   HelpCircle,
   Building2, 
   Clock, 
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  PlusCircle,
+  ArrowDownLeft
 } from 'lucide-react';
 import { api } from '../../services/apiService';
+import { tradeHeavenMediationService, WalletRecord } from '../../services/tradeHeavenMediatorEngine';
 
 interface Props {
   isOpen: boolean;
@@ -21,6 +25,7 @@ interface Props {
   checkoutData: PaymentCheckoutData | null;
   selectedCurrency: Currency;
   onPaymentSuccess?: (orderId: string) => void;
+  onNavigate?: (view: any) => void;
 }
 
 export const PaymentCheckoutModal: React.FC<Props> = ({
@@ -28,15 +33,36 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
   onClose,
   checkoutData,
   selectedCurrency,
-  onPaymentSuccess
+  onPaymentSuccess,
+  onNavigate
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'REQUEST_LINK' | 'SWIFT' | 'REQUEST_INFO'>('REQUEST_LINK');
+  const [paymentMethod, setPaymentMethod] = useState<'WALLET_TOPUP' | 'REQUEST_LINK' | 'SWIFT' | 'REQUEST_INFO'>('WALLET_TOPUP');
   const [clientEmail, setClientEmail] = useState('elena@vostoksourcing.com');
   const [clientPhone, setClientPhone] = useState('+91 8532934479');
   const [billingName, setBillingName] = useState('Elena Rostova');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Live Mediation Wallet Top-Up state
+  const [buyerWallets, setBuyerWallets] = useState<WalletRecord[]>([]);
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-titan-01');
+  const [topupAmountInr, setTopupAmountInr] = useState<string>('500000');
+  const [gatewayTxId, setGatewayTxId] = useState<string>(() => `GW-RZP-${Math.floor(1000000 + Math.random() * 9000000)}`);
+  const [walletStatusMsg, setWalletStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isToppingUp, setIsToppingUp] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      tradeHeavenMediationService.getState().then(st => {
+        const buyers = (st.wallets || []).filter(w => w.wallet_type === 'BUYER');
+        setBuyerWallets(buyers);
+        if (buyers.length > 0 && !buyers.some(b => b.entity_id === selectedBuyerId)) {
+          setSelectedBuyerId(buyers[0].entity_id);
+        }
+      }).catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen || !checkoutData) return null;
 
@@ -47,15 +73,57 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
     return `${curr.symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const handleInstantWalletTopUp = async () => {
+    setWalletStatusMsg(null);
+    const inr = parseFloat(topupAmountInr);
+    if (isNaN(inr) || inr <= 0) {
+      setWalletStatusMsg({ type: 'error', text: 'Please enter a valid positive top-up amount in INR.' });
+      return;
+    }
+    const amountPaise = Math.round(inr * 100);
+    setIsToppingUp(true);
+    try {
+      const updated = await tradeHeavenMediationService.creditBuyerDeposit(
+        selectedBuyerId,
+        amountPaise,
+        gatewayTxId.trim() || `GW-RZP-${Date.now()}`
+      );
+      setBuyerWallets((updated.wallets || []).filter(w => w.wallet_type === 'BUYER'));
+      setGatewayTxId(`GW-RZP-${Math.floor(1000000 + Math.random() * 9000000)}`);
+      setWalletStatusMsg({
+        type: 'success',
+        text: `Top-Up Successful! Credited ₹${inr.toLocaleString('en-IN')} (${amountPaise.toLocaleString()} paise) to ${selectedBuyerId} via creditBuyerDeposit.`
+      });
+    } catch (err: any) {
+      setWalletStatusMsg({
+        type: 'error',
+        text: err?.message || 'Failed to credit buyer wallet deposit.'
+      });
+    } finally {
+      setIsToppingUp(false);
+    }
+  };
+
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     try {
       const orderId = `ORD-TH-${Date.now().toString().slice(-6)}`;
+      if (paymentMethod === 'WALLET_TOPUP') {
+        const orderPaise = Math.round(checkoutData.amountUsd * 83.5 * 100);
+        await tradeHeavenMediationService.lockOrderFundsInEscrow(
+          selectedBuyerId,
+          orderId,
+          orderPaise,
+          'comp-melissa-mpcommodity',
+          checkoutData.title
+        );
+      }
+
       await api.createOrder({
         id: orderId,
-        buyerId: 'usr-buyer-001',
+        buyerId: selectedBuyerId || 'usr-buyer-001',
         buyerCompany: billingName,
         supplierCompany: checkoutData.supplierCompany || 'Trade Heaven Global SA',
         productTitle: checkoutData.title,
@@ -64,7 +132,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
         currency: selectedCurrency,
         incoterm: 'FOB',
         status: paymentMethod === 'REQUEST_LINK' ? 'PENDING' : 'PAID',
-        paymentMethod,
+        paymentMethod: paymentMethod === 'WALLET_TOPUP' ? 'SWIFT' : paymentMethod,
         createdAt: new Date().toISOString()
       });
 
@@ -76,7 +144,15 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
         setIsSuccess(false);
         onClose();
       }, 3000);
-    } catch (err) {
+    } catch (err: any) {
+      if (paymentMethod === 'WALLET_TOPUP') {
+        setWalletStatusMsg({
+          type: 'error',
+          text: err?.message || 'Insufficient available wallet funds to lock in escrow. Please click "+ Top-Up Wallet Balance" first.'
+        });
+        setIsProcessing(false);
+        return;
+      }
       setIsSuccess(true);
       setTimeout(() => {
         setIsSuccess(false);
@@ -111,28 +187,39 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
             <Lock className="w-3.5 h-3.5" /> 256-Bit SSL Encrypted trade protection Rail
           </div>
           <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-            Secure Trade Protection Checkout &amp; Settlement
+            Secure Trade Protection Checkout &amp; Wallet Top-Up
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
-            Capital is protected in neutral Swiss trade protection vaults under FINMA compliance rules.
+            Top up your Trade Heaven buyer wallet (`creditBuyerDeposit`) or lock funds in mediated escrow.
           </p>
         </div>
 
-        {/* Order Summary Strip */}
-        <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 gap-3">
+        {/* Order Summary Strip + Direct Funds Top-Up Action */}
+        <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between shrink-0 gap-3">
           <div className="min-w-0">
             <div className="text-[10px] text-slate-500 font-bold uppercase">{checkoutData.type}</div>
             <div className="font-bold text-xs sm:text-sm text-slate-900 mt-0.5 truncate">{checkoutData.title}</div>
             <div className="text-[11px] text-slate-600 font-medium truncate">{checkoutData.description}</div>
           </div>
 
-          <div className="text-right shrink-0">
-            <div className="text-[10px] text-slate-500 font-medium">Total Settlement</div>
-            <div className="text-lg sm:text-xl font-black text-emerald-600 font-mono">
-              {formatPrice(convertedPrice)}
-            </div>
-            <div className="text-[10px] text-slate-400 font-mono">
-              (${checkoutData.amountUsd.toLocaleString()} USD)
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('WALLET_TOPUP')}
+              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Funds Top-Up</span>
+            </button>
+
+            <div className="text-right">
+              <div className="text-[10px] text-slate-500 font-medium">Total Settlement</div>
+              <div className="text-lg sm:text-xl font-black text-emerald-600 font-mono">
+                {formatPrice(convertedPrice)}
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                (${checkoutData.amountUsd.toLocaleString()} USD)
+              </div>
             </div>
           </div>
         </div>
@@ -147,14 +234,14 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                 ? 'Payment Link Request Submitted!' 
                 : paymentMethod === 'REQUEST_INFO' 
                 ? 'Information Request Submitted!' 
-                : 'Trade Protection Settlement Logged!'}
+                : 'Escrow Lock & Settlement Logged!'}
             </h3>
             <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
               {paymentMethod === 'REQUEST_LINK' 
                 ? `Your request for ${checkoutData.title} (${formatPrice(convertedPrice)}) has been sent to Treasury. Check your email (${clientEmail}) for your custom secure payment link.`
                 : paymentMethod === 'REQUEST_INFO'
                 ? `Your inquiry regarding ${checkoutData.title} (${formatPrice(convertedPrice)}) has been logged. Our Treasury Operations team will contact you at ${clientEmail} with complete payment information.`
-                : 'Your funds are held securely in Swiss Trade Protection. A verified Proforma Invoice & receipt have been dispatched to your email.'}
+                : 'Your funds have been locked in Trade Heaven Mediated Escrow (ORDER_LOCK_ESCROW).'}
             </p>
             <button
               type="button"
@@ -168,8 +255,21 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
           <form onSubmit={handleProcessPayment} className="p-4 sm:p-6 md:p-7 space-y-5 flex-1 overflow-y-auto text-xs">
             {/* Payment Method Selector */}
             <div className="space-y-2">
-              <label className="block font-bold text-slate-800">Select Settlement Method</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block font-bold text-slate-800">Select Settlement &amp; Top-Up Method</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('WALLET_TOPUP')}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-1 transition-all cursor-pointer ${
+                    paymentMethod === 'WALLET_TOPUP'
+                      ? 'bg-emerald-50 border-emerald-600 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <Wallet className="w-4 h-4 text-emerald-600" />
+                  <span className="text-[11px]">Wallet &amp; Top-Up</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('REQUEST_LINK')}
@@ -180,7 +280,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                   }`}
                 >
                   <Link className="w-4 h-4 text-emerald-600" />
-                  <span className="text-[11px]">Request Payment Link</span>
+                  <span className="text-[11px]">Payment Link</span>
                 </button>
 
                 <button
@@ -206,10 +306,127 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                   }`}
                 >
                   <HelpCircle className="w-4 h-4 text-amber-600" />
-                  <span className="text-[11px]">Request Information</span>
+                  <span className="text-[11px]">Request Info</span>
                 </button>
               </div>
             </div>
+
+            {/* Wallet Top-Up & Mediated Escrow View */}
+            {paymentMethod === 'WALLET_TOPUP' && (
+              <div className="space-y-3.5 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <Wallet className="w-4 h-4 text-emerald-600" />
+                      <span>1. Buyer Wallet Funds Top-Up (`creditBuyerDeposit`)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Add funds to your Trade Heaven wallet in INR/Paise or open the full 4-Stage Mediation Console.
+                    </p>
+                  </div>
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onNavigate('MEDIATOR_ENGINE');
+                        setTimeout(() => {
+                          window.dispatchEvent(
+                            new CustomEvent('tradeheaven_open_mediation_stage', {
+                              detail: { stage: 'TOPUP' }
+                            })
+                          );
+                        }, 60);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] shrink-0 cursor-pointer"
+                    >
+                      Full Console
+                    </button>
+                  )}
+                </div>
+
+                {walletStatusMsg && (
+                  <div
+                    className={`p-3 rounded-xl border text-[11px] font-medium flex items-start gap-2 ${
+                      walletStatusMsg.type === 'success'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                        : 'bg-rose-50 border-rose-200 text-rose-900'
+                    }`}
+                  >
+                    {walletStatusMsg.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    )}
+                    <span>{walletStatusMsg.text}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Select Buyer Wallet (`buyerId`)</label>
+                  <select
+                    value={selectedBuyerId}
+                    onChange={e => setSelectedBuyerId(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-emerald-500"
+                  >
+                    {buyerWallets.map(w => (
+                      <option key={w.id} value={w.entity_id}>
+                        {w.company_name} ({w.entity_id}) — Avail: ₹{(Number(w.available_balance) / 100).toLocaleString('en-IN')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Top-Up Deposit Amount (INR ₹)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={topupAmountInr}
+                      onChange={e => setTopupAmountInr(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                    />
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                      = {Math.round((parseFloat(topupAmountInr) || 0) * 100).toLocaleString()} paise
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Gateway Tx Reference (`gatewayTxId`)</label>
+                    <input
+                      type="text"
+                      value={gatewayTxId}
+                      onChange={e => setGatewayTxId(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[100000, 500000, 1000000, 2500000].map(preset => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setTopupAmountInr(String(preset))}
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-[11px] font-mono font-semibold text-slate-700 cursor-pointer"
+                    >
+                      +₹{preset.toLocaleString('en-IN')}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleInstantWalletTopUp}
+                  disabled={isToppingUp}
+                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                >
+                  <ArrowDownLeft className="w-4 h-4" />
+                  <span>{isToppingUp ? 'Crediting Deposit...' : '+ Top-Up Wallet Balance Now (creditBuyerDeposit)'}</span>
+                </button>
+              </div>
+            )}
 
             {/* Request Payment Link View */}
             {paymentMethod === 'REQUEST_LINK' && (
