@@ -106,6 +106,7 @@ const VendorProfilePage = lazyWithRetry(() => import('./components/vendor/Vendor
 const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerProfilePage'), 'BuyerProfilePage');
 const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
 const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
+const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
 
 // Core Interactive Modals (Direct imports ensure zero dynamic chunk fetch failures)
 import { ProductDetailModal } from './components/marketplace/ProductDetailModal';
@@ -1427,7 +1428,11 @@ const MainApp: React.FC = () => {
       setActiveView('DASHBOARD');
       return;
     }
-    if (target === 'MEDIATOR_ENGINE' || target === 'MEDIATION_WALLET' || target === 'MEDIATION' || target === 'ESCROW_MEDIATOR' || target === 'WALLET_TOPUP' || target === 'TOPUP') {
+    if (target === 'WALLET_TOPUP' || target === 'TOPUP' || target === 'TOPUP_WALLET' || target === 'WALLET' || target === 'TOP_UP') {
+      setActiveView('WALLET_TOPUP');
+      return;
+    }
+    if (target === 'MEDIATOR_ENGINE' || target === 'MEDIATION_WALLET' || target === 'MEDIATION' || target === 'ESCROW_MEDIATOR') {
       setActiveView('MEDIATOR_ENGINE');
       return;
     }
@@ -2060,6 +2065,16 @@ const MainApp: React.FC = () => {
               case 'MEDIATOR_ENGINE':
                 return (
                   <TradeHeavenMediatorView embedded={false} />
+                );
+
+              case 'WALLET_TOPUP':
+                return (
+                  <DedicatedTopUpWalletPage
+                    currentUser={currentUser}
+                    selectedCurrency={selectedCurrency}
+                    onNavigate={handleNavigate}
+                    onOpenStorefront={handleOpenStorefront}
+                  />
                 );
 
               default:

@@ -202,10 +202,10 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
             type="button"
             onClick={() => {
               setPopoverOpen(false);
-              setTopUpModalOpen(true);
+              onOpenTopUp();
             }}
             className="h-full px-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-            title="Top-Up Buyer Wallet Funds"
+            title="Open Dedicated Top-Up Wallet Page"
             data-testid="header-topup-button"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
@@ -323,7 +323,7 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
                   type="button"
                   onClick={() => {
                     setPopoverOpen(false);
-                    setTopUpModalOpen(true);
+                    onOpenTopUp();
                   }}
                   className="h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                 >

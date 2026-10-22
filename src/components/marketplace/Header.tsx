@@ -198,19 +198,7 @@ export const Header: React.FC<Props> = ({
     setUserMenuOpen(false);
 
     if (role === 'BUYER') {
-      handleNavClick('DASHBOARD');
-      setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent('tradeheaven_open_dashboard_tab', {
-            detail: { tab: 'TOPUP_WALLET' }
-          })
-        );
-        window.dispatchEvent(
-          new CustomEvent('tradeheaven_open_mediation_stage', {
-            detail: { stage: 'TOPUP', sectionTab: 'TOPUP_SIMULATOR' }
-          })
-        );
-      }, 50);
+      handleNavClick('WALLET_TOPUP');
     } else {
       handleNavClick('DASHBOARD');
       setTimeout(() => {
@@ -227,19 +215,7 @@ export const Header: React.FC<Props> = ({
 
   const handleOpenFundsTopUp = () => {
     setUserMenuOpen(false);
-    handleNavClick('DASHBOARD');
-    setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent('tradeheaven_open_dashboard_tab', {
-          detail: { tab: 'TOPUP_WALLET' }
-        })
-      );
-      window.dispatchEvent(
-        new CustomEvent('tradeheaven_open_mediation_stage', {
-          detail: { stage: 'TOPUP', sectionTab: 'TOPUP_SIMULATOR' }
-        })
-      );
-    }, 50);
+    handleNavClick('WALLET_TOPUP');
   };
 
   // Primary inline top-bar links
@@ -260,8 +236,8 @@ export const Header: React.FC<Props> = ({
     authOnly?: boolean;
   }[] = [
     { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
-    { label: 'Dashboard & Ledger', view: 'DASHBOARD', icon: LayoutDashboard, activeMatch: ['DASHBOARD'], authOnly: true },
-    { label: 'Wallet Funds Top-Up', view: 'MEDIATOR_ENGINE', icon: Wallet, activeMatch: ['MEDIATOR_ENGINE'], authOnly: true },
+    { label: 'Dashboard & Ledger', view: 'DASHBOARD', icon: LayoutDashboard, activeMatch: ['DASHBOARD'] },
+    { label: 'Wallet Funds Top-Up', view: 'WALLET_TOPUP', icon: Wallet, activeMatch: ['WALLET_TOPUP', 'MEDIATOR_ENGINE', 'DASHBOARD'] },
     { label: 'Products Catalog', view: 'PRODUCT_DIRECTORY', icon: Package, activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Verified Suppliers', view: 'SUPPLIERS_DIRECTORY', icon: Building2, activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Verified Buyers', view: 'BUYERS_DIRECTORY', icon: Users, activeMatch: ['BUYERS_DIRECTORY', 'BUYER_PROFILE'] },
@@ -398,7 +374,7 @@ export const Header: React.FC<Props> = ({
           {currentUser && (
             <HeaderWalletBalance
               currentUser={currentUser}
-              isActiveView={activeView === 'MEDIATOR_ENGINE'}
+              isActiveView={activeView === 'WALLET_TOPUP' || activeView === 'MEDIATOR_ENGINE'}
               onOpenTopUp={handleOpenFundsTopUp}
               onOpenLedger={() => handleNavClick('DASHBOARD')}
             />
@@ -526,55 +502,71 @@ export const Header: React.FC<Props> = ({
                     </div>
 
                     {/* 1-Click Instant Demo Session Switcher */}
-                    <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                        <Wallet className="w-3 h-3 text-slate-400" />
-                        <span>Demo Wallet:</span>
+                    <div className="pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 shrink-0">
+                        <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Quick Demo:</span>
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleQuickDemoSession('BUYER')}
-                          className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300 text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-colors shadow-2xs flex items-center gap-1"
                           title="Switch to Buyer session and open Top-Up Wallet"
                         >
-                          Buyer Wallet
+                          <PlusCircle className="w-3 h-3 text-emerald-200" />
+                          <span>Buyer Wallet</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleQuickDemoSession('SUPPLIER')}
-                          className="px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-800 border border-blue-300 text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-colors shadow-2xs flex items-center gap-1"
                           title="Switch to Supplier session and open Transaction Ledger"
                         >
-                          Supplier Wallet
+                          <LayoutDashboard className="w-3 h-3 text-blue-200" />
+                          <span>Supplier Wallet</span>
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Dedicated Wallet Funds Top-Up & Escrow Mediation Strip (Only for signed-in users) */}
-                {currentUser && (
-                  <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl mb-2.5 flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                        <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Wallet &amp; Escrow Mediation</span>
+                {/* Dedicated Wallet Funds Top-Up & Escrow Mediation Strip (Permanently Visible - Never Hidden) */}
+                <div className="p-3 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 border border-emerald-200/90 rounded-xl mb-2.5 flex items-center justify-between gap-2.5 shadow-2xs">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                        <Wallet className="w-3 h-3" />
                       </div>
-                      <div className="text-[11px] text-emerald-700 truncate mt-0.5">
-                        Deposit funds, lock escrow, or view ledger
-                      </div>
+                      <span className="truncate">Wallet &amp; Escrow Mediation</span>
+                      {!currentUser && (
+                        <span className="px-1.5 py-0.2 text-[9px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                          Interactive
+                        </span>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleOpenFundsTopUp}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
-                    >
-                      <PlusCircle className="w-3 h-3" />
-                      <span>Top-Up</span>
-                    </button>
+                    <div className="text-[11px] text-emerald-700 truncate mt-0.5">
+                      {currentUser
+                        ? 'Deposit funds, lock escrow, or view transaction ledger'
+                        : 'Simulate instant top-up webhook & review ledger history'}
+                    </div>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!currentUser) {
+                        handleQuickDemoSession('BUYER');
+                      } else {
+                        handleOpenFundsTopUp();
+                      }
+                    }}
+                    className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap shadow-xs transition-colors"
+                    title="Open Top-Up Wallet"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Top-Up</span>
+                  </button>
+                </div>
 
                 {/* All Marketplace & Directory Options */}
                 <div className="pt-1 pb-1">
@@ -591,7 +583,17 @@ export const Header: React.FC<Props> = ({
                           type="button"
                           onClick={() => {
                             if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                              handleOpenFundsTopUp();
+                              if (!currentUser) {
+                                handleQuickDemoSession('BUYER');
+                              } else {
+                                handleOpenFundsTopUp();
+                              }
+                            } else if (item.label.includes('Dashboard')) {
+                              if (!currentUser) {
+                                handleQuickDemoSession('BUYER');
+                              } else {
+                                handleNavClick('DASHBOARD');
+                              }
                             } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
                               setUserMenuOpen(false);
                               onOpenOnboardModal();

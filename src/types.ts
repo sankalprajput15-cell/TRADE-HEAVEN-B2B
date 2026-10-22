@@ -480,7 +480,8 @@ export type ActiveView =
   | 'TRUST_SAFETY'
   | 'INSIGHTS'
   | 'PRODUCT_IMAGE_ADMIN'
-  | 'MEDIATOR_ENGINE';
+  | 'MEDIATOR_ENGINE'
+  | 'WALLET_TOPUP';
 
 export * from './types/planPricingTypes';
 
