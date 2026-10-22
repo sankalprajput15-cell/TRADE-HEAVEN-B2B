@@ -366,6 +366,20 @@ export class TradeHeavenSqlPoolAdapter {
         updated_at: new Date(Date.now() - 3600 * 1000 * 8).toISOString()
       },
       {
+        id: 'wal-buyer-girlsenberries',
+        entity_id: 'buyer-girlsenberries-01',
+        entity_name: 'Donald Sorkin',
+        company_name: 'Girlsenberries',
+        wallet_type: 'BUYER',
+        available_balance: '2000000000000', // $20,000,000.00 USD
+        locked_balance: '0',
+        currency: 'USD',
+        country: 'United States',
+        native_currency: 'USD',
+        native_symbol: '$',
+        updated_at: new Date().toISOString()
+      },
+      {
         id: 'wal-buyer-apex',
         entity_id: 'buyer-apex-03',
         entity_name: 'Rajesh Sharma',

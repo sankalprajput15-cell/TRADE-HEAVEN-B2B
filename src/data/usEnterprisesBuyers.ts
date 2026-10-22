@@ -5798,7 +5798,7 @@ export const GLOBAL_US_ENTERPRISES_BUYER_PROFILES: BuyerProfile[] = [
   ],
   "activeRfqsCount": 2,
   "completedImportsCount": 65,
-  "tradeAssuranceEscrowSecuredUsd": 2500000,
+  "tradeAssuranceEscrowSecuredUsd": 22500000,
   "mainMarkets": [
     "United States",
     "European Union",
