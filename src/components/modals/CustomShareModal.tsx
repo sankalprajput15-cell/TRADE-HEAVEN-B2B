@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   X, 
   Copy, 
@@ -15,7 +16,6 @@ import {
   Sparkles, 
   Globe2, 
   Send,
-  SlidersHorizontal,
   FileCheck,
   Factory,
   Warehouse,
@@ -26,7 +26,8 @@ import {
   Maximize2,
   Minimize2,
   Smartphone,
-  ShieldCheck
+  ShieldCheck,
+  Link2
 } from 'lucide-react';
 import { 
   CustomLinkTarget, 
@@ -36,7 +37,6 @@ import {
   SupplierTab,
   RfqModalTab,
   BuyerModalTab,
-  generateScannableQrDataUrl,
   generateScannableQrSvgString,
   generateTradeShowBadgePng,
   slugify
@@ -49,15 +49,17 @@ interface Props {
   target: CustomLinkTarget | null;
 }
 
+type ShareViewMode = 'LINK' | 'QR';
+
 export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) => {
   const [copied, setCopied] = useState(false);
   const [customNote, setCustomNote] = useState('');
   const [selectedTab, setSelectedTab] = useState<SupplierTab>(target?.supplierTab || 'OVERVIEW');
   const [selectedRfqTab, setSelectedRfqTab] = useState<RfqModalTab>(target?.rfqTab || 'DETAILS');
   const [selectedBuyerTab, setSelectedBuyerTab] = useState<BuyerModalTab>(target?.buyerTab || 'OVERVIEW');
-  const [showQr, setShowQr] = useState(false);
+  const [viewMode, setViewMode] = useState<ShareViewMode>(target?.autoShowQr ? 'QR' : 'LINK');
+  const [qrFgColor, setQrFgColor] = useState<string>('#0f172a');
   const [isBoothFullscreen, setIsBoothFullscreen] = useState(false);
-  const [realQrDataUrl, setRealQrDataUrl] = useState<string>('');
   const [isDownloadingBadge, setIsDownloadingBadge] = useState(false);
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
     }
     setCustomNote(target?.customNote || '');
     setCopied(false);
-    setShowQr(Boolean(target?.autoShowQr));
+    setViewMode(target?.autoShowQr ? 'QR' : 'LINK');
     setIsBoothFullscreen(false);
   }, [target, isOpen]);
 
@@ -94,22 +96,7 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
     });
   }, [target, selectedTab, selectedRfqTab, selectedBuyerTab, customNote]);
 
-  // Generate real ISO-compliant offline scannable QR code whenever URL changes
-  useEffect(() => {
-    let active = true;
-    if (generated?.fullUrl) {
-      generateScannableQrDataUrl(generated.fullUrl, { width: 480 }).then(url => {
-        if (active) setRealQrDataUrl(url);
-      });
-    }
-    return () => {
-      active = false;
-    };
-  }, [generated?.fullUrl]);
-
   if (!isOpen || !target || !generated) return null;
-
-  const activeQrSrc = realQrDataUrl || generated.qrCodeSvg;
 
   const handleCopy = async () => {
     if (!generated) return;
@@ -205,36 +192,77 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
       <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden relative text-slate-900 animate-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="bg-slate-900 text-white p-5 sm:p-6 flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-blue-300 font-semibold">
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Direct Link &amp; Offline Trade Show QR Generator</span>
+        <div className="bg-slate-900 text-white p-5 sm:p-6 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs text-blue-300 font-semibold">
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Direct Link &amp; Mobile QR Code Generator</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {viewMode === 'QR' ? 'Scan to Mobile QR Code' : 'Share Custom Direct Link'}
+              </h2>
+              <p className="text-xs text-slate-300">
+                {viewMode === 'QR'
+                  ? 'Point any smartphone camera to open this exact target immediately during offline trade shows.'
+                  : 'Customize the destination tab or add a note, then copy the link or switch to Scan to Mobile.'}
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Share Direct Link or Generate QR Code
-            </h2>
-            <p className="text-xs text-slate-300">
-              Share this exact item via link or generate a scannable QR code for mobile devices at offline trade shows.
-            </p>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
-            aria-label="Close modal"
+          {/* Primary View Mode Toggle: Copy Link vs Scan to Mobile */}
+          <div
+            role="tablist"
+            aria-label="Share view mode"
+            className="grid grid-cols-2 p-1 bg-slate-800/90 border border-slate-700/80 rounded-2xl gap-1"
           >
-            <X className="w-5 h-5" />
-          </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'LINK'}
+              onClick={() => setViewMode('LINK')}
+              className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                viewMode === 'LINK'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Link2 className="w-4 h-4" />
+              <span>Copy Link View</span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'QR'}
+              onClick={() => setViewMode('QR')}
+              className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                viewMode === 'QR'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Scan to Mobile (QR Code)</span>
+            </button>
+          </div>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-5 max-h-[calc(90vh-140px)] overflow-y-auto">
+        <div className="p-5 sm:p-6 space-y-5 max-h-[calc(90vh-180px)] overflow-y-auto">
 
-          {/* Preview Card with Quick QR Toggle */}
+          {/* Target Summary Card with Quick Mode Switch */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-start justify-between gap-3 sm:gap-4 shadow-xs">
             <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
               {target.imageUrl ? (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
                   <SafeImage
                     src={target.imageUrl}
                     alt={target.title || 'Preview'}
@@ -263,18 +291,25 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
 
             <button
               type="button"
-              onClick={() => setShowQr(prev => !prev)}
+              onClick={() => setViewMode(prev => (prev === 'QR' ? 'LINK' : 'QR'))}
               className={`px-3 py-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 shrink-0 transition-all cursor-pointer ${
-                showQr
+                viewMode === 'QR'
                   ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-800 hover:border-blue-400 hover:bg-blue-50/50'
               }`}
-              title="Generate Scannable QR Code for Offline Trade Shows"
+              title={viewMode === 'QR' ? 'Switch to Copy Link View' : 'Switch to Scan to Mobile QR View'}
             >
-              <QrCode className={`w-5 h-5 ${showQr ? 'text-white' : 'text-blue-600'}`} />
-              <span className="text-[10px] whitespace-nowrap">
-                {showQr ? 'QR Active' : 'Generate QR'}
-              </span>
+              {viewMode === 'QR' ? (
+                <>
+                  <Link2 className="w-5 h-5 text-white" />
+                  <span className="text-[10px] whitespace-nowrap">Copy Link</span>
+                </>
+              ) : (
+                <>
+                  <QrCode className="w-5 h-5 text-blue-600" />
+                  <span className="text-[10px] whitespace-nowrap">Scan QR</span>
+                </>
+              )}
             </button>
           </div>
 
@@ -392,7 +427,7 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Add a Personal Note / Booth Instruction (Optional):</span>
               </span>
-              <span className="text-[11px] font-normal text-slate-400">Embedded in Link &amp; QR</span>
+              <span className="text-[11px] font-normal text-slate-400">Live-updates Link &amp; QR</span>
             </label>
             <input
               type="text"
@@ -403,101 +438,67 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
             />
           </div>
 
-          {/* Primary Copy URL & Generate QR Code Bar */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-              <span>Direct Shareable Link &amp; QR Code:</span>
-              <span className="font-mono text-[10px] text-slate-500">Works on mobile &amp; desktop</span>
-            </label>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="relative flex-1 min-w-0">
-                <input
-                  type="text"
-                  readOnly
-                  value={generated.fullUrl}
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 font-mono text-xs text-slate-800 select-all focus:outline-none focus:ring-2 focus:ring-blue-600/30"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer ${
-                    copied
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-100" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span>Copy Link</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowQr(prev => !prev)}
-                  className={`flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
-                    showQr
-                      ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
-                      : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-900'
-                  }`}
-                >
-                  <QrCode className="w-4 h-4 text-blue-500" />
-                  <span>{showQr ? 'Hide QR Code' : 'Generate QR Code'}</span>
-                </button>
-              </div>
-            </div>
-            {copied && (
-              <p className="text-[11px] text-emerald-600 font-bold animate-in fade-in flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" />
-                <span>Link copied to clipboard! Ready to paste into WhatsApp, email, or chat.</span>
-              </p>
-            )}
-          </div>
-
-          {/* Dedicated Offline Trade Show QR Code Studio */}
-          {showQr && (
-            <div className="p-4 sm:p-5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-4 animate-in fade-in zoom-in-95 shadow-lg">
-              <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          {viewMode === 'QR' ? (
+            /* SCAN TO MOBILE VIEW (Visual QR Code Generator via qrcode.react) */
+            <div className="p-5 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-4 animate-in fade-in zoom-in-95 shadow-lg">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <Smartphone className="w-4 h-4 text-blue-400 shrink-0" />
                   <div>
                     <div className="text-xs font-black text-white tracking-wide">
-                      Offline Trade Show Mobile QR Pass
+                      Scan to Mobile • Offline Trade Show QR Pass
                     </div>
                     <div className="text-[11px] text-slate-400">
-                      High-density ISO QR code • Instant camera scan for {getTargetBadge().toLowerCase()}
+                      Point any iOS or Android camera to open this {target.type.toLowerCase()}
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsBoothFullscreen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                  title="Expand QR code for tabletop or booth display"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>Booth Display Mode</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* QR Color Accent Picker */}
+                  <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-xl border border-slate-700">
+                    {[
+                      { color: '#0f172a', label: 'Slate' },
+                      { color: '#1d4ed8', label: 'Trade Blue' },
+                      { color: '#047857', label: 'Emerald' }
+                    ].map((swatch) => (
+                      <button
+                        key={swatch.color}
+                        type="button"
+                        onClick={() => setQrFgColor(swatch.color)}
+                        title={`QR Theme: ${swatch.label}`}
+                        className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
+                          qrFgColor === swatch.color ? 'scale-125 border-white' : 'border-slate-500 opacity-70'
+                        }`}
+                        style={{ backgroundColor: swatch.color }}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsBoothFullscreen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    title="Expand QR code for tabletop or booth display"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Booth Display</span>
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-5">
-                <div className="bg-white p-3 rounded-2xl border-2 border-blue-400/40 shadow-md shrink-0">
-                  <img
-                    src={activeQrSrc}
-                    alt={`QR Code for ${target.title || generated.title}`}
-                    className="w-36 h-36 sm:w-40 sm:h-40 object-contain"
+                <div className="bg-white p-3.5 rounded-2xl border-2 border-blue-400/40 shadow-md shrink-0 flex flex-col items-center">
+                  <QRCodeSVG
+                    value={generated.fullUrl}
+                    size={168}
+                    level="H"
+                    fgColor={qrFgColor}
+                    bgColor="#ffffff"
+                    marginSize={1}
                   />
+                  <span className="mt-1.5 text-[10px] font-bold tracking-wider uppercase text-slate-500">
+                    Scan with Camera
+                  </span>
                 </div>
 
                 <div className="space-y-3 flex-1 min-w-0 text-center sm:text-left">
@@ -509,11 +510,13 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
                       {target.title || generated.title}
                     </div>
                     <p className="text-xs text-slate-300 line-clamp-2">
-                      Point any iOS or Android camera at this QR code during offline trade shows to open this exact {target.type.toLowerCase()} on mobile.
+                      {customNote.trim()
+                        ? `Includes note: "${customNote.trim()}"`
+                        : 'High error-correction QR code encodes your exact target and tab selection.'}
                     </p>
                   </div>
 
-                  {/* Download Printable Badge & Vector SVG */}
+                  {/* Download & Copy Actions inside Scan View */}
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                     <button
                       type="button"
@@ -522,7 +525,7 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
                       className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      <span>{isDownloadingBadge ? 'Preparing Badge...' : 'Download Trade Show Badge (PNG)'}</span>
+                      <span>{isDownloadingBadge ? 'Preparing Badge...' : 'Download Badge (PNG)'}</span>
                     </button>
 
                     <button
@@ -533,86 +536,151 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
                       <Download className="w-3.5 h-3.5 text-blue-400" />
                       <span>Vector SVG</span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                      <span>{copied ? 'Link Copied' : 'Copy URL'}</span>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+          ) : (
+            /* STANDARD COPY LINK VIEW */
+            <>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Direct Shareable Link:</span>
+                  <span className="font-mono text-[10px] text-slate-500">Works on mobile &amp; desktop</span>
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1 min-w-0">
+                    <input
+                      type="text"
+                      readOnly
+                      value={generated.fullUrl}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 font-mono text-xs text-slate-800 select-all focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+                        copied
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-100" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy Link</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('QR')}
+                      className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-900 transition-all cursor-pointer"
+                    >
+                      <QrCode className="w-4 h-4 text-blue-600" />
+                      <span>Scan to Mobile</span>
+                    </button>
+                  </div>
+                </div>
+                {copied && (
+                  <p className="text-[11px] text-emerald-600 font-bold animate-in fade-in flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Link copied to clipboard! Ready to paste into WhatsApp, email, or chat.</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Instant Share Channels */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-xs font-bold text-slate-700">
+                  Share Instantly via:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {/* WhatsApp Button */}
+                  <a
+                    href={generated.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-white" />
+                    <span>WhatsApp</span>
+                  </a>
+
+                  {/* Email Button */}
+                  <a
+                    href={generated.emailUrl}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all shadow-xs"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span>Email</span>
+                  </a>
+
+                  {/* Scan to Mobile QR Button */}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('QR')}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border bg-white border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <QrCode className="w-4 h-4 text-blue-600" />
+                    <span>Scan to Mobile</span>
+                  </button>
+
+                  {/* Telegram */}
+                  <a
+                    href={generated.telegramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-all"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Telegram</span>
+                  </a>
+
+                  {/* LinkedIn */}
+                  <a
+                    href={generated.linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-medium transition-all"
+                  >
+                    <Globe2 className="w-3.5 h-3.5" />
+                    <span>LinkedIn</span>
+                  </a>
+
+                  {/* X / Twitter */}
+                  <a
+                    href={generated.twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-950 hover:bg-black text-white text-xs font-medium transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>X / Twitter</span>
+                  </a>
+                </div>
+              </div>
+            </>
           )}
-
-          {/* Instant Share Channels */}
-          <div className="space-y-2 pt-2 border-t border-slate-100">
-            <label className="text-xs font-bold text-slate-700">
-              Share Instantly via:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {/* WhatsApp Button */}
-              <a
-                href={generated.whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs"
-              >
-                <MessageCircle className="w-4 h-4 fill-white" />
-                <span>WhatsApp</span>
-              </a>
-
-              {/* Email Button */}
-              <a
-                href={generated.emailUrl}
-                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all shadow-xs"
-              >
-                <Mail className="w-4 h-4" />
-                <span>Email</span>
-              </a>
-
-              {/* Generate QR Code Button */}
-              <button
-                type="button"
-                onClick={() => setShowQr(prev => !prev)}
-                className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                  showQr
-                    ? 'bg-blue-50 border-blue-600 text-blue-700'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <QrCode className="w-4 h-4 text-blue-600" />
-                <span>{showQr ? 'Hide QR Code' : 'Generate QR Code'}</span>
-              </button>
-
-              {/* Telegram */}
-              <a
-                href={generated.telegramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium transition-all"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Telegram</span>
-              </a>
-
-              {/* LinkedIn */}
-              <a
-                href={generated.linkedinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-medium transition-all"
-              >
-                <Globe2 className="w-3.5 h-3.5" />
-                <span>LinkedIn</span>
-              </a>
-
-              {/* X / Twitter */}
-              <a
-                href={generated.twitterUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-950 hover:bg-black text-white text-xs font-medium transition-all"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>X / Twitter</span>
-              </a>
-            </div>
-          </div>
 
         </div>
 
@@ -664,10 +732,13 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
             </div>
 
             <div className="bg-white p-4 rounded-3xl border-2 border-slate-200 shadow-inner inline-block mx-auto">
-              <img
-                src={activeQrSrc}
-                alt="Full Screen Trade Show QR Code"
-                className="w-64 h-64 sm:w-72 sm:h-72 object-contain mx-auto"
+              <QRCodeSVG
+                value={generated.fullUrl}
+                size={256}
+                level="H"
+                fgColor={qrFgColor}
+                bgColor="#ffffff"
+                marginSize={1}
               />
             </div>
 
@@ -712,3 +783,4 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
     </div>
   );
 };
+

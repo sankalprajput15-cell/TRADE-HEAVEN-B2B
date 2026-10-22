@@ -156,9 +156,9 @@ export const Header: React.FC<Props> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 h-16 flex items-center justify-between gap-3 lg:gap-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 h-16 flex items-center justify-between gap-2.5 lg:gap-4 xl:gap-6">
         {/* Left: Brand Identity & Primary Navigation */}
-        <div className="flex items-center gap-5 lg:gap-8 min-w-0">
+        <div className="flex items-center gap-3 lg:gap-4 xl:gap-7 shrink-0">
           <button
             type="button"
             onClick={() => handleNavClick('HOMEPAGE')}
@@ -168,7 +168,7 @@ export const Header: React.FC<Props> = ({
           </button>
 
           {/* Desktop Editorial Navigation Links */}
-          <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-1 h-16">
+          <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-0.5 xl:gap-1 h-16 shrink-0">
             {navItems.map(item => {
               const isActive = item.activeMatch.includes(activeView);
               return (
@@ -176,7 +176,7 @@ export const Header: React.FC<Props> = ({
                   key={item.view}
                   type="button"
                   onClick={() => handleNavClick(item.view)}
-                  className={`relative h-full px-3 text-[13px] font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap ${
+                  className={`relative h-full px-2 xl:px-3 text-xs xl:text-[13px] font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap ${
                     isActive
                       ? 'text-blue-600'
                       : 'text-slate-600 hover:text-slate-950'
@@ -184,7 +184,7 @@ export const Header: React.FC<Props> = ({
                 >
                   <span>{item.label}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 inset-x-3 h-0.5 bg-blue-600 rounded-full" />
+                    <span className="absolute bottom-0 inset-x-2 xl:inset-x-3 h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
               );
@@ -194,16 +194,17 @@ export const Header: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => handleNavClick('PRODUCT_IMAGE_ADMIN')}
-                className={`relative h-full px-3 text-[13px] font-semibold tracking-tight transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                className={`relative h-full px-2 xl:px-3 text-xs xl:text-[13px] font-semibold tracking-tight transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   activeView === 'PRODUCT_IMAGE_ADMIN'
                     ? 'text-blue-600'
                     : 'text-slate-600 hover:text-slate-950'
                 }`}
               >
                 <ImageIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Product Images</span>
+                <span className="hidden 2xl:inline">Product Images</span>
+                <span className="2xl:hidden">Images</span>
                 {activeView === 'PRODUCT_IMAGE_ADMIN' && (
-                  <span className="absolute bottom-0 inset-x-3 h-0.5 bg-blue-600 rounded-full" />
+                  <span className="absolute bottom-0 inset-x-2 xl:inset-x-3 h-0.5 bg-blue-600 rounded-full" />
                 )}
               </button>
             )}
@@ -211,7 +212,10 @@ export const Header: React.FC<Props> = ({
         </div>
 
         {/* Center: Global Product & Supplier Search Bar */}
-        <div ref={searchWrapperRef} className="hidden md:block relative flex-1 max-w-md">
+        <div
+          ref={searchWrapperRef}
+          className="hidden md:block relative flex-1 min-w-[170px] lg:min-w-[200px] xl:min-w-[280px] max-w-sm lg:max-w-md xl:max-w-xl 2xl:max-w-2xl mx-1 lg:mx-2"
+        >
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
             <input
@@ -288,15 +292,15 @@ export const Header: React.FC<Props> = ({
         </div>
 
         {/* Right: Currency, Notifications, Primary CTA & User Account */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 shrink-0">
           {/* Currency Selector */}
-          <div className="hidden sm:flex items-center h-9 px-2.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 transition-colors">
-            <Globe className="w-3.5 h-3.5 text-slate-500 mr-1.5 shrink-0" />
+          <div className="hidden md:flex items-center h-9 px-2 xl:px-2.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-slate-100/80 transition-colors shrink-0">
+            <Globe className="w-3.5 h-3.5 text-slate-500 mr-1 xl:mr-1.5 shrink-0" />
             <select
               aria-label="Select Currency"
               value={selectedCurrency}
               onChange={e => handleCurrencySelect(e.target.value as Currency)}
-              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
+              className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer pr-0.5"
             >
               {CURRENCY_OPTIONS.map(c => (
                 <option key={c.code} value={c.code}>
@@ -312,7 +316,7 @@ export const Header: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenCreateRfq}
-            className="h-9 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs transition-colors shrink-0 cursor-pointer"
+            className="h-9 px-3 xl:px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-2xs transition-colors shrink-0 cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Post RFQ</span>
@@ -332,19 +336,19 @@ export const Header: React.FC<Props> = ({
                 })
               );
             }}
-            className="h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-2xs"
+            className="h-9 px-2.5 xl:px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-2xs whitespace-nowrap"
             title="Share custom link to this page with anyone"
           >
             <Share2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="hidden md:inline">Share</span>
+            <span className="hidden xl:inline">Share</span>
           </button>
 
           {/* Divider */}
-          <div className="hidden sm:block h-5 w-px bg-slate-200 mx-0.5" />
+          <div className="hidden sm:block h-5 w-px bg-slate-200 mx-0.5 shrink-0" />
 
           {/* User Profile or Auth Controls */}
           {currentUser ? (
-            <div className="relative" ref={userMenuRef}>
+            <div className="relative shrink-0" ref={userMenuRef}>
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(prev => !prev)}
@@ -357,7 +361,7 @@ export const Header: React.FC<Props> = ({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="hidden xl:block leading-none max-w-[110px]">
+                <div className="hidden 2xl:block leading-none max-w-[110px]">
                   <div className="text-xs font-semibold text-slate-900 truncate">
                     {currentUser.name}
                   </div>
