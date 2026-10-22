@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Currency, PaymentTerms, AuthUser, UserRole, MembershipStatus, AccountStatus, SecurityAuditLog } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
+import { useAuth } from '../../context/AuthContext';
 import { securityService } from '../../services/securityService';
+import { AdminActionLogger } from '../admin/AdminActionLogger';
 import { bigrockApi, DbInquiry, DbListing, DbFaq, DbUser } from '../../services/bigrockApi';
 import { ImageUploadService } from '../../services/imageUploadService';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
@@ -58,7 +60,8 @@ export const ClientAdminView: React.FC<Props> = ({
   currentUser = null,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS'>('INQUIRIES');
+  const { impersonateUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER'>('INQUIRIES');
   
   // Data Loading & Refresh states
   const [isLoading, setIsLoading] = useState(false);
@@ -338,29 +341,76 @@ export const ClientAdminView: React.FC<Props> = ({
   // ADD NEW USER
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName.trim() || !newUserEmail.trim()) return;
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      securityService.logSecurityEvent({
+        actorUid: currentUser?.id || 'admin-001',
+        actorEmail: currentUser?.email || 'admin@tradeheaven.net',
+        actorRole: currentUser?.role || 'ADMIN',
+        action: 'USER_CREATE_FAILED',
+        targetResource: '/api/admin/users/create',
+        details: 'User creation failed: Missing required name or email fields.',
+        status: 'DENIED'
+      });
+      showToast('error', 'Please provide both name and email.');
+      return;
+    }
 
     setIsLoading(true);
-    const res = await bigrockApi.upsertUser({
-      name: newUserName.trim(),
-      email: newUserEmail.trim(),
-      role: newUserRole,
-      company_name: newUserCompany.trim() || 'Enterprise Trading Firm',
-      country: 'Global',
-      status: 'ACTIVE',
-      is_verified: true,
-      is_premium: newUserRole === 'ADMIN'
-    });
+    try {
+      const res = await bigrockApi.upsertUser({
+        name: newUserName.trim(),
+        email: newUserEmail.trim(),
+        role: newUserRole,
+        company_name: newUserCompany.trim() || 'Enterprise Trading Firm',
+        country: 'Global',
+        status: 'ACTIVE',
+        is_verified: true,
+        is_premium: newUserRole === 'ADMIN'
+      });
 
-    setIsLoading(false);
-    if (res.success) {
-      showToast('success', `✓ User ${newUserEmail} registered in database.`);
-      setShowAddUserModal(false);
-      setNewUserName('');
-      setNewUserEmail('');
-      loadAllData();
-    } else {
-      showToast('error', 'Failed to register user: ' + res.error);
+      setIsLoading(false);
+      if (res.success) {
+        securityService.logSecurityEvent({
+          actorUid: currentUser?.id || 'admin-001',
+          actorEmail: currentUser?.email || 'admin@tradeheaven.net',
+          actorRole: currentUser?.role || 'ADMIN',
+          action: 'USER_CREATED',
+          targetResource: '/api/admin/users/create',
+          details: `Successfully registered user ${newUserEmail.trim()} (${newUserRole}).`,
+          status: 'SUCCESS'
+        });
+        showToast('success', `✓ User ${newUserEmail} registered in database.`);
+        setShowAddUserModal(false);
+        setNewUserName('');
+        setNewUserEmail('');
+        setNewUserCompany('');
+        loadAllData();
+      } else {
+        const errorMsg = res.error || 'Database rejection';
+        securityService.logSecurityEvent({
+          actorUid: currentUser?.id || 'admin-001',
+          actorEmail: currentUser?.email || 'admin@tradeheaven.net',
+          actorRole: currentUser?.role || 'ADMIN',
+          action: 'USER_CREATE_FAILED',
+          targetResource: '/api/admin/users/create',
+          details: `Failed to register user ${newUserEmail.trim()}: ${errorMsg}`,
+          status: 'DENIED'
+        });
+        showToast('error', 'Failed to register user: ' + errorMsg);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      const errorMsg = err?.message || 'Network exception';
+      securityService.logSecurityEvent({
+        actorUid: currentUser?.id || 'admin-001',
+        actorEmail: currentUser?.email || 'admin@tradeheaven.net',
+        actorRole: currentUser?.role || 'ADMIN',
+        action: 'USER_CREATE_FAILED',
+        targetResource: '/api/admin/users/create',
+        details: `Exception during user creation for ${newUserEmail.trim()}: ${errorMsg}`,
+        status: 'DENIED'
+      });
+      showToast('error', 'Failed to register user: ' + errorMsg);
     }
   };
 
@@ -630,6 +680,18 @@ export const ClientAdminView: React.FC<Props> = ({
         >
           <Activity className="w-4 h-4" />
           <span>Security Audit Trail</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ACTION_LOGGER')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'ACTION_LOGGER'
+              ? 'bg-amber-600 text-white shadow-sm'
+              : 'bg-white text-amber-900 hover:bg-amber-50 border border-amber-200'
+          }`}
+        >
+          <Terminal className="w-4 h-4 text-amber-600" />
+          <span>Action Logger</span>
         </button>
       </div>
 
@@ -963,7 +1025,7 @@ export const ClientAdminView: React.FC<Props> = ({
                         </select>
                       </td>
 
-                      <td className="p-3 text-right">
+                      <td className="p-3 text-right flex items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => handleAdminPrivilegeToggle(user.id, 'isVerified', !user.isVerified)}
@@ -974,6 +1036,20 @@ export const ClientAdminView: React.FC<Props> = ({
                           }`}
                         >
                           {user.isVerified ? '✓ KYC Verified' : 'Unverified'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            impersonateUser(user);
+                            if (typeof window !== 'undefined') {
+                              window.location.href = '/?view=HOMEPAGE';
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Login directly into this client account as an admin to make changes"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Login As</span>
                         </button>
                       </td>
                     </tr>
@@ -1669,6 +1745,13 @@ export const ClientAdminView: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 8: ACTION LOGGER */}
+      {/* ========================================================================= */}
+      {activeTab === 'ACTION_LOGGER' && (
+        <AdminActionLogger currentUser={currentUser} />
       )}
     </div>
   );

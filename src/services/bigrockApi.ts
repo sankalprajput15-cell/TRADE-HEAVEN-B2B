@@ -479,11 +479,39 @@ export const bigrockApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(user)
       });
-      if (response.ok) {
+      if (response && response.ok) {
         const json = await safeParseJson(response);
         return { success: true, data: json?.data || user };
       }
     } catch (err) { console.warn('[BigRock API upsertUser]:', err); }
+
+    // Fallback & client durability: persist new user into th_registered_users_store
+    try {
+      const USERS_STORAGE_KEY = 'th_registered_users_store';
+      const saved = localStorage.getItem(USERS_STORAGE_KEY);
+      const store = saved ? JSON.parse(saved) : {};
+      const uid = user.id || `user-${Date.now()}`;
+      const authUser = {
+        id: uid,
+        name: user.name,
+        email: user.email,
+        role: user.role || 'BUYER',
+        companyName: user.company_name || 'Enterprise Trading Firm',
+        country: user.country || 'Global',
+        status: user.status || 'ACTIVE',
+        isVerified: Boolean(user.is_verified),
+        isPremium: Boolean(user.is_premium),
+        membershipStatus: user.is_premium ? 'paid' : 'free',
+        tier: user.is_premium ? 'VIP' : 'Free Tier',
+        joinedDate: new Date().toISOString().split('T')[0]
+      };
+      store[uid] = authUser;
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(store));
+      window.dispatchEvent(new Event('tradeheaven_users_updated'));
+    } catch (e) {
+      console.warn('[upsertUser local fallback error]:', e);
+    }
+
     return { success: true, data: user };
   },
 

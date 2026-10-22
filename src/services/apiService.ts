@@ -615,6 +615,7 @@ export const api = {
       });
       return [callerUser];
     }
+    activeUsersStore = loadStoredUsers();
     return Object.values(activeUsersStore);
   },
 

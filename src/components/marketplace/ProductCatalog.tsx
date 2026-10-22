@@ -19,7 +19,8 @@ import {
   MessageCircle,
   Package,
   Layers,
-  Lock
+  Lock,
+  X
 } from 'lucide-react';
 import { ProductCatalogGrid, ProductListSkeleton } from './ProductCatalogGrid';
 import { PaginationControls } from '../common/PaginationControls';
@@ -300,6 +301,226 @@ export const ProductCatalog: React.FC<Props> = ({
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginatedProducts = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const renderFilterContent = (isMobile = false) => (
+    <div className="space-y-4 sm:space-y-5">
+      <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-200">
+        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> Sourcing Filters
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              handleCategorySelect('ALL');
+              setActiveSupplierTiers([]);
+              setActiveCountries([]);
+              setSelectedIncoterm('ALL');
+              setMaxMoq(50000);
+              setSearchTerm('');
+              setOwnershipFilter('ALL');
+            }}
+            className="text-[11px] text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+          >
+            Reset All
+          </button>
+          {isMobile && (
+            <button
+              onClick={() => setMobileFilterOpen(false)}
+              className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Industry Category Sector */}
+      <div>
+        <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Industry Sector</label>
+        <div className="space-y-1 text-xs max-h-48 overflow-y-auto pr-1">
+          <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+            <input
+              type="radio"
+              name={isMobile ? "category-mobile" : "category"}
+              checked={activeCategory === 'ALL'}
+              onChange={() => handleCategorySelect('ALL')}
+              className="accent-blue-600"
+            />
+            <span className={activeCategory === 'ALL' ? 'font-bold text-blue-600' : ''}>All Sectors</span>
+          </label>
+          {availableCategories.map(cat => (
+            <label key={cat} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+              <input
+                type="radio"
+                name={isMobile ? "category-mobile" : "category"}
+                checked={activeCategory === cat}
+                onChange={() => handleCategorySelect(cat)}
+                className="accent-blue-600"
+              />
+              <span className={`line-clamp-1 ${activeCategory === cat ? 'font-bold text-blue-600' : ''}`}>{cat}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Data Separation / Listing Ownership */}
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+        <label className="block text-xs font-bold text-slate-800 mb-1.5 uppercase tracking-wide">
+          🌐 Listing Source
+        </label>
+        <div className="space-y-2 text-xs">
+          <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+            <input
+              type="radio"
+              name={isMobile ? "ownership-mobile" : "ownership"}
+              checked={ownershipFilter === 'ALL'}
+              onChange={() => setOwnershipFilter('ALL')}
+              className="accent-blue-600"
+            />
+            <span className={ownershipFilter === 'ALL' ? 'font-bold text-slate-900' : ''}>All Users' Listings</span>
+          </label>
+
+          <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+            <input
+              type="radio"
+              name={isMobile ? "ownership-mobile" : "ownership"}
+              checked={ownershipFilter === 'MINE'}
+              onChange={() => setOwnershipFilter('MINE')}
+              className="accent-blue-600"
+              disabled={!user}
+            />
+            <span className={`${ownershipFilter === 'MINE' ? 'font-bold text-slate-900' : ''} ${!user ? 'text-slate-400 cursor-not-allowed' : ''}`}>
+              My Listings Only {!user && <span className="text-[9px] text-amber-600 font-semibold">(Sign in required)</span>}
+            </span>
+          </label>
+
+          <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+            <input
+              type="radio"
+              name={isMobile ? "ownership-mobile" : "ownership"}
+              checked={ownershipFilter === 'OTHERS'}
+              onChange={() => setOwnershipFilter('OTHERS')}
+              className="accent-blue-600"
+            />
+            <span className={ownershipFilter === 'OTHERS' ? 'font-bold text-slate-900' : ''}>Exclude My Listings</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Supplier Membership Tier (Multi-select) */}
+      <div>
+        <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Supplier Verification Tier</label>
+        <div className="space-y-1 text-xs">
+          {['VIP', 'GOLD', 'SILVER'].map(tier => {
+            const isChecked = activeSupplierTiers.includes(tier);
+            return (
+              <label key={tier} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {
+                    if (isChecked) {
+                      setActiveSupplierTiers(activeSupplierTiers.filter(t => t !== tier));
+                    } else {
+                      setActiveSupplierTiers([...activeSupplierTiers, tier]);
+                    }
+                  }}
+                  className="accent-blue-600 rounded"
+                />
+                <span>{tier} Verified</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Country of Origin (Multi-select) */}
+      <div>
+        <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Country of Origin</label>
+        <div className="space-y-1 text-xs max-h-40 overflow-y-auto pr-1">
+          {['China', 'United States', 'Saudi Arabia', 'UAE', 'Singapore', 'Germany', 'Poland', 'South Korea', 'India', 'Vietnam'].map(country => {
+            const isChecked = activeCountries.includes(country);
+            return (
+              <label key={country} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => {
+                    if (isChecked) {
+                      setActiveCountries(activeCountries.filter(c => c !== country));
+                    } else {
+                      setActiveCountries([...activeCountries, country]);
+                    }
+                  }}
+                  className="accent-blue-600 rounded"
+                />
+                <span>{country}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Incoterms Filter */}
+      <div>
+        <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Supported Trade Term (Incoterms)</label>
+        <div className="space-y-1 text-xs">
+          {['ALL', 'FOB', 'CIF', 'DDP', 'EXW', 'CFR'].map(term => (
+            <label key={term} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
+              <input
+                type="radio"
+                name={isMobile ? "incoterm-mobile" : "incoterm"}
+                checked={selectedIncoterm === term}
+                onChange={() => setSelectedIncoterm(term)}
+                className="accent-blue-600"
+              />
+              <span className="font-mono font-semibold">{term}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Maximum MOQ Slider */}
+      <div>
+        <div className="flex justify-between items-center text-xs mb-1">
+          <span className="font-bold text-slate-800">Max MOQ</span>
+          <span className="text-emerald-700 font-mono font-bold">≤ {maxMoq.toLocaleString()}</span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="5000"
+          step="50"
+          value={maxMoq}
+          onChange={e => setMaxMoq(parseInt(e.target.value))}
+          className="w-full accent-blue-600 cursor-pointer"
+        />
+      </div>
+
+      {/* Trust Guarantees */}
+      <div className="pt-2.5 sm:pt-3 border-t border-slate-200 space-y-1.5 text-[10px] sm:text-[11px] text-slate-600">
+        <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span>Trade Protection Certificate</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-blue-800 font-medium">
+          <Award className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+          <span>SGS / TÜV Audited Plants</span>
+        </div>
+      </div>
+
+      {isMobile && (
+        <div className="pt-4 mt-4 border-t border-slate-200">
+          <button
+            onClick={() => setMobileFilterOpen(false)}
+            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md cursor-pointer"
+          >
+            Apply Filters ({filtered.length} Results)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div id="product-catalog-section" className="space-y-4 sm:space-y-6 bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm min-w-0 max-w-full overflow-hidden">
       {/* Offline/Cached Connection Banner */}
@@ -416,203 +637,25 @@ export const ProductCatalog: React.FC<Props> = ({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 items-start min-w-0 w-full">
-        {/* Faceted Filter Sidebar (Collapsible on mobile) */}
-        <div className={`space-y-4 sm:space-y-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 h-fit shadow-2xs min-w-0 w-full ${mobileFilterOpen ? 'block' : 'hidden lg:block'}`}>
-          <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-200">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" /> Sourcing Filters
-            </h3>
-            <button
-              onClick={() => {
-                handleCategorySelect('ALL');
-                setActiveSupplierTiers([]);
-                setActiveCountries([]);
-                setSelectedIncoterm('ALL');
-                setMaxMoq(50000);
-                setSearchTerm('');
-                setOwnershipFilter('ALL');
-              }}
-              className="text-[11px] text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
-            >
-              Reset All
-            </button>
-          </div>
-
-          {/* Industry Category Sector */}
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Industry Sector</label>
-            <div className="space-y-1 text-xs max-h-48 overflow-y-auto pr-1">
-              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                <input
-                  type="radio"
-                  name="category"
-                  checked={activeCategory === 'ALL'}
-                  onChange={() => handleCategorySelect('ALL')}
-                  className="accent-blue-600"
-                />
-                <span className={activeCategory === 'ALL' ? 'font-bold text-blue-600' : ''}>All Sectors</span>
-              </label>
-              {availableCategories.map(cat => (
-                <label key={cat} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                  <input
-                    type="radio"
-                    name="category"
-                    checked={activeCategory === cat}
-                    onChange={() => handleCategorySelect(cat)}
-                    className="accent-blue-600"
-                  />
-                  <span className={`line-clamp-1 ${activeCategory === cat ? 'font-bold text-blue-600' : ''}`}>{cat}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Data Separation / Listing Ownership */}
-          <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
-            <label className="block text-xs font-bold text-slate-800 mb-1.5 uppercase tracking-wide">
-              🌐 Listing Source
-            </label>
-            <div className="space-y-2 text-xs">
-              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                <input
-                  type="radio"
-                  name="ownership"
-                  checked={ownershipFilter === 'ALL'}
-                  onChange={() => setOwnershipFilter('ALL')}
-                  className="accent-blue-600"
-                />
-                <span className={ownershipFilter === 'ALL' ? 'font-bold text-slate-900' : ''}>All Users' Listings</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                <input
-                  type="radio"
-                  name="ownership"
-                  checked={ownershipFilter === 'MINE'}
-                  onChange={() => setOwnershipFilter('MINE')}
-                  className="accent-blue-600"
-                  disabled={!user}
-                />
-                <span className={`${ownershipFilter === 'MINE' ? 'font-bold text-slate-900' : ''} ${!user ? 'text-slate-400 cursor-not-allowed' : ''}`}>
-                  My Listings Only {!user && <span className="text-[9px] text-amber-600 font-semibold">(Sign in required)</span>}
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                <input
-                  type="radio"
-                  name="ownership"
-                  checked={ownershipFilter === 'OTHERS'}
-                  onChange={() => setOwnershipFilter('OTHERS')}
-                  className="accent-blue-600"
-                />
-                <span className={ownershipFilter === 'OTHERS' ? 'font-bold text-slate-900' : ''}>Exclude My Listings</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Supplier Membership Tier (Multi-select) */}
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Supplier Verification Tier</label>
-            <div className="space-y-1 text-xs">
-              {['VIP', 'GOLD', 'SILVER'].map(tier => {
-                const isChecked = activeSupplierTiers.includes(tier);
-                return (
-                  <label key={tier} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => {
-                        if (isChecked) {
-                          setActiveSupplierTiers(activeSupplierTiers.filter(t => t !== tier));
-                        } else {
-                          setActiveSupplierTiers([...activeSupplierTiers, tier]);
-                        }
-                      }}
-                      className="accent-blue-600 rounded"
-                    />
-                    <span>{tier} Verified</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Country of Origin (Multi-select) */}
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Country of Origin</label>
-            <div className="space-y-1 text-xs max-h-40 overflow-y-auto pr-1">
-              {['China', 'United States', 'Saudi Arabia', 'UAE', 'Singapore', 'Germany', 'Poland', 'South Korea', 'India', 'Vietnam'].map(country => {
-                const isChecked = activeCountries.includes(country);
-                return (
-                  <label key={country} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => {
-                        if (isChecked) {
-                          setActiveCountries(activeCountries.filter(c => c !== country));
-                        } else {
-                          setActiveCountries([...activeCountries, country]);
-                        }
-                      }}
-                      className="accent-blue-600 rounded"
-                    />
-                    <span>{country}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Incoterms Filter */}
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1.5 sm:mb-2">Supported Trade Term (Incoterms)</label>
-            <div className="space-y-1 text-xs">
-              {['ALL', 'FOB', 'CIF', 'DDP', 'EXW', 'CFR'].map(term => (
-                <label key={term} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer font-medium">
-                  <input
-                    type="radio"
-                    name="incoterm"
-                    checked={selectedIncoterm === term}
-                    onChange={() => setSelectedIncoterm(term)}
-                    className="accent-blue-600"
-                  />
-                  <span className="font-mono font-semibold">{term}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Maximum MOQ Slider */}
-          <div>
-            <div className="flex justify-between items-center text-xs mb-1">
-              <span className="font-bold text-slate-800">Max MOQ</span>
-              <span className="text-emerald-700 font-mono font-bold">≤ {maxMoq.toLocaleString()}</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="5000"
-              step="50"
-              value={maxMoq}
-              onChange={e => setMaxMoq(parseInt(e.target.value))}
-              className="w-full accent-blue-600 cursor-pointer"
-            />
-          </div>
-
-          {/* Trust Guarantees */}
-          <div className="pt-2.5 sm:pt-3 border-t border-slate-200 space-y-1.5 text-[10px] sm:text-[11px] text-slate-600">
-            <div className="flex items-center gap-1.5 text-emerald-800 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Trade Protection Certificate</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-blue-800 font-medium">
-              <Award className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>SGS / TÜV Audited Plants</span>
-            </div>
-          </div>
+        {/* Desktop Faceted Filter Sidebar */}
+        <div className="hidden lg:block bg-white border border-slate-200 rounded-2xl p-5 h-fit shadow-2xs min-w-0 w-full">
+          {renderFilterContent(false)}
         </div>
+
+        {/* Mobile Slide-Out Filter Drawer */}
+        {mobileFilterOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+              onClick={() => setMobileFilterOpen(false)}
+            />
+            {/* Drawer Panel */}
+            <div className="absolute inset-y-0 right-0 w-full max-w-sm bg-white shadow-2xl p-5 overflow-y-auto flex flex-col justify-between animate-in slide-in-from-right duration-300">
+              {renderFilterContent(true)}
+            </div>
+          </div>
+        )}
 
         {/* Product Results Grid/List */}
         <div className="lg:col-span-3 space-y-4 min-w-0 w-full">

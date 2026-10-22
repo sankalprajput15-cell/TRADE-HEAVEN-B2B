@@ -80,7 +80,7 @@ class SecurityService {
   public async fetchBackendAuditLogs(): Promise<SecurityAuditLog[]> {
     try {
       const response = await fetch('/api/v1/admin/audit-logs');
-      if (response.ok) {
+      if (response && response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.logs)) {
           const normalized: SecurityAuditLog[] = data.logs.map((log: any) => ({
@@ -101,7 +101,7 @@ class SecurityService {
         }
       }
     } catch (err) {
-      console.error('Failed to fetch backend audit logs:', err);
+      // Gracefully fallback to local audit logs when backend API is offline/unavailable
     }
     return this.getAuditLogs();
   }

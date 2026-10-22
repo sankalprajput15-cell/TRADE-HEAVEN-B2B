@@ -9,10 +9,13 @@ export interface AuthContextType {
   isLoading: boolean;
   role: UserRole | null;
   isAdmin: boolean;
+  isImpersonating: boolean;
   setUser: (user: AuthUser | null) => void;
   setCurrentUser: (user: AuthUser | null) => void;
   login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
   logout: () => void;
+  impersonateUser: (targetUser: AuthUser) => void;
+  stopImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +24,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [originalAdminUser, setOriginalAdminUser] = useState<AuthUser | null>(() => {
+    try {
+      const stored = sessionStorage.getItem('th_admin_origin_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     try {
@@ -34,6 +45,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch {}
   }, []);
+
+  const impersonateUser = (targetUser: AuthUser) => {
+    const currentAdmin = originalAdminUser || user;
+    if (currentAdmin && currentAdmin.role === 'ADMIN') {
+      try {
+        sessionStorage.setItem('th_admin_origin_user', JSON.stringify(currentAdmin));
+      } catch {}
+      setOriginalAdminUser(currentAdmin);
+    }
+    setUser(targetUser);
+    setIsAuthenticated(true);
+    try {
+      localStorage.setItem('th_session_user', JSON.stringify(targetUser));
+    } catch {}
+  };
+
+  const stopImpersonation = () => {
+    if (originalAdminUser) {
+      setUser(originalAdminUser);
+      setIsAuthenticated(true);
+      try {
+        localStorage.setItem('th_session_user', JSON.stringify(originalAdminUser));
+        sessionStorage.removeItem('th_admin_origin_user');
+      } catch {}
+      setOriginalAdminUser(null);
+    }
+  };
 
   const login = async (email?: string, password?: string): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
     setIsLoading(true);
@@ -167,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = Boolean(isAuthenticated && (user?.role === 'ADMIN' || user?.isVerifiedAdmin === true));
+  const isImpersonating = Boolean(originalAdminUser);
 
   return (
     <AuthContext.Provider
@@ -177,10 +216,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         role: user?.role || null,
         isAdmin,
+        isImpersonating,
         setUser: handleSetUser,
         setCurrentUser: handleSetUser,
         login,
-        logout
+        logout,
+        impersonateUser,
+        stopImpersonation
       }}
     >
       {children}

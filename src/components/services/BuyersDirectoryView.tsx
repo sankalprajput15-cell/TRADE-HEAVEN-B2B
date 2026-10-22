@@ -67,12 +67,14 @@ export const BuyersDirectoryView: React.FC<Props> = ({
   }, [currentUser]);
 
   const filtered = buyers.filter(b => {
+    if (!b) return false;
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === '' ||
-      b.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.businessType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (b.targetCategories || []).some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()));
+      (b.companyName || '').toLowerCase().includes(searchLower) ||
+      (b.country || '').toLowerCase().includes(searchLower) ||
+      (b.description || '').toLowerCase().includes(searchLower) ||
+      (b.businessType || '').toLowerCase().includes(searchLower) ||
+      (b.targetCategories || []).some(cat => (cat || '').toLowerCase().includes(searchLower));
     const matchesTier = selectedTier === 'ALL' || b.tier === selectedTier;
     return matchesSearch && matchesTier;
   });

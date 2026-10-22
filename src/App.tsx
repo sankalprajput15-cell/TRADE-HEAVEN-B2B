@@ -30,6 +30,8 @@ import { SEOManager } from './components/common/SEOManager';
 import { BreadcrumbNavigation } from './components/common/BreadcrumbNavigation';
 import { NotFoundView } from './components/common/NotFoundView';
 import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
+import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 
 // Helper for retryable lazy loaded views
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -87,7 +89,7 @@ const PremiumServicesView = lazyWithRetry(() => import('./components/services/Pr
 const PostSellOfferView = lazyWithRetry(() => import('./components/services/PostSellOfferView'), 'PostSellOfferView');
 const BuyLeadsView = lazyWithRetry(() => import('./components/services/BuyLeadsView'), 'BuyLeadsView');
 const SuppliersDirectoryView = lazyWithRetry(() => import('./components/services/SuppliersDirectoryView'), 'SuppliersDirectoryView');
-const BuyersDirectoryView = lazyWithRetry(() => import('./components/services/BuyersDirectoryView'), 'BuyersDirectoryView');
+
 const RefundPolicyView = lazyWithRetry(() => import('./components/services/RefundPolicyView'), 'RefundPolicyView');
 const ProductListingPolicyView = lazyWithRetry(() => import('./components/services/ProductListingPolicyView'), 'ProductListingPolicyView');
 const PrivacyPolicyView = lazyWithRetry(() => import('./components/services/PrivacyPolicyView'), 'PrivacyPolicyView');
@@ -96,7 +98,7 @@ const ClientAdminView = lazyWithRetry(() => import('./components/services/Client
 
 const PlanPricingAdminModule = lazyWithRetry(() => import('./components/admin/PlanPricingAdminModule'), 'PlanPricingAdminModule');
 const BulkEntityCrmModule = lazyWithRetry(() => import('./components/admin/BulkEntityCrmModule'), 'BulkEntityCrmModule');
-const AdminDashboard = lazyWithRetry(() => import('./components/admin/AdminDashboard'), 'AdminDashboard');
+
 const OnboardWithUsPage = lazyWithRetry(() => import('./components/marketplace/OnboardWithUsPage'), 'OnboardWithUsPage');
 const AboutTradeHeavenView = lazyWithRetry(() => import('./components/services/AboutTradeHeavenView'), 'AboutTradeHeavenView');
 const LandingPageView = lazyWithRetry(() => import('./components/marketplace/LandingPageView'), 'LandingPageView');
@@ -151,7 +153,9 @@ const MainApp: React.FC = () => {
     setCurrentUser,
     isAuthenticated,
     isAdmin,
-    logout
+    isImpersonating,
+    logout,
+    stopImpersonation
   } = useAuth();
 
   const { 
@@ -1556,6 +1560,30 @@ const MainApp: React.FC = () => {
       />
 
 
+
+      {/* Active Admin Impersonation Banner */}
+      {isImpersonating && (
+        <div className="bg-amber-600 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between gap-3 shadow-md z-50 sticky top-0 animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2 truncate">
+            <span className="px-2 py-0.5 rounded bg-black/20 text-amber-200 uppercase font-black text-[10px] tracking-wider">
+              Admin Impersonation Mode
+            </span>
+            <span className="truncate">
+              You are currently logged in &amp; operating as <strong>{currentUser?.name}</strong> ({currentUser?.companyName || currentUser?.email}).
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              stopImpersonation();
+              handleNavigate('CLIENT_ADMIN');
+            }}
+            className="px-3 py-1 rounded-lg bg-white text-amber-900 hover:bg-amber-50 font-extrabold text-[11px] shadow-xs shrink-0 cursor-pointer whitespace-nowrap transition-colors"
+          >
+            Exit &amp; Return to Admin Dashboard
+          </button>
+        </div>
+      )}
 
       {/* 2. MAIN MARKETPLACE APP HEADER */}
       <Header
