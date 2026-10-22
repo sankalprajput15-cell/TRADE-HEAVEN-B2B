@@ -4,7 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { securityService } from '../../services/securityService';
-import { AdminActionLogger } from '../admin/AdminActionLogger';
+import { AdminActivityLogger, adminActivityBus } from '../admin/AdminActivityLogger';
 import { bigrockApi, DbInquiry, DbListing, DbFaq, DbUser } from '../../services/bigrockApi';
 import { ImageUploadService } from '../../services/imageUploadService';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
@@ -61,7 +61,7 @@ export const ClientAdminView: React.FC<Props> = ({
   onUpdateCurrentUser
 }) => {
   const { impersonateUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER'>('INQUIRIES');
+  const [activeTab, setActiveTab] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM'>('INQUIRIES');
   
   // Data Loading & Refresh states
   const [isLoading, setIsLoading] = useState(false);
@@ -379,6 +379,7 @@ export const ClientAdminView: React.FC<Props> = ({
           details: `Successfully registered user ${newUserEmail.trim()} (${newUserRole}).`,
           status: 'SUCCESS'
         });
+        adminActivityBus.logActivity('ENTITY_CREATION', `Successfully registered user ${newUserEmail.trim()} (${newUserRole})`, 'SUCCESS', currentUser?.name || 'Admin');
         showToast('success', `✓ User ${newUserEmail} registered in database.`);
         setShowAddUserModal(false);
         setNewUserName('');
@@ -387,6 +388,7 @@ export const ClientAdminView: React.FC<Props> = ({
         loadAllData();
       } else {
         const errorMsg = res.error || 'Database rejection';
+        adminActivityBus.logActivity('ENTITY_CREATION', `Failed to register user ${newUserEmail.trim()}: ${errorMsg}`, 'FAILURE', currentUser?.name || 'Admin');
         securityService.logSecurityEvent({
           actorUid: currentUser?.id || 'admin-001',
           actorEmail: currentUser?.email || 'admin@tradeheaven.net',
@@ -401,6 +403,7 @@ export const ClientAdminView: React.FC<Props> = ({
     } catch (err: any) {
       setIsLoading(false);
       const errorMsg = err?.message || 'Network exception';
+      adminActivityBus.logActivity('ENTITY_CREATION', `Exception during user creation for ${newUserEmail.trim()}: ${errorMsg}`, 'FAILURE', currentUser?.name || 'Admin');
       securityService.logSecurityEvent({
         actorUid: currentUser?.id || 'admin-001',
         actorEmail: currentUser?.email || 'admin@tradeheaven.net',
@@ -429,12 +432,14 @@ export const ClientAdminView: React.FC<Props> = ({
 
     const res = await api.adminUpdateUserPrivileges(targetUserId, updates, currentUser!);
     if (res.success) {
+      adminActivityBus.logActivity('USER_PRIVILEGE_UPDATE', `Updated user ${targetUserId} field [${field}] to ${String(value)}`, 'SUCCESS', currentUser?.name || 'Admin');
       showToast('success', res.message || 'Privilege updated successfully');
       loadAllData();
       if (onUpdateCurrentUser && currentUser?.id === targetUserId && res.data) {
         onUpdateCurrentUser(res.data);
       }
     } else {
+      adminActivityBus.logActivity('USER_PRIVILEGE_UPDATE', `Failed to update user ${targetUserId} field [${field}]: ${res.error}`, 'FAILURE', currentUser?.name || 'Admin');
       showToast('error', res.error || 'Failed to update privileges');
     }
   };
@@ -1040,6 +1045,7 @@ export const ClientAdminView: React.FC<Props> = ({
                         <button
                           type="button"
                           onClick={() => {
+                            adminActivityBus.logActivity('IMPERSONATION', `Admin impersonated client ${user.name} (${user.email})`, 'SUCCESS', currentUser?.name || 'Admin');
                             impersonateUser(user);
                             if (typeof window !== 'undefined') {
                               window.location.href = '/?view=HOMEPAGE';
@@ -1751,7 +1757,7 @@ export const ClientAdminView: React.FC<Props> = ({
       {/* TAB 8: ACTION LOGGER */}
       {/* ========================================================================= */}
       {activeTab === 'ACTION_LOGGER' && (
-        <AdminActionLogger currentUser={currentUser} />
+        <AdminActivityLogger currentUser={currentUser} />
       )}
     </div>
   );

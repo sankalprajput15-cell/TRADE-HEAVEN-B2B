@@ -7,6 +7,7 @@ import {
   GeminiModelId,
   PlanCategory
 } from '../../../types/planPricingTypes';
+import { adminActivityBus } from '../AdminActivityLogger';
 import { 
   X, 
   DollarSign, 
@@ -259,8 +260,10 @@ export const PlanEditModal: React.FC<PlanEditModalProps> = ({
         allowedModels,
         featureKeys
       });
+      adminActivityBus.logActivity('PLAN_PRICE_UPDATE', `Updated plan "${name.trim()}" pricing (Monthly: $${monthlyPriceUsd}, Annual: $${annualPriceUsd})`, 'SUCCESS', 'Admin');
       onClose();
     } catch (err: any) {
+      adminActivityBus.logActivity('PLAN_PRICE_UPDATE', `Failed to update plan "${name.trim()}": ${err.message || 'error'}`, 'FAILURE', 'Admin');
       setErrors({ submit: err.message || 'Failed to save plan.' });
     } finally {
       setIsSubmitting(false);
