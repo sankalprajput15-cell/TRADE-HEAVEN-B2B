@@ -8,7 +8,7 @@ import {
   RefreshCw,
   ZoomIn, 
   ZoomOut,
-  Sparkles,
+  Loader2,
   Layers,
   ShieldCheck,
   Sliders,
@@ -320,7 +320,7 @@ export const ImageEditingOverlay: React.FC<ImageEditingOverlayProps> = ({
                 {/* PROCESSING OVERLAY */}
                 {isProcessingAi && (
                   <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center text-white z-30">
-                    <Sparkles className="w-8 h-8 text-blue-400 animate-spin mb-2" />
+                    <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-2" />
                     <span className="text-xs font-extrabold">Replacing background with Trade Heaven Studio AI...</span>
                   </div>
                 )}

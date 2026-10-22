@@ -13,7 +13,7 @@ import {
   Building2, 
   Package, 
   FileText, 
-  Sparkles, 
+  Tag, 
   Globe2, 
   Send,
   FileCheck,
@@ -424,7 +424,7 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <Tag className="w-3.5 h-3.5 text-blue-600" />
                 <span>Add a Personal Note / Booth Instruction (Optional):</span>
               </span>
               <span className="text-[11px] font-normal text-slate-400">Live-updates Link &amp; QR</span>

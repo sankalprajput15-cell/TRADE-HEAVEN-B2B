@@ -6,7 +6,6 @@ import {
   Trash2,
   Package,
   Layers,
-  Sparkles,
   Check,
   RefreshCw,
   Search,
@@ -971,7 +970,7 @@ export const MultiImageBatchUploader: React.FC<MultiImageBatchUploaderProps> = (
             ) : bannerMessage.type === 'error' ? (
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             ) : (
-              <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+              <Wand2 className="w-4 h-4 text-blue-600 shrink-0" />
             )}
             <span>{bannerMessage.text}</span>
           </div>

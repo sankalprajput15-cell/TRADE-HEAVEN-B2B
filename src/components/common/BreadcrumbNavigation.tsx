@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ChevronRight, Home, ArrowLeft, Tag, Layers, Building2, ShieldCheck, Sparkles } from 'lucide-react';
+import { ChevronRight, Home, ArrowLeft, Tag, Layers, Building2, ShieldCheck } from 'lucide-react';
 import { ActiveView, Product, RfqRequirement } from '../../types';
 
 export interface BreadcrumbItem {

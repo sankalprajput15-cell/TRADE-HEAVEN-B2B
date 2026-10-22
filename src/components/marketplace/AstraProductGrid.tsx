@@ -35,6 +35,8 @@ export const AstraProductGrid: React.FC<Props> = ({
               alt={product.title}
               category={product.category}
               productId={product.id}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover hover:scale-105 transition-transform"
             />
             <div className="absolute bottom-2.5 right-2.5">

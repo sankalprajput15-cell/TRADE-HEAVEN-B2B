@@ -127,6 +127,27 @@ const getCategoryPool = (categoryName?: string, titleName?: string): string[] =>
   return FALLBACK_SEEDS;
 };
 
+// Automatic image optimization utility (converts Unsplash images to auto WebP/AVIF format and responsive widths)
+export const optimizeUnsplashUrl = (url: string, options: { width?: number; quality?: number; isThumbnail?: boolean } = {}) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!url.includes('images.unsplash.com')) return url;
+
+  const targetWidth = options.width || (options.isThumbnail ? 320 : 800);
+  const targetQuality = options.quality || 70;
+
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('auto', 'format,compress');
+    urlObj.searchParams.set('fit', 'crop');
+    urlObj.searchParams.set('w', String(targetWidth));
+    urlObj.searchParams.set('q', String(targetQuality));
+    return urlObj.toString();
+  } catch (e) {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}auto=format,compress&fit=crop&w=${targetWidth}&q=${targetQuality}`;
+  }
+};
+
 // Deterministic string hashing
 const getDeterministicHash = (str: string): number => {
   let hash = 0;
@@ -327,9 +348,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const currentCandidate = useMemo(() => {
     const raw = candidates[attemptIndex] || FALLBACK_SEEDS[0];
     if (!raw || raw.startsWith('/assets/') || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
-    const sep = raw.includes('?') ? '&' : '?';
-    return `${raw}${sep}v=1`;
-  }, [candidates, attemptIndex]);
+    return optimizeUnsplashUrl(raw, {
+      width: isThumbnail ? 320 : 800,
+      quality: 70,
+      isThumbnail
+    });
+  }, [candidates, attemptIndex, isThumbnail]);
 
   useEffect(() => {
     setAttemptIndex(0);

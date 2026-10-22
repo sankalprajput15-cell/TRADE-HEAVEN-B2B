@@ -15,7 +15,6 @@ import {
   Building2,
   Landmark,
   Lock,
-  Sparkles,
   Terminal,
   Copy,
   Check,
@@ -747,7 +746,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                           >
                             {preset.tag}
                           </span>
-                          {active && <Sparkles className="w-3.5 h-3.5 text-emerald-400" />}
+                          {active && <Zap className="w-3.5 h-3.5 text-emerald-400" />}
                         </div>
                         <div className="text-sm sm:text-base font-black font-mono mt-1.5">
                           {preset.label}

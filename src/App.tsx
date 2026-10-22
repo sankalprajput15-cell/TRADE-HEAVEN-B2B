@@ -134,7 +134,7 @@ import { DETAILED_VENDOR_PROFILES } from './data/detailedVendorProfiles';
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
-import { Loader2, Mail, CheckCircle2, AlertCircle, Send, Sparkles, X } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, AlertCircle, Send, Tag, X } from 'lucide-react';
 import { TradeHeavenDataLoader } from './components/common/TradeHeavenDataLoader';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
@@ -198,6 +198,32 @@ const MainApp: React.FC = () => {
     };
     window.addEventListener('tradeheaven_database_error', handleDbError);
     return () => window.removeEventListener('tradeheaven_database_error', handleDbError);
+  }, []);
+
+  // Background prefetch for popular categories, suppliers, and assets after initial load
+  useEffect(() => {
+    const prefetchPopularData = () => {
+      try {
+        const topCategoryImages = [
+          'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=70',
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=70',
+          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=70',
+          'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=70'
+        ];
+        topCategoryImages.forEach(url => {
+          const img = new Image();
+          img.src = url;
+        });
+      } catch (e) {}
+    };
+
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(prefetchPopularData, { timeout: 2500 });
+      } else {
+        setTimeout(prefetchPopularData, 1200);
+      }
+    }
   }, []);
 
   // Products and entities initialized with default rich marketplace dataset + active image overrides
@@ -1529,14 +1555,7 @@ const MainApp: React.FC = () => {
         products={products} 
       />
 
-      {/* 1. TOP ANNOUNCEMENT & LIVE RFQ TICKER */}
-      <LiveRfqTicker
-        rfqs={rfqs}
-        onSelectRfq={(rfq) => {
-          setSelectedRfqId(rfq.id);
-          setSelectedRfqForModal(rfq);
-        }}
-      />
+
 
       {/* 2. MAIN MARKETPLACE APP HEADER */}
       <Header
@@ -1589,7 +1608,7 @@ const MainApp: React.FC = () => {
           <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-lg border border-blue-500/30 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-start sm:items-center gap-3 min-w-0">
               <span className="p-2 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
-                <Sparkles className="w-4 h-4" />
+                <Tag className="w-4 h-4" />
               </span>
               <div className="min-w-0">
                 <div className="text-[10px] font-black uppercase tracking-wider text-blue-300">

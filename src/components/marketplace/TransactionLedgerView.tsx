@@ -24,7 +24,7 @@ import {
   Layers,
   Eye,
   X,
-  Sparkles,
+  Zap,
   Database
 } from 'lucide-react';
 import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
@@ -295,7 +295,7 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
           textClass: 'text-indigo-700',
           amountClass: 'text-indigo-600',
           prefix: '+',
-          icon: <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          icon: <Zap className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
         };
       case 'SUPPLIER_PAYOUT':
         return {

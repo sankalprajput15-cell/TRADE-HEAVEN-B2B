@@ -170,6 +170,16 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
     [totalPaise, activeWallet, currentUser]
   );
 
+  const isPaidMember = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'ADMIN') return true;
+    return (
+      currentUser.membershipStatus === 'paid' ||
+      currentUser.isPremium === true ||
+      (Boolean(currentUser.tier) && currentUser.tier !== 'FREE')
+    );
+  }, [currentUser]);
+
   return (
     <>
       <div className="relative flex items-center shrink-0" ref={containerRef}>
@@ -189,20 +199,13 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
           data-testid="header-wallet-toggle-button"
         >
           {/* Left Emerald Icon Pill */}
-          <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-mono font-bold text-[10px] flex items-center gap-1 shadow-2xs group-hover:bg-emerald-700 transition-colors shrink-0">
-            <Wallet className="w-3 h-3 text-white shrink-0" />
-            <span className="hidden sm:inline">Wallet</span>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-mono font-bold text-xs flex items-center gap-1.5 shadow-2xs group-hover:bg-emerald-700 transition-colors shrink-0">
+            <Wallet className="w-3.5 h-3.5 text-white shrink-0" />
+            <span>Wallet</span>
           </span>
 
-          {/* Compact Available Balance Readout */}
-          <div className="flex items-center gap-1 leading-none whitespace-nowrap font-mono text-xs font-bold text-slate-900">
-            <span className="text-emerald-700 font-mono font-bold" data-testid="header-available-balance">
-              {nativeAvailCompact.primary}
-            </span>
-          </div>
-
           <ChevronDown
-            className={`w-3 h-3 text-slate-400 group-hover:text-emerald-700 transition-transform duration-200 shrink-0 ${
+            className={`w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 transition-transform duration-200 shrink-0 ${
               popoverOpen ? 'rotate-180 text-emerald-700' : ''
             }`}
           />

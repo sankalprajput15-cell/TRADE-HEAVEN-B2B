@@ -33,7 +33,7 @@ import {
   Briefcase,
   MessageSquare,
   Info,
-  Sparkles,
+  TrendingUp,
   Package,
   Home,
   Wallet
@@ -158,6 +158,21 @@ export const Header: React.FC<Props> = ({
       .slice(0, 5);
   }, [products, searchTerm]);
 
+  const isPaidAndRegisteredMember = useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'ADMIN') return true;
+    const isRegisteredRole = currentUser.role === 'BUYER' || currentUser.role === 'SUPPLIER';
+    if (!isRegisteredRole) return false;
+    
+    // Strictly require paid membership status, isPremium flag, or paid tier (GOLD/PLATINUM/SILVER)
+    const isPaid = 
+      currentUser.membershipStatus === 'paid' || 
+      currentUser.isPremium === true ||
+      (Boolean(currentUser.tier) && currentUser.tier !== 'FREE');
+      
+    return isPaid;
+  }, [currentUser]);
+
   const handleLogout = () => {
     setUserMenuOpen(false);
     if (onLogout) {
@@ -246,7 +261,7 @@ export const Header: React.FC<Props> = ({
     { label: 'Products Catalog', view: 'PRODUCT_DIRECTORY', icon: Package, activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Verified Suppliers', view: 'SUPPLIERS_DIRECTORY', icon: Building2, activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Verified Buyers', view: 'BUYERS_DIRECTORY', icon: Users, activeMatch: ['BUYERS_DIRECTORY', 'BUYER_PROFILE'] },
-    { label: 'Buy Leads', view: 'BUY_LEADS', icon: Sparkles, activeMatch: ['BUY_LEADS'] },
+    { label: 'Buy Leads', view: 'BUY_LEADS', icon: TrendingUp, activeMatch: ['BUY_LEADS'] },
     { label: 'RFQ Hub & Tenders', view: 'RFQ_HUB', icon: FileText, activeMatch: ['RFQ_HUB'] },
     { label: 'Country Trade Hubs', view: 'COUNTRY_HUB', icon: Globe, activeMatch: ['COUNTRY_HUB'] },
     { label: 'Incoterms Calculator', view: 'INCOTERMS_CALCULATOR', icon: Calculator, activeMatch: ['INCOTERMS_CALCULATOR', 'TRADE_TOOLS'] },
@@ -375,8 +390,8 @@ export const Header: React.FC<Props> = ({
 
         {/* Zone 3: Wallet Balance, Primary CTA & Account Menu */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Authenticated User Wallet Balance (available_balance & locked_balance) + Top-Up */}
-          {currentUser && (
+          {/* Authenticated & Paid Registered Buyers/Suppliers Wallet Balance */}
+          {isPaidAndRegisteredMember && currentUser && (
             <HeaderWalletBalance
               currentUser={currentUser}
               isActiveView={activeView === 'WALLET_TOPUP' || activeView === 'MEDIATOR_ENGINE'}
@@ -468,12 +483,6 @@ export const Header: React.FC<Props> = ({
                       <div className="font-bold text-xs text-slate-900 truncate">
                         {currentUser.name}
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                        {currentUser.email}
-                      </div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                        {currentUser.companyName || 'Verified Account'} · {currentUser.role}
-                      </div>
                     </div>
                     <button
                       type="button"
@@ -485,7 +494,7 @@ export const Header: React.FC<Props> = ({
                     </button>
                   </div>
                 ) : (
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 space-y-2.5">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <div className="text-xs font-bold text-slate-900">
@@ -521,73 +530,8 @@ export const Header: React.FC<Props> = ({
                         )}
                       </div>
                     </div>
-
-                    {/* 1-Click Instant Demo Session Switcher */}
-                    <div className="pt-2.5 border-t border-slate-200/80 flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 shrink-0">
-                        <Wallet className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Quick Demo:</span>
-                      </span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleQuickDemoSession('BUYER')}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-colors shadow-2xs flex items-center gap-1"
-                          title="Switch to Buyer session and open Top-Up Wallet"
-                        >
-                          <PlusCircle className="w-3 h-3 text-emerald-200" />
-                          <span>Buyer Wallet</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleQuickDemoSession('SUPPLIER')}
-                          className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-[11px] font-semibold cursor-pointer whitespace-nowrap transition-colors shadow-2xs flex items-center gap-1"
-                          title="Switch to Supplier session and open Transaction Ledger"
-                        >
-                          <LayoutDashboard className="w-3 h-3 text-blue-200" />
-                          <span>Supplier Wallet</span>
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 )}
-
-                {/* Dedicated Wallet Funds Top-Up & Escrow Mediation Strip (Permanently Visible - Never Hidden) */}
-                <div className="p-3 bg-gradient-to-r from-emerald-50 via-teal-50/70 to-emerald-50 border border-emerald-200/90 rounded-xl mb-2.5 flex items-center justify-between gap-2.5 shadow-2xs">
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                        <Wallet className="w-3 h-3" />
-                      </div>
-                      <span className="truncate">Wallet &amp; Escrow Mediation</span>
-                      {!currentUser && (
-                        <span className="px-1.5 py-0.2 text-[9px] font-bold uppercase rounded bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                          Interactive
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-emerald-700 truncate mt-0.5">
-                      {currentUser
-                        ? 'Deposit funds, lock escrow, or view transaction ledger'
-                        : 'Simulate instant top-up webhook & review ledger history'}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!currentUser) {
-                        handleQuickDemoSession('BUYER');
-                      } else {
-                        handleOpenFundsTopUp();
-                      }
-                    }}
-                    className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap shadow-xs transition-colors"
-                    title="Open Top-Up Wallet"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Top-Up</span>
-                  </button>
-                </div>
 
                 {/* All Marketplace & Directory Options */}
                 <div className="pt-1 pb-1">

@@ -38,7 +38,6 @@ import {
   List,
   RotateCcw,
   RotateCw,
-  Sparkles,
   FileImage,
   ArrowRight,
   Sun

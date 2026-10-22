@@ -24,7 +24,7 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
   className = '',
   imgClassName = '',
   dominantColor,
-  eager = true,
+  eager = false,
   showGradientOverlay = false,
   children,
   ...restProps
@@ -117,6 +117,8 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
           src={finalBlur}
           alt=""
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
           className={`absolute inset-0 w-full h-full object-cover object-center transform scale-105 filter blur-xl transition-opacity duration-700 ease-out z-0 pointer-events-none ${
             isLoaded ? 'opacity-0' : 'opacity-100'
           }`}
@@ -149,6 +151,8 @@ export const OptimizedHeroImage: React.FC<OptimizedHeroImageProps> = ({
         <img
           src="/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
           alt={finalAlt}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover object-center opacity-90 z-[1]"
         />
       ) : null}

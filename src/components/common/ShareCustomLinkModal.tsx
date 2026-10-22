@@ -9,9 +9,8 @@ import {
   Mail, 
   MessageCircle, 
   Building2, 
-  Package, 
+  Package,
   FileText, 
-  Sparkles,
   QrCode,
   Smartphone
 } from 'lucide-react';
@@ -299,7 +298,7 @@ export const ShareCustomLinkModal: React.FC<Props> = ({ config, onClose }) => {
 
           {/* Informational reassurance notice */}
           <div className="p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl flex items-start gap-2.5 text-slate-700">
-            <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <Share2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-[11px] leading-relaxed">
               <strong>Recipients will land directly here:</strong> When someone clicks or pastes this link, Trade Heaven automatically opens this exact specific view, bypassing default menus.
             </div>
