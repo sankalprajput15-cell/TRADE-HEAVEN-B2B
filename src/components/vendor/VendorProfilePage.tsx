@@ -165,10 +165,20 @@ export const VendorProfilePage: React.FC<Props> = ({
   const [directPaySuccess, setDirectPaySuccess] = useState<string | null>(null);
   const [directPayError, setDirectPayError] = useState<string | null>(null);
 
+  const isBasicPlanNoDirectTransfer =
+    profile.id === 'comp-zac-importation-fadetech' ||
+    Boolean(profile.memberTierLabel?.toLowerCase().includes('basic plan'));
+
   const handleDirectSupplierTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     setDirectPayError(null);
     setDirectPaySuccess(null);
+    if (isBasicPlanNoDirectTransfer) {
+      setDirectPayError(
+        `${profile.companyName} (${profile.contactPerson}) is a Basic Plan Holder. Direct on-site funds transfers from the portal are disabled for Basic Plan accounts.`
+      );
+      return;
+    }
     const inr = parseFloat(directPayAmountInr);
     if (isNaN(inr) || inr <= 0) {
       setDirectPayError('Please enter a valid transfer amount greater than ₹0.');
@@ -973,102 +983,124 @@ export const VendorProfilePage: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Direct On-Site Funds Transfer to VIP Supplier */}
+          {/* Direct On-Site Funds Transfer to VIP Supplier (Disabled for Basic Plan Holders like Zac) */}
           <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="bg-slate-900 text-white px-5 py-3.5 border-b border-slate-800 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                <DollarSign className={`w-4 h-4 shrink-0 ${isBasicPlanNoDirectTransfer ? 'text-amber-400' : 'text-emerald-400'}`} />
                 <h3 className="text-xs font-black uppercase tracking-wider text-white">
                   Transfer Funds to Supplier
                 </h3>
               </div>
-              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
-                VIP On-Site Pay
+              <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                isBasicPlanNoDirectTransfer ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {isBasicPlanNoDirectTransfer ? 'Basic Plan Holder' : 'VIP On-Site Pay'}
               </span>
             </div>
 
-            <form onSubmit={handleDirectSupplierTransfer} className="p-5 space-y-3.5 text-xs bg-slate-50/50">
-              {directPayError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-semibold">
-                  {directPayError}
+            {isBasicPlanNoDirectTransfer ? (
+              <div className="p-5 space-y-3 text-xs bg-amber-50/60">
+                <div className="p-3.5 rounded-2xl bg-amber-100/80 border border-amber-300 text-amber-950 space-y-1.5">
+                  <div className="font-black text-xs uppercase tracking-wide text-amber-900">
+                    Direct On-Site Transfer Disabled (Basic Plan)
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900 font-medium">
+                    <strong>{profile.companyName}</strong> ({profile.contactPerson}) is registered as a <strong>Basic Plan Holder</strong>. Direct on-site funds transfers from buyers are restricted exclusively to <strong>VIP Plan</strong> members.
+                  </p>
                 </div>
-              )}
-              {directPaySuccess && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{directPaySuccess}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setDirectPayMode('DIRECT_VIP')}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    directPayMode === 'DIRECT_VIP'
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  disabled
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-200 text-slate-500 font-black text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
                 >
-                  VIP Direct Transfer
+                  <span>Direct Portal Funds Transfer Unavailable</span>
                 </button>
+              </div>
+            ) : (
+              <form onSubmit={handleDirectSupplierTransfer} className="p-5 space-y-3.5 text-xs bg-slate-50/50">
+                {directPayError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-semibold">
+                    {directPayError}
+                  </div>
+                )}
+                {directPaySuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{directPaySuccess}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setDirectPayMode('DIRECT_VIP')}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      directPayMode === 'DIRECT_VIP'
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    VIP Direct Transfer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDirectPayMode('ESCROW_HOLD')}
+                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      directPayMode === 'ESCROW_HOLD'
+                        ? 'bg-slate-900 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Hold in Escrow
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Amount (INR ₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={directPayAmountInr}
+                      onChange={e => setDirectPayAmountInr(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-mono font-bold text-slate-900 focus:border-slate-900 outline-hidden"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      PO / Invoice Ref
+                    </label>
+                    <input
+                      type="text"
+                      value={directPayRef}
+                      onChange={e => setDirectPayRef(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-mono font-semibold text-slate-900 focus:border-slate-900 outline-hidden"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => setDirectPayMode('ESCROW_HOLD')}
-                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    directPayMode === 'ESCROW_HOLD'
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  type="submit"
+                  disabled={directPaySubmitting}
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-60"
                 >
-                  Hold in Escrow
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>
+                    {directPaySubmitting
+                      ? 'Processing Transfer...'
+                      : directPayMode === 'DIRECT_VIP'
+                      ? `Send Direct Funds to ${profile.companyName.split(' ')[0]}`
+                      : 'Lock Order Funds in Escrow'}
+                  </span>
                 </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Amount (INR ₹)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="any"
-                    value={directPayAmountInr}
-                    onChange={e => setDirectPayAmountInr(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-mono font-bold text-slate-900 focus:border-slate-900 outline-hidden"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    PO / Invoice Ref
-                  </label>
-                  <input
-                    type="text"
-                    value={directPayRef}
-                    onChange={e => setDirectPayRef(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-mono font-semibold text-slate-900 focus:border-slate-900 outline-hidden"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={directPaySubmitting}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-60"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>
-                  {directPaySubmitting
-                    ? 'Processing Transfer...'
-                    : directPayMode === 'DIRECT_VIP'
-                    ? `Send Direct Funds to ${profile.companyName.split(' ')[0]}`
-                    : 'Lock Order Funds in Escrow'}
-                </span>
-              </button>
-            </form>
+              </form>
+            )}
           </div>
 
           {/* Sticky RFQ Lead Generator Form */}

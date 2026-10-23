@@ -989,6 +989,11 @@ export const tradeHeavenMediationService = {
     supplierId?: string,
     productTitle?: string
   ): Promise<MediationSystemState> {
+    if (supplierId === 'comp-zac-importation-fadetech') {
+      throw new Error(
+        'Direct on-site funds transfer disabled: IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Only VIP Plan members can receive direct funds transfers from the site.'
+      );
+    }
     try {
       const res = await fetch('/api/v1/mediation/lock-escrow', {
         method: 'POST',
@@ -1019,6 +1024,11 @@ export const tradeHeavenMediationService = {
     totalAmountPaise: number;
     platformFeePaise: number;
   }): Promise<MediationSystemState> {
+    if (params.supplierId === 'comp-zac-importation-fadetech') {
+      throw new Error(
+        'Direct on-site funds transfer disabled: IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Only VIP Plan members can receive direct funds transfers from the site.'
+      );
+    }
     try {
       const res = await fetch('/api/v1/mediation/release-escrow', {
         method: 'POST',

@@ -562,7 +562,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 label: 'Documents',
                 icon: Download
               },
-              ...(currentUser?.tier === 'VIP' || currentUser?.isPremium ? [{
+              ...(currentUser?.tier === 'VIP' ? [{
                 id: 'RECEIVE_FUNDS',
                 label: 'Direct Receive Funds',
                 icon: DollarSign

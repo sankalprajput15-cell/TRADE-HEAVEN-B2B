@@ -235,9 +235,19 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     message: string;
   } | null>(null);
 
+  const isSelectedSupplierBasicPlan = targetSupplierId === 'comp-zac-importation-fadetech';
+
   const handleTransferToSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     setSupplierTransferFeedback(null);
+    if (isSelectedSupplierBasicPlan) {
+      setSupplierTransferFeedback({
+        type: 'error',
+        message:
+          'IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Direct on-site funds transfers from the site are disabled for Basic Plan accounts (VIP membership required).'
+      });
+      return;
+    }
     const inrVal = parseFloat(supplierTransferAmountInr);
     if (isNaN(inrVal) || inrVal <= 0) {
       setSupplierTransferFeedback({
@@ -1661,19 +1671,38 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 </label>
                 <select
                   value={targetSupplierId}
-                  onChange={e => setTargetSupplierId(e.target.value)}
+                  onChange={e => {
+                    setTargetSupplierId(e.target.value);
+                    setSupplierTransferFeedback(null);
+                  }}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:border-slate-900 focus:outline-none"
                 >
                   {supplierRecipients.map(supp => {
                     const info = getEntityCurrency(supp);
+                    const isZacBasic = supp.entity_id === 'comp-zac-importation-fadetech';
                     return (
                       <option key={supp.id} value={supp.entity_id}>
-                        {info.flag} {supp.company_name} ({info.country})
+                        {info.flag} {supp.company_name} ({info.country}){' '}
+                        {isZacBasic
+                          ? '— [BASIC PLAN • Direct Site Transfer Disabled]'
+                          : '— [VIP Member]'}
                       </option>
                     );
                   })}
                 </select>
               </div>
+
+              {isSelectedSupplierBasicPlan && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-1">
+                  <div className="font-black uppercase tracking-wide text-[11px] text-amber-900 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Basic Plan Holder — Direct Site Transfer Disabled</span>
+                  </div>
+                  <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
+                    <strong>IMPORTATION FADE-TECH (Zachary Aldin)</strong> holds a <strong>Basic Plan</strong> membership. Direct on-site funds transfers from the portal are only available for <strong>VIP Plan</strong> suppliers.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1688,7 +1717,8 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                       step="any"
                       value={supplierTransferAmountInr}
                       onChange={e => setSupplierTransferAmountInr(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none"
+                      disabled={isSelectedSupplierBasicPlan}
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
                       required
                     />
                   </div>
@@ -1702,7 +1732,8 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                     type="text"
                     value={supplierOrderRef}
                     onChange={e => setSupplierOrderRef(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-semibold text-slate-900 focus:border-slate-900 focus:outline-none"
+                    disabled={isSelectedSupplierBasicPlan}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-semibold text-slate-900 focus:border-slate-900 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
                     required
                   />
                 </div>
@@ -1710,12 +1741,14 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
 
               <button
                 type="submit"
-                disabled={isTransferringToSupplier}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-60"
+                disabled={isTransferringToSupplier || isSelectedSupplierBasicPlan}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <ArrowUpRight className="w-4 h-4" />
                 <span>
-                  {isTransferringToSupplier
+                  {isSelectedSupplierBasicPlan
+                    ? 'Direct Transfer Disabled (Basic Plan Holder)'
+                    : isTransferringToSupplier
                     ? 'Processing Supplier Transfer...'
                     : supplierTransferMode === 'DIRECT_VIP'
                     ? 'Send Direct VIP Funds Transfer to Supplier'

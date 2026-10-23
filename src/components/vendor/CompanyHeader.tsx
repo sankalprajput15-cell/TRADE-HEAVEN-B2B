@@ -75,14 +75,24 @@ export const CompanyHeader: React.FC<Props> = ({
                 type="logo"
                 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white object-cover shadow-2xl"
               />
-              <div className="absolute -bottom-2 -right-1 px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-wider shadow-sm border border-amber-300">
-                {profile.tier} TIER
+              <div className={`absolute -bottom-2 -right-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider shadow-sm border ${
+                profile.id === 'comp-zac-importation-fadetech' || profile.memberTierLabel?.toLowerCase().includes('basic plan')
+                  ? 'bg-slate-200 text-slate-800 border-slate-300'
+                  : 'bg-amber-400 text-slate-950 border-amber-300'
+              }`}>
+                {profile.id === 'comp-zac-importation-fadetech' || profile.memberTierLabel?.toLowerCase().includes('basic plan')
+                  ? 'BASIC PLAN'
+                  : `${profile.tier} TIER`}
               </div>
             </div>
 
             <div className="text-white space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-600/90 text-white text-[10px] font-bold tracking-wide uppercase border border-blue-400 shadow-xs">
+                <span className={`px-2.5 py-0.5 rounded-full text-white text-[10px] font-bold tracking-wide uppercase border shadow-xs ${
+                  profile.id === 'comp-zac-importation-fadetech' || profile.memberTierLabel?.toLowerCase().includes('basic plan')
+                    ? 'bg-slate-700/95 border-slate-500'
+                    : 'bg-blue-600/90 border-blue-400'
+                }`}>
                   {profile.memberTierLabel || `${profile.tier} Verified Exporter`}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1 border border-emerald-400">

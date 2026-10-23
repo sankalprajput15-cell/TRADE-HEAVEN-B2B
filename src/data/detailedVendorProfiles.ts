@@ -636,8 +636,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     establishedYear: 2018,
     yearsInBusiness: 8,
     businessType: 'Australian Coal Exporter & Energy Commodities Merchant',
-    tier: 'GOLD',
-    memberTierLabel: 'Trade Heaven Basic Business Plan (Premium Seller Services) • Invoice TRD-INV-27-0004',
+    tier: 'SILVER',
+    memberTierLabel: 'Basic Plan Holder • Direct On-Site Funds Transfer Disabled (Invoice TRD-INV-27-0004)',
     isVerifiedKYC: true,
     kycVerificationDate: '2026-09-04',
     trustScore: 99,
@@ -651,9 +651,9 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     productionLines: 8,
     logoUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
     bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80',
-    tagline: 'Verified Australian Thermal & Coking Coal Exporter • Premium Seller Services Member',
-    description: 'IMPORTATION FADE-TECH (42a Bassett street hurstville, Australia | Zac@otec.ltd) is a verified Trade Heaven Basic Business Plan (Premium Seller Services) member with invoice TRD-INV-27-0004. Specializing in high-calorific Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal for steelworks, and High-Carbon PCI Coal. Authorized Representative: Zachary Aldin (+61 424 854 899). Accepted Payment: Bank Wire Transfer, L/C at sight, Trade Protection Escrow.',
-    acceptedPaymentTerms: ['Bank Wire Transfer', 'Irrevocable L/C at Sight', 'Trade Protection Escrow', 'SBLC / DLC'],
+    tagline: 'Verified Australian Thermal & Coking Coal Exporter • Basic Plan Holder',
+    description: 'IMPORTATION FADE-TECH (42a Bassett street hurstville, Australia | Zac@otec.ltd) is a Trade Heaven Basic Plan Holder with invoice TRD-INV-27-0004. Note: Direct on-site funds receiving from buyers is disabled for Basic Plan holders (VIP Members Only). Specializing in high-calorific Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal for steelworks, and High-Carbon PCI Coal. Authorized Representative: Zachary Aldin (+61 424 854 899).',
+    acceptedPaymentTerms: ['Offline Bank Wire Transfer (Direct On-Site Transfer Disabled)', 'Irrevocable L/C at Sight', 'SBLC / DLC'],
     supportedIncotermsList: ['FOB', 'CIF', 'CFR'],
     portsOfDispatch: ['Port of Newcastle, NSW Australia', 'Port of Gladstone, QLD Australia', 'Hay Point Coal Terminal, QLD Australia'],
     marketDistribution: [
@@ -820,6 +820,9 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
 export function getDetailedVendorProfile(companyId: string, fallbackBase?: any): DetailedVendorProfile {
   if (companyId === 'user-supplier-melissa') {
     return DETAILED_VENDOR_PROFILES['comp-melissa-mpcommodity'];
+  }
+  if (companyId === 'user-supplier-zac') {
+    return DETAILED_VENDOR_PROFILES['comp-zac-importation-fadetech'];
   }
   if (DETAILED_VENDOR_PROFILES[companyId]) {
     return DETAILED_VENDOR_PROFILES[companyId];

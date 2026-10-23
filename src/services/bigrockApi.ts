@@ -362,7 +362,7 @@ export const bigrockApi = {
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
       const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isZac ? 'IMPORTATION FADE-TECH' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'));
       const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
-      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? (isZac ? 'GOLD' : 'SILVER') : 'FREE');
+      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? ('Basic Plan' as any) : 'FREE');
       const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
@@ -370,7 +370,7 @@ export const bigrockApi = {
         name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' '))),
         email: isZac ? 'Zac@otec.ltd' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail),
         role: role,
-        isPremium: isAdmin || isMelissa,
+        isPremium: isAdmin,
         membershipStatus: membershipStatus,
         status: 'ACTIVE',
         isVerified: true,
@@ -399,7 +399,7 @@ export const bigrockApi = {
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
       const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isZac ? 'IMPORTATION FADE-TECH' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'));
       const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
-      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? (isZac ? 'GOLD' : 'SILVER') : 'FREE');
+      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? ('Basic Plan' as any) : 'FREE');
       const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
@@ -407,7 +407,7 @@ export const bigrockApi = {
         name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner'))),
         email: isZac ? 'Zac@otec.ltd' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail),
         role: role,
-        isPremium: isAdmin || isMelissa,
+        isPremium: isAdmin,
         membershipStatus: membershipStatus,
         status: 'ACTIVE',
         isVerified: true,
@@ -505,9 +505,9 @@ export const bigrockApi = {
         country: 'Australia',
         status: 'ACTIVE',
         is_verified: true,
-        is_premium: true,
+        is_premium: false,
         membership_status: 'paid',
-        tier: 'GOLD'
+        tier: 'Basic Plan'
       }
     ];
   },

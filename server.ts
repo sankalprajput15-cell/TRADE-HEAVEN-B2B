@@ -413,9 +413,9 @@ const serverUsersStore: ServerUserRecord[] = [
     country: 'Australia',
     status: 'ACTIVE',
     isVerified: true,
-    isPremium: true,
+    isPremium: false,
     membershipStatus: 'paid',
-    tier: 'GOLD',
+    tier: 'Basic Plan',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
   }
 ];
@@ -2895,6 +2895,11 @@ app.post('/api/v1/mediation/lock-escrow', async (req, res) => {
     if (!buyerId || !orderId || !totalAmountPaise || Number(totalAmountPaise) <= 0) {
       return res.status(400).json({ error: 'Valid buyerId, orderId, and totalAmountPaise are required.' });
     }
+    if (supplierId && String(supplierId).toLowerCase().includes('zac')) {
+      return res.status(403).json({
+        error: 'Direct on-site funds transfer is disabled for Zachary Aldin / IMPORTATION FADE-TECH (Basic Plan Holder). Only VIP Plan members can receive funds directly on site.'
+      });
+    }
     const amount = Math.round(Number(totalAmountPaise));
     await serverMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, amount);
     serverMediationPool.markOrderLocked(orderId, buyerId, amount, supplierId, productTitle);
@@ -2919,6 +2924,11 @@ app.post('/api/v1/mediation/release-escrow', async (req, res) => {
     const { orderId, buyerId, supplierId, totalAmountPaise, platformFeePaise } = req.body;
     if (!orderId || !buyerId || !supplierId || !totalAmountPaise || Number(totalAmountPaise) <= 0) {
       return res.status(400).json({ error: 'orderId, buyerId, supplierId, and totalAmountPaise are required.' });
+    }
+    if (String(supplierId).toLowerCase().includes('zac')) {
+      return res.status(403).json({
+        error: 'Direct on-site funds transfer is disabled for Zachary Aldin / IMPORTATION FADE-TECH (Basic Plan Holder). Only VIP Plan members can receive funds directly on site.'
+      });
     }
     const total = Math.round(Number(totalAmountPaise));
     const fee = Math.round(Number(platformFeePaise || 0));

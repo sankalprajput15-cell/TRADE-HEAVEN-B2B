@@ -340,6 +340,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   const handleLockEscrow = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+    if (lockSupplierId === 'comp-zac-importation-fadetech') {
+      setFeedback({
+        type: 'error',
+        title: 'Basic Plan Holder — Direct Site Transfer Disabled',
+        message: 'IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Funds cannot be transferred directly from the site to Basic Plan accounts.'
+      });
+      return;
+    }
     const inr = parseFloat(lockAmountInr);
     if (isNaN(inr) || inr <= 0) {
       setFeedback({
@@ -380,6 +388,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   const handleReleaseEscrow = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+    if (releaseSupplierId === 'comp-zac-importation-fadetech') {
+      setFeedback({
+        type: 'error',
+        title: 'Basic Plan Holder — Direct Site Settlement Disabled',
+        message: 'IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Direct on-site funds transfers are restricted to VIP members.'
+      });
+      return;
+    }
     const totalInr = parseFloat(releaseTotalAmountInr);
     const feePct = parseFloat(releaseFeePercent);
     if (isNaN(totalInr) || totalInr <= 0) {
@@ -1092,9 +1108,11 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                   >
                     {supplierWallets.map(w => {
                       const info = getEntityCurrency(w.entity_id);
+                      const isZacBasic = w.entity_id === 'comp-zac-importation-fadetech';
                       return (
                         <option key={w.id} value={w.entity_id}>
-                          {info.flag} {w.company_name} ({info.country} - {info.currency})
+                          {info.flag} {w.company_name} ({info.country} - {info.currency}){' '}
+                          {isZacBasic ? '— [BASIC PLAN • Direct Site Transfer Disabled]' : '— [VIP Member]'}
                         </option>
                       );
                     })}
@@ -1199,11 +1217,15 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     onChange={e => setReleaseSupplierId(e.target.value)}
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
                   >
-                    {supplierWallets.map(w => (
-                      <option key={w.id} value={w.entity_id}>
-                        {w.company_name} ({w.entity_id})
-                      </option>
-                    ))}
+                    {supplierWallets.map(w => {
+                      const isZacBasic = w.entity_id === 'comp-zac-importation-fadetech';
+                      return (
+                        <option key={w.id} value={w.entity_id}>
+                          {w.company_name} ({w.entity_id}){' '}
+                          {isZacBasic ? '— [BASIC PLAN • Direct Site Transfer Disabled]' : '— [VIP Member]'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
