@@ -343,8 +343,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     if (lockSupplierId === 'comp-zac-importation-fadetech') {
       setFeedback({
         type: 'error',
-        title: 'Basic Plan Holder — Direct Site Transfer Disabled',
-        message: 'IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Funds cannot be transferred directly from the site to Basic Plan accounts.'
+        title: 'Direct On-Site Transfer Not Active',
+        message: 'Direct on-site fund transfer is not active for IMPORTATION FADE-TECH (OTEC LTD). Please contact the supplier directly for it.'
       });
       return;
     }
@@ -391,8 +391,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     if (releaseSupplierId === 'comp-zac-importation-fadetech') {
       setFeedback({
         type: 'error',
-        title: 'Basic Plan Holder — Direct Site Settlement Disabled',
-        message: 'IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Direct on-site funds transfers are restricted to VIP members.'
+        title: 'Direct On-Site Transfer Not Active',
+        message: 'Direct on-site fund transfer is not active for IMPORTATION FADE-TECH (OTEC LTD). Please contact the supplier directly for it.'
       });
       return;
     }
@@ -1112,7 +1112,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       return (
                         <option key={w.id} value={w.entity_id}>
                           {info.flag} {w.company_name} ({info.country} - {info.currency}){' '}
-                          {isZacBasic ? '— [BASIC PLAN • Direct Site Transfer Disabled]' : '— [VIP Member]'}
+                          {isZacBasic ? '— [Not Active • Contact Supplier]' : '— [Direct Transfer Active]'}
                         </option>
                       );
                     })}
@@ -1222,7 +1222,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       return (
                         <option key={w.id} value={w.entity_id}>
                           {w.company_name} ({w.entity_id}){' '}
-                          {isZacBasic ? '— [BASIC PLAN • Direct Site Transfer Disabled]' : '— [VIP Member]'}
+                          {isZacBasic ? '— [Not Active • Contact Supplier]' : '— [Direct Transfer Active]'}
                         </option>
                       );
                     })}

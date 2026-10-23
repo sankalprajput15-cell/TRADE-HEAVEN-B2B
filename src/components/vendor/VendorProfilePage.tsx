@@ -175,7 +175,7 @@ export const VendorProfilePage: React.FC<Props> = ({
     setDirectPaySuccess(null);
     if (isBasicPlanNoDirectTransfer) {
       setDirectPayError(
-        `${profile.companyName} (${profile.contactPerson}) is a Basic Plan Holder. Direct on-site funds transfers from the portal are disabled for Basic Plan accounts.`
+        `Direct on-site fund transfer is not active for ${profile.companyName}. Please contact the supplier directly for it.`
       );
       return;
     }
@@ -995,7 +995,7 @@ export const VendorProfilePage: React.FC<Props> = ({
               <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
                 isBasicPlanNoDirectTransfer ? 'text-amber-400' : 'text-emerald-400'
               }`}>
-                {isBasicPlanNoDirectTransfer ? 'Basic Plan Holder' : 'VIP On-Site Pay'}
+                {isBasicPlanNoDirectTransfer ? 'Not Active' : 'Direct Pay Active'}
               </span>
             </div>
 
@@ -1003,18 +1003,19 @@ export const VendorProfilePage: React.FC<Props> = ({
               <div className="p-5 space-y-3 text-xs bg-amber-50/60">
                 <div className="p-3.5 rounded-2xl bg-amber-100/80 border border-amber-300 text-amber-950 space-y-1.5">
                   <div className="font-black text-xs uppercase tracking-wide text-amber-900">
-                    Direct On-Site Transfer Disabled (Basic Plan)
+                    Direct On-Site Transfer Not Active
                   </div>
                   <p className="text-[11px] leading-relaxed text-amber-900 font-medium">
-                    <strong>{profile.companyName}</strong> ({profile.contactPerson}) is registered as a <strong>Basic Plan Holder</strong>. Direct on-site funds transfers from buyers are restricted exclusively to <strong>VIP Plan</strong> members.
+                    Direct on-site fund transfer is not active for <strong>{profile.companyName}</strong>. Please contact the supplier directly for payment arrangements.
                   </p>
                 </div>
                 <button
                   type="button"
-                  disabled
-                  className="w-full py-2.5 px-4 rounded-xl bg-slate-200 text-slate-500 font-black text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+                  onClick={() => setIsContactInquiryModalOpen(true)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <span>Direct Portal Funds Transfer Unavailable</span>
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Contact Supplier for Payment</span>
                 </button>
               </div>
             ) : (

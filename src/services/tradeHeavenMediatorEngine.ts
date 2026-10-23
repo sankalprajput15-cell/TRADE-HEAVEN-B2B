@@ -83,7 +83,7 @@ export function assertVipForDirectSiteTransfer(params: {
   if (senderId && (!isVipPlanStatus(resolvedSenderPlan, senderId) || isBasicPlanStatus(resolvedSenderPlan, senderId))) {
     const senderLabel = senderWallet?.company_name || senderWallet?.entity_name || senderId;
     throw new Error(
-      `Direct-to-site fund transfer blocked: ${senderLabel} has a 'Basic' plan status. Only VIP members can initiate direct-to-site fund transfers.`
+      `Direct on-site fund transfer is not active for ${senderLabel}. Please contact the supplier directly for payment arrangements.`
     );
   }
 
@@ -93,7 +93,7 @@ export function assertVipForDirectSiteTransfer(params: {
   ) {
     const recipientLabel = recipientWallet?.company_name || recipientWallet?.entity_name || recipientId;
     throw new Error(
-      `Direct-to-site fund transfer blocked: ${recipientLabel} has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can use this feature and receive funds.`
+      `Direct on-site fund transfer is not active for ${recipientLabel}. Please contact the supplier directly for it.`
     );
   }
 }
@@ -220,7 +220,7 @@ export class TradeHeavenMediatorEngine {
 
       if (isBasicPlanStatus(wallet.plan_status, buyerId)) {
         throw new Error(
-          `Direct-to-site fund transfer blocked: ${wallet.company_name || buyerId} has a 'Basic' plan status. Only VIP members can initiate direct-to-site fund transfers.`
+          `Direct on-site fund transfer is not active for ${wallet.company_name || buyerId}. Please contact the supplier directly for payment arrangements.`
         );
       }
 
@@ -232,7 +232,7 @@ export class TradeHeavenMediatorEngine {
         const suppWallet = suppRes.rows[0];
         if (isBasicPlanStatus(suppWallet?.plan_status, supplierId)) {
           throw new Error(
-            `Direct-to-site fund transfer blocked: ${suppWallet?.company_name || supplierId} has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can use this feature and receive funds.`
+            `Direct on-site fund transfer is not active for ${suppWallet?.company_name || supplierId}. Please contact the supplier directly for it.`
           );
         }
       }

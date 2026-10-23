@@ -270,7 +270,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
       setSupplierTransferFeedback({
         type: 'error',
         message:
-          'Direct-to-site fund transfers are disabled for users with a Basic plan status. Upgrade to a VIP plan to initiate direct on-site fund transfers.'
+          'Direct on-site fund transfer is currently not active for your account. Please contact the supplier directly for payment arrangements.'
       });
       return;
     }
@@ -278,7 +278,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
       setSupplierTransferFeedback({
         type: 'error',
         message:
-          `${selectedRecipientWallet?.company_name || 'Selected supplier'} has a Basic plan status. Direct on-site funds transfers are disabled for Basic Plan accounts (only VIP members can receive direct-to-site funds).`
+          `Direct on-site fund transfer is not active for ${selectedRecipientWallet?.company_name || 'this supplier'}. Please contact the supplier directly for it.`
       });
       return;
     }
@@ -1729,8 +1729,8 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                       <option key={supp.id} value={supp.entity_id}>
                         {info.flag} {supp.company_name} ({info.country}){' '}
                         {isSuppBasic
-                          ? '— [BASIC PLAN • Direct Site Transfer Disabled]'
-                          : '— [VIP Member]'}
+                          ? '— [Not Active • Contact Supplier]'
+                          : '— [Direct Transfer Active]'}
                       </option>
                     );
                   })}
@@ -1741,10 +1741,10 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-1">
                   <div className="font-black uppercase tracking-wide text-[11px] text-amber-900 flex items-center gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                    <span>Your Account Has Basic Plan Status — Direct Site Transfers Locked</span>
+                    <span>Direct On-Site Transfer Not Active</span>
                   </div>
                   <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
-                    Your account (<strong>{currentUser?.companyName || currentUser?.name}</strong>) is on a <strong>Basic Plan</strong>. Direct-to-site fund transfers and receiving funds on-site are restricted exclusively to <strong>VIP Plan</strong> members.
+                    Direct on-site fund transfer is currently not active for <strong>{currentUser?.companyName || currentUser?.name}</strong>. Please contact the supplier directly for payment arrangements.
                   </p>
                 </div>
               )}
@@ -1753,10 +1753,10 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-1">
                   <div className="font-black uppercase tracking-wide text-[11px] text-amber-900 flex items-center gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                    <span>Basic Plan Holder — Direct Site Transfer Disabled</span>
+                    <span>Direct On-Site Transfer Not Active</span>
                   </div>
                   <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
-                    <strong>{selectedRecipientWallet?.company_name || 'IMPORTATION FADE-TECH (Zachary Aldin)'}</strong> holds a <strong>Basic Plan</strong> membership. Direct on-site funds transfers from the portal are only available for <strong>VIP Plan</strong> suppliers.
+                    Direct on-site fund transfer is not active for <strong>{selectedRecipientWallet?.company_name || 'IMPORTATION FADE-TECH (OTEC LTD)'}</strong>. Please contact the supplier directly for it.
                   </p>
                 </div>
               )}
@@ -1804,11 +1804,11 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 <ArrowUpRight className="w-4 h-4" />
                 <span>
                   {isDirectTransferBlockedByPlan
-                    ? 'Direct Transfer Disabled (Basic Plan Holder)'
+                    ? 'Not Active — Contact Supplier for Payment'
                     : isTransferringToSupplier
                     ? 'Processing Supplier Transfer...'
                     : supplierTransferMode === 'DIRECT_VIP'
-                    ? 'Send Direct VIP Funds Transfer to Supplier'
+                    ? 'Send Direct Funds Transfer to Supplier'
                     : 'Lock Funds in Escrow for Supplier'}
                 </span>
               </button>
