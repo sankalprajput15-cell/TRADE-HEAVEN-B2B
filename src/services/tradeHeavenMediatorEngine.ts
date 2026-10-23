@@ -717,7 +717,17 @@ export class TradeHeavenSqlPoolAdapter {
         // 2. SELECT queries on wallets
         if (normalized.startsWith("SELECT id FROM wallets WHERE entity_id = $1 AND wallet_type = 'BUYER' FOR UPDATE")) {
           const [entityId] = params;
-          const rows = this.wallets.filter(w => w.entity_id === entityId && w.wallet_type === 'BUYER');
+          let rows = this.wallets.filter(w => w.entity_id === entityId);
+          if (rows.length === 0 && entityId) {
+            const created = this.createWallet({
+              entity_id: entityId,
+              entity_name: entityId,
+              company_name: entityId,
+              wallet_type: 'BUYER',
+              initial_balance_paise: 0
+            });
+            rows = [created];
+          }
           return { rowCount: rows.length, rows };
         }
 
@@ -727,7 +737,17 @@ export class TradeHeavenSqlPoolAdapter {
           normalized.startsWith('SELECT id FROM wallets WHERE entity_id = $1 FOR UPDATE')
         ) {
           const [entityId] = params;
-          const rows = this.wallets.filter(w => w.entity_id === entityId);
+          let rows = this.wallets.filter(w => w.entity_id === entityId);
+          if (rows.length === 0 && entityId) {
+            const created = this.createWallet({
+              entity_id: entityId,
+              entity_name: entityId,
+              company_name: entityId,
+              wallet_type: 'BUYER',
+              initial_balance_paise: 0
+            });
+            rows = [created];
+          }
           return { rowCount: rows.length, rows };
         }
 

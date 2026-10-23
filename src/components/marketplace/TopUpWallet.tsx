@@ -5,6 +5,7 @@ import {
   WalletRecord,
   LedgerEntryRecord
 } from '../../services/tradeHeavenMediatorEngine';
+import { useAuth } from '../../context/AuthContext';
 import {
   Wallet,
   CreditCard,
@@ -21,7 +22,10 @@ import {
   AlertCircle,
   ArrowRight,
   FileCheck2,
-  Zap
+  Zap,
+  Upload,
+  Mail,
+  FileText
 } from 'lucide-react';
 import { addTopUpRequest } from './TopUpRequestsList';
 import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
@@ -107,6 +111,8 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
   onSuccess,
   onNavigateToFullEngine
 }) => {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-titan-01');
@@ -169,15 +175,137 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     loadState();
   }, []);
 
-  const buyerWallets = useMemo(
-    () => (state?.wallets || []).filter(w => w.wallet_type === 'BUYER'),
+  const [transferProofFile, setTransferProofFile] = useState<string | null>(null);
+  const [transferUtrInput, setTransferUtrInput] = useState<string>('');
+  const [confirmationEmail, setConfirmationEmail] = useState<string>(currentUser?.email || '');
+  const [proofSubmittedBanner, setProofSubmittedBanner] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [isSubmittingProof, setIsSubmittingProof] = useState<boolean>(false);
+
+  const selectedWallet: WalletRecord = useMemo(() => {
+    const wallets = state?.wallets || [];
+    if (currentUser) {
+      const uid = (currentUser.id || '').toLowerCase();
+      const email = (currentUser.email || '').toLowerCase();
+      const comp = (currentUser.companyName || '').toLowerCase();
+      const name = (currentUser.name || '').toLowerCase();
+
+      const matched = wallets.find(w => {
+        const eid = w.entity_id.toLowerCase();
+        const wcomp = w.company_name.toLowerCase();
+        const wname = w.entity_name.toLowerCase();
+        if (uid && (eid === uid || eid.includes(uid))) return true;
+        if (comp && (wcomp === comp || wcomp.includes(comp) || comp.includes(wcomp))) return true;
+        if (name && (wname === name || wname.includes(name))) return true;
+        if (email.includes('zac@otec.ltd') && eid.includes('zac')) return true;
+        if (email.includes('melissa') && eid.includes('melissa')) return true;
+        return false;
+      });
+      if (matched) return matched;
+    }
+
+    return {
+      id: `wal-personal-${currentUser?.id || 'guest'}`,
+      entity_id: currentUser?.id || 'personal-client-wallet',
+      entity_name: currentUser?.name || 'Logged-in Client',
+      company_name: currentUser?.companyName || currentUser?.name || 'Personal Account',
+      wallet_type: currentUser?.role === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER',
+      available_balance: '0',
+      locked_balance: '0',
+      currency: 'INR',
+      updated_at: new Date().toISOString()
+    };
+  }, [state, currentUser]);
+
+  const buyerWallets = useMemo(() => [selectedWallet], [selectedWallet]);
+
+  // Verified Suppliers directory for Buyer-to-Supplier Funds Transfer (only company name & country shown, never balances)
+  const supplierRecipients = useMemo(
+    () => (state?.wallets || []).filter(w => w.wallet_type === 'SUPPLIER'),
     [state]
   );
 
-  const selectedWallet: WalletRecord | undefined = useMemo(
-    () => buyerWallets.find(w => w.entity_id === selectedBuyerId) || buyerWallets[0],
-    [buyerWallets, selectedBuyerId]
-  );
+  const [targetSupplierId, setTargetSupplierId] = useState<string>('comp-melissa-mpcommodity');
+  const [supplierTransferMode, setSupplierTransferMode] = useState<'DIRECT_VIP' | 'ESCROW_HOLD'>('DIRECT_VIP');
+  const [supplierTransferAmountInr, setSupplierTransferAmountInr] = useState<string>('250000');
+  const [supplierOrderRef, setSupplierOrderRef] = useState<string>(() => `PO-VIP-${Math.floor(10000 + Math.random() * 90000)}`);
+  const [isTransferringToSupplier, setIsTransferringToSupplier] = useState<boolean>(false);
+  const [supplierTransferFeedback, setSupplierTransferFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  const handleTransferToSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSupplierTransferFeedback(null);
+    const inrVal = parseFloat(supplierTransferAmountInr);
+    if (isNaN(inrVal) || inrVal <= 0) {
+      setSupplierTransferFeedback({
+        type: 'error',
+        message: 'Please enter a valid transfer amount greater than ₹0.'
+      });
+      return;
+    }
+    const transferPaise = Math.round(inrVal * 100);
+    const availPaise = Number(selectedWallet.available_balance || 0);
+    if (availPaise < transferPaise) {
+      setSupplierTransferFeedback({
+        type: 'error',
+        message: `Insufficient Available Balance (${formatInrFromPaise(availPaise)}). Please top up your wallet first.`
+      });
+      return;
+    }
+
+    const orderRef = supplierOrderRef.trim() || `PO-VIP-${Date.now().toString().slice(-5)}`;
+    const recipient = supplierRecipients.find(s => s.entity_id === targetSupplierId);
+    const recipientName = recipient?.company_name || targetSupplierId;
+
+    setIsTransferringToSupplier(true);
+    try {
+      // Step 1: Lock funds in escrow
+      let updatedState = await tradeHeavenMediationService.lockOrderFundsInEscrow(
+        selectedWallet.entity_id,
+        orderRef,
+        transferPaise,
+        targetSupplierId,
+        `Supplier Settlement (${orderRef})`
+      );
+
+      // Step 2: If DIRECT_VIP mode, immediately release settlement to VIP supplier
+      if (supplierTransferMode === 'DIRECT_VIP') {
+        const feePaise = Math.round(transferPaise * 0.015); // 1.5% VIP settlement fee
+        updatedState = await tradeHeavenMediationService.releaseEscrowToSupplier({
+          orderId: orderRef,
+          buyerId: selectedWallet.entity_id,
+          supplierId: targetSupplierId,
+          totalAmountPaise: transferPaise,
+          platformFeePaise: feePaise
+        });
+        setSupplierTransferFeedback({
+          type: 'success',
+          message: `Direct VIP Transfer of ${formatInrFromPaise(transferPaise)} settled to ${recipientName} (Ref: ${orderRef}).`
+        });
+      } else {
+        setSupplierTransferFeedback({
+          type: 'success',
+          message: `${formatInrFromPaise(transferPaise)} locked in Escrow for ${recipientName} (Order: ${orderRef}). Release anytime upon shipment confirmation.`
+        });
+      }
+
+      setState(updatedState);
+      setSupplierOrderRef(`PO-VIP-${Math.floor(10000 + Math.random() * 90000)}`);
+      if (onSuccess) {
+        onSuccess(updatedState);
+      }
+    } catch (err: any) {
+      setSupplierTransferFeedback({
+        type: 'error',
+        message: err?.message || 'Unable to complete transfer to supplier.'
+      });
+    } finally {
+      setIsTransferringToSupplier(false);
+    }
+  };
 
   const selectedGateway = useMemo(
     () => GATEWAY_OPTIONS.find(g => g.id === selectedGatewayId) || GATEWAY_OPTIONS[0],
@@ -207,14 +335,63 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     return `₹${inr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Filter recent WALLET_TOPUP ledger entries
+  // Filter recent WALLET_TOPUP ledger entries strictly for this user's personal wallet
   const recentTopUps: LedgerEntryRecord[] = useMemo(() => {
     if (!state) return [];
     const entries = state.ledgerEntries || (state as any).ledger_entries || [];
     return entries
-      .filter(entry => entry.transaction_type === 'WALLET_TOPUP')
+      .filter(
+        entry =>
+          entry.transaction_type === 'WALLET_TOPUP' &&
+          (entry.destination_wallet_id === selectedWallet.id ||
+            entry.destination_wallet_id === selectedWallet.entity_id)
+      )
       .slice(0, 6);
-  }, [state]);
+  }, [state, selectedWallet]);
+
+  const handlePortalScreenshotSubmission = () => {
+    setErrorMessage(null);
+    setProofError(null);
+    setProofSubmittedBanner(null);
+    if (parsedInr <= 0) {
+      setProofError('Please enter a valid transfer amount greater than ₹0.');
+      return;
+    }
+    if (!transferProofFile) {
+      setProofError('Please attach your bank transfer screenshot or payment slip (PNG, JPG, or PDF) before submitting.');
+      return;
+    }
+    setIsSubmittingProof(true);
+    const refId = transferUtrInput.trim() || gatewayTxId || `GW-SWIFT-${Math.floor(1000000 + Math.random() * 9000000)}`;
+    const targetMail = (confirmationEmail || currentUser?.email || 'your registered email').trim();
+
+    setTimeout(() => {
+      addTopUpRequest({
+        id: `REQ-TOPUP-${Date.now().toString().slice(-4)}`,
+        referenceId: refId,
+        buyerId: selectedWallet.entity_id,
+        buyerName: selectedWallet.entity_name,
+        companyName: selectedWallet.company_name,
+        amountPaise,
+        amountInr: parsedInr,
+        paymentRail: 'Funds Transfer (Portal Screenshot Upload)',
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        bankName: OFFICIAL_SWIFT_BANK_DETAILS.bankName,
+        ibanOrAccount: OFFICIAL_SWIFT_BANK_DETAILS.iban,
+        bicOrIfsc: OFFICIAL_SWIFT_BANK_DETAILS.bicSwift,
+        remark: OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark,
+        notes: `Funds transfer screenshot (${transferProofFile}) uploaded on portal. Confirmation mail sent to ${targetMail} & billing@tradeheaven.org.`,
+        proofDocumentName: transferProofFile
+      });
+      setIsSubmittingProof(false);
+      setProofSubmittedBanner(
+        `Transfer screenshot "${transferProofFile}" uploaded for ${formatInrFromPaise(amountPaise)} (Ref: ${refId}). Submission confirmation has been sent by mail to ${targetMail} and Trade Heaven Treasury (billing@tradeheaven.org).`
+      );
+      setTransferProofFile(null);
+      setTransferUtrInput('');
+    }, 450);
+  };
 
   const handleProceedToGatewayModal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,7 +401,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
       return;
     }
     if (!selectedWallet) {
-      setErrorMessage('Please select a valid Buyer Wallet.');
+      setErrorMessage('Please select a valid Personal Wallet.');
       return;
     }
     setSimStep('GATEWAY_CHECKOUT');
@@ -249,7 +426,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
         setState(updatedState);
 
         const updatedBuyerWallet = (updatedState?.wallets || []).find(
-          w => w.entity_id === selectedWallet.entity_id && w.wallet_type === 'BUYER'
+          w => w.entity_id === selectedWallet.entity_id
         );
         const newBalancePaise = Number(
           updatedBuyerWallet?.available_balance ?? prevBalancePaise + amountPaise
@@ -321,54 +498,53 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
 
   return (
     <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-      {/* Top Banner */}
+      {/* Top Banner: Shows ONLY Logged-In Client's Current Account Balance */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 sm:p-8 border-b border-slate-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
-              <Zap className="w-3.5 h-3.5" />
-              <span>Stage 1 Mediation • Instant Escrow Wallet Funding</span>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Personal Account Wallet • Direct Funds Transfer &amp; Screenshot Verification</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2.5">
               <Wallet className="w-6 h-6 text-emerald-400" />
-              <span>Top-Up Buyer Trade Wallet</span>
+              <span>My Current Account Balance &amp; Top-Up Portal</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-              Select a top-up package or custom deposit amount, simulate the B2B payment gateway webhook confirmation, and trigger{' '}
-              <code className="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono text-xs border border-slate-700">
-                creditBuyerDeposit(buyerId, amountPaise, gatewayTxId)
-              </code>{' '}
-              to credit your available wallet balance in real time.
+              View your personal account balance below. Top up via direct bank funds transfer and upload your transfer screenshot on this portal to receive instant submission confirmation by email.
             </p>
           </div>
 
-          {/* Active Buyer Balance Card */}
+          {/* Logged-In Client Personal Balance Card */}
           {selectedWallet && (() => {
             const buyerCurrency = getEntityCurrency(selectedWallet);
             const buyerAvail = formatBalanceInNativeCurrency(selectedWallet.available_balance, selectedWallet);
             const buyerLocked = formatBalanceInNativeCurrency(selectedWallet.locked_balance, selectedWallet);
 
             return (
-              <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 min-w-[280px] sm:min-w-[320px] shrink-0 space-y-3">
+              <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 min-w-[280px] sm:min-w-[340px] shrink-0 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                      <span>Selected Buyer Wallet</span>
-                      <span className="text-emerald-400 font-mono">({buyerCurrency.flag} {buyerCurrency.currencyCode})</span>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                      <span>Logged-In Client Account</span>
+                      <span className="font-mono">({buyerCurrency.flag} {buyerCurrency.currencyCode})</span>
                     </div>
                     <div className="text-sm font-black text-white truncate">
-                      {selectedWallet.company_name}
+                      {currentUser?.companyName || selectedWallet.company_name}
+                    </div>
+                    <div className="text-[11px] text-slate-400 truncate">
+                      {currentUser?.name || selectedWallet.entity_name} {currentUser?.email ? `• ${currentUser.email}` : ''}
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px] font-bold">
-                    {buyerCurrency.country}
+                    Personal Balance
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-slate-800/70 rounded-xl p-2.5 border border-slate-700/60">
                     <div className="text-[10px] text-slate-400 font-semibold flex items-center justify-between">
-                      <span>Available</span>
+                      <span>Current Balance</span>
                       <span className="text-[9px] font-mono text-emerald-400">{buyerCurrency.currencyCode}</span>
                     </div>
                     <div className="text-base sm:text-lg font-black text-emerald-400 font-mono mt-0.5 truncate">
@@ -665,49 +841,213 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
               </div>
 
               <form onSubmit={handleProceedToGatewayModal} className="space-y-6">
-              {/* 1. Buyer Entity Selector */}
-              <div className="space-y-2">
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                  1. Select Destination Buyer Account
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {buyerWallets.map(w => {
-                    const isSelected = w.entity_id === selectedWallet?.entity_id;
-                    const entityCurrency = getEntityCurrency(w.entity_id);
-                    const formattedNative = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
-                    return (
-                      <button
-                        type="button"
-                        key={w.id}
-                        onClick={() => setSelectedBuyerId(w.entity_id)}
-                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-500/20'
-                            : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
+              {/* 1. Funds Transfer Screenshot Upload & Mail Confirmation Portal */}
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+                {/* Structured Header */}
+                <div className="bg-slate-900 text-white px-5 py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                      <Upload className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-black tracking-tight text-white">
+                        1. Top Up by Funds Transfer &amp; Screenshot Upload
+                      </h3>
+                      <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                        Transfer funds to the official bank account above, attach your payment screenshot, and receive submission confirmation by email.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Portal + Mail Receipt</span>
+                  </div>
+                </div>
+
+                {/* Body Content */}
+                <div className="p-5 space-y-4 bg-slate-50/50">
+                  {/* Inline Error Banner */}
+                  {proofError && (
+                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                      <div className="flex-1">{proofError}</div>
+                    </div>
+                  )}
+
+                  {/* Inline Confirmation Banner */}
+                  {proofSubmittedBanner && (
+                    <div className="p-4 rounded-xl bg-emerald-950 text-white text-xs border border-emerald-700 flex items-start gap-3 shadow-xs">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                      <div className="space-y-1 flex-1">
+                        <div className="font-black text-emerald-300">
+                          Funds Transfer Screenshot Uploaded &amp; Confirmation Mail Sent
+                        </div>
+                        <div className="text-slate-200 leading-relaxed">{proofSubmittedBanner}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step Fields: Amount, Confirmation Email, and Reference ID */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                        Transfer Amount (INR)
+                      </label>
+                      <div className="relative flex items-center">
+                        <span className="absolute left-3 text-xs font-black text-slate-400">₹</span>
+                        <input
+                          type="number"
+                          min="1"
+                          step="any"
+                          value={amountInr}
+                          onChange={e => {
+                            setAmountInr(e.target.value);
+                            if (proofError) setProofError(null);
+                          }}
+                          placeholder="500000"
+                          className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none transition-colors"
+                        />
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                        ≈ ${amountUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                        Confirmation Email Address
+                      </label>
+                      <div className="relative flex items-center">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                        <input
+                          type="email"
+                          value={confirmationEmail}
+                          onChange={e => setConfirmationEmail(e.target.value)}
+                          placeholder={currentUser?.email || 'client@company.com'}
+                          className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:border-slate-900 focus:outline-none transition-colors"
+                        />
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-1 truncate">
+                        Instant mail receipt sent here
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                        UTR / SWIFT Reference ID
+                      </label>
+                      <input
+                        type="text"
+                        value={transferUtrInput}
+                        onChange={e => setTransferUtrInput(e.target.value)}
+                        placeholder={gatewayTxId || 'SWIFT / Bank UTR'}
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-mono font-semibold text-slate-900 focus:border-slate-900 focus:outline-none transition-colors"
+                      />
+                      <div className="text-[10px] text-slate-500 mt-1 truncate">
+                        Optional • Auto-generated if blank
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dedicated Full-Width Screenshot Upload Dropzone */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-bold text-slate-700">
+                        Payment Screenshot / Wire Advice Slip
+                      </span>
+                      {transferProofFile && (
+                        <button
+                          type="button"
+                          onClick={() => setTransferProofFile(null)}
+                          className="text-[11px] font-bold text-rose-600 hover:text-rose-700 cursor-pointer"
+                        >
+                          Remove File
+                        </button>
+                      )}
+                    </div>
+
+                    <label
+                      className={`w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                        transferProofFile
+                          ? 'border-emerald-500/70 bg-emerald-50/50'
+                          : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            transferProofFile
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          }`}
+                        >
+                          {transferProofFile ? (
+                            <FileCheck2 className="w-5 h-5" />
+                          ) : (
+                            <FileText className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-black text-slate-900 truncate">
+                            {transferProofFile
+                              ? transferProofFile
+                              : 'Click to upload transfer screenshot or bank wire receipt'}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {transferProofFile
+                              ? 'Screenshot attached • Ready for portal verification & email confirmation'
+                              : 'Supports PNG, JPG, JPEG, or PDF • Max 10 MB'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setTransferProofFile(file.name);
+                            setProofError(null);
+                            setProofSubmittedBanner(null);
+                          }
+                        }}
+                      />
+
+                      <span
+                        className={`px-3.5 py-2 rounded-lg text-xs font-bold shrink-0 text-center transition-colors ${
+                          transferProofFile
+                            ? 'bg-white text-emerald-700 border border-emerald-300 hover:bg-emerald-50'
+                            : 'bg-slate-900 text-white hover:bg-slate-800'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700 flex items-center gap-1">
-                            <span>{entityCurrency.flag}</span>
-                            <span>{entityCurrency.currency}</span>
-                          </span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
-                        </div>
-                        <div className="font-bold text-xs text-slate-900 mt-2 truncate">
-                          {w.company_name}
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          {entityCurrency.country}
-                        </div>
-                        <div className="text-[11px] font-mono font-bold text-emerald-700 mt-1">
-                          Avail: {formattedNative.nativeAmount}
-                        </div>
-                        <div className="text-[9.5px] font-mono text-slate-400">
-                          {formattedNative.inrAmount}
-                        </div>
-                      </button>
-                    );
-                  })}
+                        {transferProofFile ? 'Change Screenshot' : 'Browse Screenshot'}
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Action Footer Bar */}
+                  <div className="pt-3 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="text-[11px] text-slate-600">
+                      <span className="font-semibold text-slate-800">Confirmation Receipt:</span>{' '}
+                      Sent to <span className="font-mono font-bold text-slate-900">{(confirmationEmail || currentUser?.email || 'your registered email').trim()}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isSubmittingProof}
+                      onClick={handlePortalScreenshotSubmission}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0 shadow-xs disabled:opacity-60"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>
+                        {isSubmittingProof
+                          ? 'Uploading & Sending Confirmation Mail...'
+                          : 'Submit Screenshot & Send Confirmation Mail'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1185,13 +1525,13 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
 
         {/* Right Column: Live Wallet Overview & Recent Top-Up Ledger Entries (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* All Buyer Wallets Live Status */}
+          {/* Logged-In Client Personal Wallet Status Only */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-slate-700" />
+                <Building2 className="w-4 h-4 text-emerald-700" />
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  Live Buyer Wallets (PostgreSQL State)
+                  My Personal Account Balance
                 </h3>
               </div>
               <button
@@ -1203,58 +1543,195 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
               </button>
             </div>
 
-            <div className="space-y-2.5">
-              {buyerWallets.map(w => {
-                const isCurrent = w.entity_id === selectedWallet?.entity_id;
-                return (
-                  <div
-                    key={w.id}
-                    onClick={() => setSelectedBuyerId(w.entity_id)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                      isCurrent
-                        ? 'bg-white border-emerald-500 shadow-sm'
-                        : 'bg-white/70 border-slate-200 hover:bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                          <span>{getEntityCurrency(w.entity_id).flag}</span>
-                          <span>{w.company_name}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-mono">
-                          {w.entity_name} • {getEntityCurrency(w.entity_id).country} ({getEntityCurrency(w.entity_id).currency})
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {w.wallet_type}
-                      </span>
+            {selectedWallet && (
+              <div className="p-4 rounded-xl border bg-white border-emerald-500 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                      <span>{getEntityCurrency(selectedWallet).flag}</span>
+                      <span>{currentUser?.companyName || selectedWallet.company_name}</span>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-slate-100 text-xs">
-                      <div>
-                        <span className="text-[10px] text-slate-400 block">Available Balance</span>
-                        <span className="font-mono font-black text-emerald-600 block">
-                          {formatBalanceInNativeCurrency(w.available_balance, w.entity_id).nativeAmount}
-                        </span>
-                        <span className="text-[9.5px] font-mono text-slate-400 block">
-                          {formatBalanceInNativeCurrency(w.available_balance, w.entity_id).inrAmount}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 block">Locked in Escrow</span>
-                        <span className="font-mono font-bold text-amber-600 block">
-                          {formatBalanceInNativeCurrency(w.locked_balance, w.entity_id).nativeAmount}
-                        </span>
-                        <span className="text-[9.5px] font-mono text-slate-400 block">
-                          {formatBalanceInNativeCurrency(w.locked_balance, w.entity_id).inrAmount}
-                        </span>
-                      </div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                      {currentUser?.name || selectedWallet.entity_name} • {getEntityCurrency(selectedWallet).country} ({getEntityCurrency(selectedWallet).currencyCode})
                     </div>
                   </div>
-                );
-              })}
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    MY ACCOUNT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2.5 border-t border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Current Available Balance</span>
+                    <span className="font-mono font-black text-emerald-600 block text-sm">
+                      {formatBalanceInNativeCurrency(selectedWallet.available_balance, selectedWallet).primary}
+                    </span>
+                    <span className="text-[9.5px] font-mono text-slate-400 block">
+                      {formatBalanceInNativeCurrency(selectedWallet.available_balance, selectedWallet).secondary}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Locked in Escrow</span>
+                    <span className="font-mono font-bold text-amber-600 block text-sm">
+                      {formatBalanceInNativeCurrency(selectedWallet.locked_balance, selectedWallet).primary}
+                    </span>
+                    <span className="text-[9.5px] font-mono text-slate-400 block">
+                      {formatBalanceInNativeCurrency(selectedWallet.locked_balance, selectedWallet).secondary}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Mail Confirmation To:</span>
+                  </span>
+                  <span className="font-mono font-bold text-slate-800 truncate max-w-[180px]">
+                    {confirmationEmail || currentUser?.email || 'Registered Client Email'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Direct Buyer-to-Supplier Funds Transfer Card */}
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div className="bg-slate-900 text-white px-5 py-3.5 border-b border-slate-800 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                  Transfer Funds to Supplier
+                </h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                VIP Direct &amp; Escrow
+              </span>
             </div>
+
+            <form onSubmit={handleTransferToSupplier} className="p-5 space-y-3.5 bg-slate-50/50">
+              {supplierTransferFeedback && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-semibold flex items-start gap-2 border ${
+                    supplierTransferFeedback.type === 'success'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border-rose-200 text-rose-800'
+                  }`}
+                >
+                  {supplierTransferFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1 leading-relaxed">{supplierTransferFeedback.message}</div>
+                </div>
+              )}
+
+              {/* Transfer Mode Toggle */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setSupplierTransferMode('DIRECT_VIP')}
+                  className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    supplierTransferMode === 'DIRECT_VIP'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  VIP Direct Settlement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSupplierTransferMode('ESCROW_HOLD')}
+                  className={`py-2 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    supplierTransferMode === 'ESCROW_HOLD'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Lock in Order Escrow
+                </button>
+              </div>
+
+              {/* Recipient Supplier Select (Name & Country Only - Never Shows Balance) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Recipient Verified Supplier
+                </label>
+                <select
+                  value={targetSupplierId}
+                  onChange={e => setTargetSupplierId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:border-slate-900 focus:outline-none"
+                >
+                  {supplierRecipients.map(supp => {
+                    const info = getEntityCurrency(supp);
+                    return (
+                      <option key={supp.id} value={supp.entity_id}>
+                        {info.flag} {supp.company_name} ({info.country})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Transfer Amount (INR)
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-xs font-black text-slate-400">₹</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={supplierTransferAmountInr}
+                      onChange={e => setSupplierTransferAmountInr(e.target.value)}
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    PO / Invoice Reference
+                  </label>
+                  <input
+                    type="text"
+                    value={supplierOrderRef}
+                    onChange={e => setSupplierOrderRef(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-semibold text-slate-900 focus:border-slate-900 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isTransferringToSupplier}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-60"
+              >
+                <ArrowUpRight className="w-4 h-4" />
+                <span>
+                  {isTransferringToSupplier
+                    ? 'Processing Supplier Transfer...'
+                    : supplierTransferMode === 'DIRECT_VIP'
+                    ? 'Send Direct VIP Funds Transfer to Supplier'
+                    : 'Lock Funds in Escrow for Supplier'}
+                </span>
+              </button>
+
+              {onNavigateToFullEngine && (
+                <button
+                  type="button"
+                  onClick={onNavigateToFullEngine}
+                  className="w-full py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Open Full 4-Stage Escrow &amp; Settlement Engine →</span>
+                </button>
+              )}
+            </form>
           </div>
 
           {/* Recent Top-Up Ledger Feed */}

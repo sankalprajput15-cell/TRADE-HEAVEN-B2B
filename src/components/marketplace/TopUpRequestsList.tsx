@@ -16,10 +16,12 @@ import {
   FileText,
   ShieldCheck,
   ArrowUpRight,
+  Upload,
   X
 } from 'lucide-react';
 import { OFFICIAL_SWIFT_BANK_DETAILS } from '../../constants/swiftBankDetails';
 import { tradeHeavenMediationService } from '../../services/tradeHeavenMediatorEngine';
+import { useAuth } from '../../context/AuthContext';
 import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
 
 export type TopUpStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
@@ -170,6 +172,8 @@ export const TopUpRequestsList: React.FC<Props> = ({
   onRefreshParentState,
   className = ''
 }) => {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
   const [requests, setRequests] = useState<TopUpRequestItem[]>(loadStoredRequests);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED'>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -186,6 +190,7 @@ export const TopUpRequestsList: React.FC<Props> = ({
   const [remarkConfirmed, setRemarkConfirmed] = useState<boolean>(true);
   const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
   const [formSuccessMsg, setFormSuccessMsg] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -203,13 +208,24 @@ export const TopUpRequestsList: React.FC<Props> = ({
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  // Filter requests by wallet (if specified), status, and search query
-  const filteredRequests = useMemo(() => {
+  // Filter requests strictly by the logged-in user's personal wallet
+  const personalRequests = useMemo(() => {
     return requests.filter(req => {
-      // If a wallet is selected, we can show matching wallet requests or all buyer requests
-      if (selectedWalletId && req.buyerId !== selectedWalletId) {
-        // Still allow matching if user searches for something specific, or show all
+      if (selectedWalletId && req.buyerId === selectedWalletId) return true;
+      if (currentUser) {
+        const uid = (currentUser.id || '').toLowerCase();
+        const comp = (currentUser.companyName || '').toLowerCase();
+        const name = (currentUser.name || '').toLowerCase();
+        if (uid && (req.buyerId.toLowerCase() === uid || req.buyerId.toLowerCase().includes(uid))) return true;
+        if (comp && req.companyName.toLowerCase().includes(comp)) return true;
+        if (name && req.buyerName.toLowerCase().includes(name)) return true;
       }
+      return false;
+    });
+  }, [requests, selectedWalletId, currentUser]);
+
+  const filteredRequests = useMemo(() => {
+    return personalRequests.filter(req => {
       if (statusFilter !== 'ALL' && req.status !== statusFilter) {
         return false;
       }
@@ -225,15 +241,15 @@ export const TopUpRequestsList: React.FC<Props> = ({
       }
       return true;
     });
-  }, [requests, selectedWalletId, statusFilter, searchTerm]);
+  }, [personalRequests, statusFilter, searchTerm]);
 
   const pendingCount = useMemo(
-    () => requests.filter(r => r.status === 'PENDING').length,
-    [requests]
+    () => personalRequests.filter(r => r.status === 'PENDING').length,
+    [personalRequests]
   );
   const verifiedCount = useMemo(
-    () => requests.filter(r => r.status === 'VERIFIED').length,
-    [requests]
+    () => personalRequests.filter(r => r.status === 'VERIFIED').length,
+    [personalRequests]
   );
 
   const formatInr = (amountInr: number) => {
@@ -281,7 +297,6 @@ export const TopUpRequestsList: React.FC<Props> = ({
 
     const parsedInr = parseFloat(formAmountInr) || 0;
     if (parsedInr <= 0) {
-      alert('Please enter a valid amount.');
       setFormSubmitting(false);
       return;
     }
@@ -289,12 +304,9 @@ export const TopUpRequestsList: React.FC<Props> = ({
     const newRequest: TopUpRequestItem = {
       id: `REQ-TOPUP-${Date.now().toString().slice(-4)}`,
       referenceId: formUtr.trim() || `GW-SWIFT-${Math.floor(1000000 + Math.random() * 9000000)}`,
-      buyerId: selectedWalletId || 'buyer-titan-01',
-      buyerName: selectedWalletId === 'buyer-euro-02' ? 'Elena Rostova' : 'Marcus Vance',
-      companyName:
-        selectedWalletId === 'buyer-euro-02'
-          ? 'EuroMed Hospital Procurement GmbH'
-          : 'Titan Global Construction & Infrastructure LLC',
+      buyerId: selectedWalletId || currentUser?.id || 'personal-client-wallet',
+      buyerName: currentUser?.name || 'Logged-in Client',
+      companyName: currentUser?.companyName || currentUser?.name || 'Personal Account',
       amountPaise: Math.round(parsedInr * 100),
       amountInr: parsedInr,
       paymentRail: formRail,
@@ -305,7 +317,7 @@ export const TopUpRequestsList: React.FC<Props> = ({
       bicOrIfsc: OFFICIAL_SWIFT_BANK_DETAILS.bicSwift,
       remark: OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark,
       notes: formNotes.trim() || `Transferred to ${OFFICIAL_SWIFT_BANK_DETAILS.bankName}. Remark: ${OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark}`,
-      proofDocumentName: 'Bank_Transfer_Counterfoil.pdf'
+      proofDocumentName: selectedFile || 'Bank_Transfer_Screenshot.png'
     };
 
     setTimeout(() => {
@@ -313,13 +325,14 @@ export const TopUpRequestsList: React.FC<Props> = ({
       saveStoredRequests(updated);
       setRequests(updated);
       setFormSubmitting(false);
-      setFormSuccessMsg(`Transfer request ${newRequest.referenceId} logged! Status: PENDING.`);
+      setFormSuccessMsg(`Transfer proof (${newRequest.proofDocumentName}) uploaded! Confirmation email sent to ${currentUser?.email || 'your registered email'}. Status: PENDING.`);
       setTimeout(() => {
         setShowLogModal(false);
         setFormSuccessMsg(null);
         setFormUtr(`GW-SWIFT-${Math.floor(1000000 + Math.random() * 9000000)}`);
         setFormNotes('');
-      }, 1400);
+        setSelectedFile(null);
+      }, 2200);
     }, 400);
   };
 
@@ -331,10 +344,10 @@ export const TopUpRequestsList: React.FC<Props> = ({
           <div className="flex items-center gap-2">
             <h3 className="font-extrabold text-slate-900 text-base sm:text-lg flex items-center gap-2">
               <Clock className="w-5 h-5 text-emerald-600" />
-              <span>Top-Up Transfer Requests &amp; Status Tracker</span>
+              <span>My Top-Up Transfer Requests &amp; Status Tracker</span>
             </h3>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-200">
-              {requests.length} Total
+              {personalRequests.length} Total
             </span>
           </div>
           <p className="text-xs text-slate-500">
@@ -730,6 +743,37 @@ export const TopUpRequestsList: React.FC<Props> = ({
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-emerald-500"
                   placeholder="e.g. Dispatched from HSBC New York corporate account"
                 />
+              </div>
+
+              {/* Mock Screenshot Upload */}
+              <div className="space-y-1">
+                <label className="block font-bold text-slate-800">Upload Transfer Screenshot / Receipt *</label>
+                <div 
+                  onClick={() => setSelectedFile('Manual_Transfer_Proof_' + Date.now().toString().slice(-4) + '.png')}
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer ${
+                    selectedFile 
+                      ? 'border-emerald-500 bg-emerald-50' 
+                      : 'border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  {selectedFile ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                      <span className="font-bold text-emerald-900">{selectedFile}</span>
+                      <span className="text-[10px] text-emerald-600 font-mono">Proof Uploaded Successfully</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-slate-500">
+                      <Upload className="w-6 h-6 text-slate-400" />
+                      <span className="font-semibold">Click to upload transaction screenshot</span>
+                      <span className="text-[10px] opacity-70">Supports PNG, JPG, PDF (Max 10MB)</span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Submission triggers an automated confirmation email to Treasury.</span>
+                </div>
               </div>
 
               {/* Mandatory Remark Checkbox */}

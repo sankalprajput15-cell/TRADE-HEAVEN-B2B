@@ -385,6 +385,7 @@ export const INITIAL_SAAS_PLANS: SaaSPlan[] = [
       'Trade Analyst Data & Comprehensive Customs Reports',
       'Global Trade Events VIP Delegation Access',
       'Senior International Export Manager & Dedicated Account Manager',
+      'Enable funds receiving option from buyers directly on site',
       '24/7 VIP Working Support'
     ],
     stripeProductId: 'prod_vip_business',
@@ -437,6 +438,7 @@ export const INITIAL_SAAS_PLANS: SaaSPlan[] = [
       '**Trade Intelligence & Support:**',
       'Trade Analyst Data & Factory Audit Intelligence',
       'Global Trade Events Buyer Delegation Pass',
+      'Enable funds receiving option from buyers directly on site',
       'Dedicated Sourcing Agent / Account Manager'
     ],
     stripeProductId: 'prod_buyer_advance',

@@ -6,6 +6,7 @@ import {
   LedgerTransactionType,
   WalletRecord
 } from '../../services/tradeHeavenMediatorEngine';
+import { useAuth } from '../../context/AuthContext';
 import {
   BookOpen,
   ArrowDownLeft,
@@ -64,6 +65,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
   onNavigateToTopUp,
   onNavigateToMediationEngine
 }) => {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('ALL');
@@ -114,6 +117,18 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
     let withdrawalCount = 0;
 
     for (const entry of entries) {
+      // Privacy Gating: Non-admins only aggregate their own transaction data
+      if (!isAdmin && currentUser) {
+        const srcWallet = entry.source_wallet_id ? walletMap.get(entry.source_wallet_id) : null;
+        const dstWallet = entry.destination_wallet_id ? walletMap.get(entry.destination_wallet_id) : null;
+        
+        const isRelatedToUser = 
+          (srcWallet && (srcWallet.entity_id === currentUser.id || srcWallet.entity_id.includes(currentUser.id) || srcWallet.company_name === currentUser.companyName)) ||
+          (dstWallet && (dstWallet.entity_id === currentUser.id || dstWallet.entity_id.includes(currentUser.id) || dstWallet.company_name === currentUser.companyName));
+          
+        if (!isRelatedToUser) continue;
+      }
+
       const amt = Number(entry.amount) || 0;
       switch (entry.transaction_type) {
         case 'WALLET_TOPUP':
@@ -156,6 +171,18 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
     if (!state?.ledgerEntries) return [];
 
     return state.ledgerEntries.filter(entry => {
+      // Privacy Gating: Non-admins only see their own transactions
+      if (!isAdmin && currentUser) {
+        const srcWallet = entry.source_wallet_id ? walletMap.get(entry.source_wallet_id) : null;
+        const dstWallet = entry.destination_wallet_id ? walletMap.get(entry.destination_wallet_id) : null;
+        
+        const isRelatedToUser = 
+          (srcWallet && (srcWallet.entity_id === currentUser.id || srcWallet.entity_id.includes(currentUser.id) || srcWallet.company_name === currentUser.companyName)) ||
+          (dstWallet && (dstWallet.entity_id === currentUser.id || dstWallet.entity_id.includes(currentUser.id) || dstWallet.company_name === currentUser.companyName));
+          
+        if (!isRelatedToUser) return false;
+      }
+
       if (categoryFilter === 'DEPOSIT' && entry.transaction_type !== 'WALLET_TOPUP') {
         return false;
       }
@@ -579,7 +606,13 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             className="h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 max-w-[220px] cursor-pointer"
           >
             <option value="ALL">All Wallets ({state?.wallets.length || 0})</option>
-            {state?.wallets.map(w => (
+            {state?.wallets
+              .filter(w => {
+                if (isAdmin) return true;
+                if (!currentUser) return false;
+                return w.entity_id === currentUser.id || w.entity_id.includes(currentUser.id) || w.company_name === currentUser.companyName;
+              })
+              .map(w => (
               <option key={w.id} value={w.id}>
                 {w.company_name} ({w.wallet_type})
               </option>

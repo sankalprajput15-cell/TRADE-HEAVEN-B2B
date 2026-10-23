@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { UserRole, Currency, EscrowTransaction, RfqRequirement, Product, AuthUser } from '../../types';
 import { CURRENCY_RATES, MOCK_ESCROWS, MOCK_RFQS, MOCK_PRODUCTS } from '../../data/mockData';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { TradeHeavenMediatorView } from './TradeHeavenMediatorView';
 import { TopUpWallet } from './TopUpWallet';
 import { TransactionLedgerView } from './TransactionLedgerView';
+import { tradeHeavenMediationService, MediationSystemState } from '../../services/tradeHeavenMediatorEngine';
+import { formatBalanceInNativeCurrency } from '../../utils/entityCurrency';
 import { 
   LayoutDashboard, 
   ShieldCheck, 
@@ -32,7 +34,10 @@ import {
   X,
   Send,
   Activity,
-  BookOpen
+  BookOpen,
+  Globe,
+  Wallet,
+  Lock
 } from 'lucide-react';
 
 interface Props {
@@ -81,7 +86,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenStorefront,
   initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS'>(
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
     initialTab || 'TRANSACTION_LEDGER'
   );
 
@@ -116,6 +121,21 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
+  const isAdmin = currentUser?.role === 'ADMIN';
+
+  const filteredEscrows = useMemo(() => {
+    if (isAdmin) return MOCK_ESCROWS;
+    if (!currentUser) return [];
+    return MOCK_ESCROWS.filter(e => 
+      e.buyerCompany === currentUser.companyName || 
+      e.supplierCompany === currentUser.companyName
+    );
+  }, [currentUser, isAdmin]);
+
+  const totalProtectedVolume = useMemo(() => {
+    return filteredEscrows.reduce((acc, e) => acc + e.totalAmountUsd, 0);
+  }, [filteredEscrows]);
+
   // Settings State loaded from localStorage or defaults
   const [alertsEnabled, setAlertsEnabled] = useState<boolean>(() => {
     return localStorage.getItem('th_alerts_enabled') !== 'false';
@@ -145,6 +165,47 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [selectedLogForPreview, setSelectedLogForPreview] = useState<SimulationLog | null>(null);
   const [testScenarioRunning, setTestScenarioRunning] = useState(false);
+  const [mediationState, setMediationState] = useState<MediationSystemState | null>(null);
+
+  useEffect(() => {
+    const fetchMediation = async () => {
+      try {
+        const state = await tradeHeavenMediationService.getState();
+        setMediationState(state);
+      } catch (err) {}
+    };
+    fetchMediation();
+    window.addEventListener('tradeheaven_mediation_updated', fetchMediation);
+    return () => window.removeEventListener('tradeheaven_mediation_updated', fetchMediation);
+  }, []);
+
+  const userBalance = useMemo(() => {
+    if (!mediationState || !currentUser) return { avail: '₹0.00', locked: '₹0.00', hasLocked: false };
+    
+    let totalAvailPaise = 0;
+    let totalLockedPaise = 0;
+    
+    mediationState.wallets.forEach(w => {
+      const isOwnWallet = w.entity_id === currentUser.id || 
+                         w.entity_id.includes(currentUser.id) || 
+                         w.company_name === currentUser.companyName;
+      
+      if (isOwnWallet) {
+        totalAvailPaise += Number(w.available_balance || 0);
+        totalLockedPaise += Number(w.locked_balance || 0);
+      }
+    });
+    
+    const formatted = formatBalanceInNativeCurrency(totalAvailPaise, currentUser.id);
+    const lockedFormatted = formatBalanceInNativeCurrency(totalLockedPaise, currentUser.id);
+    
+    return {
+      avail: formatted.nativeAmount,
+      locked: lockedFormatted.nativeAmount,
+      hasLocked: totalLockedPaise > 0
+    };
+  }, [mediationState, currentUser]);
+
   const [liveNotificationToast, setLiveNotificationToast] = useState<{
     show: boolean;
     title: string;
@@ -361,14 +422,6 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
-            onClick={() => setActiveTab('TOPUP_WALLET')}
-            className="h-10 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-          >
-            <CreditCard className="w-4 h-4 text-emerald-600" />
-            <span>Top-Up Wallet</span>
-          </button>
-          <button
-            type="button"
             onClick={onOpenCreateRfq}
             className="h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
           >
@@ -389,29 +442,39 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
 
       {/* Metric Counters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-2 relative overflow-hidden group hover:border-emerald-400 transition-all">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-            <span>Total Protected Trade Volume</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span className="flex items-center gap-1.5">
+              <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+              Your Account Balance
+            </span>
+            <button 
+              onClick={() => setActiveTab('TOPUP_WALLET')}
+              className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 transition-colors"
+            >
+              Top Up
+              <PlusCircle className="w-3 h-3" />
+            </button>
           </div>
-          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-            {formatPrice(349000)}
+          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums tracking-tight">
+            {userBalance.avail}
           </div>
-          <div className="text-xs text-slate-500">
-            100% Escrow Capital Guaranteed
-          </div>
-        </div>
-
-        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-            <span>Active RFQ Inquiries</span>
-            <FileText className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-            {rfqs.length} Tenders
-          </div>
-          <div className="text-xs text-slate-500">
-            6 pending verified factory quotes
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] text-slate-500 flex items-center justify-between">
+              <span>Secure Trade Funds</span>
+              {userBalance.hasLocked && (
+                <span className="text-amber-700 font-bold flex items-center gap-1">
+                  <Lock className="w-2.5 h-2.5" />
+                  {userBalance.locked} Escrowed
+                </span>
+              )}
+            </div>
+            <button 
+              onClick={() => setActiveTab('TOPUP_WALLET')}
+              className="text-[9px] text-slate-400 hover:text-blue-600 transition-colors text-left"
+            >
+              Top up via funds transfer for mail confirmation & screenshot verification →
+            </button>
           </div>
         </div>
 
@@ -438,6 +501,19 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           </div>
           <div className="text-xs text-slate-500 font-mono tabular-nums">
             Audit ID: TH-CORP-98421
+          </div>
+        </div>
+
+        <div className="p-5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Active Trade RFQs</span>
+            <FileText className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+            {rfqs.length} Active
+          </div>
+          <div className="text-xs text-slate-500">
+            Global Marketplace Tenders
           </div>
         </div>
       </div>
@@ -468,7 +544,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               },
               {
                 id: 'OVERVIEW',
-                label: `Active Contracts (${MOCK_ESCROWS.length})`,
+                label: `Active Contracts (${filteredEscrows.length})`,
                 icon: ShieldCheck
               },
               {
@@ -485,7 +561,12 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 id: 'DOCUMENTS',
                 label: 'Documents',
                 icon: Download
-              }
+              },
+              ...(currentUser?.tier === 'VIP' || currentUser?.isPremium ? [{
+                id: 'RECEIVE_FUNDS',
+                label: 'Direct Receive Funds',
+                icon: DollarSign
+              } as const] : [])
             ] as const
           ).map(tab => {
             const Icon = tab.icon;
@@ -540,11 +621,116 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         <TradeHeavenMediatorView embedded={true} />
       )}
 
+      {/* Tab Content: Direct Receive Funds (VIP Only) */}
+      {activeTab === 'RECEIVE_FUNDS' && (
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 space-y-6 animate-fadeIn">
+          <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">Direct Funds Receiving Console</h2>
+              <p className="text-sm text-slate-500">VIP Exclusive: Generate payment links and receive funds directly from your global buyers.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-4">
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-blue-600" />
+                  Create New Receive Funds Request
+                </h3>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Buyer Email / ID</label>
+                      <input type="text" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" placeholder="e.g. buyer@example.com" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Amount (USD)</label>
+                      <input type="number" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" placeholder="0.00" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Purpose of Payment / Invoice Reference</label>
+                    <input type="text" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs" placeholder="e.g. Invoice #INV-2026-001" />
+                  </div>
+                  <button className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-xs hover:bg-slate-800 transition-colors">
+                    Generate Payment Link & Notify Buyer
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 font-bold text-slate-700">Reference</th>
+                      <th className="px-4 py-3 font-bold text-slate-700">Buyer</th>
+                      <th className="px-4 py-3 font-bold text-slate-700">Amount</th>
+                      <th className="px-4 py-3 font-bold text-slate-700">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    <tr>
+                      <td className="px-4 py-4 font-mono text-slate-500">PAY-RF-9210</td>
+                      <td className="px-4 py-4 font-semibold text-slate-900">Alpha Trading Corp</td>
+                      <td className="px-4 py-4 font-bold text-slate-900">$12,500.00</td>
+                      <td className="px-4 py-4">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">AWAITING PAYMENT</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-4 font-mono text-slate-500">PAY-RF-8842</td>
+                      <td className="px-4 py-4 font-semibold text-slate-900">Global Logistics Ltd</td>
+                      <td className="px-4 py-4 font-bold text-slate-900">$5,200.00</td>
+                      <td className="px-4 py-4">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">SETTLED</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-5 bg-blue-600 text-white rounded-2xl space-y-3 shadow-lg shadow-blue-200">
+                <h3 className="font-bold flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  VIP Protection
+                </h3>
+                <p className="text-[11px] opacity-90 leading-relaxed">
+                  As a VIP member, your direct receiving requests are protected by our 100% Anti-Fraud Guarantee. Funds are verified by our treasury before being released to your wallet.
+                </p>
+                <div className="pt-2 border-t border-white/20">
+                  <span className="text-[10px] font-bold">VIP SETTLEMENT SPEED: <span className="text-blue-100">INSTANT</span></span>
+                </div>
+              </div>
+
+              <div className="p-5 border border-slate-200 rounded-2xl space-y-3 bg-slate-50">
+                <h4 className="font-bold text-slate-900 text-xs">Merchant Fee Schedule</h4>
+                <div className="space-y-2 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">VIP Platform Fee</span>
+                    <span className="font-bold text-emerald-600">0.5%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Standard Buyer Fee</span>
+                    <span className="font-bold">None</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tab Content: Escrows */}
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {MOCK_ESCROWS.map(tp => (
+            {filteredEscrows.map(tp => (
               <div
                 key={tp.id}
                 className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-blue-400 transition-all"
@@ -987,6 +1173,91 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {activeTab === 'RECEIVE_FUNDS' && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200 mb-2">
+                  <ShieldCheck className="w-3 h-3" />
+                  VIP Elite Feature
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Direct Funds Receiving</h3>
+                <p className="text-sm text-slate-500 mt-1">Accept instant payments from global buyers directly on your Trade Heaven storefront.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden md:block">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gateway Status</div>
+                  <div className="text-sm font-black text-emerald-600 flex items-center justify-end gap-1.5 mt-0.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Operational
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-slate-900">Instant Settlement</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">Funds are settled into your Trade Heaven treasury wallet immediately upon buyer confirmation.</p>
+              </div>
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-slate-900">0% Transaction Fee</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">As a VIP member, you bypass standard platform processing fees on all direct incoming transfers.</p>
+              </div>
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-slate-900">Global Rails</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">Supports SWIFT, SEPA, and instant IMPS/RTGS for seamless cross-border capital flow.</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-3xl -mr-32 -mt-32" />
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-xl font-bold">Your Unique Receiving Link</h4>
+                    <p className="text-slate-400 text-sm">Send this secure link to buyers for direct invoice settlement.</p>
+                  </div>
+                  <button className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors cursor-pointer">
+                    <Settings className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-2xl">
+                  <div className="flex-grow px-4 font-mono text-sm text-blue-300 truncate">
+                    https://tradeheaven.net/pay/{currentUser?.companyName?.toLowerCase().replace(/\s+/g, '-') || 'supplier'}
+                  </div>
+                  <button className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs transition-all cursor-pointer shadow-lg shadow-blue-900/40">
+                    Copy Link
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <button className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-white text-slate-900 font-bold text-sm hover:bg-slate-100 transition-all cursor-pointer">
+                    <Download className="w-4 h-4" />
+                    Download QR Code
+                  </button>
+                  <button className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/20 hover:bg-white/5 font-bold text-sm transition-all cursor-pointer">
+                    <PlusCircle className="w-4 h-4" />
+                    Generate New Invoice
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -87,42 +87,40 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
     };
   }, []);
 
-  const activeWallet: WalletRecord | undefined = useMemo(() => {
-    if (!state?.wallets) return undefined;
-    return state.wallets.find(w => w.entity_id === selectedWalletId) || state.wallets[0];
-  }, [state, selectedWalletId]);
+  const activeWallet: WalletRecord = useMemo(() => {
+    const wallets = state?.wallets || [];
+    if (currentUser) {
+      const uid = (currentUser.id || '').toLowerCase();
+      const email = (currentUser.email || '').toLowerCase();
+      const comp = (currentUser.companyName || '').toLowerCase();
+      const name = (currentUser.name || '').toLowerCase();
 
-  const formatInrFromPaise = (paiseVal: string | number) => {
-    const inr = Number(paiseVal || 0) / 100;
-    return `₹${inr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+      const matched = wallets.find(w => {
+        const eid = w.entity_id.toLowerCase();
+        const wcomp = w.company_name.toLowerCase();
+        const wname = w.entity_name.toLowerCase();
+        if (uid && (eid === uid || eid.includes(uid))) return true;
+        if (comp && (wcomp === comp || wcomp.includes(comp) || comp.includes(wcomp))) return true;
+        if (name && (wname === name || wname.includes(name))) return true;
+        if (email.includes('zac@otec.ltd') && eid.includes('zac')) return true;
+        if (email.includes('melissa') && eid.includes('melissa')) return true;
+        return false;
+      });
+      if (matched) return matched;
+    }
 
-  const formatCompactInr = (paiseVal: string | number) => {
-    const rupees = Number(paiseVal || 0) / 100;
-    if (rupees >= 10000000) return `₹${(rupees / 10000000).toFixed(2)} Cr`;
-    if (rupees >= 100000) return `₹${(rupees / 100000).toFixed(2)} Lakh`;
-    return `₹${rupees.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-  };
-
-  const walletCurrency = useMemo(() => getEntityCurrency(activeWallet), [activeWallet]);
-
-  const totalPaise = useMemo(
-    () => (Number(activeWallet?.available_balance || 0) + Number(activeWallet?.locked_balance || 0)).toString(),
-    [activeWallet]
-  );
-
-  const nativeAvail = useMemo(
-    () => formatBalanceInNativeCurrency(activeWallet?.available_balance || '0', activeWallet),
-    [activeWallet]
-  );
-  const nativeLocked = useMemo(
-    () => formatBalanceInNativeCurrency(activeWallet?.locked_balance || '0', activeWallet),
-    [activeWallet]
-  );
-  const nativeTotal = useMemo(
-    () => formatBalanceInNativeCurrency(totalPaise, activeWallet),
-    [activeWallet, totalPaise]
-  );
+    return {
+      id: `wal-personal-${currentUser?.id || 'guest'}`,
+      entity_id: currentUser?.id || 'personal-client-wallet',
+      entity_name: currentUser?.name || 'Logged-in Client',
+      company_name: currentUser?.companyName || currentUser?.name || 'Personal Account',
+      wallet_type: currentUser?.role === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER',
+      available_balance: '0',
+      locked_balance: '0',
+      currency: 'INR',
+      updated_at: new Date().toISOString()
+    };
+  }, [state, currentUser]);
 
   return (
     <div className="min-h-screen bg-slate-50/60 pb-16">
@@ -158,7 +156,7 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
               className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-slate-500" />
-              <span>Buyer Dashboard</span>
+              <span>My Dashboard</span>
             </button>
             <button
               type="button"
@@ -173,115 +171,6 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
-        {/* Main Hero Card */}
-        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-700/60 relative overflow-hidden">
-          <div className="absolute right-0 top-0 bottom-0 w-96 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.15),transparent_70%)] pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Trade Heaven Custodial Liquidity Portal</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Corporate Wallet &amp; Top-Up Engine
-              </h1>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Dedicated gateway for corporate buyer and supplier liquidity, displaying balances in local country currencies ({walletCurrency.flag} {walletCurrency.currencyCode}) alongside real-time transaction ledger tracking.
-              </p>
-            </div>
-
-            {/* Corporate Wallet Selector Pill */}
-            {state?.wallets && state.wallets.length > 0 && (
-              <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-3 shrink-0 lg:min-w-[300px]">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                  <span>Selected Account</span>
-                  <div className="flex items-center gap-1 font-mono text-[10px] text-emerald-400 font-bold bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
-                    <span>{walletCurrency.flag}</span>
-                    <span>{walletCurrency.currencyCode} ({walletCurrency.currencySymbol})</span>
-                  </div>
-                </div>
-                <select
-                  value={selectedWalletId}
-                  onChange={e => setSelectedWalletId(e.target.value)}
-                  className="w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-600 text-xs font-medium text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
-                >
-                  {state.wallets.map(w => {
-                    const c = getEntityCurrency(w);
-                    return (
-                      <option key={w.id || w.entity_id} value={w.entity_id}>
-                        {c.flag} {w.company_name} ({w.wallet_type}) · {c.currencyCode}
-                      </option>
-                    );
-                  })}
-                </select>
-                <div className="text-[11px] text-slate-400 mt-2 truncate flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>{activeWallet?.entity_name}</span>
-                  </div>
-                  <span className="font-mono text-emerald-400 text-[10px] font-semibold shrink-0">
-                    {walletCurrency.country}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Core Balance Metrics Strip in Buyer/Supplier Country Currency */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-slate-700/60">
-            {/* Available Balance in Country Currency */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                <span>Available Cash Liquidity</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
-                  {walletCurrency.flag} {walletCurrency.currencyCode}
-                </span>
-              </div>
-              <div className="text-2xl font-extrabold font-mono tabular-nums text-emerald-400 truncate">
-                {nativeAvail.primary}
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-                <span>{walletCurrency.country}</span>
-                <span className="font-mono text-slate-300 font-medium">{nativeAvail.secondary}</span>
-              </div>
-            </div>
-
-            {/* Locked Balance in Country Currency */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                <span>Locked in Escrow Mediation</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
-                  {walletCurrency.flag} {walletCurrency.currencyCode}
-                </span>
-              </div>
-              <div className="text-2xl font-extrabold font-mono tabular-nums text-amber-400 truncate">
-                {nativeLocked.primary}
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-                <span>Under contract guarantee</span>
-                <span className="font-mono text-slate-300 font-medium">{nativeLocked.secondary}</span>
-              </div>
-            </div>
-
-            {/* Total Balance in Country Currency */}
-            <div className="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                <span>Total Net Wallet Liquidity</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
-                  {walletCurrency.flag} {walletCurrency.currencyCode}
-                </span>
-              </div>
-              <div className="text-2xl font-extrabold font-mono tabular-nums text-white truncate">
-                {nativeTotal.primary}
-              </div>
-              <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-                <span>Combined Equity</span>
-                <span className="font-mono text-slate-300 font-medium">{nativeTotal.secondary}</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Official Bank Account for Balance Top-Up Banner */}
         <div className="bg-white border border-blue-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -436,7 +325,7 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
 
             {/* Previous Top-Up Requests & Status List */}
             <TopUpRequestsList
-              selectedWalletId={selectedWalletId}
+              selectedWalletId={activeWallet.entity_id}
               onRefreshParentState={() => loadState(false)}
             />
           </div>
@@ -446,7 +335,7 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
         {activeTab === 'REQUESTS' && (
           <div className="space-y-6">
             <TopUpRequestsList
-              selectedWalletId={selectedWalletId}
+              selectedWalletId={activeWallet.entity_id}
               onRefreshParentState={() => loadState(false)}
             />
           </div>

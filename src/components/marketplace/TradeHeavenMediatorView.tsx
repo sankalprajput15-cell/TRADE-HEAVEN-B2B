@@ -6,6 +6,7 @@ import {
   LedgerTransactionType,
   BankTransferResult
 } from '../../services/tradeHeavenMediatorEngine';
+import { useAuth } from '../../context/AuthContext';
 import {
   Wallet,
   Lock,
@@ -39,6 +40,8 @@ type ActiveLedgerFilter = 'ALL' | LedgerTransactionType;
 type ActiveSectionTab = 'WORKBENCH' | 'TOPUP_SIMULATOR' | 'LEDGER_VIEW';
 
 export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) => {
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN';
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -124,11 +127,55 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     return () => window.removeEventListener('tradeheaven_open_mediation_stage', handleStageEvent);
   }, []);
 
-  const buyerWallets = useMemo(
-    () => (state?.wallets || []).filter(w => w.wallet_type === 'BUYER'),
-    [state]
-  );
+  const buyerWallets = useMemo(() => {
+    const wallets = state?.wallets || [];
+    if (isAdmin) {
+      return wallets.filter(w => w.wallet_type === 'BUYER');
+    }
+    if (currentUser) {
+      const uid = (currentUser.id || '').toLowerCase();
+      const email = (currentUser.email || '').toLowerCase();
+      const comp = (currentUser.companyName || '').toLowerCase();
+      const name = (currentUser.name || '').toLowerCase();
 
+      const matched = wallets.find(w => {
+        const eid = w.entity_id.toLowerCase();
+        const wcomp = w.company_name.toLowerCase();
+        const wname = w.entity_name.toLowerCase();
+        if (uid && (eid === uid || eid.includes(uid))) return true;
+        if (comp && (wcomp === comp || wcomp.includes(comp) || comp.includes(wcomp))) return true;
+        if (name && (wname === name || wname.includes(name))) return true;
+        if (email.includes('zac@otec.ltd') && eid.includes('zac')) return true;
+        if (email.includes('melissa') && eid.includes('melissa')) return true;
+        return false;
+      });
+      if (matched) return [matched];
+    }
+    return [
+      {
+        id: `wal-personal-${currentUser?.id || 'guest'}`,
+        entity_id: currentUser?.id || 'personal-client-wallet',
+        entity_name: currentUser?.name || 'Logged-in Client',
+        company_name: currentUser?.companyName || currentUser?.name || 'Personal Account',
+        wallet_type: 'BUYER' as const,
+        available_balance: '0',
+        locked_balance: '0',
+        currency: 'INR',
+        updated_at: new Date().toISOString()
+      }
+    ];
+  }, [state, isAdmin, currentUser]);
+
+  useEffect(() => {
+    if (!isAdmin && buyerWallets.length > 0) {
+      const personalId = buyerWallets[0].entity_id;
+      setTopupBuyerId(personalId);
+      setLockBuyerId(personalId);
+      setReleaseBuyerId(personalId);
+    }
+  }, [isAdmin, buyerWallets]);
+
+  // Recipient supplier directory (only company name & ID shown in dropdowns, never balances)
   const supplierWallets = useMemo(
     () => (state?.wallets || []).filter(w => w.wallet_type === 'SUPPLIER'),
     [state]
@@ -140,8 +187,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   );
 
   const lockedOrders = useMemo(
-    () => (state?.orders || []).filter(o => o.status === 'LOCKED_IN_ESCROW'),
-    [state]
+    () => (state?.orders || []).filter(o => {
+      if (o.status !== 'LOCKED_IN_ESCROW') return false;
+      if (isAdmin) return true;
+      if (!currentUser) return false;
+      // Show order if user is buyer or supplier
+      return o.buyer_id === currentUser.id || o.supplier_id === currentUser.id || o.buyer_id.includes(currentUser.id) || o.supplier_id.includes(currentUser.id);
+    }),
+    [state, isAdmin, currentUser]
   );
 
   // Format paise according to selected unit (INR, PAISE, or USD)
@@ -174,6 +227,16 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     let platformRevenuePaise = 0;
 
     state.wallets.forEach(w => {
+      // Privacy Gating: Non-admins only aggregate their own wallet data
+      if (!isAdmin && currentUser) {
+        const isOwnWallet = w.entity_id === currentUser.id || 
+                           w.entity_id.includes(currentUser.id) || 
+                           w.company_name === currentUser.companyName ||
+                           (currentUser.companyName && w.company_name.toLowerCase().includes(currentUser.companyName.toLowerCase()));
+        
+        if (!isOwnWallet) return;
+      }
+
       const avail = Number(w.available_balance || 0);
       const locked = Number(w.locked_balance || 0);
       totalLockedEscrowPaise += locked;
@@ -188,7 +251,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       totalSupplierAvailablePaise,
       platformRevenuePaise
     };
-  }, [state]);
+  }, [state, isAdmin, currentUser]);
 
   // Auto-populate Stage 3 fields when selecting a locked order
   const handleSelectLockedOrder = (orderId: string) => {
@@ -371,14 +434,40 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
 
   // Filtered ledger entries
   const filteredLedger = useMemo(() => {
-    const list = state?.ledgerEntries || [];
+    let list = state?.ledgerEntries || [];
+    
+    // Privacy Gating: Non-admins only see their own transactions
+    if (!isAdmin && currentUser) {
+      list = list.filter(entry => {
+        const srcWallet = entry.source_wallet_id ? state?.wallets.find(w => w.id === entry.source_wallet_id) : null;
+        const dstWallet = entry.destination_wallet_id ? state?.wallets.find(w => w.id === entry.destination_wallet_id) : null;
+        
+        const isRelatedToUser = 
+          (srcWallet && (srcWallet.entity_id === currentUser.id || srcWallet.entity_id.includes(currentUser.id) || srcWallet.company_name === currentUser.companyName)) ||
+          (dstWallet && (dstWallet.entity_id === currentUser.id || dstWallet.entity_id.includes(currentUser.id) || dstWallet.company_name === currentUser.companyName));
+          
+        return isRelatedToUser;
+      });
+    }
+
     if (ledgerFilter === 'ALL') return list;
     return list.filter(entry => entry.transaction_type === ledgerFilter);
-  }, [state, ledgerFilter]);
+  }, [state, ledgerFilter, isAdmin, currentUser]);
 
   // Filtered wallets
   const filteredWallets = useMemo(() => {
-    const list = state?.wallets || [];
+    let list = state?.wallets || [];
+
+    // Privacy Gating: Non-admins only see their own wallets in the table
+    if (!isAdmin && currentUser) {
+      list = list.filter(w => 
+        w.entity_id === currentUser.id || 
+        w.entity_id.includes(currentUser.id) || 
+        w.company_name === currentUser.companyName ||
+        (currentUser.companyName && w.company_name.toLowerCase().includes(currentUser.companyName.toLowerCase()))
+      );
+    }
+
     const q = walletSearch.trim().toLowerCase();
     if (!q) return list;
     return list.filter(
@@ -388,7 +477,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
         w.entity_id.toLowerCase().includes(q) ||
         w.id.toLowerCase().includes(q)
     );
-  }, [state, walletSearch]);
+  }, [state, walletSearch, isAdmin, currentUser]);
 
   const resolveWalletLabel = (walletId: string | null) => {
     if (!walletId) return 'External Gateway / Bank Rail';
@@ -580,59 +669,65 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
         {(embedded || activeSectionTab === 'WORKBENCH') && (
           <>
             {/* Treasury & Escrow Summary Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+              {(isAdmin || currentUser?.role === 'BUYER') && (
+                <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+                    <span>{isAdmin ? 'Total Buyer Available Liquidity' : 'Your Available Balance'}</span>
+                    <Wallet className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+                    {formatAmount(metrics.totalBuyerAvailablePaise)}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {isAdmin ? `${buyerWallets.length} active buyer wallets · Ready for escrow lock` : 'Funds available for trade protection & settlements'}
+                  </div>
+                </div>
+              )}
+
               <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
                 <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-                  <span>Buyer Available Liquidity</span>
-                  <Wallet className="w-4 h-4 text-blue-600" />
+                  <span>{isAdmin ? 'Total Locked in Escrow' : 'Your Funds in Escrow'}</span>
+                  <Lock className="w-4 h-4 text-amber-600" />
                 </div>
                 <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-                  {formatAmount(metrics.totalBuyerAvailablePaise)}
+                  {formatAmount(metrics.totalLockedEscrowPaise)}
                 </div>
-            <div className="text-xs text-slate-500">
-              {buyerWallets.length} active buyer wallets · Ready for escrow lock
-            </div>
-          </div>
+                <div className="text-xs text-slate-500">
+                  {isAdmin ? `${lockedOrders.length} active mediated orders · Held under FOR UPDATE lock` : `${lockedOrders.length} active mediated contracts held in neutral custody`}
+                </div>
+              </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Locked in Escrow Mediation</span>
-              <Lock className="w-4 h-4 text-amber-600" />
-            </div>
-            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-              {formatAmount(metrics.totalLockedEscrowPaise)}
-            </div>
-            <div className="text-xs text-slate-500">
-              {lockedOrders.length} active mediated orders · Held under FOR UPDATE lock
-            </div>
-          </div>
+              {(isAdmin || currentUser?.role === 'SUPPLIER') && (
+                <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+                    <span>{isAdmin ? 'Total Supplier Settled Balance' : 'Your Settled Balance'}</span>
+                    <Building2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+                    {formatAmount(metrics.totalSupplierAvailablePaise)}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {isAdmin ? `${supplierWallets.length} verified suppliers · Available for bank withdrawal` : 'Cleared funds ready for bank withdrawal'}
+                  </div>
+                </div>
+              )}
 
-          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Supplier Settled Balance</span>
-              <Building2 className="w-4 h-4 text-emerald-600" />
+              {isAdmin && (
+                <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+                    <span>Platform Revenue Vault</span>
+                    <Landmark className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
+                    {formatAmount(metrics.platformRevenuePaise)}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Wallet ID: <span className="font-mono">{platformWallet?.id || 'wal-platform-rev'}</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-              {formatAmount(metrics.totalSupplierAvailablePaise)}
-            </div>
-            <div className="text-xs text-slate-500">
-              {supplierWallets.length} verified suppliers · Available for bank withdrawal
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-              <span>Platform Revenue Vault</span>
-              <Landmark className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums">
-              {formatAmount(metrics.platformRevenuePaise)}
-            </div>
-            <div className="text-xs text-slate-500">
-              Wallet ID: <span className="font-mono">{platformWallet?.id || 'wal-platform-rev'}</span>
-            </div>
-          </div>
-        </div>
 
         {/* Feedback Banner */}
         {feedback && (

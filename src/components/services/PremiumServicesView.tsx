@@ -271,9 +271,13 @@ export const PremiumServicesView: React.FC<Props> = ({
               return (
                 <div
                   key={plan.id}
-                  className="bg-slate-900 text-white border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-xl space-y-6 relative"
+                  className="bg-slate-900 text-white border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl shadow-blue-900/20 space-y-6 relative group overflow-hidden"
                 >
-                  <div className="space-y-4">
+                  {/* Elite Glow Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 blur-3xl rounded-full animate-pulse" />
+                  
+                  <div className="space-y-4 relative z-10">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
                         {plan.targetAudience || 'Strategic Enterprise'}
@@ -281,6 +285,15 @@ export const PremiumServicesView: React.FC<Props> = ({
                       <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-black border border-blue-400/30">
                         {plan.tierBadge || 'VIP ELITE'}
                       </span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center gap-2 animate-fadeIn">
+                      <div className="p-1.5 rounded-lg bg-blue-500 text-white">
+                        <CreditCard className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-white leading-none">Site-Direct Funding</span>
+                      </div>
                     </div>
 
                     <h3 className="text-xl font-black text-white">{plan.name}</h3>
@@ -308,17 +321,33 @@ export const PremiumServicesView: React.FC<Props> = ({
                       ).map((feat, fIdx) => {
                       const isHeader = feat.startsWith('**') && feat.endsWith('**');
                       const cleanText = isHeader ? feat.slice(2, -2) : feat;
+                      const isNewFeature = cleanText.includes('receiving option from buyers');
+                      
                       if (isHeader) {
                         return (
                           <div key={fIdx} className="pt-3 pb-1">
-                            <span className="font-bold text-[13px]">{cleanText}</span>
+                            <span className="font-bold text-[13px] text-blue-300">{cleanText}</span>
                           </div>
                         );
                       }
                       return (
-                        <div key={fIdx} className="flex items-start gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                          <span className="leading-snug">{cleanText}</span>
+                        <div 
+                          key={fIdx} 
+                          className={`flex items-start gap-2 p-1.5 rounded-lg transition-all ${
+                            isNewFeature ? 'bg-blue-500/10 border border-blue-400/20 shadow-sm shadow-blue-500/10' : ''
+                          }`}
+                        >
+                          <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${isNewFeature ? 'text-blue-400' : 'text-emerald-500'}`} />
+                          <div className="flex flex-col">
+                            <span className={`leading-snug ${isNewFeature ? 'font-black text-white' : ''}`}>
+                              {cleanText}
+                            </span>
+                            {isNewFeature && (
+                              <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter mt-0.5 animate-pulse">
+                                ★ New Elite Capability
+                              </span>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -503,9 +532,13 @@ export const PremiumServicesView: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => handleSelectPackage(plan)}
-                  className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs transition-colors border border-slate-200 cursor-pointer flex items-center justify-center gap-1.5"
+                  className={`w-full py-3.5 rounded-xl ${
+                    activeTab === 'SUPPLIER'
+                      ? 'bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-50 hover:to-slate-100 text-slate-900 border border-slate-300'
+                      : 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-slate-900 border border-blue-100'
+                  } font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5`}
                 >
-                  <span>Select {plan.name}</span>
+                  <span>Get Started with Trade Heaven</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
