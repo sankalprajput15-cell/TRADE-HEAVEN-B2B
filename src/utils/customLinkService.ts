@@ -129,7 +129,10 @@ export const VIEW_ALIASES: Record<string, ActiveView> = {
   'mediator-engine': 'MEDIATOR_ENGINE',
   mediation: 'MEDIATOR_ENGINE',
   'escrow-engine': 'MEDIATOR_ENGINE',
-  wallets: 'MEDIATOR_ENGINE'
+  wallets: 'MEDIATOR_ENGINE',
+  'direct-transfer-guide': 'DIRECT_TRANSFER_GUIDE',
+  'payment-guide': 'DIRECT_TRANSFER_GUIDE',
+  'transfer-guide': 'DIRECT_TRANSFER_GUIDE'
 };
 
 /**

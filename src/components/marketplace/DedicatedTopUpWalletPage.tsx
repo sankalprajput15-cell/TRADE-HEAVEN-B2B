@@ -152,6 +152,14 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={() => onNavigate('DIRECT_TRANSFER_GUIDE')}
+              className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+              <span>How Direct Transfer Works &amp; Client Guide</span>
+            </button>
+            <button
+              type="button"
               onClick={() => onNavigate('DASHBOARD')}
               className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >

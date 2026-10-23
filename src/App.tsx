@@ -107,6 +107,7 @@ const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerPro
 const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
 const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
+const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
 const CustomerReviews = lazyWithRetry(() => import('./components/marketplace/CustomerReviews'), 'CustomerReviews');
 const TradeHeavenLiveChatWidget = lazyWithRetry(() => import('./components/common/TradeHeavenLiveChatWidget'), 'TradeHeavenLiveChatWidget');
 
@@ -2114,6 +2115,15 @@ const MainApp: React.FC = () => {
                   <DedicatedTopUpWalletPage
                     currentUser={currentUser}
                     selectedCurrency={selectedCurrency}
+                    onNavigate={handleNavigate}
+                    onOpenStorefront={handleOpenStorefront}
+                  />
+                );
+
+              case 'DIRECT_TRANSFER_GUIDE':
+                return (
+                  <DirectSiteTransferGuidePage
+                    currentUser={currentUser}
                     onNavigate={handleNavigate}
                     onOpenStorefront={handleOpenStorefront}
                   />

@@ -481,7 +481,8 @@ export type ActiveView =
   | 'INSIGHTS'
   | 'PRODUCT_IMAGE_ADMIN'
   | 'MEDIATOR_ENGINE'
-  | 'WALLET_TOPUP';
+  | 'WALLET_TOPUP'
+  | 'DIRECT_TRANSFER_GUIDE';
 
 export * from './types/planPricingTypes';
 
