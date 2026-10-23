@@ -29,7 +29,13 @@ import {
 } from 'lucide-react';
 import { TopUpWallet } from './TopUpWallet';
 import { TransactionLedgerView } from './TransactionLedgerView';
-import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
+import {
+  formatBalanceInNativeCurrency,
+  getEntityCurrency,
+  localAmountToPaise,
+  paiseToLocalAmount,
+  formatLocalAmount
+} from '../../utils/entityCurrency';
 import { MOCK_COMPANIES } from '../../data/mockData';
 
 interface Props {
@@ -59,39 +65,39 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     message: string;
   } | null>(null);
 
-  // Stage 1 Form: creditBuyerDeposit
+  // Stage 1 Form: creditBuyerDeposit (in buyer's native country currency)
   const [topupBuyerId, setTopupBuyerId] = useState<string>('buyer-titan-01');
-  const [topupAmountInr, setTopupAmountInr] = useState<string>('500000'); // ₹5,00,000 = 50,000,000 paise
+  const [topupAmountInr, setTopupAmountInr] = useState<string>('5000');
   const [topupGatewayTxId, setTopupGatewayTxId] = useState<string>(
     () => `GW-RZP-${Math.floor(1000000 + Math.random() * 9000000)}`
   );
 
-  // Stage 2 Form: lockOrderFundsInEscrow
+  // Stage 2 Form: lockOrderFundsInEscrow (in buyer's native country currency)
   const [lockBuyerId, setLockBuyerId] = useState<string>('buyer-apex-03');
   const [lockSupplierId, setLockSupplierId] = useState<string>('comp-bharat-steel');
   const [lockOrderId, setLockOrderId] = useState<string>('ORD-ESC-2026-9102');
   const [lockProductTitle, setLockProductTitle] = useState<string>(
     'Hot-Dip Galvanized Structural Steel Coils S355JR (120 MT)'
   );
-  const [lockAmountInr, setLockAmountInr] = useState<string>('550000'); // ₹5,50,000 = 55,000,000 paise
+  const [lockAmountInr, setLockAmountInr] = useState<string>('6500');
 
-  // Stage 3 Form: releaseEscrowToSupplier
+  // Stage 3 Form: releaseEscrowToSupplier (in buyer's native country currency)
   const [releaseOrderId, setReleaseOrderId] = useState<string>('ORD-ESC-2026-8841');
   const [releaseBuyerId, setReleaseBuyerId] = useState<string>('buyer-titan-01');
   const [releaseSupplierId, setReleaseSupplierId] = useState<string>('comp-melissa-mpcommodity');
-  const [releaseTotalAmountInr, setReleaseTotalAmountInr] = useState<string>('920000');
+  const [releaseTotalAmountInr, setReleaseTotalAmountInr] = useState<string>('11000');
   const [releaseFeePercent, setReleaseFeePercent] = useState<string>('2.5');
 
-  // Stage 4 Form: requestBankPayout
+  // Stage 4 Form: requestBankPayout (in entity's native country currency)
   const [payoutEntityId, setPayoutEntityId] = useState<string>('comp-melissa-mpcommodity');
-  const [payoutAmountInr, setPayoutAmountInr] = useState<string>('400000');
+  const [payoutAmountInr, setPayoutAmountInr] = useState<string>('5000');
   const [beneficiaryName, setBeneficiaryName] = useState<string>(
     'MP Commodity Brokers Australia Pty Ltd'
   );
   const [beneficiaryAccount, setBeneficiaryAccount] = useState<string>('50200048192041');
-  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState<string>('HDFC0000241');
-  const [beneficiaryBank, setBeneficiaryBank] = useState<string>('HDFC Bank Corporate Treasury');
-  const [beneficiaryRail, setBeneficiaryRail] = useState<'IMPS' | 'NEFT' | 'RTGS' | 'ACH' | 'SWIFT'>('IMPS');
+  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState<string>('CTBAAU2S');
+  const [beneficiaryBank, setBeneficiaryBank] = useState<string>('Commonwealth Bank Corporate Treasury');
+  const [beneficiaryRail, setBeneficiaryRail] = useState<'IMPS' | 'NEFT' | 'RTGS' | 'ACH' | 'SWIFT'>('SWIFT');
   const [lastPayoutResult, setLastPayoutResult] = useState<BankTransferResult | null>(null);
 
   const loadMediationState = async () => {
@@ -230,18 +236,10 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     [state, isAdmin, currentUser]
   );
 
-  // Format paise according to selected unit (INR, PAISE, or USD)
-  const formatAmount = (paiseVal: string | number | bigint): string => {
-    const numPaise = Number(paiseVal);
-    if (displayUnit === 'PAISE') {
-      return `${numPaise.toLocaleString('en-IN')} paise`;
-    }
-    const inr = numPaise / 100;
-    if (displayUnit === 'USD') {
-      const usd = inr / 83.5;
-      return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return `₹${inr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Format paise in the active entity's native country currency
+  const defaultEntityTarget = currentUser?.id || currentUser?.companyName || 'buyer-titan-01';
+  const formatAmount = (paiseVal: string | number | bigint, entityTarget?: string): string => {
+    return formatBalanceInNativeCurrency(paiseVal, entityTarget || defaultEntityTarget).nativeAmount;
   };
 
   // Aggregate metrics
@@ -293,7 +291,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     if (found) {
       setReleaseBuyerId(found.buyer_id);
       setReleaseSupplierId(found.supplier_id);
-      setReleaseTotalAmountInr(String(found.total_amount_paise / 100));
+      const localVal = paiseToLocalAmount(found.total_amount_paise, found.buyer_id);
+      setReleaseTotalAmountInr(String(Number(localVal.toFixed(2))));
     }
   };
 
@@ -301,8 +300,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   const handleCreditDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
-    const inr = parseFloat(topupAmountInr);
-    if (isNaN(inr) || inr <= 0) {
+    const localAmt = parseFloat(topupAmountInr);
+    if (isNaN(localAmt) || localAmt <= 0) {
       setFeedback({
         type: 'error',
         title: 'Invalid Deposit Amount',
@@ -310,7 +309,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       });
       return;
     }
-    const amountPaise = Math.round(inr * 100);
+    const amountPaise = localAmountToPaise(localAmt, topupBuyerId);
     setSubmitting(true);
     try {
       const updated = await tradeHeavenMediationService.creditBuyerDeposit(
@@ -323,7 +322,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       setFeedback({
         type: 'success',
         title: 'Buyer Deposit Credited (WALLET_TOPUP)',
-        message: `Credited ${formatAmount(amountPaise)} (${amountPaise.toLocaleString()} paise) to buyer wallet ${topupBuyerId}.`
+        message: `Credited ${formatAmount(amountPaise, topupBuyerId)} to buyer wallet ${topupBuyerId}.`
       });
     } catch (err: any) {
       setFeedback({
@@ -348,8 +347,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       });
       return;
     }
-    const inr = parseFloat(lockAmountInr);
-    if (isNaN(inr) || inr <= 0) {
+    const localAmt = parseFloat(lockAmountInr);
+    if (isNaN(localAmt) || localAmt <= 0) {
       setFeedback({
         type: 'error',
         title: 'Invalid Order Amount',
@@ -357,7 +356,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       });
       return;
     }
-    const totalAmountPaise = Math.round(inr * 100);
+    const totalAmountPaise = localAmountToPaise(localAmt, lockBuyerId);
     setSubmitting(true);
     try {
       const updated = await tradeHeavenMediationService.lockOrderFundsInEscrow(
@@ -371,7 +370,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       setFeedback({
         type: 'success',
         title: 'Order Funds Locked in Escrow (ORDER_LOCK_ESCROW)',
-        message: `Moved ${formatAmount(totalAmountPaise)} from ${lockBuyerId} available_balance into locked_balance for order ${lockOrderId}.`
+        message: `Moved ${formatAmount(totalAmountPaise, lockBuyerId)} from ${lockBuyerId} available_balance into locked_balance for order ${lockOrderId}.`
       });
     } catch (err: any) {
       setFeedback({
@@ -396,9 +395,9 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       });
       return;
     }
-    const totalInr = parseFloat(releaseTotalAmountInr);
+    const totalLocal = parseFloat(releaseTotalAmountInr);
     const feePct = parseFloat(releaseFeePercent);
-    if (isNaN(totalInr) || totalInr <= 0) {
+    if (isNaN(totalLocal) || totalLocal <= 0) {
       setFeedback({
         type: 'error',
         title: 'Invalid Settlement Amount',
@@ -406,7 +405,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       });
       return;
     }
-    const totalAmountPaise = Math.round(totalInr * 100);
+    const totalAmountPaise = localAmountToPaise(totalLocal, releaseBuyerId);
     const platformFeePaise = Math.round(totalAmountPaise * ((isNaN(feePct) ? 2.5 : feePct) / 100));
     const netSupplierPaise = totalAmountPaise - platformFeePaise;
 
@@ -423,7 +422,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       setFeedback({
         type: 'success',
         title: 'Serializable Mediated Settlement Committed (ESCROW_RELEASE + PLATFORM_FEE)',
-        message: `Settled ${releaseOrderId}: Net ${formatAmount(netSupplierPaise)} credited to supplier (${releaseSupplierId}) and ${formatAmount(platformFeePaise)} platform commission credited to Trade Heaven Treasury.`
+        message: `Settled ${releaseOrderId}: Net ${formatAmount(netSupplierPaise, releaseSupplierId)} credited to supplier (${releaseSupplierId}) and ${formatAmount(platformFeePaise, releaseBuyerId)} platform commission credited to Trade Heaven Treasury.`
       });
     } catch (err: any) {
       setFeedback({
@@ -440,8 +439,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   const handleBankPayout = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
-    const inr = parseFloat(payoutAmountInr);
-    if (isNaN(inr) || inr <= 0) {
+    const localAmt = parseFloat(payoutAmountInr);
+    if (isNaN(localAmt) || localAmt <= 0) {
       setFeedback({
         type: 'error',
         title: 'Invalid Withdrawal Amount',
@@ -449,7 +448,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       });
       return;
     }
-    const amountPaise = Math.round(inr * 100);
+    const amountPaise = localAmountToPaise(localAmt, payoutEntityId);
     setSubmitting(true);
     try {
       const { payoutResult, state: updated } = await tradeHeavenMediationService.requestBankPayout(
@@ -468,7 +467,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       setFeedback({
         type: 'success',
         title: `Bank Payout ${payoutResult.status} (${payoutResult.payoutId})`,
-        message: `Withdrew ${formatAmount(amountPaise)} from ${payoutEntityId} via ${beneficiaryRail} to ${beneficiaryBank} (${beneficiaryAccount}).`
+        message: `Withdrew ${formatAmount(amountPaise, payoutEntityId)} from ${payoutEntityId} via ${beneficiaryRail} to ${beneficiaryBank} (${beneficiaryAccount}).`
       });
     } catch (err: any) {
       setFeedback({
@@ -572,7 +571,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   };
 
   const feePaisePreview = useMemo(() => {
-    const totalPaise = Math.round((parseFloat(releaseTotalAmountInr) || 0) * 100);
+    const totalPaise = localAmountToPaise(parseFloat(releaseTotalAmountInr) || 0, releaseBuyerId);
     const pct = parseFloat(releaseFeePercent) || 0;
     const fee = Math.round(totalPaise * (pct / 100));
     return {
@@ -580,7 +579,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
       feePaise: fee,
       netPaise: Math.max(0, totalPaise - fee)
     };
-  }, [releaseTotalAmountInr, releaseFeePercent]);
+  }, [releaseTotalAmountInr, releaseFeePercent, releaseBuyerId]);
 
   return (
     <div className={embedded ? 'space-y-8' : 'bg-slate-50 min-h-screen py-10'}>
@@ -603,22 +602,10 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {/* Unit Switcher */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
-              {(['INR', 'PAISE', 'USD'] as const).map(unit => (
-                <button
-                  key={unit}
-                  type="button"
-                  onClick={() => setDisplayUnit(unit)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
-                    displayUnit === unit
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {unit === 'INR' ? '₹ INR' : unit === 'PAISE' ? 'Paise (BigInt)' : '$ USD'}
-                </button>
-              ))}
+            {/* Country Native Currency Indicator */}
+            <div className="px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <span>{getEntityCurrency(defaultEntityTarget).flag}</span>
+              <span>Native Country Currency ({getEntityCurrency(defaultEntityTarget).currency})</span>
             </div>
 
             <button
@@ -967,7 +954,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       const native = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
                       return (
                         <option key={w.id} value={w.entity_id}>
-                          {native.flag} {w.company_name} ({native.country}) — Avail: {native.nativeAmount} ({native.inrAmount})
+                          {native.flag} {w.company_name} ({native.country}) — Avail: {native.nativeAmount}
                         </option>
                       );
                     })}
@@ -977,7 +964,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Deposit Amount (INR ₹)
+                      Deposit Amount ({getEntityCurrency(topupBuyerId).currency} {getEntityCurrency(topupBuyerId).symbol})
                     </label>
                     <input
                       type="number"
@@ -989,7 +976,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       required
                     />
                     <div className="text-[11px] text-slate-500 font-mono mt-1">
-                      = {Math.round((parseFloat(topupAmountInr) || 0) * 100).toLocaleString()} paise
+                      {getEntityCurrency(topupBuyerId).flag} {getEntityCurrency(topupBuyerId).country} ({getEntityCurrency(topupBuyerId).currency})
                     </div>
                   </div>
 
@@ -1009,14 +996,14 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
 
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-[11px] font-medium text-slate-500 mr-1">Quick Add:</span>
-                  {[100000, 500000, 1000000, 2500000].map(preset => (
+                  {[1000, 5000, 10000, 25000].map(preset => (
                     <button
                       key={preset}
                       type="button"
                       onClick={() => setTopupAmountInr(String(preset))}
                       className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-[11px] font-mono font-semibold text-slate-700 hover:text-blue-700 transition-colors cursor-pointer"
                     >
-                      +₹{preset.toLocaleString('en-IN')}
+                      +{formatLocalAmount(preset, topupBuyerId, 0)}
                     </button>
                   ))}
                 </div>
@@ -1080,7 +1067,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Escrow Lock Amount (INR ₹)
+                      Escrow Lock Amount ({getEntityCurrency(lockBuyerId).currency} {getEntityCurrency(lockBuyerId).symbol})
                     </label>
                     <input
                       type="number"
@@ -1092,7 +1079,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       required
                     />
                     <div className="text-[11px] text-slate-500 font-mono mt-1">
-                      = {Math.round((parseFloat(lockAmountInr) || 0) * 100).toLocaleString()} paise
+                      {getEntityCurrency(lockBuyerId).flag} {getEntityCurrency(lockBuyerId).country} ({getEntityCurrency(lockBuyerId).currency})
                     </div>
                   </div>
                 </div>
@@ -1232,7 +1219,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Total Settlement (INR ₹)
+                      Total Settlement ({getEntityCurrency(releaseBuyerId).currency} {getEntityCurrency(releaseBuyerId).symbol})
                     </label>
                     <input
                       type="number"
@@ -1265,21 +1252,21 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 {/* Settlement Split Breakdown */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
                   <div className="flex justify-between text-slate-600">
-                    <span>Buyer Locked Deduction:</span>
+                    <span>Buyer Locked Deduction ({getEntityCurrency(releaseBuyerId).currency}):</span>
                     <span className="font-mono font-semibold text-slate-900">
-                      -{formatAmount(feePaisePreview.totalPaise)}
+                      -{formatAmount(feePaisePreview.totalPaise, releaseBuyerId)}
                     </span>
                   </div>
                   <div className="flex justify-between text-emerald-700">
-                    <span>Net Supplier Payout (`ESCROW_RELEASE`):</span>
+                    <span>Net Supplier Payout ({getEntityCurrency(releaseSupplierId).currency}):</span>
                     <span className="font-mono font-semibold">
-                      +{formatAmount(feePaisePreview.netPaise)}
+                      +{formatAmount(feePaisePreview.netPaise, releaseSupplierId)}
                     </span>
                   </div>
                   <div className="flex justify-between text-indigo-700">
                     <span>Trade Heaven Fee (`PLATFORM_FEE`):</span>
                     <span className="font-mono font-semibold">
-                      +{formatAmount(feePaisePreview.feePaise)}
+                      +{formatAmount(feePaisePreview.feePaise, releaseBuyerId)}
                     </span>
                   </div>
                 </div>
@@ -1326,7 +1313,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                         const native = formatBalanceInNativeCurrency(w.available_balance, w.entity_id);
                         return (
                           <option key={w.id} value={w.entity_id}>
-                            {native.flag} [{w.wallet_type}] {w.company_name} ({native.country}) — Avail: {native.nativeAmount} ({native.inrAmount})
+                            {native.flag} [{w.wallet_type}] {w.company_name} ({native.country}) — Avail: {native.nativeAmount}
                           </option>
                         );
                       })}
@@ -1336,7 +1323,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Withdrawal Amount (INR ₹)
+                      Withdrawal Amount ({getEntityCurrency(payoutEntityId).currency} {getEntityCurrency(payoutEntityId).symbol})
                     </label>
                     <input
                       type="number"
@@ -1736,7 +1723,7 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                             setLockSupplierId(order.supplier_id);
                             setLockOrderId(order.order_id);
                             setLockProductTitle(order.product_title);
-                            setLockAmountInr(String(order.total_amount_paise / 100));
+                            setLockAmountInr(String(Number(paiseToLocalAmount(order.total_amount_paise, order.buyer_id).toFixed(2))));
                             setActiveStage('LOCK_ESCROW');
                           }}
                           className="h-7 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold transition-colors cursor-pointer"
@@ -1822,7 +1809,12 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredLedger.map(entry => (
+                {filteredLedger.map(entry => {
+                  const dstW = entry.destination_wallet_id ? state?.wallets.find(w => w.id === entry.destination_wallet_id) : null;
+                  const srcW = entry.source_wallet_id ? state?.wallets.find(w => w.id === entry.source_wallet_id) : null;
+                  const targetW = dstW && dstW.wallet_type !== 'PLATFORM_REVENUE' ? dstW : srcW;
+                  const rowNative = formatBalanceInNativeCurrency(entry.amount, targetW?.entity_id || defaultEntityTarget);
+                  return (
                   <tr key={entry.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 pr-4">
                       <div className="font-mono font-semibold text-slate-900">{entry.id}</div>
@@ -1855,11 +1847,13 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                       {resolveWalletLabel(entry.destination_wallet_id)}
                     </td>
                     <td className="py-3 px-3 text-right font-mono tabular-nums font-bold text-slate-900">
-                      {formatAmount(entry.amount)}
+                      <div>{rowNative.flag} {rowNative.nativeAmount}</div>
+                      <div className="text-[10px] font-normal text-slate-400">{rowNative.secondary}</div>
                     </td>
                     <td className="py-3 pl-3 text-slate-500">{entry.notes}</td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

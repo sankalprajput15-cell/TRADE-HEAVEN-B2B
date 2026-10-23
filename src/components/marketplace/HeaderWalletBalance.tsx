@@ -269,7 +269,7 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
                     {nativeAvailFull.primary}
                   </div>
                   <div className="text-[10px] font-mono text-slate-500 tabular-nums">
-                    {nativeAvailFull.secondary} · {Number(availablePaise).toLocaleString('en-IN')} paise
+                    {walletCurrency.country} ({walletCurrency.currencyCode})
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
@@ -288,7 +288,7 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
                     {nativeLockedFull.primary}
                   </div>
                   <div className="text-[10px] font-mono text-slate-500 tabular-nums">
-                    {nativeLockedFull.secondary} · {Number(lockedPaise).toLocaleString('en-IN')} paise
+                    {walletCurrency.country} ({walletCurrency.currencyCode})
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
@@ -298,9 +298,9 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
 
               {/* Total Wallet Equity */}
               <div className="pt-1.5 px-1 flex items-center justify-between text-xs border-t border-slate-100">
-                <span className="font-semibold text-slate-500">Total Net Balance</span>
+                <span className="font-semibold text-slate-500">Total Net Balance ({walletCurrency.currencyCode})</span>
                 <span className="font-bold font-mono tabular-nums text-slate-900">
-                  {nativeTotalFull.primary} <span className="text-[10px] text-slate-400 font-normal">({nativeTotalFull.secondary})</span>
+                  {nativeTotalFull.primary}
                 </span>
               </div>
             </div>

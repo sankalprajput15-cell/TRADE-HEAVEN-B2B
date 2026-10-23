@@ -22,7 +22,7 @@ import {
 import { OFFICIAL_SWIFT_BANK_DETAILS } from '../../constants/swiftBankDetails';
 import { tradeHeavenMediationService } from '../../services/tradeHeavenMediatorEngine';
 import { useAuth } from '../../context/AuthContext';
-import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
+import { formatBalanceInNativeCurrency, getEntityCurrency, localAmountToPaise } from '../../utils/entityCurrency';
 
 export type TopUpStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
 
@@ -182,8 +182,11 @@ export const TopUpRequestsList: React.FC<Props> = ({
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [showLogModal, setShowLogModal] = useState<boolean>(false);
 
+  const activeEntityTarget = selectedWalletId || currentUser?.id || currentUser?.companyName || 'buyer-titan-01';
+  const activeCurrency = getEntityCurrency(activeEntityTarget);
+
   // New transfer submission form state
-  const [formAmountInr, setFormAmountInr] = useState<string>('500000');
+  const [formAmountInr, setFormAmountInr] = useState<string>('5000');
   const [formUtr, setFormUtr] = useState<string>(() => `GW-SWIFT-${Math.floor(1000000 + Math.random() * 9000000)}`);
   const [formRail, setFormRail] = useState<string>('SWIFT (International wire)');
   const [formNotes, setFormNotes] = useState<string>('');
@@ -295,11 +298,12 @@ export const TopUpRequestsList: React.FC<Props> = ({
     setFormSubmitting(true);
     setFormSuccessMsg(null);
 
-    const parsedInr = parseFloat(formAmountInr) || 0;
-    if (parsedInr <= 0) {
+    const parsedLocal = parseFloat(formAmountInr) || 0;
+    if (parsedLocal <= 0) {
       setFormSubmitting(false);
       return;
     }
+    const computedPaise = localAmountToPaise(parsedLocal, activeEntityTarget);
 
     const newRequest: TopUpRequestItem = {
       id: `REQ-TOPUP-${Date.now().toString().slice(-4)}`,
@@ -307,8 +311,8 @@ export const TopUpRequestsList: React.FC<Props> = ({
       buyerId: selectedWalletId || currentUser?.id || 'personal-client-wallet',
       buyerName: currentUser?.name || 'Logged-in Client',
       companyName: currentUser?.companyName || currentUser?.name || 'Personal Account',
-      amountPaise: Math.round(parsedInr * 100),
-      amountInr: parsedInr,
+      amountPaise: computedPaise,
+      amountInr: Math.round(computedPaise / 100),
       paymentRail: formRail,
       status: 'PENDING',
       createdAt: new Date().toISOString(),
@@ -686,19 +690,21 @@ export const TopUpRequestsList: React.FC<Props> = ({
               {/* Amount Input */}
               <div className="space-y-1">
                 <label className="block font-bold text-slate-800">
-                  Transfer Amount in INR (₹) *
+                  Transfer Amount in {activeCurrency.country} ({activeCurrency.currency} {activeCurrency.symbol}) *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 font-bold font-mono text-slate-400">₹</span>
+                  <span className="absolute left-3.5 top-2.5 font-bold font-mono text-slate-400">
+                    {activeCurrency.symbol}
+                  </span>
                   <input
                     type="number"
-                    min="100"
-                    step="100"
+                    min="10"
+                    step="any"
                     required
                     value={formAmountInr}
                     onChange={e => setFormAmountInr(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-500"
-                    placeholder="500000"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-500"
+                    placeholder="5000"
                   />
                 </div>
               </div>

@@ -18,6 +18,7 @@ import { securityService } from '../../services/securityService';
 import { UnifiedContactInquiryModal } from '../modals/UnifiedContactInquiryModal';
 import { SafeImage } from '../common/SafeImage';
 import { tradeHeavenMediationService } from '../../services/tradeHeavenMediatorEngine';
+import { getEntityCurrency, localAmountToPaise, formatLocalAmount } from '../../utils/entityCurrency';
 import { 
   ShieldCheck, 
   Award, 
@@ -157,13 +158,19 @@ export const VendorProfilePage: React.FC<Props> = ({
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const rfqAttachmentRef = useRef<HTMLInputElement>(null);
 
-  // Direct VIP Funds Transfer state on Supplier Storefront
-  const [directPayAmountInr, setDirectPayAmountInr] = useState('250000');
+  // Direct VIP Funds Transfer state on Supplier Storefront (in supplier's country currency)
+  const [directPayAmountInr, setDirectPayAmountInr] = useState('5000');
   const [directPayRef, setDirectPayRef] = useState(() => `VIP-PO-${Math.floor(10000 + Math.random() * 90000)}`);
   const [directPayMode, setDirectPayMode] = useState<'DIRECT_VIP' | 'ESCROW_HOLD'>('DIRECT_VIP');
   const [directPaySubmitting, setDirectPaySubmitting] = useState(false);
   const [directPaySuccess, setDirectPaySuccess] = useState<string | null>(null);
   const [directPayError, setDirectPayError] = useState<string | null>(null);
+
+  const supplierCountryCurrency = getEntityCurrency({
+    id: profile.id,
+    companyName: profile.companyName,
+    country: profile.country
+  });
 
   const isBasicPlanNoDirectTransfer =
     profile.id === 'comp-zac-importation-fadetech' ||
@@ -179,12 +186,21 @@ export const VendorProfilePage: React.FC<Props> = ({
       );
       return;
     }
-    const inr = parseFloat(directPayAmountInr);
-    if (isNaN(inr) || inr <= 0) {
-      setDirectPayError('Please enter a valid transfer amount greater than ₹0.');
+    const localVal = parseFloat(directPayAmountInr);
+    if (isNaN(localVal) || localVal <= 0) {
+      setDirectPayError(`Please enter a valid transfer amount greater than ${supplierCountryCurrency.symbol}0.`);
       return;
     }
-    const amountPaise = Math.round(inr * 100);
+    const amountPaise = localAmountToPaise(localVal, {
+      id: profile.id,
+      companyName: profile.companyName,
+      country: profile.country
+    });
+    const formattedLocal = formatLocalAmount(localVal, {
+      id: profile.id,
+      companyName: profile.companyName,
+      country: profile.country
+    });
     const buyerEntityId = currentUser?.id || 'buyer-titan-01';
     const orderId = directPayRef.trim() || `VIP-PO-${Date.now().toString().slice(-5)}`;
 
@@ -219,11 +235,11 @@ export const VendorProfilePage: React.FC<Props> = ({
           platformFeePaise: feePaise
         });
         setDirectPaySuccess(
-          `₹${inr.toLocaleString('en-IN')} transferred directly to ${profile.companyName} (Ref: ${orderId}).`
+          `${supplierCountryCurrency.flag} ${formattedLocal} (${supplierCountryCurrency.currency}) transferred directly to ${profile.companyName} (Ref: ${orderId}).`
         );
       } else {
         setDirectPaySuccess(
-          `₹${inr.toLocaleString('en-IN')} locked in Escrow for ${profile.companyName} (Ref: ${orderId}).`
+          `${supplierCountryCurrency.flag} ${formattedLocal} (${supplierCountryCurrency.currency}) locked in Escrow for ${profile.companyName} (Ref: ${orderId}).`
         );
       }
       setDirectPayRef(`VIP-PO-${Math.floor(10000 + Math.random() * 90000)}`);
@@ -1060,7 +1076,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Amount (INR ₹)
+                      Amount ({supplierCountryCurrency.currency} {supplierCountryCurrency.symbol})
                     </label>
                     <input
                       type="number"

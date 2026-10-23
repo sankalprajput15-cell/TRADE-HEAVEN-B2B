@@ -28,7 +28,12 @@ import {
   FileText
 } from 'lucide-react';
 import { addTopUpRequest } from './TopUpRequestsList';
-import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
+import {
+  formatBalanceInNativeCurrency,
+  getEntityCurrency,
+  localAmountToPaise,
+  formatLocalAmount
+} from '../../utils/entityCurrency';
 
 interface TopUpWalletProps {
   onSuccess?: (updatedState: MediationSystemState) => void;
@@ -96,13 +101,13 @@ const GATEWAY_OPTIONS: GatewayOption[] = [
   }
 ];
 
-const PRESET_AMOUNTS_INR = [
-  { label: '₹1,00,000', value: 100000, tag: 'Starter Lot' },
-  { label: '₹2,50,000', value: 250000, tag: 'Sample & MOQ' },
-  { label: '₹5,00,000', value: 500000, tag: 'Popular B2B' },
-  { label: '₹10,00,000', value: 1000000, tag: 'Container Deposit' },
-  { label: '₹25,00,000', value: 2500000, tag: 'Bulk Trade' },
-  { label: '₹50,00,000', value: 5000000, tag: 'Enterprise L/C' }
+const PRESET_AMOUNTS_LOCAL = [
+  { value: 1000, tag: 'Starter Lot' },
+  { value: 2500, tag: 'Sample & MOQ' },
+  { value: 5000, tag: 'Popular B2B' },
+  { value: 10000, tag: 'Container Deposit' },
+  { value: 25000, tag: 'Bulk Trade' },
+  { value: 50000, tag: 'Enterprise L/C' }
 ];
 
 type GatewaySimulationStep = 'CONFIGURE' | 'GATEWAY_CHECKOUT' | 'PROCESSING_WEBHOOK' | 'CONFIRMED';
@@ -116,7 +121,7 @@ export const TopUpWallet: React.FC<TopUpWalletProps> = ({
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedBuyerId, setSelectedBuyerId] = useState<string>('buyer-titan-01');
-  const [amountInr, setAmountInr] = useState<string>('500000');
+  const [amountInr, setAmountInr] = useState<string>('5000');
   const [selectedGatewayId, setSelectedGatewayId] = useState<GatewayOption['id']>('CURRENCY_CLOUD_SWIFT');
   const [gatewayTxId, setGatewayTxId] = useState<string>(() => `GW-SWIFT-${Math.floor(1000000 + Math.random() * 9000000)}`);
   const [simStep, setSimStep] = useState<GatewaySimulationStep>('CONFIGURE');
@@ -227,7 +232,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
 
   const [targetSupplierId, setTargetSupplierId] = useState<string>('comp-melissa-mpcommodity');
   const [supplierTransferMode, setSupplierTransferMode] = useState<'DIRECT_VIP' | 'ESCROW_HOLD'>('DIRECT_VIP');
-  const [supplierTransferAmountInr, setSupplierTransferAmountInr] = useState<string>('250000');
+  const [supplierTransferAmountInr, setSupplierTransferAmountInr] = useState<string>('2500');
   const [supplierOrderRef, setSupplierOrderRef] = useState<string>(() => `PO-VIP-${Math.floor(10000 + Math.random() * 90000)}`);
   const [isTransferringToSupplier, setIsTransferringToSupplier] = useState<boolean>(false);
   const [supplierTransferFeedback, setSupplierTransferFeedback] = useState<{
@@ -282,19 +287,21 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
       });
       return;
     }
-    const inrVal = parseFloat(supplierTransferAmountInr);
-    if (isNaN(inrVal) || inrVal <= 0) {
+    const recipient = supplierRecipients.find(s => s.entity_id === targetSupplierId);
+    const recipientCurrency = getEntityCurrency(recipient || targetSupplierId);
+    const localVal = parseFloat(supplierTransferAmountInr);
+    if (isNaN(localVal) || localVal <= 0) {
       setSupplierTransferFeedback({
         type: 'error',
-        message: 'Please enter a valid transfer amount greater than ₹0.'
+        message: `Please enter a valid transfer amount greater than ${recipientCurrency.currencySymbol}0.`
       });
       return;
     }
-    const transferPaise = Math.round(inrVal * 100);
+    const transferPaise = localAmountToPaise(localVal, recipient || targetSupplierId);
     const availPaise = Number(selectedWallet.available_balance || 0);
     const orderRef = supplierOrderRef.trim() || `PO-VIP-${Date.now().toString().slice(-5)}`;
-    const recipient = supplierRecipients.find(s => s.entity_id === targetSupplierId);
     const recipientName = recipient?.company_name || targetSupplierId;
+    const formattedTransferNative = formatLocalAmount(localVal, recipient || targetSupplierId);
 
     setIsTransferringToSupplier(true);
     try {
@@ -337,12 +344,12 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
         });
         setSupplierTransferFeedback({
           type: 'success',
-          message: `Direct VIP Transfer of ${formatInrFromPaise(transferPaise)} settled to ${recipientName} (Ref: ${orderRef}).`
+          message: `Direct Transfer of ${formattedTransferNative} (${recipientCurrency.country}) settled to ${recipientName} (Ref: ${orderRef}).`
         });
       } else {
         setSupplierTransferFeedback({
           type: 'success',
-          message: `${formatInrFromPaise(transferPaise)} locked in Escrow for ${recipientName} (Order: ${orderRef}). Release anytime upon shipment confirmation.`
+          message: `${formattedTransferNative} (${recipientCurrency.country}) locked in Escrow for ${recipientName} (Order: ${orderRef}). Release anytime upon shipment confirmation.`
         });
       }
 
@@ -376,17 +383,20 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     setGatewayTxId(`${selectedGateway.prefix}-${Math.floor(1000000 + Math.random() * 9000000)}`);
   };
 
+  const walletCurrency = useMemo(() => getEntityCurrency(selectedWallet), [selectedWallet]);
+
   const parsedInr = useMemo(() => {
     const num = parseFloat(amountInr);
     return isNaN(num) || num < 0 ? 0 : num;
   }, [amountInr]);
 
-  const amountPaise = useMemo(() => Math.round(parsedInr * 100), [parsedInr]);
-  const amountUsd = useMemo(() => parsedInr / 83.5, [parsedInr]);
+  const amountPaise = useMemo(
+    () => localAmountToPaise(parsedInr, selectedWallet),
+    [parsedInr, selectedWallet]
+  );
 
-  const formatInrFromPaise = (paiseVal: string | number) => {
-    const inr = Number(paiseVal || 0) / 100;
-    return `₹${inr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatNativeFromPaise = (paiseVal: string | number, targetEntity: any = selectedWallet) => {
+    return formatBalanceInNativeCurrency(paiseVal, targetEntity, { includeCode: true }).primary;
   };
 
   // Filter recent WALLET_TOPUP ledger entries strictly for this user's personal wallet
@@ -408,7 +418,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     setProofError(null);
     setProofSubmittedBanner(null);
     if (parsedInr <= 0) {
-      setProofError('Please enter a valid transfer amount greater than ₹0.');
+      setProofError(`Please enter a valid transfer amount greater than ${walletCurrency.currencySymbol}0.`);
       return;
     }
     if (!transferProofFile) {
@@ -427,7 +437,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
         buyerName: selectedWallet.entity_name,
         companyName: selectedWallet.company_name,
         amountPaise,
-        amountInr: parsedInr,
+        amountInr: Math.round(amountPaise / 100),
         paymentRail: 'Funds Transfer (Portal Screenshot Upload)',
         status: 'PENDING',
         createdAt: new Date().toISOString(),
@@ -440,7 +450,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
       });
       setIsSubmittingProof(false);
       setProofSubmittedBanner(
-        `Transfer screenshot "${transferProofFile}" uploaded for ${formatInrFromPaise(amountPaise)} (Ref: ${refId}). Submission confirmation has been sent by mail to ${targetMail} and Trade Heaven Treasury (billing@tradeheaven.org).`
+        `Transfer screenshot "${transferProofFile}" uploaded for ${formatLocalAmount(parsedInr, selectedWallet)} (Ref: ${refId}). Submission confirmation has been sent by mail to ${targetMail} and Trade Heaven Treasury (billing@tradeheaven.org).`
       );
       setTransferProofFile(null);
       setTransferUtrInput('');
@@ -451,7 +461,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     e.preventDefault();
     setErrorMessage(null);
     if (parsedInr <= 0) {
-      setErrorMessage('Please select or enter a valid top-up amount greater than ₹0.');
+      setErrorMessage(`Please select or enter a valid top-up amount greater than ${walletCurrency.currencySymbol}0.`);
       return;
     }
     if (!selectedWallet) {
@@ -945,10 +955,12 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                        Transfer Amount (INR)
+                        Transfer Amount ({walletCurrency.country} • {walletCurrency.currencyCode})
                       </label>
                       <div className="relative flex items-center">
-                        <span className="absolute left-3 text-xs font-black text-slate-400">₹</span>
+                        <span className="absolute left-3 text-xs font-black text-slate-400">
+                          {walletCurrency.currencySymbol}
+                        </span>
                         <input
                           type="number"
                           min="1"
@@ -958,12 +970,12 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                             setAmountInr(e.target.value);
                             if (proofError) setProofError(null);
                           }}
-                          placeholder="500000"
-                          className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none transition-colors"
+                          placeholder="5000"
+                          className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none transition-colors"
                         />
                       </div>
                       <div className="text-[10px] text-slate-500 mt-1 font-mono">
-                        ≈ ${amountUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                        {walletCurrency.flag} {walletCurrency.country} ({walletCurrency.currencyCode})
                       </div>
                     </div>
 
@@ -1109,15 +1121,15 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
-                    2. Select Top-Up Amount (INR / Paise)
+                    2. Select Top-Up Amount ({walletCurrency.country} • {walletCurrency.currencyCode})
                   </label>
                   <span className="text-[11px] text-slate-500 font-mono">
-                    1 INR = 100 Paise
+                    {walletCurrency.flag} {walletCurrency.currencyCode} ({walletCurrency.currencySymbol})
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {PRESET_AMOUNTS_INR.map(preset => {
+                  {PRESET_AMOUNTS_LOCAL.map(preset => {
                     const active = parsedInr === preset.value;
                     return (
                       <button
@@ -1143,14 +1155,15 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                           {active && <Zap className="w-3.5 h-3.5 text-emerald-400" />}
                         </div>
                         <div className="text-sm sm:text-base font-black font-mono mt-1.5">
-                          {preset.label}
+                          {walletCurrency.flag} {walletCurrency.currencySymbol}
+                          {preset.value.toLocaleString('en-US')}
                         </div>
                         <div
                           className={`text-[10px] font-mono ${
                             active ? 'text-slate-300' : 'text-slate-400'
                           }`}
                         >
-                          {(preset.value * 100).toLocaleString('en-IN')} paise
+                          {walletCurrency.country} ({walletCurrency.currencyCode})
                         </div>
                       </button>
                     );
@@ -1161,25 +1174,27 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 <div className="pt-2">
                   <div className="relative flex items-center">
                     <span className="absolute left-4 text-slate-400 font-black font-mono text-base">
-                      ₹
+                      {walletCurrency.currencySymbol}
                     </span>
                     <input
                       type="number"
-                      min="100"
-                      step="100"
+                      min="1"
+                      step="any"
                       value={amountInr}
                       onChange={e => setAmountInr(e.target.value)}
-                      placeholder="Enter custom deposit amount in INR"
-                      className="w-full pl-9 pr-36 py-3.5 rounded-2xl border border-slate-300 focus:border-emerald-600 focus:outline-none text-base font-black font-mono text-slate-900 bg-slate-50/50"
+                      placeholder={`Enter custom deposit amount in ${walletCurrency.currencyCode}`}
+                      className="w-full pl-10 pr-36 py-3.5 rounded-2xl border border-slate-300 focus:border-emerald-600 focus:outline-none text-base font-black font-mono text-slate-900 bg-slate-50/50"
                     />
                     <div className="absolute right-3 text-right">
                       <div className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                        ≈ ${amountUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} USD
+                        {walletCurrency.flag} {walletCurrency.currencyCode}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1.5 px-1 font-mono">
-                    <span>Exact Engine Value: <strong>{amountPaise.toLocaleString('en-IN')} paise</strong></span>
+                    <span>
+                      Country Wallet Credit: <strong>{formatLocalAmount(parsedInr, selectedWallet)}</strong>
+                    </span>
                     <span>Zero Platform Top-Up Fee (100% Credited)</span>
                   </div>
                 </div>
@@ -1233,7 +1248,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
               >
                 <CreditCard className="w-4 h-4" />
                 <span>
-                  Proceed to Gateway Confirmation ({formatInrFromPaise(amountPaise)})
+                  Proceed to Gateway Confirmation ({formatLocalAmount(parsedInr, selectedWallet)})
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -1265,7 +1280,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 <div className="text-right">
                   <div className="text-[10px] uppercase tracking-wider text-slate-400">Payable Amount</div>
                   <div className="text-lg font-black text-emerald-400 font-mono">
-                    {formatInrFromPaise(amountPaise)}
+                    {formatLocalAmount(parsedInr, selectedWallet)}
                   </div>
                 </div>
               </div>
@@ -1370,9 +1385,11 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                   </div>
 
                   <div className="flex items-center justify-between text-xs border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500 font-semibold">Exact Credit in Paise (BigInt Safe):</span>
+                    <span className="text-slate-500 font-semibold">
+                      Wallet Credit ({walletCurrency.country}):
+                    </span>
                     <span className="font-mono font-bold text-slate-900">
-                      {amountPaise.toLocaleString('en-IN')} paise
+                      {formatLocalAmount(parsedInr, selectedWallet)}
                     </span>
                   </div>
 
@@ -1488,7 +1505,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                       ACID Transaction Committed • WALLET_TOPUP
                     </span>
                     <h3 className="text-lg font-black text-slate-900 mt-1">
-                      {formatInrFromPaise(lastReceipt.amountPaise)} Credited to Buyer Wallet
+                      {formatNativeFromPaise(lastReceipt.amountPaise)} Credited to Buyer Wallet
                     </h3>
                     <p className="text-xs text-slate-600">
                       Confirmed via {lastReceipt.gatewayName} at {lastReceipt.timestamp}
@@ -1502,22 +1519,22 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                 <div>
                   <div className="text-[10px] font-bold uppercase text-slate-400">Previous Available</div>
                   <div className="text-sm font-bold text-slate-600 font-mono mt-0.5">
-                    {formatInrFromPaise(lastReceipt.previousBalancePaise)}
+                    {formatNativeFromPaise(lastReceipt.previousBalancePaise)}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] font-bold uppercase text-emerald-600">+ Top-Up Deposit</div>
                   <div className="text-sm font-black text-emerald-600 font-mono mt-0.5">
-                    +{formatInrFromPaise(lastReceipt.amountPaise)}
+                    +{formatNativeFromPaise(lastReceipt.amountPaise)}
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono">
-                    ({lastReceipt.amountPaise.toLocaleString('en-IN')} paise)
+                    {walletCurrency.country} ({walletCurrency.currencyCode})
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] font-bold uppercase text-slate-900">New Available Balance</div>
                   <div className="text-base font-black text-slate-900 font-mono mt-0.5">
-                    {formatInrFromPaise(lastReceipt.newBalancePaise)}
+                    {formatNativeFromPaise(lastReceipt.newBalancePaise)}
                   </div>
                 </div>
               </div>
@@ -1764,10 +1781,12 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Transfer Amount (INR)
+                    Transfer Amount ({getEntityCurrency(selectedRecipientWallet || targetSupplierId).country} • {getEntityCurrency(selectedRecipientWallet || targetSupplierId).currencyCode})
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3 text-xs font-black text-slate-400">₹</span>
+                    <span className="absolute left-3 text-xs font-black text-slate-400">
+                      {getEntityCurrency(selectedRecipientWallet || targetSupplierId).currencySymbol}
+                    </span>
                     <input
                       type="number"
                       min="1"
@@ -1775,9 +1794,14 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                       value={supplierTransferAmountInr}
                       onChange={e => setSupplierTransferAmountInr(e.target.value)}
                       disabled={isDirectTransferBlockedByPlan}
-                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
+                      className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-mono font-bold text-slate-900 focus:border-slate-900 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
                       required
                     />
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-500 mt-1">
+                    {getEntityCurrency(selectedRecipientWallet || targetSupplierId).flag}{' '}
+                    {getEntityCurrency(selectedRecipientWallet || targetSupplierId).country} (
+                    {getEntityCurrency(selectedRecipientWallet || targetSupplierId).currencyCode})
                   </div>
                 </div>
 
@@ -1866,10 +1890,10 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                     </div>
                     <div className="text-right shrink-0">
                       <div className="font-mono font-black text-emerald-600">
-                        +{formatInrFromPaise(entry.amount)}
+                        +{formatBalanceInNativeCurrency(entry.amount, selectedWallet).primary}
                       </div>
                       <div className="text-[10px] font-mono text-slate-400">
-                        {Number(entry.amount).toLocaleString('en-IN')} paise
+                        {walletCurrency.country} ({walletCurrency.currencyCode})
                       </div>
                     </div>
                   </div>

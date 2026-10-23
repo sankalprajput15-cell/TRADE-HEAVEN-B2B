@@ -75,6 +75,9 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedEntry, setSelectedEntry] = useState<LedgerEntryRecord | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const defaultEntityTarget = currentUser?.id || currentUser?.companyName || 'buyer-titan-01';
+  const formatNativeSummary = (paiseVal: string | number) =>
+    formatBalanceInNativeCurrency(paiseVal, defaultEntityTarget);
 
   const loadLedgerState = async () => {
     setLoading(true);
@@ -252,15 +255,16 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
       'Source Entity',
       'Destination Wallet ID',
       'Destination Entity',
-      'Amount (Paise)',
-      'Amount (INR)',
+      'Amount (Country Currency)',
+      'Country & Currency',
       'Notes'
     ];
 
     const rows = filteredEntries.map(e => {
       const src = e.source_wallet_id ? walletMap.get(e.source_wallet_id) : null;
       const dst = e.destination_wallet_id ? walletMap.get(e.destination_wallet_id) : null;
-      const inrValue = (Number(e.amount) / 100).toFixed(2);
+      const rel = dst && dst.wallet_type !== 'PLATFORM_REVENUE' ? dst : src;
+      const native = formatBalanceInNativeCurrency(e.amount, rel?.entity_id || defaultEntityTarget);
       return [
         e.id,
         e.created_at,
@@ -270,8 +274,8 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
         src ? `"${src.company_name}"` : 'Gateway / External',
         e.destination_wallet_id || 'ESCROW_VAULT_OR_BANK',
         dst ? `"${dst.company_name}"` : 'Escrow Hold / Bank Rail',
-        e.amount,
-        inrValue,
+        `"${native.nativeAmount}"`,
+        `"${native.secondary}"`,
         `"${e.notes.replace(/"/g, '""')}"`
       ].join(',');
     });
@@ -462,13 +466,13 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
-            {formatInrFromPaise(metrics.totalDepositsPaise)}
+            {formatNativeSummary(metrics.totalDepositsPaise).nativeAmount}
           </div>
           <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
             <span className="text-emerald-700 font-medium">
               {metrics.depositCount} WALLET_TOPUP
             </span>
-            <span>≈ {formatUsdEquivalent(metrics.totalDepositsPaise)}</span>
+            <span>{formatNativeSummary(metrics.totalDepositsPaise).secondary}</span>
           </div>
         </button>
 
@@ -489,11 +493,11 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             <Lock className="w-4 h-4 text-amber-600" />
           </div>
           <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
-            {formatInrFromPaise(metrics.totalEscrowLockedPaise + metrics.totalEscrowReleasedPaise)}
+            {formatNativeSummary(metrics.totalEscrowLockedPaise + metrics.totalEscrowReleasedPaise).nativeAmount}
           </div>
           <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
-            <span>Hold: {formatInrFromPaise(metrics.totalEscrowLockedPaise)}</span>
-            <span>Paid: {formatInrFromPaise(metrics.totalEscrowReleasedPaise)}</span>
+            <span>Hold: {formatNativeSummary(metrics.totalEscrowLockedPaise).nativeAmount}</span>
+            <span>Paid: {formatNativeSummary(metrics.totalEscrowReleasedPaise).nativeAmount}</span>
           </div>
         </button>
 
@@ -514,11 +518,11 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             <ShieldCheck className="w-4 h-4 text-indigo-600" />
           </div>
           <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
-            {formatInrFromPaise(metrics.totalPlatformFeesPaise)}
+            {formatNativeSummary(metrics.totalPlatformFeesPaise).nativeAmount}
           </div>
           <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
             <span className="text-indigo-700 font-medium">PLATFORM_FEE (2.5%)</span>
-            <span>≈ {formatUsdEquivalent(metrics.totalPlatformFeesPaise)}</span>
+            <span>{formatNativeSummary(metrics.totalPlatformFeesPaise).secondary}</span>
           </div>
         </button>
 
@@ -539,13 +543,13 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
             <Landmark className="w-4 h-4 text-purple-600" />
           </div>
           <div className="mt-2 text-xl sm:text-2xl font-bold text-slate-900 font-mono tabular-nums">
-            {formatInrFromPaise(metrics.totalWithdrawalsPaise)}
+            {formatNativeSummary(metrics.totalWithdrawalsPaise).nativeAmount}
           </div>
           <div className="mt-1 flex items-center justify-between text-xs text-slate-500 font-mono tabular-nums">
             <span className="text-purple-700 font-medium">
               {metrics.withdrawalCount} SUPPLIER_PAYOUT
             </span>
-            <span>IMPS · NEFT · SWIFT</span>
+            <span>SWIFT · Wire · Local Rail</span>
           </div>
         </button>
       </div>
@@ -688,7 +692,7 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                   <th className="py-3 px-4">Reference ID</th>
                   <th className="py-3 px-4">Source Wallet (Debit)</th>
                   <th className="py-3 px-4">Destination Wallet (Credit)</th>
-                  <th className="py-3 px-4 text-right">Amount (INR / Paise)</th>
+                  <th className="py-3 px-4 text-right">Amount (Country Currency)</th>
                   <th className="py-3 px-4 text-right">Record</th>
                 </tr>
               </thead>
@@ -778,11 +782,11 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className={`text-sm font-bold font-mono tabular-nums ${meta.amountClass}`}>
                           {meta.prefix}
-                          {nativeFormatted ? nativeFormatted.nativeAmount : formatInrFromPaise(entry.amount)}
+                          {nativeFormatted ? nativeFormatted.nativeAmount : formatNativeSummary(entry.amount).nativeAmount}
                         </div>
                         <div className="text-[11px] font-mono text-slate-400 tabular-nums flex items-center justify-end gap-1">
-                          {nativeFormatted && <span>{nativeFormatted.flag}</span>}
-                          <span>{formatInrFromPaise(entry.amount)}</span>
+                          <span>{(nativeFormatted || formatNativeSummary(entry.amount)).flag}</span>
+                          <span>{(nativeFormatted || formatNativeSummary(entry.amount)).secondary}</span>
                         </div>
                       </td>
 
@@ -843,34 +847,24 @@ export const TransactionLedgerView: React.FC<TransactionLedgerViewProps> = ({
                 selectedEntry.destination_wallet_id && walletMap.get(selectedEntry.destination_wallet_id)?.wallet_type !== 'PLATFORM_REVENUE'
                   ? walletMap.get(selectedEntry.destination_wallet_id)
                   : (selectedEntry.source_wallet_id ? walletMap.get(selectedEntry.source_wallet_id) : null);
-              const selNative = selRelWallet ? formatBalanceInNativeCurrency(selectedEntry.amount, selRelWallet.entity_id) : null;
+              const selNative = selRelWallet
+                ? formatBalanceInNativeCurrency(selectedEntry.amount, selRelWallet.entity_id)
+                : formatNativeSummary(selectedEntry.amount);
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <div>
                     <div className="text-[11px] font-medium text-slate-500">
-                      Native Country Currency
+                      Amount (Country Currency)
                     </div>
                     <div className="text-base font-bold font-mono tabular-nums text-slate-900 mt-0.5 flex items-center gap-1.5 truncate">
-                      {selNative ? (
-                        <>
-                          <span className="shrink-0">{selNative.flag}</span>
-                          <span className="truncate">{selNative.nativeAmount}</span>
-                        </>
-                      ) : (
-                        <span>—</span>
-                      )}
+                      <span className="shrink-0">{selNative.flag}</span>
+                      <span className="truncate">{selNative.nativeAmount}</span>
                     </div>
                   </div>
                   <div>
-                    <div className="text-[11px] font-medium text-slate-500">Amount (INR Ledger)</div>
-                    <div className="text-base font-bold font-mono tabular-nums text-slate-900 mt-0.5">
-                      {formatInrFromPaise(selectedEntry.amount)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-medium text-slate-500">BigInt Paise Value</div>
-                    <div className="text-xs font-semibold font-mono tabular-nums text-indigo-700 mt-1">
-                      {Number(selectedEntry.amount).toLocaleString()} paise
+                    <div className="text-[11px] font-medium text-slate-500">Entity Jurisdiction</div>
+                    <div className="text-xs font-semibold font-mono text-slate-800 mt-1">
+                      {selNative.secondary}
                     </div>
                   </div>
                   <div>
