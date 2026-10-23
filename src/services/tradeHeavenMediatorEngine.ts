@@ -739,11 +739,12 @@ export class TradeHeavenSqlPoolAdapter {
           const [entityId] = params;
           let rows = this.wallets.filter(w => w.entity_id === entityId);
           if (rows.length === 0 && entityId) {
+            const isSupplier = String(entityId).startsWith('comp-') || String(entityId).toLowerCase().includes('supp');
             const created = this.createWallet({
               entity_id: entityId,
               entity_name: entityId,
               company_name: entityId,
-              wallet_type: 'BUYER',
+              wallet_type: isSupplier ? 'SUPPLIER' : 'BUYER',
               initial_balance_paise: 0
             });
             rows = [created];

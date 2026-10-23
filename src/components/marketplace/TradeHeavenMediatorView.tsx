@@ -30,6 +30,7 @@ import {
 import { TopUpWallet } from './TopUpWallet';
 import { TransactionLedgerView } from './TransactionLedgerView';
 import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
+import { MOCK_COMPANIES } from '../../data/mockData';
 
 interface Props {
   embedded?: boolean;
@@ -175,11 +176,43 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
     }
   }, [isAdmin, buyerWallets]);
 
-  // Recipient supplier directory (only company name & ID shown in dropdowns, never balances)
-  const supplierWallets = useMemo(
-    () => (state?.wallets || []).filter(w => w.wallet_type === 'SUPPLIER'),
-    [state]
-  );
+  // Recipient supplier directory (merges all portal suppliers, never exposes balances to non-admins)
+  const supplierWallets = useMemo(() => {
+    const walletSuppliers = (state?.wallets || []).filter(w => w.wallet_type === 'SUPPLIER');
+    const seenIds = new Set(walletSuppliers.map(w => w.entity_id));
+    const merged: WalletRecord[] = [...walletSuppliers];
+
+    for (const comp of MOCK_COMPANIES || []) {
+      if (!comp?.id || seenIds.has(comp.id)) continue;
+      seenIds.add(comp.id);
+      merged.push({
+        id: `wal-supp-${comp.id}`,
+        entity_id: comp.id,
+        entity_name: comp.contactPerson || 'Verified Exporter Representative',
+        company_name: comp.companyName,
+        wallet_type: 'SUPPLIER',
+        available_balance: '0',
+        locked_balance: '0',
+        currency: 'INR',
+        country: comp.country || 'United States',
+        updated_at: new Date().toISOString()
+      });
+    }
+    return merged;
+  }, [state]);
+
+  const [supplierDirectorySearch, setSupplierDirectorySearch] = useState<string>('');
+  const filteredSupplierDirectory = useMemo(() => {
+    const q = supplierDirectorySearch.trim().toLowerCase();
+    if (!q) return supplierWallets;
+    return supplierWallets.filter(
+      s =>
+        s.company_name.toLowerCase().includes(q) ||
+        s.entity_name.toLowerCase().includes(q) ||
+        (s.country || '').toLowerCase().includes(q) ||
+        s.entity_id.toLowerCase().includes(q)
+    );
+  }, [supplierWallets, supplierDirectorySearch]);
 
   const platformWallet = useMemo(
     () => (state?.wallets || []).find(w => w.wallet_type === 'PLATFORM_REVENUE'),
@@ -1504,6 +1537,104 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                   })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+
+            {/* Direct Directory of All Portal Suppliers Whom Buyers Can Pay (No Balances Shown) */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-emerald-600" />
+                    <h2 className="text-base font-bold text-slate-900">
+                      All Portal Suppliers — Direct Pay &amp; Escrow Directory ({supplierWallets.length})
+                    </h2>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Select any verified supplier on the portal below to directly lock order funds in escrow or release settlement payment
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={supplierDirectorySearch}
+                    onChange={e => setSupplierDirectorySearch(e.target.value)}
+                    placeholder="Search supplier name or country..."
+                    className="w-full h-8 pl-8 pr-3 rounded-lg border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl px-4 bg-slate-50/40">
+                {filteredSupplierDirectory.slice(0, 60).map(supp => {
+                  const info = getEntityCurrency(supp);
+                  const isSelectedLock = lockSupplierId === supp.entity_id && activeStage === 'LOCK_ESCROW';
+                  const isSelectedRelease = releaseSupplierId === supp.entity_id && activeStage === 'RELEASE_SETTLEMENT';
+                  return (
+                    <div
+                      key={supp.id}
+                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                          <span className="text-base shrink-0">{info.flag}</span>
+                          <span className="truncate">{supp.company_name}</span>
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            VERIFIED SUPPLIER
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span className="font-medium text-slate-700">{supp.entity_name}</span>
+                          <span aria-hidden="true">·</span>
+                          <span>{supp.country || info.country} ({info.currency})</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="font-mono text-[10px] text-slate-400">{supp.entity_id}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLockSupplierId(supp.entity_id);
+                            setLockProductTitle(`Commercial Supply Order — ${supp.company_name}`);
+                            setActiveStage('LOCK_ESCROW');
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                            isSelectedLock
+                              ? 'bg-amber-600 text-white shadow-2xs'
+                              : 'bg-amber-50 hover:bg-amber-600 text-amber-800 hover:text-white border border-amber-200'
+                          }`}
+                        >
+                          <Lock className="w-3 h-3" />
+                          <span>{isSelectedLock ? 'Selected for Escrow' : 'Lock Escrow'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReleaseSupplierId(supp.entity_id);
+                            setActiveStage('RELEASE_SETTLEMENT');
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                            isSelectedRelease
+                              ? 'bg-emerald-600 text-white shadow-2xs'
+                              : 'bg-slate-900 hover:bg-emerald-600 text-white'
+                          }`}
+                        >
+                          <ArrowUpRight className="w-3 h-3" />
+                          <span>{isSelectedRelease ? 'Selected to Pay' : 'Pay Supplier'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredSupplierDirectory.length === 0 && (
+                  <div className="py-6 text-center text-xs text-slate-500">
+                    No suppliers match your search filter.
+                  </div>
+                )}
               </div>
             </div>
 

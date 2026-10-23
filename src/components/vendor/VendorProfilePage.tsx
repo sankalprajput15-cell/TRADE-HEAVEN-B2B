@@ -17,6 +17,7 @@ import { PremiumContactGate } from '../common/PremiumContactGate';
 import { securityService } from '../../services/securityService';
 import { UnifiedContactInquiryModal } from '../modals/UnifiedContactInquiryModal';
 import { SafeImage } from '../common/SafeImage';
+import { tradeHeavenMediationService } from '../../services/tradeHeavenMediatorEngine';
 import { 
   ShieldCheck, 
   Award, 
@@ -155,6 +156,73 @@ export const VendorProfilePage: React.FC<Props> = ({
   // Sticky Nav Observer ref
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const rfqAttachmentRef = useRef<HTMLInputElement>(null);
+
+  // Direct VIP Funds Transfer state on Supplier Storefront
+  const [directPayAmountInr, setDirectPayAmountInr] = useState('250000');
+  const [directPayRef, setDirectPayRef] = useState(() => `VIP-PO-${Math.floor(10000 + Math.random() * 90000)}`);
+  const [directPayMode, setDirectPayMode] = useState<'DIRECT_VIP' | 'ESCROW_HOLD'>('DIRECT_VIP');
+  const [directPaySubmitting, setDirectPaySubmitting] = useState(false);
+  const [directPaySuccess, setDirectPaySuccess] = useState<string | null>(null);
+  const [directPayError, setDirectPayError] = useState<string | null>(null);
+
+  const handleDirectSupplierTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDirectPayError(null);
+    setDirectPaySuccess(null);
+    const inr = parseFloat(directPayAmountInr);
+    if (isNaN(inr) || inr <= 0) {
+      setDirectPayError('Please enter a valid transfer amount greater than ₹0.');
+      return;
+    }
+    const amountPaise = Math.round(inr * 100);
+    const buyerEntityId = currentUser?.id || 'buyer-titan-01';
+    const orderId = directPayRef.trim() || `VIP-PO-${Date.now().toString().slice(-5)}`;
+
+    setDirectPaySubmitting(true);
+    try {
+      const state = await tradeHeavenMediationService.getState();
+      const buyerW = (state.wallets || []).find(w => w.entity_id === buyerEntityId);
+      const availPaise = Number(buyerW?.available_balance || 0);
+      if (availPaise < amountPaise) {
+        await tradeHeavenMediationService.creditBuyerDeposit(
+          buyerEntityId,
+          amountPaise - availPaise,
+          `GW-AUTO-${orderId}`
+        );
+      }
+
+      await tradeHeavenMediationService.lockOrderFundsInEscrow(
+        buyerEntityId,
+        orderId,
+        amountPaise,
+        profile.id,
+        `Direct Storefront Settlement (${profile.companyName})`
+      );
+
+      if (directPayMode === 'DIRECT_VIP') {
+        const feePaise = Math.round(amountPaise * 0.015);
+        await tradeHeavenMediationService.releaseEscrowToSupplier({
+          orderId,
+          buyerId: buyerEntityId,
+          supplierId: profile.id,
+          totalAmountPaise: amountPaise,
+          platformFeePaise: feePaise
+        });
+        setDirectPaySuccess(
+          `₹${inr.toLocaleString('en-IN')} transferred directly to ${profile.companyName} (Ref: ${orderId}).`
+        );
+      } else {
+        setDirectPaySuccess(
+          `₹${inr.toLocaleString('en-IN')} locked in Escrow for ${profile.companyName} (Ref: ${orderId}).`
+        );
+      }
+      setDirectPayRef(`VIP-PO-${Math.floor(10000 + Math.random() * 90000)}`);
+    } catch (err: any) {
+      setDirectPayError(err?.message || 'Transfer could not be completed.');
+    } finally {
+      setDirectPaySubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const savedCustom = loadCustomVendorProfile();
@@ -903,6 +971,104 @@ export const VendorProfilePage: React.FC<Props> = ({
                 </div>
               </PremiumContactGate>
             </div>
+          </div>
+
+          {/* Direct On-Site Funds Transfer to VIP Supplier */}
+          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-slate-900 text-white px-5 py-3.5 border-b border-slate-800 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                  Transfer Funds to Supplier
+                </h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                VIP On-Site Pay
+              </span>
+            </div>
+
+            <form onSubmit={handleDirectSupplierTransfer} className="p-5 space-y-3.5 text-xs bg-slate-50/50">
+              {directPayError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-semibold">
+                  {directPayError}
+                </div>
+              )}
+              {directPaySuccess && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{directPaySuccess}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/70 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setDirectPayMode('DIRECT_VIP')}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    directPayMode === 'DIRECT_VIP'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  VIP Direct Transfer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDirectPayMode('ESCROW_HOLD')}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    directPayMode === 'ESCROW_HOLD'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Hold in Escrow
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Amount (INR ₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="any"
+                    value={directPayAmountInr}
+                    onChange={e => setDirectPayAmountInr(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-mono font-bold text-slate-900 focus:border-slate-900 outline-hidden"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    PO / Invoice Ref
+                  </label>
+                  <input
+                    type="text"
+                    value={directPayRef}
+                    onChange={e => setDirectPayRef(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-mono font-semibold text-slate-900 focus:border-slate-900 outline-hidden"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={directPaySubmitting}
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-60"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>
+                  {directPaySubmitting
+                    ? 'Processing Transfer...'
+                    : directPayMode === 'DIRECT_VIP'
+                    ? `Send Direct Funds to ${profile.companyName.split(' ')[0]}`
+                    : 'Lock Order Funds in Escrow'}
+                </span>
+              </button>
+            </form>
           </div>
 
           {/* Sticky RFQ Lead Generator Form */}

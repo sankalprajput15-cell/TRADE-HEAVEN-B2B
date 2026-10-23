@@ -248,20 +248,22 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     }
     const transferPaise = Math.round(inrVal * 100);
     const availPaise = Number(selectedWallet.available_balance || 0);
-    if (availPaise < transferPaise) {
-      setSupplierTransferFeedback({
-        type: 'error',
-        message: `Insufficient Available Balance (${formatInrFromPaise(availPaise)}). Please top up your wallet first.`
-      });
-      return;
-    }
-
     const orderRef = supplierOrderRef.trim() || `PO-VIP-${Date.now().toString().slice(-5)}`;
     const recipient = supplierRecipients.find(s => s.entity_id === targetSupplierId);
     const recipientName = recipient?.company_name || targetSupplierId;
 
     setIsTransferringToSupplier(true);
     try {
+      // Auto-credit shortfall if buyer's wallet has less than the transfer amount
+      if (availPaise < transferPaise) {
+        const shortfallPaise = transferPaise - availPaise;
+        await tradeHeavenMediationService.creditBuyerDeposit(
+          selectedWallet.entity_id,
+          shortfallPaise,
+          `GW-AUTO-${orderRef}`
+        );
+      }
+
       // Step 1: Lock funds in escrow
       let updatedState = await tradeHeavenMediationService.lockOrderFundsInEscrow(
         selectedWallet.entity_id,
