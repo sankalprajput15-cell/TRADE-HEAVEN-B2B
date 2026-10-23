@@ -352,23 +352,29 @@ export const bigrockApi = {
       const isAdmin = cleanEmail === 'yr943334@gmail.com' || cleanEmail.includes('admin');
       const isMelissa = cleanEmail.includes('mpcommoditybroker');
       const isZac = cleanEmail === 'zac@otec.ltd';
+      const isSvetlana = cleanEmail === 'info@joybambooforestfarm.com';
       
-      // Enforce specific password for Zac in fallback mode
+      // Enforce specific password for Zac and Svetlana in fallback mode
       if (isZac && password !== 'Zac@0011') {
         return { success: false, message: 'Invalid password for Zachary Aldin' };
       }
+      if (isSvetlana && password !== 'JoyBamboo@2026') {
+        return { success: false, message: 'Invalid password for Joy Bamboo Forest Farm LLC' };
+      }
 
-      const isSupplier = isMelissa || isZac || cleanEmail.includes('supplier');
+      const isSupplier = isMelissa || isZac || isSvetlana || cleanEmail.includes('supplier');
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
-      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isZac ? 'IMPORTATION FADE-TECH' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'));
+      const companyName = isAdmin
+        ? 'Trade Heaven Global Operations & Treasury'
+        : (isZac ? 'IMPORTATION FADE-TECH' : (isSvetlana ? 'Joy Bamboo Forest Farm LLC' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm')));
       const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
       const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? ('Basic Plan' as any) : 'FREE');
-      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac) ? 'paid' : 'free';
+      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac || isSvetlana) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
-        id: isZac ? 'user-supplier-zac' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`),
-        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' '))),
-        email: isZac ? 'Zac@otec.ltd' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail),
+        id: isZac ? 'user-supplier-zac' : (isSvetlana ? 'user-supplier-svetlana' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`)),
+        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isSvetlana ? 'Svetlana Brodskaya' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' ')))),
+        email: isZac ? 'Zac@otec.ltd' : (isSvetlana ? 'info@joybambooforestfarm.com' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail)),
         role: role,
         isPremium: isAdmin,
         membershipStatus: membershipStatus,
@@ -389,23 +395,29 @@ export const bigrockApi = {
       const isAdmin = cleanEmail === 'yr943334@gmail.com';
       const isMelissa = cleanEmail.includes('mpcommoditybroker');
       const isZac = cleanEmail === 'zac@otec.ltd';
+      const isSvetlana = cleanEmail === 'info@joybambooforestfarm.com';
 
-      // Enforce specific password for Zac in fallback mode
+      // Enforce specific password for Zac and Svetlana in fallback mode
       if (isZac && password !== 'Zac@0011') {
         return { success: false, message: 'Invalid password for Zachary Aldin' };
       }
+      if (isSvetlana && password !== 'JoyBamboo@2026') {
+        return { success: false, message: 'Invalid password for Joy Bamboo Forest Farm LLC' };
+      }
 
-      const isSupplier = isMelissa || isZac || cleanEmail.includes('supplier');
+      const isSupplier = isMelissa || isZac || isSvetlana || cleanEmail.includes('supplier');
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
-      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isZac ? 'IMPORTATION FADE-TECH' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'));
+      const companyName = isAdmin
+        ? 'Trade Heaven Global Operations & Treasury'
+        : (isZac ? 'IMPORTATION FADE-TECH' : (isSvetlana ? 'Joy Bamboo Forest Farm LLC' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm')));
       const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
       const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? ('Basic Plan' as any) : 'FREE');
-      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac) ? 'paid' : 'free';
+      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac || isSvetlana) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
-        id: isZac ? 'user-supplier-zac' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`),
-        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner'))),
-        email: isZac ? 'Zac@otec.ltd' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail),
+        id: isZac ? 'user-supplier-zac' : (isSvetlana ? 'user-supplier-svetlana' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`)),
+        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isSvetlana ? 'Svetlana Brodskaya' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner')))),
+        email: isZac ? 'Zac@otec.ltd' : (isSvetlana ? 'info@joybambooforestfarm.com' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail)),
         role: role,
         isPremium: isAdmin,
         membershipStatus: membershipStatus,

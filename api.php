@@ -1091,13 +1091,51 @@ switch ($action) {
             error_log($err_msg);
             file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
             
-            // Allow master admins and Zac fallback, otherwise return maintenance message
-            if ($email !== 'admin@tradeheaven.net' && $email !== 'admin@trade4deals.com' && $email !== 'yr943334@gmail.com' && $email !== 'zac@otec.ltd') {
+            // Allow master admins, Zac, and Joy Bamboo fallback, otherwise return maintenance message
+            if ($email !== 'admin@tradeheaven.net' && $email !== 'admin@trade4deals.com' && $email !== 'yr943334@gmail.com' && $email !== 'zac@otec.ltd' && $email !== 'info@joybambooforestfarm.com') {
                 echo json_encode([
                     "status" => "error",
                     "code" => "DATABASE_CONNECTION_ERROR",
                     "message" => "Our secure database is currently undergoing temporary connection optimization. Please try again shortly or contact support."
                 ]);
+                exit();
+            }
+        }
+        // Check for Joy Bamboo Forest Farm LLC (Svetlana Brodskaya) credentials
+        if ($email === 'info@joybambooforestfarm.com') {
+            if ($password === 'JoyBamboo@2026' || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password']))) {
+                $token = "jwt_svetlana_" . md5($email . time());
+                echo json_encode([
+                    "status" => "success",
+                    "success" => true,
+                    "token" => $token,
+                    "data" => [
+                        "id" => "user-supplier-svetlana",
+                        "name" => "Svetlana Brodskaya",
+                        "email" => "info@joybambooforestfarm.com",
+                        "company_name" => "Joy Bamboo Forest Farm LLC",
+                        "role" => "SUPPLIER"
+                    ],
+                    "user" => [
+                        "id" => "user-supplier-svetlana",
+                        "name" => "Svetlana Brodskaya",
+                        "email" => "info@joybambooforestfarm.com",
+                        "role" => "SUPPLIER",
+                        "isPremium" => false,
+                        "membershipStatus" => "paid",
+                        "status" => "ACTIVE",
+                        "isVerified" => true,
+                        "tier" => "Basic Plan",
+                        "companyName" => "Joy Bamboo Forest Farm LLC",
+                        "country" => "United States",
+                        "avatarUrl" => "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+                        "token" => $token
+                    ],
+                    "message" => "Welcome back, Svetlana Brodskaya."
+                ]);
+                exit();
+            } else {
+                echo json_encode(["status" => "error", "message" => "Invalid password for Joy Bamboo Forest Farm LLC."]);
                 exit();
             }
         }
