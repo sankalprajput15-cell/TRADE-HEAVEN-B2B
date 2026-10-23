@@ -436,6 +436,20 @@ export class TradeHeavenSqlPoolAdapter {
         updated_at: new Date(Date.now() - 3600 * 1000 * 10).toISOString()
       },
       {
+        id: 'wal-supp-zac',
+        entity_id: 'comp-zac-importation-fadetech',
+        entity_name: 'Zachary Aldin',
+        company_name: 'IMPORTATION FADE-TECH (OTEC LTD)',
+        wallet_type: 'SUPPLIER',
+        available_balance: '0', // Funds reset to 0 USD
+        locked_balance: '0',
+        currency: 'USD',
+        country: 'Australia',
+        native_currency: 'AUD',
+        native_symbol: 'A$',
+        updated_at: new Date().toISOString()
+      },
+      {
         id: 'wal-platform-rev',
         entity_id: 'trade-heaven-treasury',
         entity_name: 'Trade Heaven Treasury',

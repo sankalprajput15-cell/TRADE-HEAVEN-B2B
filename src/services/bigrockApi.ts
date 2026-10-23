@@ -351,17 +351,24 @@ export const bigrockApi = {
       const cleanEmail = (email || '').trim().toLowerCase();
       const isAdmin = cleanEmail === 'yr943334@gmail.com' || cleanEmail.includes('admin');
       const isMelissa = cleanEmail.includes('mpcommoditybroker');
-      const isSupplier = isMelissa || cleanEmail.includes('supplier');
+      const isZac = cleanEmail === 'zac@otec.ltd';
+      
+      // Enforce specific password for Zac in fallback mode
+      if (isZac && password !== 'Zac@0011') {
+        return { success: false, message: 'Invalid password for Zachary Aldin' };
+      }
+
+      const isSupplier = isMelissa || isZac || cleanEmail.includes('supplier');
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
-      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm');
-      const country = isAdmin ? 'United Kingdom' : (isMelissa ? 'Australia' : 'United States');
-      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? 'SILVER' : 'FREE');
-      const membershipStatus: MembershipStatus = (isAdmin || isMelissa) ? 'paid' : 'free';
+      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isZac ? 'IMPORTATION FADE-TECH' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'));
+      const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
+      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? (isZac ? 'GOLD' : 'SILVER') : 'FREE');
+      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
-        id: isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`,
-        name: isAdmin ? 'Administrator' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' ')),
-        email: isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail,
+        id: isZac ? 'user-supplier-zac' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`),
+        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' '))),
+        email: isZac ? 'Zac@otec.ltd' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail),
         role: role,
         isPremium: isAdmin || isMelissa,
         membershipStatus: membershipStatus,
@@ -381,17 +388,24 @@ export const bigrockApi = {
       const cleanEmail = (email || '').trim().toLowerCase();
       const isAdmin = cleanEmail === 'yr943334@gmail.com';
       const isMelissa = cleanEmail.includes('mpcommoditybroker');
-      const isSupplier = isMelissa || cleanEmail.includes('supplier');
+      const isZac = cleanEmail === 'zac@otec.ltd';
+
+      // Enforce specific password for Zac in fallback mode
+      if (isZac && password !== 'Zac@0011') {
+        return { success: false, message: 'Invalid password for Zachary Aldin' };
+      }
+
+      const isSupplier = isMelissa || isZac || cleanEmail.includes('supplier');
       const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
-      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm');
-      const country = isAdmin ? 'United Kingdom' : (isMelissa ? 'Australia' : 'United States');
-      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? 'SILVER' : 'FREE');
-      const membershipStatus: MembershipStatus = (isAdmin || isMelissa) ? 'paid' : 'free';
+      const companyName = isAdmin ? 'Trade Heaven Global Operations & Treasury' : (isZac ? 'IMPORTATION FADE-TECH' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'));
+      const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
+      const tier: SupplierTier = isAdmin ? 'VIP' : (isSupplier ? (isZac ? 'GOLD' : 'SILVER') : 'FREE');
+      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac) ? 'paid' : 'free';
 
       const fallbackUser: AuthUser = {
-        id: isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`,
-        name: isAdmin ? 'Administrator' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner')),
-        email: isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail,
+        id: isZac ? 'user-supplier-zac' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`),
+        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner'))),
+        email: isZac ? 'Zac@otec.ltd' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail),
         role: role,
         isPremium: isAdmin || isMelissa,
         membershipStatus: membershipStatus,
@@ -468,6 +482,32 @@ export const bigrockApi = {
         status: 'ACTIVE',
         is_verified: true,
         is_premium: true
+      },
+      {
+        id: 'user-buyer-donald',
+        name: 'Donald Sorkin',
+        email: 'mail-sorkindon@gmail.com',
+        role: 'BUYER',
+        company_name: 'Girlsenberries',
+        country: 'United States',
+        status: 'ACTIVE',
+        is_verified: true,
+        is_premium: true,
+        membership_status: 'paid',
+        tier: 'VIP'
+      },
+      {
+        id: 'user-supplier-zac',
+        name: 'Zachary Aldin',
+        email: 'Zac@otec.ltd',
+        role: 'SUPPLIER',
+        company_name: 'IMPORTATION FADE-TECH',
+        country: 'Australia',
+        status: 'ACTIVE',
+        is_verified: true,
+        is_premium: true,
+        membership_status: 'paid',
+        tier: 'GOLD'
       }
     ];
   },
@@ -759,6 +799,30 @@ export const bigrockApi = {
         product_name: 'Solar Lithium ESS Battery Packs',
         status: 'pending',
         created_at: new Date(Date.now() - 3600000 * 5).toISOString()
+      },
+      {
+        id: 'inq-donald-01',
+        name: 'Donald Sorkin',
+        email: 'mail-sorkindon@gmail.com',
+        phone: '+1 (681) 277-2492',
+        company: 'Girlsenberries',
+        subject: 'Procurement: 75 Metric Tons IQF Frozen Strawberries',
+        message: 'Looking for 75 MT Grade A IQF Strawberries (25-35mm) with CIF Westlake Village terms. Must have trade protection.',
+        product_name: 'IQF Frozen Strawberries',
+        status: 'pending',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 'inq-zac-01',
+        name: 'Zachary Aldin',
+        email: 'Zac@otec.ltd',
+        phone: '+61 424 854 899',
+        company: 'IMPORTATION FADE-TECH',
+        subject: 'Supply Offer: High-CV Australian Thermal Coal (6000-6500 kcal)',
+        message: 'Premium Australian coal available for export. Guaranteed GAR 6000+ kcal/kg. Looking for reliable long-term buyers in Asia-Pacific.',
+        product_name: 'Australian Thermal Coal',
+        status: 'pending',
+        created_at: new Date().toISOString()
       }
     ];
   },

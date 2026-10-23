@@ -141,7 +141,7 @@ export const DEFAULT_USERS: Record<UserRole, AuthUser> = {
     id: 'user-admin-001',
     name: 'Administrator',
     email: 'yr943334@gmail.com',
-    password: 'Yash@8532',
+    password: 'Yash@0011',
     companyName: 'Trade Heaven Global Operations & Treasury',
     country: 'United Kingdom',
     role: 'ADMIN',

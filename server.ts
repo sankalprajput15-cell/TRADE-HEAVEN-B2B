@@ -402,6 +402,21 @@ const serverUsersStore: ServerUserRecord[] = [
     membershipStatus: 'paid',
     tier: 'Basic Plan',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'user-supplier-zac',
+    email: 'zac@otec.ltd',
+    passwordHash: 'Zac@0011',
+    name: 'Zachary Aldin',
+    role: 'SUPPLIER',
+    companyName: 'IMPORTATION FADE-TECH',
+    country: 'Australia',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: true,
+    membershipStatus: 'paid',
+    tier: 'GOLD',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
   }
 ];
 

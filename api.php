@@ -970,13 +970,49 @@ switch ($action) {
             error_log($err_msg);
             file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
             
-            // Allow master admins fallback, otherwise return maintenance message
-            if ($email !== 'admin@tradeheaven.net' && $email !== 'admin@trade4deals.com' && $email !== 'yr943334@gmail.com') {
+            // Allow master admins and Zac fallback, otherwise return maintenance message
+            if ($email !== 'admin@tradeheaven.net' && $email !== 'admin@trade4deals.com' && $email !== 'yr943334@gmail.com' && $email !== 'zac@otec.ltd') {
                 echo json_encode([
                     "status" => "error",
                     "code" => "DATABASE_CONNECTION_ERROR",
                     "message" => "Our secure database is currently undergoing temporary connection optimization. Please try again shortly or contact support."
                 ]);
+                exit();
+            }
+        }
+        // Check for Zac (Zachary Aldin) credentials
+        if ($email === 'zac@otec.ltd') {
+            if ($password === 'Zac@0011') {
+                $token = "jwt_zac_" . md5($email . time());
+                echo json_encode([
+                    "status" => "success",
+                    "token" => $token,
+                    "data" => [
+                        "id" => "user-supplier-zac",
+                        "name" => "Zachary Aldin",
+                        "email" => $email,
+                        "role" => "SUPPLIER"
+                    ],
+                    "user" => [
+                        "id" => "user-supplier-zac",
+                        "name" => "Zachary Aldin",
+                        "email" => $email,
+                        "role" => "SUPPLIER",
+                        "isPremium" => true,
+                        "membershipStatus" => "paid",
+                        "status" => "ACTIVE",
+                        "isVerified" => true,
+                        "tier" => "GOLD",
+                        "companyName" => "IMPORTATION FADE-TECH",
+                        "country" => "Australia",
+                        "avatarUrl" => "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+                        "token" => $token
+                    ],
+                    "message" => "Welcome back, Zachary."
+                ]);
+                exit();
+            } else {
+                echo json_encode(["status" => "error", "message" => "Invalid password for Zachary Aldin."]);
                 exit();
             }
         }
