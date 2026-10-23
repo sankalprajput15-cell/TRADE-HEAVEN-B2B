@@ -8,7 +8,9 @@ import nodemailer from 'nodemailer';
 import {
   TradeHeavenMediatorEngine,
   TradeHeavenSqlPoolAdapter,
-  TradeHeavenBankRailsClient
+  TradeHeavenBankRailsClient,
+  isBasicPlanStatus,
+  assertVipForDirectSiteTransfer
 } from './src/services/tradeHeavenMediatorEngine';
 
 dotenv.config();
@@ -2864,13 +2866,38 @@ app.get('/api/v1/mediation/state', (_req, res) => {
   res.json(getServerMediationState());
 });
 
+function resolveServerEntityPlan(entityId?: string, explicitPlan?: string): string | undefined {
+  if (explicitPlan) return explicitPlan;
+  if (!entityId) return undefined;
+  const wallet = serverMediationPool.getWallets().find(w => w.entity_id === entityId);
+  if (wallet?.plan_status) return wallet.plan_status;
+  const user = serverUsersStore.find(
+    u =>
+      u.id === entityId ||
+      u.email.toLowerCase() === entityId.toLowerCase() ||
+      (entityId === 'comp-zac-importation-fadetech' && u.id === 'user-supplier-zac')
+  );
+  return user?.tier;
+}
+
 // POST /api/v1/mediation/topup - 1. TOP-UP: Buyer adds money to Trade Heaven wallet
 app.post('/api/v1/mediation/topup', async (req, res) => {
   try {
-    const { buyerId, amountPaise, gatewayTxId } = req.body;
+    const { buyerId, amountPaise, gatewayTxId, senderPlan } = req.body;
     if (!buyerId || !amountPaise || Number(amountPaise) <= 0) {
       return res.status(400).json({ error: 'Valid buyerId and positive amountPaise are required.' });
     }
+    const resolvedSenderPlan = resolveServerEntityPlan(buyerId, senderPlan);
+    if (isBasicPlanStatus(resolvedSenderPlan, buyerId)) {
+      return res.status(403).json({
+        error: `Direct-to-site fund transfer blocked: User (${buyerId}) has a 'Basic' plan status. Only VIP members can use direct-to-site fund transfers.`
+      });
+    }
+    assertVipForDirectSiteTransfer({
+      senderId: buyerId,
+      senderPlan: resolvedSenderPlan,
+      wallets: serverMediationPool.getWallets()
+    });
     const txId = gatewayTxId || `GW-TX-${Date.now()}`;
     await serverMediatorEngine.creditBuyerDeposit(buyerId, Math.round(Number(amountPaise)), txId);
     logServerActivity(
@@ -2891,17 +2918,33 @@ app.post('/api/v1/mediation/topup', async (req, res) => {
 // POST /api/v1/mediation/lock-escrow - 2. HOLD IN MEDIATION: Lock buyer funds in escrow
 app.post('/api/v1/mediation/lock-escrow', async (req, res) => {
   try {
-    const { buyerId, orderId, totalAmountPaise, supplierId, productTitle } = req.body;
+    const { buyerId, orderId, totalAmountPaise, supplierId, productTitle, senderPlan, recipientPlan } = req.body;
     if (!buyerId || !orderId || !totalAmountPaise || Number(totalAmountPaise) <= 0) {
       return res.status(400).json({ error: 'Valid buyerId, orderId, and totalAmountPaise are required.' });
     }
-    if (supplierId && String(supplierId).toLowerCase().includes('zac')) {
+    const resolvedSenderPlan = resolveServerEntityPlan(buyerId, senderPlan);
+    const resolvedRecipientPlan = resolveServerEntityPlan(supplierId, recipientPlan);
+
+    if (isBasicPlanStatus(resolvedSenderPlan, buyerId)) {
       return res.status(403).json({
-        error: 'Direct on-site funds transfer is disabled for Zachary Aldin / IMPORTATION FADE-TECH (Basic Plan Holder). Only VIP Plan members can receive funds directly on site.'
+        error: `Direct-to-site fund transfer blocked: Buyer (${buyerId}) has a 'Basic' plan status. Only VIP members can initiate direct-to-site fund transfers.`
       });
     }
+    if (supplierId && isBasicPlanStatus(resolvedRecipientPlan, supplierId)) {
+      return res.status(403).json({
+        error: `Direct-to-site fund transfer blocked: Supplier (${supplierId}) has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can use this feature and receive funds.`
+      });
+    }
+    assertVipForDirectSiteTransfer({
+      senderId: buyerId,
+      senderPlan: resolvedSenderPlan,
+      recipientId: supplierId,
+      recipientPlan: resolvedRecipientPlan,
+      wallets: serverMediationPool.getWallets()
+    });
+
     const amount = Math.round(Number(totalAmountPaise));
-    await serverMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, amount);
+    await serverMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, amount, supplierId);
     serverMediationPool.markOrderLocked(orderId, buyerId, amount, supplierId, productTitle);
     logServerActivity(
       req,
@@ -2921,15 +2964,31 @@ app.post('/api/v1/mediation/lock-escrow', async (req, res) => {
 // POST /api/v1/mediation/release-escrow - 3. MEDIATED SETTLEMENT: Release escrow to supplier + platform commission
 app.post('/api/v1/mediation/release-escrow', async (req, res) => {
   try {
-    const { orderId, buyerId, supplierId, totalAmountPaise, platformFeePaise } = req.body;
+    const { orderId, buyerId, supplierId, totalAmountPaise, platformFeePaise, senderPlan, recipientPlan } = req.body;
     if (!orderId || !buyerId || !supplierId || !totalAmountPaise || Number(totalAmountPaise) <= 0) {
       return res.status(400).json({ error: 'orderId, buyerId, supplierId, and totalAmountPaise are required.' });
     }
-    if (String(supplierId).toLowerCase().includes('zac')) {
+    const resolvedSenderPlan = resolveServerEntityPlan(buyerId, senderPlan);
+    const resolvedRecipientPlan = resolveServerEntityPlan(supplierId, recipientPlan);
+
+    if (isBasicPlanStatus(resolvedSenderPlan, buyerId)) {
       return res.status(403).json({
-        error: 'Direct on-site funds transfer is disabled for Zachary Aldin / IMPORTATION FADE-TECH (Basic Plan Holder). Only VIP Plan members can receive funds directly on site.'
+        error: `Direct-to-site fund transfer blocked: Buyer (${buyerId}) has a 'Basic' plan status. Only VIP members can use direct-to-site fund transfers.`
       });
     }
+    if (isBasicPlanStatus(resolvedRecipientPlan, supplierId)) {
+      return res.status(403).json({
+        error: `Direct-to-site fund transfer blocked: Supplier (${supplierId}) has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can use this feature and receive funds.`
+      });
+    }
+    assertVipForDirectSiteTransfer({
+      senderId: buyerId,
+      senderPlan: resolvedSenderPlan,
+      recipientId: supplierId,
+      recipientPlan: resolvedRecipientPlan,
+      wallets: serverMediationPool.getWallets()
+    });
+
     const total = Math.round(Number(totalAmountPaise));
     const fee = Math.round(Number(platformFeePaise || 0));
     await serverMediatorEngine.releaseEscrowToSupplier({
@@ -2958,10 +3017,21 @@ app.post('/api/v1/mediation/release-escrow', async (req, res) => {
 // POST /api/v1/mediation/payout - 4. PAYOUT / WITHDRAWAL: Withdraw available balance to real bank account
 app.post('/api/v1/mediation/payout', async (req, res) => {
   try {
-    const { entityId, amountPaise, destinationBankDetails } = req.body;
+    const { entityId, amountPaise, destinationBankDetails, entityPlan } = req.body;
     if (!entityId || !amountPaise || Number(amountPaise) <= 0) {
       return res.status(400).json({ error: 'Valid entityId and positive amountPaise are required.' });
     }
+    const resolvedEntityPlan = resolveServerEntityPlan(entityId, entityPlan);
+    if (isBasicPlanStatus(resolvedEntityPlan, entityId)) {
+      return res.status(403).json({
+        error: `Direct-to-site payout blocked: Entity (${entityId}) has a 'Basic' plan status. Only VIP members can receive direct-to-site fund transfers and payouts.`
+      });
+    }
+    assertVipForDirectSiteTransfer({
+      recipientId: entityId,
+      recipientPlan: resolvedEntityPlan,
+      wallets: serverMediationPool.getWallets()
+    });
     const amount = Math.round(Number(amountPaise));
     const payoutResult = await serverMediatorEngine.requestBankPayout(entityId, amount, {
       ...destinationBankDetails,

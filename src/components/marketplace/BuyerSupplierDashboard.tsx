@@ -562,11 +562,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 label: 'Documents',
                 icon: Download
               },
-              ...(currentUser?.tier === 'VIP' ? [{
+              {
                 id: 'RECEIVE_FUNDS',
                 label: 'Direct Receive Funds',
                 icon: DollarSign
-              } as const] : [])
+              } as const
             ] as const
           ).map(tab => {
             const Icon = tab.icon;
@@ -1178,86 +1178,119 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
 
       {activeTab === 'RECEIVE_FUNDS' && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200 mb-2">
-                  <ShieldCheck className="w-3 h-3" />
-                  VIP Elite Feature
+          {currentUser?.tier !== 'VIP' ||
+          String(currentUser?.tier || currentUser?.plan || '').toLowerCase().includes('basic') ||
+          String(currentUser?.id || '').toLowerCase().includes('zac') ? (
+            <div className="bg-white border border-amber-300 rounded-3xl p-8 shadow-sm space-y-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-100 pb-5">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider border border-amber-300 mb-2">
+                    <Lock className="w-3 h-3" />
+                    Basic Plan Status — Feature Restricted
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                    Direct-to-Site Funds Receiving Disabled
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Your account (<strong>{currentUser?.companyName || currentUser?.name || 'Basic Plan Holder'}</strong>) is currently registered under a <strong>Basic Plan</strong>.
+                  </p>
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Direct Funds Receiving</h3>
-                <p className="text-sm text-slate-500 mt-1">Accept instant payments from global buyers directly on your Trade Heaven storefront.</p>
+                <span className="px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 font-mono text-xs font-bold uppercase">
+                  Current Plan: {currentUser?.tier || 'Basic Plan'}
+                </span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right hidden md:block">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gateway Status</div>
-                  <div className="text-sm font-black text-emerald-600 flex items-center justify-end gap-1.5 mt-0.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Operational
+
+              <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-sm leading-relaxed space-y-2">
+                <div className="font-black text-amber-900 uppercase tracking-wide text-xs">
+                  VIP Membership Required to Receive Direct-to-Site Funds
+                </div>
+                <p className="text-xs text-amber-900 font-medium">
+                  Under Trade Heaven payment service rules, users and suppliers with a <strong>Basic</strong> plan status cannot initiate or receive direct-to-site fund transfers. Only verified <strong>VIP Plan</strong> members are authorized to use direct on-site settlement links and receive instant wallet payouts.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black uppercase tracking-wider border border-amber-200 mb-2">
+                    <ShieldCheck className="w-3 h-3" />
+                    VIP Elite Feature
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Direct Funds Receiving</h3>
+                  <p className="text-sm text-slate-500 mt-1">Accept instant payments from global buyers directly on your Trade Heaven storefront.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden md:block">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gateway Status</div>
+                    <div className="text-sm font-black text-emerald-600 flex items-center justify-end gap-1.5 mt-0.5">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Operational (VIP Active)
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                    <RefreshCw className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900">Instant Settlement</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">Funds are settled into your Trade Heaven treasury wallet immediately upon buyer confirmation.</p>
+                </div>
+                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900">0% Transaction Fee</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">As a VIP member, you bypass standard platform processing fees on all direct incoming transfers.</p>
+                </div>
+                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900">Global Rails</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">Supports SWIFT, SEPA, and instant IMPS/RTGS for seamless cross-border capital flow.</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-3xl -mr-32 -mt-32" />
+                <div className="relative z-10 space-y-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <h4 className="text-xl font-bold">Your Unique Receiving Link</h4>
+                      <p className="text-slate-400 text-sm">Send this secure link to buyers for direct invoice settlement.</p>
+                    </div>
+                    <button className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors cursor-pointer">
+                      <Settings className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-2xl">
+                    <div className="flex-grow px-4 font-mono text-sm text-blue-300 truncate">
+                      https://tradeheaven.net/pay/{currentUser?.companyName?.toLowerCase().replace(/\s+/g, '-') || 'supplier'}
+                    </div>
+                    <button className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs transition-all cursor-pointer shadow-lg shadow-blue-900/40">
+                      Copy Link
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <button className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-white text-slate-900 font-bold text-sm hover:bg-slate-100 transition-all cursor-pointer">
+                      <Download className="w-4 h-4" />
+                      Download QR Code
+                    </button>
+                    <button className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/20 hover:bg-white/5 font-bold text-sm transition-all cursor-pointer">
+                      <PlusCircle className="w-4 h-4" />
+                      Generate New Invoice
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                  <RefreshCw className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-slate-900">Instant Settlement</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">Funds are settled into your Trade Heaven treasury wallet immediately upon buyer confirmation.</p>
-              </div>
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-slate-900">0% Transaction Fee</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">As a VIP member, you bypass standard platform processing fees on all direct incoming transfers.</p>
-              </div>
-              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
-                  <Globe className="w-5 h-5" />
-                </div>
-                <h4 className="font-bold text-slate-900">Global Rails</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">Supports SWIFT, SEPA, and instant IMPS/RTGS for seamless cross-border capital flow.</p>
-              </div>
-            </div>
-
-            <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-3xl -mr-32 -mt-32" />
-              <div className="relative z-10 space-y-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <h4 className="text-xl font-bold">Your Unique Receiving Link</h4>
-                    <p className="text-slate-400 text-sm">Send this secure link to buyers for direct invoice settlement.</p>
-                  </div>
-                  <button className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors cursor-pointer">
-                    <Settings className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 p-2 bg-white/5 border border-white/10 rounded-2xl">
-                  <div className="flex-grow px-4 font-mono text-sm text-blue-300 truncate">
-                    https://tradeheaven.net/pay/{currentUser?.companyName?.toLowerCase().replace(/\s+/g, '-') || 'supplier'}
-                  </div>
-                  <button className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs transition-all cursor-pointer shadow-lg shadow-blue-900/40">
-                    Copy Link
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <button className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-white text-slate-900 font-bold text-sm hover:bg-slate-100 transition-all cursor-pointer">
-                    <Download className="w-4 h-4" />
-                    Download QR Code
-                  </button>
-                  <button className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/20 hover:bg-white/5 font-bold text-sm transition-all cursor-pointer">
-                    <PlusCircle className="w-4 h-4" />
-                    Generate New Invoice
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       )}
 

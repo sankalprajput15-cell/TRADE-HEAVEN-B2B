@@ -12,12 +12,15 @@ export type LedgerTransactionType =
   | 'PLATFORM_FEE'
   | 'SUPPLIER_PAYOUT';
 
+export type MemberPlanStatus = 'VIP' | 'BASIC';
+
 export interface WalletRecord {
   id: string;
   entity_id: string;
   entity_name: string;
   company_name: string;
   wallet_type: WalletType;
+  plan_status?: MemberPlanStatus;
   available_balance: string; // Stored in paise (100 paise = ₹1.00) as string for BigInt safety
   locked_balance: string;    // Stored in paise as string for BigInt safety
   currency: string;
@@ -25,6 +28,74 @@ export interface WalletRecord {
   native_currency?: string;
   native_symbol?: string;
   updated_at: string;
+}
+
+/**
+ * Conditional Plan-Status Check Helpers for Direct-to-Site Fund Transfers & Receiving
+ * Prevents users or suppliers with a 'Basic' plan status from initiating or receiving
+ * direct-to-site fund transfers, ensuring only VIP members can use that feature.
+ */
+export function isBasicPlanStatus(planOrTier?: string | null, entityId?: string | null): boolean {
+  const normalizedEntity = String(entityId || '').trim().toLowerCase();
+  if (
+    normalizedEntity === 'comp-zac-importation-fadetech' ||
+    normalizedEntity === 'user-supplier-zac' ||
+    normalizedEntity.includes('zac')
+  ) {
+    return true;
+  }
+  const normalizedPlan = String(planOrTier || '').trim().toLowerCase();
+  if (!normalizedPlan) return false;
+  return (
+    normalizedPlan === 'basic' ||
+    normalizedPlan.includes('basic') ||
+    normalizedPlan === 'free' ||
+    normalizedPlan === 'silver'
+  );
+}
+
+export function isVipPlanStatus(planOrTier?: string | null, entityId?: string | null): boolean {
+  if (isBasicPlanStatus(planOrTier, entityId)) return false;
+  const normalizedPlan = String(planOrTier || '').trim().toUpperCase();
+  if (!normalizedPlan) return true;
+  return (
+    normalizedPlan === 'VIP' ||
+    normalizedPlan.includes('VIP') ||
+    normalizedPlan === 'GOLD' ||
+    normalizedPlan === 'ADVANCE'
+  );
+}
+
+export function assertVipForDirectSiteTransfer(params: {
+  senderId?: string | null;
+  senderPlan?: string | null;
+  recipientId?: string | null;
+  recipientPlan?: string | null;
+  wallets?: WalletRecord[];
+}): void {
+  const { senderId, senderPlan, recipientId, recipientPlan, wallets = [] } = params;
+  const senderWallet = senderId ? wallets.find(w => w.entity_id === senderId) : undefined;
+  const recipientWallet = recipientId ? wallets.find(w => w.entity_id === recipientId) : undefined;
+
+  const resolvedSenderPlan = senderPlan || senderWallet?.plan_status;
+  const resolvedRecipientPlan = recipientPlan || recipientWallet?.plan_status;
+
+  if (senderId && (!isVipPlanStatus(resolvedSenderPlan, senderId) || isBasicPlanStatus(resolvedSenderPlan, senderId))) {
+    const senderLabel = senderWallet?.company_name || senderWallet?.entity_name || senderId;
+    throw new Error(
+      `Direct-to-site fund transfer blocked: ${senderLabel} has a 'Basic' plan status. Only VIP members can initiate direct-to-site fund transfers.`
+    );
+  }
+
+  if (
+    recipientId &&
+    (!isVipPlanStatus(resolvedRecipientPlan, recipientId) || isBasicPlanStatus(resolvedRecipientPlan, recipientId))
+  ) {
+    const recipientLabel = recipientWallet?.company_name || recipientWallet?.entity_name || recipientId;
+    throw new Error(
+      `Direct-to-site fund transfer blocked: ${recipientLabel} has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can use this feature and receive funds.`
+    );
+  }
 }
 
 export interface LedgerEntryRecord {
@@ -96,11 +167,17 @@ export class TradeHeavenMediatorEngine {
       await client.query("BEGIN;");
 
       const walletRes = await client.query(
-        `SELECT id FROM wallets WHERE entity_id = $1 AND wallet_type = 'BUYER' FOR UPDATE;`,
+        `SELECT id, plan_status, company_name FROM wallets WHERE entity_id = $1 AND wallet_type = 'BUYER' FOR UPDATE;`,
         [buyerId]
       );
       if (walletRes.rowCount === 0) throw new Error("Buyer wallet not found.");
-      const walletId = walletRes.rows[0].id;
+      const buyerWallet = walletRes.rows[0];
+      if (isBasicPlanStatus(buyerWallet.plan_status, buyerId)) {
+        throw new Error(
+          `Direct-to-site fund transfer blocked: ${buyerWallet.company_name || buyerId} has a 'Basic' plan status. Only VIP members can use direct-to-site fund transfers.`
+        );
+      }
+      const walletId = buyerWallet.id;
 
       // Credit available balance
       await client.query(
@@ -127,18 +204,38 @@ export class TradeHeavenMediatorEngine {
   /**
    * 2. HOLD IN MEDIATION (Order Placement):
    * Moves funds from Buyer's available balance into their locked escrow balance.
+   * Enforces conditional check that neither Buyer nor Supplier has a 'Basic' plan status.
    */
-  async lockOrderFundsInEscrow(buyerId: string, orderId: string, totalAmountPaise: number) {
+  async lockOrderFundsInEscrow(buyerId: string, orderId: string, totalAmountPaise: number, supplierId?: string) {
     const client = await this.db.connect();
     try {
       await client.query("BEGIN;");
 
       const walletRes = await client.query(
-        `SELECT id, available_balance FROM wallets WHERE entity_id = $1 FOR UPDATE;`,
+        `SELECT id, available_balance, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE;`,
         [buyerId]
       );
       const wallet = walletRes.rows[0];
       if (!wallet) throw new Error("Wallet not found for entity: " + buyerId);
+
+      if (isBasicPlanStatus(wallet.plan_status, buyerId)) {
+        throw new Error(
+          `Direct-to-site fund transfer blocked: ${wallet.company_name || buyerId} has a 'Basic' plan status. Only VIP members can initiate direct-to-site fund transfers.`
+        );
+      }
+
+      if (supplierId) {
+        const suppRes = await client.query(
+          `SELECT id, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE;`,
+          [supplierId]
+        );
+        const suppWallet = suppRes.rows[0];
+        if (isBasicPlanStatus(suppWallet?.plan_status, supplierId)) {
+          throw new Error(
+            `Direct-to-site fund transfer blocked: ${suppWallet?.company_name || supplierId} has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can use this feature and receive funds.`
+          );
+        }
+      }
 
       if (BigInt(wallet.available_balance) < BigInt(totalAmountPaise)) {
         throw new Error("Insufficient available wallet funds to lock in escrow.");
@@ -173,6 +270,7 @@ export class TradeHeavenMediatorEngine {
    * 3. MEDIATED SETTLEMENT (Buyer Confirms / Goods Delivered):
    * Moves locked funds from Buyer, transfers platform commission to Trade Heaven, 
    * and settles the net amount into the Supplier's available balance.
+   * Enforces conditional check ensuring only VIP members can send and receive direct-to-site funds.
    */
   async releaseEscrowToSupplier(params: {
     orderId: string;
@@ -189,13 +287,25 @@ export class TradeHeavenMediatorEngine {
       await client.query("BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
 
       // Lock all involved wallets
-      const buyerW = (await client.query(`SELECT id, locked_balance FROM wallets WHERE entity_id = $1 FOR UPDATE;`, [buyerId])).rows[0];
-      const supplierW = (await client.query(`SELECT id FROM wallets WHERE entity_id = $1 FOR UPDATE;`, [supplierId])).rows[0];
+      const buyerW = (await client.query(`SELECT id, locked_balance, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE;`, [buyerId])).rows[0];
+      const supplierW = (await client.query(`SELECT id, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE;`, [supplierId])).rows[0];
       const platformW = (await client.query(`SELECT id FROM wallets WHERE wallet_type = 'PLATFORM_REVENUE' FOR UPDATE;`)).rows[0];
 
       if (!buyerW) throw new Error("Buyer wallet not found.");
       if (!supplierW) throw new Error("Supplier wallet not found.");
       if (!platformW) throw new Error("Platform revenue wallet not found.");
+
+      if (isBasicPlanStatus(buyerW.plan_status, buyerId)) {
+        throw new Error(
+          `Direct-to-site fund transfer blocked: Buyer ${buyerW.company_name || buyerId} has a 'Basic' plan status. Only VIP members can use direct-to-site fund transfers.`
+        );
+      }
+
+      if (isBasicPlanStatus(supplierW.plan_status, supplierId)) {
+        throw new Error(
+          `Direct-to-site fund transfer blocked: Supplier ${supplierW.company_name || supplierId} has a 'Basic' plan status and cannot receive funds directly on site. Only VIP members can receive direct-to-site funds.`
+        );
+      }
 
       if (BigInt(buyerW.locked_balance) < BigInt(totalAmountPaise)) {
         throw new Error("Mismatch: Locked balance is less than settlement amount.");
@@ -242,6 +352,7 @@ export class TradeHeavenMediatorEngine {
   /**
    * 4. PAYOUT / WITHDRAWAL:
    * Supplier or Buyer withdraws their available balance out to their real bank account.
+   * Enforces conditional check that 'Basic' plan holders cannot receive direct-to-site payouts.
    */
   async requestBankPayout(entityId: string, amountPaise: number, destinationBankDetails: any): Promise<BankTransferResult> {
     const client = await this.db.connect();
@@ -249,11 +360,17 @@ export class TradeHeavenMediatorEngine {
       await client.query("BEGIN;");
 
       const walletRes = await client.query(
-        `SELECT id, available_balance FROM wallets WHERE entity_id = $1 FOR UPDATE;`,
+        `SELECT id, available_balance, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE;`,
         [entityId]
       );
       const wallet = walletRes.rows[0];
       if (!wallet) throw new Error("Wallet not found for entity: " + entityId);
+
+      if (isBasicPlanStatus(wallet.plan_status, entityId)) {
+        throw new Error(
+          `Direct-to-site payout blocked: ${wallet.company_name || entityId} has a 'Basic' plan status. Only VIP members can receive direct-to-site fund transfers and payouts.`
+        );
+      }
 
       if (BigInt(wallet.available_balance) < BigInt(amountPaise)) {
         throw new Error("Insufficient funds available for bank withdrawal.");
@@ -343,6 +460,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Marcus Vance',
         company_name: 'Titan Global Construction & Infrastructure LLC',
         wallet_type: 'BUYER',
+        plan_status: 'VIP',
         available_balance: '185000000', // ₹18,50,000.00 (185,000,000 paise)
         locked_balance: '92000000',     // ₹9,20,000.00 locked in active escrow
         currency: 'INR',
@@ -357,6 +475,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Elena Rostova',
         company_name: 'EuroMed Hospital Procurement GmbH',
         wallet_type: 'BUYER',
+        plan_status: 'VIP',
         available_balance: '340000000', // ₹34,00,000.00
         locked_balance: '64000000',     // ₹6,40,000.00 locked in escrow
         currency: 'INR',
@@ -371,6 +490,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Donald Sorkin',
         company_name: 'Girlsenberries',
         wallet_type: 'BUYER',
+        plan_status: 'VIP',
         available_balance: '2000000000000', // $20,000,000.00 USD
         locked_balance: '0',
         currency: 'USD',
@@ -385,6 +505,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Rajesh Sharma',
         company_name: 'Apex Agro & Industrial Imports Pvt Ltd',
         wallet_type: 'BUYER',
+        plan_status: 'VIP',
         available_balance: '125000000', // ₹12,50,000.00
         locked_balance: '0',
         currency: 'INR',
@@ -399,6 +520,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Melissa Prezios',
         company_name: 'MP Commodity Brokers Australia Pty Ltd',
         wallet_type: 'SUPPLIER',
+        plan_status: 'VIP',
         available_balance: '248500000', // ₹24,85,000.00 available for bank payout
         locked_balance: '0',
         currency: 'INR',
@@ -413,6 +535,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Chen Wei',
         company_name: 'Shenzhen Lumina New Energy Tech Co., Ltd.',
         wallet_type: 'SUPPLIER',
+        plan_status: 'VIP',
         available_balance: '162000000', // ₹16,20,000.00
         locked_balance: '0',
         currency: 'INR',
@@ -427,6 +550,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Vikramaditya Singh',
         company_name: 'Bharat Precision Forgings & Alloys Ltd.',
         wallet_type: 'SUPPLIER',
+        plan_status: 'VIP',
         available_balance: '95000000',  // ₹9,50,000.00
         locked_balance: '0',
         currency: 'INR',
@@ -441,6 +565,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Zachary Aldin',
         company_name: 'IMPORTATION FADE-TECH (OTEC LTD)',
         wallet_type: 'SUPPLIER',
+        plan_status: 'BASIC',
         available_balance: '0', // Funds reset to 0 USD
         locked_balance: '0',
         currency: 'USD',
@@ -455,6 +580,7 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Trade Heaven Treasury',
         company_name: 'Trade Heaven Global Operations & Mediation Vault',
         wallet_type: 'PLATFORM_REVENUE',
+        plan_status: 'VIP',
         available_balance: '18450000',  // ₹1,84,500.00 accumulated platform commission
         locked_balance: '0',
         currency: 'INR',
@@ -715,7 +841,10 @@ export class TradeHeavenSqlPoolAdapter {
         }
 
         // 2. SELECT queries on wallets
-        if (normalized.startsWith("SELECT id FROM wallets WHERE entity_id = $1 AND wallet_type = 'BUYER' FOR UPDATE")) {
+        if (
+          normalized.startsWith("SELECT id FROM wallets WHERE entity_id = $1 AND wallet_type = 'BUYER' FOR UPDATE") ||
+          normalized.startsWith("SELECT id, plan_status, company_name FROM wallets WHERE entity_id = $1 AND wallet_type = 'BUYER' FOR UPDATE")
+        ) {
           const [entityId] = params;
           let rows = this.wallets.filter(w => w.entity_id === entityId);
           if (rows.length === 0 && entityId) {
@@ -733,7 +862,10 @@ export class TradeHeavenSqlPoolAdapter {
 
         if (
           normalized.startsWith('SELECT id, available_balance FROM wallets WHERE entity_id = $1 FOR UPDATE') ||
+          normalized.startsWith('SELECT id, available_balance, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE') ||
           normalized.startsWith('SELECT id, locked_balance FROM wallets WHERE entity_id = $1 FOR UPDATE') ||
+          normalized.startsWith('SELECT id, locked_balance, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE') ||
+          normalized.startsWith('SELECT id, plan_status, company_name FROM wallets WHERE entity_id = $1 FOR UPDATE') ||
           normalized.startsWith('SELECT id FROM wallets WHERE entity_id = $1 FOR UPDATE')
         ) {
           const [entityId] = params;
@@ -940,6 +1072,10 @@ const notifyMediationStateUpdated = (state: MediationSystemState): MediationSyst
 };
 
 export const tradeHeavenMediationService = {
+  isBasicPlanStatus,
+  isVipPlanStatus,
+  assertVipForDirectSiteTransfer,
+
   async getState(): Promise<MediationSystemState> {
     try {
       const res = await fetch('/api/v1/mediation/state');
@@ -959,12 +1095,23 @@ export const tradeHeavenMediationService = {
     };
   },
 
-  async creditBuyerDeposit(buyerId: string, amountPaise: number, gatewayTxId: string): Promise<MediationSystemState> {
+  async creditBuyerDeposit(
+    buyerId: string,
+    amountPaise: number,
+    gatewayTxId: string,
+    senderPlan?: string | null
+  ): Promise<MediationSystemState> {
+    assertVipForDirectSiteTransfer({
+      senderId: buyerId,
+      senderPlan,
+      wallets: localPool.getWallets()
+    });
+
     try {
       const res = await fetch('/api/v1/mediation/topup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ buyerId, amountPaise, gatewayTxId })
+        body: JSON.stringify({ buyerId, amountPaise, gatewayTxId, senderPlan })
       });
       if (res.ok) {
         const data = await res.json();
@@ -987,18 +1134,31 @@ export const tradeHeavenMediationService = {
     orderId: string,
     totalAmountPaise: number,
     supplierId?: string,
-    productTitle?: string
+    productTitle?: string,
+    senderPlan?: string | null,
+    recipientPlan?: string | null
   ): Promise<MediationSystemState> {
-    if (supplierId === 'comp-zac-importation-fadetech') {
-      throw new Error(
-        'Direct on-site funds transfer disabled: IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Only VIP Plan members can receive direct funds transfers from the site.'
-      );
-    }
+    assertVipForDirectSiteTransfer({
+      senderId: buyerId,
+      senderPlan,
+      recipientId: supplierId,
+      recipientPlan,
+      wallets: localPool.getWallets()
+    });
+
     try {
       const res = await fetch('/api/v1/mediation/lock-escrow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ buyerId, orderId, totalAmountPaise, supplierId, productTitle })
+        body: JSON.stringify({
+          buyerId,
+          orderId,
+          totalAmountPaise,
+          supplierId,
+          productTitle,
+          senderPlan,
+          recipientPlan
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -1011,7 +1171,7 @@ export const tradeHeavenMediationService = {
       if (err?.message && !err.message.includes('fetch')) throw err;
     }
 
-    await localMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, totalAmountPaise);
+    await localMediatorEngine.lockOrderFundsInEscrow(buyerId, orderId, totalAmountPaise, supplierId);
     localPool.markOrderLocked(orderId, buyerId, totalAmountPaise, supplierId, productTitle);
     const updatedState = await this.getState();
     return notifyMediationStateUpdated(updatedState);
@@ -1023,12 +1183,17 @@ export const tradeHeavenMediationService = {
     supplierId: string;
     totalAmountPaise: number;
     platformFeePaise: number;
+    senderPlan?: string | null;
+    recipientPlan?: string | null;
   }): Promise<MediationSystemState> {
-    if (params.supplierId === 'comp-zac-importation-fadetech') {
-      throw new Error(
-        'Direct on-site funds transfer disabled: IMPORTATION FADE-TECH (Zachary Aldin) is a Basic Plan Holder. Only VIP Plan members can receive direct funds transfers from the site.'
-      );
-    }
+    assertVipForDirectSiteTransfer({
+      senderId: params.buyerId,
+      senderPlan: params.senderPlan,
+      recipientId: params.supplierId,
+      recipientPlan: params.recipientPlan,
+      wallets: localPool.getWallets()
+    });
+
     try {
       const res = await fetch('/api/v1/mediation/release-escrow', {
         method: 'POST',
@@ -1055,13 +1220,20 @@ export const tradeHeavenMediationService = {
   async requestBankPayout(
     entityId: string,
     amountPaise: number,
-    destinationBankDetails: any
+    destinationBankDetails: any,
+    entityPlan?: string | null
   ): Promise<{ payoutResult: BankTransferResult; state: MediationSystemState }> {
+    assertVipForDirectSiteTransfer({
+      recipientId: entityId,
+      recipientPlan: entityPlan,
+      wallets: localPool.getWallets()
+    });
+
     try {
       const res = await fetch('/api/v1/mediation/payout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entityId, amountPaise, destinationBankDetails })
+        body: JSON.stringify({ entityId, amountPaise, destinationBankDetails, entityPlan })
       });
       if (res.ok) {
         const data = await res.json();
