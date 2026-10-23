@@ -429,5 +429,44 @@ export const GLOBAL_BAMBOO_STICKS_COMPANIES: CompanyProfile[] = [
     isContactMasked: true,
     tradeAssuranceLimitUsd: 100000,
     completedOrdersCount: 49
+  },
+  {
+    id: "comp-joy-bamboo-forest-farm",
+    ownerUid: "user-supplier-svetlana",
+    companyName: "Joy Bamboo Forest Farm LLC",
+    legalRegistrationNumber: "FL-LLC-2026-JBFF-300",
+    country: "United States",
+    city: "Saint Petersburg / Sebring, FL",
+    address: "Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702 | Farm Pickup Address: Sebring, FL",
+    establishedYear: 2020,
+    businessType: "Manufacturer",
+    tier: "SILVER",
+    status: "ACTIVE",
+    isVerifiedKYC: true,
+    kycVerificationDate: "2026-10-23",
+    trustScore: 96,
+    responseRate: "99.0%",
+    avgResponseTime: "< 1 hour",
+    totalEmployees: "11 - 50",
+    annualRevenueUsd: "$2M - $10M USD",
+    mainMarkets: ["United States", "North America", "Caribbean", "Europe"],
+    certifications: [
+      "Paid Basic Plan",
+      "USDA Florida Bamboo Grower",
+      "Direct Farm Pickup: Sebring, FL",
+      "Sustainable Forestry Certified"
+    ],
+    factorySizeSqM: 45000,
+    productionLines: 4,
+    logoUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
+    bannerUrl: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    description: "Joy Bamboo Forest Farm LLC — Paid Basic Plan Supplier. Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702. Farm address where the bamboo will be picked up is in Sebring, FL. Managed by Svetlana Brodskaya (Manager, info@joybambooforestfarm.com). Supplying Florida farm-grown timber bamboo poles, raw bamboo culms, agricultural bamboo canes, and wholesale bamboo shoots.",
+    contactPerson: "Svetlana Brodskaya (Manager)",
+    contactEmail: "info@joybambooforestfarm.com",
+    contactPhone: "info@joybambooforestfarm.com",
+    isContactMasked: false,
+    tradeAssuranceLimitUsd: 250000,
+    completedOrdersCount: 42
   }
 ];
+

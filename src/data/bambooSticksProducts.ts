@@ -3,6 +3,82 @@ import { GLOBAL_BAMBOO_STICKS_COMPANIES } from './bambooSticksCompanies';
 
 export const GLOBAL_BAMBOO_STICKS_PRODUCTS: Product[] = [
   {
+    id: "prod-joy-bamboo-01",
+    supplierId: "comp-joy-bamboo-forest-farm",
+    supplierName: "Joy Bamboo Forest Farm LLC",
+    supplierCountry: "United States",
+    supplierTier: "SILVER",
+    supplierTrustScore: 96,
+    supplierIsVerified: true,
+    minOrderQuantity: "500 Poles",
+    priceRangeUsd: "$4.50 - $12.00 / Pole",
+    unit: "Poles",
+    title: "Florida Farm-Grown Timber Bamboo Poles & Raw Bamboo Culms (Farm Pickup in Sebring, FL)",
+    category: "Bamboo & Wood Products",
+    subCategory: "Bamboo Poles & Timber Culms",
+    images: [
+      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    ],
+    description: "Freshly harvested, Florida farm-grown timber bamboo poles, raw bamboo culms, and structural agricultural bamboo canes from Joy Bamboo Forest Farm LLC. Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702. Farm pickup location: Sebring, FL. Contact Manager Svetlana Brodskaya (info@joybambooforestfarm.com) to schedule bulk farm pickup or freight dispatch.",
+    priceTiers: [
+      { minUnits: 500, maxUnits: 2000, priceUsd: 12.00 },
+      { minUnits: 2001, maxUnits: 10000, priceUsd: 8.50 },
+      { minUnits: 10001, priceUsd: 4.50 }
+    ],
+    fobPriceUsd: 8.50,
+    moq: 500,
+    moqUnit: "Poles",
+    sampleAvailable: true,
+    samplePriceUsd: 45,
+    leadTimeDays: 5,
+    supportedIncoterms: ["EXW", "FCA", "FOB", "DDP"],
+    specifications: [
+      { name: "Grower & Supplier", value: "Joy Bamboo Forest Farm LLC (Svetlana Brodskaya, Manager)" },
+      { name: "Farm Pickup Location", value: "Sebring, Florida, USA" },
+      { name: "Corporate Mailing Address", value: "7901 4th Stan Ste 300, Saint Petersburg, FL 33702" },
+      { name: "Direct Contact Email", value: "info@joybambooforestfarm.com" }
+    ]
+  },
+  {
+    id: "prod-joy-bamboo-02",
+    supplierId: "comp-joy-bamboo-forest-farm",
+    supplierName: "Joy Bamboo Forest Farm LLC",
+    supplierCountry: "United States",
+    supplierTier: "SILVER",
+    supplierTrustScore: 96,
+    supplierIsVerified: true,
+    minOrderQuantity: "1,000 Pieces",
+    priceRangeUsd: "$0.85 - $2.40 / Piece",
+    unit: "Pieces",
+    title: "Heavy-Duty Agricultural Bamboo Nursery Stakes, Garden Canes & Split Bamboo Slats — Sebring, FL Farm",
+    category: "Bamboo & Wood Products",
+    subCategory: "Bamboo Sticks & Skewers",
+    images: [
+      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80"
+    ],
+    description: "Wholesale agricultural bamboo nursery stakes, tree support canes, and split bamboo fencing slats cultivated in Florida by Joy Bamboo Forest Farm LLC. Farm pickup in Sebring, FL; mailing office at 7901 4th Stan Ste 300, Saint Petersburg, FL 33702. Managed by Svetlana Brodskaya (info@joybambooforestfarm.com).",
+    priceTiers: [
+      { minUnits: 1000, maxUnits: 5000, priceUsd: 2.40 },
+      { minUnits: 5001, maxUnits: 25000, priceUsd: 1.50 },
+      { minUnits: 25001, priceUsd: 0.85 }
+    ],
+    fobPriceUsd: 1.50,
+    moq: 1000,
+    moqUnit: "Pieces",
+    sampleAvailable: true,
+    samplePriceUsd: 35,
+    leadTimeDays: 5,
+    supportedIncoterms: ["EXW", "FCA", "FOB", "DDP"],
+    specifications: [
+      { name: "Origin", value: "Sebring, Florida, United States" },
+      { name: "Pickup / Dispatch", value: "Farm Pickup in Sebring, FL" },
+      { name: "Manager", value: "Svetlana Brodskaya (info@joybambooforestfarm.com)" },
+      { name: "Application", value: "Commercial Nurseries, Citrus Groves, Landscaping & Construction" }
+    ]
+  },
+  {
     id: "prod-bamboo-01",
     supplierId: GLOBAL_BAMBOO_STICKS_COMPANIES[0].id,
     supplierName: GLOBAL_BAMBOO_STICKS_COMPANIES[0].companyName,

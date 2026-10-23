@@ -814,6 +814,129 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         }
       ]
     }
+  },
+  'comp-joy-bamboo-forest-farm': {
+    id: 'comp-joy-bamboo-forest-farm',
+    companyName: 'Joy Bamboo Forest Farm LLC',
+    tradeName: 'Joy Bamboo Forest Farm LLC',
+    legalRegistrationNumber: 'FL-LLC-2026-JBFF-300',
+    taxVatNumber: 'US-FL-JBFF-33702',
+    dunsNumber: '11-849-3370',
+    country: 'United States',
+    city: 'Saint Petersburg / Sebring, FL',
+    address: 'Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702 | Farm Pickup Address: Sebring, FL',
+    establishedYear: 2020,
+    yearsInBusiness: 6,
+    businessType: 'Manufacturer',
+    tier: 'SILVER',
+    memberTierLabel: 'Paid Basic Plan • Direct On-Site Funds Transfer Not Active',
+    isVerifiedKYC: true,
+    kycVerificationDate: '2026-10-23',
+    trustScore: 96.0,
+    responseRate: '99.0%',
+    avgResponseTime: '< 1 hour',
+    totalEmployees: '11 - 50 Staff',
+    annualRevenueUsd: '$2M - $10M USD',
+    tradeAssuranceLimitUsd: 250000,
+    completedOrdersCount: 42,
+    factorySizeSqM: 45000,
+    productionLines: 4,
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    tagline: 'Florida Farm-Grown Timber Bamboo Poles, Raw Culms & Agricultural Bamboo Supplier (Pickup in Sebring, FL)',
+    description: 'Joy Bamboo Forest Farm LLC is a verified Paid Basic Plan supplier in Florida, United States. Corporate Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702. Farm address where the bamboo will be picked up is in Sebring, FL. Managed by Svetlana Brodskaya (Manager, info@joybambooforestfarm.com). Note: Direct on-site fund transfers are not active for Basic Plan accounts — please contact Svetlana Brodskaya directly at info@joybambooforestfarm.com for order payment and farm pickup coordination.',
+    acceptedPaymentTerms: [
+      'Direct Supplier Coordination (Contact Supplier Directly)',
+      'Bank Wire Transfer (T/T)',
+      'ACH Corporate Transfer',
+      'Farm Pickup Settlement (Sebring, FL)'
+    ],
+    supportedIncotermsList: ['EXW', 'FCA', 'FOB', 'DDP'],
+    portsOfDispatch: [
+      'Sebring, FL (Direct Farm Pickup Facility)',
+      'Port Tampa Bay, FL (USTPA)',
+      'Port Miami, FL (USMIA)'
+    ],
+    marketDistribution: [
+      { market: 'United States (Domestic)', percentage: 70, topCountries: ['Florida', 'Southeast USA', 'East Coast USA'] },
+      { market: 'North America & Canada', percentage: 15, topCountries: ['Canada', 'Mexico'] },
+      { market: 'Caribbean & Latin America', percentage: 10, topCountries: ['Bahamas', 'Puerto Rico', 'Dominican Republic'] },
+      { market: 'European Union', percentage: 5, topCountries: ['United Kingdom', 'Netherlands'] }
+    ],
+    oemOdmCapabilities: {
+      oemServicesOffered: true,
+      customLogoPrinting: false,
+      customPackaging: true,
+      sampleLeadTimeDays: 5,
+      prototype3DModeling: false,
+      reverseEngineering: false
+    },
+    contactPerson: 'Svetlana Brodskaya',
+    contactEmail: 'info@joybambooforestfarm.com',
+    contactPhone: 'info@joybambooforestfarm.com',
+    whatsapp: 'info@joybambooforestfarm.com',
+    contactPersonDetails: {
+      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
+      name: 'Svetlana Brodskaya',
+      designation: 'Manager — Joy Bamboo Forest Farm LLC',
+      email: 'info@joybambooforestfarm.com',
+      phone: '7901 4th Stan Ste 300, Saint Petersburg, FL 33702 (Farm Pickup: Sebring, FL)',
+      whatsapp: 'info@joybambooforestfarm.com',
+      languages: ['English', 'Russian'],
+      timezone: 'EST (UTC-5) / Florida Business Hours',
+      isVerified: true,
+      responseTime: 'Under 1 hour'
+    },
+    complianceCertificates: [
+      {
+        id: 'cert-jbff-1',
+        name: 'Paid Basic Plan Supplier Verification & Florida LLC Registration',
+        category: 'GOVERNMENT',
+        issuingAuthority: 'State of Florida Division of Corporations & Trade Heaven',
+        issueDate: '2026-10-23',
+        expiryDate: '2027-10-23',
+        certificateNumber: 'FL-LLC-JBFF-33702',
+        type: 'IMAGE',
+        verified: true,
+        thumbnailUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=400&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 'cert-jbff-2',
+        name: 'Florida Agricultural Bamboo Farm & Sebring Pickup Facility Compliance',
+        category: 'QUALITY',
+        issuingAuthority: 'Florida Agricultural Inspection Bureau',
+        issueDate: '2026-01-15',
+        expiryDate: '2028-01-15',
+        certificateNumber: 'FL-AG-SEBRING-2026',
+        type: 'IMAGE',
+        verified: true,
+        thumbnailUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=400&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800&auto=format&fit=crop&q=80'
+      }
+    ],
+    factoryDetails: {
+      factorySizeSqM: 45000,
+      productionLines: 4,
+      annualOutputUnits: '250,000 Bamboo Poles & Stakes / Year',
+      monthlyCapacity: '20,000 Poles / Month (Sebring, FL Farm Pickup)',
+      tourGallery: [
+        {
+          id: 'tour-jbff-1',
+          title: 'Sebring, FL Bamboo Plantation & Direct Farm Pickup Yard',
+          department: 'Bamboo Harvesting & Loading Yard (Sebring, FL)',
+          imageUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+          caption: 'Farm address where the bamboo is harvested, graded, and picked up in Sebring, Florida.'
+        },
+        {
+          id: 'tour-jbff-2',
+          title: 'Saint Petersburg Corporate Office & Dispatch Administration',
+          department: 'Corporate Mailing Office (7901 4th Stan Ste 300, Saint Petersburg, FL 33702)',
+          imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+          caption: 'Managed by Svetlana Brodskaya (Manager, info@joybambooforestfarm.com).'
+        }
+      ]
+    }
   }
 };
 
@@ -823,6 +946,9 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
   }
   if (companyId === 'user-supplier-zac') {
     return DETAILED_VENDOR_PROFILES['comp-zac-importation-fadetech'];
+  }
+  if (companyId === 'user-supplier-svetlana') {
+    return DETAILED_VENDOR_PROFILES['comp-joy-bamboo-forest-farm'];
   }
   if (DETAILED_VENDOR_PROFILES[companyId]) {
     return DETAILED_VENDOR_PROFILES[companyId];

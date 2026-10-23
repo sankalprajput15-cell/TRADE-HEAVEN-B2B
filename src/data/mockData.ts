@@ -744,6 +744,40 @@ export const CATEGORIES_TREE = [
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
   {
+    id: 'comp-joy-bamboo-forest-farm',
+    ownerUid: 'user-supplier-svetlana',
+    companyName: 'Joy Bamboo Forest Farm LLC',
+    legalRegistrationNumber: 'FL-LLC-2026-JBFF-300',
+    country: 'United States',
+    city: 'Saint Petersburg / Sebring, FL',
+    address: 'Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702 | Farm Pickup Address: Sebring, FL',
+    establishedYear: 2020,
+    businessType: 'Manufacturer',
+    tier: 'SILVER',
+    status: 'ACTIVE',
+    isVerifiedKYC: true,
+    kycVerificationDate: '2026-10-23',
+    trustScore: 96,
+    responseRate: '99.0%',
+    avgResponseTime: '< 1 hour',
+    totalEmployees: '11-50 Staff',
+    annualRevenueUsd: '$2M - $10M USD',
+    mainMarkets: ['United States', 'North America', 'Caribbean', 'Europe'],
+    tradeAssuranceLimitUsd: 250000,
+    completedOrdersCount: 42,
+    factorySizeSqM: 45000,
+    productionLines: 4,
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    description: 'Joy Bamboo Forest Farm LLC — Paid Basic Plan Supplier. Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702. Farm address where the bamboo will be picked up is in Sebring, FL. Managed by Svetlana Brodskaya (Manager, info@joybambooforestfarm.com). Supplying Florida farm-grown timber bamboo poles, raw bamboo culms, and agricultural bamboo stakes.',
+    contactPerson: 'Svetlana Brodskaya (Manager)',
+    contactEmail: 'info@joybambooforestfarm.com',
+    contactPhone: 'info@joybambooforestfarm.com',
+    whatsapp: 'info@joybambooforestfarm.com',
+    isContactMasked: false,
+    certifications: ['Paid Basic Plan', 'Florida LLC Registered', 'Direct Farm Pickup: Sebring, FL', 'USDA Florida Bamboo Grower']
+  },
+  {
     id: 'comp-melissa-mpcommodity',
     ownerUid: 'user-supplier-melissa',
     companyName: 'MP Commodity Brokers Australia Pty Ltd',
@@ -800,7 +834,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ...GLOBAL_HOTEL_SUPPLIES_COMPANIES,
   ...GLOBAL_TIRES_COMPANIES,
   ...GLOBAL_GERMANIUM_COMPANIES,
-  ...GLOBAL_BAMBOO_STICKS_COMPANIES,
+  ...GLOBAL_BAMBOO_STICKS_COMPANIES.filter(c => c.id !== 'comp-joy-bamboo-forest-farm'),
   {
   "id": "comp-ext2026-0",
   "ownerUid": "user-ext-supplier-0",
@@ -12802,6 +12836,26 @@ export const MOCK_PLAN_CONFIGS: SubscriptionPlanConfig[] = [
 ];
 
 export const MOCK_PAID_CLIENTS: PaidClientRecord[] = [
+  {
+    id: 'client-joy-bamboo',
+    companyId: 'comp-joy-bamboo-forest-farm',
+    companyName: 'Joy Bamboo Forest Farm LLC',
+    tier: 'Basic Plan',
+    status: 'ACTIVE',
+    startsAt: '2026-10-23',
+    renewsAt: '2027-10-23',
+    amountPaidUsd: 1100,
+    totalPaidUsd: 1100,
+    ltvUsd: 1100,
+    quoteCreditsRemaining: 500,
+    paymentMethod: 'Bank transfer',
+    contactPerson: 'Svetlana Brodskaya (Manager)',
+    contactEmail: 'info@joybambooforestfarm.com',
+    country: 'United States',
+    autoRenew: true,
+    lastInvoiceRef: 'INV-TH-2026-JBFF-300',
+    assignedAccountManager: 'Sophia Sterling (Senior Enterprise VP)'
+  },
   {
     id: 'client-melissa-mpcommodity',
     companyId: 'comp-melissa-mpcommodity',

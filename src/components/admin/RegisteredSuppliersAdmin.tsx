@@ -46,6 +46,21 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       tier: 'Paid Basic Plan (Fuel • All Services Enabled)',
       created_at: '2026-10-19 21:34:46 UTC'
     };
+    const svetlanaSupplier: RegisteredSupplier = {
+      id: 'user-supplier-svetlana',
+      name: 'Svetlana Brodskaya (Manager)',
+      email: 'info@joybambooforestfarm.com',
+      company_name: 'Joy Bamboo Forest Farm LLC',
+      companyName: 'Joy Bamboo Forest Farm LLC',
+      phone: 'Mailing: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702 | Farm Pickup: Sebring, FL',
+      country: 'United States (Saint Petersburg, FL 33702 / Farm Pickup: Sebring, FL)',
+      role: 'SUPPLIER',
+      status: 'ACTIVE',
+      is_verified: 1,
+      isVerified: true,
+      tier: 'Paid Basic Plan (Bamboo Forest Farm • Sebring, FL Pickup)',
+      created_at: '2026-10-23 12:00:00 UTC'
+    };
     try {
       const res = await fetch('/api.php?action=get_users');
       if (!res.ok) {
@@ -67,16 +82,24 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
 
       // If no users explicitly marked as supplier yet, fall back to showing all users so admin can inspect registrations
       const finalSuppliers = (supplierList.length > 0 ? supplierList : usersList).map(s => {
-        if (String(s.email || '').toLowerCase().includes('mpcommoditybroker')) {
+        const emailLower = String(s.email || '').toLowerCase();
+        if (emailLower.includes('mpcommoditybroker')) {
           return { ...s, ...melissaSupplier };
+        }
+        if (emailLower.includes('joybambooforestfarm')) {
+          return { ...s, ...svetlanaSupplier };
         }
         return s;
       });
       const hasMelissa = finalSuppliers.some(s => String(s.email || '').toLowerCase().includes('mpcommoditybroker'));
-      setSuppliers(hasMelissa ? finalSuppliers : [melissaSupplier, ...finalSuppliers]);
+      const hasSvetlana = finalSuppliers.some(s => String(s.email || '').toLowerCase().includes('joybambooforestfarm'));
+      let merged = [...finalSuppliers];
+      if (!hasMelissa) merged = [melissaSupplier, ...merged];
+      if (!hasSvetlana) merged = [svetlanaSupplier, ...merged];
+      setSuppliers(merged);
     } catch (err: any) {
       console.error('[RegisteredSuppliersAdmin] Failed to fetch suppliers:', err);
-      setSuppliers([melissaSupplier]);
+      setSuppliers([svetlanaSupplier, melissaSupplier]);
     } finally {
       setLoading(false);
     }

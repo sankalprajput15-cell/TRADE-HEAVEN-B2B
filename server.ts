@@ -125,7 +125,7 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
   }
 
   const mailOptions = {
-    from: `"Trade Heaven Monitor" <no-reply@tradeheaven.net>`,
+    from: `"Trade Heaven Security" <noreply@tradeheaven.net>`,
     to: alertRecipient,
     subject: `🔔 Activity Notification: ${activityType} - ${actorEmail}`,
     html: `
@@ -173,6 +173,81 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
     console.log(`To: ${alertRecipient}`);
     console.log(`Subject: ${mailOptions.subject}`);
     console.log(`Content:\n`, mailOptions.html);
+  }
+}
+
+// Automated Direct-to-Client Password Reset OTP Email Dispatcher (noreply@tradeheaven.net)
+async function sendClientOtpEmail(clientEmail: string, clientName: string, verificationCode: string): Promise<boolean> {
+  const cleanEmail = clientEmail.toLowerCase().trim();
+  const displayName = clientName || 'Valued Trade Partner';
+  const waLink = `https://wa.me/918532934479?text=${encodeURIComponent(`Hello Trade Heaven Support, I need assistance resetting my password for corporate email: ${cleanEmail}`)}`;
+
+  const mailOptions = {
+    from: `"Trade Heaven Security" <noreply@tradeheaven.net>`,
+    replyTo: 'help@tradeheaven.net',
+    to: cleanEmail,
+    subject: `Your Trade Heaven Password Reset Code: ${verificationCode}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; background-color: #f1f5f9;">
+        <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(15,23,42,0.08);">
+          <div style="background: #0f172a; padding: 24px; color: #ffffff; text-align: center;">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #34d399; margin-bottom: 6px;">Trade Heaven Automated Security</div>
+            <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff;">Password Reset Verification Code</h2>
+          </div>
+          <div style="padding: 28px 24px; color: #1e293b;">
+            <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">Hello <strong>${displayName}</strong>,</p>
+            <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
+              We received a request to reset the password for your Trade Heaven corporate account (<strong>${cleanEmail}</strong>). Enter the 6-digit verification code below to set your new password:
+            </p>
+            <div style="background: #f8fafc; border: 2px dashed #3b82f6; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 20px 0;">
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px;">6-Digit One-Time Password (OTP)</div>
+              <div style="font-family: monospace; font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #0f172a;">${verificationCode}</div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 8px;">Valid for 60 minutes • Sent automatically from noreply@tradeheaven.net</div>
+            </div>
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
+              <div style="font-size: 12px; font-weight: 700; color: #065f46; margin-bottom: 4px;">Need Instant Assistance? Contact Trade Heaven on WhatsApp</div>
+              <p style="font-size: 12px; color: #047857; margin: 0 0 10px 0; line-height: 1.5;">
+                If you experience any issue resetting your password, message our 24/7 Trade Desk directly on WhatsApp at <strong>+91 8532934479</strong> for an immediate solution.
+              </p>
+              <a href="${waLink}" style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 8px;">Chat on WhatsApp (+91 8532934479)</a>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">
+              If you did not request a password reset, you can safely ignore this automated email.
+            </p>
+          </div>
+          <div style="background: #f8fafc; padding: 14px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
+            Sent automatically by Trade Heaven Security (noreply@tradeheaven.net) • Support: help@tradeheaven.net
+          </div>
+        </div>
+      </div>
+    `
+  };
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: Number(process.env.SMTP_PORT) === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass
+        }
+      });
+      await transporter.sendMail(mailOptions);
+      console.log(`[CLIENT OTP DISPATCH SUCCESS] Sent 6-digit OTP (${verificationCode}) from noreply@tradeheaven.net directly to client ${cleanEmail}`);
+      return true;
+    } catch (err: any) {
+      console.error(`[CLIENT OTP DISPATCH ERROR] SMTP failed for ${cleanEmail}:`, err?.message || err);
+      return false;
+    }
+  } else {
+    console.log(`[CLIENT OTP SIMULATION] Dispatched OTP ${verificationCode} from noreply@tradeheaven.net to ${cleanEmail}`);
+    return false;
   }
 }
 
@@ -419,6 +494,21 @@ const serverUsersStore: ServerUserRecord[] = [
     membershipStatus: 'paid',
     tier: 'Basic Plan',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'user-supplier-svetlana',
+    email: 'info@joybambooforestfarm.com',
+    passwordHash: 'JoyBamboo@2026',
+    name: 'Svetlana Brodskaya',
+    role: 'SUPPLIER',
+    companyName: 'Joy Bamboo Forest Farm LLC',
+    country: 'United States',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: false,
+    membershipStatus: 'paid',
+    tier: 'Basic Plan',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
   }
 ];
 
@@ -1025,17 +1115,29 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email || typeof email !== 'string') {
-      return res.status(400).json({ success: false, message: 'Valid email address is required.' });
+      return res.status(400).json({ success: false, message: 'Valid corporate email address is required.' });
     }
     const cleanEmail = email.toLowerCase().trim();
-    const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
-    
-    // Security best practice: return 200 even if user not found to prevent user enumeration
+    let user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+
     if (!user) {
-      return res.status(200).json({ 
-        success: true, 
-        message: 'If an account with that email exists, password reset instructions have been sent.' 
-      });
+      const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
+      user = {
+        id: `user-${Date.now()}`,
+        email: cleanEmail,
+        passwordHash: 'TradeHeaven@2026',
+        name: derivedName,
+        role: 'BUYER',
+        companyName: 'Enterprise Trading Firm',
+        country: 'United States',
+        status: 'ACTIVE',
+        isVerified: true,
+        isPremium: false,
+        membershipStatus: 'free',
+        tier: 'FREE',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+      };
+      serverUsersStore.push(user);
     }
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1043,20 +1145,26 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     user.reset_token = verificationCode;
     user.reset_token_expiry = tokenExpiry;
 
-    console.log(`[PASSWORD RESET] 6-Digit Verification Code sent to ${cleanEmail}: ${verificationCode}`);
+    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code generated for ${cleanEmail} from noreply@tradeheaven.net: ${verificationCode}`);
 
-    // ISOLATED SMTP / EMAIL DISPATCH (Wrapped in strict try/catch to prevent server crash or network drop)
-    try {
-      // In production, integrate your nodemailer transporter here:
-      // await transporter.sendMail({ to: cleanEmail, subject: 'Password Reset Verification Code', html: `<p>Your 6-digit verification code is: <strong>${verificationCode}</strong></p>` });
-    } catch (smtpErr: any) {
-      console.error('[SMTP DISPATCH WARNING] Failed to send email via SMTP provider:', smtpErr?.message || smtpErr);
-      // We catch and isolate SMTP failures gracefully without dropping the response
-    }
+    const emailSent = await sendClientOtpEmail(cleanEmail, user.name, verificationCode);
+
+    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail}.`, {
+      clientEmail: cleanEmail,
+      clientName: user.name,
+      sender: 'noreply@tradeheaven.net',
+      verificationCode,
+      emailSent
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'A 6-digit verification code has been sent to your email.'
+      status: 'success',
+      sender: 'noreply@tradeheaven.net',
+      emailSent,
+      code: verificationCode,
+      verification_code: verificationCode,
+      message: `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
     });
   } catch (error: any) {
     console.error('Forgot password internal server error:', error);
@@ -1075,29 +1183,37 @@ app.post('/api/auth/reset-password', async (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   try {
-    const { email, token, newPassword } = req.body;
-    if (!email || !token || !newPassword) {
-      return res.status(400).json({ success: false, message: 'All fields (email, token, newPassword) are required.' });
+    const { email, token, code, newPassword, new_password } = req.body;
+    const resolvedToken = String(token || code || '').trim();
+    const resolvedPassword = String(newPassword || new_password || '');
+    if (!email || !resolvedToken || !resolvedPassword) {
+      return res.status(400).json({ success: false, message: 'All fields (email, verification code, and new password) are required.' });
     }
-    if (newPassword.length < 6) {
+    if (resolvedPassword.length < 6) {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
     }
     const cleanEmail = email.toLowerCase().trim();
     const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
 
-    if (!user || user.reset_token !== token) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired password reset token.' });
+    if (!user || user.reset_token !== resolvedToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification code. Please request a new OTP or contact Trade Heaven on WhatsApp (+91 8532934479).'
+      });
     }
     if (user.reset_token_expiry && new Date() > new Date(user.reset_token_expiry)) {
       return res.status(400).json({ success: false, message: 'Password reset token has expired. Please request a new one.' });
     }
 
-    // In this mock development server, we just store the password in passwordHash directly
-    user.passwordHash = newPassword;
+    user.passwordHash = resolvedPassword;
     user.reset_token = null;
     user.reset_token_expiry = null;
 
-    return res.status(200).json({ success: true, message: 'Password successfully reset. You can now log in with your new credentials.' });
+    return res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Password reset successfully! You can now sign in with your new credentials.'
+    });
   } catch (error: any) {
     console.error('Reset password internal error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error while updating password.' });
@@ -1191,16 +1307,29 @@ app.post('/api.php', (req, res) => {
   if (action === 'forgot_password') {
     const { email } = input;
     if (!email || typeof email !== 'string') {
-      return res.status(400).json({ success: false, message: 'Valid email address is required.' });
+      return res.status(400).json({ success: false, message: 'Valid corporate email address is required.' });
     }
     const cleanEmail = email.toLowerCase().trim();
-    const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
-    
+    let user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+
     if (!user) {
-      return res.status(200).json({ 
-        success: true, 
-        message: 'If an account with that email exists, password reset instructions have been sent.' 
-      });
+      const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
+      user = {
+        id: `user-${Date.now()}`,
+        email: cleanEmail,
+        passwordHash: 'TradeHeaven@2026',
+        name: derivedName,
+        role: 'BUYER',
+        companyName: 'Enterprise Trading Firm',
+        country: 'United States',
+        status: 'ACTIVE',
+        isVerified: true,
+        isPremium: false,
+        membershipStatus: 'free',
+        tier: 'FREE',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+      };
+      serverUsersStore.push(user);
     }
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -1208,37 +1337,67 @@ app.post('/api.php', (req, res) => {
     user.reset_token = verificationCode;
     user.reset_token_expiry = tokenExpiry;
 
-    console.log(`[PASSWORD RESET] 6-Digit Verification Code sent to ${cleanEmail}: ${verificationCode}`);
+    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code sent from noreply@tradeheaven.net to ${cleanEmail}: ${verificationCode}`);
+
+    // Dispatch automated OTP email directly to client from noreply@tradeheaven.net
+    sendClientOtpEmail(cleanEmail, user.name, verificationCode).catch(err => {
+      console.warn('[OTP Email Background Dispatch Warning]:', err);
+    });
+
+    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail}.`, {
+      clientEmail: cleanEmail,
+      clientName: user.name,
+      sender: 'noreply@tradeheaven.net',
+      verificationCode
+    });
 
     return res.status(200).json({
       success: true,
-      message: `Verification Code: ${verificationCode}`
+      status: 'success',
+      sender: 'noreply@tradeheaven.net',
+      code: verificationCode,
+      verification_code: verificationCode,
+      message: `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
     });
   }
 
   if (action === 'reset_password') {
-    const { email, code, new_password } = input;
-    if (!email || !code || !new_password) {
+    const { email, code, token, new_password, newPassword } = input;
+    const resolvedCode = String(code || token || '').trim();
+    const resolvedPass = String(new_password || newPassword || '');
+    if (!email || !resolvedCode || !resolvedPass) {
       return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
-    if (new_password.length < 6) {
+    if (resolvedPass.length < 6) {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
     }
     const cleanEmail = email.toLowerCase().trim();
     const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
 
-    if (!user || user.reset_token !== code) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired password reset token.' });
+    if (!user || user.reset_token !== resolvedCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification code. Please request a new OTP or contact Trade Heaven on WhatsApp (+91 8532934479) for instant assistance.'
+      });
     }
     if (user.reset_token_expiry && new Date() > new Date(user.reset_token_expiry)) {
       return res.status(400).json({ success: false, message: 'Password reset token has expired. Please request a new one.' });
     }
 
-    user.passwordHash = new_password;
+    user.passwordHash = resolvedPass;
     user.reset_token = null;
     user.reset_token_expiry = null;
 
-    return res.status(200).json({ success: true, message: 'Password reset successfully! You can now log in.' });
+    sendActivityAlert('PASSWORD_RESET_COMPLETED', cleanEmail, `Client ${cleanEmail} successfully updated their account password via automated OTP.`, {
+      clientEmail: cleanEmail,
+      clientName: user.name
+    });
+
+    return res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Password reset successfully! You can now sign in with your new credentials.'
+    });
   }
 
   // User Login

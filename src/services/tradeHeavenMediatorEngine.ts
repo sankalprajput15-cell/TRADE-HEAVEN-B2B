@@ -40,7 +40,11 @@ export function isBasicPlanStatus(planOrTier?: string | null, entityId?: string 
   if (
     normalizedEntity === 'comp-zac-importation-fadetech' ||
     normalizedEntity === 'user-supplier-zac' ||
-    normalizedEntity.includes('zac')
+    normalizedEntity.includes('zac') ||
+    normalizedEntity === 'comp-joy-bamboo-forest-farm' ||
+    normalizedEntity === 'user-supplier-svetlana' ||
+    normalizedEntity.includes('joy-bamboo') ||
+    normalizedEntity.includes('joy bamboo')
   ) {
     return true;
   }
@@ -572,6 +576,21 @@ export class TradeHeavenSqlPoolAdapter {
         country: 'Australia',
         native_currency: 'AUD',
         native_symbol: 'A$',
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'wal-supp-joy-bamboo',
+        entity_id: 'comp-joy-bamboo-forest-farm',
+        entity_name: 'Svetlana Brodskaya',
+        company_name: 'Joy Bamboo Forest Farm LLC',
+        wallet_type: 'SUPPLIER',
+        plan_status: 'BASIC',
+        available_balance: '0',
+        locked_balance: '0',
+        currency: 'USD',
+        country: 'United States',
+        native_currency: 'USD',
+        native_symbol: '$',
         updated_at: new Date().toISOString()
       },
       {

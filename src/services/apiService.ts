@@ -63,26 +63,52 @@ const MELISSA_SUPPLIER_USER: AuthUser = {
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
 };
 
+const SVETLANA_SUPPLIER_USER: AuthUser = {
+  id: 'user-supplier-svetlana',
+  name: 'Svetlana Brodskaya',
+  email: 'info@joybambooforestfarm.com',
+  phone: '7901 4th Stan Ste 300, Saint Petersburg, FL 33702 (Farm Pickup: Sebring, FL)',
+  companyName: 'Joy Bamboo Forest Farm LLC',
+  country: 'United States',
+  role: 'SUPPLIER',
+  status: 'ACTIVE',
+  isVerified: true,
+  isPremium: false,
+  membershipStatus: 'paid',
+  tier: 'Basic Plan' as any,
+  plan: 'Basic Plan (Paid Supplier)',
+  joinedDate: '2026-10-23',
+  avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+};
+
 function loadStoredUsers(): Record<string, AuthUser> {
   let base: Record<string, AuthUser> = {
     ...DEFAULT_USERS,
-    'user-supplier-melissa': MELISSA_SUPPLIER_USER
+    'user-supplier-melissa': MELISSA_SUPPLIER_USER,
+    'user-supplier-svetlana': SVETLANA_SUPPLIER_USER
   };
   try {
     const saved = localStorage.getItem(USERS_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       base = { ...base, ...parsed };
-      // Ensure Melissa's supplier record is always up-to-date with Paid Basic Plan ($1,100 USD) and Fuel details
+      // Ensure Melissa & Svetlana supplier records are always up-to-date
       Object.keys(base).forEach(k => {
         const u = base[k];
         if (u && u.email && u.email.toLowerCase().includes('mpcommoditybroker') && k !== 'user-supplier-melissa') {
+          delete base[k];
+        }
+        if (u && u.email && u.email.toLowerCase().includes('joybambooforestfarm') && k !== 'user-supplier-svetlana') {
           delete base[k];
         }
       });
       base['user-supplier-melissa'] = {
         ...(base['user-supplier-melissa'] || {}),
         ...MELISSA_SUPPLIER_USER
+      };
+      base['user-supplier-svetlana'] = {
+        ...(base['user-supplier-svetlana'] || {}),
+        ...SVETLANA_SUPPLIER_USER
       };
     }
   } catch {}
@@ -106,7 +132,12 @@ function loadStoredSuppliers(): CompanyProfile[] {
   
   const mockMap = new Map<string, CompanyProfile>();
   MOCK_COMPANIES.forEach(s => mockMap.set(s.id, s));
-  const userCreated = stored.filter(s => !mockMap.has(s.id) && !(s.contactEmail || '').toLowerCase().includes('mpcommoditybroker'));
+  const userCreated = stored.filter(
+    s =>
+      !mockMap.has(s.id) &&
+      !(s.contactEmail || '').toLowerCase().includes('mpcommoditybroker') &&
+      !(s.contactEmail || '').toLowerCase().includes('joybambooforestfarm')
+  );
   return [...MOCK_COMPANIES, ...userCreated];
 }
 
@@ -191,6 +222,7 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
   );
   existingEmails.add('melissa@mpcommoditybroker.com');
   existingEmails.add('melissa@mpcommoditybrokers.com');
+  existingEmails.add('info@joybambooforestfarm.com');
   const existingCompanies = new Set(
     baseSuppliers.map(s => (s.companyName || '').toLowerCase()).filter(Boolean)
   );
@@ -204,7 +236,9 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
     const companyLower = (u.companyName || '').toLowerCase();
     if (
       u.id === 'user-supplier-melissa' ||
+      u.id === 'user-supplier-svetlana' ||
       emailLower.includes('mpcommoditybroker') ||
+      emailLower.includes('joybambooforestfarm') ||
       (emailLower && existingEmails.has(emailLower)) ||
       (companyLower && existingCompanies.has(companyLower))
     ) {

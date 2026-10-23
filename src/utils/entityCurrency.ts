@@ -257,6 +257,12 @@ export const ENTITY_TO_COUNTRY_MAP: Record<string, string> = {
   'zac': 'AU',
   'importation fade-tech': 'AU',
 
+  'comp-joy-bamboo-forest-farm': 'US',
+  'wal-supp-joy-bamboo': 'US',
+  'user-supplier-svetlana': 'US',
+  'joy bamboo': 'US',
+  'svetlana brodskaya': 'US',
+
   'comp-shenzhen-solar': 'CN',
   'wal-supp-shenzhen': 'CN',
   'shenzhen lumina': 'CN',

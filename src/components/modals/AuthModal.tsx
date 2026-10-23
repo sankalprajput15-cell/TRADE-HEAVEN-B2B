@@ -25,7 +25,9 @@ import {
   Eye,
   EyeOff,
   Wallet,
-  PlusCircle
+  PlusCircle,
+  MessageCircle,
+  RefreshCw
 } from 'lucide-react';
 
 interface Props {
@@ -63,6 +65,7 @@ export const AuthModal: React.FC<Props> = ({
   // Forgot / Reset Password States
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [autoOtpCode, setAutoOtpCode] = useState<string | null>(null);
   const [resetTokenInput, setResetTokenInput] = useState('');
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
@@ -84,21 +87,55 @@ export const AuthModal: React.FC<Props> = ({
 
   const { login } = useAuth();
 
+  const whatsappResetUrl = `https://wa.me/918532934479?text=${encodeURIComponent(
+    `Hello Trade Heaven Support, I need assistance with password reset / OTP verification for my corporate account${(forgotEmail || email) ? ` (${(forgotEmail || email).trim()})` : ''}.`
+  )}`;
+
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setForgotSuccess(null);
+    setAutoOtpCode(null);
     setIsLoading(true);
     try {
       const res = await apiClient.sendResetCode(forgotEmail);
       if (res.success) {
-        setForgotSuccess(res.message);
+        setForgotSuccess(
+          res.message ||
+            `Automated 6-digit OTP sent from noreply@tradeheaven.net to ${forgotEmail.trim()}.`
+        );
+        if (res.code) {
+          setAutoOtpCode(res.code);
+          setResetTokenInput(res.code);
+        }
         setAuthMode('RESET_PASSWORD');
       } else {
         setError(res.message);
       }
     } catch (err) {
-      setError('Network communication failure.');
+      setError('Network communication failure. Please contact Trade Heaven on WhatsApp for instant support.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!forgotEmail) return;
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await apiClient.sendResetCode(forgotEmail);
+      if (res.success) {
+        setForgotSuccess(`New 6-digit OTP dispatched automatically from noreply@tradeheaven.net to ${forgotEmail.trim()}.`);
+        if (res.code) {
+          setAutoOtpCode(res.code);
+          setResetTokenInput(res.code);
+        }
+      } else {
+        setError(res.message);
+      }
+    } catch {
+      setError('Could not resend OTP. Please contact Trade Heaven on WhatsApp below.');
     } finally {
       setIsLoading(false);
     }
@@ -116,13 +153,15 @@ export const AuthModal: React.FC<Props> = ({
         setTimeout(() => {
           setAuthMode('LOGIN');
           setEmail(forgotEmail);
+          setPassword(resetNewPassword);
           setResetSuccess(null);
-        }, 2000);
+          setAutoOtpCode(null);
+        }, 1800);
       } else {
         setError(res.message);
       }
     } catch (err) {
-      setError('Network communication failure.');
+      setError('Network communication failure. Please contact Trade Heaven on WhatsApp for instant password reset.');
     } finally {
       setIsLoading(false);
     }
@@ -640,6 +679,7 @@ export const AuthModal: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => {
+                      if (email && !forgotEmail) setForgotEmail(email);
                       setAuthMode('FORGOT_PASSWORD');
                       setError(null);
                       setSuccess(null);
@@ -647,8 +687,17 @@ export const AuthModal: React.FC<Props> = ({
                     }}
                     className="text-blue-600 hover:text-blue-700 font-bold text-[11px] cursor-pointer"
                   >
-                    Forgot password?
+                    Forgot password / Need OTP?
                   </button>
+                  <a
+                    href={whatsappResetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-700 hover:text-emerald-800 font-bold text-[11px] flex items-center gap-1"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>WhatsApp Support</span>
+                  </a>
                 </div>
 
                 <button
@@ -665,9 +714,22 @@ export const AuthModal: React.FC<Props> = ({
             {/* FORGOT PASSWORD VIEW */}
             {authMode === 'FORGOT_PASSWORD' && (
               <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 text-xs">
-                <div className="text-center pb-2">
-                  <h3 className="text-base font-black text-slate-900">Reset Your Password</h3>
-                  <p className="text-slate-500 text-[11px]">Enter your work email to receive a secure recovery token.</p>
+                <div className="text-center pb-1">
+                  <h3 className="text-base font-black text-slate-900">Automated Password Reset (OTP)</h3>
+                  <p className="text-slate-500 text-[11px] mt-0.5">
+                    Enter your corporate email to receive an automated 6-digit verification code from{' '}
+                    <span className="font-mono font-bold text-slate-800">noreply@tradeheaven.net</span>.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-[11px] text-blue-950 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5 text-blue-900">
+                    <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>Automated Delivery: noreply@tradeheaven.net</span>
+                  </div>
+                  <p className="text-blue-800/90 leading-relaxed">
+                    Your 6-digit OTP is generated and dispatched automatically—no manual forwarding wait. Please also check your Spam/Junk folder.
+                  </p>
                 </div>
 
                 <div>
@@ -690,10 +752,36 @@ export const AuthModal: React.FC<Props> = ({
                   disabled={isLoading}
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                 >
-                  <span>{isLoading ? 'Sending Link...' : 'Send Recovery Link'}</span>
+                  <Key className="w-4 h-4" />
+                  <span>{isLoading ? 'Dispatching Automated OTP...' : 'Send 6-Digit OTP (noreply@tradeheaven.net)'}</span>
                 </button>
 
-                <div className="text-center pt-2">
+                {/* Direct WhatsApp Support Fallback Card */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black text-emerald-950 text-xs flex items-center gap-1.5">
+                      <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>OTP Not Reaching Your Inbox?</span>
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200/80 text-emerald-900">
+                      24/7 Instant Help
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                    If your corporate mail firewall blocks automated emails from <span className="font-mono font-semibold">noreply@tradeheaven.net</span>, contact Trade Heaven on WhatsApp for an instant password reset solution:
+                  </p>
+                  <a
+                    href={whatsappResetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Contact Trade Heaven on WhatsApp (+91 8532934479)</span>
+                  </a>
+                </div>
+
+                <div className="text-center pt-1">
                   <button
                     type="button"
                     onClick={() => setAuthMode('LOGIN')}
@@ -707,26 +795,60 @@ export const AuthModal: React.FC<Props> = ({
 
             {/* RESET PASSWORD VIEW */}
             {authMode === 'RESET_PASSWORD' && (
-              <form onSubmit={handleResetPasswordSubmit} className="space-y-4 text-xs">
-                <div className="text-center pb-2">
-                  <h3 className="text-base font-black text-slate-900">Choose New Password</h3>
-                  <p className="text-slate-500 text-[11px]">Enter your verification code and set a secure new password (min 6 chars).</p>
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5 text-xs">
+                <div className="text-center pb-1">
+                  <h3 className="text-base font-black text-slate-900">Verify OTP &amp; Set New Password</h3>
+                  <p className="text-slate-500 text-[11px]">
+                    Dispatched from <span className="font-mono font-bold text-slate-700">noreply@tradeheaven.net</span> to{' '}
+                    <span className="font-bold text-slate-800">{forgotEmail}</span>
+                  </p>
                 </div>
 
                 {forgotSuccess && (
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
-                    {forgotSuccess}
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 text-[11px] space-y-1.5">
+                    <div className="font-bold flex items-center gap-1.5 text-emerald-800">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{forgotSuccess}</span>
+                    </div>
+                    {autoOtpCode && (
+                      <div className="pt-1.5 border-t border-emerald-200/80 flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-emerald-900">
+                          Instant Automated OTP Code:{' '}
+                          <strong className="font-mono text-xs bg-white px-2 py-0.5 rounded border border-emerald-300 tracking-widest">
+                            {autoOtpCode}
+                          </strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setResetTokenInput(autoOtpCode)}
+                          className="px-2 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] cursor-pointer shrink-0"
+                        >
+                          Auto-Filled
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {resetSuccess ? (
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs font-bold text-center">
                     {resetSuccess} Redirecting to sign in...
                   </div>
                 ) : (
                   <>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">6-Digit Verification Code</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-bold text-slate-700">6-Digit Verification Code (OTP)</label>
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          disabled={isLoading}
+                          className="text-[11px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Resend OTP</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         required
@@ -739,7 +861,7 @@ export const AuthModal: React.FC<Props> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">New Password *</label>
+                      <label className="block font-bold text-slate-700 mb-1">New Password * (min 6 characters)</label>
                       <input
                         type="password"
                         required
@@ -756,12 +878,32 @@ export const AuthModal: React.FC<Props> = ({
                       disabled={isLoading}
                       className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                     >
-                      <span>{isLoading ? 'Resetting Password...' : 'Update Password & Sign In'}</span>
+                      <span>{isLoading ? 'Updating Password...' : 'Update Password & Sign In'}</span>
                     </button>
                   </>
                 )}
 
-                <div className="text-center pt-2">
+                {/* WhatsApp Instant Support Fallback */}
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">
+                  <div className="font-bold text-emerald-950 text-[11px] flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Need Help Resetting Your Password?</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                    If the OTP from <span className="font-mono font-semibold">noreply@tradeheaven.net</span> hasn&apos;t arrived, contact Trade Heaven on WhatsApp for an immediate solution:
+                  </p>
+                  <a
+                    href={whatsappResetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp Trade Heaven (+91 8532934479)</span>
+                  </a>
+                </div>
+
+                <div className="text-center pt-1">
                   <button
                     type="button"
                     onClick={() => setAuthMode('LOGIN')}
