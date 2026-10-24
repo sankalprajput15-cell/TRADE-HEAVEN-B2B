@@ -397,7 +397,7 @@ export function buildCustomLink(target: CustomLinkTarget): GeneratedCustomLink {
 
   // Formulate share messages
   const notePrefix = target.customNote ? `💬 Note: "${target.customNote}"\n\n` : '';
-  const shareText = `${notePrefix}✨ ${title}\n${summary}\n\n👉 Open direct link:\n${fullUrl}`;
+  const shareText = `${notePrefix}${title}\n${summary}\n\n👉 Open direct link:\n${fullUrl}`;
 
   const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
   const emailUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(

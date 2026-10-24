@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Copy, Check, ArrowRight, Gift, Maximize2, X, ShieldCheck } from 'lucide-react';
+import { Copy, Check, ArrowRight, Gift, Maximize2, X, ShieldCheck } from 'lucide-react';
 import { ActiveView } from '../../types';
 
 export const DIWALI_OFFER_BANNER_IMAGE = '/assets/aistudio/Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png';
@@ -64,8 +64,7 @@ export const DiwaliOfferBanner: React.FC<DiwaliOfferBannerProps> = ({
                 />
               </button>
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
-                  <Sparkles className="w-3 h-3" />
+                <span className="inline-flex items-center px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
                   Diwali Maha Utsav
                 </span>
                 <span className="font-bold text-amber-100 text-xs sm:text-sm">

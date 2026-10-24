@@ -1988,6 +1988,8 @@ const MainApp: React.FC = () => {
                 return (
                   <CountryTradeHubView
                     initialCountryId="uk"
+                    products={products}
+                    onSelectProduct={handleSelectProduct}
                     onOpenProductModal={(title) => {
                       const prod = products.find(p => p && p.title && p.title.toLowerCase().includes((title || '').toLowerCase()));
                       if (prod) setSelectedProduct(prod);

@@ -58,6 +58,66 @@ html, body {
   animation: scalePulse 2.2s ease-in-out infinite;
 }
 
+/* SVG World Map Active Trade Corridor Flow Animations */
+@keyframes tradeFlowDash {
+  0% {
+    stroke-dashoffset: 60;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes tradePacketStream {
+  0% {
+    stroke-dashoffset: 220;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes hubBeaconPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.32);
+    opacity: 0.3;
+  }
+}
+
+.trade-flow-line-active {
+  stroke-dasharray: 8 7;
+  animation: tradeFlowDash 1.6s linear infinite;
+}
+
+.trade-flow-line-ambient {
+  stroke-dasharray: 4 8;
+  animation: tradeFlowDash 3.6s linear infinite;
+}
+
+.trade-flow-packet {
+  stroke-dasharray: 18 202;
+  animation: tradePacketStream 2.4s linear infinite;
+}
+
+.hub-beacon-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hubBeaconPulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trade-flow-line-active,
+  .trade-flow-line-ambient,
+  .trade-flow-packet,
+  .hub-beacon-ring {
+    animation: none;
+  }
+}
+
 
 
 /* Google Translate Overrides */
