@@ -7,6 +7,12 @@ import { LanguageRegionSelector } from './LanguageRegionSelector';
 import { HeaderWalletBalance } from './HeaderWalletBalance';
 import { SafeImage } from '../common/SafeImage';
 import {
+  SearchAutoSuggestDropdown,
+  useSearchAutoSuggest,
+  CategorySuggestion,
+  SupplierSuggestion
+} from '../common/SearchAutoSuggestDropdown';
+import {
   PlusCircle,
   LogIn,
   UserPlus,
@@ -60,6 +66,7 @@ interface Props {
   unreadMessagesCount?: number;
   products?: Product[];
   onSelectProduct?: (product: Product) => void;
+  onOpenStorefront?: (companyId: string) => void;
   onNavigateToCategory?: (category: string, subcategory?: string) => void;
   onNavigateToSearch?: (query: string) => void;
 }
@@ -92,12 +99,15 @@ export const Header: React.FC<Props> = ({
   onLogout,
   products = [],
   onSelectProduct,
+  onOpenStorefront,
+  onNavigateToCategory,
   onNavigateToSearch
 }) => {
   const { setCurrentUser, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [activeSuggestIndex, setActiveSuggestIndex] = useState(-1);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
@@ -133,11 +143,12 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const trimmed = searchTerm.trim();
     setSearchFocused(false);
     setUserMenuOpen(false);
+    setActiveSuggestIndex(-1);
     if (onNavigateToSearch) {
       onNavigateToSearch(trimmed);
     } else {
@@ -145,18 +156,86 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const matchingSuggestions = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q || q.length < 2) return [];
-    return products
-      .filter(
-        p =>
-          p.title.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.id.toLowerCase().includes(q)
-      )
-      .slice(0, 5);
-  }, [products, searchTerm]);
+  const autoSuggestions = useSearchAutoSuggest(searchTerm, products, 5, 5, 3);
+
+  const handleSelectSuggestedCategory = (cat: CategorySuggestion) => {
+    setSearchTerm(cat.name);
+    setSearchFocused(false);
+    setActiveSuggestIndex(-1);
+    if (onNavigateToCategory) {
+      if (cat.isSubcategory && cat.parentCategory) {
+        onNavigateToCategory(cat.parentCategory, cat.name);
+      } else {
+        onNavigateToCategory(cat.name, '');
+      }
+    } else if (onNavigateToSearch) {
+      onNavigateToSearch(cat.name);
+    } else {
+      handleNavClick('PRODUCT_DIRECTORY');
+    }
+  };
+
+  const handleSelectSuggestedSupplier = (supp: SupplierSuggestion) => {
+    setSearchTerm(supp.companyName);
+    setSearchFocused(false);
+    setActiveSuggestIndex(-1);
+    if (onOpenStorefront && supp.id && !supp.id.startsWith('supp-')) {
+      onOpenStorefront(supp.id);
+    } else if (onNavigateToSearch) {
+      onNavigateToSearch(supp.companyName);
+    } else {
+      handleNavClick('SUPPLIERS_DIRECTORY');
+    }
+  };
+
+  const handleSelectSuggestedProduct = (prod: Product) => {
+    setSearchTerm(prod.title);
+    setSearchFocused(false);
+    setActiveSuggestIndex(-1);
+    if (onSelectProduct) {
+      onSelectProduct(prod);
+    } else if (onNavigateToSearch) {
+      onNavigateToSearch(prod.title);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const totalItems =
+      autoSuggestions.categories.length +
+      autoSuggestions.suppliers.length +
+      autoSuggestions.products.length;
+
+    if (e.key === 'Escape') {
+      setSearchFocused(false);
+      setActiveSuggestIndex(-1);
+      return;
+    }
+    if (!totalItems) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSearchFocused(true);
+      setActiveSuggestIndex((prev) => (prev + 1) % totalItems);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSearchFocused(true);
+      setActiveSuggestIndex((prev) => (prev <= 0 ? totalItems - 1 : prev - 1));
+    } else if (e.key === 'Enter' && activeSuggestIndex >= 0) {
+      e.preventDefault();
+      const catLen = autoSuggestions.categories.length;
+      const suppLen = autoSuggestions.suppliers.length;
+      if (activeSuggestIndex < catLen) {
+        handleSelectSuggestedCategory(autoSuggestions.categories[activeSuggestIndex]);
+      } else if (activeSuggestIndex < catLen + suppLen) {
+        handleSelectSuggestedSupplier(autoSuggestions.suppliers[activeSuggestIndex - catLen]);
+      } else {
+        const prodIdx = activeSuggestIndex - catLen - suppLen;
+        if (autoSuggestions.products[prodIdx]) {
+          handleSelectSuggestedProduct(autoSuggestions.products[prodIdx]);
+        }
+      }
+    }
+  };
 
   const isPaidAndRegisteredMember = useMemo(() => {
     if (!currentUser) return false;
@@ -316,7 +395,55 @@ export const Header: React.FC<Props> = ({
           </nav>
         </div>
 
+        {/* Zone 2: Global Search Bar with Real-Time Category & Supplier Auto-Suggest Dropdown */}
+        <div ref={searchWrapperRef} className="relative flex-1 max-w-xs sm:max-w-sm lg:max-w-md mx-1 sm:mx-2 min-w-[130px]">
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+            <Search className="absolute left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <input
+              id="header-global-search-input"
+              type="text"
+              value={searchTerm}
+              onFocus={() => setSearchFocused(true)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setSearchFocused(true);
+                setActiveSuggestIndex(-1);
+              }}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search categories, suppliers, products..."
+              className="w-full h-8 sm:h-9 pl-8 pr-7 rounded-xl bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 text-xs text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              autoComplete="off"
+              aria-autocomplete="list"
+              aria-expanded={searchFocused && searchTerm.trim().length > 0}
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setActiveSuggestIndex(-1);
+                }}
+                className="absolute right-2 p-0.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </form>
 
+          {searchFocused && searchTerm.trim().length > 0 && (
+            <SearchAutoSuggestDropdown
+              query={searchTerm}
+              suggestions={autoSuggestions}
+              activeIndex={activeSuggestIndex}
+              onSelectCategory={handleSelectSuggestedCategory}
+              onSelectSupplier={handleSelectSuggestedSupplier}
+              onSelectProduct={handleSelectSuggestedProduct}
+              onViewAllResults={() => handleSearchSubmit()}
+              className="absolute top-full left-0 right-0 mt-1.5 min-w-[290px] sm:min-w-[380px]"
+            />
+          )}
+        </div>
 
         {/* Zone 3: Wallet Balance, Primary CTA & Account Menu */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

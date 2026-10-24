@@ -36,6 +36,7 @@ import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
 import { OptimizedHeroImage } from '../common/OptimizedHeroImage';
 import { getDynamicHeroImageForView } from '../../utils/heroImageOptimization';
+import { useSearchAutoSuggest, HighlightedMatch } from '../common/SearchAutoSuggestDropdown';
 
 interface Props {
   onSearch: (query: string, category: string, targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS') => void;
@@ -189,6 +190,7 @@ export const HeroSection: React.FC<Props> = ({
   };
 
   const activeRfqPool = useMemo(() => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS), [rfqs]);
+  const autoSuggest = useSearchAutoSuggest(searchQuery, products, 8, 8, 4);
 
   // Full-Site Multi-Index Search Query Matcher
   const searchResults = useMemo(() => {
@@ -858,6 +860,111 @@ export const HeroSection: React.FC<Props> = ({
                   </div>
                 ) : (
                   <>
+                    {/* REAL-TIME AUTO-SUGGEST: MATCHING PRODUCT CATEGORIES & SUPPLIER NAMES */}
+                    {searchQuery.trim().length > 0 && (autoSuggest.categories.length > 0 || autoSuggest.suppliers.length > 0) && (
+                      <div
+                        id="hero-realtime-autosuggest-section"
+                        className="p-3.5 rounded-2xl bg-white border border-blue-200/80 shadow-xs space-y-3.5"
+                      >
+                        {autoSuggest.categories.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                              <span className="flex items-center gap-1.5 text-blue-700">
+                                <Layers className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Matching Product Categories</span>
+                              </span>
+                              <span className="font-mono text-slate-400">{autoSuggest.categories.length}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                              {autoSuggest.categories.map((cat) => (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setIsSearchPopoverOpen(false);
+                                    if (cat.isSubcategory && cat.parentCategory) {
+                                      setSelectedCat(cat.parentCategory);
+                                      setSearchQuery(cat.name);
+                                      onSearch(cat.name, cat.parentCategory, 'PRODUCTS');
+                                    } else {
+                                      setSelectedCat(cat.name);
+                                      onSearch('', cat.name, 'PRODUCTS');
+                                    }
+                                    onNavigate?.('PRODUCT_DIRECTORY');
+                                  }}
+                                  className="px-3 py-2 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                                >
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                                      <HighlightedMatch text={cat.name} query={searchQuery} />
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 truncate">
+                                      {cat.isSubcategory && cat.parentCategory
+                                        ? `in ${cat.parentCategory}`
+                                        : 'Primary Sector'}{' '}
+                                      · {cat.productCount > 0 ? `${cat.productCount} listings` : cat.supplierCountLabel || 'Verified sector'}
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {autoSuggest.suppliers.length > 0 && (
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                              <span className="flex items-center gap-1.5 text-amber-800">
+                                <Building2 className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Matching Supplier Names &amp; Exporters</span>
+                              </span>
+                              <span className="font-mono text-slate-400">{autoSuggest.suppliers.length}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                              {autoSuggest.suppliers.map((supp) => (
+                                <button
+                                  key={supp.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (supp.id && !supp.id.startsWith('supp-')) {
+                                      handleSupplierClick(supp.id);
+                                    } else {
+                                      setIsSearchPopoverOpen(false);
+                                      onSearch(supp.companyName, '', 'SUPPLIERS');
+                                      onNavigate?.('SUPPLIERS_DIRECTORY');
+                                    }
+                                  }}
+                                  className="px-3 py-2 rounded-xl border border-slate-200/80 hover:border-amber-500 hover:bg-amber-50/40 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                                >
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-bold text-slate-900 group-hover:text-amber-800 truncate flex items-center gap-1">
+                                      <span className="truncate">
+                                        <HighlightedMatch text={supp.companyName} query={searchQuery} />
+                                      </span>
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 truncate">
+                                      {supp.contactPerson ? (
+                                        <>
+                                          <span className="font-medium text-slate-700">
+                                            <HighlightedMatch text={supp.contactPerson} query={searchQuery} />
+                                          </span>{' '}
+                                          ·{' '}
+                                        </>
+                                      ) : null}
+                                      {supp.country} · <span className="font-semibold text-amber-700">{supp.tier}</span>
+                                    </div>
+                                  </div>
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-700 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* SECTION 1: MATCHED BUY LEADS & RFQS */}
                     {(activeFilter === 'ALL' || activeFilter === 'RFQS') && searchResults.rfqs.length > 0 && (
                       <div className="space-y-2.5">

@@ -98,10 +98,10 @@ export class ServerDeliveryQueueManager {
   }
 
   private getDefaultTransporter(): nodemailer.Transporter | null {
-    const host = (process.env.SMTP_HOST || process.env.NOREPLY_SMTP_HOST || '').trim();
-    const port = Number(process.env.SMTP_PORT || process.env.NOREPLY_SMTP_PORT || 587);
-    const user = (process.env.SMTP_USER || process.env.NOREPLY_SMTP_USER || '').trim();
-    const pass = (process.env.SMTP_PASS || process.env.NOREPLY_SMTP_PASS || '').trim();
+    const host = (process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net').trim();
+    const port = Number(process.env.NOREPLY_SMTP_PORT || 465);
+    const user = (process.env.NOREPLY_SMTP_USER || 'noreply@tradeheaven.net').trim();
+    const pass = (process.env.NOREPLY_SMTP_PASS || '').trim();
 
     if (!host || !user || !pass) {
       return null;
@@ -111,6 +111,7 @@ export class ServerDeliveryQueueManager {
       host,
       port,
       secure: port === 465,
+      name: 'tradeheaven.net',
       auth: { user, pass }
     });
   }
@@ -354,7 +355,7 @@ export const serverDeliveryQueueManager = new ServerDeliveryQueueManager(2000);
 export class AutomatedSmtpService {
   public readonly senderAddress = 'noreply@tradeheaven.net';
   public readonly senderFormatted = '"Trade Heaven Security" <noreply@tradeheaven.net>';
-  public readonly replyToAddress = 'noreply@tradeheaven.net';
+  public readonly replyToAddress = 'help@tradeheaven.net';
   public readonly whatsappSupportNumber = '+91 8532934479';
   public readonly remoteMtaGatewayUrl = 'https://tradeheaven.net/api.php';
 
@@ -362,13 +363,13 @@ export class AutomatedSmtpService {
   private recentDispatches = new Map<string, { timestamp: number; result: SmtpDispatchResult }>();
 
   /**
-   * Prioritize the verified primary SMTP transport (process.env.SMTP_HOST = smtp.gmail.com)
+   * Use verified corporate SMTP (tradeheaven.net:465 • noreply@tradeheaven.net) with DKIM signing.
    */
   private getPrimarySmtpCredentials() {
-    const host = (process.env.SMTP_HOST || process.env.NOREPLY_SMTP_HOST || '').trim();
-    const port = Number(process.env.SMTP_PORT || process.env.NOREPLY_SMTP_PORT || 587);
-    const user = (process.env.SMTP_USER || process.env.NOREPLY_SMTP_USER || '').trim();
-    const pass = (process.env.SMTP_PASS || process.env.NOREPLY_SMTP_PASS || '').trim();
+    const host = (process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net').trim();
+    const port = Number(process.env.NOREPLY_SMTP_PORT || 465);
+    const user = (process.env.NOREPLY_SMTP_USER || this.senderAddress).trim();
+    const pass = (process.env.NOREPLY_SMTP_PASS || '').trim();
     return { host, port, user, pass };
   }
 
@@ -383,6 +384,7 @@ export class AutomatedSmtpService {
       host,
       port,
       secure: port === 465,
+      name: 'tradeheaven.net',
       auth: {
         user,
         pass
@@ -510,10 +512,11 @@ export class AutomatedSmtpService {
       return recent.result;
     }
 
-    const subject = `🔑 Trade Heaven Password Reset OTP: ${finalOtpCode}`;
+    const subject = `Your Trade Heaven Password Reset Code: ${finalOtpCode}`;
 
     const textBody = [
-      `Trade Heaven Security (${this.senderAddress})`,
+      `TRADE HEAVEN AUTOMATED SECURITY`,
+      `Password Reset Verification Code`,
       ``,
       `Hello ${displayName},`,
       ``,
@@ -526,35 +529,27 @@ export class AutomatedSmtpService {
     ].join('\n');
 
     const htmlBody = `
-      <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
-        <h2 style="color: #2563eb; margin-top: 0; font-size: 20px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">🔑 Trade Heaven Password Reset Code</h2>
-        <p style="font-size: 14px; line-height: 1.5; color: #334155;">Hello <strong>${displayName}</strong>,</p>
-        <p style="font-size: 14px; line-height: 1.5; color: #334155;">
-          Use the 6-digit verification code (OTP) below to reset the password for your Trade Heaven corporate account (<strong>${cleanEmail}</strong>):
-        </p>
-        <div style="background: #eff6ff; color: #1e40af; padding: 18px; border-radius: 10px; font-size: 32px; font-weight: bold; font-family: monospace; text-align: center; letter-spacing: 8px; margin: 20px 0; border: 2px solid #3b82f6;">
-          ${finalOtpCode}
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: #0f172a; padding: 28px 24px; text-align: center; color: #ffffff;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #34d399; text-transform: uppercase; margin-bottom: 8px;">
+            TRADE HEAVEN AUTOMATED SECURITY
+          </div>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+            Password Reset Verification Code
+          </h2>
         </div>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-          <tr>
-            <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Account Email:</td>
-            <td style="padding: 6px 0; color: #1e293b; font-size: 13px; font-family: monospace; border-bottom: 1px solid #f1f5f9;">${cleanEmail}</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Dispatched Via:</td>
-            <td style="padding: 6px 0; color: #1e293b; font-size: 13px; font-family: monospace; border-bottom: 1px solid #f1f5f9;">${this.senderAddress}</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Code Validity:</td>
-            <td style="padding: 6px 0; color: #1e293b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${expiryMinutes} Minutes</td>
-          </tr>
-          <tr>
-            <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">WhatsApp Support:</td>
-            <td style="padding: 6px 0; color: #1e293b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${this.whatsappSupportNumber}</td>
-          </tr>
-        </table>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 0;">Automated account recovery notification from Trade Heaven Security (${this.senderAddress}). If you need assistance, contact Trade Heaven on WhatsApp at ${this.whatsappSupportNumber}.</p>
+        <div style="padding: 28px 24px; color: #1e293b;">
+          <p style="font-size: 15px; line-height: 1.6; color: #0f172a; margin: 0 0 14px 0;">Hello <strong>${displayName}</strong>,</p>
+          <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
+            Use the 6-digit verification code (OTP) below to reset the password for your Trade Heaven corporate account (<strong>${cleanEmail}</strong>):
+          </p>
+          <div style="background: #eff6ff; color: #1e40af; padding: 18px; border-radius: 12px; font-size: 32px; font-weight: 900; font-family: monospace; text-align: center; letter-spacing: 8px; margin: 20px 0; border: 2px solid #3b82f6;">
+            ${finalOtpCode}
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin: 20px 0 0 0; line-height: 1.5;">
+            Valid for ${expiryMinutes} minutes • Dispatched via <strong>${this.senderAddress}</strong> • Reply to <strong>${this.replyToAddress}</strong> or WhatsApp <strong>${this.whatsappSupportNumber}</strong>.
+          </p>
+        </div>
       </div>
     `;
 
@@ -628,47 +623,82 @@ export class AutomatedSmtpService {
     const displayName = client.name || 'Valued Trade Partner';
     const companyLabel = client.companyName ? ` (${client.companyName})` : '';
 
-    const bannerFilePath = path.join(
+    const optimizedBannerPath = path.join(
+      process.cwd(),
+      'public',
+      'assets',
+      'aistudio',
+      'diwali-offer-banner-mail.jpg'
+    );
+    const fallbackBannerPath = path.join(
       process.cwd(),
       'public',
       'assets',
       'aistudio',
       'Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png'
     );
+    const bannerFilePath = fs.existsSync(optimizedBannerPath) ? optimizedBannerPath : fallbackBannerPath;
     const hasBannerFile = fs.existsSync(bannerFilePath);
     const bannerCid = 'diwali-maha-utsav-banner@tradeheaven.net';
 
-    const subject = `🪔 Diwali Maha Utsav Offer: FLAT 10% OFF on All Trade Heaven Membership Plans (Code: DIWALI10)`;
+    const subject = `Your Trade Heaven VIP Business Plan Proposal — Diwali Maha Utsav (Code: DIWALI10)`;
 
     const textBody = [
-      `TH TRADE HEAVEN — Take Your Business Online`,
-      `DIWALI MAHA UTSAV — BRIGHTEN YOUR B2B BUSINESS`,
+      `TRADE HEAVEN AUTOMATED SECURITY`,
+      `VIP Business Plan (VIP ELITE) — Exclusive Membership Proposal`,
       ``,
       `Hello ${displayName}${companyLabel},`,
       ``,
-      `Celebrate Diwali Maha Utsav with Trade Heaven! Brighten your B2B global trade operations with our special festive offer:`,
+      `Here are the complete details for the Trade Heaven VIP Business Plan (VIP ELITE) tailored for your corporate account (${cleanEmail}):`,
       ``,
-      `🎉 FLAT 10% OFF ON ALL SUBSCRIPTION & MEMBERSHIP PLANS`,
-      `🏷️ Use Promo Code: DIWALI10`,
-      `🌐 Visit: https://www.tradeheaven.net`,
+      `VIP BUSINESS PLAN (VIP ELITE) PRICING:`,
+      `• Standard Annual Membership: $6,100 USD / Year ($610 / Month)`,
+      `• Diwali Maha Utsav 10% OFF Price (Code: DIWALI10): $5,490 USD / Year (Save $610 USD)`,
       ``,
-      `Whether you are renewing or upgrading your Basic, Silver, Gold, or VIP Enterprise Membership Plan, apply promo code DIWALI10 at checkout to receive an instant 10% discount.`,
+      `INCLUDED VIP BUSINESS PLAN DELIVERABLES:`,
+      `1. Verified & Genuine Orders:`,
+      `   • 60+ Verified & Genuine Orders / Month + Priority Escrow Protection`,
+      `2. Catalog & Priority Listings:`,
+      `   • Dedicated Catalogue Page (200+ Products & Custom Flipbook)`,
+      `   • 100 Ready to Ship Listings`,
+      `   • Top Priority Marketplace Listings & Spotlight`,
+      `   • 4 Premium Product Banners & Spotlight Ads`,
+      `3. Website, Domain & Security:`,
+      `   • Business Website (Dynamic / E-commerce Corporate Website)`,
+      `   • Custom Domain and Hosting Services (High Speed CDN)`,
+      `   • Advanced SSL (Secure Socket Layer) & DDoS Protection`,
+      `   • Multi-Language Translator Widget`,
+      `4. Trade Intelligence, Direct Funds & VIP Support:`,
+      `   • Enable Funds Receiving Option from Buyers Directly on Site`,
+      `   • Trade Analyst Data & Comprehensive Customs Reports`,
+      `   • Global Trade Events VIP Delegation Access`,
+      `   • Senior International Export Manager & Dedicated Account Manager`,
+      `   • 24/7 VIP Working Support`,
       ``,
-      `Need assistance claiming your offer? Contact Trade Heaven Support on WhatsApp at ${this.whatsappSupportNumber} or reply to ${this.replyToAddress}.`
+      `Activation Code: DIWALI10`,
+      `Portal: https://www.tradeheaven.net`,
+      ``,
+      `Dispatched via ${this.senderAddress} • Reply to ${this.replyToAddress} or WhatsApp ${this.whatsappSupportNumber}.`
     ].join('\n');
 
     const htmlBody = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #0f172a; border-radius: 16px; overflow: hidden; border: 2px solid #f59e0b; color: #f8fafc;">
-        <div style="background: linear-gradient(90deg, #580816 0%, #8b1122 50%, #0f172a 100%); padding: 20px 24px; text-align: center; border-bottom: 1px solid rgba(245, 158, 11, 0.35);">
-          <div style="font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #fcd34d; text-transform: uppercase;">Trade Heaven • Take Your Business Online</div>
-          <h1 style="margin: 6px 0 4px 0; font-size: 26px; font-weight: 900; color: #fde047; letter-spacing: 1px;">🪔 DIWALI MAHA UTSAV</h1>
-          <div style="font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">BRIGHTEN YOUR B2B BUSINESS</div>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: #0f172a; padding: 28px 24px; text-align: center; color: #ffffff;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #34d399; text-transform: uppercase; margin-bottom: 8px;">
+            TRADE HEAVEN AUTOMATED SECURITY
+          </div>
+          <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+            VIP Business Plan (VIP ELITE)
+          </h2>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #94a3b8;">
+            Exclusive Corporate Membership Proposal • Diwali Maha Utsav Privilege
+          </p>
         </div>
 
         ${
           hasBannerFile
-            ? `<div style="background: #020617; text-align: center;">
-                <img src="cid:${bannerCid}" alt="Trade Heaven Diwali Maha Utsav - Flat 10% OFF on All Subscription & Membership Plans - Use Promo Code DIWALI10" style="width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto;" />
+            ? `<div style="background: #0f172a; text-align: center; border-top: 1px solid #1e293b;">
+                <img src="cid:${bannerCid}" alt="Trade Heaven VIP Business Plan - Code DIWALI10" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 0 auto;" />
               </div>`
             : ''
         }
@@ -678,30 +708,67 @@ export class AutomatedSmtpService {
             Hello <strong>${displayName}</strong>${companyLabel},
           </p>
           <p style="font-size: 14px; line-height: 1.6; margin: 0 0 20px 0; color: #334155;">
-            This festive season, accelerate your international sourcing and verified export reach with the <strong>Trade Heaven Diwali Maha Utsav</strong> celebration! We are delighted to extend an exclusive client privilege to your corporate account:
+            Below are the exclusive deliverables and Diwali Maha Utsav pricing for the <strong>Trade Heaven VIP Business Plan (VIP ELITE)</strong> for your corporate account (<strong>${cleanEmail}</strong>):
           </p>
 
-          <div style="background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%); color: #ffffff; border: 2px solid #f59e0b; border-radius: 14px; padding: 22px; text-align: center; margin: 0 0 22px 0;">
-            <div style="font-size: 28px; font-weight: 900; color: #fde047; letter-spacing: 1px; margin-bottom: 6px;">
-              FLAT 10% OFF
+          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 22px 0;">
+            <div style="font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
+              VIP BUSINESS PLAN • ANNUAL MEMBERSHIP
             </div>
-            <div style="font-size: 14px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
-              ON ALL SUBSCRIPTION &amp; MEMBERSHIP PLANS
+            <div style="font-size: 14px; color: #64748b; text-decoration: line-through; margin-bottom: 4px;">
+              Standard Annual Rate: $6,100 USD / Year
             </div>
-            <div style="display: inline-block; background: #0f172a; border: 1.5px dashed #fbbf24; border-radius: 8px; padding: 10px 20px; font-family: monospace; font-size: 18px; font-weight: 900; color: #fde047; letter-spacing: 2px;">
-              Use Promo Code: DIWALI10
+            <div style="font-size: 30px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; margin-bottom: 6px;">
+              $5,490 USD <span style="font-size: 14px; font-weight: 700; color: #1e40af;">/ Year</span>
+            </div>
+            <div style="font-size: 12px; font-weight: 700; color: #059669; margin-bottom: 12px;">
+              Instant 10% Savings ($610 USD OFF) with Code: DIWALI10
+            </div>
+            <div style="display: inline-block; background: #0f172a; color: #fde047; padding: 10px 22px; border-radius: 8px; font-family: monospace; font-size: 20px; font-weight: 900; letter-spacing: 4px;">
+              DIWALI10
             </div>
           </div>
 
-          <div style="text-align: center; margin: 24px 0;">
-            <a href="https://www.tradeheaven.net" style="display: inline-block; background: #f59e0b; color: #0f172a; font-weight: 900; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 10px; letter-spacing: 0.5px; text-transform: uppercase;">
-              Claim 10% OFF at www.tradeheaven.net →
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 0 0 20px 0;">
+            <div style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              VIP Business Plan Deliverables Included:
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #334155;">
+              <tr>
+                <td style="padding: 6px 0; vertical-align: top; width: 22px; color: #059669; font-weight: 900;">✓</td>
+                <td style="padding: 6px 0;"><strong>60+ Verified &amp; Genuine Orders / Month</strong> + Priority Escrow Protection</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; vertical-align: top; color: #059669; font-weight: 900;">✓</td>
+                <td style="padding: 6px 0;"><strong>Dedicated Catalogue Page</strong> (200+ Products, Custom Flipbook &amp; 100 Ready-to-Ship Listings)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; vertical-align: top; color: #059669; font-weight: 900;">✓</td>
+                <td style="padding: 6px 0;"><strong>Top Priority Marketplace Listings</strong> + 4 Premium Product Banners &amp; Spotlight Ads</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; vertical-align: top; color: #059669; font-weight: 900;">✓</td>
+                <td style="padding: 6px 0;"><strong>Dynamic E-Commerce Corporate Website</strong> + Custom Domain, High-Speed CDN Hosting &amp; Advanced SSL</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; vertical-align: top; color: #059669; font-weight: 900;">✓</td>
+                <td style="padding: 6px 0;"><strong>Direct Buyer Funds Receiving Option</strong> Enabled Directly on Site</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; vertical-align: top; color: #059669; font-weight: 900;">✓</td>
+                <td style="padding: 6px 0;"><strong>Senior International Export Manager</strong>, Trade Analyst Customs Reports, VIP Trade Events Pass &amp; 24/7 VIP Support</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="text-align: center; margin: 22px 0;">
+            <a href="https://www.tradeheaven.net" style="display: inline-block; background: #0f172a; color: #ffffff; font-weight: 800; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 10px;">
+              Activate VIP Business Plan at www.tradeheaven.net
             </a>
           </div>
 
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 22px 0;" />
-          <p style="font-size: 12px; color: #64748b; margin: 0; line-height: 1.5;">
-            Dispatched via <strong>${this.senderAddress}</strong> • Need help upgrading or applying promo code <strong>DIWALI10</strong>? Contact Trade Heaven Support on WhatsApp at <strong>${this.whatsappSupportNumber}</strong>.
+          <p style="font-size: 12px; color: #64748b; margin: 20px 0 0 0; line-height: 1.5;">
+            Valid for your corporate account • Dispatched via <strong>${this.senderAddress}</strong> • Reply to <strong>${this.replyToAddress}</strong> or WhatsApp <strong>${this.whatsappSupportNumber}</strong>.
           </p>
         </div>
       </div>
@@ -711,9 +778,10 @@ export class AutomatedSmtpService {
     const attachments: nodemailer.SendMailOptions['attachments'] = hasBannerFile
       ? [
           {
-            filename: 'TradeHeaven-Diwali-Maha-Utsav-10-Off.png',
+            filename: 'TradeHeaven-Diwali-Maha-Utsav-10-Off.jpg',
             path: bannerFilePath,
-            cid: bannerCid
+            cid: bannerCid,
+            contentDisposition: 'inline'
           }
         ]
       : undefined;

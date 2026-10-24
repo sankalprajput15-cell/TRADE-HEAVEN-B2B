@@ -81,22 +81,27 @@ async function sendLoginAlert(userEmail: string, userName: string, userRole: str
     `
   };
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const smtpHost = process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net';
+  const smtpPort = Number(process.env.NOREPLY_SMTP_PORT || 465);
+  const smtpUser = process.env.NOREPLY_SMTP_USER || 'noreply@tradeheaven.net';
+  const smtpPass = process.env.NOREPLY_SMTP_PASS || process.env.SMTP_PASS;
 
   if (smtpHost && smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Number(process.env.SMTP_PORT) === 465,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        name: 'tradeheaven.net',
         auth: {
           user: smtpUser,
           pass: smtpPass
         }
       });
-      const receipts = await serverDeliveryQueueManager.enqueue(mailOptions, transporter);
+      const receipts = await serverDeliveryQueueManager.enqueue(
+        { ...mailOptions, replyTo: 'help@tradeheaven.net' },
+        transporter
+      );
       console.log(`[LOGIN ALERT SUCCESS] Serialized single-recipient emails delivered (${receipts.filter(r => r.success).length}/${receipts.length})!`);
     } catch (err: any) {
       console.error(`[LOGIN ALERT ERROR] SMTP transmission failed:`, err?.message || err);
@@ -153,22 +158,27 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
     `
   };
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
+  const smtpHost = process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net';
+  const smtpPort = Number(process.env.NOREPLY_SMTP_PORT || 465);
+  const smtpUser = process.env.NOREPLY_SMTP_USER || 'noreply@tradeheaven.net';
+  const smtpPass = process.env.NOREPLY_SMTP_PASS || process.env.SMTP_PASS;
 
   if (smtpHost && smtpUser && smtpPass) {
     try {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Number(process.env.SMTP_PORT) === 465,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        name: 'tradeheaven.net',
         auth: {
           user: smtpUser,
           pass: smtpPass
         }
       });
-      const receipts = await serverDeliveryQueueManager.enqueue(mailOptions, transporter);
+      const receipts = await serverDeliveryQueueManager.enqueue(
+        { ...mailOptions, replyTo: 'help@tradeheaven.net' },
+        transporter
+      );
       console.log(`[ACTIVITY ALERT SUCCESS] Serialized single-recipient emails delivered (${receipts.filter(r => r.success).length}/${receipts.length}) for ${activityType}!`);
     } catch (err: any) {
       console.error(`[ACTIVITY ALERT ERROR] SMTP transmission failed:`, err?.message || err);
@@ -812,13 +822,14 @@ app.post('/api/v1/admin/launch-diwali-offer-campaign', async (req, res) => {
 app.post('/api/v1/auth/test-email', async (req, res) => {
   const { customTargetEmail, testSmtpHost, testSmtpPort, testSmtpUser, testSmtpPass } = req.body;
   const target = (customTargetEmail || process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
-  const host = testSmtpHost || process.env.SMTP_HOST;
-  const port = Number(testSmtpPort || process.env.SMTP_PORT || 587);
-  const user = testSmtpUser || process.env.SMTP_USER;
-  const pass = testSmtpPass || process.env.SMTP_PASS;
+  const host = testSmtpHost || process.env.SMTP_HOST || process.env.NOREPLY_SMTP_HOST;
+  const port = Number(testSmtpPort || process.env.SMTP_PORT || process.env.NOREPLY_SMTP_PORT || 587);
+  const user = testSmtpUser || process.env.SMTP_USER || process.env.NOREPLY_SMTP_USER;
+  const pass = testSmtpPass || process.env.SMTP_PASS || process.env.NOREPLY_SMTP_PASS;
 
   const mailOptions = {
-    from: `"Trade Heaven Test Alert" <no-reply@tradeheaven.net>`,
+    from: `"Trade Heaven Security" <noreply@tradeheaven.net>`,
+    replyTo: 'help@tradeheaven.net',
     to: target,
     subject: `🧪 Trade Heaven SMTP Test Email Successful!`,
     html: `

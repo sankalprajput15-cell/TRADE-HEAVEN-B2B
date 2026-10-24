@@ -5,6 +5,12 @@ import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
+import {
+  SearchAutoSuggestDropdown,
+  useSearchAutoSuggest,
+  CategorySuggestion,
+  SupplierSuggestion
+} from '../common/SearchAutoSuggestDropdown';
 import { 
   Search, 
   Filter, 
@@ -60,6 +66,9 @@ export const ProductCatalog: React.FC<Props> = ({
 }) => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
+  const [isSuggestOpen, setIsSuggestOpen] = useState(false);
+  const [activeSuggestIndex, setActiveSuggestIndex] = useState(-1);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
   const [internalCategory, setInternalCategory] = useState<string>(initialCategory || propCategory || 'ALL');
   
   const [internalSupplierTiers, setInternalSupplierTiers] = useState<string[]>([]);
@@ -176,6 +185,36 @@ export const ProductCatalog: React.FC<Props> = ({
     if (onCategoryChange) {
       onCategoryChange(cat);
     }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSuggestOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const catalogAutoSuggestions = useSearchAutoSuggest(searchTerm, cachedProducts, 5, 5, 3);
+
+  const handleSelectCatalogCategorySuggestion = (cat: CategorySuggestion) => {
+    setIsSuggestOpen(false);
+    setActiveSuggestIndex(-1);
+    if (cat.isSubcategory && cat.parentCategory) {
+      handleCategorySelect(cat.parentCategory);
+      setSearchTerm(cat.name);
+    } else {
+      handleCategorySelect(cat.name);
+      setSearchTerm('');
+    }
+  };
+
+  const handleSelectCatalogSupplierSuggestion = (supp: SupplierSuggestion) => {
+    setIsSuggestOpen(false);
+    setActiveSuggestIndex(-1);
+    setSearchTerm(supp.companyName);
   };
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
@@ -543,16 +582,88 @@ export const ProductCatalog: React.FC<Props> = ({
 
       {/* Search & Top Controls */}
       <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 shadow-2xs min-w-0">
-        <div className="relative flex-1 w-full min-w-0">
-          <Search className="absolute left-3 top-2.5 sm:top-3 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+        <div ref={searchContainerRef} className="relative flex-1 w-full min-w-0">
+          <Search className="absolute left-3 top-2.5 sm:top-3 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 pointer-events-none" />
           <input
             id="catalog-search-input"
             type="text"
-            placeholder="Search products, supplier name (e.g. Melissa Prezios), or company name..."
+            placeholder="Search product categories, supplier names (e.g. Melissa Prezios), or products..."
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl pl-9 sm:pl-10 pr-3 py-1.5 sm:py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+            onFocus={() => setIsSuggestOpen(true)}
+            onChange={e => {
+              setSearchTerm(e.target.value);
+              setIsSuggestOpen(true);
+              setActiveSuggestIndex(-1);
+            }}
+            onKeyDown={e => {
+              const totalItems =
+                catalogAutoSuggestions.categories.length +
+                catalogAutoSuggestions.suppliers.length +
+                catalogAutoSuggestions.products.length;
+              if (e.key === 'Escape') {
+                setIsSuggestOpen(false);
+                setActiveSuggestIndex(-1);
+                return;
+              }
+              if (!totalItems) return;
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setIsSuggestOpen(true);
+                setActiveSuggestIndex(prev => (prev + 1) % totalItems);
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setIsSuggestOpen(true);
+                setActiveSuggestIndex(prev => (prev <= 0 ? totalItems - 1 : prev - 1));
+              } else if (e.key === 'Enter' && activeSuggestIndex >= 0) {
+                e.preventDefault();
+                const catLen = catalogAutoSuggestions.categories.length;
+                const suppLen = catalogAutoSuggestions.suppliers.length;
+                if (activeSuggestIndex < catLen) {
+                  handleSelectCatalogCategorySuggestion(catalogAutoSuggestions.categories[activeSuggestIndex]);
+                } else if (activeSuggestIndex < catLen + suppLen) {
+                  handleSelectCatalogSupplierSuggestion(catalogAutoSuggestions.suppliers[activeSuggestIndex - catLen]);
+                } else {
+                  const prod = catalogAutoSuggestions.products[activeSuggestIndex - catLen - suppLen];
+                  if (prod) {
+                    setIsSuggestOpen(false);
+                    onSelectProduct(prod);
+                  }
+                }
+              }
+            }}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl pl-9 sm:pl-10 pr-8 py-1.5 sm:py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+            autoComplete="off"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setIsSuggestOpen(false);
+                setActiveSuggestIndex(-1);
+              }}
+              className="absolute right-2.5 top-2 sm:top-2.5 p-0.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition-colors cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {isSuggestOpen && searchTerm.trim().length > 0 && (
+            <SearchAutoSuggestDropdown
+              query={searchTerm}
+              suggestions={catalogAutoSuggestions}
+              activeIndex={activeSuggestIndex}
+              onSelectCategory={handleSelectCatalogCategorySuggestion}
+              onSelectSupplier={handleSelectCatalogSupplierSuggestion}
+              onSelectProduct={prod => {
+                setIsSuggestOpen(false);
+                onSelectProduct(prod);
+              }}
+              onViewAllResults={() => setIsSuggestOpen(false)}
+              className="absolute top-full left-0 right-0 mt-1.5"
+            />
+          )}
         </div>
         <div className="flex items-center justify-between w-full sm:w-auto gap-2.5 shrink-0 min-w-0">
           {/* Mobile Filter Toggle Button */}

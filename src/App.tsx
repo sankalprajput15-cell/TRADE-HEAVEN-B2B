@@ -1617,6 +1617,10 @@ const MainApp: React.FC = () => {
           handleSelectProduct(prod);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        onOpenStorefront={(companyId) => {
+          handleOpenStorefront(companyId);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
         onNavigateToCategory={(category, subcategory) => {
           setCatalogCategory(category || 'ALL');
           setCatalogSearch(subcategory || '');
