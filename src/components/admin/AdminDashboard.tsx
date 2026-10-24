@@ -18,6 +18,7 @@ import { BulkCsvProductImporter } from './BulkCsvProductImporter';
 import { BatchImageCsvImporter } from './BatchImageCsvImporter';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
+import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
   Database, 
@@ -41,7 +42,11 @@ import {
   Building2,
   FileSpreadsheet,
   Image as ImageIcon,
-  Upload
+  Upload,
+  AlertTriangle,
+  RefreshCw,
+  Mail,
+  Bell
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -63,6 +68,167 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'PRODUCT_IMAGE_SYSTEM' | 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS' | 'BULK_CSV_IMPORT' | 'BATCH_IMAGE_IMPORT' | 'MULTI_FILE_UPLOAD'>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const {
+    notifications,
+    deliveryQueueStatus,
+    isDeliveryQueueFlagged,
+    resetDeliveryQueueAlert,
+    simulateDeliveryQueueFailures,
+    refreshDeliveryQueueStatus
+  } = useNotifications();
+
+  const [isSendingDiwaliOffer, setIsSendingDiwaliOffer] = useState(false);
+  const [diwaliCampaignSummary, setDiwaliCampaignSummary] = useState<string | null>(null);
+  const [diwaliBatchState, setDiwaliBatchState] = useState<{
+    isRunning: boolean;
+    totalClients: number;
+    processedCount: number;
+    deliveredCount: number;
+    failedCount: number;
+    currentRecipient: string | null;
+    launchedAt: string | null;
+    completedAt: string | null;
+    receipts: Array<{
+      recipient: string;
+      success: boolean;
+      enforcedDelayMs?: number;
+      messageId?: string;
+      dispatchedAt?: string;
+      error?: string;
+    }>;
+  }>({
+    isRunning: false,
+    totalClients: 4,
+    processedCount: 0,
+    deliveredCount: 0,
+    failedCount: 0,
+    currentRecipient: null,
+    launchedAt: null,
+    completedAt: null,
+    receipts: []
+  });
+
+  // Load initial Diwali campaign status & eligible client count
+  useEffect(() => {
+    let active = true;
+    fetch('/api/v1/admin/diwali-offer-clients', { headers: { Accept: 'application/json' } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!active || !data?.success) return;
+        const c = data.lastCampaign;
+        const clientCount = Array.isArray(data.clients) ? data.clients.length : 4;
+        if (c) {
+          setDiwaliBatchState({
+            isRunning: Boolean(c.isRunning),
+            totalClients: Number(c.totalClients || clientCount || 4),
+            processedCount: Number(c.processedCount ?? c.deliveredCount ?? 0),
+            deliveredCount: Number(c.deliveredCount || 0),
+            failedCount: Number(c.failedCount || 0),
+            currentRecipient: c.currentRecipient || null,
+            launchedAt: c.launchedAt || null,
+            completedAt: c.completedAt || null,
+            receipts: Array.isArray(c.receipts) ? c.receipts : []
+          });
+          if (c.isRunning) {
+            setIsSendingDiwaliOffer(true);
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Poll live batch progress every 600ms while the Diwali campaign is running
+  useEffect(() => {
+    if (!isSendingDiwaliOffer && !diwaliBatchState.isRunning) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/v1/admin/diwali-offer-clients', {
+          headers: { Accept: 'application/json' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const c = data?.lastCampaign;
+        if (c) {
+          setDiwaliBatchState({
+            isRunning: Boolean(c.isRunning),
+            totalClients: Number(c.totalClients || 4),
+            processedCount: Number(c.processedCount ?? 0),
+            deliveredCount: Number(c.deliveredCount || 0),
+            failedCount: Number(c.failedCount || 0),
+            currentRecipient: c.currentRecipient || null,
+            launchedAt: c.launchedAt || null,
+            completedAt: c.completedAt || null,
+            receipts: Array.isArray(c.receipts) ? c.receipts : []
+          });
+
+          if (!c.isRunning && c.launchedAt) {
+            setIsSendingDiwaliOffer(false);
+            await refreshDeliveryQueueStatus();
+            const msg = `Diwali Maha Utsav (DIWALI10 - Flat 10% OFF) offer emailed to ${c.deliveredCount}/${c.totalClients} existing clients via serialized 2s delivery queue.`;
+            setDiwaliCampaignSummary(msg);
+          }
+        }
+      } catch {
+        // ignore transient poll error
+      }
+    }, 600);
+
+    return () => clearInterval(pollInterval);
+  }, [isSendingDiwaliOffer, diwaliBatchState.isRunning, refreshDeliveryQueueStatus]);
+
+  const handleBroadcastDiwaliOffer = async () => {
+    setIsSendingDiwaliOffer(true);
+    setDiwaliCampaignSummary(null);
+    setDiwaliBatchState((prev) => ({
+      ...prev,
+      isRunning: true,
+      processedCount: 0,
+      deliveredCount: 0,
+      failedCount: 0,
+      currentRecipient: null,
+      completedAt: null,
+      receipts: []
+    }));
+
+    try {
+      const res = await fetch('/api/v1/admin/launch-diwali-offer-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ async: true })
+      });
+      const data = await res.json();
+      if (data?.campaign) {
+        const c = data.campaign;
+        setDiwaliBatchState({
+          isRunning: Boolean(c.isRunning),
+          totalClients: Number(c.totalClients || 4),
+          processedCount: Number(c.processedCount ?? 0),
+          deliveredCount: Number(c.deliveredCount || 0),
+          failedCount: Number(c.failedCount || 0),
+          currentRecipient: c.currentRecipient || null,
+          launchedAt: c.launchedAt || null,
+          completedAt: c.completedAt || null,
+          receipts: Array.isArray(c.receipts) ? c.receipts : []
+        });
+      }
+      if (!data?.success) {
+        setIsSendingDiwaliOffer(false);
+        triggerToast('error', data?.message || 'Failed to launch Diwali offer campaign.');
+      }
+    } catch (err: any) {
+      setIsSendingDiwaliOffer(false);
+      triggerToast('error', err?.message || 'Network error while dispatching Diwali offer emails.');
+    }
+  };
+
+  const latestQueueAlertNotification = notifications.find(
+    (n) => n.type === 'SYSTEM' && n.title.toLowerCase().includes('delivery queue')
+  );
 
   // Sync tab if initialTab prop changes
   useEffect(() => {
@@ -327,13 +493,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* LOGGED IN USER CARD */}
-        <div className="p-4 mx-4 my-4 bg-slate-850 rounded-2xl border border-slate-800 flex items-center gap-3">
+        <div className="p-4 mx-4 mt-4 mb-2 bg-slate-850 rounded-2xl border border-slate-800 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
             {currentUser?.name?.slice(0, 2).toUpperCase() || 'AD'}
           </div>
           <div className="min-w-0">
             <div className="text-white text-xs font-black truncate">{currentUser?.name || 'Administrator'}</div>
             <div className="text-[10px] text-slate-500 truncate font-semibold">{currentUser?.email || 'yr943334@gmail.com'}</div>
+          </div>
+        </div>
+
+        {/* SIDEBAR DELIVERY QUEUE STATUS INDICATOR */}
+        <div
+          id="admin-sidebar-queue-indicator"
+          className={`mx-4 mb-4 p-3 rounded-xl border transition-all ${
+            isDeliveryQueueFlagged
+              ? 'bg-rose-950/70 border-rose-500/60 text-rose-200 shadow-lg shadow-rose-950/50'
+              : 'bg-slate-850/90 border-slate-800 text-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                  isDeliveryQueueFlagged
+                    ? 'bg-rose-500 animate-ping'
+                    : 'bg-emerald-400'
+                }`}
+              />
+              <span className="text-[11px] font-black uppercase tracking-wider truncate">
+                {isDeliveryQueueFlagged ? 'Queue Flagged (5+ Err)' : 'Delivery Queue OK'}
+              </span>
+            </div>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                isDeliveryQueueFlagged
+                  ? 'bg-rose-500/30 text-rose-200 border border-rose-400/40'
+                  : 'bg-emerald-500/15 text-emerald-300'
+              }`}
+            >
+              {deliveryQueueStatus.consecutiveFailures}/{deliveryQueueStatus.failureThreshold}
+            </span>
+          </div>
+          <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+            <span>Min Delay: {deliveryQueueStatus.minDelayMs / 1000}s</span>
+            <span>Sent: {deliveryQueueStatus.totalProcessed}</span>
           </div>
         </div>
 
@@ -400,6 +604,227 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="text-xs font-bold">{toastMessage.text}</span>
           </div>
         )}
+
+        {/* AUTOMATED DELIVERY QUEUE STATUS INDICATOR BANNER */}
+        <div
+          id="admin-delivery-queue-status-indicator"
+          className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+            isDeliveryQueueFlagged
+              ? 'bg-rose-50 border-rose-300 text-rose-950 shadow-md shadow-rose-500/10'
+              : 'bg-white border-slate-200 text-slate-800 shadow-xs'
+          }`}
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                  isDeliveryQueueFlagged
+                    ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                    : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                }`}
+              >
+                {isDeliveryQueueFlagged ? (
+                  <AlertTriangle className="w-5 h-5" />
+                ) : (
+                  <Mail className="w-5 h-5" />
+                )}
+              </div>
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs sm:text-sm font-black tracking-tight">
+                    {isDeliveryQueueFlagged
+                      ? `🚨 DELIVERY QUEUE CRITICAL FLAG: ${deliveryQueueStatus.consecutiveFailures} Consecutive Failures Detected`
+                      : 'Serialized SMTP Delivery Queue Status: HEALTHY'}
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
+                      isDeliveryQueueFlagged
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-emerald-100 text-emerald-800'
+                    }`}
+                  >
+                    {isDeliveryQueueFlagged ? 'FLAGGED • ACTION REQUIRED' : 'SERIALIZED 2S INTERVAL'}
+                  </span>
+                </div>
+                <p
+                  className={`text-xs leading-relaxed ${
+                    isDeliveryQueueFlagged ? 'text-rose-800 font-semibold' : 'text-slate-500'
+                  }`}
+                >
+                  {isDeliveryQueueFlagged
+                    ? `Automated NotificationContext alert triggered after reaching the ${deliveryQueueStatus.failureThreshold}-failure threshold. Last error: "${
+                        deliveryQueueStatus.lastFailureReason || 'SMTP transport error'
+                      }".`
+                    : `All single-recipient batch operations are strictly serialized with a minimum ${
+                        deliveryQueueStatus.minDelayMs / 1000
+                      }s delay. Consecutive failures: ${deliveryQueueStatus.consecutiveFailures}/${
+                        deliveryQueueStatus.failureThreshold
+                      } (Queue depth: ${deliveryQueueStatus.queueDepth}, Total processed: ${
+                        deliveryQueueStatus.totalProcessed
+                      }).`}
+                </p>
+                {isDeliveryQueueFlagged && latestQueueAlertNotification && (
+                  <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/90 border border-rose-200 text-[11px] text-rose-900 font-bold">
+                    <Bell className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                    <span>
+                      NotificationContext Logged: &ldquo;{latestQueueAlertNotification.title}&rdquo;
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {isDeliveryQueueFlagged ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await resetDeliveryQueueAlert();
+                    triggerToast('success', 'Delivery queue failure counter reset and status indicator cleared.');
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Acknowledge &amp; Reset Flag</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await simulateDeliveryQueueFailures(5);
+                    triggerToast('error', 'Simulated 5 consecutive queue failures — NotificationContext alert triggered.');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1.5 border border-slate-200 transition-all cursor-pointer"
+                  title="Simulate 5 consecutive failures to verify NotificationContext & status flag"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Test 5-Failure Alert</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                disabled={isSendingDiwaliOffer}
+                onClick={handleBroadcastDiwaliOffer}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                title="Send the Diwali Maha Utsav (FLAT 10% OFF • DIWALI10) banner offer email to all existing clients via the serialized 2s queue"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>
+                  {isSendingDiwaliOffer
+                    ? `Emails Sent ${diwaliBatchState.processedCount}/${diwaliBatchState.totalClients} (2s Queue)...`
+                    : 'Mail Diwali Offer (DIWALI10) to Clients'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('ACTIVITY_LOGS')}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Inspect Logs</span>
+              </button>
+            </div>
+          </div>
+
+          {/* DIWALI OFFER BATCH PROGRESS BAR & STATUS COUNTER */}
+          <div
+            id="admin-diwali-batch-progress-monitor"
+            className="mt-4 pt-3.5 border-t border-slate-200/80 space-y-2.5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                  🪔 Diwali Offer Batch Monitor (Code: DIWALI10)
+                </span>
+                <span
+                  id="admin-diwali-emails-sent-counter"
+                  className={`px-2.5 py-0.5 rounded-md font-mono text-xs font-black ${
+                    isSendingDiwaliOffer || diwaliBatchState.isRunning
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
+                      : diwaliBatchState.processedCount > 0 &&
+                        diwaliBatchState.processedCount === diwaliBatchState.totalClients
+                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                      : 'bg-slate-100 text-slate-700 border border-slate-200'
+                  }`}
+                >
+                  Emails Sent {diwaliBatchState.processedCount}/{diwaliBatchState.totalClients}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600">
+                {diwaliBatchState.currentRecipient && (isSendingDiwaliOffer || diwaliBatchState.isRunning) && (
+                  <span className="text-amber-700 font-mono">
+                    Dispatching: {diwaliBatchState.currentRecipient}
+                  </span>
+                )}
+                <span>
+                  {diwaliBatchState.totalClients > 0
+                    ? `${Math.round(
+                        (diwaliBatchState.processedCount / diwaliBatchState.totalClients) * 100
+                      )}% Complete`
+                    : '0% Complete'}
+                </span>
+              </div>
+            </div>
+
+            {/* Progress Bar Track */}
+            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+              <div
+                id="admin-diwali-batch-progress-bar"
+                className={`h-full transition-all duration-500 rounded-full ${
+                  diwaliBatchState.failedCount > 0
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500'
+                    : isSendingDiwaliOffer || diwaliBatchState.isRunning
+                    ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                }`}
+                style={{
+                  width: `${
+                    diwaliBatchState.totalClients > 0
+                      ? Math.min(
+                          100,
+                          Math.round(
+                            (diwaliBatchState.processedCount / diwaliBatchState.totalClients) * 100
+                          )
+                        )
+                      : 0
+                  }%`
+                }}
+              />
+            </div>
+
+            {/* Per-Recipient Serialized Receipt Badges */}
+            {diwaliBatchState.receipts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                {diwaliBatchState.receipts.map((rec, idx) => (
+                  <span
+                    key={`${rec.recipient}-${idx}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
+                      rec.success
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-rose-50 text-rose-800 border-rose-200'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3 h-3 shrink-0" />
+                    <span>{rec.recipient}</span>
+                    {typeof rec.enforcedDelayMs === 'number' && (
+                      <span className="text-slate-400">({rec.enforcedDelayMs / 1000}s)</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {diwaliCampaignSummary && (
+              <div className="text-xs font-bold text-emerald-700 flex items-center gap-2 pt-0.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{diwaliCampaignSummary}</span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* VIEW CONDITIONAL RENDERING */}
         {activeTab === 'PRODUCT_IMAGE_SYSTEM' && (

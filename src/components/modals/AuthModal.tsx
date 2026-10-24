@@ -601,9 +601,23 @@ export const AuthModal: React.FC<Props> = ({
             )}
 
             {error && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+                <div className="pt-1.5 border-t border-rose-200/80 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-rose-800 font-medium">Having trouble signing in or receiving OTP?</span>
+                  <a
+                    href={whatsappResetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shrink-0 transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Contact Trade Heaven on WhatsApp</span>
+                  </a>
+                </div>
               </div>
             )}
 
@@ -687,17 +701,8 @@ export const AuthModal: React.FC<Props> = ({
                     }}
                     className="text-blue-600 hover:text-blue-700 font-bold text-[11px] cursor-pointer"
                   >
-                    Forgot password / Need OTP?
+                    Forgot password? (Auto OTP via noreply@tradeheaven.net)
                   </button>
-                  <a
-                    href={whatsappResetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-700 hover:text-emerald-800 font-bold text-[11px] flex items-center gap-1"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>WhatsApp Support</span>
-                  </a>
                 </div>
 
                 <button
@@ -708,6 +713,27 @@ export const AuthModal: React.FC<Props> = ({
                   <LogIn className="w-4 h-4" />
                   <span>{isLoading ? 'Verifying Credentials...' : 'Sign In'}</span>
                 </button>
+
+                {/* Login UI WhatsApp Support Link for Any Sign-In / OTP Issues */}
+                <div className="p-3 rounded-xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between gap-2.5">
+                  <div className="min-w-0">
+                    <div className="font-bold text-emerald-950 text-[11px]">
+                      Encountering login or OTP issues?
+                    </div>
+                    <div className="text-[10px] text-emerald-800 truncate">
+                      Instant password reset &amp; account support (+91 8532934479)
+                    </div>
+                  </div>
+                  <a
+                    href={whatsappResetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1.5 shrink-0 shadow-2xs transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Contact Trade Heaven on WhatsApp</span>
+                  </a>
+                </div>
               </form>
             )}
 

@@ -321,7 +321,8 @@ export const apiClient = {
     password?: string
   ): Promise<{ success: boolean; data?: any; token?: string; user?: AuthUser; error?: string; message?: string }> {
     try {
-      const cleanEmail = (email || '').trim().toLowerCase();
+      const rawClean = (email || '').trim().toLowerCase();
+      const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
       if (!cleanEmail || !password) {
         return { success: false, error: 'Both corporate email and password are required.', message: 'Both corporate email and password are required.' };
       }
@@ -376,12 +377,12 @@ export const apiClient = {
           name: rawUser.name || (isAdmin ? 'Administrator' : 'Trade Partner'),
           email: rawUser.email || cleanEmail,
           role: (isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER')),
-          isPremium: isAdmin,
-          membershipStatus: isAdmin ? 'paid' : 'free',
+          isPremium: Boolean(rawUser.isPremium ?? isAdmin),
+          membershipStatus: rawUser.membershipStatus || (isAdmin ? 'paid' : 'free'),
           status: rawUser.status || 'ACTIVE',
           isVerified: Boolean(rawUser.isVerified ?? true),
           isVerifiedAdmin: isAdmin,
-          tier: isAdmin ? 'VIP' : 'FREE',
+          tier: rawUser.tier || (isAdmin ? 'VIP' : 'FREE'),
           companyName: rawUser.companyName || rawUser.company_name || (isAdmin ? 'Trade Heaven Global Operations & Treasury' : 'Enterprise Trading Firm'),
           country: rawUser.country || (isAdmin ? 'United Kingdom' : 'United States'),
           phone: rawUser.phone || '',
@@ -606,7 +607,8 @@ export const apiClient = {
     sender?: string;
     emailSent?: boolean;
   }> {
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const rawClean = (email || '').trim().toLowerCase();
+    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return { success: false, message: 'Please enter a valid corporate email address.' };
     }
@@ -700,7 +702,8 @@ export const apiClient = {
    * Reset password with the 6-digit code
    */
   async resetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const rawClean = (email || '').trim().toLowerCase();
+    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
     const cleanCode = (code || '').trim();
 
     if (!cleanEmail || !cleanCode || !newPassword) {

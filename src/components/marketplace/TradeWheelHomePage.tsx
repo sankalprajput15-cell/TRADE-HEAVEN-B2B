@@ -106,7 +106,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   };
 
   return (
-    <div id="tradewheel-homepage-root" className="space-y-10 sm:space-y-12">
+    <div id="tradewheel-homepage-root" className="space-y-8 sm:space-y-10">
       {/* 1. HERO SECTION */}
       <HeroSection
         onSearch={handleHeroSearch}

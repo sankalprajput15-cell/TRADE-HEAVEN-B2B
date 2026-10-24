@@ -5,6 +5,7 @@ import { planPricingService } from '../../services/planPricingService';
 import { SaaSPlan } from '../../types/planPricingTypes';
 import { INITIAL_SAAS_PLANS } from '../../data/planPricingMockData';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
+import { DIWALI_PROMO_CODE } from '../marketplace/DiwaliOfferBanner';
 import { 
   Crown, 
   ShieldCheck, 
@@ -119,12 +120,17 @@ export const PremiumServicesView: React.FC<Props> = ({
     return `${curr.symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
+  const [promoCodeApplied, setPromoCodeApplied] = useState<boolean>(true);
+
   const handleSelectPackage = (plan: SaaSPlan) => {
+    const finalUsd = promoCodeApplied ? Math.round(plan.annualPriceUsd * 0.9) : plan.annualPriceUsd;
     onOpenPaymentCheckout({
       planId: plan.slug || plan.id,
-      title: plan.name,
-      description: plan.description || `${plan.name} membership plan`,
-      amountUsd: plan.annualPriceUsd,
+      title: promoCodeApplied ? `${plan.name} (DIWALI10 - 10% OFF Applied)` : plan.name,
+      description: promoCodeApplied
+        ? `${plan.description || `${plan.name} membership plan`} • Diwali Maha Utsav Flat 10% OFF (Code: ${DIWALI_PROMO_CODE})`
+        : plan.description || `${plan.name} membership plan`,
+      amountUsd: finalUsd,
       type: 'MEMBERSHIP'
     });
   };
@@ -151,6 +157,29 @@ export const PremiumServicesView: React.FC<Props> = ({
 
   return (
     <div id="premium-services-view" className="space-y-8 sm:space-y-10">
+      {/* Active Promo Code Toggle Bar */}
+      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-amber-950">
+          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-black font-mono tracking-wider">
+            {DIWALI_PROMO_CODE}
+          </span>
+          <span>
+            Diwali Maha Utsav Offer: <strong>FLAT 10% OFF</strong> on all Subscription &amp; Membership Plans!
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setPromoCodeApplied(!promoCodeApplied)}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            promoCodeApplied
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+          }`}
+        >
+          {promoCodeApplied ? '✓ Promo Code DIWALI10 Applied (-10%)' : 'Apply Promo Code DIWALI10'}
+        </button>
+      </div>
+
       {/* Top Header */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-9 lg:p-12 shadow-xl relative overflow-hidden">
         <div className="max-w-3xl space-y-4 relative z-10">

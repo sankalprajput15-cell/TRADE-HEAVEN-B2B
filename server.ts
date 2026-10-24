@@ -12,6 +12,11 @@ import {
   isBasicPlanStatus,
   assertVipForDirectSiteTransfer
 } from './src/services/tradeHeavenMediatorEngine';
+import {
+  automatedSmtpService,
+  normalizeRecipientEmail,
+  serverDeliveryQueueManager
+} from './src/services/smtpService';
 
 dotenv.config();
 
@@ -28,17 +33,17 @@ function getAlertRecipients(): string[] {
   return defaults;
 }
 
-// Helper to send login email alerts safely
+// Helper to send login email alerts safely as strictly serialized individual single-recipient messages
 async function sendLoginAlert(userEmail: string, userName: string, userRole: string, companyName: string, country: string) {
   const recipients = getAlertRecipients();
   const alertRecipient = recipients.join(', ');
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
-  console.log(`[LOGIN ALERT TRIGGERED] User ${userEmail} logged in. Dispatched security alert email task to ${alertRecipient}...`);
+  console.log(`[LOGIN ALERT TRIGGERED] User ${userEmail} logged in. Enqueuing serialized security alert emails (2s interval) for: ${alertRecipient}...`);
 
   const mailOptions = {
     from: `"Trade Heaven Security" <no-reply@tradeheaven.net>`,
-    to: alertRecipient,
+    to: recipients,
     subject: `⚠️ Security Alert: User Login - ${userEmail}`,
     html: `
       <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
@@ -91,8 +96,8 @@ async function sendLoginAlert(userEmail: string, userName: string, userRole: str
           pass: smtpPass
         }
       });
-      await transporter.sendMail(mailOptions);
-      console.log(`[LOGIN ALERT SUCCESS] Email sent to ${alertRecipient} successfully!`);
+      const receipts = await serverDeliveryQueueManager.enqueue(mailOptions, transporter);
+      console.log(`[LOGIN ALERT SUCCESS] Serialized single-recipient emails delivered (${receipts.filter(r => r.success).length}/${receipts.length})!`);
     } catch (err: any) {
       console.error(`[LOGIN ALERT ERROR] SMTP transmission failed:`, err?.message || err);
     }
@@ -104,13 +109,13 @@ async function sendLoginAlert(userEmail: string, userName: string, userRole: str
   }
 }
 
-// Helper to send general system activity alerts safely
+// Helper to send general system activity alerts safely as strictly serialized individual single-recipient messages
 async function sendActivityAlert(activityType: string, actorEmail: string, description: string, metadata: Record<string, any> = {}) {
   const recipients = getAlertRecipients();
   const alertRecipient = recipients.join(', ');
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
 
-  console.log(`[ACTIVITY ALERT TRIGGERED] Action ${activityType} performed. Dispatched alert email to ${alertRecipient}...`);
+  console.log(`[ACTIVITY ALERT TRIGGERED] Action ${activityType} performed. Enqueuing serialized alert emails (2s interval) for: ${alertRecipient}...`);
 
   // Format metadata into HTML table rows
   let metadataRows = '';
@@ -126,7 +131,7 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
 
   const mailOptions = {
     from: `"Trade Heaven Security" <noreply@tradeheaven.net>`,
-    to: alertRecipient,
+    to: recipients,
     subject: `🔔 Activity Notification: ${activityType} - ${actorEmail}`,
     html: `
       <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
@@ -163,8 +168,8 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
           pass: smtpPass
         }
       });
-      await transporter.sendMail(mailOptions);
-      console.log(`[ACTIVITY ALERT SUCCESS] Email sent to ${alertRecipient} successfully for ${activityType}!`);
+      const receipts = await serverDeliveryQueueManager.enqueue(mailOptions, transporter);
+      console.log(`[ACTIVITY ALERT SUCCESS] Serialized single-recipient emails delivered (${receipts.filter(r => r.success).length}/${receipts.length}) for ${activityType}!`);
     } catch (err: any) {
       console.error(`[ACTIVITY ALERT ERROR] SMTP transmission failed:`, err?.message || err);
     }
@@ -177,78 +182,13 @@ async function sendActivityAlert(activityType: string, actorEmail: string, descr
 }
 
 // Automated Direct-to-Client Password Reset OTP Email Dispatcher (noreply@tradeheaven.net)
-async function sendClientOtpEmail(clientEmail: string, clientName: string, verificationCode: string): Promise<boolean> {
-  const cleanEmail = clientEmail.toLowerCase().trim();
-  const displayName = clientName || 'Valued Trade Partner';
-  const waLink = `https://wa.me/918532934479?text=${encodeURIComponent(`Hello Trade Heaven Support, I need assistance resetting my password for corporate email: ${cleanEmail}`)}`;
-
-  const mailOptions = {
-    from: `"Trade Heaven Security" <noreply@tradeheaven.net>`,
-    replyTo: 'help@tradeheaven.net',
-    to: cleanEmail,
-    subject: `Your Trade Heaven Password Reset Code: ${verificationCode}`,
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; background-color: #f1f5f9;">
-        <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(15,23,42,0.08);">
-          <div style="background: #0f172a; padding: 24px; color: #ffffff; text-align: center;">
-            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #34d399; margin-bottom: 6px;">Trade Heaven Automated Security</div>
-            <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff;">Password Reset Verification Code</h2>
-          </div>
-          <div style="padding: 28px 24px; color: #1e293b;">
-            <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">Hello <strong>${displayName}</strong>,</p>
-            <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
-              We received a request to reset the password for your Trade Heaven corporate account (<strong>${cleanEmail}</strong>). Enter the 6-digit verification code below to set your new password:
-            </p>
-            <div style="background: #f8fafc; border: 2px dashed #3b82f6; border-radius: 12px; padding: 20px; text-align: center; margin: 0 0 20px 0;">
-              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 6px;">6-Digit One-Time Password (OTP)</div>
-              <div style="font-family: monospace; font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #0f172a;">${verificationCode}</div>
-              <div style="font-size: 11px; color: #64748b; margin-top: 8px;">Valid for 60 minutes • Sent automatically from noreply@tradeheaven.net</div>
-            </div>
-            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
-              <div style="font-size: 12px; font-weight: 700; color: #065f46; margin-bottom: 4px;">Need Instant Assistance? Contact Trade Heaven on WhatsApp</div>
-              <p style="font-size: 12px; color: #047857; margin: 0 0 10px 0; line-height: 1.5;">
-                If you experience any issue resetting your password, message our 24/7 Trade Desk directly on WhatsApp at <strong>+91 8532934479</strong> for an immediate solution.
-              </p>
-              <a href="${waLink}" style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 8px;">Chat on WhatsApp (+91 8532934479)</a>
-            </div>
-            <p style="font-size: 12px; color: #64748b; margin: 0;">
-              If you did not request a password reset, you can safely ignore this automated email.
-            </p>
-          </div>
-          <div style="background: #f8fafc; padding: 14px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
-            Sent automatically by Trade Heaven Security (noreply@tradeheaven.net) • Support: help@tradeheaven.net
-          </div>
-        </div>
-      </div>
-    `
-  };
-
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-
-  if (smtpHost && smtpUser && smtpPass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Number(process.env.SMTP_PORT) === 465,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass
-        }
-      });
-      await transporter.sendMail(mailOptions);
-      console.log(`[CLIENT OTP DISPATCH SUCCESS] Sent 6-digit OTP (${verificationCode}) from noreply@tradeheaven.net directly to client ${cleanEmail}`);
-      return true;
-    } catch (err: any) {
-      console.error(`[CLIENT OTP DISPATCH ERROR] SMTP failed for ${cleanEmail}:`, err?.message || err);
-      return false;
-    }
-  } else {
-    console.log(`[CLIENT OTP SIMULATION] Dispatched OTP ${verificationCode} from noreply@tradeheaven.net to ${cleanEmail}`);
-    return false;
-  }
+async function sendClientOtpEmail(clientEmail: string, clientName: string, verificationCode: string) {
+  return await automatedSmtpService.sendPasswordResetOtp({
+    recipientEmail: clientEmail,
+    recipientName: clientName,
+    otpCode: verificationCode,
+    expiryMinutes: 60
+  });
 }
 
 const app = express();
@@ -509,6 +449,21 @@ const serverUsersStore: ServerUserRecord[] = [
     membershipStatus: 'paid',
     tier: 'Basic Plan',
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'user-buyer-donald',
+    email: 'sorkindon@gmail.com',
+    passwordHash: 'Donald@1234',
+    name: 'Donald Sorkin',
+    role: 'BUYER',
+    companyName: 'Girlsenberries',
+    country: 'United States',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: true,
+    membershipStatus: 'paid',
+    tier: 'VIP',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
   }
 ];
 
@@ -573,7 +528,7 @@ app.post('/api/v1/auth/login', (req, res) => {
     });
   }
 
-  const cleanEmail = email.toLowerCase().trim();
+  const cleanEmail = normalizeRecipientEmail(email);
 
   const isMasterAdminEmail = cleanEmail === ADMIN_EMAIL || cleanEmail === 'yr943334@gmial.com' || cleanEmail === 'yr943334@gmail.com' || cleanEmail === 'admin@tradeheaven.net';
   const isMasterAdminPass = password === ADMIN_PASSWORD || password === 'Yash@8532' || password === 'Admin@2026!' || password === 'admin123' || password === 'admin' || password === 'Admin@123';
@@ -623,7 +578,7 @@ app.post('/api/v1/auth/login', (req, res) => {
   }
 
   // 2. Check registered users in database store
-  const matchedUser = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+  const matchedUser = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
   if (matchedUser && matchedUser.passwordHash === password) {
     const token = generateServerJwt(matchedUser);
     const isAdmin = matchedUser.role === 'ADMIN' || matchedUser.email.toLowerCase().trim() === ADMIN_EMAIL;
@@ -660,7 +615,200 @@ app.post('/api/v1/auth/login', (req, res) => {
   });
 });
 
-// POST /api/v1/auth/test-email - Trigger manual test email alert via SMTP
+// GET /api/v1/auth/email-queue-status - Inspect serialized server-side delivery queue status
+app.get('/api/v1/auth/email-queue-status', (_req, res) => {
+  return res.json({
+    success: true,
+    queue: serverDeliveryQueueManager.getQueueStatus()
+  });
+});
+
+// POST /api/v1/auth/email-queue-reset-alert - Reset consecutive failure count and clear flagged status
+app.post('/api/v1/auth/email-queue-reset-alert', (_req, res) => {
+  const status = serverDeliveryQueueManager.resetFailureState();
+  return res.json({
+    success: true,
+    message: 'Delivery queue consecutive failure counter has been reset.',
+    queue: status
+  });
+});
+
+// POST /api/v1/auth/email-queue-simulate-failures - Simulate consecutive failures for diagnostic verification
+app.post('/api/v1/auth/email-queue-simulate-failures', (req, res) => {
+  const count = Number(req.body?.count || 5);
+  const reason = String(req.body?.reason || 'SMTP connection timeout / upstream MTA refusal');
+  const status = serverDeliveryQueueManager.recordSimulatedFailures(count, reason);
+  return res.json({
+    success: true,
+    message: `Recorded ${count} consecutive delivery queue failure(s) for diagnostic verification.`,
+    queue: status
+  });
+});
+
+// Track latest Diwali Offer Campaign receipts and real-time step-by-step progress
+let lastDiwaliCampaignReport: {
+  isRunning: boolean;
+  launchedAt: string | null;
+  completedAt: string | null;
+  promoCode: string;
+  discount: string;
+  bannerUrl: string;
+  totalClients: number;
+  processedCount: number;
+  deliveredCount: number;
+  failedCount: number;
+  currentRecipient: string | null;
+  receipts: any[];
+} = {
+  isRunning: false,
+  launchedAt: null,
+  completedAt: null,
+  promoCode: 'DIWALI10',
+  discount: 'FLAT 10% OFF',
+  bannerUrl: '/assets/aistudio/Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png',
+  totalClients: 4,
+  processedCount: 0,
+  deliveredCount: 0,
+  failedCount: 0,
+  currentRecipient: null,
+  receipts: []
+};
+
+function getExistingClientRecordsForOffer() {
+  const seen = new Set<string>();
+  const clients: Array<{ id: string; email: string; name: string; companyName: string; role: string; tier?: string }> = [];
+
+  for (const u of serverUsersStore) {
+    const clean = normalizeRecipientEmail(u.email);
+    if (!clean || !clean.includes('@')) continue;
+    // Include all existing BUYER & SUPPLIER clients (exclude internal admin accounts)
+    if (u.role === 'ADMIN') continue;
+    if (seen.has(clean)) continue;
+    seen.add(clean);
+    clients.push({
+      id: u.id,
+      email: clean,
+      name: u.name,
+      companyName: u.companyName,
+      role: u.role,
+      tier: u.tier
+    });
+  }
+
+  return clients;
+}
+
+// GET /api/v1/admin/diwali-offer-clients - Inspect existing clients and live batch progress for the Diwali Maha Utsav offer campaign
+app.get('/api/v1/admin/diwali-offer-clients', (_req, res) => {
+  const clients = getExistingClientRecordsForOffer();
+  if (!lastDiwaliCampaignReport.launchedAt && lastDiwaliCampaignReport.totalClients !== clients.length) {
+    lastDiwaliCampaignReport.totalClients = clients.length;
+  }
+  return res.json({
+    success: true,
+    clients,
+    lastCampaign: lastDiwaliCampaignReport,
+    queue: serverDeliveryQueueManager.getQueueStatus()
+  });
+});
+
+// POST /api/v1/admin/launch-diwali-offer-campaign - Mail Diwali Maha Utsav (FLAT 10% OFF - Code: DIWALI10) banner offer to all existing clients
+app.post('/api/v1/admin/launch-diwali-offer-campaign', async (req, res) => {
+  try {
+    if (lastDiwaliCampaignReport.isRunning) {
+      return res.json({
+        success: true,
+        message: `Diwali Maha Utsav campaign is currently in progress (Emails Sent ${lastDiwaliCampaignReport.processedCount}/${lastDiwaliCampaignReport.totalClients}).`,
+        campaign: lastDiwaliCampaignReport,
+        queue: serverDeliveryQueueManager.getQueueStatus()
+      });
+    }
+
+    const customRecipients: Array<{ email: string; name?: string; companyName?: string; tier?: string }> | undefined =
+      Array.isArray(req.body?.clients) ? req.body.clients : undefined;
+    const runAsync = Boolean(req.body?.async);
+
+    const rawClients =
+      customRecipients && customRecipients.length > 0
+        ? customRecipients
+        : getExistingClientRecordsForOffer();
+
+    const seen = new Set<string>();
+    const targetClients: Array<{ email: string; name?: string; companyName?: string; tier?: string }> = [];
+    for (const c of rawClients) {
+      const norm = normalizeRecipientEmail(c.email);
+      if (norm && norm.includes('@') && !seen.has(norm)) {
+        seen.add(norm);
+        targetClients.push({ ...c, email: norm });
+      }
+    }
+
+    lastDiwaliCampaignReport = {
+      isRunning: true,
+      launchedAt: new Date().toISOString(),
+      completedAt: null,
+      promoCode: 'DIWALI10',
+      discount: 'FLAT 10% OFF',
+      bannerUrl: '/assets/aistudio/Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png',
+      totalClients: targetClients.length,
+      processedCount: 0,
+      deliveredCount: 0,
+      failedCount: 0,
+      currentRecipient: targetClients[0]?.email || null,
+      receipts: []
+    };
+
+    const executeBatch = async () => {
+      try {
+        for (let i = 0; i < targetClients.length; i++) {
+          const client = targetClients[i];
+          lastDiwaliCampaignReport.currentRecipient = client.email;
+          const receipt = await automatedSmtpService.sendDiwaliOfferEmailToClient(client);
+          lastDiwaliCampaignReport.receipts.push(receipt);
+          lastDiwaliCampaignReport.processedCount = i + 1;
+          if (receipt.success) {
+            lastDiwaliCampaignReport.deliveredCount += 1;
+          } else {
+            lastDiwaliCampaignReport.failedCount += 1;
+          }
+          lastDiwaliCampaignReport.currentRecipient = targetClients[i + 1]?.email || null;
+        }
+      } finally {
+        lastDiwaliCampaignReport.isRunning = false;
+        lastDiwaliCampaignReport.currentRecipient = null;
+        lastDiwaliCampaignReport.completedAt = new Date().toISOString();
+      }
+    };
+
+    if (runAsync) {
+      void executeBatch();
+      return res.status(202).json({
+        success: true,
+        message: `Started Diwali Maha Utsav batch campaign for ${targetClients.length} clients (Emails Sent 0/${targetClients.length}).`,
+        campaign: lastDiwaliCampaignReport,
+        queue: serverDeliveryQueueManager.getQueueStatus()
+      });
+    }
+
+    await executeBatch();
+
+    return res.json({
+      success: lastDiwaliCampaignReport.deliveredCount > 0,
+      message: `Diwali Maha Utsav (DIWALI10 - Flat 10% OFF) offer emailed to ${lastDiwaliCampaignReport.deliveredCount}/${lastDiwaliCampaignReport.totalClients} existing clients via serialized 2s delivery queue.`,
+      campaign: lastDiwaliCampaignReport,
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    lastDiwaliCampaignReport.isRunning = false;
+    lastDiwaliCampaignReport.currentRecipient = null;
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch Diwali offer campaign: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/auth/test-email - Trigger manual test email alert via serialized SMTP queue
 app.post('/api/v1/auth/test-email', async (req, res) => {
   const { customTargetEmail, testSmtpHost, testSmtpPort, testSmtpUser, testSmtpPass } = req.body;
   const target = (customTargetEmail || process.env.ALERT_EMAIL || 'solutionthe87@gmail.com').toLowerCase().trim();
@@ -701,11 +849,22 @@ app.post('/api/v1/auth/test-email', async (req, res) => {
         secure: port === 465,
         auth: { user, pass }
       });
-      await transporter.sendMail(mailOptions);
+      const receipts = await serverDeliveryQueueManager.enqueue(mailOptions, transporter);
+      const allSucceeded = receipts.length > 0 && receipts.every((r) => r.success);
+      if (!allSucceeded) {
+        const firstErr = receipts.find((r) => !r.success)?.error || 'SMTP delivery error';
+        return res.status(500).json({
+          success: false,
+          mode: 'SMTP',
+          receipts,
+          message: `SMTP transmission failed: ${firstErr}`
+        });
+      }
       return res.json({
         success: true,
         mode: 'SMTP',
-        message: `Successfully transmitted test email to ${target} via your secure SMTP host (${host}). Check your inbox/spam folder!`
+        receipts,
+        message: `Successfully transmitted serialized test email(s) to ${receipts.map((r) => r.recipient).join(', ')} via your secure SMTP host (${host}). Check your inbox/spam folder!`
       });
     } catch (err: any) {
       return res.status(500).json({
@@ -1117,8 +1276,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ success: false, message: 'Valid corporate email address is required.' });
     }
-    const cleanEmail = email.toLowerCase().trim();
-    let user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+    const cleanEmail = normalizeRecipientEmail(email);
+    let user = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
 
     if (!user) {
       const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
@@ -1140,21 +1299,25 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       serverUsersStore.push(user);
     }
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const initialCode = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenExpiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');
+
+    const dispatchResult = await sendClientOtpEmail(cleanEmail, user.name, initialCode);
+    const verificationCode = dispatchResult.dispatchedCode || initialCode;
+    const emailSent = dispatchResult.success;
+
     user.reset_token = verificationCode;
     user.reset_token_expiry = tokenExpiry;
 
-    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code generated for ${cleanEmail} from noreply@tradeheaven.net: ${verificationCode}`);
+    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code dispatched for ${cleanEmail} from noreply@tradeheaven.net (${dispatchResult.mode}): ${verificationCode}`);
 
-    const emailSent = await sendClientOtpEmail(cleanEmail, user.name, verificationCode);
-
-    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail}.`, {
+    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail} via ${dispatchResult.mode}.`, {
       clientEmail: cleanEmail,
       clientName: user.name,
       sender: 'noreply@tradeheaven.net',
       verificationCode,
-      emailSent
+      emailSent,
+      deliveryMode: dispatchResult.mode
     });
 
     return res.status(200).json({
@@ -1162,6 +1325,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       status: 'success',
       sender: 'noreply@tradeheaven.net',
       emailSent,
+      deliveryMode: dispatchResult.mode,
       code: verificationCode,
       verification_code: verificationCode,
       message: `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
@@ -1192,22 +1356,47 @@ app.post('/api/auth/reset-password', async (req, res) => {
     if (resolvedPassword.length < 6) {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
     }
-    const cleanEmail = email.toLowerCase().trim();
-    const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+    const cleanEmail = normalizeRecipientEmail(email);
+    let user = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
 
-    if (!user || user.reset_token !== resolvedToken) {
+    const localTokenValid = Boolean(
+      user &&
+      user.reset_token === resolvedToken &&
+      (!user.reset_token_expiry || new Date() <= new Date(user.reset_token_expiry))
+    );
+
+    const remoteSync = await automatedSmtpService.syncRemotePasswordReset(cleanEmail, resolvedToken, resolvedPassword);
+
+    if (!localTokenValid && !remoteSync.success) {
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired verification code. Please request a new OTP or contact Trade Heaven on WhatsApp (+91 8532934479).'
       });
     }
-    if (user.reset_token_expiry && new Date() > new Date(user.reset_token_expiry)) {
-      return res.status(400).json({ success: false, message: 'Password reset token has expired. Please request a new one.' });
-    }
 
-    user.passwordHash = resolvedPassword;
-    user.reset_token = null;
-    user.reset_token_expiry = null;
+    if (!user) {
+      const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
+      user = {
+        id: `user-${Date.now()}`,
+        email: cleanEmail,
+        passwordHash: resolvedPassword,
+        name: derivedName,
+        role: 'BUYER',
+        companyName: 'Enterprise Trading Firm',
+        country: 'United States',
+        status: 'ACTIVE',
+        isVerified: true,
+        isPremium: false,
+        membershipStatus: 'free',
+        tier: 'FREE',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+      };
+      serverUsersStore.push(user);
+    } else {
+      user.passwordHash = resolvedPassword;
+      user.reset_token = null;
+      user.reset_token_expiry = null;
+    }
 
     return res.status(200).json({
       success: true,
@@ -1220,7 +1409,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-app.post('/api.php', (req, res) => {
+app.post('/api.php', async (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
   res.type('application/json');
@@ -1309,8 +1498,8 @@ app.post('/api.php', (req, res) => {
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ success: false, message: 'Valid corporate email address is required.' });
     }
-    const cleanEmail = email.toLowerCase().trim();
-    let user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+    const cleanEmail = normalizeRecipientEmail(email);
+    let user = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
 
     if (!user) {
       const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
@@ -1332,29 +1521,34 @@ app.post('/api.php', (req, res) => {
       serverUsersStore.push(user);
     }
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const initialCode = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenExpiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');
+
+    // Dispatch automated OTP email directly to client from noreply@tradeheaven.net (with live BigRock MTA relay)
+    const dispatchResult = await sendClientOtpEmail(cleanEmail, user.name, initialCode);
+    const verificationCode = dispatchResult.dispatchedCode || initialCode;
+    const emailSent = dispatchResult.success;
+
     user.reset_token = verificationCode;
     user.reset_token_expiry = tokenExpiry;
 
-    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code sent from noreply@tradeheaven.net to ${cleanEmail}: ${verificationCode}`);
+    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code sent from noreply@tradeheaven.net to ${cleanEmail} (${dispatchResult.mode}): ${verificationCode}`);
 
-    // Dispatch automated OTP email directly to client from noreply@tradeheaven.net
-    sendClientOtpEmail(cleanEmail, user.name, verificationCode).catch(err => {
-      console.warn('[OTP Email Background Dispatch Warning]:', err);
-    });
-
-    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail}.`, {
+    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail} via ${dispatchResult.mode}.`, {
       clientEmail: cleanEmail,
       clientName: user.name,
       sender: 'noreply@tradeheaven.net',
-      verificationCode
+      verificationCode,
+      emailSent,
+      deliveryMode: dispatchResult.mode
     });
 
     return res.status(200).json({
       success: true,
       status: 'success',
       sender: 'noreply@tradeheaven.net',
+      emailSent,
+      deliveryMode: dispatchResult.mode,
       code: verificationCode,
       verification_code: verificationCode,
       message: `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
@@ -1371,22 +1565,47 @@ app.post('/api.php', (req, res) => {
     if (resolvedPass.length < 6) {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
     }
-    const cleanEmail = email.toLowerCase().trim();
-    const user = serverUsersStore.find(u => u.email.toLowerCase().trim() === cleanEmail);
+    const cleanEmail = normalizeRecipientEmail(email);
+    let user = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
 
-    if (!user || user.reset_token !== resolvedCode) {
+    const localTokenValid = Boolean(
+      user &&
+      user.reset_token === resolvedCode &&
+      (!user.reset_token_expiry || new Date() <= new Date(user.reset_token_expiry))
+    );
+
+    const remoteSync = await automatedSmtpService.syncRemotePasswordReset(cleanEmail, resolvedCode, resolvedPass);
+
+    if (!localTokenValid && !remoteSync.success) {
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired verification code. Please request a new OTP or contact Trade Heaven on WhatsApp (+91 8532934479) for instant assistance.'
       });
     }
-    if (user.reset_token_expiry && new Date() > new Date(user.reset_token_expiry)) {
-      return res.status(400).json({ success: false, message: 'Password reset token has expired. Please request a new one.' });
-    }
 
-    user.passwordHash = resolvedPass;
-    user.reset_token = null;
-    user.reset_token_expiry = null;
+    if (!user) {
+      const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
+      user = {
+        id: `user-${Date.now()}`,
+        email: cleanEmail,
+        passwordHash: resolvedPass,
+        name: derivedName,
+        role: 'BUYER',
+        companyName: 'Enterprise Trading Firm',
+        country: 'United States',
+        status: 'ACTIVE',
+        isVerified: true,
+        isPremium: false,
+        membershipStatus: 'free',
+        tier: 'FREE',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+      };
+      serverUsersStore.push(user);
+    } else {
+      user.passwordHash = resolvedPass;
+      user.reset_token = null;
+      user.reset_token_expiry = null;
+    }
 
     sendActivityAlert('PASSWORD_RESET_COMPLETED', cleanEmail, `Client ${cleanEmail} successfully updated their account password via automated OTP.`, {
       clientEmail: cleanEmail,
@@ -1406,7 +1625,7 @@ app.post('/api.php', (req, res) => {
     if (!email) {
       return res.status(400).json({ status: 'error', success: false, message: 'Corporate email is required.' });
     }
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = normalizeRecipientEmail(email);
 
     const isMasterAdminEmail = cleanEmail === ADMIN_EMAIL || cleanEmail === 'yr943334@gmial.com' || cleanEmail === 'yr943334@gmail.com' || cleanEmail === 'admin@tradeheaven.net';
     const isMasterAdminPass = password === ADMIN_PASSWORD || password === 'Yash@8532' || password === 'Admin@2026!' || password === 'admin123' || password === 'admin' || password === 'Admin@123';
@@ -1447,7 +1666,7 @@ app.post('/api.php', (req, res) => {
       });
     }
 
-    const matched = serverUsersStore.find(u => u.email === cleanEmail && (!u.passwordHash || u.passwordHash === password));
+    const matched = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail && (!u.passwordHash || u.passwordHash === password));
     if (matched) {
       const token = generateServerJwt(matched);
       sendLoginAlert(matched.email, matched.name, matched.role, matched.companyName, matched.country);
@@ -3216,11 +3435,28 @@ app.post('/api/v1/mediation/payout', async (req, res) => {
 // -------------------------------------------------------------
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
+    let viteMiddleware: any = null;
+    const vitePromise = createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
+    }).then((vite) => {
+      viteMiddleware = vite.middlewares;
+      return vite;
     });
-    app.use(vite.middlewares);
+
+    app.use(async (req, res, next) => {
+      try {
+        if (!viteMiddleware) {
+          await vitePromise;
+        }
+        if (viteMiddleware) {
+          return viteMiddleware(req, res, next);
+        }
+        next();
+      } catch (err) {
+        next(err);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
@@ -3235,3 +3471,4 @@ async function startServer() {
 }
 
 startServer();
+

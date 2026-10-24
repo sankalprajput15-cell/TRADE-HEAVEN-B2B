@@ -718,3 +718,28 @@ export interface AppNotification {
   isRead: boolean;
   linkView?: ActiveView;
 }
+
+export interface DeliveryQueueReceipt {
+  recipient: string;
+  success: boolean;
+  messageId?: string;
+  dispatchedAt: string;
+  enforcedDelayMs: number;
+  error?: string;
+}
+
+export interface DeliveryQueueHealthStatus {
+  minDelayMs: number;
+  queueDepth: number;
+  isProcessing: boolean;
+  totalProcessed: number;
+  consecutiveFailures: number;
+  failureThreshold: number;
+  isFlagged: boolean;
+  lastFailureReason: string | null;
+  lastFailureAlertId: string | null;
+  lastFailureAlertTriggeredAt: string | null;
+  lastDispatchedAt: string | null;
+  recentDeliveries: DeliveryQueueReceipt[];
+}
+
