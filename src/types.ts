@@ -74,7 +74,7 @@ export interface NegotiationThread {
   lastUpdated?: string;
 }
 
-export type MembershipStatus = 'free' | 'paid' | 'expired' | 'grace_period';
+export type MembershipStatus = 'free' | 'paid' | 'basic' | 'verified' | 'pending' | 'expired' | 'grace_period';
 export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING';
 
 export interface AuthUser {

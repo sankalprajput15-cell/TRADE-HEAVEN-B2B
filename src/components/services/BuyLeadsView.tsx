@@ -39,6 +39,7 @@ import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { DailyFreeLeadBanner } from '../marketplace/DailyFreeLeadBanner';
 import { PitchBuyerModal } from '../marketplace/PitchBuyerModal';
 import { PaginationControls } from '../common/PaginationControls';
+import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
 import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState } from '../../services/freeLeadService';
 
 interface Props {
@@ -443,14 +444,28 @@ export const BuyLeadsView: React.FC<Props> = ({
               </button>
             )}
             <div className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200/60 text-blue-800 text-[11px] font-mono font-bold">
-              <strong>{filtered.length}</strong> {filtered.length === 1 ? 'tender match' : 'tenders matching'}
+              {!currentUser && searchTerm.trim() !== '' ? (
+                <span className="text-amber-700 font-bold flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-amber-600" />
+                  <span>Search Locked</span>
+                </span>
+              ) : (
+                <><strong>{filtered.length}</strong> {filtered.length === 1 ? 'tender match' : 'tenders matching'}</>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Leads Grid / Empty State */}
-      {isLoading ? (
+      {!currentUser && searchTerm.trim() !== '' ? (
+        <SearchRegistrationGate
+          query={searchTerm}
+          variant="panel"
+          onRegister={onOpenRegisterFree}
+          onClearSearch={() => setSearchTerm('')}
+        />
+      ) : isLoading ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
           <TradeHeavenDataLoader 
             message="Fetching live procurement buy leads..." 

@@ -9,7 +9,10 @@ import {
   SearchAutoSuggestDropdown,
   useSearchAutoSuggest,
   CategorySuggestion,
-  SupplierSuggestion
+  SupplierSuggestion,
+  SearchRegistrationGate,
+  triggerRegistrationModal,
+  triggerProductDirectoryRedirect
 } from '../common/SearchAutoSuggestDropdown';
 import { 
   Search, 
@@ -596,15 +599,23 @@ export const ProductCatalog: React.FC<Props> = ({
               setActiveSuggestIndex(-1);
             }}
             onKeyDown={e => {
-              const totalItems =
-                catalogAutoSuggestions.categories.length +
-                catalogAutoSuggestions.suppliers.length +
-                catalogAutoSuggestions.products.length;
               if (e.key === 'Escape') {
                 setIsSuggestOpen(false);
                 setActiveSuggestIndex(-1);
                 return;
               }
+              if (!user) {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setIsSuggestOpen(false);
+                  triggerRegistrationModal();
+                }
+                return;
+              }
+              const totalItems =
+                catalogAutoSuggestions.categories.length +
+                catalogAutoSuggestions.suppliers.length +
+                catalogAutoSuggestions.products.length;
               if (!totalItems) return;
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -660,7 +671,10 @@ export const ProductCatalog: React.FC<Props> = ({
                 setIsSuggestOpen(false);
                 onSelectProduct(prod);
               }}
-              onViewAllResults={() => setIsSuggestOpen(false)}
+              onViewAllResults={() => {
+                setIsSuggestOpen(false);
+                triggerProductDirectoryRedirect(searchTerm);
+              }}
               className="absolute top-full left-0 right-0 mt-1.5"
             />
           )}
@@ -677,6 +691,11 @@ export const ProductCatalog: React.FC<Props> = ({
           <div className="text-[11px] sm:text-xs text-slate-600 font-mono shrink-0">
             {isLoading || (products.length === 0 && !isUsingCache) ? (
               <span className="inline-block w-20 h-3 bg-slate-200 rounded animate-pulse align-middle" />
+            ) : !user && searchTerm.trim() !== '' ? (
+              <span className="text-amber-700 font-bold flex items-center gap-1">
+                <Lock className="w-3 h-3 text-amber-600" />
+                <span>Search Locked</span>
+              </span>
             ) : (
               <><strong className="text-slate-900 font-bold">{filtered.length}</strong> Products</>
             )}
@@ -701,7 +720,7 @@ export const ProductCatalog: React.FC<Props> = ({
       </div>
 
       {/* Matched Suppliers & Companies Banner when searching by Supplier Name or Company Name */}
-      {matchedSuppliers.length > 0 && (
+      {Boolean(user) && matchedSuppliers.length > 0 && (
         <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
@@ -852,7 +871,13 @@ export const ProductCatalog: React.FC<Props> = ({
             </div>
           )}
 
-          {isLoading || (products.length === 0 && !isUsingCache) ? (
+          {!user && searchTerm.trim() !== '' ? (
+            <SearchRegistrationGate
+              query={searchTerm}
+              variant="panel"
+              onClearSearch={() => setSearchTerm('')}
+            />
+          ) : isLoading || (products.length === 0 && !isUsingCache) ? (
             <div id="product-catalog-loading-skeletons" className="space-y-4">
               {viewMode === 'GRID' ? (
                 <ProductCatalogGrid

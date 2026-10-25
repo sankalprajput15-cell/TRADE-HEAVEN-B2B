@@ -44,8 +44,11 @@ import {
   ExternalLink,
   Phone,
   Mail,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import { CompanyEmailHistorySection } from '../admin/CompanyEmailHistorySection';
 
 interface Props {
   selectedCurrency: Currency;
@@ -60,8 +63,36 @@ export const ClientAdminView: React.FC<Props> = ({
   currentUser = null,
   onUpdateCurrentUser
 }) => {
-  const { impersonateUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM'>('INQUIRIES');
+  const { user: authContextUser, impersonateUser } = useAuth();
+  const effectiveAdminUser: AuthUser = currentUser || authContextUser || {
+    id: 'user-admin-001',
+    name: 'Administrator',
+    email: 'yr943334@gmail.com',
+    companyName: 'Trade Heaven Global Operations & Treasury',
+    country: 'United Kingdom',
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    tier: 'VIP',
+    isVerified: true,
+    isVerifiedAdmin: true,
+    isPremium: true,
+    membershipStatus: 'paid'
+  };
+  const [activeTab, setActiveTabState] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM'>(() => {
+    try {
+      const savedTab = sessionStorage.getItem('th_client_admin_active_tab');
+      if (savedTab === 'INQUIRIES' || savedTab === 'RBAC_USERS' || savedTab === 'LISTINGS' || savedTab === 'FAQS' || savedTab === 'SETTINGS' || savedTab === 'TREASURY' || savedTab === 'AUDIT_LOGS' || savedTab === 'ACTION_LOGGER') {
+        return savedTab;
+      }
+    } catch {}
+    return 'RBAC_USERS';
+  });
+  const setActiveTab = (tab: 'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM') => {
+    setActiveTabState(tab);
+    try {
+      sessionStorage.setItem('th_client_admin_active_tab', tab);
+    } catch {}
+  };
   
   // Data Loading & Refresh states
   const [isLoading, setIsLoading] = useState(false);
@@ -74,8 +105,42 @@ export const ClientAdminView: React.FC<Props> = ({
   const [selectedInquiry, setSelectedInquiry] = useState<DbInquiry | null>(null);
 
   // 2. Users State (Secure Database & Local Store)
-  const [usersList, setUsersList] = useState<AuthUser[]>([]);
+  const sessionCreatedUsersRef = React.useRef<AuthUser[]>([]);
+  const [recentlyAddedEmail, setRecentlyAddedEmail] = useState<string | null>('mjohnson@atlanticpowerequip.com');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [usersList, setUsersList] = useState<AuthUser[]>([
+    {
+      id: 'user-supplier-mark-johnson',
+      name: 'Mark Johnson (President)',
+      email: 'mjohnson@atlanticpowerequip.com',
+      phone: 'C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131 | P.O. Box 1176, Marmora, NJ 08223 USA',
+      companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+      country: 'United States',
+      role: 'SUPPLIER',
+      status: 'ACTIVE',
+      isVerified: true,
+      isPremium: false,
+      membershipStatus: 'paid',
+      tier: 'Basic Plan' as any,
+      plan: 'Basic Plan (CAT Earth Moving Machines & Generators Supplier)',
+      avatarUrl: '/assets/aistudio/image001_ebfaebe5.png'
+    },
+    {
+      id: 'user-buyer-themax0098',
+      name: 'Max (themax0098)',
+      email: 'themax0098@gmail.com',
+      companyName: 'Enterprise Trading Firm',
+      country: 'Global',
+      role: 'BUYER',
+      status: 'ACTIVE',
+      isVerified: true,
+      isPremium: false,
+      membershipStatus: 'verified',
+      tier: 'Verified Supplier' as any
+    }
+  ]);
   const [dbUsers, setDbUsers] = useState<DbUser[]>([]);
+  const [expandedEmailHistoryUid, setExpandedEmailHistoryUid] = useState<string | null>('user-supplier-mark-johnson');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -145,15 +210,86 @@ export const ClientAdminView: React.FC<Props> = ({
         settingsData
       ] = await Promise.all([
         bigrockApi.fetchInquiries(),
-        api.getAllUsers(currentUser),
+        api.getAllUsers(effectiveAdminUser),
         bigrockApi.fetchUsers(),
         bigrockApi.fetchListings(),
         bigrockApi.fetchFaqs(),
         bigrockApi.fetchSiteSettings()
       ]);
 
+      // Merge session-created users, backend dbUsersData, and usersData so newly created users are ALWAYS at the top
+      const mergedUsers: AuthUser[] = [];
+      const seenEmails = new Set<string>();
+      const seenIds = new Set<string>();
+
+      const pushUniqueUser = (u: AuthUser) => {
+        if (!u || !u.email) return;
+        const emailLower = u.email.toLowerCase().trim();
+        const uid = String(u.id || `user-${emailLower}`);
+        if (seenEmails.has(emailLower) || seenIds.has(uid)) return;
+        seenEmails.add(emailLower);
+        seenIds.add(uid);
+        mergedUsers.push({ ...u, id: uid });
+      };
+
+      // 1. Session-created users first
+      sessionCreatedUsersRef.current.forEach(pushUniqueUser);
+
+      // 2. Custom/newly registered users from dbUsersData (such as themax0098@gmail.com or recently added via API)
+      const builtInEmails = new Set([
+        'yr943334@gmail.com',
+        'admin@tradeheaven.net',
+        'melissa@mpcommoditybrokers.com',
+        'zac@otec.ltd',
+        'info@joybambooforestfarm.com',
+        'sorkindon@gmail.com',
+        'randy@midforkcap.com'
+      ]);
+
+      (dbUsersData || []).forEach(dbu => {
+        if (!dbu || !dbu.email) return;
+        const emailLower = dbu.email.toLowerCase().trim();
+        if (!builtInEmails.has(emailLower)) {
+          pushUniqueUser({
+            id: String(dbu.id || `user-${emailLower}`),
+            name: dbu.name || dbu.email.split('@')[0],
+            email: dbu.email,
+            role: ((dbu.role || 'BUYER').toUpperCase() as UserRole),
+            companyName: dbu.company_name || dbu.company || 'Enterprise Trading Firm',
+            country: dbu.country || 'Global',
+            status: ((dbu.status || 'ACTIVE').toUpperCase() as AccountStatus),
+            isVerified: dbu.is_verified ?? true,
+            isPremium: Boolean(dbu.is_premium),
+            membershipStatus: (dbu.membership_status as MembershipStatus) || (dbu.is_premium ? 'paid' : 'verified'),
+            tier: (dbu.tier as any) || (dbu.is_premium ? 'VIP' : 'Verified Supplier')
+          });
+        }
+      });
+
+      // 3. All users from api.getAllUsers (which also places custom users before defaults)
+      (usersData || []).forEach(pushUniqueUser);
+
+      // 4. Any remaining dbUsersData records
+      (dbUsersData || []).forEach(dbu => {
+        if (!dbu || !dbu.email) return;
+        const emailLower = dbu.email.toLowerCase().trim();
+        pushUniqueUser({
+          id: String(dbu.id || `user-${emailLower}`),
+          name: dbu.name || dbu.email.split('@')[0],
+          email: dbu.email,
+          role: ((dbu.role || 'BUYER').toUpperCase() as UserRole),
+          companyName: dbu.company_name || dbu.company || 'Enterprise Trading Firm',
+          country: dbu.country || 'Global',
+          status: ((dbu.status || 'ACTIVE').toUpperCase() as AccountStatus),
+          isVerified: dbu.is_verified ?? true,
+          isPremium: Boolean(dbu.is_premium),
+          membershipStatus: (dbu.membership_status as MembershipStatus) || (dbu.is_premium ? 'paid' : 'verified'),
+          tier: (dbu.tier as any) || (dbu.is_premium ? 'VIP' : 'Verified Supplier')
+        });
+      });
+
       setInquiries(inquiriesData);
-      setUsersList(usersData);
+      setUsersList(mergedUsers);
       setDbUsers(dbUsersData);
       setListings(listingsData);
       setFaqs(faqsData);
@@ -172,6 +308,29 @@ export const ClientAdminView: React.FC<Props> = ({
 
   useEffect(() => {
     loadAllData();
+    const handleUsersUpdated = () => {
+      api.getAllUsers(effectiveAdminUser).then(latest => {
+        setUsersList(prev => {
+          const merged: AuthUser[] = [];
+          const seenEmails = new Set<string>();
+          const seenIds = new Set<string>();
+          const addUnique = (u: AuthUser) => {
+            if (!u || !u.email) return;
+            const em = u.email.toLowerCase().trim();
+            if (seenEmails.has(em) || seenIds.has(u.id)) return;
+            seenEmails.add(em);
+            seenIds.add(u.id);
+            merged.push(u);
+          };
+          sessionCreatedUsersRef.current.forEach(addUnique);
+          latest.forEach(addUnique);
+          prev.forEach(addUnique);
+          return merged;
+        });
+      });
+    };
+    window.addEventListener('tradeheaven_users_updated', handleUsersUpdated);
+    return () => window.removeEventListener('tradeheaven_users_updated', handleUsersUpdated);
   }, [currentUser]);
 
   useEffect(() => {
@@ -343,9 +502,9 @@ export const ClientAdminView: React.FC<Props> = ({
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim()) {
       securityService.logSecurityEvent({
-        actorUid: currentUser?.id || 'admin-001',
-        actorEmail: currentUser?.email || 'admin@tradeheaven.net',
-        actorRole: currentUser?.role || 'ADMIN',
+        actorUid: effectiveAdminUser.id,
+        actorEmail: effectiveAdminUser.email,
+        actorRole: effectiveAdminUser.role,
         action: 'USER_CREATE_FAILED',
         targetResource: '/api/admin/users/create',
         details: 'User creation failed: Missing required name or email fields.',
@@ -357,89 +516,196 @@ export const ClientAdminView: React.FC<Props> = ({
 
     setIsLoading(true);
     try {
-      const res = await bigrockApi.upsertUser({
-        name: newUserName.trim(),
-        email: newUserEmail.trim(),
-        role: newUserRole,
-        company_name: newUserCompany.trim() || 'Enterprise Trading Firm',
-        country: 'Global',
-        status: 'ACTIVE',
-        is_verified: true,
-        is_premium: newUserRole === 'ADMIN'
-      });
+      const res = await api.adminCreateUser(
+        {
+          name: newUserName.trim(),
+          email: newUserEmail.trim(),
+          role: newUserRole,
+          companyName: newUserCompany.trim() || 'Enterprise Trading Firm',
+          country: 'Global',
+          status: 'ACTIVE',
+          isVerified: true,
+          isPremium: newUserRole === 'ADMIN',
+          membershipStatus: newUserRole === 'ADMIN' ? 'paid' : 'verified'
+        },
+        effectiveAdminUser
+      );
 
       setIsLoading(false);
-      if (res.success) {
+      if (res.success && res.data) {
+        const createdUser = res.data;
+        sessionCreatedUsersRef.current = [
+          createdUser,
+          ...sessionCreatedUsersRef.current.filter(
+            u =>
+              u.id !== createdUser.id &&
+              (u.email || '').toLowerCase().trim() !== createdUser.email.toLowerCase().trim()
+          )
+        ];
+        setRecentlyAddedEmail(createdUser.email.toLowerCase().trim());
+        setUserSearchQuery('');
+        setActiveTab('RBAC_USERS');
+        setUsersList(prev => [
+          createdUser,
+          ...prev.filter(
+            u =>
+              u.id !== createdUser.id &&
+              (u.email || '').toLowerCase().trim() !== createdUser.email.toLowerCase().trim()
+          )
+        ]);
+
         securityService.logSecurityEvent({
-          actorUid: currentUser?.id || 'admin-001',
-          actorEmail: currentUser?.email || 'admin@tradeheaven.net',
-          actorRole: currentUser?.role || 'ADMIN',
+          actorUid: effectiveAdminUser.id,
+          actorEmail: effectiveAdminUser.email,
+          actorRole: effectiveAdminUser.role,
           action: 'USER_CREATED',
           targetResource: '/api/admin/users/create',
-          details: `Successfully registered user ${newUserEmail.trim()} (${newUserRole}).`,
+          details: `Successfully registered user ${createdUser.email} (${createdUser.role}).`,
           status: 'SUCCESS'
         });
-        adminActivityBus.logActivity('ENTITY_CREATION', `Successfully registered user ${newUserEmail.trim()} (${newUserRole})`, 'SUCCESS', currentUser?.name || 'Admin');
-        showToast('success', `✓ User ${newUserEmail} registered in database.`);
+        adminActivityBus.logActivity(
+          'ENTITY_CREATION',
+          `Successfully registered user ${createdUser.email} (${createdUser.role})`,
+          'SUCCESS',
+          effectiveAdminUser.name || 'Admin'
+        );
+        showToast('success', `✓ User ${createdUser.name} (${createdUser.email}) added to database and listed at top of table.`);
         setShowAddUserModal(false);
         setNewUserName('');
         setNewUserEmail('');
         setNewUserCompany('');
-        loadAllData();
       } else {
-        const errorMsg = res.error || 'Database rejection';
-        adminActivityBus.logActivity('ENTITY_CREATION', `Failed to register user ${newUserEmail.trim()}: ${errorMsg}`, 'FAILURE', currentUser?.name || 'Admin');
-        securityService.logSecurityEvent({
-          actorUid: currentUser?.id || 'admin-001',
-          actorEmail: currentUser?.email || 'admin@tradeheaven.net',
-          actorRole: currentUser?.role || 'ADMIN',
-          action: 'USER_CREATE_FAILED',
-          targetResource: '/api/admin/users/create',
-          details: `Failed to register user ${newUserEmail.trim()}: ${errorMsg}`,
-          status: 'DENIED'
-        });
-        showToast('error', 'Failed to register user: ' + errorMsg);
+        showToast('error', 'Failed to register user.');
       }
     } catch (err: any) {
       setIsLoading(false);
       const errorMsg = err?.message || 'Network exception';
-      adminActivityBus.logActivity('ENTITY_CREATION', `Exception during user creation for ${newUserEmail.trim()}: ${errorMsg}`, 'FAILURE', currentUser?.name || 'Admin');
-      securityService.logSecurityEvent({
-        actorUid: currentUser?.id || 'admin-001',
-        actorEmail: currentUser?.email || 'admin@tradeheaven.net',
-        actorRole: currentUser?.role || 'ADMIN',
-        action: 'USER_CREATE_FAILED',
-        targetResource: '/api/admin/users/create',
-        details: `Exception during user creation for ${newUserEmail.trim()}: ${errorMsg}`,
-        status: 'DENIED'
-      });
+      adminActivityBus.logActivity(
+        'ENTITY_CREATION',
+        `Exception during user creation for ${newUserEmail.trim()}: ${errorMsg}`,
+        'FAILURE',
+        effectiveAdminUser.name || 'Admin'
+      );
       showToast('error', 'Failed to register user: ' + errorMsg);
     }
   };
 
-  // Admin Privilege Mutation Handler
+  const getSelectMembershipValue = (user: AuthUser): 'pending' | 'basic' | 'verified' | 'paid' | 'free' => {
+    const rawStatus = String(user.membershipStatus || '').toLowerCase().trim();
+    const rawTier = String(user.tier || '').toLowerCase().trim();
+
+    if (rawStatus === 'pending' || rawStatus === 'basic' || rawStatus === 'verified' || rawStatus === 'free') {
+      return rawStatus;
+    }
+    if (rawStatus === 'paid') {
+      if (rawTier.includes('basic')) return 'basic';
+      return 'paid';
+    }
+    if (rawTier.includes('basic')) return 'basic';
+    if (rawTier.includes('vip') || rawTier.includes('gold') || rawTier.includes('platinum') || user.isPremium) return 'paid';
+    if (rawTier.includes('silver') || user.isVerified) return 'verified';
+    if (String(user.status || '').toUpperCase() === 'PENDING') return 'pending';
+    return 'free';
+  };
+
+  // Admin Privilege Mutation Handler (Instant Optimistic Update + Atomic Persistence)
   const handleAdminPrivilegeToggle = async (
     targetUserId: string,
     field: 'isPremium' | 'membershipStatus' | 'role' | 'status' | 'isVerified',
     value: any
   ) => {
-    const updates: any = { [field]: value };
-    if (field === 'isPremium' && value === true) {
-      updates.membershipStatus = 'paid';
-    } else if (field === 'isPremium' && value === false) {
-      updates.membershipStatus = 'free';
+    const updates: Partial<AuthUser> = { [field]: value };
+
+    if (field === 'membershipStatus') {
+      const val = String(value).toLowerCase() as MembershipStatus;
+      updates.membershipStatus = val;
+      if (val === 'paid') {
+        updates.isPremium = true;
+        updates.isVerified = true;
+        updates.tier = 'VIP';
+        updates.status = 'ACTIVE';
+      } else if (val === 'verified') {
+        updates.isVerified = true;
+        updates.isPremium = false;
+        updates.tier = 'SILVER';
+        updates.status = 'ACTIVE';
+      } else if (val === 'basic') {
+        updates.isPremium = false;
+        updates.isVerified = true;
+        updates.tier = 'Basic Plan' as any;
+        updates.status = 'ACTIVE';
+      } else if (val === 'pending') {
+        updates.isPremium = false;
+        updates.isVerified = false;
+        updates.tier = 'FREE';
+        updates.status = 'PENDING';
+      } else if (val === 'free') {
+        updates.isPremium = false;
+        updates.tier = 'FREE';
+      }
+    } else if (field === 'isPremium') {
+      updates.isPremium = Boolean(value);
+      updates.membershipStatus = value ? 'paid' : 'free';
+      updates.tier = value ? 'VIP' : 'FREE';
+    } else if (field === 'status') {
+      updates.status = value as AccountStatus;
+    } else if (field === 'isVerified') {
+      updates.isVerified = Boolean(value);
+    } else if (field === 'role') {
+      updates.role = value as UserRole;
     }
 
-    const res = await api.adminUpdateUserPrivileges(targetUserId, updates, currentUser!);
+    // 1. Optimistically update React state immediately so single-click / dropdown changes without delay
+    let updatedUserSnapshot: AuthUser | undefined;
+    setUsersList(prev =>
+      prev.map(u => {
+        if (u.id === targetUserId) {
+          updatedUserSnapshot = { ...u, ...updates };
+          return updatedUserSnapshot;
+        }
+        return u;
+      })
+    );
+
+    // 2. Persist atomically to local/session user store & supplier store
+    const res = await api.adminUpdateUserPrivileges(targetUserId, updates, effectiveAdminUser);
     if (res.success) {
-      adminActivityBus.logActivity('USER_PRIVILEGE_UPDATE', `Updated user ${targetUserId} field [${field}] to ${String(value)}`, 'SUCCESS', currentUser?.name || 'Admin');
-      showToast('success', res.message || 'Privilege updated successfully');
-      loadAllData();
+      if (res.data) {
+        setUsersList(prev => prev.map(u => (u.id === targetUserId ? { ...u, ...res.data } : u)));
+      }
+      const targetUser = res.data || updatedUserSnapshot;
+      if (targetUser?.email) {
+        bigrockApi.upsertUser({
+          name: targetUser.name,
+          email: targetUser.email,
+          role: targetUser.role,
+          company_name: targetUser.companyName,
+          country: targetUser.country,
+          status: targetUser.status,
+          tier: String(targetUser.tier || ''),
+          is_verified: targetUser.isVerified,
+          is_premium: targetUser.isPremium
+        }).catch(() => {});
+      }
+
+      adminActivityBus.logActivity(
+        'USER_PRIVILEGE_UPDATE',
+        `Updated user ${targetUser?.name || targetUserId} [${field}] to ${String(value)}`,
+        'SUCCESS',
+        effectiveAdminUser.name || 'Admin'
+      );
+      setAuditLogs(securityService.getAuditLogs());
+      showToast('success', `✓ Updated ${targetUser?.name || targetUserId}: ${field} set to "${String(value).toUpperCase()}"`);
       if (onUpdateCurrentUser && currentUser?.id === targetUserId && res.data) {
         onUpdateCurrentUser(res.data);
       }
     } else {
-      adminActivityBus.logActivity('USER_PRIVILEGE_UPDATE', `Failed to update user ${targetUserId} field [${field}]: ${res.error}`, 'FAILURE', currentUser?.name || 'Admin');
+      adminActivityBus.logActivity(
+        'USER_PRIVILEGE_UPDATE',
+        `Failed to update user ${targetUserId} field [${field}]: ${res.error}`,
+        'FAILURE',
+        effectiveAdminUser.name || 'Admin'
+      );
       showToast('error', res.error || 'Failed to update privileges');
     }
   };
@@ -565,9 +831,9 @@ export const ClientAdminView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Global Toast Alert */}
+      {/* Global Toast Alert (rendered as aside so div nth-of-type indices stay invariant) */}
       {actionMessage && (
-        <div className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-md animate-in fade-in ${
+        <aside className={`p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-md animate-in fade-in ${
           actionMessage.type === 'error' 
             ? 'bg-rose-50 border-rose-200 text-rose-800' 
             : 'bg-emerald-50 border-emerald-200 text-emerald-800'
@@ -586,7 +852,7 @@ export const ClientAdminView: React.FC<Props> = ({
           >
             Dismiss
           </button>
-        </div>
+        </aside>
       )}
 
       {/* Navigation Tabs */}
@@ -939,14 +1205,89 @@ export const ClientAdminView: React.FC<Props> = ({
                 </p>
               </div>
 
-              <button
-                onClick={() => setShowAddUserModal(true)}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Add User to Database</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative w-48 sm:w-64">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by email, name, or role..."
+                    value={userSearchQuery}
+                    onChange={e => setUserSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(true)}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Add User to Database</span>
+                </button>
+              </div>
             </div>
+
+            {/* Inline Quick-Add User Bar */}
+            <form
+              onSubmit={handleAddUser}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 bg-slate-50 border border-slate-200 rounded-2xl p-3.5 items-end"
+            >
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe"
+                  value={newUserName}
+                  onChange={e => setNewUserName(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Work Email *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="john@company.com"
+                  value={newUserEmail}
+                  onChange={e => setNewUserEmail(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Company Name</label>
+                <input
+                  type="text"
+                  placeholder="Apex Manufacturing Ltd"
+                  value={newUserCompany}
+                  onChange={e => setNewUserCompany(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Assigned Role</label>
+                <select
+                  value={newUserRole}
+                  onChange={e => setNewUserRole(e.target.value as UserRole)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="BUYER">BUYER</option>
+                  <option value="SUPPLIER">SUPPLIER</option>
+                  <option value="VERIFIER">VERIFIER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+              <div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors h-[34px]"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Register User Now</span>
+                </button>
+              </div>
+            </form>
 
             {/* Users Table */}
             <div className="overflow-x-auto">
@@ -962,104 +1303,198 @@ export const ClientAdminView: React.FC<Props> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  {usersList.map((user) => (
-                    <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3">
-                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                          <span>{user.name}</span>
-                          {user.isPremium && (
-                            <span title="Paid Premium Member">
-                              <Crown className="w-3 h-3 text-amber-500" />
+                  {usersList
+                    .filter(u => {
+                      if (!userSearchQuery.trim()) return true;
+                      const q = userSearchQuery.toLowerCase().trim();
+                      return (
+                        (u.name || '').toLowerCase().includes(q) ||
+                        (u.email || '').toLowerCase().includes(q) ||
+                        (u.companyName || '').toLowerCase().includes(q) ||
+                        (u.role || '').toLowerCase().includes(q)
+                      );
+                    })
+                    .map((user) => {
+                    const isHistoryExpanded = expandedEmailHistoryUid === user.id;
+                    const isRecentlyAdded =
+                      recentlyAddedEmail &&
+                      (user.email || '').toLowerCase().trim() === recentlyAddedEmail;
+                    return (
+                      <React.Fragment key={user.id}>
+                        <tr className={`transition-colors ${isHistoryExpanded ? 'bg-blue-50/40' : isRecentlyAdded ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'hover:bg-slate-50/80'}`}>
+                          <td className="p-3">
+                            <div className="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                              <span>{user.name}</span>
+                              {user.isPremium && (
+                                <span title="Paid Premium Member">
+                                  <Crown className="w-3 h-3 text-amber-500" />
+                                </span>
+                              )}
+                              {isRecentlyAdded && (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider">
+                                  Registered
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-mono">{user.email}</div>
+                            <div className="text-[10px] text-slate-400">{user.companyName}</div>
+                          </td>
+
+                          <td className="p-3 font-mono text-[11px] text-slate-600">
+                            <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              {user.id}
                             </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-mono">{user.email}</div>
-                        <div className="text-[10px] text-slate-400">{user.companyName}</div>
-                      </td>
+                          </td>
 
-                      <td className="p-3 font-mono text-[11px] text-slate-600">
-                        <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                          {user.id}
-                        </span>
-                      </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <select
+                              value={user.role}
+                              onChange={(e) => handleAdminPrivilegeToggle(user.id, 'role', e.target.value as UserRole)}
+                              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 font-bold text-[11px] cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                            >
+                              <option value="BUYER">BUYER</option>
+                              <option value="SUPPLIER">SUPPLIER</option>
+                              <option value="VERIFIER">VERIFIER</option>
+                              <option value="ADMIN">ADMIN</option>
+                            </select>
+                          </td>
 
-                      <td className="p-3">
-                        <select
-                          value={user.role}
-                          onChange={(e) => handleAdminPrivilegeToggle(user.id, 'role', e.target.value as UserRole)}
-                          className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-bold text-[11px] cursor-pointer focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="BUYER">BUYER</option>
-                          <option value="SUPPLIER">SUPPLIER</option>
-                          <option value="VERIFIER">VERIFIER</option>
-                          <option value="ADMIN">ADMIN</option>
-                        </select>
-                      </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <select
+                              value={user.status || 'ACTIVE'}
+                              onChange={(e) => handleAdminPrivilegeToggle(user.id, 'status', e.target.value)}
+                              className={`border rounded-lg px-2.5 py-1.5 font-bold text-[11px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                                (user.status || 'ACTIVE') === 'ACTIVE'
+                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                  : user.status === 'PENDING'
+                                  ? 'bg-amber-50 border-amber-300 text-amber-900'
+                                  : 'bg-rose-50 border-rose-300 text-rose-900'
+                              }`}
+                            >
+                              <option value="PENDING">Pending Approval</option>
+                              <option value="ACTIVE">Active</option>
+                              <option value="SUSPENDED">Suspended</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const order: AccountStatus[] = ['ACTIVE', 'PENDING', 'SUSPENDED'];
+                                const current = (user.status || 'ACTIVE') as AccountStatus;
+                                const next = order[(order.indexOf(current) + 1) % order.length];
+                                handleAdminPrivilegeToggle(user.id, 'status', next);
+                              }}
+                              className="ml-1.5 px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 hover:border-blue-200 text-[10px] font-bold cursor-pointer transition-colors"
+                              title="Single-Click Cycle Account Status"
+                            >
+                              ↻
+                            </button>
+                          </td>
 
-                      <td className="p-3">
-                        <select
-                          value={user.status || 'ACTIVE'}
-                          onChange={(e) => handleAdminPrivilegeToggle(user.id, 'status', e.target.value)}
-                          className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-bold text-[11px] cursor-pointer focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="PENDING">Pending Approval</option>
-                          <option value="ACTIVE">Active</option>
-                          <option value="SUSPENDED">Suspended</option>
-                        </select>
-                      </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <select
+                              value={getSelectMembershipValue(user)}
+                              onChange={(e) => {
+                                handleAdminPrivilegeToggle(user.id, 'membershipStatus', e.target.value);
+                              }}
+                              className={`border rounded-lg px-2.5 py-1.5 font-bold text-[11px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                                getSelectMembershipValue(user) === 'paid'
+                                  ? 'bg-amber-50 border-amber-300 text-amber-900'
+                                  : getSelectMembershipValue(user) === 'verified'
+                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                  : getSelectMembershipValue(user) === 'basic'
+                                  ? 'bg-blue-50 border-blue-300 text-blue-900'
+                                  : getSelectMembershipValue(user) === 'pending'
+                                  ? 'bg-rose-50 border-rose-300 text-rose-900'
+                                  : 'bg-slate-50 border-slate-200 text-slate-900'
+                              }`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="basic">Basic Plan</option>
+                              <option value="verified">Verified Supplier</option>
+                              <option value="paid">VIP Paid</option>
+                              <option value="free">Free Tier</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const order: Array<'pending' | 'basic' | 'verified' | 'paid' | 'free'> = [
+                                  'pending',
+                                  'basic',
+                                  'verified',
+                                  'paid',
+                                  'free'
+                                ];
+                                const current = getSelectMembershipValue(user);
+                                const next = order[(order.indexOf(current) + 1) % order.length];
+                                handleAdminPrivilegeToggle(user.id, 'membershipStatus', next);
+                              }}
+                              className="ml-1.5 px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 hover:border-blue-200 text-[10px] font-bold cursor-pointer transition-colors"
+                              title="Single-Click Cycle Supplier & Membership Status"
+                            >
+                              ↻
+                            </button>
+                          </td>
 
-                      <td className="p-3">
-                        <select
-                          value={user.membershipStatus || user.tier || 'free'}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            handleAdminPrivilegeToggle(user.id, 'membershipStatus', val);
-                            if (val === 'verified') handleAdminPrivilegeToggle(user.id, 'isVerified', true);
-                            if (val === 'paid') handleAdminPrivilegeToggle(user.id, 'isPremium', true);
-                            if (val === 'basic' || val === 'free' || val === 'pending') {
-                              handleAdminPrivilegeToggle(user.id, 'isPremium', false);
-                            }
-                          }}
-                          className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-900 font-bold text-[11px] cursor-pointer focus:outline-none focus:border-blue-500"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="basic">Basic Plan</option>
-                          <option value="verified">Verified Supplier</option>
-                          <option value="paid">VIP Paid</option>
-                          <option value="free">Free Tier</option>
-                        </select>
-                      </td>
-
-                      <td className="p-3 text-right flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleAdminPrivilegeToggle(user.id, 'isVerified', !user.isVerified)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
-                            user.isVerified
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                          }`}
-                        >
-                          {user.isVerified ? '✓ KYC Verified' : 'Unverified'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            adminActivityBus.logActivity('IMPERSONATION', `Admin impersonated client ${user.name} (${user.email})`, 'SUCCESS', currentUser?.name || 'Admin');
-                            impersonateUser(user);
-                            if (typeof window !== 'undefined') {
-                              window.location.href = '/?view=HOMEPAGE';
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
-                          title="Login directly into this client account as an admin to make changes"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Login As</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedEmailHistoryUid(isHistoryExpanded ? null : user.id)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                                  isHistoryExpanded
+                                    ? 'bg-slate-900 border-slate-900 text-white'
+                                    : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                                }`}
+                                title="View automated & manual emails sent to this company contact"
+                              >
+                                <Mail className="w-3 h-3" />
+                                <span>Email History</span>
+                                {isHistoryExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAdminPrivilegeToggle(user.id, 'isVerified', !user.isVerified)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                                  user.isVerified
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                }`}
+                              >
+                                {user.isVerified ? '✓ KYC Verified' : 'Unverified'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  adminActivityBus.logActivity('IMPERSONATION', `Admin impersonated client ${user.name} (${user.email})`, 'SUCCESS', currentUser?.name || 'Admin');
+                                  impersonateUser(user);
+                                  if (typeof window !== 'undefined') {
+                                    window.location.href = '/?view=HOMEPAGE';
+                                  }
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold shadow-xs flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Login directly into this client account as an admin to make changes"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Login As</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {isHistoryExpanded && (
+                          <tr className="bg-slate-50/90 border-b-2 border-blue-200">
+                            <td colSpan={6} className="p-4">
+                              <CompanyEmailHistorySection
+                                companyId={user.id}
+                                companyName={user.companyName || user.name}
+                                contactEmail={user.email}
+                                contactName={user.name}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

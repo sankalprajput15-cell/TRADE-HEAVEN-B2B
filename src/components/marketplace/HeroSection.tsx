@@ -30,13 +30,21 @@ import { CATEGORIES_TREE, MOCK_COMPANIES, MOCK_RFQS, CURRENCY_RATES, GLOBAL_B2B_
 import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { Product, Currency, ActiveView, CompanyProfile, RfqRequirement } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { SafeImage } from '../common/SafeImage';
 import { EditableText } from '../EditableText';
 import { EditableImage } from '../EditableImage';
 import { OptimizedHeroImage } from '../common/OptimizedHeroImage';
 import { getDynamicHeroImageForView } from '../../utils/heroImageOptimization';
-import { useSearchAutoSuggest, HighlightedMatch } from '../common/SearchAutoSuggestDropdown';
+import {
+  useSearchAutoSuggest,
+  HighlightedMatch,
+  CategoryIcon,
+  SearchRegistrationGate,
+  triggerRegistrationModal,
+  triggerLoginModal
+} from '../common/SearchAutoSuggestDropdown';
 
 interface Props {
   onSearch: (query: string, category: string, targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS') => void;
@@ -49,6 +57,7 @@ interface Props {
   onOpenStorefront?: (companyId: string) => void;
   onNavigate?: (view: ActiveView) => void;
   onSelectRfq?: (rfq: RfqRequirement) => void;
+  onOpenRegisterFree?: () => void;
 }
 
 type SearchFilterType = 'ALL' | 'PRODUCTS' | 'SUPPLIERS' | 'RFQS' | 'CATEGORIES' | 'TOOLS';
@@ -149,9 +158,13 @@ export const HeroSection: React.FC<Props> = ({
   onSelectProduct,
   onOpenStorefront,
   onNavigate,
-  onSelectRfq
+  onSelectRfq,
+  onOpenRegisterFree
 }) => {
   const { siteContent, isLiveEditMode, openQuickEdit, currentUser, isUserAuthorized } = useSiteContent();
+  const { currentUser: authUser } = useAuth();
+  const [previewUnlocked, setPreviewUnlocked] = useState(false);
+  const isRegistered = Boolean(authUser || currentUser || previewUnlocked);
   const { t, tText, languageCode } = useLanguage();
   const auth = isUserAuthorized(currentUser);
   const isAdmin = auth.isAuthorized;
@@ -343,6 +356,10 @@ export const HeroSection: React.FC<Props> = ({
     e.preventDefault();
     setIsSearchPopoverOpen(false);
     setIsCategoryMenuOpen(false);
+    if (!isRegistered) {
+      triggerRegistrationModal();
+      return;
+    }
     const effectiveMode =
       searchTargetMode === 'SUPPLIERS' || (searchQuery.trim() && searchResults.suppliers.length > 0 && searchResults.products.length === 0)
         ? 'SUPPLIERS'
@@ -628,7 +645,11 @@ export const HeroSection: React.FC<Props> = ({
                             }`}
                           >
                             <div className="flex items-center gap-2.5 truncate pr-2">
-                              <Tag className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                              <CategoryIcon
+                                icon={cat.icon}
+                                categoryName={cat.name}
+                                className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-blue-600'}`}
+                              />
                               <span className="truncate">{tText(cat.name)}</span>
                             </div>
                             <span className={`text-[10px] shrink-0 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
@@ -713,6 +734,40 @@ export const HeroSection: React.FC<Props> = ({
               id="hero-omnibar-results-popover"
               className="absolute top-full left-0 right-0 mt-2.5 z-40 bg-white text-slate-900 border border-slate-200 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
             >
+              {!isRegistered ? (
+                <>
+                  <div className="p-3.5 sm:p-4 bg-slate-900 text-white border-b border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="text-xs font-bold text-slate-200 truncate">
+                        {searchQuery.trim() ? (
+                          <>Protected Search for <span className="text-amber-400 font-black">"{searchQuery}"</span></>
+                        ) : (
+                          <>Protected Global Search Directory</>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[10px] bg-slate-800 text-amber-400 px-2.5 py-0.5 rounded-full border border-slate-700 font-bold shrink-0">
+                      Registration Required
+                    </span>
+                  </div>
+                  <SearchRegistrationGate
+                    query={searchQuery}
+                    variant="dropdown"
+                    onRegister={() => {
+                      if (onOpenRegisterFree) onOpenRegisterFree();
+                      triggerRegistrationModal();
+                    }}
+                    onLogin={() => {
+                      triggerLoginModal();
+                    }}
+                    onPreview={() => {
+                      setPreviewUnlocked(true);
+                    }}
+                  />
+                </>
+              ) : (
+                <>
               {/* Header with Search Query & Filter Tabs */}
               <div className="p-3.5 sm:p-4 bg-slate-900 text-white border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -729,74 +784,86 @@ export const HeroSection: React.FC<Props> = ({
                   </span>
                 </div>
 
-                {/* Segmented Filter Tabs */}
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-800/90 border border-slate-700/80 overflow-x-auto text-[11px] font-semibold">
+                {/* Quick Filter Row: Toggle between 'Products', 'Suppliers', and 'RFQ Leads' */}
+                <div
+                  data-testid="hero-autosuggest-quick-filter-row"
+                  className="flex items-center gap-1.5 overflow-x-auto text-[11px] font-semibold"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
+                    Quick Filter:
+                  </span>
                   <button
                     type="button"
                     onClick={() => setActiveFilter('ALL')}
-                    className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    className={`px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                       activeFilter === 'ALL'
-                        ? 'bg-white text-slate-950 font-semibold shadow-2xs'
-                        : 'text-slate-300 hover:text-white'
+                        ? 'bg-white text-slate-950 font-bold shadow-2xs'
+                        : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80'
                     }`}
                   >
                     <LayoutGrid className="w-3 h-3 shrink-0" />
                     <span>All</span>
                   </button>
 
-                  {searchResults.rfqs.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveFilter('RFQS')}
-                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                        activeFilter === 'RFQS'
-                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
-                          : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      <FileText className="w-3 h-3 shrink-0" />
-                      <span>RFQs</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    data-testid="hero-quick-filter-products"
+                    onClick={() => setActiveFilter(activeFilter === 'PRODUCTS' ? 'ALL' : 'PRODUCTS')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      activeFilter === 'PRODUCTS'
+                        ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                        : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80'
+                    }`}
+                  >
+                    <Package className="w-3 h-3 shrink-0" />
+                    <span>Products</span>
+                    <span className="text-[10px] font-mono opacity-80">
+                      ({searchResults.products.length + autoSuggest.categories.length})
+                    </span>
+                  </button>
 
-                  {searchResults.products.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveFilter('PRODUCTS')}
-                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                        activeFilter === 'PRODUCTS'
-                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
-                          : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      <Package className="w-3 h-3 shrink-0" />
-                      <span>Products</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    data-testid="hero-quick-filter-suppliers"
+                    onClick={() => setActiveFilter(activeFilter === 'SUPPLIERS' ? 'ALL' : 'SUPPLIERS')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      activeFilter === 'SUPPLIERS'
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
+                        : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80'
+                    }`}
+                  >
+                    <Building2 className="w-3 h-3 shrink-0" />
+                    <span>Suppliers</span>
+                    <span className="text-[10px] font-mono opacity-80">
+                      ({searchResults.suppliers.length})
+                    </span>
+                  </button>
 
-                  {searchResults.suppliers.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveFilter('SUPPLIERS')}
-                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                        activeFilter === 'SUPPLIERS'
-                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
-                          : 'text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      <Building2 className="w-3 h-3 shrink-0" />
-                      <span>Suppliers</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    data-testid="hero-quick-filter-rfq-leads"
+                    onClick={() => setActiveFilter(activeFilter === 'RFQS' ? 'ALL' : 'RFQS')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      activeFilter === 'RFQS'
+                        ? 'bg-emerald-600 text-white font-bold shadow-2xs'
+                        : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80'
+                    }`}
+                  >
+                    <FileText className="w-3 h-3 shrink-0" />
+                    <span>RFQ Leads</span>
+                    <span className="text-[10px] font-mono opacity-80">
+                      ({searchResults.rfqs.length})
+                    </span>
+                  </button>
 
                   {searchResults.tools.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setActiveFilter('TOOLS')}
-                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      onClick={() => setActiveFilter(activeFilter === 'TOOLS' ? 'ALL' : 'TOOLS')}
+                      className={`px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'TOOLS'
-                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
-                          : 'text-slate-300 hover:text-white'
+                          ? 'bg-white text-slate-950 font-bold shadow-2xs'
+                          : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80'
                       }`}
                     >
                       <Wrench className="w-3 h-3 shrink-0" />
@@ -807,11 +874,11 @@ export const HeroSection: React.FC<Props> = ({
                   {searchResults.categories.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setActiveFilter('CATEGORIES')}
-                      className={`px-2.5 py-1 rounded-md transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      onClick={() => setActiveFilter(activeFilter === 'CATEGORIES' ? 'ALL' : 'CATEGORIES')}
+                      className={`px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                         activeFilter === 'CATEGORIES'
-                          ? 'bg-white text-slate-950 font-semibold shadow-2xs'
-                          : 'text-slate-300 hover:text-white'
+                          ? 'bg-white text-slate-950 font-bold shadow-2xs'
+                          : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/80'
                       }`}
                     >
                       <Layers className="w-3 h-3 shrink-0" />
@@ -861,12 +928,14 @@ export const HeroSection: React.FC<Props> = ({
                 ) : (
                   <>
                     {/* REAL-TIME AUTO-SUGGEST: MATCHING PRODUCT CATEGORIES & SUPPLIER NAMES */}
-                    {searchQuery.trim().length > 0 && (autoSuggest.categories.length > 0 || autoSuggest.suppliers.length > 0) && (
+                    {searchQuery.trim().length > 0 &&
+                      (((activeFilter === 'ALL' || activeFilter === 'PRODUCTS') && autoSuggest.categories.length > 0) ||
+                        ((activeFilter === 'ALL' || activeFilter === 'SUPPLIERS') && autoSuggest.suppliers.length > 0)) && (
                       <div
                         id="hero-realtime-autosuggest-section"
                         className="p-3.5 rounded-2xl bg-white border border-blue-200/80 shadow-xs space-y-3.5"
                       >
-                        {autoSuggest.categories.length > 0 && (
+                        {(activeFilter === 'ALL' || activeFilter === 'PRODUCTS') && autoSuggest.categories.length > 0 && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
                               <span className="flex items-center gap-1.5 text-blue-700">
@@ -892,17 +961,30 @@ export const HeroSection: React.FC<Props> = ({
                                     }
                                     onNavigate?.('PRODUCT_DIRECTORY');
                                   }}
-                                  className="px-3 py-2 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                                  className="px-3 py-2 rounded-xl border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/40 text-left flex items-center justify-between gap-2.5 transition-colors cursor-pointer group"
                                 >
-                                  <div className="min-w-0">
-                                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
-                                      <HighlightedMatch text={cat.name} query={searchQuery} />
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 truncate">
-                                      {cat.isSubcategory && cat.parentCategory
-                                        ? `in ${cat.parentCategory}`
-                                        : 'Primary Sector'}{' '}
-                                      · {cat.productCount > 0 ? `${cat.productCount} listings` : cat.supplierCountLabel || 'Verified sector'}
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-200/80 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                      <CategoryIcon
+                                        icon={cat.icon}
+                                        categoryName={cat.parentCategory || cat.name}
+                                        className="w-4 h-4"
+                                      />
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                                        <HighlightedMatch text={cat.name} query={searchQuery} />
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 truncate">
+                                        {cat.isSubcategory && cat.parentCategory ? (
+                                          <>
+                                            in <HighlightedMatch text={cat.parentCategory} query={searchQuery} />
+                                          </>
+                                        ) : (
+                                          'Primary Sector'
+                                        )}{' '}
+                                        · {cat.productCount > 0 ? `${cat.productCount} listings` : cat.supplierCountLabel || 'Verified sector'}
+                                      </div>
                                     </div>
                                   </div>
                                   <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
@@ -912,7 +994,7 @@ export const HeroSection: React.FC<Props> = ({
                           </div>
                         )}
 
-                        {autoSuggest.suppliers.length > 0 && (
+                        {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS') && autoSuggest.suppliers.length > 0 && (
                           <div className="space-y-2 pt-1">
                             <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
                               <span className="flex items-center gap-1.5 text-amber-800">
@@ -1014,7 +1096,7 @@ export const HeroSection: React.FC<Props> = ({
                               </div>
 
                               <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors line-clamp-1 truncate">
-                                {rfq.productName}
+                                <HighlightedMatch text={rfq.productName} query={searchQuery} />
                               </div>
 
                               <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50/80 p-2.5 rounded-xl border border-slate-200/60">
@@ -1088,7 +1170,7 @@ export const HeroSection: React.FC<Props> = ({
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
                                   <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-sky-700 transition-colors line-clamp-1 truncate">
-                                    {prod.title}
+                                    <HighlightedMatch text={prod.title} query={searchQuery} />
                                   </div>
                                   <div className="text-[11px] font-mono font-black text-slate-900 truncate">
                                     {formatPrice(unitPrice)} <span className="text-[10px] text-slate-500 font-normal">/ {unitLabel}</span>
@@ -1108,7 +1190,7 @@ export const HeroSection: React.FC<Props> = ({
                     )}
 
                     {/* SECTION 3: MATCHED SUPPLIERS & FACTORIES */}
-                    {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS' || searchQuery.trim().length > 0) && searchResults.suppliers.length > 0 && (
+                    {(activeFilter === 'ALL' || activeFilter === 'SUPPLIERS') && searchResults.suppliers.length > 0 && (
                       <div className="space-y-2.5">
                         <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
                           <span className="flex items-center gap-2">
@@ -1147,11 +1229,11 @@ export const HeroSection: React.FC<Props> = ({
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
                                   <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
-                                    {supp.companyName}
+                                    <HighlightedMatch text={supp.companyName} query={searchQuery} />
                                   </div>
                                   {supp.contactPerson && (
                                     <div className="text-[11px] font-semibold text-blue-600 truncate">
-                                      Supplier: {supp.contactPerson}
+                                      Supplier: <HighlightedMatch text={supp.contactPerson} query={searchQuery} />
                                     </div>
                                   )}
                                   <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
@@ -1271,7 +1353,7 @@ export const HeroSection: React.FC<Props> = ({
                               </div>
 
                               <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-blue-700 transition-colors truncate">
-                                {metric.subcategory}
+                                <HighlightedMatch text={metric.subcategory} query={searchQuery} />
                               </div>
 
                               <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-200/80">
@@ -1296,20 +1378,32 @@ export const HeroSection: React.FC<Props> = ({
               </div>
 
               {/* Popover Footer Action */}
-              <div className="p-3 bg-slate-900 text-white border-t border-slate-800 flex items-center justify-between text-xs">
-                <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
+              <div className="p-3 bg-slate-900 text-white border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
+                <span className="text-slate-400 text-[11px] flex items-center gap-1.5 truncate">
                   <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 font-mono text-[10px] text-amber-400 font-bold">Enter</kbd>
-                  <span>Press Enter to explore full catalog</span>
+                  <span className="truncate">Press Enter to explore full Product Directory</span>
                 </span>
                 <button
                   type="button"
-                  onClick={handleSearchSubmit}
-                  className="font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer text-xs shadow-sm"
+                  data-testid="hero-see-all-results-btn"
+                  onClick={() => {
+                    setIsSearchPopoverOpen(false);
+                    setIsCategoryMenuOpen(false);
+                    if (!isRegistered) {
+                      triggerRegistrationModal();
+                      return;
+                    }
+                    onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat, 'PRODUCTS');
+                    onNavigate?.('PRODUCT_DIRECTORY');
+                  }}
+                  className="font-bold text-white bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer text-xs shadow-sm shrink-0"
                 >
-                  <span>View All {searchResults.totalCount} Results</span>
+                  <span>See All Results</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
+                </>
+              )}
             </div>
           )}
         </div>

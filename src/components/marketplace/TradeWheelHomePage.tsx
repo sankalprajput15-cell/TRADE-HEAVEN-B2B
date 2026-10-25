@@ -29,7 +29,11 @@ import {
   MessageCircle,
   ExternalLink,
   Lock,
-  Headphones
+  Headphones,
+  Home,
+  Search,
+  LayoutDashboard,
+  X
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 
@@ -73,6 +77,12 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const { t, tText } = useLanguage();
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [showAllSuppliers, setShowAllSuppliers] = React.useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
+  const [mobileSearchQuery, setMobileSearchQuery] = React.useState('');
+  const [mobileSearchMode, setMobileSearchMode] = React.useState<'PRODUCTS' | 'RFQS' | 'SUPPLIERS'>('PRODUCTS');
+  const [activeMobileNav, setActiveMobileNav] = React.useState<'HOME' | 'SEARCH' | 'RFQS' | 'DASHBOARD'>('HOME');
+  const mobileSearchInputRef = React.useRef<HTMLInputElement>(null);
+
   const activeRfqsPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
   const displayedRfqs = activeRfqsPool.slice(0, 12);
   const displayedCompanies = showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6);
@@ -90,8 +100,61 @@ export const TradeWheelHomePage: React.FC<Props> = ({
     }
     if (targetMode === 'SUPPLIERS' && onNavigateToSuppliers) {
       onNavigateToSuppliers(query);
+    } else if (targetMode === 'RFQS' && onNavigateToRfqs) {
+      onNavigateToRfqs(query);
     } else if (onNavigateToCategory) {
       onNavigateToCategory(category || 'ALL', query);
+    }
+  };
+
+  const handleMobileQuickSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = mobileSearchQuery.trim();
+    setIsMobileSearchOpen(false);
+    if (mobileSearchMode === 'RFQS') {
+      if (onNavigateToRfqs) {
+        onNavigateToRfqs(trimmed);
+      } else {
+        onNavigate('BUY_LEADS');
+      }
+      return;
+    }
+    if (mobileSearchMode === 'SUPPLIERS') {
+      if (onNavigateToSuppliers) {
+        onNavigateToSuppliers(trimmed);
+      } else {
+        onNavigate('SUPPLIERS_DIRECTORY');
+      }
+      return;
+    }
+    if (onNavigateToCategory) {
+      onNavigateToCategory(selectedCategory || 'ALL', trimmed);
+    } else {
+      onNavigate('PRODUCT_DIRECTORY');
+    }
+  };
+
+  const handleMobileSearchTabClick = () => {
+    setActiveMobileNav('SEARCH');
+    setIsMobileSearchOpen(prev => {
+      const next = !prev;
+      if (next) {
+        setTimeout(() => {
+          mobileSearchInputRef.current?.focus();
+        }, 60);
+      }
+      return next;
+    });
+  };
+
+  const handleFocusHeroSearchInput = () => {
+    setIsMobileSearchOpen(false);
+    const heroInput = document.getElementById('hero-search-input') as HTMLInputElement | null;
+    if (heroInput) {
+      heroInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => heroInput.focus(), 300);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -106,7 +169,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   };
 
   return (
-    <div id="tradewheel-homepage-root" className="space-y-8 sm:space-y-10">
+    <div id="tradewheel-homepage-root" className="space-y-8 sm:space-y-10 pb-20 md:pb-0">
       {/* 1. HERO SECTION */}
       <HeroSection
         onSearch={handleHeroSearch}
@@ -119,6 +182,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenStorefront={onOpenStorefront}
         onNavigate={onNavigate}
         onSelectRfq={onSelectRfq}
+        onOpenRegisterFree={onOpenRegisterFree}
       />
 
       {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}
@@ -542,6 +606,233 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
+
+      {/* 9. MOBILE QUICK-SEARCH SHEET (Triggered from Mobile Bottom Navigation Bar) */}
+      {isMobileSearchOpen && (
+        <div
+          id="mobile-home-quick-search-sheet"
+          className="md:hidden fixed inset-x-0 bottom-16 z-50 bg-slate-900/95 backdrop-blur-md text-white border-t border-slate-700 rounded-t-3xl p-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+        >
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-blue-400" />
+              <span className="text-xs font-extrabold tracking-wide uppercase text-slate-200">
+                Marketplace Quick Search
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleFocusHeroSearchInput}
+                className="text-[11px] font-bold text-blue-400 hover:text-blue-300 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 cursor-pointer"
+              >
+                Full Omnibar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
+                  setActiveMobileNav('HOME');
+                }}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                aria-label="Close mobile search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Search Mode Selector */}
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-800/90 rounded-xl mb-3 border border-slate-700/80">
+            <button
+              type="button"
+              onClick={() => setMobileSearchMode('PRODUCTS')}
+              className={`py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                mobileSearchMode === 'PRODUCTS'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Products</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileSearchMode('RFQS')}
+              className={`py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                mobileSearchMode === 'RFQS'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>RFQs ({activeRfqsPool.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileSearchMode('SUPPLIERS')}
+              className={`py-1.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                mobileSearchMode === 'SUPPLIERS'
+                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Suppliers</span>
+            </button>
+          </div>
+
+          <form onSubmit={handleMobileQuickSearchSubmit} className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                ref={mobileSearchInputRef}
+                type="text"
+                value={mobileSearchQuery}
+                onChange={(e) => setMobileSearchQuery(e.target.value)}
+                placeholder={
+                  mobileSearchMode === 'RFQS'
+                    ? 'Search active buyer RFQs & tenders...'
+                    : mobileSearchMode === 'SUPPLIERS'
+                    ? 'Search verified factories & exporters...'
+                    : 'Search wholesale products, HS codes...'
+                }
+                className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-white text-slate-900 text-xs font-semibold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {mobileSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setMobileSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold shrink-0 shadow-md cursor-pointer"
+            >
+              Go
+            </button>
+          </form>
+
+          {/* Quick Search Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-3 mt-2 border-t border-slate-800">
+            {['CNC Machinery', 'Solar Panels', 'ICUMSA 45 Sugar', 'Copper Cathodes', 'Medical Gloves'].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  setIsMobileSearchOpen(false);
+                  if (onNavigateToCategory) {
+                    onNavigateToCategory('ALL', chip);
+                  } else {
+                    onNavigate('PRODUCT_DIRECTORY');
+                  }
+                }}
+                className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold whitespace-nowrap border border-slate-700 shrink-0 cursor-pointer"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 10. MOBILE BOTTOM-NAVIGATION BAR (Marketplace Home View) */}
+      <nav
+        id="marketplace-mobile-bottom-nav"
+        aria-label="Mobile Marketplace Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-8px_24px_-6px_rgba(15,23,42,0.12)] px-2 py-1.5"
+      >
+        <div className="grid grid-cols-4 items-center max-w-md mx-auto gap-1">
+          {/* 1. Home */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMobileNav('HOME');
+              setIsMobileSearchOpen(false);
+              setSelectedCategory(null);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer ${
+              activeMobileNav === 'HOME' && !isMobileSearchOpen
+                ? 'text-blue-600 bg-blue-50/80 font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5 leading-tight">Home</span>
+          </button>
+
+          {/* 2. Search */}
+          <button
+            type="button"
+            onClick={handleMobileSearchTabClick}
+            aria-expanded={isMobileSearchOpen}
+            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer ${
+              isMobileSearchOpen || activeMobileNav === 'SEARCH'
+                ? 'text-blue-600 bg-blue-50/80 font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'
+            }`}
+          >
+            <Search className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5 leading-tight">Search</span>
+          </button>
+
+          {/* 3. RFQs */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMobileNav('RFQS');
+              setIsMobileSearchOpen(false);
+              if (onNavigateToRfqs) {
+                onNavigateToRfqs();
+              } else {
+                onNavigate('BUY_LEADS');
+              }
+            }}
+            className={`relative flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer ${
+              activeMobileNav === 'RFQS'
+                ? 'text-emerald-600 bg-emerald-50/80 font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'
+            }`}
+          >
+            <div className="relative">
+              <FileText className="w-5 h-5" />
+              <span className="absolute -top-1.5 -right-3 px-1 min-w-[16px] h-4 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center shadow-2xs">
+                {activeRfqsPool.length > 99 ? '99+' : activeRfqsPool.length}
+              </span>
+            </div>
+            <span className="text-[10px] mt-0.5 leading-tight">RFQs</span>
+          </button>
+
+          {/* 4. Dashboard */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMobileNav('DASHBOARD');
+              setIsMobileSearchOpen(false);
+              onNavigate('DASHBOARD');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`relative flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer ${
+              activeMobileNav === 'DASHBOARD'
+                ? 'text-blue-600 bg-blue-50/80 font-extrabold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'
+            }`}
+          >
+            <div className="relative">
+              <LayoutDashboard className="w-5 h-5" />
+              {currentUser && (
+                <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+              )}
+            </div>
+            <span className="text-[10px] mt-0.5 leading-tight">Dashboard</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

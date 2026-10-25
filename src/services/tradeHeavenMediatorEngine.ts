@@ -38,6 +38,10 @@ export interface WalletRecord {
 export function isBasicPlanStatus(planOrTier?: string | null, entityId?: string | null): boolean {
   const normalizedEntity = String(entityId || '').trim().toLowerCase();
   if (
+    normalizedEntity === 'comp-atlantic-power-equip' ||
+    normalizedEntity === 'user-supplier-mark-johnson' ||
+    normalizedEntity.includes('atlanticpowerequip') ||
+    normalizedEntity.includes('atlantic-power') ||
     normalizedEntity === 'comp-zac-importation-fadetech' ||
     normalizedEntity === 'user-supplier-zac' ||
     normalizedEntity.includes('zac') ||
@@ -576,6 +580,21 @@ export class TradeHeavenSqlPoolAdapter {
         country: 'Australia',
         native_currency: 'AUD',
         native_symbol: 'A$',
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: 'wal-supp-atlantic-power',
+        entity_id: 'comp-atlantic-power-equip',
+        entity_name: 'Mark Johnson (President)',
+        company_name: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+        wallet_type: 'SUPPLIER',
+        plan_status: 'BASIC',
+        available_balance: '0',
+        locked_balance: '0',
+        currency: 'USD',
+        country: 'United States',
+        native_currency: 'USD',
+        native_symbol: '$',
         updated_at: new Date().toISOString()
       },
       {

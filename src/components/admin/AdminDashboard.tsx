@@ -18,6 +18,7 @@ import { BulkCsvProductImporter } from './BulkCsvProductImporter';
 import { BatchImageCsvImporter } from './BatchImageCsvImporter';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
+import { CustomEmailDispatcherAdminModule } from './CustomEmailDispatcherAdminModule';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -49,8 +50,23 @@ import {
   Bell
 } from 'lucide-react';
 
+export type AdminDashboardTabId = 
+  | 'CUSTOM_EMAIL_DISPATCHER'
+  | 'PRODUCT_IMAGE_SYSTEM' 
+  | 'CMS' 
+  | 'DATABASE' 
+  | 'DIAGNOSTICS' 
+  | 'REGISTERED_SUPPLIERS' 
+  | 'COUNTRIES' 
+  | 'CRM' 
+  | 'PRICING' 
+  | 'ACTIVITY_LOGS' 
+  | 'BULK_CSV_IMPORT' 
+  | 'BATCH_IMAGE_IMPORT' 
+  | 'MULTI_FILE_UPLOAD';
+
 interface AdminDashboardProps {
-  initialTab?: 'PRODUCT_IMAGE_SYSTEM' | 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS' | 'BULK_CSV_IMPORT' | 'BATCH_IMAGE_IMPORT' | 'MULTI_FILE_UPLOAD';
+  initialTab?: AdminDashboardTabId;
   currentUser: AuthUser | null;
   onNavigate: (view: any) => void;
   selectedCurrency: Currency;
@@ -59,14 +75,14 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  initialTab = 'PRODUCT_IMAGE_SYSTEM',
+  initialTab = 'CUSTOM_EMAIL_DISPATCHER',
   currentUser,
   onNavigate,
   selectedCurrency,
   onOpenPaymentCheckout,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'PRODUCT_IMAGE_SYSTEM' | 'CMS' | 'DATABASE' | 'DIAGNOSTICS' | 'REGISTERED_SUPPLIERS' | 'COUNTRIES' | 'CRM' | 'PRICING' | 'ACTIVITY_LOGS' | 'BULK_CSV_IMPORT' | 'BATCH_IMAGE_IMPORT' | 'MULTI_FILE_UPLOAD'>(initialTab);
+  const [activeTab, setActiveTab] = useState<AdminDashboardTabId>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const {
@@ -439,6 +455,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
 
   const navigationItems = [
+    { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
     { id: 'PRODUCT_IMAGE_SYSTEM', label: '📸 Product Image System (All)', icon: ImageIcon },
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
@@ -827,6 +844,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* VIEW CONDITIONAL RENDERING */}
+        {activeTab === 'CUSTOM_EMAIL_DISPATCHER' && (
+          <div className="space-y-4">
+            <CustomEmailDispatcherAdminModule />
+          </div>
+        )}
+
         {activeTab === 'PRODUCT_IMAGE_SYSTEM' && (
           <div className="space-y-4">
             <DedicatedProductImageSystem />

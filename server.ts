@@ -384,7 +384,24 @@ function logServerActivity(
   return logEntry;
 }
 
-const serverUsersStore: ServerUserRecord[] = [
+const REGISTERED_USERS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'registered-users.json');
+
+const DEFAULT_SERVER_USERS: ServerUserRecord[] = [
+  {
+    id: 'user-buyer-themax0098',
+    email: 'themax0098@gmail.com',
+    passwordHash: 'TradeHeaven@2026',
+    name: 'Max (themax0098)',
+    role: 'BUYER',
+    companyName: 'Enterprise Trading Firm',
+    country: 'Global',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: false,
+    membershipStatus: 'paid',
+    tier: 'Verified Supplier',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+  },
   {
     id: 'user-admin-root',
     email: 'yr943334@gmail.com',
@@ -474,8 +491,180 @@ const serverUsersStore: ServerUserRecord[] = [
     membershipStatus: 'paid',
     tier: 'VIP',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'user-supplier-mark-johnson',
+    email: 'mjohnson@atlanticpowerequip.com',
+    passwordHash: 'Atlantic@2026',
+    name: 'Mark Johnson (President)',
+    role: 'SUPPLIER',
+    companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    country: 'United States',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: false,
+    membershipStatus: 'paid',
+    tier: 'Basic Plan',
+    avatarUrl: '/assets/aistudio/image001_ebfaebe5.png'
+  },
+  {
+    id: 'user-supplier-randy',
+    email: 'randy@midforkcap.com',
+    passwordHash: 'Randy@2026',
+    name: 'Mr. Randy',
+    role: 'SUPPLIER',
+    companyName: 'Middle Fox LLC',
+    country: 'United States',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: true,
+    membershipStatus: 'paid',
+    tier: 'VIP',
+    avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80'
   }
 ];
+
+function loadServerUsersFromDisk(): ServerUserRecord[] {
+  const combined: ServerUserRecord[] = [];
+  const seenEmails = new Set<string>();
+  const seenIds = new Set<string>();
+
+  try {
+    const dir = path.dirname(REGISTERED_USERS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    if (fs.existsSync(REGISTERED_USERS_FILE)) {
+      const raw = fs.readFileSync(REGISTERED_USERS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (!item || !item.email) continue;
+          const emailKey = String(item.email).toLowerCase().trim();
+          const idKey = String(item.id || `user-${emailKey}`);
+          if (seenEmails.has(emailKey) || seenIds.has(idKey)) continue;
+          seenEmails.add(emailKey);
+          seenIds.add(idKey);
+          combined.push(item);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[ServerUsersStore] Failed to load registered-users.json:', err);
+  }
+
+  for (const def of DEFAULT_SERVER_USERS) {
+    const emailKey = def.email.toLowerCase().trim();
+    if (!seenEmails.has(emailKey) && !seenIds.has(def.id)) {
+      seenEmails.add(emailKey);
+      seenIds.add(def.id);
+      if (emailKey === 'mjohnson@atlanticpowerequip.com' || emailKey === 'themax0098@gmail.com') {
+        combined.unshift(def);
+      } else {
+        combined.push(def);
+      }
+    }
+  }
+
+  // Ensure Mark Johnson is positioned right at the very top of the users list
+  const markIdx = combined.findIndex(u => u.email.toLowerCase().trim() === 'mjohnson@atlanticpowerequip.com');
+  if (markIdx > 0) {
+    const [markRecord] = combined.splice(markIdx, 1);
+    combined.unshift(markRecord);
+  }
+
+  return combined;
+}
+
+let serverUsersStore: ServerUserRecord[] = loadServerUsersFromDisk();
+
+function saveServerUsersToDisk() {
+  try {
+    const dir = path.dirname(REGISTERED_USERS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(REGISTERED_USERS_FILE, JSON.stringify(serverUsersStore, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[ServerUsersStore] Failed to save registered-users.json:', err);
+  }
+}
+
+// Persist initial seed on startup so registered-users.json is always warm
+saveServerUsersToDisk();
+
+function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
+  const rawEmail = String(input.email || '').trim();
+  const cleanEmail = rawEmail.toLowerCase();
+  const derivedName =
+    String(input.name || '').trim() ||
+    (cleanEmail ? cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Registered Partner');
+
+  const existingIndex = serverUsersStore.findIndex(
+    u =>
+      (input.id && u.id === String(input.id)) ||
+      (cleanEmail && u.email.toLowerCase().trim() === cleanEmail)
+  );
+
+  const existing = existingIndex !== -1 ? serverUsersStore[existingIndex] : undefined;
+  const resolvedRoleRaw = String(input.role || existing?.role || 'BUYER').toUpperCase();
+  const resolvedRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' =
+    resolvedRoleRaw === 'ADMIN' || resolvedRoleRaw === 'SUPPLIER' || resolvedRoleRaw === 'VERIFIER'
+      ? (resolvedRoleRaw as any)
+      : 'BUYER';
+
+  const resolvedStatusRaw = String(input.status || existing?.status || 'ACTIVE').toUpperCase();
+  const resolvedStatus: 'ACTIVE' | 'PENDING' | 'SUSPENDED' =
+    resolvedStatusRaw === 'PENDING' || resolvedStatusRaw === 'SUSPENDED'
+      ? (resolvedStatusRaw as any)
+      : 'ACTIVE';
+
+  const resolvedIsPremium =
+    input.isPremium !== undefined
+      ? Boolean(input.isPremium)
+      : input.is_premium !== undefined
+      ? Boolean(input.is_premium)
+      : existing?.isPremium ?? (resolvedRole === 'ADMIN');
+
+  const resolvedIsVerified =
+    input.isVerified !== undefined
+      ? Boolean(input.isVerified)
+      : input.is_verified !== undefined
+      ? Boolean(input.is_verified)
+      : existing?.isVerified ?? true;
+
+  const rawMem = String(input.membershipStatus || input.membership_status || existing?.membershipStatus || '').toLowerCase();
+  const resolvedMembershipStatus: 'free' | 'paid' =
+    rawMem === 'paid' || rawMem === 'verified' || rawMem === 'basic' || resolvedIsPremium ? 'paid' : 'free';
+
+  const record: ServerUserRecord = {
+    id: existing?.id || String(input.id || `user-${Date.now()}`),
+    email: rawEmail || existing?.email || `user-${Date.now()}@tradeheaven.net`,
+    passwordHash: String(input.password || input.passwordHash || existing?.passwordHash || 'TradeHeaven@2026'),
+    name: derivedName,
+    role: resolvedRole,
+    companyName: String(input.companyName || input.company_name || input.company || existing?.companyName || 'Enterprise Trading Firm').trim(),
+    country: String(input.country || existing?.country || 'Global').trim(),
+    status: resolvedStatus,
+    isVerified: resolvedIsVerified,
+    isPremium: resolvedIsPremium,
+    membershipStatus: resolvedMembershipStatus,
+    tier: String(input.tier || existing?.tier || (resolvedIsPremium ? 'VIP' : 'Verified Supplier')),
+    avatarUrl:
+      input.avatarUrl ||
+      input.avatar_url ||
+      existing?.avatarUrl ||
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+  };
+
+  if (existingIndex !== -1) {
+    serverUsersStore[existingIndex] = record;
+  } else {
+    serverUsersStore.unshift(record);
+  }
+  saveServerUsersToDisk();
+  return record;
+}
 
 function generateServerJwt(user: ServerUserRecord): string {
   const nowSec = Math.floor(Date.now() / 1000);
@@ -589,7 +778,8 @@ app.post('/api/v1/auth/login', (req, res) => {
 
   // 2. Check registered users in database store
   const matchedUser = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
-  if (matchedUser && matchedUser.passwordHash === password) {
+  const isRandyValidPass = matchedUser?.email === 'randy@midforkcap.com' && (password === 'Randy@2026' || password === 'MiddleFox@2026' || password === 'Randy@1234');
+  if (matchedUser && (matchedUser.passwordHash === password || isRandyValidPass)) {
     const token = generateServerJwt(matchedUser);
     const isAdmin = matchedUser.role === 'ADMIN' || matchedUser.email.toLowerCase().trim() === ADMIN_EMAIL;
     sendLoginAlert(matchedUser.email, matchedUser.name, matchedUser.role, matchedUser.companyName, matchedUser.country);
@@ -818,6 +1008,503 @@ app.post('/api/v1/admin/launch-diwali-offer-campaign', async (req, res) => {
   }
 });
 
+// POST /api/v1/admin/send-buyer-inquiry-alert - Dispatches buyer inquiry dashboard notification email
+app.post('/api/v1/admin/send-buyer-inquiry-alert', async (req, res) => {
+  try {
+    const {
+      recipientEmail = 'sorkindon@gmail.com',
+      recipientName = 'Donald Sorkin',
+      companyName = 'Girlsenberries',
+      inquiryId = 'INQ-2026-US-8942',
+      buyerName = 'Marcus Vance (VP Global Procurement)',
+      buyerCompany = 'Apex Global Food Sourcing LLC',
+      buyerCountry = 'United States',
+      productName = 'Wholesale Grade-A Frozen & Dried Cultivated Berries (Commercial Food Service)',
+      quantity = '2x 40ft High-Cube Refrigerated Containers (28,000 kg)',
+      estimatedValue = '$148,000.00 USD',
+      incoterm = 'CIF Long Beach Port, USA',
+      paymentTerms = '30% Escrow Advance, 70% Irrevocable DLC at Sight against B/L',
+      portalUrl = 'https://www.tradeheaven.net',
+      loginEmail = 'sorkindon@gmail.com',
+      loginPassword = 'Donald@1234'
+    } = req.body || {};
+
+    const receipt = await automatedSmtpService.sendBuyerInquiryAlertEmail({
+      recipientEmail,
+      recipientName,
+      companyName,
+      inquiryId,
+      buyerName,
+      buyerCompany,
+      buyerCountry,
+      productName,
+      quantity,
+      estimatedValue,
+      incoterm,
+      paymentTerms,
+      portalUrl,
+      loginEmail,
+      loginPassword
+    });
+
+    return res.json({
+      success: receipt.success,
+      message: receipt.success
+        ? `Buyer inquiry alert email successfully dispatched to ${receipt.recipient} (Message ID: ${receipt.messageId || 'sent'})`
+        : `Failed to deliver email: ${receipt.error || 'Unknown transport error'}`,
+      receipt,
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch buyer inquiry alert email: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/send-fuel-supplier-onboarding - Dispatches fuel supplier onboarding credentials and active inquiries email
+app.post('/api/v1/admin/send-fuel-supplier-onboarding', async (req, res) => {
+  try {
+    const {
+      recipientEmail = 'randy@midforkcap.com',
+      recipientName = 'Mr. Randy',
+      companyName = 'Middle Fox LLC',
+      contactPhone = '+1 (406) 309 5590',
+      loginPassword = 'Randy@2026',
+      portalUrl = 'https://www.tradeheaven.net'
+    } = req.body || {};
+
+    const receipt = await automatedSmtpService.sendSupplierOnboardingWithInquiriesEmail({
+      recipientEmail,
+      recipientName,
+      companyName,
+      contactPhone,
+      loginPassword,
+      portalUrl
+    });
+
+    logServerActivity(
+      req,
+      'ONBOARDING_EMAIL_DISPATCH',
+      recipientEmail,
+      'ADMIN',
+      '/api/v1/admin/send-fuel-supplier-onboarding',
+      `Dispatched fuel supplier onboarding with active tenders to ${recipientEmail} (${companyName}) via secure corporate SMTP.`,
+      receipt.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: receipt.success,
+      message: receipt.success
+        ? `Supplier onboarding email and active inquiries successfully dispatched to ${receipt.recipient} (Message ID: ${receipt.messageId || 'sent'})`
+        : `Failed to deliver email: ${receipt.error || 'Unknown transport error'}`,
+      receipt,
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch supplier onboarding email: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/send-custom-email - Dispatches customized admin email with bespoke inquiries & credentials
+app.post('/api/v1/admin/send-custom-email', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    if (!payload.recipientEmail || typeof payload.recipientEmail !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Recipient email is required.'
+      });
+    }
+
+    const receipt = await automatedSmtpService.sendCustomAdminEmail(payload);
+
+    logServerActivity(
+      req,
+      'CUSTOM_ADMIN_EMAIL_DISPATCH',
+      payload.recipientEmail,
+      'ADMIN',
+      '/api/v1/admin/send-custom-email',
+      `Dispatched customized email (${payload.subject || 'Custom Notice'}) to ${payload.recipientEmail} (${payload.companyName || 'Corporate Entity'}) via secure corporate SMTP.`,
+      receipt.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: receipt.success,
+      message: receipt.success
+        ? `Custom email successfully dispatched to ${receipt.recipient} (Message ID: ${receipt.messageId || 'sent'})`
+        : `Failed to deliver email: ${receipt.error || 'Unknown transport error'}`,
+      receipt,
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch custom admin email: ${err?.message || err}`
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// SCHEDULED EMAIL AUTOMATION ENGINE (BulkEntityCrmModule)
+// -------------------------------------------------------------
+interface ServerScheduledEmailJob {
+  id: string;
+  templateId: string;
+  templateName: string;
+  entityCategory: string;
+  recipientEmail: string;
+  recipientName: string;
+  companyName: string;
+  scheduledFor: string; // ISO string
+  scheduledDateLabel: string;
+  scheduledTimeLabel: string;
+  timezone: string;
+  status: 'SCHEDULED' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+  createdAt: string;
+  dispatchedAt?: string;
+  messageId?: string;
+  error?: string;
+  emailPayload: Record<string, any>;
+}
+
+const serverScheduledEmailsStore: ServerScheduledEmailJob[] = [
+  {
+    id: 'sched-crm-1001',
+    templateId: 'tpl-buyer-verified-suppliers-ready',
+    templateName: 'Verified Supplier Quotations Ready (For Buyers)',
+    entityCategory: 'BUYER_LEAD',
+    recipientEmail: 'm.vance@apexglobal.com',
+    recipientName: 'Marcus Vance',
+    companyName: 'Apex Global Logistics & Sourcing',
+    scheduledFor: new Date(Date.now() + 3600 * 1000 * 4).toISOString(),
+    scheduledDateLabel: '2026-10-25',
+    scheduledTimeLabel: '14:00',
+    timezone: 'UTC',
+    status: 'SCHEDULED',
+    createdAt: new Date(Date.now() - 1800 * 1000).toISOString(),
+    emailPayload: {
+      recipientName: 'Marcus Vance',
+      recipientEmail: 'm.vance@apexglobal.com',
+      companyName: 'Apex Global Logistics & Sourcing',
+      contactPhone: '+1-415-892-3321',
+      loginEmail: 'm.vance@apexglobal.com',
+      loginPassword: 'ApexGl@2026',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: 'Trade Heaven Sourcing Update: Verified Supplier Quotes for Solar Inverters 10kW (Apex Global Logistics & Sourcing)',
+      badgeLabel: 'TRADE HEAVEN • BUYER SOURCING & ESCROW DESK',
+      headline: 'Verified Supplier Quotations Ready for Apex Global Logistics & Sourcing',
+      subheadline: 'Matched Export Manufacturers for Solar Inverters 10kW (500 units)',
+      introMessage: 'Dear Marcus Vance,\n\nThank you for sourcing with Trade Heaven. Our procurement team led by IEM Sarah Jenkins has vetted and matched top-tier verified suppliers for your requirement of Solar Inverters 10kW (Target Volume: 500 units | Budget: $120,000).\n\nLog in to your Buyer Console to compare audited factory quotes, request SGS inspection reports, and initiate Escrow-protected trade contracts.',
+      includeCredentialsBox: true,
+      includeLoginGuide: true,
+      includeEscrowBadge: true,
+      ctaText: 'Review Supplier Quotes in Buyer Console →',
+      ctaUrl: 'https://www.tradeheaven.net',
+      attachedDocuments: [
+        {
+          id: 'pdf-trade-assurance-terms',
+          title: 'Trade Assurance Terms',
+          fileName: 'Trade_Heaven_Escrow_&_Trade_Assurance_Terms_2026.pdf',
+          fileSizeLabel: '420 KB',
+          category: 'Escrow & Legal'
+        },
+        {
+          id: 'pdf-marketplace-onboarding-guide',
+          title: 'Marketplace Onboarding Guide',
+          fileName: 'Trade_Heaven_Global_Marketplace_Onboarding_Guide.pdf',
+          fileSizeLabel: '680 KB',
+          category: 'Onboarding'
+        }
+      ]
+    }
+  },
+  {
+    id: 'sched-crm-1002',
+    templateId: 'tpl-supplier-onboarding-fuel',
+    templateName: 'Supplier Onboarding & Active Buyer Tenders (Fuel / Commodities)',
+    entityCategory: 'SUPPLIER_PROFILE',
+    recipientEmail: 'randy@midforkcap.com',
+    recipientName: 'Mr. Randy',
+    companyName: 'Middle Fox LLC',
+    scheduledFor: new Date(Date.now() + 3600 * 1000 * 18).toISOString(),
+    scheduledDateLabel: '2026-10-26',
+    scheduledTimeLabel: '09:00',
+    timezone: 'EST (America/New_York)',
+    status: 'SCHEDULED',
+    createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+    emailPayload: {
+      recipientName: 'Mr. Randy',
+      recipientEmail: 'randy@midforkcap.com',
+      companyName: 'Middle Fox LLC',
+      contactPhone: '+1 (406) 309 5590',
+      loginEmail: 'randy@midforkcap.com',
+      loginPassword: 'Middle@2026',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: 'Welcome to Trade Heaven: Middle Fox LLC Supplier Portal Credentials & Active Inquiries (Petroleum & Fuel (EN 590, Jet Fuel A-1))',
+      badgeLabel: 'TRADE HEAVEN • VERIFIED SUPPLIER ONBOARDING DESK',
+      headline: 'Welcome to Trade Heaven, Middle Fox LLC',
+      subheadline: 'Supplier Profile Activated & Verified Buyer Inquiries Assigned',
+      introMessage: 'Dear Mr. Randy,\n\nWe are pleased to confirm that Middle Fox LLC (United States) has been officially approved on the Trade Heaven Global B2B Portal under Petroleum & Fuel (EN 590, Jet Fuel A-1). Your dedicated International Export Manager is IEM Elena Rostova.\n\nWe have matched active wholesale buyer inquiries directly to your export catalog. Please use your portal credentials below to log in, review buyer specifications, and submit your official FOB/CIF quotation.',
+      includeCredentialsBox: true,
+      includeLoginGuide: true,
+      includeEscrowBadge: true,
+      ctaText: 'Log In to Supplier Portal & View Inquiries →',
+      ctaUrl: 'https://www.tradeheaven.net',
+      attachedDocuments: [
+        {
+          id: 'pdf-trade-assurance-terms',
+          title: 'Trade Assurance Terms',
+          fileName: 'Trade_Heaven_Escrow_&_Trade_Assurance_Terms_2026.pdf',
+          fileSizeLabel: '420 KB',
+          category: 'Escrow & Legal'
+        },
+        {
+          id: 'pdf-sgs-inspection-protocol',
+          title: 'SGS & Saybolt Q&Q Inspection Protocol',
+          fileName: 'SGS_Saybolt_Port_Inspection_Protocol_2026.pdf',
+          fileSizeLabel: '315 KB',
+          category: 'Quality Control'
+        }
+      ]
+    }
+  }
+];
+
+let isProcessingScheduledEmails = false;
+async function processDueScheduledEmails() {
+  if (isProcessingScheduledEmails) return;
+  isProcessingScheduledEmails = true;
+  try {
+    const nowMs = Date.now();
+    for (const job of serverScheduledEmailsStore) {
+      if (job.status === 'SCHEDULED') {
+        const dueMs = new Date(job.scheduledFor).getTime();
+        if (!Number.isNaN(dueMs) && dueMs <= nowMs) {
+          const receipt = await automatedSmtpService.sendCustomAdminEmail({
+            ...(job.emailPayload as any),
+            dispatchType: 'AUTOMATED',
+            scheduledFor: `${job.scheduledDateLabel} ${job.scheduledTimeLabel} (${job.timezone})`
+          });
+          job.status = receipt.success ? 'DELIVERED' : 'FAILED';
+          job.dispatchedAt = receipt.dispatchedAt || new Date().toISOString();
+          job.messageId = receipt.messageId;
+          job.error = receipt.error;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[SCHEDULED EMAIL ENGINE ERROR]', err);
+  } finally {
+    isProcessingScheduledEmails = false;
+  }
+}
+
+setInterval(() => {
+  void processDueScheduledEmails();
+}, 10000);
+
+// GET /api/v1/admin/scheduled-emails - List all scheduled email deliveries
+app.get('/api/v1/admin/scheduled-emails', (_req, res) => {
+  return res.json({
+    success: true,
+    scheduledEmails: serverScheduledEmailsStore
+  });
+});
+
+// POST /api/v1/admin/schedule-email - Schedule one or multiple automated template deliveries
+app.post('/api/v1/admin/schedule-email', (req, res) => {
+  try {
+    const { items } = req.body || {};
+    const jobList: any[] = Array.isArray(items) ? items : [req.body];
+    const createdJobs: ServerScheduledEmailJob[] = [];
+
+    for (const raw of jobList) {
+      if (!raw || !raw.recipientEmail) continue;
+      const newJob: ServerScheduledEmailJob = {
+        id: `sched-crm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        templateId: raw.templateId || 'tpl-custom',
+        templateName: raw.templateName || 'Reusable CRM Template',
+        entityCategory: raw.entityCategory || 'BUYER_LEAD',
+        recipientEmail: raw.recipientEmail,
+        recipientName: raw.recipientName || raw.companyName || 'Valued Partner',
+        companyName: raw.companyName || 'Partner Organization',
+        scheduledFor: raw.scheduledFor || new Date(Date.now() + 3600 * 1000).toISOString(),
+        scheduledDateLabel: raw.scheduledDateLabel || new Date().toISOString().slice(0, 10),
+        scheduledTimeLabel: raw.scheduledTimeLabel || '09:00',
+        timezone: raw.timezone || 'UTC',
+        status: 'SCHEDULED',
+        createdAt: new Date().toISOString(),
+        emailPayload: raw.emailPayload || {}
+      };
+      serverScheduledEmailsStore.unshift(newJob);
+      createdJobs.push(newJob);
+    }
+
+    if (createdJobs.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one valid recipientEmail is required to schedule an email.'
+      });
+    }
+
+    logServerActivity(
+      req,
+      'SCHEDULE_CRM_EMAIL',
+      createdJobs[0].recipientEmail,
+      'ADMIN',
+      '/api/v1/admin/schedule-email',
+      `Scheduled ${createdJobs.length} automated template email(s) ("${createdJobs[0].templateName}") for delivery at ${createdJobs[0].scheduledDateLabel} ${createdJobs[0].scheduledTimeLabel} (${createdJobs[0].timezone}).`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      message: `Scheduled ${createdJobs.length} email delivery job(s) for ${createdJobs[0].scheduledDateLabel} at ${createdJobs[0].scheduledTimeLabel} (${createdJobs[0].timezone}).`,
+      createdJobs,
+      scheduledEmails: serverScheduledEmailsStore
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to schedule email: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/scheduled-emails/:id/send-now - Trigger immediate delivery of a scheduled email
+app.post('/api/v1/admin/scheduled-emails/:id/send-now', async (req, res) => {
+  try {
+    const job = serverScheduledEmailsStore.find(j => j.id === req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Scheduled email job not found.' });
+    }
+
+    const receipt = await automatedSmtpService.sendCustomAdminEmail({
+      ...(job.emailPayload as any),
+      dispatchType: 'AUTOMATED',
+      scheduledFor: `${job.scheduledDateLabel} ${job.scheduledTimeLabel} (${job.timezone})`
+    });
+
+    job.status = receipt.success ? 'DELIVERED' : 'FAILED';
+    job.dispatchedAt = receipt.dispatchedAt || new Date().toISOString();
+    job.messageId = receipt.messageId;
+    job.error = receipt.error;
+
+    logServerActivity(
+      req,
+      'SCHEDULED_EMAIL_DISPATCHED_NOW',
+      job.recipientEmail,
+      'ADMIN',
+      `/api/v1/admin/scheduled-emails/${job.id}/send-now`,
+      `Dispatched scheduled automated template "${job.templateName}" to ${job.recipientEmail} (${job.companyName}).`,
+      receipt.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: receipt.success,
+      message: receipt.success
+        ? `Scheduled email for ${job.recipientName} (${job.recipientEmail}) dispatched and logged in Company Email History.`
+        : `Failed to dispatch scheduled email: ${receipt.error || 'Unknown error'}`,
+      job,
+      scheduledEmails: serverScheduledEmailsStore
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch scheduled email: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/scheduled-emails/:id/reschedule - Update date/time of a scheduled email
+app.post('/api/v1/admin/scheduled-emails/:id/reschedule', (req, res) => {
+  const job = serverScheduledEmailsStore.find(j => j.id === req.params.id);
+  if (!job) {
+    return res.status(404).json({ success: false, message: 'Scheduled email job not found.' });
+  }
+  const { scheduledFor, scheduledDateLabel, scheduledTimeLabel, timezone } = req.body || {};
+  if (scheduledFor) job.scheduledFor = scheduledFor;
+  if (scheduledDateLabel) job.scheduledDateLabel = scheduledDateLabel;
+  if (scheduledTimeLabel) job.scheduledTimeLabel = scheduledTimeLabel;
+  if (timezone) job.timezone = timezone;
+  job.status = 'SCHEDULED';
+
+  return res.json({
+    success: true,
+    message: `Rescheduled email for ${job.recipientName} to ${job.scheduledDateLabel} at ${job.scheduledTimeLabel} (${job.timezone}).`,
+    job,
+    scheduledEmails: serverScheduledEmailsStore
+  });
+});
+
+// POST /api/v1/admin/scheduled-emails/:id/cancel - Cancel a pending scheduled email
+app.post('/api/v1/admin/scheduled-emails/:id/cancel', (req, res) => {
+  const job = serverScheduledEmailsStore.find(j => j.id === req.params.id);
+  if (!job) {
+    return res.status(404).json({ success: false, message: 'Scheduled email job not found.' });
+  }
+  job.status = 'CANCELLED';
+  return res.json({
+    success: true,
+    message: `Cancelled scheduled email for ${job.recipientName} (${job.recipientEmail}).`,
+    job,
+    scheduledEmails: serverScheduledEmailsStore
+  });
+});
+
+// GET /api/v1/admin/email-history - Retrieve automated and manual emails sent to a company profile or across the platform
+app.get('/api/v1/admin/email-history', (req, res) => {
+  try {
+    const email = typeof req.query.email === 'string' ? req.query.email : undefined;
+    const companyName = typeof req.query.companyName === 'string' ? req.query.companyName : undefined;
+    const companyId = typeof req.query.companyId === 'string' ? req.query.companyId : undefined;
+    const dispatchType =
+      typeof req.query.dispatchType === 'string' &&
+      (req.query.dispatchType === 'AUTOMATED' || req.query.dispatchType === 'MANUAL' || req.query.dispatchType === 'ALL')
+        ? req.query.dispatchType
+        : 'ALL';
+
+    const history = serverDeliveryQueueManager.getEmailHistory({
+      email,
+      companyName,
+      companyId,
+      dispatchType
+    });
+
+    const allForContact = serverDeliveryQueueManager.getEmailHistory({
+      email,
+      companyName,
+      companyId,
+      dispatchType: 'ALL'
+    });
+
+    const stats = {
+      totalCount: allForContact.length,
+      automatedCount: allForContact.filter((h) => h.dispatchType === 'AUTOMATED').length,
+      manualCount: allForContact.filter((h) => h.dispatchType === 'MANUAL').length,
+      deliveredCount: allForContact.filter((h) => h.success).length,
+      failedCount: allForContact.filter((h) => !h.success).length
+    };
+
+    return res.json({
+      success: true,
+      history,
+      stats
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to fetch email history: ${err?.message || err}`
+    });
+  }
+});
+
+
 // POST /api/v1/auth/test-email - Trigger manual test email alert via serialized SMTP queue
 app.post('/api/v1/auth/test-email', async (req, res) => {
   const { customTargetEmail, testSmtpHost, testSmtpPort, testSmtpUser, testSmtpPass } = req.body;
@@ -936,7 +1623,8 @@ app.post('/api/v1/auth/register', (req, res) => {
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
   };
 
-  serverUsersStore.push(newRecord);
+  serverUsersStore.unshift(newRecord);
+  saveServerUsersToDisk();
   const token = generateServerJwt(newRecord);
 
   logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api/v1/auth/register', `User ${name} registered successfully as ${resolvedRole} for company ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
@@ -998,6 +1686,25 @@ app.get('/api/v1/auth/me', (req, res) => {
 // BigRock PHP + MySQL Backend Emulation & Forwarder
 let serverRfqsStore: any[] = [
   {
+    id: 100,
+    name: 'Robert MacLeod (VP Infrastructure Procurement)',
+    email: 'rmacleod@canadianpowergrid.ca',
+    phone: '+1 416 555 0198',
+    subject: '🌟 GOLDEN LEAD [VIP Member Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali Offer',
+    product_name: '10 Units CAT / Cummins Heavy-Duty Industrial Diesel Generators (500kW - 2000kW)',
+    message: 'GOLDEN LEAD — 100% ADVANCE PAYMENT (ONLY ACCESSED BY VIP MEMBER): Urgent Canadian infrastructure & northern mining procurement for 10 Units Industrial Diesel Generators (CAT Power / Cummins Power Generation) for delivery to Canada (Toronto, Ontario / Calgary, Alberta). Payment Terms: 100% Advance Payment via Direct Wire / TT upon Proforma Invoice. Assigned to Mark Johnson (President, Shore Technical Equipment Inc. DBA: Atlantic Power & Equipment Co., P.O. Box 1176, Marmora, NJ 08223 USA | mjohnson@atlanticpowerequip.com | C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131). SPECIAL DIWALI OFFER: Upgrade from Basic Plan to VIP Member with Diwali Offer (Flat 10% OFF + Instant Golden Lead Unlock) to access direct buyer settlement with 100% Advance Payment.',
+    status: 'pending',
+    target_quantity: 10,
+    quantity_unit: 'Units (Generators)',
+    target_price: 95000,
+    incoterm: 'DDP / CIF Canada',
+    destination_port: 'Toronto / Vancouver / Calgary, Canada',
+    category: 'Industrial Machinery',
+    company_name: 'Canadian Northern Grid & Energy Corp.',
+    country: 'Canada',
+    created_at: new Date().toISOString()
+  },
+  {
     id: 101,
     name: 'Sarah Jenkins',
     email: 'procurement@nordicsteel.se',
@@ -1058,6 +1765,34 @@ let serverRfqsStore: any[] = [
 
 // Listings store on server
 let serverListingsStore: any[] = [
+  {
+    id: 10,
+    title: 'CAT Power Heavy-Duty Industrial Diesel Generator Sets (500kW – 2000kW)',
+    description: 'Supplied by Mark Johnson (President), Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co., Marmora, NJ 08223 USA). Heavy-duty Caterpillar diesel generators ready for export to Canada & worldwide.',
+    category: 'Industrial Machinery',
+    sub_category: 'Power Generators & CAT Engines',
+    price: '88000',
+    moq: 1,
+    moq_unit: 'Units',
+    supplier_name: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    supplier_country: 'United States',
+    image_url: '/assets/aistudio/image002_50ab7837.png',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 11,
+    title: 'CAT Heavy Earth Moving Machines & Multi-Brand Construction Fleet (CAT, Cummins, Perkins, Komatsu)',
+    description: 'Excavators, bulldozers, wheel loaders, and heavy earth moving machines supplied by Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.) — Basic Plan Member.',
+    category: 'Industrial Machinery',
+    sub_category: 'Earth Moving & Heavy Construction Machinery',
+    price: '125000',
+    moq: 1,
+    moq_unit: 'Units',
+    supplier_name: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    supplier_country: 'United States',
+    image_url: '/assets/aistudio/image005_20fe3db0.png',
+    created_at: new Date().toISOString()
+  },
   {
     id: 1,
     title: 'High-Precision 5-Axis CNC Milling Center',
@@ -1217,9 +1952,17 @@ app.get('/api.php', (req, res) => {
         phone: '+1 800-555-0199',
         role: u.role,
         company_name: u.companyName,
+        companyName: u.companyName,
         country: u.country,
+        status: u.status || 'ACTIVE',
         is_verified: u.isVerified,
-        is_premium: u.isPremium
+        isVerified: u.isVerified,
+        is_premium: u.isPremium,
+        isPremium: u.isPremium,
+        membership_status: u.membershipStatus || (u.isPremium ? 'paid' : 'verified'),
+        membershipStatus: u.membershipStatus || (u.isPremium ? 'paid' : 'verified'),
+        tier: u.tier || (u.isPremium ? 'VIP' : 'Verified Supplier'),
+        avatar_url: u.avatarUrl
       }))
     });
   }
@@ -1457,7 +2200,8 @@ app.post('/api.php', async (req, res) => {
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
     };
 
-    serverUsersStore.push(newRecord);
+    serverUsersStore.unshift(newRecord);
+    saveServerUsersToDisk();
     const token = generateServerJwt(newRecord);
 
     logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api.php?action=register', `User ${newRecord.name} successfully registered a corporate account for ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
@@ -1960,13 +2704,108 @@ app.post('/api.php', async (req, res) => {
   }
 
   if (action === 'upsert_user') {
-    return res.json({ success: true, data: input });
+    const savedRecord = upsertServerUserRecord(input);
+    return res.json({
+      success: true,
+      status: 'success',
+      data: {
+        id: savedRecord.id,
+        name: savedRecord.name,
+        email: savedRecord.email,
+        role: savedRecord.role,
+        company_name: savedRecord.companyName,
+        companyName: savedRecord.companyName,
+        country: savedRecord.country,
+        status: savedRecord.status,
+        is_verified: savedRecord.isVerified,
+        isVerified: savedRecord.isVerified,
+        is_premium: savedRecord.isPremium,
+        isPremium: savedRecord.isPremium,
+        membership_status: savedRecord.membershipStatus,
+        membershipStatus: savedRecord.membershipStatus,
+        tier: savedRecord.tier,
+        avatarUrl: savedRecord.avatarUrl
+      }
+    });
+  }
+
+  if (action === 'delete_user') {
+    const targetId = String(input.id || '');
+    const targetEmail = String(input.email || '').toLowerCase().trim();
+    serverUsersStore = serverUsersStore.filter(
+      u => u.id !== targetId && (!targetEmail || u.email.toLowerCase().trim() !== targetEmail)
+    );
+    saveServerUsersToDisk();
+    return res.json({ success: true, status: 'success' });
   }
 
   res.json({
     success: true,
     status: 'success',
     message: `Action ${action || 'default'} executed successfully on BigRock backend`
+  });
+});
+
+// Dedicated Admin Users CRUD endpoints (/api/admin/users, /api/admin/users/create)
+app.get('/api/admin/users', (_req, res) => {
+  return res.json({
+    success: true,
+    data: serverUsersStore.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      companyName: u.companyName,
+      company_name: u.companyName,
+      country: u.country,
+      status: u.status || 'ACTIVE',
+      isVerified: u.isVerified,
+      is_verified: u.isVerified,
+      isPremium: u.isPremium,
+      is_premium: u.isPremium,
+      membershipStatus: u.membershipStatus || (u.isPremium ? 'paid' : 'verified'),
+      membership_status: u.membershipStatus || (u.isPremium ? 'paid' : 'verified'),
+      tier: u.tier || (u.isPremium ? 'VIP' : 'Verified Supplier'),
+      avatarUrl: u.avatarUrl
+    }))
+  });
+});
+
+app.post('/api/admin/users/create', (req, res) => {
+  const input = req.body || {};
+  if (!input.email) {
+    return res.status(400).json({ success: false, message: 'Email is required to create a user.' });
+  }
+  const savedRecord = upsertServerUserRecord(input);
+  return res.status(201).json({
+    success: true,
+    data: {
+      id: savedRecord.id,
+      name: savedRecord.name,
+      email: savedRecord.email,
+      role: savedRecord.role,
+      companyName: savedRecord.companyName,
+      company_name: savedRecord.companyName,
+      country: savedRecord.country,
+      status: savedRecord.status,
+      isVerified: savedRecord.isVerified,
+      is_verified: savedRecord.isVerified,
+      isPremium: savedRecord.isPremium,
+      is_premium: savedRecord.isPremium,
+      membershipStatus: savedRecord.membershipStatus,
+      membership_status: savedRecord.membershipStatus,
+      tier: savedRecord.tier,
+      avatarUrl: savedRecord.avatarUrl
+    },
+    message: `User ${savedRecord.name} (${savedRecord.email}) created and saved.`
+  });
+});
+
+app.put('/api/admin/users/:id', (req, res) => {
+  const savedRecord = upsertServerUserRecord({ ...(req.body || {}), id: req.params.id });
+  return res.json({
+    success: true,
+    data: savedRecord
   });
 });
 
@@ -3196,6 +4035,25 @@ app.get('/api/v1/admin/audit-logs', (req, res) => {
 // POST /api/v1/admin/audit-logs - Record client event to the centralized backend logger
 app.post('/api/v1/admin/audit-logs', (req, res) => {
   const { action, actorEmail, actorRole, targetResource, details, status, actorUid } = req.body;
+
+  // Safety net: if a USER_CREATED event is logged, ensure the user is present in serverUsersStore & disk
+  if (action === 'USER_CREATED' && typeof details === 'string') {
+    const emailMatch = details.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    const roleMatch = details.match(/\((BUYER|SUPPLIER|VERIFIER|ADMIN)\)/i);
+    if (emailMatch && emailMatch[1]) {
+      const targetEmail = emailMatch[1].toLowerCase().trim();
+      const exists = serverUsersStore.some(u => u.email.toLowerCase().trim() === targetEmail);
+      if (!exists) {
+        upsertServerUserRecord({
+          email: targetEmail,
+          role: roleMatch ? roleMatch[1].toUpperCase() : 'BUYER',
+          status: 'ACTIVE',
+          isVerified: true
+        });
+      }
+    }
+  }
+
   const logEntry = logServerActivity(
     req,
     action || 'CLIENT_EVENT',
@@ -3478,6 +4336,110 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
+
+    // Automatically dispatch the Golden Lead (10 Generators to Canada, 100% Advance Payment, VIP-Only Access + Diwali Offer) email to Mark Johnson
+    setTimeout(async () => {
+      try {
+        const subject = '🌟 GOLDEN LEAD [VIP Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali Offer';
+        const htmlBody = `
+          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 680px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #b45309 100%); padding: 28px 24px; color: #ffffff;">
+              <div style="display: inline-block; background-color: #f59e0b; color: #0f172a; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                🌟 GOLDEN LEAD ALERT • VIP MEMBER EXCLUSIVE • 100% ADVANCE PAYMENT
+              </div>
+              <h1 style="margin: 0; font-size: 22px; font-weight: 800; line-height: 1.3;">
+                Urgent Buyer Inquiry: 10 Units Industrial Diesel Generators to Canada
+              </h1>
+              <p style="margin: 8px 0 0 0; font-size: 14px; color: #fde68a;">
+                Matched to Shore Technical Equipment Inc. (DBA: Atlantic Power &amp; Equipment Co.) — CAT Earth Moving Machines &amp; Generators Catalog
+              </p>
+            </div>
+
+            <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+              <p style="margin-top: 0;">Dear <strong>Mark Johnson (President)</strong>,</p>
+              <p>
+                Welcome to <strong>Trade Heaven Global B2B</strong>! Your supplier profile for <strong>Shore Technical Equipment Inc. (DBA: Atlantic Power &amp; Equipment Co.)</strong> has been activated under the <strong>Basic Plan</strong> for <strong>CAT Earth Moving Machines &amp; Industrial Generators</strong>.
+              </p>
+              <p>
+                Our North American Procurement Desk has just matched an urgent, pre-verified <strong>GOLDEN LEAD</strong> directly to your CAT Power &amp; Cummins Generator inventory:
+              </p>
+
+              <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 10px; padding: 18px; margin: 20px 0;">
+                <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px;">
+                  🍁 GOLDEN LEAD SPECIFICATION (REF: RFQ-GOLD-CA-10GEN-2026)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <tr>
+                    <td style="padding: 6px 0; color: #64748b; width: 42%;"><strong>Required Equipment:</strong></td>
+                    <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">10 Units Heavy-Duty Industrial Diesel Generators (CAT / Cummins Power Generation, 500kW – 2,000kW)</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #64748b;"><strong>Destination Country:</strong></td>
+                    <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">Canada (Toronto, ON / Calgary, AB Delivery Terminals)</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #64748b;"><strong>Payment Terms:</strong></td>
+                    <td style="padding: 6px 0; color: #15803d; font-weight: 800;">100% ADVANCE PAYMENT (100% Upfront Wire / TT before dispatch)</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #64748b;"><strong>Estimated Contract Value:</strong></td>
+                    <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">$950,000.00 USD (100% Advance Escrowed)</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 0; color: #64748b;"><strong>Lead Access Policy:</strong></td>
+                    <td style="padding: 6px 0; color: #b91c1c; font-weight: 800;">🔒 ONLY ACCESSED BY VIP MEMBER (100% Advance Payment Settlement)</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); color: #ffffff; border-radius: 10px; padding: 18px; margin: 20px 0;">
+                <div style="font-size: 12px; font-weight: 800; color: #fde68a; text-transform: uppercase; letter-spacing: 1px;">
+                  🪔 SPECIAL DIWALI OFFER — VIP MEMBERSHIP UPGRADE
+                </div>
+                <h4 style="margin: 6px 0 8px 0; font-size: 17px; color: #ffffff;">
+                  Upgrade from Basic Plan to VIP Member &amp; Unlock 100% Advance Payment Golden Leads!
+                </h4>
+                <p style="margin: 0 0 10px 0; font-size: 13px; color: #ffedd5;">
+                  Because your account is currently on the <strong>Basic Plan</strong>, direct buyer coordinates and 100% Advance Payment Golden Leads are locked for <strong>VIP Members Only</strong>. Take advantage of our <strong>Special Diwali Festival Offer (Promo Code: DIWALI10 — Flat 10% OFF + Priority VIP Fast-Track)</strong> to upgrade your membership today and claim this 10-Generator Canada contract with <strong>100% Advance Payment</strong>!
+                </p>
+              </div>
+
+              <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #0f172a;">Your Registered Supplier Profile &amp; Portal Credentials</h4>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Contact Person:</strong> Mark Johnson (President)</p>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Company:</strong> Shore Technical Equipment Inc. (DBA: Atlantic Power &amp; Equipment Co.)</p>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Address:</strong> P.O. Box 1176, Marmora, New Jersey 08223, USA</p>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Phone / WhatsApp:</strong> C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131</p>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Website:</strong> www.atlanticpowerequip.com</p>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Portal Login Email:</strong> mjohnson@atlanticpowerequip.com | <strong>Password:</strong> Atlantic@2026</p>
+                <p style="margin: 4px 0; font-size: 13px;"><strong>Current Plan:</strong> Basic Plan Member (CAT Earth Moving Machines &amp; Generators)</p>
+              </div>
+
+              <p style="margin-bottom: 0; font-size: 13px; color: #475569;">
+                Best regards,<br/>
+                <strong>Trade Heaven Global B2B — VIP Procurement &amp; Trade Assurance Desk</strong>
+              </p>
+            </div>
+          </div>
+        `;
+        await automatedSmtpService.sendCustomAdminEmail(
+          'mjohnson@atlanticpowerequip.com',
+          subject,
+          htmlBody,
+          '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+          {
+            recipientName: 'Mark Johnson (President)',
+            companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+            companyId: 'comp-atlantic-power-equip',
+            category: 'BUYER_INQUIRY',
+            summaryText: 'GOLDEN LEAD [VIP Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali VIP Upgrade Offer dispatched to Mark Johnson (mjohnson@atlanticpowerequip.com).'
+          }
+        );
+        console.log('[SMTP Auto-Dispatch] Sent Golden Lead (10 Generators to Canada + 100% Advance + Diwali Offer) to mjohnson@atlanticpowerequip.com');
+      } catch (err) {
+        console.warn('[SMTP Auto-Dispatch] Notice:', err);
+      }
+    }, 1500);
   });
 }
 

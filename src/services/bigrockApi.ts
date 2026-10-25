@@ -482,6 +482,19 @@ export const bigrockApi = {
 
     return [
       {
+        id: 'user-buyer-themax0098',
+        name: 'Max (themax0098)',
+        email: 'themax0098@gmail.com',
+        role: 'BUYER',
+        company_name: 'Enterprise Trading Firm',
+        country: 'Global',
+        status: 'ACTIVE',
+        is_verified: true,
+        is_premium: false,
+        membership_status: 'verified',
+        tier: 'Verified Supplier'
+      },
+      {
         id: 'user-admin-01',
         name: 'Administrator',
         email: 'yr943334@gmail.com',
@@ -533,46 +546,59 @@ export const bigrockApi = {
   },
 
   async upsertUser(user: DbUser): Promise<{ success: boolean; data?: DbUser; error?: string }> {
-    try {
-      const response = await fetch(`${BIGROCK_API_URL}?action=upsert_user`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
-      });
-      if (response && response.ok) {
-        const json = await safeParseJson(response);
-        return { success: true, data: json?.data || user };
-      }
-    } catch (err) { console.warn('[BigRock API upsertUser]:', err); }
+    const uid = user.id || `user-${Date.now()}`;
+    const enrichedUser: DbUser = { ...user, id: uid };
 
-    // Fallback & client durability: persist new user into th_registered_users_store
+    // Always persist user into th_registered_users_store for immediate & durable availability
     try {
       const USERS_STORAGE_KEY = 'th_registered_users_store';
       const saved = localStorage.getItem(USERS_STORAGE_KEY);
       const store = saved ? JSON.parse(saved) : {};
-      const uid = user.id || `user-${Date.now()}`;
       const authUser = {
         id: uid,
-        name: user.name,
-        email: user.email,
-        role: user.role || 'BUYER',
-        companyName: user.company_name || 'Enterprise Trading Firm',
-        country: user.country || 'Global',
-        status: user.status || 'ACTIVE',
-        isVerified: Boolean(user.is_verified),
-        isPremium: Boolean(user.is_premium),
-        membershipStatus: user.is_premium ? 'paid' : 'free',
-        tier: user.is_premium ? 'VIP' : 'Free Tier',
+        name: enrichedUser.name,
+        email: enrichedUser.email,
+        role: enrichedUser.role || 'BUYER',
+        companyName: enrichedUser.company_name || enrichedUser.company || 'Enterprise Trading Firm',
+        country: enrichedUser.country || 'Global',
+        status: enrichedUser.status || 'ACTIVE',
+        isVerified: enrichedUser.is_verified ?? true,
+        isPremium: Boolean(enrichedUser.is_premium),
+        membershipStatus: enrichedUser.membership_status || (enrichedUser.is_premium ? 'paid' : 'verified'),
+        tier: enrichedUser.tier || (enrichedUser.is_premium ? 'VIP' : 'Verified Supplier'),
         joinedDate: new Date().toISOString().split('T')[0]
       };
       store[uid] = authUser;
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(store));
+      const serialized = JSON.stringify(store);
+      try {
+        localStorage.setItem(USERS_STORAGE_KEY, serialized);
+      } catch {
+        localStorage.removeItem('th_suppliers_store');
+        localStorage.removeItem('th_rfqs_store');
+        localStorage.removeItem('th_buyers_store');
+        localStorage.removeItem('th_quotes_store');
+        localStorage.setItem(USERS_STORAGE_KEY, serialized);
+      }
       window.dispatchEvent(new Event('tradeheaven_users_updated'));
     } catch (e) {
-      console.warn('[upsertUser local fallback error]:', e);
+      console.warn('[upsertUser local persistence warning]:', e);
     }
 
-    return { success: true, data: user };
+    try {
+      const response = await fetch(`${BIGROCK_API_URL}?action=upsert_user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(enrichedUser)
+      });
+      if (response && response.ok) {
+        const json = await safeParseJson(response);
+        if (json && (json.success || json.status === 'success')) {
+          return { success: true, data: json.data || enrichedUser };
+        }
+      }
+    } catch (err) { console.warn('[BigRock API upsertUser]:', err); }
+
+    return { success: true, data: enrichedUser };
   },
 
   async deleteUser(id: string): Promise<{ success: boolean; error?: string }> {

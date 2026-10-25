@@ -149,6 +149,14 @@ export const Header: React.FC<Props> = ({
     setSearchFocused(false);
     setUserMenuOpen(false);
     setActiveSuggestIndex(-1);
+    if (!currentUser) {
+      if (onOpenRegisterFree) {
+        onOpenRegisterFree();
+      } else {
+        onOpenAuthModal();
+      }
+      return;
+    }
     if (onNavigateToSearch) {
       onNavigateToSearch(trimmed);
     } else {
@@ -159,9 +167,14 @@ export const Header: React.FC<Props> = ({
   const autoSuggestions = useSearchAutoSuggest(searchTerm, products, 5, 5, 3);
 
   const handleSelectSuggestedCategory = (cat: CategorySuggestion) => {
-    setSearchTerm(cat.name);
     setSearchFocused(false);
     setActiveSuggestIndex(-1);
+    if (!currentUser) {
+      if (onOpenRegisterFree) onOpenRegisterFree();
+      else onOpenAuthModal();
+      return;
+    }
+    setSearchTerm(cat.name);
     if (onNavigateToCategory) {
       if (cat.isSubcategory && cat.parentCategory) {
         onNavigateToCategory(cat.parentCategory, cat.name);
@@ -176,9 +189,14 @@ export const Header: React.FC<Props> = ({
   };
 
   const handleSelectSuggestedSupplier = (supp: SupplierSuggestion) => {
-    setSearchTerm(supp.companyName);
     setSearchFocused(false);
     setActiveSuggestIndex(-1);
+    if (!currentUser) {
+      if (onOpenRegisterFree) onOpenRegisterFree();
+      else onOpenAuthModal();
+      return;
+    }
+    setSearchTerm(supp.companyName);
     if (onOpenStorefront && supp.id && !supp.id.startsWith('supp-')) {
       onOpenStorefront(supp.id);
     } else if (onNavigateToSearch) {
@@ -189,9 +207,14 @@ export const Header: React.FC<Props> = ({
   };
 
   const handleSelectSuggestedProduct = (prod: Product) => {
-    setSearchTerm(prod.title);
     setSearchFocused(false);
     setActiveSuggestIndex(-1);
+    if (!currentUser) {
+      if (onOpenRegisterFree) onOpenRegisterFree();
+      else onOpenAuthModal();
+      return;
+    }
+    setSearchTerm(prod.title);
     if (onSelectProduct) {
       onSelectProduct(prod);
     } else if (onNavigateToSearch) {
@@ -200,16 +223,25 @@ export const Header: React.FC<Props> = ({
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const totalItems =
-      autoSuggestions.categories.length +
-      autoSuggestions.suppliers.length +
-      autoSuggestions.products.length;
-
     if (e.key === 'Escape') {
       setSearchFocused(false);
       setActiveSuggestIndex(-1);
       return;
     }
+    if (!currentUser) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        setSearchFocused(false);
+        if (onOpenRegisterFree) onOpenRegisterFree();
+        else onOpenAuthModal();
+      }
+      return;
+    }
+    const totalItems =
+      autoSuggestions.categories.length +
+      autoSuggestions.suppliers.length +
+      autoSuggestions.products.length;
+
     if (!totalItems) return;
 
     if (e.key === 'ArrowDown') {

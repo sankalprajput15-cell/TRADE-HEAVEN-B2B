@@ -7,6 +7,7 @@ import { PremiumContactGate } from '../common/PremiumContactGate';
 import { SafeImage } from '../common/SafeImage';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PaginationControls } from '../common/PaginationControls';
+import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
 import { 
   Building2, 
   Search, 
@@ -177,12 +178,25 @@ export const BuyersDirectoryView: React.FC<Props> = ({
         </div>
 
         <div className="text-xs text-slate-500 font-mono shrink-0">
-          <strong>{filtered.length}</strong> Verified Buyers
+          {!currentUser && searchTerm.trim() !== '' ? (
+            <span className="text-amber-700 font-bold flex items-center gap-1">
+              <Lock className="w-3 h-3 text-amber-600" />
+              <span>Search Locked</span>
+            </span>
+          ) : (
+            <><strong>{filtered.length}</strong> Verified Buyers</>
+          )}
         </div>
       </div>
 
       {/* Buyers Grid */}
-      {isLoading ? (
+      {!currentUser && searchTerm.trim() !== '' ? (
+        <SearchRegistrationGate
+          query={searchTerm}
+          variant="panel"
+          onClearSearch={() => setSearchTerm('')}
+        />
+      ) : isLoading ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
           <TradeHeavenDataLoader 
             message="Fetching verified buyer profiles..." 

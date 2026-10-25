@@ -33,6 +33,14 @@ import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage'
 import { DiwaliOfferBanner } from './components/marketplace/DiwaliOfferBanner';
 import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { CustomerReviews } from './components/marketplace/CustomerReviews';
+import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
+import { ClientAdminView } from './components/services/ClientAdminView';
+import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
+import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
+import { AboutUs } from './components/marketplace/AboutUs';
+import { TrustAndSafety } from './components/marketplace/TrustAndSafety';
+import { InsightsBlog } from './components/marketplace/InsightsBlog';
 
 // Helper for retryable lazy loaded views
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -40,43 +48,37 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   namedExport?: string
 ) {
   return React.lazy(async () => {
-    try {
-      const module = await componentImport();
-      if ('default' in module && module.default) {
+    const resolveExport = (module: any): { default: T } => {
+      if (module && 'default' in module && module.default) {
         return { default: module.default as T };
       }
-      if (namedExport && (module as any)[namedExport]) {
-        return { default: (module as any)[namedExport] as T };
+      if (namedExport && module && module[namedExport]) {
+        return { default: module[namedExport] as T };
       }
-      const firstKey = Object.keys(module)[0];
-      return { default: (module as any)[firstKey] as T };
-    } catch (error) {
-      console.warn('[lazyWithRetry] Retrying dynamic chunk load...', error);
+      const firstKey = module ? Object.keys(module)[0] : undefined;
+      if (firstKey && module[firstKey]) {
+        return { default: module[firstKey] as T };
+      }
+      const EmptyFallback: React.FC<any> = () => null;
+      return { default: EmptyFallback as unknown as T };
+    };
+
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        await new Promise(res => setTimeout(res, 300));
+        if (attempt > 0) {
+          await new Promise(res => setTimeout(res, 400 * attempt));
+        }
         const module = await componentImport();
-        if ('default' in module && module.default) {
-          return { default: module.default as T };
+        return resolveExport(module);
+      } catch (err) {
+        if (attempt === 2) {
+          console.warn('[lazyWithRetry] Fallback activated after retries for:', namedExport || 'module', err);
         }
-        if (namedExport && (module as any)[namedExport]) {
-          return { default: (module as any)[namedExport] as T };
-        }
-        const firstKey = Object.keys(module)[0];
-        return { default: (module as any)[firstKey] as T };
-      } catch (retryErr) {
-        console.error('[lazyWithRetry] Module failed to load after retry:', retryErr);
-        if (typeof window !== 'undefined') {
-          const reloadKey = 'chunk_reload_' + (namedExport || 'view');
-          const hasReloaded = sessionStorage.getItem(reloadKey);
-          if (!hasReloaded) {
-            sessionStorage.setItem(reloadKey, 'true');
-            window.location.reload();
-          }
-        }
-        const FallbackView: React.FC<any> = () => null;
-        return { default: FallbackView as unknown as T };
       }
     }
+
+    const FallbackView: React.FC<any> = () => null;
+    return { default: FallbackView as unknown as T };
   });
 }
 
@@ -95,10 +97,6 @@ const RefundPolicyView = lazyWithRetry(() => import('./components/services/Refun
 const ProductListingPolicyView = lazyWithRetry(() => import('./components/services/ProductListingPolicyView'), 'ProductListingPolicyView');
 const PrivacyPolicyView = lazyWithRetry(() => import('./components/services/PrivacyPolicyView'), 'PrivacyPolicyView');
 const TermsOfUseView = lazyWithRetry(() => import('./components/services/TermsOfUseView'), 'TermsOfUseView');
-const ClientAdminView = lazyWithRetry(() => import('./components/services/ClientAdminView'), 'ClientAdminView');
-
-const PlanPricingAdminModule = lazyWithRetry(() => import('./components/admin/PlanPricingAdminModule'), 'PlanPricingAdminModule');
-const BulkEntityCrmModule = lazyWithRetry(() => import('./components/admin/BulkEntityCrmModule'), 'BulkEntityCrmModule');
 
 const OnboardWithUsPage = lazyWithRetry(() => import('./components/marketplace/OnboardWithUsPage'), 'OnboardWithUsPage');
 const AboutTradeHeavenView = lazyWithRetry(() => import('./components/services/AboutTradeHeavenView'), 'AboutTradeHeavenView');
@@ -109,8 +107,6 @@ const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace
 const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
-const CustomerReviews = lazyWithRetry(() => import('./components/marketplace/CustomerReviews'), 'CustomerReviews');
-const TradeHeavenLiveChatWidget = lazyWithRetry(() => import('./components/common/TradeHeavenLiveChatWidget'), 'TradeHeavenLiveChatWidget');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
 const ProductDetailModal = lazyWithRetry(() => import('./components/marketplace/ProductDetailModal'), 'ProductDetailModal');
@@ -144,10 +140,6 @@ import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
 import { getDynamicHeroImageForView } from './utils/heroImageOptimization';
 import { OptimizedHeroImage } from './components/common/OptimizedHeroImage';
-
-const AboutUs = React.lazy(() => import('./components/marketplace/AboutUs').then(m => ({ default: m.AboutUs })));
-const TrustAndSafety = React.lazy(() => import('./components/marketplace/TrustAndSafety').then(m => ({ default: m.TrustAndSafety })));
-const InsightsBlog = React.lazy(() => import('./components/marketplace/InsightsBlog').then(m => ({ default: m.InsightsBlog })));
 
 const MainApp: React.FC = () => {
   const { 
@@ -723,13 +715,49 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     const handleRegisterEvent = () => {
-      handleOpenRegisterFree();
+      setAuthModalMode('REGISTER');
+      setIsAuthModalOpen(true);
+    };
+    const handleLoginEvent = () => {
+      setAuthModalMode('LOGIN');
+      setIsAuthModalOpen(true);
+    };
+    const handleSearchProductDirectory = (e: Event) => {
+      const customEvent = e as CustomEvent<{ query?: string }>;
+      if (!currentUser) {
+        setAuthModalMode('REGISTER');
+        setIsAuthModalOpen(true);
+        return;
+      }
+      const q = customEvent?.detail?.query ?? '';
+      setCatalogSearch(q);
+      setActiveView('PRODUCT_DIRECTORY');
+    };
+    const handleSearchRfqLeads = (e: Event) => {
+      const customEvent = e as CustomEvent<{ rfq?: RfqRequirement; query?: string }>;
+      if (!currentUser) {
+        setAuthModalMode('REGISTER');
+        setIsAuthModalOpen(true);
+        return;
+      }
+      if (customEvent?.detail?.rfq) {
+        setSelectedRfqForModal(customEvent.detail.rfq);
+        setSelectedRfqId(customEvent.detail.rfq.id);
+      } else {
+        setActiveView('BUY_LEADS');
+      }
     };
     window.addEventListener('tradeheaven_open_register', handleRegisterEvent);
+    window.addEventListener('tradeheaven_open_login', handleLoginEvent);
+    window.addEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
+    window.addEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
     return () => {
       window.removeEventListener('tradeheaven_open_register', handleRegisterEvent);
+      window.removeEventListener('tradeheaven_open_login', handleLoginEvent);
+      window.removeEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
+      window.removeEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
     };
-  }, []);
+  }, [currentUser]);
 
   // Exponential backoff helper to prevent application crashes when backend/database is slow to respond
   const fetchWithRetry = async <T,>(
@@ -1629,7 +1657,11 @@ const MainApp: React.FC = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onNavigateToSearch={(query) => {
-          console.log('[Search Investigation] handleNavigateToSearch (onNavigateToSearch) triggered with query:', query);
+          if (!currentUser) {
+            setAuthModalMode('REGISTER');
+            setIsAuthModalOpen(true);
+            return;
+          }
           setCatalogCategory('ALL');
           setCatalogSearch(query);
           setSelectedProduct(null);

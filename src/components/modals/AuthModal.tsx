@@ -489,37 +489,6 @@ export const AuthModal: React.FC<Props> = ({
           </div>
         ) : (
           <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
-            {/* Wallet Funds Top-Up & Mediation Quick Access */}
-            <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
-                  <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Need to Top-Up Buyer Wallet Funds?</span>
-                </div>
-                <div className="text-[11px] text-emerald-800 truncate">
-                  Open Stage 01 (`creditBuyerDeposit`) in the Escrow &amp; Wallet Console
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  if (onNavigate) onNavigate('MEDIATOR_ENGINE');
-                  setTimeout(() => {
-                    window.dispatchEvent(
-                      new CustomEvent('tradeheaven_open_mediation_stage', {
-                        detail: { stage: 'TOPUP' }
-                      })
-                    );
-                  }, 60);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shrink-0 cursor-pointer shadow-2xs"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Funds Top-Up</span>
-              </button>
-            </div>
-
             {/* Mode Switcher: Sign In vs Register Free vs Work With Us */}
             <div className="grid grid-cols-3 bg-slate-100 p-1 rounded-xl gap-1 text-[11px] font-bold">
               <button

@@ -225,7 +225,7 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
   };
 
   return (
-    <div id="trade-heaven-live-chat-root" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end pointer-events-none">
+    <div id="trade-heaven-live-chat-root" className="fixed bottom-20 right-3 sm:right-6 md:bottom-6 z-40 flex flex-col items-end pointer-events-none">
       
       {/* 1. CHAT WINDOW (WHEN EXPANDED) */}
       {isOpen && (

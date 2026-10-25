@@ -81,18 +81,80 @@ const SVETLANA_SUPPLIER_USER: AuthUser = {
   avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
 };
 
+const RANDY_SUPPLIER_USER: AuthUser = {
+  id: 'user-supplier-randy',
+  name: 'Mr. Randy',
+  email: 'randy@midforkcap.com',
+  phone: '+1 (406) 309 5590',
+  companyName: 'Middle Fox LLC',
+  country: 'United States',
+  role: 'SUPPLIER',
+  status: 'ACTIVE',
+  isVerified: true,
+  isPremium: true,
+  membershipStatus: 'paid',
+  tier: 'VIP' as any,
+  plan: 'VIP Enterprise Plan (Refined Petroleum & Fuel Exporter)',
+  joinedDate: '2026-10-24',
+  avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80'
+};
+
+const MARK_JOHNSON_SUPPLIER_USER: AuthUser = {
+  id: 'user-supplier-mark-johnson',
+  name: 'Mark Johnson (President)',
+  email: 'mjohnson@atlanticpowerequip.com',
+  phone: 'C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131 | P.O. Box 1176, Marmora, NJ 08223 USA',
+  companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+  country: 'United States',
+  role: 'SUPPLIER',
+  status: 'ACTIVE',
+  isVerified: true,
+  isPremium: false,
+  membershipStatus: 'paid',
+  tier: 'Basic Plan' as any,
+  plan: 'Basic Plan (CAT Earth Moving Machines & Generators Supplier)',
+  joinedDate: '2026-10-25',
+  avatarUrl: '/assets/aistudio/image001_ebfaebe5.png'
+};
+
+const THEMAX_BUYER_USER: AuthUser = {
+  id: 'user-buyer-themax0098',
+  name: 'Max (themax0098)',
+  email: 'themax0098@gmail.com',
+  companyName: 'Enterprise Trading Firm',
+  country: 'Global',
+  role: 'BUYER',
+  status: 'ACTIVE',
+  isVerified: true,
+  isPremium: false,
+  membershipStatus: 'verified',
+  tier: 'Verified Supplier' as any,
+  joinedDate: '2026-10-25',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+};
+
+// In-memory custom users cache that survives localStorage QuotaExceededError
+const inMemoryCustomUsersMap: Record<string, AuthUser> = {
+  'user-supplier-mark-johnson': MARK_JOHNSON_SUPPLIER_USER,
+  'user-buyer-themax0098': THEMAX_BUYER_USER
+};
+
 function loadStoredUsers(): Record<string, AuthUser> {
   let base: Record<string, AuthUser> = {
+    'user-supplier-mark-johnson': MARK_JOHNSON_SUPPLIER_USER,
+    'user-buyer-themax0098': THEMAX_BUYER_USER,
     ...DEFAULT_USERS,
     'user-supplier-melissa': MELISSA_SUPPLIER_USER,
-    'user-supplier-svetlana': SVETLANA_SUPPLIER_USER
+    'user-supplier-svetlana': SVETLANA_SUPPLIER_USER,
+    'user-supplier-randy': RANDY_SUPPLIER_USER,
+    ...inMemoryCustomUsersMap
   };
   try {
     const saved = localStorage.getItem(USERS_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      base = { ...base, ...parsed };
-      // Ensure Melissa & Svetlana supplier records are always up-to-date
+      base = { ...base, ...parsed, ...inMemoryCustomUsersMap };
+      // Clean up duplicate keys for Melissa, Svetlana, Randy & Mark Johnson while preserving any admin privilege changes
       Object.keys(base).forEach(k => {
         const u = base[k];
         if (u && u.email && u.email.toLowerCase().includes('mpcommoditybroker') && k !== 'user-supplier-melissa') {
@@ -101,14 +163,37 @@ function loadStoredUsers(): Record<string, AuthUser> {
         if (u && u.email && u.email.toLowerCase().includes('joybambooforestfarm') && k !== 'user-supplier-svetlana') {
           delete base[k];
         }
+        if (u && u.email && u.email.toLowerCase().includes('midforkcap') && k !== 'user-supplier-randy') {
+          delete base[k];
+        }
+        if (u && u.email && u.email.toLowerCase().includes('atlanticpowerequip') && k !== 'user-supplier-mark-johnson') {
+          delete base[k];
+        }
       });
+      base['user-supplier-mark-johnson'] = {
+        ...MARK_JOHNSON_SUPPLIER_USER,
+        ...(parsed['user-supplier-mark-johnson'] || {}),
+        ...(inMemoryCustomUsersMap['user-supplier-mark-johnson'] || {})
+      };
       base['user-supplier-melissa'] = {
-        ...(base['user-supplier-melissa'] || {}),
-        ...MELISSA_SUPPLIER_USER
+        ...MELISSA_SUPPLIER_USER,
+        ...(parsed['user-supplier-melissa'] || {}),
+        ...(inMemoryCustomUsersMap['user-supplier-melissa'] || {})
       };
       base['user-supplier-svetlana'] = {
-        ...(base['user-supplier-svetlana'] || {}),
-        ...SVETLANA_SUPPLIER_USER
+        ...SVETLANA_SUPPLIER_USER,
+        ...(parsed['user-supplier-svetlana'] || {}),
+        ...(inMemoryCustomUsersMap['user-supplier-svetlana'] || {})
+      };
+      base['user-supplier-randy'] = {
+        ...RANDY_SUPPLIER_USER,
+        ...(parsed['user-supplier-randy'] || {}),
+        ...(inMemoryCustomUsersMap['user-supplier-randy'] || {})
+      };
+      base['user-buyer-themax0098'] = {
+        ...THEMAX_BUYER_USER,
+        ...(parsed['user-buyer-themax0098'] || {}),
+        ...(inMemoryCustomUsersMap['user-buyer-themax0098'] || {})
       };
     }
   } catch {}
@@ -116,9 +201,24 @@ function loadStoredUsers(): Record<string, AuthUser> {
 }
 
 function persistStoredUsers(users: Record<string, AuthUser>) {
+  Object.entries(users).forEach(([k, v]) => {
+    if (v && v.id) {
+      inMemoryCustomUsersMap[k] = v;
+    }
+  });
+  const serialized = JSON.stringify(users);
   try {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-  } catch {}
+    localStorage.setItem(USERS_STORAGE_KEY, serialized);
+  } catch {
+    // Evict bulky mock caches so user registrations always have storage space
+    try {
+      localStorage.removeItem(SUPPLIERS_STORAGE_KEY);
+      localStorage.removeItem(RFQS_STORAGE_KEY);
+      localStorage.removeItem(BUYERS_STORAGE_KEY);
+      localStorage.removeItem(QUOTES_STORAGE_KEY);
+      localStorage.setItem(USERS_STORAGE_KEY, serialized);
+    } catch {}
+  }
 }
 
 function loadStoredSuppliers(): CompanyProfile[] {
@@ -143,7 +243,9 @@ function loadStoredSuppliers(): CompanyProfile[] {
 
 function persistStoredSuppliers(suppliers: CompanyProfile[]) {
   try {
-    localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(suppliers));
+    const mockIds = new Set(MOCK_COMPANIES.map(s => s.id));
+    const customOnly = (suppliers || []).filter(s => s && !mockIds.has(s.id));
+    localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(customOnly));
   } catch {}
 }
 
@@ -223,6 +325,7 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
   existingEmails.add('melissa@mpcommoditybroker.com');
   existingEmails.add('melissa@mpcommoditybrokers.com');
   existingEmails.add('info@joybambooforestfarm.com');
+  existingEmails.add('randy@midforkcap.com');
   const existingCompanies = new Set(
     baseSuppliers.map(s => (s.companyName || '').toLowerCase()).filter(Boolean)
   );
@@ -237,8 +340,10 @@ export function getAllSuppliersWithUsers(): CompanyProfile[] {
     if (
       u.id === 'user-supplier-melissa' ||
       u.id === 'user-supplier-svetlana' ||
+      u.id === 'user-supplier-randy' ||
       emailLower.includes('mpcommoditybroker') ||
       emailLower.includes('joybambooforestfarm') ||
+      emailLower.includes('midforkcap') ||
       (emailLower && existingEmails.has(emailLower)) ||
       (companyLower && existingCompanies.has(companyLower))
     ) {
@@ -637,7 +742,7 @@ export const api = {
   // USER PROFILE & ACCOUNT OWNERSHIP SECURITY
   // ==========================================
   async getAllUsers(callerUser?: AuthUser | null): Promise<AuthUser[]> {
-    if (callerUser && callerUser.role !== 'ADMIN') {
+    if (callerUser && callerUser.role !== 'ADMIN' && !callerUser.isVerifiedAdmin) {
       securityService.logSecurityEvent({
         actorUid: callerUser.id,
         actorEmail: callerUser.email,
@@ -650,7 +755,162 @@ export const api = {
       return [callerUser];
     }
     activeUsersStore = loadStoredUsers();
-    return Object.values(activeUsersStore);
+
+    // Sync from backend /api/admin/users so users created on server or via API are always merged in
+    try {
+      const srvRes = await fetch('/api/admin/users', { method: 'GET', headers: { Accept: 'application/json' } });
+      if (srvRes.ok) {
+        const srvJson = await srvRes.json();
+        const srvList: any[] = Array.isArray(srvJson?.data) ? srvJson.data : [];
+        let changed = false;
+        for (const srvU of srvList) {
+          if (!srvU || !srvU.email) continue;
+          const emailLower = String(srvU.email).toLowerCase().trim();
+          const existingEntry = Object.entries(activeUsersStore).find(
+            ([, u]) => u && u.email && u.email.toLowerCase().trim() === emailLower
+          );
+          if (!existingEntry) {
+            const uid = String(srvU.id || `user-${Date.now()}`);
+            const mappedUser: AuthUser = {
+              id: uid,
+              name: srvU.name || emailLower.split('@')[0],
+              email: srvU.email,
+              role: (String(srvU.role || 'BUYER').toUpperCase() as UserRole),
+              companyName: srvU.companyName || srvU.company_name || 'Enterprise Trading Firm',
+              country: srvU.country || 'Global',
+              status: (String(srvU.status || 'ACTIVE').toUpperCase() as AccountStatus),
+              isVerified: srvU.isVerified ?? srvU.is_verified ?? true,
+              isPremium: Boolean(srvU.isPremium ?? srvU.is_premium),
+              membershipStatus: (srvU.membershipStatus || srvU.membership_status || 'verified') as MembershipStatus,
+              tier: (srvU.tier || 'Verified Supplier') as any,
+              avatarUrl: srvU.avatarUrl || srvU.avatar_url
+            };
+            activeUsersStore[uid] = mappedUser;
+            inMemoryCustomUsersMap[uid] = mappedUser;
+            changed = true;
+          }
+        }
+        if (changed) {
+          persistStoredUsers(activeUsersStore);
+        }
+      }
+    } catch {}
+
+    const seenIds = new Set<string>();
+    const seenEmails = new Set<string>();
+    const customUsers: AuthUser[] = [];
+    const defaultUsers: AuthUser[] = [];
+    const defaultKeys = new Set([
+      ...Object.keys(DEFAULT_USERS),
+      'user-supplier-melissa',
+      'user-supplier-svetlana',
+      'user-supplier-randy'
+    ]);
+
+    for (const [key, u] of Object.entries(activeUsersStore)) {
+      if (!u || !u.id) continue;
+      const emailKey = (u.email || '').toLowerCase().trim();
+      if (seenIds.has(u.id) || (emailKey && seenEmails.has(emailKey))) continue;
+      seenIds.add(u.id);
+      if (emailKey) seenEmails.add(emailKey);
+      if (!defaultKeys.has(key) && !defaultKeys.has(u.id)) {
+        customUsers.unshift(u);
+      } else {
+        defaultUsers.push(u);
+      }
+    }
+    return [...customUsers, ...defaultUsers];
+  },
+
+  async adminCreateUser(
+    payload: {
+      name: string;
+      email: string;
+      role: UserRole;
+      companyName?: string;
+      country?: string;
+      status?: AccountStatus;
+      isVerified?: boolean;
+      isPremium?: boolean;
+      membershipStatus?: MembershipStatus;
+    },
+    _adminCaller?: AuthUser | null
+  ): Promise<{ success: boolean; data: AuthUser; message: string }> {
+    activeUsersStore = loadStoredUsers();
+    const cleanEmail = payload.email.trim();
+    const emailLower = cleanEmail.toLowerCase();
+
+    // Check if an account with this email already exists
+    let existingKey: string | undefined;
+    for (const [k, u] of Object.entries(activeUsersStore)) {
+      if (u && u.email && u.email.toLowerCase().trim() === emailLower) {
+        existingKey = k;
+        break;
+      }
+    }
+
+    const uid = existingKey ? activeUsersStore[existingKey].id : `user-${Date.now()}`;
+    const isVip = payload.isPremium ?? (payload.role === 'ADMIN');
+    const newUser: AuthUser = {
+      ...(existingKey ? activeUsersStore[existingKey] : {}),
+      id: uid,
+      name: payload.name.trim(),
+      email: cleanEmail,
+      role: payload.role || 'BUYER',
+      companyName: (payload.companyName || '').trim() || 'Enterprise Trading Firm',
+      country: (payload.country || '').trim() || 'Global',
+      status: payload.status || 'ACTIVE',
+      isVerified: payload.isVerified ?? true,
+      isPremium: isVip,
+      membershipStatus: payload.membershipStatus || (isVip ? 'paid' : 'verified'),
+      tier: isVip ? 'VIP' : ('Verified Supplier' as any),
+      joinedDate: new Date().toISOString().split('T')[0],
+      avatarUrl:
+        (existingKey && activeUsersStore[existingKey]?.avatarUrl) ||
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+    };
+
+    const storeKey = existingKey || uid;
+    // Re-insert at the end of activeUsersStore so customUsers.unshift places the newest user at index 0
+    if (existingKey) {
+      delete activeUsersStore[existingKey];
+    }
+    activeUsersStore[storeKey] = newUser;
+    inMemoryCustomUsersMap[storeKey] = newUser;
+    persistStoredUsers(activeUsersStore);
+
+    // Persist to dedicated backend endpoint AND BigRock API
+    try {
+      await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      });
+    } catch {}
+
+    await bigrockApi.upsertUser({
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      company_name: newUser.companyName,
+      country: newUser.country,
+      status: newUser.status,
+      is_verified: newUser.isVerified,
+      is_premium: newUser.isPremium,
+      membership_status: newUser.membershipStatus,
+      tier: newUser.tier
+    });
+
+    try {
+      window.dispatchEvent(new Event('tradeheaven_users_updated'));
+    } catch {}
+
+    return {
+      success: true,
+      data: newUser,
+      message: `User ${newUser.name} (${newUser.email}) registered in database.`
+    };
   },
 
   async updateUserProfile(
@@ -730,33 +990,82 @@ export const api = {
       status?: AccountStatus;
       isVerified?: boolean;
       tier?: any;
+      plan?: string;
     },
-    adminCaller: AuthUser
+    adminCaller?: AuthUser | null
   ): Promise<{ success: boolean; data?: AuthUser; error?: string; message?: string }> {
     const adminCheck = securityService.adminUpdateUserMembership(adminCaller, targetUserId, updates);
     if (!adminCheck.success) {
       return { success: false, error: adminCheck.error, message: adminCheck.error };
     }
 
-    // Apply updates across user records
+    activeUsersStore = loadStoredUsers();
+
+    // Apply updates across all matching user records in activeUsersStore
     let targetRecord: AuthUser | undefined;
     for (const roleKey of Object.keys(activeUsersStore)) {
-      if (activeUsersStore[roleKey].id === targetUserId || roleKey === targetUserId) {
+      if (activeUsersStore[roleKey] && (activeUsersStore[roleKey].id === targetUserId || roleKey === targetUserId)) {
         activeUsersStore[roleKey] = {
           ...activeUsersStore[roleKey],
           ...updates
         };
         targetRecord = activeUsersStore[roleKey];
-        break;
       }
+    }
+
+    if (!targetRecord) {
+      targetRecord = {
+        id: targetUserId,
+        name: 'Registered Partner',
+        email: `${targetUserId}@tradeheaven.net`,
+        companyName: 'Verified Trading Partner',
+        country: 'Global',
+        role: updates.role || 'SUPPLIER',
+        status: updates.status || 'ACTIVE',
+        isVerified: updates.isVerified ?? true,
+        isPremium: updates.isPremium ?? false,
+        membershipStatus: updates.membershipStatus || 'free',
+        tier: updates.tier || 'FREE',
+        ...updates
+      };
+      activeUsersStore[targetUserId] = targetRecord;
     }
 
     persistStoredUsers(activeUsersStore);
 
+    // Also sync supplier status/tier in activeSuppliersStore if this user owns a supplier profile
+    let supplierChanged = false;
+    activeSuppliersStore = (activeSuppliersStore || []).map(supp => {
+      const emailMatch =
+        targetRecord?.email &&
+        supp.contactEmail &&
+        supp.contactEmail.toLowerCase().trim() === targetRecord.email.toLowerCase().trim();
+      if (supp.ownerUid === targetUserId || supp.id === targetUserId || emailMatch) {
+        supplierChanged = true;
+        return {
+          ...supp,
+          tier: updates.tier ? (updates.tier as any) : supp.tier,
+          isVerifiedKYC: updates.isVerified !== undefined ? updates.isVerified : supp.isVerifiedKYC,
+          status:
+            updates.status === 'SUSPENDED'
+              ? 'SUSPENDED'
+              : updates.status === 'PENDING'
+              ? 'PENDING_REVIEW'
+              : updates.status === 'ACTIVE'
+              ? 'ACTIVE'
+              : supp.status
+        };
+      }
+      return supp;
+    });
+    if (supplierChanged) {
+      persistStoredSuppliers(activeSuppliersStore);
+    }
+
     return {
       success: true,
       data: targetRecord,
-      message: `Updated privileges for ${targetUserId}: isPremium=${updates.isPremium}, status=${updates.membershipStatus}`
+      message: `Updated user ${targetRecord.name || targetUserId} privileges successfully`
     };
   },
 
