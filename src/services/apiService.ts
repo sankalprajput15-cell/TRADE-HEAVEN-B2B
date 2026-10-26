@@ -40,10 +40,57 @@ const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Pr
 
 // Storage keys for reactive state persistence
 const USERS_STORAGE_KEY = 'th_registered_users_store';
+const DELETED_USERS_STORAGE_KEY = 'th_permanently_deleted_users_v1';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';
 const BUYERS_STORAGE_KEY = 'th_buyers_store';
 const RFQS_STORAGE_KEY = 'th_rfqs_store';
 const QUOTES_STORAGE_KEY = 'th_quotes_store';
+
+export function getPermanentlyDeletedUsers(): { ids: Set<string>; emails: Set<string> } {
+  const ids = new Set<string>();
+  const emails = new Set<string>();
+  try {
+    const raw = localStorage.getItem(DELETED_USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.ids)) {
+        parsed.ids.forEach((id: string) => id && ids.add(String(id).trim()));
+      }
+      if (Array.isArray(parsed.emails)) {
+        parsed.emails.forEach((em: string) => em && emails.add(String(em).toLowerCase().trim()));
+      }
+    }
+  } catch {}
+  return { ids, emails };
+}
+
+export function markUserPermanentlyDeleted(id?: string, email?: string) {
+  const current = getPermanentlyDeletedUsers();
+  const cleanId = String(id || '').trim();
+  const cleanEmail = String(email || '').toLowerCase().trim();
+  if (cleanId) current.ids.add(cleanId);
+  if (cleanEmail) current.emails.add(cleanEmail);
+  try {
+    localStorage.setItem(
+      DELETED_USERS_STORAGE_KEY,
+      JSON.stringify({ ids: Array.from(current.ids), emails: Array.from(current.emails) })
+    );
+  } catch {}
+}
+
+export function unmarkUserPermanentlyDeleted(id?: string, email?: string) {
+  const current = getPermanentlyDeletedUsers();
+  const cleanId = String(id || '').trim();
+  const cleanEmail = String(email || '').toLowerCase().trim();
+  if (cleanId) current.ids.delete(cleanId);
+  if (cleanEmail) current.emails.delete(cleanEmail);
+  try {
+    localStorage.setItem(
+      DELETED_USERS_STORAGE_KEY,
+      JSON.stringify({ ids: Array.from(current.ids), emails: Array.from(current.emails) })
+    );
+  } catch {}
+}
 
 const MELISSA_SUPPLIER_USER: AuthUser = {
   id: 'user-supplier-melissa',
@@ -197,6 +244,22 @@ function loadStoredUsers(): Record<string, AuthUser> {
       };
     }
   } catch {}
+
+  const deleted = getPermanentlyDeletedUsers();
+  Object.keys(base).forEach(k => {
+    const u = base[k];
+    if (!u) {
+      delete base[k];
+      return;
+    }
+    const uid = String(u.id || k).trim();
+    const em = String(u.email || '').toLowerCase().trim();
+    if (deleted.ids.has(uid) || deleted.ids.has(k) || (em && deleted.emails.has(em))) {
+      delete base[k];
+      delete inMemoryCustomUsersMap[k];
+    }
+  });
+
   return base;
 }
 
@@ -761,11 +824,18 @@ export const api = {
       const srvRes = await fetch('/api/admin/users', { method: 'GET', headers: { Accept: 'application/json' } });
       if (srvRes.ok) {
         const srvJson = await srvRes.json();
+        if (Array.isArray(srvJson?.deletedIds) || Array.isArray(srvJson?.deletedEmails)) {
+          (srvJson.deletedIds || []).forEach((id: string) => markUserPermanentlyDeleted(id, undefined));
+          (srvJson.deletedEmails || []).forEach((em: string) => markUserPermanentlyDeleted(undefined, em));
+        }
+        const deletedNow = getPermanentlyDeletedUsers();
         const srvList: any[] = Array.isArray(srvJson?.data) ? srvJson.data : [];
         let changed = false;
         for (const srvU of srvList) {
           if (!srvU || !srvU.email) continue;
           const emailLower = String(srvU.email).toLowerCase().trim();
+          const srvUid = String(srvU.id || '').trim();
+          if (deletedNow.emails.has(emailLower) || (srvUid && deletedNow.ids.has(srvUid))) continue;
           const existingEntry = Object.entries(activeUsersStore).find(
             ([, u]) => u && u.email && u.email.toLowerCase().trim() === emailLower
           );
@@ -796,6 +866,7 @@ export const api = {
       }
     } catch {}
 
+    const deleted = getPermanentlyDeletedUsers();
     const seenIds = new Set<string>();
     const seenEmails = new Set<string>();
     const customUsers: AuthUser[] = [];
@@ -810,6 +881,7 @@ export const api = {
     for (const [key, u] of Object.entries(activeUsersStore)) {
       if (!u || !u.id) continue;
       const emailKey = (u.email || '').toLowerCase().trim();
+      if (deleted.ids.has(u.id) || deleted.ids.has(key) || (emailKey && deleted.emails.has(emailKey))) continue;
       if (seenIds.has(u.id) || (emailKey && seenEmails.has(emailKey))) continue;
       seenIds.add(u.id);
       if (emailKey) seenEmails.add(emailKey);
@@ -836,9 +908,10 @@ export const api = {
     },
     _adminCaller?: AuthUser | null
   ): Promise<{ success: boolean; data: AuthUser; message: string }> {
-    activeUsersStore = loadStoredUsers();
     const cleanEmail = payload.email.trim();
     const emailLower = cleanEmail.toLowerCase();
+    unmarkUserPermanentlyDeleted(undefined, emailLower);
+    activeUsersStore = loadStoredUsers();
 
     // Check if an account with this email already exists
     let existingKey: string | undefined;
@@ -850,6 +923,7 @@ export const api = {
     }
 
     const uid = existingKey ? activeUsersStore[existingKey].id : `user-${Date.now()}`;
+    unmarkUserPermanentlyDeleted(uid, emailLower);
     const isVip = payload.isPremium ?? (payload.role === 'ADMIN');
     const newUser: AuthUser = {
       ...(existingKey ? activeUsersStore[existingKey] : {}),
@@ -910,6 +984,57 @@ export const api = {
       success: true,
       data: newUser,
       message: `User ${newUser.name} (${newUser.email}) registered in database.`
+    };
+  },
+
+  async adminDeleteUserPermanently(
+    targetUserId: string,
+    targetEmail?: string,
+    _adminCaller?: AuthUser | null
+  ): Promise<{ success: boolean; message: string }> {
+    const cleanId = String(targetUserId || '').trim();
+    const cleanEmail = String(targetEmail || '').toLowerCase().trim();
+
+    markUserPermanentlyDeleted(cleanId, cleanEmail);
+
+    Object.keys(activeUsersStore).forEach(k => {
+      const u = activeUsersStore[k];
+      const uEmail = String(u?.email || '').toLowerCase().trim();
+      if (k === cleanId || (u && (u.id === cleanId || (cleanEmail && uEmail === cleanEmail)))) {
+        if (u?.id) markUserPermanentlyDeleted(u.id, uEmail);
+        delete activeUsersStore[k];
+      }
+    });
+
+    Object.keys(inMemoryCustomUsersMap).forEach(k => {
+      const u = inMemoryCustomUsersMap[k];
+      const uEmail = String(u?.email || '').toLowerCase().trim();
+      if (k === cleanId || (u && (u.id === cleanId || (cleanEmail && uEmail === cleanEmail)))) {
+        delete inMemoryCustomUsersMap[k];
+      }
+    });
+
+    persistStoredUsers(activeUsersStore);
+
+    if (activeSuppliersStore) {
+      activeSuppliersStore = activeSuppliersStore.filter(supp => {
+        const sEmail = String(supp?.contactEmail || '').toLowerCase().trim();
+        if (cleanId && (supp.id === cleanId || supp.ownerUid === cleanId)) return false;
+        if (cleanEmail && sEmail === cleanEmail) return false;
+        return true;
+      });
+      persistStoredSuppliers(activeSuppliersStore);
+    }
+
+    await bigrockApi.deleteUser(cleanId, cleanEmail);
+
+    try {
+      window.dispatchEvent(new Event('tradeheaven_users_updated'));
+    } catch {}
+
+    return {
+      success: true,
+      message: `User ${cleanEmail || cleanId} permanently deleted from all databases.`
     };
   },
 

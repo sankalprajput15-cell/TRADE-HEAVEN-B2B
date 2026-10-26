@@ -15,9 +15,12 @@ import {
   CheckSquare,
   Square,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
+import { api, getPermanentlyDeletedUsers } from '../../services/apiService';
 
 export interface RegisteredSupplier {
   id: string | number;
@@ -45,11 +48,28 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
   const [actionLoadingId, setActionLoadingId] = useState<string | number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
-  const [expandedEmailHistoryId, setExpandedEmailHistoryId] = useState<string | number | null>('comp-middle-fox-llc');
+  const [expandedEmailHistoryId, setExpandedEmailHistoryId] = useState<string | number | null>('user-supplier-mark-johnson');
+  const [supplierToDeletePermanently, setSupplierToDeletePermanently] = useState<RegisteredSupplier | null>(null);
+  const [statusBanner, setStatusBanner] = useState<string | null>(null);
 
   const fetchSuppliers = async () => {
     setLoading(true);
     setError(null);
+    const markJohnsonSupplier: RegisteredSupplier = {
+      id: 'user-supplier-mark-johnson',
+      name: 'Mark Johnson (President)',
+      email: 'mjohnson@atlanticpowerequip.com',
+      company_name: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+      companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+      phone: 'C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131 | P.O. Box 1176, Marmora, NJ 08223 USA',
+      country: 'United States (Marmora, New Jersey 08223)',
+      role: 'SUPPLIER',
+      status: 'ACTIVE',
+      is_verified: 1,
+      isVerified: true,
+      tier: 'Paid Basic Plan (CAT Earth Moving Machines & Generators • Golden Lead 10 Generators to Canada)',
+      created_at: '2026-10-25 18:10:00 UTC'
+    };
     const randySupplier: RegisteredSupplier = {
       id: 'comp-middle-fox-llc',
       name: 'Mr. Randy',
@@ -111,6 +131,15 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       created_at: '2026-10-23 12:00:00 UTC'
     };
 
+    const filterOutDeleted = (list: RegisteredSupplier[]) => {
+      const deleted = getPermanentlyDeletedUsers();
+      return list.filter(s => {
+        const sid = String(s.id || '').trim();
+        const em = String(s.email || '').toLowerCase().trim();
+        return !deleted.ids.has(sid) && !deleted.emails.has(em);
+      });
+    };
+
     try {
       const res = await fetch('/api.php?action=get_users');
       if (!res.ok) {
@@ -131,6 +160,9 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
 
       const finalSuppliers = (supplierList.length > 0 ? supplierList : usersList).map((s) => {
         const emailLower = String(s.email || '').toLowerCase();
+        if (emailLower.includes('atlanticpowerequip')) {
+          return { ...s, ...markJohnsonSupplier };
+        }
         if (emailLower.includes('midforkcap')) {
           return { ...s, ...randySupplier };
         }
@@ -146,6 +178,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         return s;
       });
 
+      const hasMark = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('atlanticpowerequip'));
       const hasRandy = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('midforkcap'));
       const hasDonald = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('sorkindon'));
       const hasMelissa = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('mpcommoditybroker'));
@@ -156,10 +189,11 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       if (!hasSvetlana) merged = [svetlanaSupplier, ...merged];
       if (!hasDonald) merged = [donaldSupplier, ...merged];
       if (!hasRandy) merged = [randySupplier, ...merged];
-      setSuppliers(merged);
+      if (!hasMark) merged = [markJohnsonSupplier, ...merged];
+      setSuppliers(filterOutDeleted(merged));
     } catch (err: any) {
       console.error('[RegisteredSuppliersAdmin] Failed to fetch suppliers:', err);
-      setSuppliers([randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]);
+      setSuppliers(filterOutDeleted([markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
     } finally {
       setLoading(false);
     }
@@ -167,7 +201,43 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
 
   useEffect(() => {
     fetchSuppliers();
+    window.addEventListener('tradeheaven_users_updated', fetchSuppliers);
+    return () => window.removeEventListener('tradeheaven_users_updated', fetchSuppliers);
   }, []);
+
+  const handlePermanentlyDeleteSupplier = async (sup: RegisteredSupplier) => {
+    setActionLoadingId(sup.id);
+    try {
+      const cleanId = String(sup.id || '').trim();
+      const cleanEmail = String(sup.email || '').toLowerCase().trim();
+      setSuppliers(prev =>
+        prev.filter(s => String(s.id) !== cleanId && String(s.email || '').toLowerCase().trim() !== cleanEmail)
+      );
+      await api.adminDeleteUserPermanently(cleanId, cleanEmail);
+      setSupplierToDeletePermanently(null);
+      setStatusBanner(`✓ Permanently deleted user "${sup.name}" (${sup.email}) from database.`);
+      setTimeout(() => setStatusBanner(null), 4000);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleBulkDeletePermanently = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkProcessing(true);
+    try {
+      const targets = suppliers.filter(s => selectedIds.has(s.id));
+      for (const sup of targets) {
+        await api.adminDeleteUserPermanently(String(sup.id), sup.email);
+      }
+      setSuppliers(prev => prev.filter(s => !selectedIds.has(s.id)));
+      setSelectedIds(new Set());
+      setStatusBanner(`✓ Permanently deleted ${targets.length} selected user(s) from database.`);
+      setTimeout(() => setStatusBanner(null), 4000);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
 
   const handleToggleVerification = async (sup: RegisteredSupplier) => {
     const currentVerified = sup.is_verified === 1 || sup.is_verified === true || sup.isVerified === true;
@@ -345,12 +415,27 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
               <span>Mark Unverified (Batch)</span>
             </button>
             <button
+              onClick={handleBulkDeletePermanently}
+              disabled={isBulkProcessing}
+              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Permanently (Batch)</span>
+            </button>
+            <button
               onClick={() => setSelectedIds(new Set())}
               className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all border border-slate-700 cursor-pointer"
             >
               Clear Selection
             </button>
           </div>
+        </div>
+      )}
+
+      {statusBanner && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center justify-between">
+          <span>{statusBanner}</span>
+          <button onClick={() => setStatusBanner(null)} className="text-emerald-600 hover:text-emerald-900 font-black cursor-pointer">✕</button>
         </div>
       )}
 
@@ -533,25 +618,36 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
                           </div>
                         </td>
                         <td className="p-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedEmailHistoryId(isHistoryExpanded ? null : sup.id)
-                            }
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
-                              isHistoryExpanded
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
-                            }`}
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                            <span>Email History</span>
-                            {isHistoryExpanded ? (
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedEmailHistoryId(isHistoryExpanded ? null : sup.id)
+                              }
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer border ${
+                                isHistoryExpanded
+                                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                                  : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+                              }`}
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Email History</span>
+                              {isHistoryExpanded ? (
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSupplierToDeletePermanently(sup)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 transition-all cursor-pointer"
+                              title="Permanently delete this user and company profile from the database"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete Permanently</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
@@ -586,6 +682,55 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Permanent Supplier/User Deletion Confirmation Modal */}
+      {supplierToDeletePermanently && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-rose-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="font-black text-rose-700 text-base flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+                <span>Delete User &amp; Profile Permanently</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSupplierToDeletePermanently(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-1.5">
+              <div className="font-black text-rose-900 text-xs flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Warning: Permanent Database Removal</span>
+              </div>
+              <p className="text-[11px] text-rose-800 leading-relaxed">
+                This will permanently remove <strong>{supplierToDeletePermanently.name}</strong> ({supplierToDeletePermanently.email}) from the database.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSupplierToDeletePermanently(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePermanentlyDeleteSupplier(supplierToDeletePermanently)}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Yes, Delete Permanently</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

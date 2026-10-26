@@ -469,18 +469,39 @@ export const bigrockApi = {
   },
 
   async fetchUsers(): Promise<DbUser[]> {
+    const getDeletedSet = (): { ids: Set<string>; emails: Set<string> } => {
+      const ids = new Set<string>();
+      const emails = new Set<string>();
+      try {
+        const raw = localStorage.getItem('th_permanently_deleted_users_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.ids)) parsed.ids.forEach((i: string) => i && ids.add(String(i).trim()));
+          if (Array.isArray(parsed.emails)) parsed.emails.forEach((e: string) => e && emails.add(String(e).toLowerCase().trim()));
+        }
+      } catch {}
+      return { ids, emails };
+    };
+    const deleted = getDeletedSet();
+
     try {
       const response = await fetch(`${BIGROCK_API_URL}?action=get_users`);
       if (response.ok) {
         const json = await safeParseJson(response);
         if (json) {
-          const list = Array.isArray(json) ? json : (json.data || []);
-          if (list.length > 0) return list;
+          const list: DbUser[] = Array.isArray(json) ? json : (json.data || []);
+          if (list.length > 0) {
+            return list.filter(u => {
+              const uid = String(u.id || '').trim();
+              const em = String(u.email || '').toLowerCase().trim();
+              return !deleted.ids.has(uid) && !deleted.emails.has(em);
+            });
+          }
         }
       }
     } catch (err) { console.warn('[BigRock API fetchUsers]:', err); }
 
-    return [
+    const fallbackList: DbUser[] = [
       {
         id: 'user-buyer-themax0098',
         name: 'Max (themax0098)',
@@ -543,6 +564,11 @@ export const bigrockApi = {
         tier: 'Basic Plan'
       }
     ];
+    return fallbackList.filter(u => {
+      const uid = String(u.id || '').trim();
+      const em = String(u.email || '').toLowerCase().trim();
+      return !deleted.ids.has(uid) && !deleted.emails.has(em);
+    });
   },
 
   async upsertUser(user: DbUser): Promise<{ success: boolean; data?: DbUser; error?: string }> {
@@ -601,15 +627,55 @@ export const bigrockApi = {
     return { success: true, data: enrichedUser };
   },
 
-  async deleteUser(id: string): Promise<{ success: boolean; error?: string }> {
+  async deleteUser(id: string, email?: string): Promise<{ success: boolean; error?: string }> {
+    const cleanId = String(id || '').trim();
+    const cleanEmail = String(email || '').toLowerCase().trim();
+
+    try {
+      const DELETED_KEY = 'th_permanently_deleted_users_v1';
+      const rawDel = localStorage.getItem(DELETED_KEY);
+      const parsedDel = rawDel ? JSON.parse(rawDel) : { ids: [], emails: [] };
+      const idSet = new Set<string>(Array.isArray(parsedDel.ids) ? parsedDel.ids : []);
+      const emailSet = new Set<string>(Array.isArray(parsedDel.emails) ? parsedDel.emails : []);
+      if (cleanId) idSet.add(cleanId);
+      if (cleanEmail) emailSet.add(cleanEmail);
+      localStorage.setItem(DELETED_KEY, JSON.stringify({ ids: Array.from(idSet), emails: Array.from(emailSet) }));
+
+      const USERS_STORAGE_KEY = 'th_registered_users_store';
+      const saved = localStorage.getItem(USERS_STORAGE_KEY);
+      if (saved) {
+        const store = JSON.parse(saved);
+        Object.keys(store).forEach(k => {
+          const u = store[k];
+          if (k === cleanId || (u && (u.id === cleanId || (cleanEmail && String(u.email || '').toLowerCase().trim() === cleanEmail)))) {
+            delete store[k];
+          }
+        });
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(store));
+      }
+    } catch (e) {
+      console.warn('[deleteUser local cleanup warning]:', e);
+    }
+
     try {
       await fetch(`${BIGROCK_API_URL}?action=delete_user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id: cleanId, email: cleanEmail, permanent: true })
       });
-    } catch (err) { console.warn('[BigRock API deleteUser]:', err); }
-    return { success: false, error: 'Request failed' };
+    } catch (err) {
+      console.warn('[BigRock API deleteUser]:', err);
+    }
+
+    try {
+      await fetch('/api/admin/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: cleanId, email: cleanEmail, permanent: true })
+      });
+    } catch {}
+
+    return { success: true };
   },
 
   // ==========================================

@@ -80,6 +80,28 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
     }
   };
 
+  const isPaidMember = Boolean(
+    currentUser && (
+      currentUser.role === 'ADMIN' ||
+      currentUser.isVerifiedAdmin === true ||
+      currentUser.isPremium === true ||
+      currentUser.membershipStatus === 'paid' ||
+      (currentUser.membershipStatus as string) === 'basic' ||
+      String(currentUser.tier || '').toLowerCase().includes('basic') ||
+      String(currentUser.tier || '').toLowerCase().includes('vip') ||
+      String(currentUser.tier || '').toLowerCase().includes('gold') ||
+      String(currentUser.tier || '').toLowerCase().includes('paid') ||
+      String(currentUser.tier || '').toLowerCase().includes('enterprise') ||
+      String(currentUser.tier || '').toLowerCase().includes('establishment') ||
+      String(currentUser.tier || '').toLowerCase().includes('featured') ||
+      (currentUser.plan && !String(currentUser.plan).toLowerCase().includes('free'))
+    )
+  );
+
+  if (isPaidMember) {
+    return null;
+  }
+
   return (
     <div 
       id="daily-free-lead-banner"

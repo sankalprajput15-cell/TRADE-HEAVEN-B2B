@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Currency, PaymentTerms, AuthUser, UserRole, MembershipStatus, AccountStatus, SecurityAuditLog } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
-import { api } from '../../services/apiService';
+import { api, getPermanentlyDeletedUsers } from '../../services/apiService';
 import { useAuth } from '../../context/AuthContext';
 import { securityService } from '../../services/securityService';
 import { AdminActivityLogger, adminActivityBus } from '../admin/AdminActivityLogger';
@@ -108,37 +108,43 @@ export const ClientAdminView: React.FC<Props> = ({
   const sessionCreatedUsersRef = React.useRef<AuthUser[]>([]);
   const [recentlyAddedEmail, setRecentlyAddedEmail] = useState<string | null>('mjohnson@atlanticpowerequip.com');
   const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [usersList, setUsersList] = useState<AuthUser[]>([
-    {
-      id: 'user-supplier-mark-johnson',
-      name: 'Mark Johnson (President)',
-      email: 'mjohnson@atlanticpowerequip.com',
-      phone: 'C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131 | P.O. Box 1176, Marmora, NJ 08223 USA',
-      companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
-      country: 'United States',
-      role: 'SUPPLIER',
-      status: 'ACTIVE',
-      isVerified: true,
-      isPremium: false,
-      membershipStatus: 'paid',
-      tier: 'Basic Plan' as any,
-      plan: 'Basic Plan (CAT Earth Moving Machines & Generators Supplier)',
-      avatarUrl: '/assets/aistudio/image001_ebfaebe5.png'
-    },
-    {
-      id: 'user-buyer-themax0098',
-      name: 'Max (themax0098)',
-      email: 'themax0098@gmail.com',
-      companyName: 'Enterprise Trading Firm',
-      country: 'Global',
-      role: 'BUYER',
-      status: 'ACTIVE',
-      isVerified: true,
-      isPremium: false,
-      membershipStatus: 'verified',
-      tier: 'Verified Supplier' as any
-    }
-  ]);
+  const [userPendingPermanentDelete, setUserPendingPermanentDelete] = useState<AuthUser | null>(null);
+  const [isDeletingUserPermanently, setIsDeletingUserPermanently] = useState(false);
+  const [usersList, setUsersList] = useState<AuthUser[]>(() => {
+    const deleted = getPermanentlyDeletedUsers();
+    const initial: AuthUser[] = [
+      {
+        id: 'user-supplier-mark-johnson',
+        name: 'Mark Johnson (President)',
+        email: 'mjohnson@atlanticpowerequip.com',
+        phone: 'C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131 | P.O. Box 1176, Marmora, NJ 08223 USA',
+        companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+        country: 'United States',
+        role: 'SUPPLIER',
+        status: 'ACTIVE',
+        isVerified: true,
+        isPremium: false,
+        membershipStatus: 'paid',
+        tier: 'Basic Plan' as any,
+        plan: 'Basic Plan (CAT Earth Moving Machines & Generators Supplier)',
+        avatarUrl: '/assets/aistudio/image001_ebfaebe5.png'
+      },
+      {
+        id: 'user-buyer-themax0098',
+        name: 'Max (themax0098)',
+        email: 'themax0098@gmail.com',
+        companyName: 'Enterprise Trading Firm',
+        country: 'Global',
+        role: 'BUYER',
+        status: 'ACTIVE',
+        isVerified: true,
+        isPremium: false,
+        membershipStatus: 'verified',
+        tier: 'Verified Supplier' as any
+      }
+    ];
+    return initial.filter(u => !deleted.ids.has(u.id) && !deleted.emails.has(u.email.toLowerCase().trim()));
+  });
   const [dbUsers, setDbUsers] = useState<DbUser[]>([]);
   const [expandedEmailHistoryUid, setExpandedEmailHistoryUid] = useState<string | null>('user-supplier-mark-johnson');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -221,11 +227,13 @@ export const ClientAdminView: React.FC<Props> = ({
       const mergedUsers: AuthUser[] = [];
       const seenEmails = new Set<string>();
       const seenIds = new Set<string>();
+      const permanentlyDeleted = getPermanentlyDeletedUsers();
 
       const pushUniqueUser = (u: AuthUser) => {
         if (!u || !u.email) return;
         const emailLower = u.email.toLowerCase().trim();
         const uid = String(u.id || `user-${emailLower}`);
+        if (permanentlyDeleted.emails.has(emailLower) || permanentlyDeleted.ids.has(uid)) return;
         if (seenEmails.has(emailLower) || seenIds.has(uid)) return;
         seenEmails.add(emailLower);
         seenIds.add(uid);
@@ -310,6 +318,7 @@ export const ClientAdminView: React.FC<Props> = ({
     loadAllData();
     const handleUsersUpdated = () => {
       api.getAllUsers(effectiveAdminUser).then(latest => {
+        const permanentlyDeleted = getPermanentlyDeletedUsers();
         setUsersList(prev => {
           const merged: AuthUser[] = [];
           const seenEmails = new Set<string>();
@@ -317,6 +326,7 @@ export const ClientAdminView: React.FC<Props> = ({
           const addUnique = (u: AuthUser) => {
             if (!u || !u.email) return;
             const em = u.email.toLowerCase().trim();
+            if (permanentlyDeleted.emails.has(em) || permanentlyDeleted.ids.has(u.id)) return;
             if (seenEmails.has(em) || seenIds.has(u.id)) return;
             seenEmails.add(em);
             seenIds.add(u.id);
@@ -587,6 +597,61 @@ export const ClientAdminView: React.FC<Props> = ({
         effectiveAdminUser.name || 'Admin'
       );
       showToast('error', 'Failed to register user: ' + errorMsg);
+    }
+  };
+
+  // PERMANENTLY DELETE USER
+  const handlePermanentlyDeleteUser = async (targetUser: AuthUser) => {
+    if (!targetUser) return;
+    setIsDeletingUserPermanently(true);
+    try {
+      const cleanId = String(targetUser.id || '').trim();
+      const cleanEmail = String(targetUser.email || '').toLowerCase().trim();
+
+      // Immediately remove from session and UI state
+      sessionCreatedUsersRef.current = sessionCreatedUsersRef.current.filter(
+        u => u.id !== cleanId && (u.email || '').toLowerCase().trim() !== cleanEmail
+      );
+      setUsersList(prev =>
+        prev.filter(u => u.id !== cleanId && (u.email || '').toLowerCase().trim() !== cleanEmail)
+      );
+      setDbUsers(prev =>
+        prev.filter(
+          u => String(u.id || '') !== cleanId && (u.email || '').toLowerCase().trim() !== cleanEmail
+        )
+      );
+      if (expandedEmailHistoryUid === cleanId) {
+        setExpandedEmailHistoryUid(null);
+      }
+
+      await api.adminDeleteUserPermanently(cleanId, cleanEmail, effectiveAdminUser);
+
+      securityService.logSecurityEvent({
+        actorUid: effectiveAdminUser.id,
+        actorEmail: effectiveAdminUser.email,
+        actorRole: effectiveAdminUser.role,
+        action: 'USER_DELETED_PERMANENTLY',
+        targetResource: `/api/admin/users/${cleanId}`,
+        details: `Permanently deleted user account ${targetUser.name} (${targetUser.email}) from all databases.`,
+        status: 'SUCCESS'
+      });
+
+      adminActivityBus.logActivity(
+        'PRIVILEGE_MUTATION',
+        `Permanently deleted user ${targetUser.name} (${targetUser.email}) from database`,
+        'SUCCESS',
+        effectiveAdminUser.name || 'Admin'
+      );
+
+      setUserPendingPermanentDelete(null);
+      showToast(
+        'success',
+        `✓ User "${targetUser.name}" (${targetUser.email}) has been permanently deleted from the database.`
+      );
+    } catch (err: any) {
+      showToast('error', 'Failed to permanently delete user: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setIsDeletingUserPermanently(false);
     }
   };
 
@@ -1477,6 +1542,15 @@ export const ClientAdminView: React.FC<Props> = ({
                                 <ExternalLink className="w-3 h-3" />
                                 <span>Login As</span>
                               </button>
+                              <button
+                                type="button"
+                                onClick={() => setUserPendingPermanentDelete(user)}
+                                className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 text-[10px] font-bold shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Permanently delete this user account from the database"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Delete Permanently</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1497,6 +1571,87 @@ export const ClientAdminView: React.FC<Props> = ({
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent User Deletion Confirmation Modal */}
+      {userPendingPermanentDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-rose-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-xs animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="font-black text-rose-700 text-base flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+                <span>Delete User Permanently</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUserPendingPermanentDelete(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-1.5">
+              <div className="font-black text-rose-900 text-xs flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Warning: Permanent Database Removal</span>
+              </div>
+              <p className="text-[11px] text-rose-800 leading-relaxed">
+                You are about to permanently delete this user from both the local store and backend MySQL database. This action cannot be undone unless the user is manually re-registered.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-semibold">Full Name:</span>
+                <span className="font-black text-slate-900">{userPendingPermanentDelete.name}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-semibold">Email:</span>
+                <span className="font-mono font-bold text-blue-700">{userPendingPermanentDelete.email}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-semibold">Company:</span>
+                <span className="font-bold text-slate-800">{userPendingPermanentDelete.companyName || '—'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-semibold">Role / Tier:</span>
+                <span className="font-bold text-slate-700">
+                  {userPendingPermanentDelete.role} • {userPendingPermanentDelete.tier || userPendingPermanentDelete.membershipStatus || 'Standard'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isDeletingUserPermanently}
+                onClick={() => setUserPendingPermanentDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingUserPermanently}
+                onClick={() => handlePermanentlyDeleteUser(userPendingPermanentDelete)}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs cursor-pointer shadow-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                {isDeletingUserPermanently ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Delete Permanently</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

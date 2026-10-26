@@ -385,6 +385,50 @@ function logServerActivity(
 }
 
 const REGISTERED_USERS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'registered-users.json');
+const DELETED_USERS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'deleted-users.json');
+
+interface DeletedUsersRegistry {
+  ids: string[];
+  emails: string[];
+}
+
+function loadDeletedUsersRegistry(): { ids: Set<string>; emails: Set<string> } {
+  const ids = new Set<string>();
+  const emails = new Set<string>();
+  try {
+    if (fs.existsSync(DELETED_USERS_FILE)) {
+      const raw = fs.readFileSync(DELETED_USERS_FILE, 'utf-8');
+      const parsed: Partial<DeletedUsersRegistry> = JSON.parse(raw);
+      if (Array.isArray(parsed.ids)) {
+        parsed.ids.forEach(id => id && ids.add(String(id).trim()));
+      }
+      if (Array.isArray(parsed.emails)) {
+        parsed.emails.forEach(em => em && emails.add(String(em).toLowerCase().trim()));
+      }
+    }
+  } catch (err) {
+    console.warn('[ServerUsersStore] Failed to load deleted-users.json:', err);
+  }
+  return { ids, emails };
+}
+
+let serverDeletedUsersRegistry = loadDeletedUsersRegistry();
+
+function saveDeletedUsersRegistry() {
+  try {
+    const dir = path.dirname(DELETED_USERS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const payload: DeletedUsersRegistry = {
+      ids: Array.from(serverDeletedUsersRegistry.ids),
+      emails: Array.from(serverDeletedUsersRegistry.emails)
+    };
+    fs.writeFileSync(DELETED_USERS_FILE, JSON.stringify(payload, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[ServerUsersStore] Failed to save deleted-users.json:', err);
+  }
+}
 
 const DEFAULT_SERVER_USERS: ServerUserRecord[] = [
   {
@@ -528,6 +572,8 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
   const combined: ServerUserRecord[] = [];
   const seenEmails = new Set<string>();
   const seenIds = new Set<string>();
+  const deleted = loadDeletedUsersRegistry();
+  serverDeletedUsersRegistry = deleted;
 
   try {
     const dir = path.dirname(REGISTERED_USERS_FILE);
@@ -542,6 +588,7 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
           if (!item || !item.email) continue;
           const emailKey = String(item.email).toLowerCase().trim();
           const idKey = String(item.id || `user-${emailKey}`);
+          if (deleted.emails.has(emailKey) || deleted.ids.has(idKey)) continue;
           if (seenEmails.has(emailKey) || seenIds.has(idKey)) continue;
           seenEmails.add(emailKey);
           seenIds.add(idKey);
@@ -555,6 +602,7 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
 
   for (const def of DEFAULT_SERVER_USERS) {
     const emailKey = def.email.toLowerCase().trim();
+    if (deleted.emails.has(emailKey) || deleted.ids.has(def.id)) continue;
     if (!seenEmails.has(emailKey) && !seenIds.has(def.id)) {
       seenEmails.add(emailKey);
       seenIds.add(def.id);
@@ -566,7 +614,7 @@ function loadServerUsersFromDisk(): ServerUserRecord[] {
     }
   }
 
-  // Ensure Mark Johnson is positioned right at the very top of the users list
+  // Ensure Mark Johnson is positioned right at the very top of the users list (unless deleted)
   const markIdx = combined.findIndex(u => u.email.toLowerCase().trim() === 'mjohnson@atlanticpowerequip.com');
   if (markIdx > 0) {
     const [markRecord] = combined.splice(markIdx, 1);
@@ -593,9 +641,47 @@ function saveServerUsersToDisk() {
 // Persist initial seed on startup so registered-users.json is always warm
 saveServerUsersToDisk();
 
+function permanentlyDeleteServerUser(id?: string, email?: string): ServerUserRecord | null {
+  const cleanId = String(id || '').trim();
+  const cleanEmail = String(email || '').toLowerCase().trim();
+
+  let matchedUser: ServerUserRecord | null = null;
+  for (const u of serverUsersStore) {
+    const uEmail = (u.email || '').toLowerCase().trim();
+    if ((cleanId && u.id === cleanId) || (cleanEmail && uEmail === cleanEmail)) {
+      matchedUser = u;
+      serverDeletedUsersRegistry.ids.add(u.id);
+      if (uEmail) serverDeletedUsersRegistry.emails.add(uEmail);
+    }
+  }
+
+  if (cleanId) serverDeletedUsersRegistry.ids.add(cleanId);
+  if (cleanEmail) serverDeletedUsersRegistry.emails.add(cleanEmail);
+  saveDeletedUsersRegistry();
+
+  serverUsersStore = serverUsersStore.filter(u => {
+    const uEmail = (u.email || '').toLowerCase().trim();
+    if (cleanId && u.id === cleanId) return false;
+    if (cleanEmail && uEmail === cleanEmail) return false;
+    if (serverDeletedUsersRegistry.ids.has(u.id) || serverDeletedUsersRegistry.emails.has(uEmail)) return false;
+    return true;
+  });
+
+  saveServerUsersToDisk();
+  return matchedUser;
+}
+
 function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
   const rawEmail = String(input.email || '').trim();
   const cleanEmail = rawEmail.toLowerCase();
+  if (cleanEmail && serverDeletedUsersRegistry.emails.has(cleanEmail)) {
+    serverDeletedUsersRegistry.emails.delete(cleanEmail);
+    saveDeletedUsersRegistry();
+  }
+  if (input.id && serverDeletedUsersRegistry.ids.has(String(input.id).trim())) {
+    serverDeletedUsersRegistry.ids.delete(String(input.id).trim());
+    saveDeletedUsersRegistry();
+  }
   const derivedName =
     String(input.name || '').trim() ||
     (cleanEmail ? cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Registered Partner');
@@ -2729,14 +2815,26 @@ app.post('/api.php', async (req, res) => {
     });
   }
 
-  if (action === 'delete_user') {
+  if (action === 'delete_user' || action === 'permanently_delete_user') {
     const targetId = String(input.id || '');
     const targetEmail = String(input.email || '').toLowerCase().trim();
-    serverUsersStore = serverUsersStore.filter(
-      u => u.id !== targetId && (!targetEmail || u.email.toLowerCase().trim() !== targetEmail)
+    const deletedRecord = permanentlyDeleteServerUser(targetId, targetEmail);
+    logServerActivity(
+      req,
+      'USER_DELETED_PERMANENTLY',
+      ADMIN_EMAIL,
+      'ADMIN',
+      '/api.php?action=delete_user',
+      `User account permanently deleted from database: ${deletedRecord?.name || targetId} (${deletedRecord?.email || targetEmail}).`,
+      'SUCCESS'
     );
-    saveServerUsersToDisk();
-    return res.json({ success: true, status: 'success' });
+    return res.json({
+      success: true,
+      status: 'success',
+      deletedId: targetId,
+      deletedEmail: targetEmail,
+      message: `User ${deletedRecord?.email || targetEmail || targetId} permanently deleted.`
+    });
   }
 
   res.json({
@@ -2746,10 +2844,12 @@ app.post('/api.php', async (req, res) => {
   });
 });
 
-// Dedicated Admin Users CRUD endpoints (/api/admin/users, /api/admin/users/create)
+// Dedicated Admin Users CRUD endpoints (/api/admin/users, /api/admin/users/create, /api/admin/users/delete)
 app.get('/api/admin/users', (_req, res) => {
   return res.json({
     success: true,
+    deletedIds: Array.from(serverDeletedUsersRegistry.ids),
+    deletedEmails: Array.from(serverDeletedUsersRegistry.emails),
     data: serverUsersStore.map(u => ({
       id: u.id,
       name: u.name,
@@ -2806,6 +2906,52 @@ app.put('/api/admin/users/:id', (req, res) => {
   return res.json({
     success: true,
     data: savedRecord
+  });
+});
+
+app.post('/api/admin/users/delete', (req, res) => {
+  const input = req.body || {};
+  const targetId = String(input.id || '').trim();
+  const targetEmail = String(input.email || '').toLowerCase().trim();
+  if (!targetId && !targetEmail) {
+    return res.status(400).json({ success: false, message: 'User ID or email is required for permanent deletion.' });
+  }
+  const deletedRecord = permanentlyDeleteServerUser(targetId, targetEmail);
+  logServerActivity(
+    req,
+    'USER_DELETED_PERMANENTLY',
+    ADMIN_EMAIL,
+    'ADMIN',
+    '/api/admin/users/delete',
+    `User permanently deleted from database: ${deletedRecord?.name || targetId} (${deletedRecord?.email || targetEmail}).`,
+    'SUCCESS'
+  );
+  return res.json({
+    success: true,
+    deletedId: targetId,
+    deletedEmail: targetEmail,
+    message: `User ${deletedRecord?.name || targetEmail || targetId} permanently deleted from database.`
+  });
+});
+
+app.delete('/api/admin/users/:id', (req, res) => {
+  const targetId = String(req.params.id || '').trim();
+  const targetEmail = String(req.query.email || req.body?.email || '').toLowerCase().trim();
+  const deletedRecord = permanentlyDeleteServerUser(targetId, targetEmail);
+  logServerActivity(
+    req,
+    'USER_DELETED_PERMANENTLY',
+    ADMIN_EMAIL,
+    'ADMIN',
+    `/api/admin/users/${targetId}`,
+    `User permanently deleted from database: ${deletedRecord?.name || targetId} (${deletedRecord?.email || targetEmail}).`,
+    'SUCCESS'
+  );
+  return res.json({
+    success: true,
+    deletedId: targetId,
+    deletedEmail: targetEmail,
+    message: `User ${deletedRecord?.name || targetEmail || targetId} permanently deleted from database.`
   });
 });
 
