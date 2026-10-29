@@ -24,8 +24,19 @@ import {
   Clock,
   ArrowRight
 } from 'lucide-react';
-import { CustomAdminInquiryItem, CustomAdminEmailPayload } from '../../services/smtpService';
+import type {
+  CustomAdminInquiryItem,
+  CustomAdminEmailPayload
+} from '../../services/smtpService';
 import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
+
+const MEMBERSHIP_RENEWAL_DEFAULTS = {
+  companyName: 'ACE Intermediary',
+  address: '1241 Hackberry Avenue Corsicana Texas 75110',
+  email: 'ezekiahali355@gmail.com',
+  decisionMakerName: 'Ali Charley Ezekiah',
+  paymentMethod: 'Debit Card'
+};
 
 interface DispatchedHistoryItem {
   id: string;
@@ -40,7 +51,61 @@ interface DispatchedHistoryItem {
   error?: string;
 }
 
-const PRESET_TEMPLATES = [
+interface CustomEmailDispatcherProps {
+  onOpenPaymentCheckout?: (data: any) => void;
+}
+
+const PRESET_TEMPLATES: Array<{
+  id: string;
+  name: string;
+  description: string;
+  data: CustomAdminEmailPayload;
+}> = [
+  {
+    id: 'MEMBERSHIP_RENEWAL',
+    name: '💎 Basic Plan Renewal + Offer (Ali Charley Ezekiah • ACE Intermediary)',
+    description: 'Basic Business Plan ($990/yr — 10% OFF Offer) for Ali Charley Ezekiah + Admin Copy & "Renew Now" payment trigger',
+    data: {
+      recipientName: 'Ali Charley Ezekiah',
+      decisionMakerName: 'Ali Charley Ezekiah',
+      recipientEmail: 'ezekiahali355@gmail.com',
+      companyName: 'ACE Intermediary',
+      address: '1241 Hackberry Avenue Corsicana Texas 75110',
+      paymentMethod: 'Debit Card',
+      contactPhone: '+1 (903) 555-0141',
+      loginEmail: 'ezekiahali355@gmail.com',
+      loginPassword: '',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+      badgeLabel: 'TRADE HEAVEN • BASIC PLAN RENEWAL & SPECIAL OFFER',
+      headline: 'Basic Business Plan Renewal & Exciting New Trade Deals',
+      subheadline: 'Special 10% OFF Basic Plan Offer ($990/yr vs $1,100/yr) Prepared for ACE Intermediary',
+      introMessage: 'Dear Ali Charley Ezekiah,\n\nThank you for your continued partnership with Trade Heaven Global B2B. Your Basic Business Plan (Basic Tier) membership for ACE Intermediary (1241 Hackberry Avenue Corsicana Texas 75110) is eligible for renewal under our Special Current Offer ($990 USD / Year — Flat 10% OFF standard $1,100 USD rate, saving $110 USD), unlocking up to 20 verified buyer orders/month, a dedicated 50-product catalogue & 1-page business microsite, and instant Debit Card settlement.\n\nTemplate Placeholders Supported: {{companyName}} | {{address}} | {{email}} | {{decisionMakerName}} | {{paymentMethod}}',
+      includeCredentialsBox: false,
+      includeLoginGuide: false,
+      includeEscrowBadge: true,
+      isMembershipRenewal: true,
+      renewalPlanId: 'basic-business-plan',
+      renewalAmountUsd: 990,
+      inquiriesTitle: 'Basic Plan Deliverables & New Exciting Deals Unlocked With Renewal',
+      customClosingNote: 'Click "Renew Now" below to complete your Basic Business Plan renewal ($990 USD / Year with 10% OFF Offer) via Debit Card for ACE Intermediary.',
+      ctaText: 'Renew Now',
+      ctaUrl: 'https://www.tradeheaven.net/?action=renew-membership&company=ACE%20Intermediary&email=ezekiahali355%40gmail.com&decisionMaker=Ali%20Charley%20Ezekiah&address=1241%20Hackberry%20Avenue%20Corsicana%20Texas%2075110&paymentMethod=Debit%20Card&planId=basic-business-plan&amountUsd=990',
+      inquiries: [
+        {
+          id: 'BASIC-OFFER-2026',
+          title: 'Basic Business Plan Renewal (10% OFF Offer — $990/yr vs $1,100/yr) + 20 Verified Orders/Mo',
+          buyerCompany: 'Verified Global Importers & Wholesale Buyers',
+          buyerCountry: 'USA / EU / Global',
+          quantity: 'Up to 20 Verified Orders/Mo + 50 Catalogue Listings + 10 Ready-to-Ship Slots',
+          estimatedValue: '$990.00 USD / Year (Save $110 USD — Code: DIWALI10)',
+          incotermPort: 'CIF / FOB Global Ports + 1-Page Business Website, Domain & SSL',
+          paymentTerms: 'Instant Debit Card Renewal Settlement + Trade Assurance Protection',
+          urgency: 'URGENT' as const
+        }
+      ]
+    }
+  },
   {
     id: 'RANDY_FUEL_SUPPLIER',
     name: '⛽ Fuel Supplier Onboarding & Tenders (Mr. Randy • Middle Fox LLC)',
@@ -198,36 +263,105 @@ const PRESET_TEMPLATES = [
   }
 ];
 
-export const CustomEmailDispatcherAdminModule: React.FC = () => {
-  const [selectedPreset, setSelectedPreset] = useState<string>('RANDY_FUEL_SUPPLIER');
+export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherProps> = ({
+  onOpenPaymentCheckout
+}) => {
+  const [selectedPreset, setSelectedPreset] = useState<string>('MEMBERSHIP_RENEWAL');
   const [activeSubTab, setActiveSubTab] = useState<'FORM' | 'PREVIEW' | 'HISTORY'>('FORM');
   const [previewDevice, setPreviewDevice] = useState<'DESKTOP' | 'MOBILE'>('DESKTOP');
   
   // Form State
   const [formData, setFormData] = useState<CustomAdminEmailPayload>({
-    recipientName: PRESET_TEMPLATES[0].data.recipientName,
-    recipientEmail: PRESET_TEMPLATES[0].data.recipientEmail,
-    companyName: PRESET_TEMPLATES[0].data.companyName,
-    contactPhone: PRESET_TEMPLATES[0].data.contactPhone,
-    loginEmail: PRESET_TEMPLATES[0].data.loginEmail,
-    loginPassword: PRESET_TEMPLATES[0].data.loginPassword,
-    portalUrl: PRESET_TEMPLATES[0].data.portalUrl,
-    subject: PRESET_TEMPLATES[0].data.subject,
-    badgeLabel: PRESET_TEMPLATES[0].data.badgeLabel,
-    headline: PRESET_TEMPLATES[0].data.headline,
-    subheadline: PRESET_TEMPLATES[0].data.subheadline,
-    introMessage: PRESET_TEMPLATES[0].data.introMessage,
-    includeCredentialsBox: PRESET_TEMPLATES[0].data.includeCredentialsBox,
-    includeLoginGuide: PRESET_TEMPLATES[0].data.includeLoginGuide,
-    includeEscrowBadge: PRESET_TEMPLATES[0].data.includeEscrowBadge,
-    inquiriesTitle: PRESET_TEMPLATES[0].data.inquiriesTitle,
-    customClosingNote: PRESET_TEMPLATES[0].data.customClosingNote,
-    ctaText: PRESET_TEMPLATES[0].data.ctaText,
-    ctaUrl: PRESET_TEMPLATES[0].data.ctaUrl,
-    inquiries: [...PRESET_TEMPLATES[0].data.inquiries]
+    ...PRESET_TEMPLATES[0].data,
+    inquiries: [...(PRESET_TEMPLATES[0].data.inquiries || [])]
   });
 
+  const resolveTemplatePlaceholder = (val: string | undefined, fallback: string) => {
+    if (!val || val.includes('{{')) return fallback;
+    return val;
+  };
+
+  const handleTriggerRenewNowPayment = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    const resolvedCompany = resolveTemplatePlaceholder(
+      formData.companyName,
+      MEMBERSHIP_RENEWAL_DEFAULTS.companyName
+    );
+    const resolvedAddress = resolveTemplatePlaceholder(
+      formData.address,
+      MEMBERSHIP_RENEWAL_DEFAULTS.address
+    );
+    const resolvedEmail = resolveTemplatePlaceholder(
+      formData.recipientEmail,
+      MEMBERSHIP_RENEWAL_DEFAULTS.email
+    );
+    const resolvedDecisionMaker = resolveTemplatePlaceholder(
+      formData.decisionMakerName || formData.recipientName,
+      MEMBERSHIP_RENEWAL_DEFAULTS.decisionMakerName
+    );
+    const resolvedPaymentMethod = resolveTemplatePlaceholder(
+      formData.paymentMethod,
+      MEMBERSHIP_RENEWAL_DEFAULTS.paymentMethod
+    );
+    const amountUsd = formData.renewalAmountUsd || 990;
+    const planId = formData.renewalPlanId || 'basic-business-plan';
+
+    const checkoutPayload = {
+      planId,
+      title: `Basic Business Plan Renewal — 10% OFF Offer (${resolvedCompany})`,
+      description: `Basic Business Plan Renewal ($${amountUsd} USD/yr — 10% OFF standard $1,100/yr) for ${resolvedCompany} (${resolvedAddress}) • Decision Maker: ${resolvedDecisionMaker} • Payment Method: ${resolvedPaymentMethod}`,
+      amountUsd,
+      type: 'SUBSCRIPTION',
+      supplierCompany: resolvedCompany,
+      clientEmail: resolvedEmail,
+      billingName: `${resolvedDecisionMaker} (${resolvedCompany})`,
+      address: resolvedAddress,
+      decisionMakerName: resolvedDecisionMaker,
+      preferredPaymentMethod: resolvedPaymentMethod
+    };
+
+    if (onOpenPaymentCheckout) {
+      onOpenPaymentCheckout(checkoutPayload);
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('tradeheaven_open_payment_checkout', { detail: checkoutPayload })
+      );
+    }
+  };
+
+  const handleLoadPlaceholdersMode = () => {
+    setFormData(prev => ({
+      ...prev,
+      companyName: '{{companyName}}',
+      address: '{{address}}',
+      recipientEmail: '{{email}}',
+      decisionMakerName: '{{decisionMakerName}}',
+      recipientName: '{{decisionMakerName}}',
+      paymentMethod: '{{paymentMethod}}',
+      isMembershipRenewal: true,
+      ctaText: 'Renew Now'
+    }));
+  };
+
+  const handleLoadAceIntermediaryValues = () => {
+    setFormData(prev => ({
+      ...prev,
+      companyName: 'ACE Intermediary',
+      address: '1241 Hackberry Avenue Corsicana Texas 75110',
+      recipientEmail: 'ezekiahali355@gmail.com',
+      decisionMakerName: 'Ali Charley Ezekiah',
+      recipientName: 'Ali Charley Ezekiah',
+      paymentMethod: 'Debit Card',
+      isMembershipRenewal: true,
+      ctaText: 'Renew Now'
+    }));
+  };
+
   const [isSending, setIsSending] = useState(false);
+  const [sendAdminCopy, setSendAdminCopy] = useState(true);
+  const [adminCopyEmail, setAdminCopyEmail] = useState('yr943334@gmail.com');
   const [sendResult, setSendResult] = useState<{
     success: boolean;
     message: string;
@@ -242,6 +376,28 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
       if (stored) return JSON.parse(stored);
     } catch {}
     return [
+      {
+        id: 'hist-ali-basic-renewal-client',
+        recipientEmail: 'ezekiahali355@gmail.com',
+        recipientName: 'Ali Charley Ezekiah',
+        companyName: 'ACE Intermediary',
+        subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+        templatePreset: 'MEMBERSHIP_RENEWAL',
+        messageId: '<basic-plan-renewal-ace-intermediary-2026@tradeheaven.net>',
+        dispatchedAt: new Date().toISOString(),
+        success: true
+      },
+      {
+        id: 'hist-ali-basic-renewal-admin-copy',
+        recipientEmail: 'yr943334@gmail.com',
+        recipientName: 'Admin Copy (Sarah Jenkins / Master Admin)',
+        companyName: 'ACE Intermediary',
+        subject: '[ADMIN COPY] 💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+        templatePreset: 'MEMBERSHIP_RENEWAL',
+        messageId: '<admin-copy-basic-plan-renewal-ace-intermediary-2026@tradeheaven.net>',
+        dispatchedAt: new Date().toISOString(),
+        success: true
+      },
       {
         id: 'hist-randy-initial',
         recipientEmail: 'randy@midforkcap.com',
@@ -279,7 +435,7 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
     if (!matched) return;
     setFormData({
       ...matched.data,
-      inquiries: matched.data.inquiries.map(inq => ({ ...inq }))
+      inquiries: (matched.data.inquiries || []).map(inq => ({ ...inq }))
     });
     setSendResult(null);
   };
@@ -348,12 +504,17 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          sendAdminCopy,
+          adminCopyEmail
+        })
       });
 
       const data = await response.json();
 
       if (data.success) {
+        const nowIso = new Date().toISOString();
         const newHistItem: DispatchedHistoryItem = {
           id: `hist-${Date.now()}`,
           recipientEmail: formData.recipientEmail,
@@ -362,13 +523,29 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
           subject: formData.subject,
           templatePreset: selectedPreset,
           messageId: data.receipt?.messageId || data.messageId,
-          dispatchedAt: new Date().toISOString(),
+          dispatchedAt: nowIso,
           success: true
         };
-        setHistory(prev => [newHistItem, ...prev]);
+        const itemsToAdd: DispatchedHistoryItem[] = [newHistItem];
+        if (sendAdminCopy && adminCopyEmail) {
+          itemsToAdd.push({
+            id: `hist-admin-${Date.now()}`,
+            recipientEmail: adminCopyEmail,
+            recipientName: `Admin Copy (${formData.recipientName || 'Ali Charley Ezekiah'})`,
+            companyName: formData.companyName || 'ACE Intermediary',
+            subject: `[ADMIN COPY] ${formData.subject}`,
+            templatePreset: selectedPreset,
+            messageId: data.adminCopyReceipt?.messageId || `<admin-copy-${Date.now()}@tradeheaven.net>`,
+            dispatchedAt: nowIso,
+            success: true
+          });
+        }
+        setHistory(prev => [...itemsToAdd, ...prev]);
         setSendResult({
           success: true,
-          message: data.message || `Email delivered to ${formData.recipientEmail}`,
+          message:
+            data.message ||
+            `Email delivered to ${formData.recipientEmail}${sendAdminCopy ? ` + Admin Copy sent to ${adminCopyEmail}` : ''}`,
           messageId: data.receipt?.messageId || data.messageId,
           dispatchedAt: new Date().toLocaleTimeString()
         });
@@ -533,56 +710,121 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
               </div>
 
               <div className="space-y-3">
+                {/* Template Placeholders Quick Switcher */}
+                <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-900">
+                      Membership Renewal Placeholders
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleLoadPlaceholdersMode}
+                        className="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer"
+                      >
+                        Use &#123;&#123;Placeholders&#125;&#125;
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleLoadAceIntermediaryValues}
+                        className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold cursor-pointer"
+                      >
+                        Fill ACE Intermediary
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 text-[10px] font-mono text-amber-900">
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-amber-200">{'{{companyName}}'}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-amber-200">{'{{address}}'}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-amber-200">{'{{email}}'}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-amber-200">{'{{decisionMakerName}}'}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white border border-amber-200">{'{{paymentMethod}}'}</span>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    Recipient Full Name
+                    Decision Maker Name <span className="text-[10px] font-mono text-slate-400">({'{{decisionMakerName}}'})</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.recipientName || ''}
-                    onChange={e => setFormData({ ...formData, recipientName: e.target.value })}
-                    placeholder="e.g. Mr. Randy or Donald Sorkin"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-medium"
+                    value={formData.decisionMakerName ?? formData.recipientName ?? ''}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        decisionMakerName: e.target.value,
+                        recipientName: e.target.value
+                      })
+                    }
+                    placeholder="e.g. Ali Charley Ezekiah or {{decisionMakerName}}"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-bold text-slate-900"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    Target Corporate Email <span className="text-rose-500">*</span>
+                    Target Corporate Email <span className="text-rose-500">*</span> <span className="text-[10px] font-mono text-slate-400">({'{{email}}'})</span>
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     value={formData.recipientEmail || ''}
                     onChange={e => setFormData({ ...formData, recipientEmail: e.target.value })}
-                    placeholder="e.g. randy@midforkcap.com"
+                    placeholder="e.g. ezekiahali355@gmail.com or {{email}}"
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-bold text-blue-900"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    Company / Entity Name
+                    Company / Entity Name <span className="text-[10px] font-mono text-slate-400">({'{{companyName}}'})</span>
                   </label>
                   <input
                     type="text"
                     value={formData.companyName || ''}
                     onChange={e => setFormData({ ...formData, companyName: e.target.value })}
-                    placeholder="e.g. Middle Fox LLC"
+                    placeholder="e.g. ACE Intermediary or {{companyName}}"
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-medium"
                   />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    Contact Phone / WhatsApp
+                    Registered Company Address <span className="text-[10px] font-mono text-slate-400">({'{{address}}'})</span>
                   </label>
                   <input
                     type="text"
-                    value={formData.contactPhone || ''}
-                    onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
-                    placeholder="e.g. +1 (406) 309 5590"
+                    value={formData.address || ''}
+                    onChange={e => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="e.g. 1241 Hackberry Avenue Corsicana Texas 75110 or {{address}}"
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-medium"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      Payment Method <span className="text-[10px] font-mono text-slate-400">({'{{paymentMethod}}'})</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.paymentMethod || ''}
+                      onChange={e => setFormData({ ...formData, paymentMethod: e.target.value })}
+                      placeholder="e.g. Debit Card"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-bold text-emerald-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      Contact Phone / WhatsApp
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.contactPhone || ''}
+                      onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
+                      placeholder="e.g. +1 (406) 309 5590"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-medium"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -698,16 +940,51 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-800 text-slate-400">
-                  <span>Target:</span>
+                  <span>Client Target:</span>
                   <span className="font-mono text-white font-bold">{formData.recipientEmail || 'None'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-800 text-slate-400">
-                  <span>Attached Inquiries:</span>
-                  <span className="text-white font-bold">{formData.inquiries?.length || 0} RFQs</span>
+                  <span>Plan &amp; Offer:</span>
+                  <span className="text-amber-300 font-bold">Basic Plan ($990/yr • 10% OFF)</span>
                 </div>
-                <div className="flex justify-between py-1 text-slate-400">
-                  <span>Credentials Included:</span>
-                  <span className="text-emerald-400 font-bold">{formData.includeCredentialsBox !== false ? 'YES' : 'NO'}</span>
+                <div className="pt-1 space-y-2">
+                  <label className="flex items-center justify-between text-slate-300 cursor-pointer">
+                    <span className="font-semibold">Send Copy to Admin on Mail:</span>
+                    <input
+                      type="checkbox"
+                      checked={sendAdminCopy}
+                      onChange={e => setSendAdminCopy(e.target.checked)}
+                      className="rounded text-blue-500"
+                    />
+                  </label>
+                  {sendAdminCopy && (
+                    <div className="space-y-1">
+                      <input
+                        type="email"
+                        value={adminCopyEmail}
+                        onChange={e => setAdminCopyEmail(e.target.value)}
+                        placeholder="Admin email for copy..."
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-mono text-emerald-300 focus:outline-hidden focus:border-blue-500"
+                      />
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <span className="text-slate-400">Quick Admin:</span>
+                        <button
+                          type="button"
+                          onClick={() => setAdminCopyEmail('yr943334@gmail.com')}
+                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono cursor-pointer"
+                        >
+                          yr943334@gmail.com
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdminCopyEmail('sankalprajput15@gmail.com')}
+                          className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono cursor-pointer"
+                        >
+                          sankalprajput15@gmail.com
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -720,12 +997,14 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
                 {isSending ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Transmitting via SMTP...</span>
+                    <span>Transmitting to Client &amp; Admin...</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Dispatch Email to {formData.recipientName || 'Client'} Now</span>
+                    <span>
+                      Send Renewal to {formData.recipientName || 'Ali'} {sendAdminCopy ? '+ Admin Copy' : 'Now'}
+                    </span>
                   </>
                 )}
               </button>
@@ -1011,6 +1290,20 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden font-medium"
                   />
                 </div>
+
+                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="text-[11px] text-slate-500">
+                    Clicking <strong className="text-slate-800">&ldquo;{formData.ctaText || 'Renew Now'}&rdquo;</strong> triggers the subscription renewal payment flow for <strong className="text-slate-800">{formData.companyName || 'ACE Intermediary'}</strong>.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTriggerRenewNowPayment}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black tracking-wide transition-all shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Renew Now (Open Payment Flow)</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1070,11 +1363,49 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
               {/* BODY CONTENT */}
               <div className="p-6 space-y-5 text-slate-800">
                 <p className="text-sm">
-                  Hello <strong>{formData.recipientName || 'Trade Partner'}</strong>,
+                  Hello <strong>{formData.decisionMakerName || formData.recipientName || 'Trade Partner'}</strong>,
                 </p>
                 <div className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
                   {formData.introMessage || 'Please review your account access details and matched inquiries.'}
                 </div>
+
+                {/* MEMBERSHIP RENEWAL & CLIENT DETAILS BOX */}
+                {(formData.address || formData.paymentMethod || formData.isMembershipRenewal || selectedPreset === 'MEMBERSHIP_RENEWAL') && (
+                  <div className="bg-slate-50 border-2 border-slate-300 rounded-xl p-4 space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-900 tracking-wider uppercase">
+                      <span>CLIENT MEMBERSHIP &amp; BILLING SUMMARY</span>
+                      <span className="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-black">
+                        CURRENT OFFER ACTIVE
+                      </span>
+                    </div>
+                    <div className="text-xs space-y-1.5 pt-1">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Company Name:</span>
+                        <span className="font-extrabold text-slate-900 text-right">{formData.companyName || '{{companyName}}'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Address:</span>
+                        <span className="font-semibold text-slate-900 text-right">{formData.address || '{{address}}'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Email:</span>
+                        <span className="font-mono font-bold text-blue-700 text-right">{formData.recipientEmail || '{{email}}'}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-slate-500 font-semibold">Decision Maker Name:</span>
+                        <span className="font-extrabold text-slate-900 text-right">
+                          {formData.decisionMakerName || formData.recipientName || '{{decisionMakerName}}'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 font-semibold">Payment Method:</span>
+                        <span className="bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded font-extrabold text-emerald-800">
+                          💳 {formData.paymentMethod || '{{paymentMethod}}'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* CREDENTIALS BOX */}
                 {formData.includeCredentialsBox !== false && (
@@ -1174,13 +1505,17 @@ export const CustomEmailDispatcherAdminModule: React.FC = () => {
                 )}
 
                 {/* CTA BUTTON */}
-                <div className="text-center pt-3 pb-2">
-                  <a 
-                    href={formData.ctaUrl || 'https://www.tradeheaven.net'}
-                    className="inline-block bg-slate-900 text-white font-black text-xs px-6 py-3 rounded-xl shadow-md"
+                <div className="text-center pt-3 pb-2 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleTriggerRenewNowPayment}
+                    className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md cursor-pointer transition-all"
                   >
-                    {formData.ctaText || 'Log In to Portal & View Inquiries →'}
-                  </a>
+                    {formData.ctaText || 'Renew Now'}
+                  </button>
+                  <div className="text-[10px] text-slate-500">
+                    Clicking <strong>&ldquo;{formData.ctaText || 'Renew Now'}&rdquo;</strong> opens the live Subscription Renewal Checkout Modal ({formData.paymentMethod || 'Debit Card'})
+                  </div>
                 </div>
 
                 {/* ESCROW BADGE */}

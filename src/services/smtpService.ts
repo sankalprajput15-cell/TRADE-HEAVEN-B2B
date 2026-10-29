@@ -110,7 +110,10 @@ export interface SavedPdfAttachmentItem {
 export interface CustomAdminEmailPayload {
   recipientEmail: string;
   recipientName?: string;
+  decisionMakerName?: string;
   companyName?: string;
+  address?: string;
+  paymentMethod?: string;
   contactPhone?: string;
   subject: string;
   badgeLabel?: string;
@@ -123,6 +126,9 @@ export interface CustomAdminEmailPayload {
   includeCredentialsBox?: boolean;
   includeLoginGuide?: boolean;
   includeEscrowBadge?: boolean;
+  isMembershipRenewal?: boolean;
+  renewalPlanId?: string;
+  renewalAmountUsd?: number;
   inquiriesTitle?: string;
   inquiries?: CustomAdminInquiryItem[];
   attachedDocuments?: SavedPdfAttachmentItem[];
@@ -132,6 +138,260 @@ export interface CustomAdminEmailPayload {
   rawHtmlOverride?: string;
   dispatchType?: EmailDispatchType;
   scheduledFor?: string;
+}
+
+export interface MembershipRenewalEmailPayload {
+  companyName?: string;
+  address?: string;
+  email?: string;
+  decisionMakerName?: string;
+  paymentMethod?: string;
+  planId?: string;
+  offerTitle?: string;
+  renewalAmountUsd?: number;
+  ctaUrl?: string;
+  dispatchType?: EmailDispatchType;
+  sendAdminCopy?: boolean;
+  adminCopyEmail?: string;
+}
+
+export const MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE = {
+  id: 'MEMBERSHIP_RENEWAL',
+  name: 'Basic Plan Membership Renewal — Current Offer & Exciting Deals',
+  placeholders: {
+    companyName: '{{companyName}}',
+    address: '{{address}}',
+    email: '{{email}}',
+    decisionMakerName: '{{decisionMakerName}}',
+    paymentMethod: '{{paymentMethod}}'
+  },
+  defaultValues: {
+    companyName: 'ACE Intermediary',
+    address: '1241 Hackberry Avenue Corsicana Texas 75110',
+    email: 'ezekiahali355@gmail.com',
+    decisionMakerName: 'Ali Charley Ezekiah',
+    paymentMethod: 'Debit Card',
+    planId: 'basic-business-plan',
+    offerTitle: 'Basic Business Plan (Basic Tier) Renewal — Special 10% OFF Offer ($990/yr vs $1,100/yr) + Exciting Deals',
+    renewalAmountUsd: 990
+  }
+};
+
+export function buildMembershipRenewalEmailTemplate(
+  params?: Partial<MembershipRenewalEmailPayload> & { usePlaceholders?: boolean; isAdminCopy?: boolean }
+): {
+  subject: string;
+  text: string;
+  html: string;
+  ctaText: string;
+  ctaUrl: string;
+  resolvedFields: {
+    companyName: string;
+    address: string;
+    email: string;
+    decisionMakerName: string;
+    paymentMethod: string;
+    planId: string;
+    renewalAmountUsd: number;
+  };
+} {
+  const usePlaceholders = Boolean(params?.usePlaceholders);
+  const companyName =
+    params?.companyName ||
+    (usePlaceholders
+      ? MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.placeholders.companyName
+      : MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.companyName);
+  const address =
+    params?.address ||
+    (usePlaceholders
+      ? MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.placeholders.address
+      : MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.address);
+  const email =
+    params?.email ||
+    (usePlaceholders
+      ? MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.placeholders.email
+      : MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.email);
+  const decisionMakerName =
+    params?.decisionMakerName ||
+    (usePlaceholders
+      ? MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.placeholders.decisionMakerName
+      : MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.decisionMakerName);
+  const paymentMethod =
+    params?.paymentMethod ||
+    (usePlaceholders
+      ? MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.placeholders.paymentMethod
+      : MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.paymentMethod);
+
+  const planId = params?.planId || MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.planId;
+  const renewalAmountUsd =
+    typeof params?.renewalAmountUsd === 'number'
+      ? params.renewalAmountUsd
+      : MEMBERSHIP_RENEWAL_EMAIL_TEMPLATE.defaultValues.renewalAmountUsd;
+
+  const ctaText = 'Renew Now';
+  const ctaUrl =
+    params?.ctaUrl ||
+    `https://www.tradeheaven.net/?action=renew-membership&company=${encodeURIComponent(
+      companyName
+    )}&email=${encodeURIComponent(email)}&decisionMaker=${encodeURIComponent(
+      decisionMakerName
+    )}&address=${encodeURIComponent(address)}&paymentMethod=${encodeURIComponent(
+      paymentMethod
+    )}&planId=${encodeURIComponent(planId)}&amountUsd=${renewalAmountUsd}`;
+
+  const baseSubject = `💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ${companyName} (Attn: ${decisionMakerName})`;
+  const subject = params?.isAdminCopy ? `[ADMIN COPY] ${baseSubject}` : baseSubject;
+
+  const text = [
+    params?.isAdminCopy
+      ? 'ADMIN DISPATCH COPY • TRADE HEAVEN MEMBERSHIP RENEWAL DESK'
+      : 'TRADE HEAVEN • BASIC PLAN MEMBERSHIP RENEWAL & EXCLUSIVE DEALS DESK',
+    `Basic Business Plan Renewal Offer & New Trade Deals for ${companyName}`,
+    '',
+    `Dear ${decisionMakerName},`,
+    '',
+    `Thank you for being a valued member of the Trade Heaven Global B2B Network. Your Basic Business Plan (Basic Tier) membership for ${companyName} is now eligible for renewal under our Special Current Offer ($990 USD / Year — 10% OFF standard $1,100 USD rate, saving $110 USD), unlocking priority access to verified international trade deals and instant Debit Card settlement.`,
+    '',
+    '============================================================',
+    'REGISTERED CLIENT & BASIC PLAN RENEWAL SUMMARY',
+    '============================================================',
+    `• Company Name: ${companyName}`,
+    `• Registered Address: ${address}`,
+    `• Official Email: ${email}`,
+    `• Decision Maker Name: ${decisionMakerName}`,
+    `• Selected Payment Method: ${paymentMethod}`,
+    `• Subscription Plan: Basic Business Plan (Basic Tier) — Standard $1,100/yr → Special Renewal Offer: $${renewalAmountUsd.toLocaleString()} USD / Year (Save $110 USD)`,
+    '',
+    '============================================================',
+    'BASIC PLAN RENEWAL OFFER & NEW EXCITING DEALS INCLUDED',
+    '============================================================',
+    '1. Basic Plan Special Offer Rate Lock: $990 USD / Year (Flat 10% OFF standard $1,100/yr rate — Code: DIWALI10)',
+    '2. Up to 20 Verified & Genuine Buyer Orders / Month + Priority Order Matching',
+    '3. Dedicated Catalogue Page (Up to 50 Product Listings + 10 Ready-to-Ship Listings + 2 Showcase Banners)',
+    '4. Dedicated 1-Page Business Website + Domain, Hosting, SSL & Multi-Language Translator Included',
+    '5. Dedicated Account Manager / Export CSR & Instant Debit Card Renewal Checkout',
+    '',
+    `Click "${ctaText}" to complete your Basic Plan renewal via ${paymentMethod}: ${ctaUrl}`,
+    '',
+    'Need assistance? Contact our Membership & Billing Desk on WhatsApp at +91 85329 34479 or email help@tradeheaven.net.'
+  ].join('\n');
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+      <!-- Top Hero Header -->
+      <div style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%); padding: 36px 24px; text-align: center; color: #ffffff;">
+        <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #fbbf24; text-transform: uppercase; margin-bottom: 10px; background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.35); padding: 4px 12px; border-radius: 9999px;">
+          ${params?.isAdminCopy ? 'ADMIN COPY • BASIC PLAN RENEWAL DISPATCHED TO CLIENT' : 'TRADE HEAVEN • BASIC PLAN RENEWAL &amp; SPECIAL OFFER'}
+        </div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; line-height: 1.25; letter-spacing: -0.5px;">
+          Basic Business Plan Renewal &amp; Exciting New Trade Deals
+        </h1>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #cbd5e1;">
+          Special 10% OFF Basic Plan Renewal Offer Prepared for ${companyName}
+        </p>
+      </div>
+
+      <div style="padding: 30px 24px; background: #ffffff; color: #1e293b;">
+        ${
+          params?.isAdminCopy
+            ? `<div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 12px 16px; margin: 0 0 18px 0; font-size: 12px; color: #1e3a8a;">
+                <strong>Admin Notification Copy:</strong> This is an official copy of the Basic Plan Membership Renewal Offer email dispatched to <strong>${decisionMakerName}</strong> (<strong>${email}</strong>) at <strong>${companyName}</strong>.
+              </div>`
+            : ''
+        }
+        <p style="font-size: 15px; line-height: 1.6; margin: 0 0 14px 0; color: #0f172a;">
+          Dear <strong>${decisionMakerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.65; margin: 0 0 20px 0; color: #334155;">
+          We appreciate your continued partnership with <strong>Trade Heaven Global B2B</strong>. We are pleased to extend our <strong>Basic Business Plan (Basic Tier) Renewal Offer</strong> with a <strong>Flat 10% Loyalty Discount ($990 USD / Year vs. $1,100 USD Standard Rate)</strong> along with priority access to <strong>new exciting international buyer &amp; supplier deals</strong> tailored for <strong>${companyName}</strong>.
+        </p>
+
+        <!-- Client Account & Billing Summary Box -->
+        <div style="background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 14px; padding: 20px; margin: 0 0 24px 0;">
+          <div style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span>BASIC PLAN RENEWAL PROFILE &amp; BILLING RECORD</span>
+            <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">10% OFF OFFER ACTIVE</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #475569; width: 165px; font-weight: 600;">Company Name:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${companyName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Registered Address:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${address}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Registered Email:</td>
+              <td style="padding: 6px 0; font-family: monospace; color: #2563eb; font-weight: 700;">${email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Decision Maker:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${decisionMakerName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Renewal Plan &amp; Offer:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">Basic Business Plan — <span style="text-decoration: line-through; color: #64748b;">$1,100/yr</span> <span style="color: #059669;">$${renewalAmountUsd.toLocaleString()} USD / Year (Save $110)</span></td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Payment Method:</td>
+              <td style="padding: 6px 0;"><span style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 12px;">💳 ${paymentMethod}</span></td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Current Offer & New Exciting Deals Highlights -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; border-radius: 12px; padding: 18px 20px; margin: 0 0 24px 0;">
+          <div style="font-size: 12px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px;">
+            🎁 Basic Business Plan Deliverables &amp; Exciting Deals Included:
+          </div>
+          <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #1e293b; line-height: 1.7;">
+            <li><strong>Special Renewal Offer ($${renewalAmountUsd.toLocaleString()} USD / Year):</strong> Flat 10% OFF standard $1,100/yr Basic Plan rate (Promo Code: <strong>DIWALI10</strong> — Save $110 USD).</li>
+            <li><strong>Verified &amp; Genuine Buyer Orders:</strong> Up to 20 Verified &amp; Genuine Order Matches per month + New Exciting Deals Alert.</li>
+            <li><strong>Catalogue &amp; Priority Showcase:</strong> Dedicated Catalogue Page (Up to 50 Product Listings, 10 Ready-to-Ship Listings &amp; 2 Product Showcase Banners).</li>
+            <li><strong>Website, Domain &amp; SSL Included:</strong> Dedicated 1-Page Business Microsite with Domain, Hosting, SSL Certificate &amp; Multi-Language Converter.</li>
+            <li><strong>Dedicated Account Manager &amp; ${paymentMethod} Checkout:</strong> 24/7 Priority Export CSR Support + 1-click renewal via <strong>${paymentMethod}</strong>.</li>
+          </ul>
+        </div>
+
+        <!-- Direct Renew Now CTA Button -->
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${ctaUrl}" data-renewal-trigger="true" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #ffffff; font-weight: 900; font-size: 15px; text-decoration: none; padding: 15px 42px; border-radius: 12px; box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3); letter-spacing: 0.3px;">
+            ${ctaText}
+          </a>
+          <div style="font-size: 11px; color: #64748b; margin-top: 8px;">
+            Instant Basic Plan renewal checkout ($${renewalAmountUsd.toLocaleString()} USD) for <strong>${companyName}</strong> • Preferred method: <strong>${paymentMethod}</strong>
+          </div>
+        </div>
+
+        <!-- Escrow & Billing Guarantee Notice -->
+        <div style="background: #f1f5f9; border-radius: 10px; padding: 14px 16px; font-size: 12px; color: #475569; line-height: 1.5; margin-bottom: 16px;">
+          <strong style="color: #0f172a;">Verified Corporate Billing Protection:</strong> Your Basic Business Plan renewal is processed through Trade Heaven’s PCI-DSS compliant payment gateway with instant invoice generation for <strong>${companyName}</strong> (${address}).
+        </div>
+
+        <p style="font-size: 12px; color: #64748b; margin: 16px 0 0 0; line-height: 1.5;">
+          Dispatched via <strong>noreply@tradeheaven.net</strong> • Questions regarding your renewal offer? Contact your Account Executive on WhatsApp at <strong>+91 85329 34479</strong> or email <strong>help@tradeheaven.net</strong>.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return {
+    subject,
+    text,
+    html,
+    ctaText,
+    ctaUrl,
+    resolvedFields: {
+      companyName,
+      address,
+      email,
+      decisionMakerName,
+      paymentMethod,
+      planId,
+      renewalAmountUsd
+    }
+  };
 }
 
 interface QueuedEmailTask {
@@ -204,10 +464,52 @@ const KNOWN_COMPANY_CONTACTS: Record<
     recipientName: 'Sarah Jenkins (Master Admin)',
     companyName: 'Trade Heaven Global Operations & Treasury',
     companyId: 'user-admin-root'
+  },
+  'sankalprajput15@gmail.com': {
+    recipientName: 'Sankalp Rajput (Super Admin)',
+    companyName: 'Trade Heaven Global Operations & Treasury',
+    companyId: 'user-admin-root'
+  },
+  'ezekiahali355@gmail.com': {
+    recipientName: 'Ali Charley Ezekiah',
+    companyName: 'ACE Intermediary',
+    companyId: 'comp-ace-intermediary'
   }
 };
 
 const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
+  {
+    id: 'eh-ace-intermediary-basic-renewal-001',
+    recipient: 'ezekiahali355@gmail.com',
+    recipientName: 'Ali Charley Ezekiah',
+    companyName: 'ACE Intermediary',
+    companyId: 'comp-ace-intermediary',
+    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<basic-plan-renewal-ace-intermediary-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'BASIC PLAN RENEWAL OFFER & NEW EXCITING DEALS: Sent to Ali Charley Ezekiah (ezekiahali355@gmail.com) | Company: ACE Intermediary | Address: 1241 Hackberry Avenue Corsicana Texas 75110 | Payment Method: Debit Card. Plan: Basic Business Plan (Basic Tier) at $990 USD/Year (10% OFF standard $1,100/yr rate, Save $110 USD) + direct "Renew Now" payment checkout link.'
+  },
+  {
+    id: 'eh-ace-intermediary-basic-renewal-admin-copy-002',
+    recipient: 'yr943334@gmail.com',
+    recipientName: 'Sarah Jenkins (Master Admin)',
+    companyName: 'ACE Intermediary',
+    companyId: 'comp-ace-intermediary',
+    subject: '[ADMIN COPY] 💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<admin-copy-basic-plan-renewal-ace-intermediary-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 2000,
+    summaryText: 'ADMIN COPY: Official copy of Basic Business Plan ($990/yr with 10% OFF Offer) Membership Renewal email sent to Ali Charley Ezekiah (ezekiahali355@gmail.com, ACE Intermediary, 1241 Hackberry Avenue Corsicana Texas 75110, Debit Card).'
+  },
   {
     id: 'eh-mark-johnson-golden-lead-001',
     recipient: 'mjohnson@atlanticpowerequip.com',
@@ -1708,6 +2010,9 @@ export class AutomatedSmtpService {
     const displayName = payload.recipientName || 'Trade Partner';
     const companyName = payload.companyName || 'Corporate Entity';
     const contactPhone = payload.contactPhone || '';
+    const decisionMakerName = payload.decisionMakerName || payload.recipientName || displayName;
+    const companyAddress = payload.address || '';
+    const preferredPaymentMethod = payload.paymentMethod || '';
     const loginEmail = payload.loginEmail || cleanEmail;
     const loginPassword = payload.loginPassword || '';
     const portalUrl = payload.portalUrl || 'https://www.tradeheaven.net';
@@ -1718,7 +2023,7 @@ export class AutomatedSmtpService {
     const introMessage = payload.introMessage || 'Please review the important account credentials and verified buyer inquiries below.';
     const inquiries = Array.isArray(payload.inquiries) ? payload.inquiries : [];
     const inquiriesTitle = payload.inquiriesTitle || 'Active Buyer Inquiries / Matched Tenders';
-    const ctaText = payload.ctaText || 'Log In to Portal & View Inquiries →';
+    const ctaText = payload.ctaText || (payload.isMembershipRenewal ? 'Renew Now' : 'Log In to Portal & View Inquiries →');
     const ctaUrl = payload.ctaUrl || portalUrl;
 
     if (payload.rawHtmlOverride && payload.rawHtmlOverride.trim()) {
@@ -1739,11 +2044,25 @@ export class AutomatedSmtpService {
     const textParts: string[] = [
       badgeLabel,
       headline,
-      `Hello ${displayName} (${companyName}),`,
+      `Hello ${decisionMakerName} (${companyName}),`,
       '',
       introMessage,
       ''
     ];
+
+    if (companyAddress || preferredPaymentMethod || payload.isMembershipRenewal) {
+      textParts.push(
+        '============================================================',
+        'CLIENT MEMBERSHIP & BILLING RECORD',
+        '============================================================',
+        `• Company Name: ${companyName}`,
+        companyAddress ? `• Registered Address: ${companyAddress}` : '',
+        `• Registered Email: ${cleanEmail}`,
+        `• Decision Maker Name: ${decisionMakerName}`,
+        preferredPaymentMethod ? `• Preferred Payment Method: ${preferredPaymentMethod}` : '',
+        ''
+      );
+    }
 
     if (payload.includeCredentialsBox !== false && (loginEmail || loginPassword)) {
       textParts.push(
@@ -1877,11 +2196,47 @@ export class AutomatedSmtpService {
 
         <div style="padding: 30px 24px; background: #ffffff; color: #1e293b;">
           <p style="font-size: 15px; line-height: 1.6; margin: 0 0 14px 0; color: #0f172a;">
-            Hello <strong>${displayName}</strong>,
+            Hello <strong>${decisionMakerName}</strong>,
           </p>
           <div style="font-size: 14px; line-height: 1.6; margin: 0 0 20px 0; color: #334155; white-space: pre-line;">
             ${introMessage}
           </div>
+
+          ${(companyAddress || preferredPaymentMethod || payload.isMembershipRenewal) ? `
+            <!-- Membership Renewal & Client Details Box -->
+            <div style="background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 14px; padding: 20px; margin: 0 0 24px 0;">
+              <div style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>CLIENT MEMBERSHIP &amp; BILLING SUMMARY</span>
+                <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">RENEWAL OFFER</span>
+              </div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; width: 155px; font-weight: 600;">Company Name:</td>
+                  <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${companyName}</td>
+                </tr>
+                ${companyAddress ? `
+                  <tr>
+                    <td style="padding: 6px 0; color: #475569; font-weight: 600;">Address:</td>
+                    <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${companyAddress}</td>
+                  </tr>
+                ` : ''}
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; font-weight: 600;">Email:</td>
+                  <td style="padding: 6px 0; font-family: monospace; color: #2563eb; font-weight: 700;">${cleanEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; font-weight: 600;">Decision Maker:</td>
+                  <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${decisionMakerName}</td>
+                </tr>
+                ${preferredPaymentMethod ? `
+                  <tr>
+                    <td style="padding: 6px 0; color: #475569; font-weight: 600;">Payment Method:</td>
+                    <td style="padding: 6px 0;"><span style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 12px;">💳 ${preferredPaymentMethod}</span></td>
+                  </tr>
+                ` : ''}
+              </table>
+            </div>
+          ` : ''}
 
           ${payload.includeCredentialsBox !== false && (loginEmail || loginPassword) ? `
             <!-- Credentials Box -->
@@ -2056,6 +2411,64 @@ export class AutomatedSmtpService {
       },
       transporter || undefined
     );
+  }
+
+  /**
+   * Dispatches the dedicated 'Membership Renewal' email template targeting
+   * renewal of current subscription offers (Basic Business Plan with Offer)
+   * to the client AND dispatches a copy to the Admin email when sendAdminCopy !== false.
+   */
+  public async sendMembershipRenewalEmail(
+    payload: MembershipRenewalEmailPayload
+  ): Promise<SerializedDeliveryReceipt & { adminCopyReceipt?: SerializedDeliveryReceipt }> {
+    const built = buildMembershipRenewalEmailTemplate(payload);
+    const cleanEmail = built.resolvedFields.email.trim().toLowerCase();
+    const transporter = this.createPrimaryTransporter();
+
+    const clientReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      cleanEmail,
+      {
+        from: this.senderFormatted,
+        replyTo: this.replyToAddress,
+        subject: built.subject,
+        text: built.text,
+        html: built.html,
+        dispatchType: payload.dispatchType || 'MANUAL',
+        companyName: built.resolvedFields.companyName,
+        recipientName: built.resolvedFields.decisionMakerName,
+        summaryText: `Basic Plan Membership Renewal Offer ($${built.resolvedFields.renewalAmountUsd} USD/yr) dispatched to ${built.resolvedFields.decisionMakerName} (${built.resolvedFields.companyName}, ${built.resolvedFields.address}) with '${built.ctaText}' payment checkout trigger (${built.resolvedFields.paymentMethod}).`
+      },
+      transporter || undefined
+    );
+
+    if (payload.sendAdminCopy !== false) {
+      const adminTarget = (payload.adminCopyEmail || 'yr943334@gmail.com').trim().toLowerCase();
+      const adminBuilt = buildMembershipRenewalEmailTemplate({
+        ...payload,
+        isAdminCopy: true
+      });
+      const adminCopyReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminTarget,
+        {
+          from: this.senderFormatted,
+          replyTo: this.replyToAddress,
+          subject: adminBuilt.subject,
+          text: adminBuilt.text,
+          html: adminBuilt.html,
+          dispatchType: payload.dispatchType || 'MANUAL',
+          companyName: built.resolvedFields.companyName,
+          recipientName: `Admin Copy (${adminTarget})`,
+          summaryText: `[ADMIN COPY] Copy of Basic Plan Membership Renewal Offer sent to ${built.resolvedFields.decisionMakerName} (${cleanEmail}, ${built.resolvedFields.companyName}).`
+        },
+        transporter || undefined
+      );
+      return {
+        ...clientReceipt,
+        adminCopyReceipt
+      };
+    }
+
+    return clientReceipt;
   }
 }
 

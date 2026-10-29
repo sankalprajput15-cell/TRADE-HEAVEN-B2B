@@ -54,6 +54,34 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
 
   useEffect(() => {
     if (isOpen) {
+      if (checkoutData) {
+        if (checkoutData.clientEmail) {
+          setClientEmail(checkoutData.clientEmail);
+        }
+        if (checkoutData.billingName || checkoutData.decisionMakerName || checkoutData.supplierCompany) {
+          const companyLabel = checkoutData.supplierCompany || checkoutData.billingName || '';
+          const dmLabel = checkoutData.decisionMakerName || '';
+          setBillingName(
+            dmLabel && companyLabel && !companyLabel.includes(dmLabel)
+              ? `${dmLabel} (${companyLabel})`
+              : companyLabel || dmLabel
+          );
+        }
+        if (checkoutData.address || checkoutData.preferredPaymentMethod) {
+          const noteParts: string[] = [];
+          if (checkoutData.supplierCompany) noteParts.push(`Company: ${checkoutData.supplierCompany}`);
+          if (checkoutData.decisionMakerName) noteParts.push(`Decision Maker: ${checkoutData.decisionMakerName}`);
+          if (checkoutData.address) noteParts.push(`Address: ${checkoutData.address}`);
+          if (checkoutData.preferredPaymentMethod) noteParts.push(`Payment Method: ${checkoutData.preferredPaymentMethod}`);
+          setPaymentNotes(noteParts.join(' | '));
+        }
+        if (
+          checkoutData.preferredPaymentMethod &&
+          checkoutData.preferredPaymentMethod.toLowerCase().includes('debit')
+        ) {
+          setPaymentMethod('REQUEST_LINK');
+        }
+      }
       tradeHeavenMediationService.getState().then(st => {
         const buyers = (st.wallets || []).filter(w => w.wallet_type === 'BUYER');
         setBuyerWallets(buyers);
@@ -62,7 +90,7 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
         }
       }).catch(() => {});
     }
-  }, [isOpen]);
+  }, [isOpen, checkoutData]);
 
   if (!isOpen || !checkoutData) return null;
 
@@ -107,9 +135,9 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
+    const orderId = `ORD-TH-${Date.now().toString().slice(-6)}`;
 
     try {
-      const orderId = `ORD-TH-${Date.now().toString().slice(-6)}`;
       if (paymentMethod === 'WALLET_TOPUP') {
         const orderPaise = Math.round(checkoutData.amountUsd * 83.5 * 100);
         await tradeHeavenMediationService.lockOrderFundsInEscrow(
@@ -154,6 +182,9 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
         return;
       }
       setIsSuccess(true);
+      if (onPaymentSuccess) {
+        onPaymentSuccess(orderId);
+      }
       setTimeout(() => {
         setIsSuccess(false);
         onClose();

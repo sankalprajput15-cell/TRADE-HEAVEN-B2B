@@ -1307,28 +1307,89 @@ app.post('/api/v1/admin/send-custom-email', async (req, res) => {
 
     const receipt = await automatedSmtpService.sendCustomAdminEmail(payload);
 
+    let adminCopyReceipt = null;
+    if (payload.sendAdminCopy || payload.isMembershipRenewal) {
+      const adminEmail = (payload.adminCopyEmail || 'yr943334@gmail.com').trim();
+      if (adminEmail && adminEmail.toLowerCase() !== payload.recipientEmail.trim().toLowerCase()) {
+        adminCopyReceipt = await automatedSmtpService.sendCustomAdminEmail({
+          ...payload,
+          recipientEmail: adminEmail,
+          recipientName: `Admin Copy (for ${payload.decisionMakerName || payload.recipientName || 'Ali Charley Ezekiah'})`,
+          subject: `[ADMIN COPY] ${payload.subject || 'Membership Renewal Notice'}`
+        });
+      }
+    }
+
     logServerActivity(
       req,
       'CUSTOM_ADMIN_EMAIL_DISPATCH',
       payload.recipientEmail,
       'ADMIN',
       '/api/v1/admin/send-custom-email',
-      `Dispatched customized email (${payload.subject || 'Custom Notice'}) to ${payload.recipientEmail} (${payload.companyName || 'Corporate Entity'}) via secure corporate SMTP.`,
+      `Dispatched customized email (${payload.subject || 'Custom Notice'}) to ${payload.recipientEmail} (${payload.companyName || 'Corporate Entity'})${adminCopyReceipt ? ` + Admin Copy to ${adminCopyReceipt.recipient}` : ''} via secure corporate SMTP.`,
       receipt.success ? 'SUCCESS' : 'FAILED'
     );
 
     return res.json({
       success: receipt.success,
       message: receipt.success
-        ? `Custom email successfully dispatched to ${receipt.recipient} (Message ID: ${receipt.messageId || 'sent'})`
+        ? `Custom email successfully dispatched to ${receipt.recipient} (Message ID: ${receipt.messageId || 'sent'})${adminCopyReceipt ? ` and Admin Copy sent to ${adminCopyReceipt.recipient}` : ''}`
         : `Failed to deliver email: ${receipt.error || 'Unknown transport error'}`,
       receipt,
+      adminCopyReceipt,
       queue: serverDeliveryQueueManager.getQueueStatus()
     });
   } catch (err: any) {
     return res.status(500).json({
       success: false,
       message: `Failed to dispatch custom admin email: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/send-membership-renewal-email - Dispatches 'Membership Renewal' email template + Admin Copy
+app.post('/api/v1/admin/send-membership-renewal-email', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const email = payload.email || payload.recipientEmail || 'ezekiahali355@gmail.com';
+    const adminCopyEmail = payload.adminCopyEmail || 'yr943334@gmail.com';
+    const receipt = await automatedSmtpService.sendMembershipRenewalEmail({
+      companyName: payload.companyName || 'ACE Intermediary',
+      address: payload.address || '1241 Hackberry Avenue Corsicana Texas 75110',
+      email,
+      decisionMakerName: payload.decisionMakerName || payload.recipientName || 'Ali Charley Ezekiah',
+      paymentMethod: payload.paymentMethod || 'Debit Card',
+      planId: payload.planId || payload.renewalPlanId || 'basic-business-plan',
+      renewalAmountUsd: typeof payload.renewalAmountUsd === 'number' ? payload.renewalAmountUsd : 990,
+      ctaUrl: payload.ctaUrl,
+      dispatchType: payload.dispatchType || 'MANUAL',
+      sendAdminCopy: payload.sendAdminCopy !== false,
+      adminCopyEmail
+    });
+
+    logServerActivity(
+      req,
+      'MEMBERSHIP_RENEWAL_EMAIL_DISPATCH',
+      email,
+      'ADMIN',
+      '/api/v1/admin/send-membership-renewal-email',
+      `Dispatched Basic Plan Membership Renewal offer ($990/yr — 10% OFF) to ${email} (${payload.companyName || 'ACE Intermediary'}) + Admin Copy to ${adminCopyEmail} via corporate SMTP.`,
+      receipt.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: receipt.success,
+      message: receipt.success
+        ? `Basic Plan Membership Renewal email dispatched to ${receipt.recipient} (Message ID: ${receipt.messageId || 'sent'})${receipt.adminCopyReceipt ? ` + Admin Copy sent to ${receipt.adminCopyReceipt.recipient}` : ''}`
+        : `Failed to deliver Membership Renewal email: ${receipt.error || 'Unknown transport error'}`,
+      receipt,
+      adminCopyReceipt: receipt.adminCopyReceipt || null,
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch membership renewal email: ${err?.message || err}`
     });
   }
 });

@@ -490,8 +490,11 @@ const DEFAULT_SAVED_PDF_DOCUMENTS: SavedPdfDocument[] = [
 
 const AVAILABLE_MERGE_TAGS = [
   { tag: '{{companyName}}', label: 'Company Name' },
-  { tag: '{{contactPerson}}', label: 'Contact Person' },
+  { tag: '{{decisionMakerName}}', label: 'Decision Maker Name' },
+  { tag: '{{address}}', label: 'Company Address' },
   { tag: '{{email}}', label: 'Contact Email' },
+  { tag: '{{paymentMethod}}', label: 'Payment Method' },
+  { tag: '{{contactPerson}}', label: 'Contact Person' },
   { tag: '{{country}}', label: 'Country' },
   { tag: '{{targetProduct}}', label: 'Product / Category' },
   { tag: '{{requiredQuantity}}', label: 'Quantity / Volume' },
@@ -500,6 +503,22 @@ const AVAILABLE_MERGE_TAGS = [
 ];
 
 const DEFAULT_REUSABLE_TEMPLATES: ReusableEmailTemplate[] = [
+  {
+    id: 'tpl-membership-renewal-current-offer',
+    name: 'Membership Renewal — Current Subscription Offer & Exciting Deals',
+    targetAudience: 'ALL',
+    subject: '💎 Exclusive Membership Renewal Offer & Priority B2B Deals for {{companyName}} (Attn: {{decisionMakerName}})',
+    badgeLabel: 'TRADE HEAVEN • VIP MEMBERSHIP RENEWAL & EXCLUSIVE DEALS',
+    headline: 'Renew Your Membership & Unlock Exciting New Trade Deals',
+    subheadline: 'Special Subscription Renewal Offer Prepared for {{companyName}}',
+    body: 'Dear {{decisionMakerName}},\n\nThank you for your continued partnership with Trade Heaven Global B2B. Your corporate membership for {{companyName}} is now eligible for renewal under our Current Subscription Offer—unlocking priority access to new exciting international trade deals, 100% Advance Payment Golden Leads, and zero-fee Escrow protection.\n\nREGISTERED CLIENT & RENEWAL ACCOUNT SUMMARY:\n• Company Name: {{companyName}}\n• Address: {{address}}\n• Email: {{email}}\n• Decision Maker Name: {{decisionMakerName}}\n• Preferred Payment Method: {{paymentMethod}}\n\nClick "Renew Now" below to lock in your current subscription offer rate and complete your renewal via {{paymentMethod}}.',
+    ctaText: 'Renew Now',
+    ctaUrl: 'https://www.tradeheaven.net/?action=renew-membership&company={{companyName}}&email={{email}}&decisionMaker={{decisionMakerName}}&address={{address}}&paymentMethod={{paymentMethod}}',
+    includeCredentialsBox: false,
+    includeLoginGuide: false,
+    includeEscrowBadge: true,
+    updatedAt: new Date().toISOString()
+  },
   {
     id: 'tpl-golden-lead-canada-10-generators-diwali',
     name: 'Golden Lead: 10 Generators to Canada (100% Advance • VIP Exclusive + Diwali Offer)',
@@ -789,24 +808,29 @@ export const BulkEntityCrmModule: React.FC = () => {
     if (!rawText) return '';
     const sample: BulkEntityRecord = rec || records[0] || {
       id: 'sample-default',
-      companyName: 'Middle Fox LLC',
-      contactPerson: 'Mr. Randy',
-      email: 'randy@midforkcap.com',
-      country: 'United States',
-      targetProduct: 'EN 590 Diesel & Jet Fuel A-1',
-      requiredQuantity: '100,000 MT',
-      budget: '$62,000,000 USD',
+      companyName: 'ACE Intermediary',
+      contactPerson: 'Ali Charley Ezekiah',
+      email: 'ezekiahali355@gmail.com',
+      country: '1241 Hackberry Avenue Corsicana Texas 75110',
+      targetProduct: 'VIP Membership Renewal & Global Trade Deals',
+      requiredQuantity: 'Annual Subscription Renewal',
+      budget: '$1,499 USD',
       assignedIem: globalIem
     };
     const productOrCategory = sample.targetProduct || sample.category || sample.rfqTitle || sample.inquiryType || 'Global Commodities';
     const qtyOrVolume = sample.requiredQuantity || sample.volumeUnit || 'Bulk Contract Volume';
     const priceOrBudget = sample.budget || sample.targetPrice || 'Negotiable FOB/CIF';
-    const contactName = sample.contactPerson || sample.companyName || 'Valued Partner';
+    const contactName = sample.contactPerson || sample.companyName || 'Ali Charley Ezekiah';
+    const addressVal = sample.country || '1241 Hackberry Avenue Corsicana Texas 75110';
+    const paymentMethodVal = 'Debit Card';
 
     return rawText
-      .replace(/\{\{companyName\}\}/g, sample.companyName || 'Your Company')
+      .replace(/\{\{companyName\}\}/g, sample.companyName || 'ACE Intermediary')
+      .replace(/\{\{decisionMakerName\}\}/g, contactName)
       .replace(/\{\{contactPerson\}\}/g, contactName)
-      .replace(/\{\{email\}\}/g, sample.email || 'contact@company.com')
+      .replace(/\{\{address\}\}/g, addressVal)
+      .replace(/\{\{email\}\}/g, sample.email || 'ezekiahali355@gmail.com')
+      .replace(/\{\{paymentMethod\}\}/g, paymentMethodVal)
       .replace(/\{\{country\}\}/g, sample.country || sample.portOfDestination || 'Global')
       .replace(/\{\{targetProduct\}\}/g, productOrCategory)
       .replace(/\{\{requiredQuantity\}\}/g, qtyOrVolume)
@@ -818,19 +842,22 @@ export const BulkEntityCrmModule: React.FC = () => {
   const getResolvedVariablesList = (rec?: BulkEntityRecord) => {
     const sample: BulkEntityRecord = rec || records[0] || {
       id: 'sample-default',
-      companyName: 'Middle Fox LLC',
-      contactPerson: 'Mr. Randy',
-      email: 'randy@midforkcap.com',
-      country: 'United States',
-      targetProduct: 'EN 590 Diesel & Jet Fuel A-1',
-      requiredQuantity: '100,000 MT',
-      budget: '$62,000,000 USD',
+      companyName: 'ACE Intermediary',
+      contactPerson: 'Ali Charley Ezekiah',
+      email: 'ezekiahali355@gmail.com',
+      country: '1241 Hackberry Avenue Corsicana Texas 75110',
+      targetProduct: 'VIP Membership Renewal & Global Trade Deals',
+      requiredQuantity: 'Annual Subscription Renewal',
+      budget: '$1,499 USD',
       assignedIem: globalIem
     };
     return [
-      { tag: '{{contactPerson}}', label: 'Recipient Name', value: sample.contactPerson || sample.companyName || 'Valued Partner' },
-      { tag: '{{companyName}}', label: 'Company Name', value: sample.companyName || 'Your Company' },
-      { tag: '{{email}}', label: 'Recipient Email', value: sample.email || 'contact@company.com' },
+      { tag: '{{companyName}}', label: 'Company Name', value: sample.companyName || 'ACE Intermediary' },
+      { tag: '{{decisionMakerName}}', label: 'Decision Maker Name', value: sample.contactPerson || 'Ali Charley Ezekiah' },
+      { tag: '{{address}}', label: 'Address', value: sample.country || '1241 Hackberry Avenue Corsicana Texas 75110' },
+      { tag: '{{email}}', label: 'Recipient Email', value: sample.email || 'ezekiahali355@gmail.com' },
+      { tag: '{{paymentMethod}}', label: 'Payment Method', value: 'Debit Card' },
+      { tag: '{{contactPerson}}', label: 'Recipient Name', value: sample.contactPerson || sample.companyName || 'Ali Charley Ezekiah' },
       { tag: '{{country}}', label: 'Country / Port', value: sample.country || sample.portOfDestination || 'Global' },
       { tag: '{{targetProduct}}', label: 'Product / Category', value: sample.targetProduct || sample.category || sample.rfqTitle || sample.inquiryType || 'Global Commodities' },
       { tag: '{{requiredQuantity}}', label: 'Volume / Quantity', value: sample.requiredQuantity || sample.volumeUnit || 'Bulk Contract Volume' },

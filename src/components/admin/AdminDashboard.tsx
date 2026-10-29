@@ -849,7 +849,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* VIEW CONDITIONAL RENDERING */}
         {activeTab === 'CUSTOM_EMAIL_DISPATCHER' && (
           <div className="space-y-4">
-            <CustomEmailDispatcherAdminModule />
+            <CustomEmailDispatcherAdminModule onOpenPaymentCheckout={onOpenPaymentCheckout} />
           </div>
         )}
 

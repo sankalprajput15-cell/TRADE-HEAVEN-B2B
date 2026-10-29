@@ -6,8 +6,13 @@ export interface PaymentCheckoutData {
   title: string;
   description: string;
   amountUsd: number;
-  type: 'MEMBERSHIP' | 'ESCROW_DEPOSIT' | 'SAMPLE_ORDER' | 'AUDIT_PACKAGE' | string;
+  type: 'MEMBERSHIP' | 'SUBSCRIPTION' | 'ESCROW_DEPOSIT' | 'SAMPLE_ORDER' | 'AUDIT_PACKAGE' | string;
   supplierCompany?: string;
+  clientEmail?: string;
+  billingName?: string;
+  address?: string;
+  decisionMakerName?: string;
+  preferredPaymentMethod?: string;
 }
 
 export interface EscrowMilestone {

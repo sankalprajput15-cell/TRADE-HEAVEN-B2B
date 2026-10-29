@@ -1,4 +1,4 @@
-import { NotificationProvider } from "./context/NotificationContext";
+import { NotificationProvider, useNotifications } from "./context/NotificationContext";
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
@@ -158,6 +158,8 @@ const MainApp: React.FC = () => {
     activeQuickEditSection,
     closeQuickEdit
   } = useSiteContent();
+
+  const { addNotification } = useNotifications();
 
   // Navigation & Currency State - Initialize from URL if present
   const getInitialView = (): ActiveView => {
@@ -709,6 +711,21 @@ const MainApp: React.FC = () => {
   const [authModalMode, setAuthModalMode] = useState<'LOGIN' | 'REGISTER' | 'WORK_WITH_US'>('LOGIN');
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [checkoutData, setCheckoutData] = useState<PaymentCheckoutData | null>(null);
+  const [renewalSuccessToast, setRenewalSuccessToast] = useState<{
+    orderId: string;
+    companyName: string;
+    decisionMakerName?: string;
+    planTitle: string;
+    paymentMethod?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!renewalSuccessToast) return;
+    const timer = setTimeout(() => {
+      setRenewalSuccessToast(null);
+    }, 9000);
+    return () => clearTimeout(timer);
+  }, [renewalSuccessToast]);
 
   const handleOpenRegisterFree = () => {
     setAuthModalMode('REGISTER');
@@ -1385,6 +1402,47 @@ const MainApp: React.FC = () => {
   const handleOpenPaymentCheckout = (data: PaymentCheckoutData) => {
     setCheckoutData(data);
   };
+
+  useEffect(() => {
+    const handleCustomPaymentEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<PaymentCheckoutData>;
+      if (customEvent.detail) {
+        setCheckoutData(customEvent.detail);
+      }
+    };
+    window.addEventListener('tradeheaven_open_payment_checkout', handleCustomPaymentEvent);
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'renew-membership') {
+        const company = params.get('company') || 'ACE Intermediary';
+        const email = params.get('email') || 'ezekiahali355@gmail.com';
+        const decisionMaker = params.get('decisionMaker') || 'Ali Charley Ezekiah';
+        const address = params.get('address') || '1241 Hackberry Avenue Corsicana Texas 75110';
+        const paymentMethod = params.get('paymentMethod') || 'Debit Card';
+        const planId = params.get('planId') || 'VIP-RENEWAL-OFFER-2026';
+        const amountUsd = Number(params.get('amountUsd')) || 1499;
+
+        setCheckoutData({
+          planId,
+          title: `Membership Renewal — Current Offer & Exciting Deals (${company})`,
+          description: `Annual Membership Renewal for ${company} (${address}) • Decision Maker: ${decisionMaker} • Preferred Payment: ${paymentMethod}`,
+          amountUsd,
+          type: 'SUBSCRIPTION',
+          supplierCompany: company,
+          clientEmail: email,
+          billingName: `${decisionMaker} (${company})`,
+          address,
+          decisionMakerName: decisionMaker,
+          preferredPaymentMethod: paymentMethod
+        });
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener('tradeheaven_open_payment_checkout', handleCustomPaymentEvent);
+    };
+  }, []);
 
   const handleOpenContactModal = (config?: Partial<typeof contactModalConfig>) => {
     setContactModalConfig({
@@ -2375,9 +2433,99 @@ const MainApp: React.FC = () => {
           selectedCurrency={selectedCurrency}
           onNavigate={handleNavigate}
           onPaymentSuccess={orderId => {
-            // Success
+            const isMembershipOrSubscription =
+              !checkoutData ||
+              checkoutData.type === 'SUBSCRIPTION' ||
+              checkoutData.type === 'MEMBERSHIP' ||
+              checkoutData.title?.toLowerCase().includes('renewal') ||
+              checkoutData.title?.toLowerCase().includes('membership') ||
+              checkoutData.planId?.toLowerCase().includes('renewal') ||
+              checkoutData.planId?.toLowerCase().includes('vip');
+
+            const companyName =
+              checkoutData?.supplierCompany ||
+              currentUser?.companyName ||
+              'ACE Intermediary';
+
+            if (currentUser && isMembershipOrSubscription) {
+              setCurrentUser({
+                ...currentUser,
+                isPremium: true,
+                membershipStatus: 'paid',
+                tier: 'VIP',
+                isVerified: true
+              });
+            }
+
+            setRenewalSuccessToast({
+              orderId,
+              companyName,
+              decisionMakerName: checkoutData?.decisionMakerName,
+              planTitle: checkoutData?.title || 'VIP Membership Renewal',
+              paymentMethod: checkoutData?.preferredPaymentMethod || 'Debit Card'
+            });
+
+            addNotification({
+              type: 'ORDER',
+              title: 'Membership Renewal Complete — Account Updated',
+              message: `Account status for ${companyName} is now updated to Active VIP (Ref: ${orderId}). You can now access all your new membership benefits and priority trade deals.`,
+              linkView: 'BUY_LEADS'
+            });
           }}
         />
+
+        {renewalSuccessToast && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-6 right-6 z-[100] max-w-md w-[calc(100vw-2rem)] bg-slate-900 text-white border border-emerald-500/50 rounded-2xl shadow-2xl p-4 sm:p-5 animate-in fade-in slide-in-from-bottom-4 duration-200"
+          >
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 mt-0.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Membership Renewed • Status Updated
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setRenewalSuccessToast(null)}
+                    className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                    aria-label="Dismiss notification"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <h4 className="text-sm font-black text-white mt-1.5 leading-snug">
+                  Account Status Updated for {renewalSuccessToast.companyName}!
+                </h4>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  Your membership renewal payment (<span className="font-mono text-emerald-300 font-bold">{renewalSuccessToast.orderId}</span>) succeeded. Your account status is now updated and you can immediately access your new VIP benefits, priority Golden Leads, and zero-fee escrow deals.
+                </p>
+                <div className="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-400 truncate">
+                    {renewalSuccessToast.decisionMakerName
+                      ? `Attn: ${renewalSuccessToast.decisionMakerName}`
+                      : renewalSuccessToast.planTitle}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCheckoutData(null);
+                      setRenewalSuccessToast(null);
+                      handleNavigate('BUY_LEADS');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black tracking-wide transition-colors shrink-0 cursor-pointer"
+                  >
+                    Access New Benefits →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <BackendDataManagementModal
           isOpen={isDbModalOpen}
