@@ -42,7 +42,8 @@ import {
   TrendingUp,
   Package,
   Home,
-  Wallet
+  Wallet,
+  Landmark
 } from 'lucide-react';
 
 interface Props {
@@ -103,7 +104,7 @@ export const Header: React.FC<Props> = ({
   onNavigateToCategory,
   onNavigateToSearch
 }) => {
-  const { setCurrentUser, logout } = useAuth();
+  const { setCurrentUser, logout, login } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -342,7 +343,7 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUserRole === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   const handleOpenFundsTopUp = () => {
     setUserMenuOpen(false);
@@ -355,7 +356,9 @@ export const Header: React.FC<Props> = ({
     { label: 'Products', view: 'PRODUCT_DIRECTORY', activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', activeMatch: ['BUY_LEADS', 'RFQ_HUB'] },
-    { label: 'Trade Assurance Certificate', view: 'TRADE_ASSURANCE_CERTIFICATE', activeMatch: ['TRADE_ASSURANCE_CERTIFICATE'] },
+    ...(isAdmin
+      ? [{ label: '📈 Mail Open Rate', view: 'RENEWAL_INSIGHTS' as ActiveView, activeMatch: ['RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_EDITOR'] as ActiveView[] }]
+      : []),
     { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] }
   ];
 
@@ -370,7 +373,8 @@ export const Header: React.FC<Props> = ({
     { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
     { label: 'Trade Assurance Certificate', view: 'TRADE_ASSURANCE_CERTIFICATE', icon: ShieldCheck, activeMatch: ['TRADE_ASSURANCE_CERTIFICATE'] },
     { label: 'Dashboard & Ledger', view: 'DASHBOARD', icon: LayoutDashboard, activeMatch: ['DASHBOARD'] },
-    { label: 'Wallet Funds Top-Up', view: 'WALLET_TOPUP', icon: Wallet, activeMatch: ['WALLET_TOPUP', 'MEDIATOR_ENGINE', 'DASHBOARD'] },
+    { label: 'Wallet Funds Top-Up', view: 'WALLET_TOPUP', icon: Wallet, activeMatch: ['WALLET_TOPUP', 'MEDIATOR_ENGINE'] },
+    { label: 'Supplier Bank & Withdrawals', view: 'SUPPLIER_WITHDRAWAL', icon: Landmark, activeMatch: ['SUPPLIER_WITHDRAWAL'] },
     { label: 'Direct Transfer & Mediation Guide', view: 'DIRECT_TRANSFER_GUIDE', icon: ShieldCheck, activeMatch: ['DIRECT_TRANSFER_GUIDE'] },
     { label: 'Products Catalog', view: 'PRODUCT_DIRECTORY', icon: Package, activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Verified Suppliers', view: 'SUPPLIERS_DIRECTORY', icon: Building2, activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
@@ -484,10 +488,47 @@ export const Header: React.FC<Props> = ({
           {isPaidAndRegisteredMember && currentUser && (
             <HeaderWalletBalance
               currentUser={currentUser}
-              isActiveView={activeView === 'WALLET_TOPUP' || activeView === 'MEDIATOR_ENGINE'}
+              isActiveView={activeView === 'WALLET_TOPUP' || activeView === 'SUPPLIER_WITHDRAWAL' || activeView === 'MEDIATOR_ENGINE'}
               onOpenTopUp={handleOpenFundsTopUp}
+              onOpenWithdrawalPage={() => handleNavClick('SUPPLIER_WITHDRAWAL')}
               onOpenLedger={() => handleNavClick('DASHBOARD')}
             />
+          )}
+
+          {/* Quick Access: Mail Open Rate & Renewal Insights (Admin Only) */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => handleNavClick('RENEWAL_INSIGHTS')}
+              className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
+                activeView === 'RENEWAL_INSIGHTS' || activeView === 'RENEWAL_EMAIL_EDITOR'
+                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+              }`}
+              title="Check Mail Open Rates, Click-Through Rates & Renewal Conversions"
+            >
+              <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+              <span>Mail Open Rate</span>
+            </button>
+          )}
+
+          {/* 1-Click Login as Zac (Admin Impersonation Only) */}
+          {isAdmin && currentUser?.email?.toLowerCase() !== 'zac@otec.ltd' && (
+            <button
+              type="button"
+              onClick={async () => {
+                const res = await login('zac@otec.ltd', 'Zac@0011');
+                if (res.success && res.user) {
+                  setCurrentUser(res.user);
+                  handleNavClick('DASHBOARD');
+                }
+              }}
+              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+              title="1-Click Sign In as Zac (Zachary Aldin • zac@otec.ltd)"
+            >
+              <LogIn className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>Login as Zac</span>
+            </button>
           )}
 
           {/* Primary Action: Post RFQ */}
@@ -568,20 +609,47 @@ export const Header: React.FC<Props> = ({
               <div className="absolute right-0 mt-2 w-[calc(100vw-1.25rem)] sm:w-96 max-w-sm max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
                 {/* User Identity or Sign In Header */}
                 {currentUser ? (
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-slate-900 truncate">
-                        {currentUser.name}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-slate-900 truncate">
+                          {currentUser.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono truncate">
+                          {currentUser.email}
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleNavClick('DASHBOARD')}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5" />
+                        <span>Dashboard</span>
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick('DASHBOARD')}
-                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
-                    >
-                      <LayoutDashboard className="w-3.5 h-3.5" />
-                      <span>Dashboard</span>
-                    </button>
+                    {isAdmin && currentUser.email.toLowerCase() !== 'zac@otec.ltd' && (
+                      <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-semibold text-slate-600 truncate">
+                          Zac • IMPORTATION FADE-TECH
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setUserMenuOpen(false);
+                            const res = await login('zac@otec.ltd', 'Zac@0011');
+                            if (res.success && res.user) {
+                              setCurrentUser(res.user);
+                              handleNavClick('DASHBOARD');
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        >
+                          <LogIn className="w-3 h-3" />
+                          <span>Switch to Zac</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5">
@@ -723,13 +791,31 @@ export const Header: React.FC<Props> = ({
                   </button>
                 </div>
 
-                {/* Admin Control Options */}
+                {/* Admin & Email Analytics Control Options (Strictly Admin Only) */}
                 {isAdmin && (
                   <div className="border-t border-slate-100 mt-2 pt-2 px-2">
                     <div className="text-[11px] font-semibold text-slate-400 mb-1">
-                      Admin Controls
+                      Email Analytics &amp; Admin Controls
                     </div>
                     <div className="grid grid-cols-2 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleNavClick('RENEWAL_INSIGHTS')}
+                        className="px-2.5 py-2 text-left text-xs font-bold bg-emerald-50 hover:bg-emerald-100 rounded-lg flex items-center gap-2 text-emerald-800 border border-emerald-200 transition-colors cursor-pointer"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">Mail Open Rate</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleNavClick('RENEWAL_EMAIL_EDITOR')}
+                        className="px-2.5 py-2 text-left text-xs font-bold bg-indigo-50 hover:bg-indigo-100 rounded-lg flex items-center gap-2 text-indigo-800 border border-indigo-200 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span className="truncate">Renewal HTML Editor</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleNavClick('PRODUCT_IMAGE_ADMIN')}

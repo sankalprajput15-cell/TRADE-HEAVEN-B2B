@@ -17,7 +17,8 @@ import {
   BookOpen,
   X,
   CheckCircle2,
-  Building2
+  Building2,
+  Landmark
 } from 'lucide-react';
 import { formatBalanceInNativeCurrency, getEntityCurrency } from '../../utils/entityCurrency';
 
@@ -25,6 +26,7 @@ interface HeaderWalletBalanceProps {
   currentUser: AuthUser;
   isActiveView?: boolean;
   onOpenTopUp: () => void;
+  onOpenWithdrawalPage?: () => void;
   onOpenLedger?: () => void;
 }
 
@@ -32,6 +34,7 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
   currentUser,
   isActiveView = false,
   onOpenTopUp,
+  onOpenWithdrawalPage,
   onOpenLedger
 }) => {
   const [state, setState] = useState<MediationSystemState | null>(null);
@@ -324,12 +327,16 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
                   type="button"
                   onClick={() => {
                     setPopoverOpen(false);
-                    onOpenTopUp();
+                    if (onOpenWithdrawalPage) {
+                      onOpenWithdrawalPage();
+                    } else {
+                      onOpenTopUp();
+                    }
                   }}
-                  className="h-9 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                  className="h-9 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                 >
-                  <span>Escrow Engine</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <Landmark className="w-3.5 h-3.5" />
+                  <span>Bank &amp; Withdraw</span>
                 </button>
               </div>
 

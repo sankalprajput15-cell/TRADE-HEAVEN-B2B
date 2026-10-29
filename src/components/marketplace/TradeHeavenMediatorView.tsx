@@ -608,18 +608,20 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
               <span>Native Country Currency ({getEntityCurrency(defaultEntityTarget).currency})</span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowSqlInspector(prev => !prev)}
-              className={`h-9 px-3.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                showSqlInspector
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>SQL Inspector ({state?.sqlLogs?.length || 0})</span>
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowSqlInspector(prev => !prev)}
+                className={`h-9 px-3.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  showSqlInspector
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <Database className="w-3.5 h-3.5" />
+                <span>SQL Inspector ({state?.sqlLogs?.length || 0})</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -795,8 +797,8 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
           </div>
         )}
 
-        {/* SQL Transaction Log Inspector */}
-        {showSqlInspector && (
+        {/* SQL Transaction Log Inspector (Admin Only) */}
+        {isAdmin && showSqlInspector && (
           <div className="bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>

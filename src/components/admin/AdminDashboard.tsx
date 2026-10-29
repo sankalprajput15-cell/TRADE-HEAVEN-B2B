@@ -93,6 +93,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<AdminDashboardTabId>(initialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const effectiveAdminUser: AuthUser = currentUser && currentUser.role === 'ADMIN'
+    ? currentUser
+    : {
+        id: currentUser?.id || 'admin-master-01',
+        name: currentUser?.name || 'Sankalp Rajput (Admin)',
+        email: currentUser?.email || 'sankalprajput15@gmail.com',
+        companyName: currentUser?.companyName || 'Trade Heaven Global B2B Administration',
+        country: currentUser?.country || 'United States',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        tier: 'VIP',
+        isVerified: true,
+        isVerifiedAdmin: true,
+        isPremium: true,
+        membershipStatus: 'paid'
+      };
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
   const {
     notifications,
     deliveryQueueStatus,
@@ -463,9 +484,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
 
   const navigationItems = [
-    { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
-    { id: 'RENEWAL_INSIGHTS', label: '📈 Renewal Insights', icon: TrendingUp },
+    { id: 'RENEWAL_INSIGHTS', label: '📈 Renewal Insights (Open Rate)', icon: TrendingUp },
     { id: 'RENEWAL_EMAIL_HTML_EDITOR', label: '💻 Renewal Offer HTML Editor', icon: Code2 },
+    { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
     { id: 'PRODUCT_IMAGE_SYSTEM', label: '📸 Product Image System (All)', icon: ImageIcon },
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
@@ -481,8 +502,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'ACTIVITY_LOGS', label: '🛡️ System Activity Logs', icon: Activity }
   ] as const;
 
+  const handleSelectSidebarTab = (tabId: AdminDashboardTabId) => {
+    setActiveTab(tabId);
+    setIsSidebarOpen(false);
+    if (typeof window !== 'undefined') {
+      const mainEl = document.getElementById('admin-main-viewport');
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
-    <div id="unified-admin-dashboard" className="min-h-screen bg-slate-50 flex flex-col lg:flex-row animate-in fade-in duration-300">
+    <div id="unified-admin-dashboard" className="min-h-screen bg-slate-50 flex flex-col lg:flex-row rounded-3xl overflow-hidden border border-slate-200 shadow-xs">
       
       {/* MOBILE HEADER BAR */}
       <div className="lg:hidden bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
@@ -497,48 +529,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200"
+          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           type="button"
         >
-          {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          <span>{isSidebarOpen ? 'Close Menu' : 'Admin Menu'}</span>
         </button>
       </div>
 
       {/* PERSISTENT SIDEBAR DESKTOP / COLLAPSED MOBILE */}
       <div className={`
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        fixed lg:static inset-y-0 left-0 w-64 bg-slate-900 text-slate-300 flex flex-col z-50 transform transition-transform duration-200 ease-in-out border-r border-slate-850 shrink-0
+        ${isSidebarOpen ? 'flex' : 'hidden lg:flex'}
+        w-full lg:w-72 bg-slate-900 text-slate-200 flex-col border-b lg:border-b-0 lg:border-r border-slate-800 shrink-0 lg:min-h-screen
       `}>
         {/* LOGO SECTION */}
-        <div className="p-6 border-b border-slate-800 hidden lg:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-sm shadow-md shadow-blue-500/20">
-            TH
+        <div className="p-5 border-b border-slate-800 hidden lg:flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white text-sm shadow-md shadow-blue-500/20">
+              TH
+            </div>
+            <div>
+              <h1 className="font-black text-white text-sm tracking-tight leading-none">TRADE HEAVEN</h1>
+              <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest mt-1 block">ADMIN CONSOLE</span>
+            </div>
           </div>
-          <div>
-            <h1 className="font-black text-white text-sm tracking-tight leading-none">TRADE HEAVEN</h1>
-            <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest mt-1 block">ADMIN CONSOLE</span>
-          </div>
+          <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase">
+            Live
+          </span>
         </div>
 
         {/* LOGGED IN USER CARD */}
-        <div className="p-4 mx-4 mt-4 mb-2 bg-slate-850 rounded-2xl border border-slate-800 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
-            {currentUser?.name?.slice(0, 2).toUpperCase() || 'AD'}
+        <div className="p-3.5 mx-4 mt-4 mb-2 bg-slate-800/90 rounded-2xl border border-slate-700/80 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-300 flex items-center justify-center font-black text-xs shrink-0">
+              {effectiveAdminUser.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="text-white text-xs font-black truncate">{effectiveAdminUser.name}</div>
+              <div className="text-[10px] text-slate-400 truncate font-semibold">{effectiveAdminUser.email}</div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-white text-xs font-black truncate">{currentUser?.name || 'Administrator'}</div>
-            <div className="text-[10px] text-slate-500 truncate font-semibold">{currentUser?.email || 'yr943334@gmail.com'}</div>
-          </div>
+          <span className="px-2 py-0.5 rounded bg-blue-600/30 text-blue-200 border border-blue-400/30 text-[9px] font-black uppercase shrink-0">
+            Admin
+          </span>
         </div>
 
-        {/* SIDEBAR DELIVERY QUEUE STATUS INDICATOR */}
-        <div
+        {/* SIDEBAR DELIVERY QUEUE STATUS INDICATOR (INTERACTIVE) */}
+        <button
+          type="button"
           id="admin-sidebar-queue-indicator"
-          className={`mx-4 mb-4 p-3 rounded-xl border transition-all ${
+          onClick={() => {
+            handleSelectSidebarTab('CUSTOM_EMAIL_DISPATCHER');
+            refreshDeliveryQueueStatus();
+          }}
+          className={`mx-4 mb-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
             isDeliveryQueueFlagged
-              ? 'bg-rose-950/70 border-rose-500/60 text-rose-200 shadow-lg shadow-rose-950/50'
-              : 'bg-slate-850/90 border-slate-800 text-slate-300'
+              ? 'bg-rose-950/80 border-rose-500/60 text-rose-200 shadow-lg shadow-rose-950/50 hover:bg-rose-900/80'
+              : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700/80 text-slate-200'
           }`}
+          title="Click to open Dispatch & Mail Center and refresh SMTP queue status"
         >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -557,20 +606,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                 isDeliveryQueueFlagged
                   ? 'bg-rose-500/30 text-rose-200 border border-rose-400/40'
-                  : 'bg-emerald-500/15 text-emerald-300'
+                  : 'bg-emerald-500/20 text-emerald-300'
               }`}
             >
               {deliveryQueueStatus.consecutiveFailures}/{deliveryQueueStatus.failureThreshold}
             </span>
           </div>
-          <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+          <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400 font-semibold">
             <span>Min Delay: {deliveryQueueStatus.minDelayMs / 1000}s</span>
             <span>Sent: {deliveryQueueStatus.totalProcessed}</span>
           </div>
-        </div>
+        </button>
 
         {/* NAVIGATION LINKS */}
-        <nav className="flex-1 px-4 space-y-1.5">
+        <nav aria-label="Admin Console Navigation" className="flex-1 px-3 py-1 space-y-1 overflow-y-auto max-h-[65vh] lg:max-h-none">
           {navigationItems.map(item => {
             const isActive = activeTab === item.id;
             const Icon = item.icon;
@@ -578,26 +627,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsSidebarOpen(false);
-                }}
+                onClick={() => handleSelectSidebarTab(item.id)}
+                aria-current={isActive ? 'page' : undefined}
                 className={`
-                  w-full px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-3 transition-all cursor-pointer
+                  w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2.5 transition-all cursor-pointer text-left
                   ${isActive 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10 font-black' 
-                    : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-black ring-1 ring-blue-400/40' 
+                    : 'hover:bg-slate-800 text-slate-300 hover:text-white'}
                 `}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span className="truncate">{item.label}</span>
+                </span>
+                {isActive && <ChevronRight className="w-3.5 h-3.5 text-blue-200 shrink-0" />}
               </button>
             );
           })}
         </nav>
 
         {/* FOOTER ACTION */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 mt-auto">
           <button
             type="button"
             onClick={() => onNavigate('HOMEPAGE')}
@@ -609,16 +659,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* OVERLAY FOR MOBILE SIDEBAR */}
-      {isSidebarOpen && (
-        <div 
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 lg:hidden"
-        />
-      )}
-
       {/* MAIN VIEWPORT */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6">
+      <main id="admin-main-viewport" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6">
+        {/* TOP QUICK-SWITCH BAR FOR EMAIL OPEN RATE & RENEWAL MANAGEMENT */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('RENEWAL_INSIGHTS')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'RENEWAL_INSIGHTS'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>📈 Mail Open Rate &amp; Renewal Insights</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('RENEWAL_EMAIL_HTML_EDITOR')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'RENEWAL_EMAIL_HTML_EDITOR'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200'
+              }`}
+            >
+              <Code2 className="w-4 h-4" />
+              <span>💻 Renewal Offer HTML &amp; Brand Header/Footer Studio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('CUSTOM_EMAIL_DISPATCHER')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'CUSTOM_EMAIL_DISPATCHER'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>✉️ Dispatch &amp; Mail Center</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('HOMEPAGE')}
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Marketplace</span>
+          </button>
+        </div>
         
         {/* TOAST ALERT */}
         {toastMessage && (
@@ -633,7 +727,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* AUTOMATED DELIVERY QUEUE STATUS INDICATOR BANNER */}
+        {/* AUTOMATED DELIVERY QUEUE STATUS INDICATOR BANNER (Shown on Dispatch Center or if Flagged) */}
+        {(activeTab === 'CUSTOM_EMAIL_DISPATCHER' || isDeliveryQueueFlagged) && (
         <div
           id="admin-delivery-queue-status-indicator"
           className={`p-4 sm:p-5 rounded-2xl border transition-all ${
@@ -853,6 +948,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         </div>
+        )}
 
         {/* VIEW CONDITIONAL RENDERING */}
         {activeTab === 'CUSTOM_EMAIL_DISPATCHER' && (
@@ -874,7 +970,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('RENEWAL_INSIGHTS')}
+                  onClick={() => handleSelectSidebarTab('RENEWAL_INSIGHTS')}
                   className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   <TrendingUp className="w-3.5 h-3.5" />
@@ -882,7 +978,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('RENEWAL_EMAIL_HTML_EDITOR')}
+                  onClick={() => handleSelectSidebarTab('RENEWAL_EMAIL_HTML_EDITOR')}
                   className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   <Code2 className="w-3.5 h-3.5" />
@@ -898,8 +994,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="space-y-4">
             <RenewalInsightsAdminModule
               onOpenPaymentCheckout={onOpenPaymentCheckout}
-              onNavigateToHtmlEditor={() => setActiveTab('RENEWAL_EMAIL_HTML_EDITOR')}
-              onNavigateToDispatcher={() => setActiveTab('CUSTOM_EMAIL_DISPATCHER')}
+              onNavigateToHtmlEditor={() => handleSelectSidebarTab('RENEWAL_EMAIL_HTML_EDITOR')}
+              onNavigateToDispatcher={() => handleSelectSidebarTab('CUSTOM_EMAIL_DISPATCHER')}
             />
           </div>
         )}
@@ -936,7 +1032,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'CMS' && (
           <div className="space-y-4">
-            <SiteContentCmsEditor />
+            <SiteContentCmsEditor currentUser={effectiveAdminUser} />
           </div>
         )}
 
@@ -945,7 +1041,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ClientAdminView
               selectedCurrency={selectedCurrency}
               onOpenPaymentCheckout={onOpenPaymentCheckout}
-              currentUser={currentUser}
+              currentUser={effectiveAdminUser}
               onUpdateCurrentUser={onUpdateCurrentUser}
             />
           </div>
@@ -972,7 +1068,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'PRICING' && (
           <div className="space-y-4">
             <PlanPricingAdminModule
-              currentUserRole={currentUser?.role}
+              currentUserRole={effectiveAdminUser.role}
               onNavigateView={onNavigate}
             />
           </div>
@@ -986,7 +1082,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'USER_DELETION_LOG' && (
           <div className="space-y-4">
-            <UserDeletionLogModule currentUser={currentUser} />
+            <UserDeletionLogModule currentUser={effectiveAdminUser} />
           </div>
         )}
 

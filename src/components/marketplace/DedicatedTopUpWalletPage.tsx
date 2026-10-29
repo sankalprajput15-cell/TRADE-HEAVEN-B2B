@@ -6,6 +6,7 @@ import {
 } from '../../services/tradeHeavenMediatorEngine';
 import { AuthUser, Currency } from '../../types';
 import { TopUpWallet } from './TopUpWallet';
+import { SupplierBankWithdrawalPanel } from './SupplierBankWithdrawalPanel';
 import { OFFICIAL_SWIFT_BANK_DETAILS } from '../../constants/swiftBankDetails';
 import { TransactionLedgerView } from './TransactionLedgerView';
 import { TradeHeavenMediatorView } from './TradeHeavenMediatorView';
@@ -30,7 +31,8 @@ import {
   Copy,
   Check,
   Landmark,
-  Clock
+  Clock,
+  Send
 } from 'lucide-react';
 
 interface Props {
@@ -38,7 +40,7 @@ interface Props {
   selectedCurrency?: Currency;
   onNavigate: (view: any) => void;
   onOpenStorefront?: (companyId: string) => void;
-  initialTab?: 'TOPUP' | 'REQUESTS' | 'LEDGER' | 'ESCROW';
+  initialTab?: 'TOPUP' | 'WITHDRAW' | 'REQUESTS' | 'LEDGER' | 'ESCROW';
 }
 
 export const DedicatedTopUpWalletPage: React.FC<Props> = ({
@@ -47,7 +49,7 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
   onNavigate,
   initialTab = 'TOPUP'
 }) => {
-  const [activeTab, setActiveTab] = useState<'TOPUP' | 'REQUESTS' | 'LEDGER' | 'ESCROW'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'TOPUP' | 'WITHDRAW' | 'REQUESTS' | 'LEDGER' | 'ESCROW'>(initialTab);
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -145,7 +147,7 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
             </button>
             <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
             <span className="font-semibold text-emerald-700 truncate">
-              Wallet Top-Up Portal
+              Wallet Top-Up &amp; Supplier Bank Withdrawal Portal
             </span>
           </div>
 
@@ -262,6 +264,16 @@ export const DedicatedTopUpWalletPage: React.FC<Props> = ({
               }`}>
                 creditBuyerDeposit()
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('SUPPLIER_WITHDRAWAL')}
+              className="h-10 px-4 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200"
+            >
+              <Send className="w-4 h-4 text-indigo-600" />
+              <span>Supplier Bank Details &amp; Withdraw Funds Page</span>
+              <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
             </button>
 
             <button

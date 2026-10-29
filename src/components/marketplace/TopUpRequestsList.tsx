@@ -211,8 +211,9 @@ export const TopUpRequestsList: React.FC<Props> = ({
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  // Filter requests strictly by the logged-in user's personal wallet
+  // Filter requests strictly by the logged-in user's personal wallet (Admin sees all)
   const personalRequests = useMemo(() => {
+    if (isAdmin) return requests;
     return requests.filter(req => {
       if (selectedWalletId && req.buyerId === selectedWalletId) return true;
       if (currentUser) {
@@ -225,7 +226,7 @@ export const TopUpRequestsList: React.FC<Props> = ({
       }
       return false;
     });
-  }, [requests, selectedWalletId, currentUser]);
+  }, [requests, selectedWalletId, currentUser, isAdmin]);
 
   const filteredRequests = useMemo(() => {
     return personalRequests.filter(req => {
@@ -384,7 +385,7 @@ export const TopUpRequestsList: React.FC<Props> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            All Requests ({requests.length})
+            All Requests ({personalRequests.length})
           </button>
           <button
             type="button"
@@ -562,13 +563,13 @@ export const TopUpRequestsList: React.FC<Props> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {isPending && (
+                      {isAdmin && isPending && (
                         <button
                           type="button"
                           disabled={isVerifyingId === item.id}
                           onClick={() => handleVerifyPending(item)}
                           className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
-                          title="Simulate bank treasury reconciliation"
+                          title="Simulate bank treasury reconciliation (Admin Only)"
                         >
                           {isVerifyingId === item.id ? (
                             <>

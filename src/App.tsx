@@ -106,6 +106,7 @@ const VendorProfilePage = lazyWithRetry(() => import('./components/vendor/Vendor
 const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerProfilePage'), 'BuyerProfilePage');
 const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
+const SupplierBankWithdrawalLandingPage = lazyWithRetry(() => import('./components/marketplace/SupplierBankWithdrawalLandingPage'), 'SupplierBankWithdrawalLandingPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
 const TradeAssuranceCertificateView = lazyWithRetry(() => import('./components/services/TradeAssuranceCertificateView'), 'TradeAssuranceCertificateView');
 
@@ -901,9 +902,17 @@ const MainApp: React.FC = () => {
     };
   }, []);
 
-  // Guard against unauthenticated visitors accessing admin views directly
+  // Guard against unauthenticated or non-admin visitors accessing admin views directly
   useEffect(() => {
-    const adminViews: ActiveView[] = ['CLIENT_ADMIN', 'PLAN_PRICING_ADMIN', 'CMS_MANAGEMENT', 'BULK_ENTITY_CRM', 'PRODUCT_IMAGE_ADMIN'];
+    const adminViews: ActiveView[] = [
+      'CLIENT_ADMIN',
+      'PLAN_PRICING_ADMIN',
+      'CMS_MANAGEMENT',
+      'BULK_ENTITY_CRM',
+      'PRODUCT_IMAGE_ADMIN',
+      'RENEWAL_INSIGHTS',
+      'RENEWAL_EMAIL_EDITOR'
+    ];
     if (adminViews.includes(activeView) && (!currentUser || !isAdmin)) {
       setActiveView('HOMEPAGE');
       setAuthModalMode('LOGIN');
@@ -2125,18 +2134,60 @@ const MainApp: React.FC = () => {
                   />
                 );
 
+              case 'RENEWAL_INSIGHTS':
+                return (
+                  <AdminRouteGuard
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Mail Open Rate & Renewal Analytics"
+                    description="Email campaign telemetry, open rates, and renewal conversion analytics are restricted to verified System Administrators."
+                    targetViewName="RENEWAL_INSIGHTS"
+                  >
+                    <AdminDashboard
+                      initialTab="RENEWAL_INSIGHTS"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      onUpdateCurrentUser={setCurrentUser}
+                    />
+                  </AdminRouteGuard>
+                );
+
+              case 'RENEWAL_EMAIL_EDITOR':
+                return (
+                  <AdminRouteGuard
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
+                    title="Renewal Email HTML Editor"
+                    description="The Renewal Email HTML Editor and campaign dispatch controls are restricted to verified System Administrators."
+                    targetViewName="RENEWAL_EMAIL_EDITOR"
+                  >
+                    <AdminDashboard
+                      initialTab="RENEWAL_EMAIL_HTML_EDITOR"
+                      currentUser={currentUser}
+                      onNavigate={handleNavigate}
+                      selectedCurrency={selectedCurrency}
+                      onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                      onUpdateCurrentUser={setCurrentUser}
+                    />
+                  </AdminRouteGuard>
+                );
+
               case 'CLIENT_ADMIN':
                 return (
                   <AdminRouteGuard
                     currentUser={currentUser}
                     onOpenAuthModal={() => setIsAuthModalOpen(true)}
                     onNavigate={handleNavigate}
-                    title="Treasury & Administrative Control Center"
-                    description="Access to custodial trade protection releases, user management, and database orchestration requires authenticated administrator credentials."
+                    title="Administrator Control Portal"
+                    description="The Administrator Control Portal is restricted to verified System Administrators."
                     targetViewName="CLIENT_ADMIN"
                   >
                     <AdminDashboard
-                      initialTab="DATABASE"
+                      initialTab="RENEWAL_INSIGHTS"
                       currentUser={currentUser}
                       onNavigate={handleNavigate}
                       selectedCurrency={selectedCurrency}
@@ -2237,6 +2288,15 @@ const MainApp: React.FC = () => {
                     selectedCurrency={selectedCurrency}
                     onNavigate={handleNavigate}
                     onOpenStorefront={handleOpenStorefront}
+                  />
+                );
+
+              case 'SUPPLIER_WITHDRAWAL':
+                return (
+                  <SupplierBankWithdrawalLandingPage
+                    currentUser={currentUser}
+                    selectedCurrency={selectedCurrency}
+                    onNavigate={handleNavigate}
                   />
                 );
 
