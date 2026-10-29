@@ -652,7 +652,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     logoUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
     bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80',
     tagline: 'Verified Australian Thermal & Coking Coal Exporter • Basic Plan Holder',
-    description: 'IMPORTATION FADE-TECH (42a Bassett street hurstville, Australia | Zac@otec.ltd) is a Trade Heaven Basic Plan Holder with invoice TRD-INV-27-0004. Note: Direct on-site funds receiving from buyers is disabled for Basic Plan holders (VIP Members Only). Specializing in high-calorific Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal for steelworks, and High-Carbon PCI Coal. Authorized Representative: Zachary Aldin (+61 424 854 899).',
+    description: 'IMPORTATION FADE-TECH is a Trade Heaven Basic Plan Holder. Specializing in high-calorific Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal for steelworks, and High-Carbon PCI Coal. Direct street address and authorized representative contact lines are protected for Paid Members.',
     acceptedPaymentTerms: ['Offline Bank Wire Transfer (Direct On-Site Transfer Disabled)', 'Irrevocable L/C at Sight', 'SBLC / DLC'],
     supportedIncotermsList: ['FOB', 'CIF', 'CFR'],
     portsOfDispatch: ['Port of Newcastle, NSW Australia', 'Port of Gladstone, QLD Australia', 'Hay Point Coal Terminal, QLD Australia'],
@@ -739,7 +739,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     tagline: 'Verified Australian Fuel, EN590 10PPM Diesel, Jet A-1 & Petroleum Commodity Brokerage',
-    description: 'MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia) is a verified Paid Basic Plan member with all platform services enabled. Specializing in bulk Fuel and Petroleum commodities including EN590 10PPM Ultra-Low Sulfur Diesel, Aviation Turbine Fuel (Jet A-1), D6 Virgin Fuel Oil, and Automotive/Marine Gasoil. Accepted Payment: Bank transfer.',
+    description: 'MP Commodity Brokers Australia Pty Ltd is a verified Paid Basic Plan member with all platform services enabled. Specializing in bulk Fuel and Petroleum commodities including EN590 10PPM Ultra-Low Sulfur Diesel, Aviation Turbine Fuel (Jet A-1), D6 Virgin Fuel Oil, and Automotive/Marine Gasoil. Accepted Payment: Bank transfer.',
     acceptedPaymentTerms: ['Bank transfer', 'T/T Bank Wire Transfer', 'Irrevocable L/C at Sight', 'SBLC / DLC'],
     supportedIncotermsList: ['FOB', 'CIF', 'CFR', 'TTO'],
     portsOfDispatch: ['Port of Sydney (Port Botany Fuel Terminal), Australia', 'Port of Melbourne, Australia', 'Port of Fremantle, Australia'],
@@ -843,8 +843,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     productionLines: 4,
     logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    tagline: 'Florida Farm-Grown Timber Bamboo Poles, Raw Culms & Agricultural Bamboo Supplier (Pickup in Sebring, FL)',
-    description: 'Joy Bamboo Forest Farm LLC is a verified Paid Basic Plan supplier in Florida, United States. Corporate Mailing Address: 7901 4th Stan Ste 300, Saint Petersburg, FL 33702. Farm address where the bamboo will be picked up is in Sebring, FL. Managed by Svetlana Brodskaya (Manager, info@joybambooforestfarm.com). Note: Direct on-site fund transfers are not active for Basic Plan accounts — please contact Svetlana Brodskaya directly at info@joybambooforestfarm.com for order payment and farm pickup coordination.',
+    tagline: 'Florida Farm-Grown Timber Bamboo Poles, Raw Culms & Agricultural Bamboo Supplier',
+    description: 'Joy Bamboo Forest Farm LLC is a verified Paid Basic Plan supplier in the United States. Supplying Florida farm-grown timber bamboo poles, raw bamboo culms, and agricultural bamboo stakes. Direct mailing address, farm pickup coordinates, and manager contact lines are protected for Paid Members.',
     acceptedPaymentTerms: [
       'Direct Supplier Coordination (Contact Supplier Directly)',
       'Bank Wire Transfer (T/T)',
@@ -930,10 +930,10 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         },
         {
           id: 'tour-jbff-2',
-          title: 'Saint Petersburg Corporate Office & Dispatch Administration',
-          department: 'Corporate Mailing Office (7901 4th Stan Ste 300, Saint Petersburg, FL 33702)',
+          title: 'Corporate Office & Dispatch Administration',
+          department: 'Corporate Mailing & Dispatch Office',
           imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-          caption: 'Managed by Svetlana Brodskaya (Manager, info@joybambooforestfarm.com).'
+          caption: 'Verified administrative headquarters and order coordination desk.'
         }
       ]
     }

@@ -19,6 +19,7 @@ import { BatchImageCsvImporter } from './BatchImageCsvImporter';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
 import { CustomEmailDispatcherAdminModule } from './CustomEmailDispatcherAdminModule';
+import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -61,6 +62,7 @@ export type AdminDashboardTabId =
   | 'CRM' 
   | 'PRICING' 
   | 'ACTIVITY_LOGS' 
+  | 'USER_DELETION_LOG'
   | 'BULK_CSV_IMPORT' 
   | 'BATCH_IMAGE_IMPORT' 
   | 'MULTI_FILE_UPLOAD';
@@ -467,6 +469,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
+    { id: 'USER_DELETION_LOG', label: '🗑️ User Deletion Log', icon: Trash2 },
     { id: 'ACTIVITY_LOGS', label: '🛡️ System Activity Logs', icon: Activity }
   ] as const;
 
@@ -921,6 +924,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'ACTIVITY_LOGS' && (
           <div className="space-y-4">
             <ActivityLogAdminModule />
+          </div>
+        )}
+
+        {activeTab === 'USER_DELETION_LOG' && (
+          <div className="space-y-4">
+            <UserDeletionLogModule currentUser={currentUser} />
           </div>
         )}
 

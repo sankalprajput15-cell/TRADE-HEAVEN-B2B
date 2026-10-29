@@ -627,7 +627,11 @@ export const bigrockApi = {
     return { success: true, data: enrichedUser };
   },
 
-  async deleteUser(id: string, email?: string): Promise<{ success: boolean; error?: string }> {
+  async deleteUser(
+    id: string,
+    email?: string,
+    meta?: Record<string, any>
+  ): Promise<{ success: boolean; error?: string }> {
     const cleanId = String(id || '').trim();
     const cleanEmail = String(email || '').toLowerCase().trim();
 
@@ -657,11 +661,18 @@ export const bigrockApi = {
       console.warn('[deleteUser local cleanup warning]:', e);
     }
 
+    const payload = {
+      id: cleanId,
+      email: cleanEmail,
+      permanent: true,
+      ...(meta || {})
+    };
+
     try {
       await fetch(`${BIGROCK_API_URL}?action=delete_user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: cleanId, email: cleanEmail, permanent: true })
+        body: JSON.stringify(payload)
       });
     } catch (err) {
       console.warn('[BigRock API deleteUser]:', err);
@@ -671,7 +682,7 @@ export const bigrockApi = {
       await fetch('/api/admin/users/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: cleanId, email: cleanEmail, permanent: true })
+        body: JSON.stringify(payload)
       });
     } catch {}
 

@@ -112,8 +112,8 @@ export const VendorProfilePage: React.FC<Props> = ({
     }
   }, [activeTab, companyId]);
   
-  // Active Profile state
-  const [profile, setProfile] = useState<DetailedVendorProfile>(() => {
+  // Active Profile state (raw + security-gated for non-paid callers)
+  const [rawProfile, setProfile] = useState<DetailedVendorProfile>(() => {
     const savedCustom = loadCustomVendorProfile();
     if (savedCustom && savedCustom.id === companyId) {
       return savedCustom;
@@ -128,8 +128,13 @@ export const VendorProfilePage: React.FC<Props> = ({
   const isAuthorizedToEdit = Boolean(
     currentUser?.role === 'ADMIN' ||
     currentUser?.isVerifiedAdmin === true ||
-    (currentUser?.email && profile.contactEmail && currentUser.email.toLowerCase() === profile.contactEmail.toLowerCase()) ||
-    (profile.id === 'comp-melissa-mpcommodity' && currentUser?.email?.toLowerCase().includes('mpcommoditybroker'))
+    (currentUser?.email && rawProfile.contactEmail && currentUser.email.toLowerCase() === rawProfile.contactEmail.toLowerCase()) ||
+    (rawProfile.id === 'comp-melissa-mpcommodity' && currentUser?.email?.toLowerCase().includes('mpcommoditybroker'))
+  );
+
+  const profile = React.useMemo(
+    () => (isAuthorizedToEdit ? rawProfile : securityService.gateDetailedVendorProfile(rawProfile, currentUser)),
+    [rawProfile, isAuthorizedToEdit, currentUser]
   );
 
   // Lightbox Modal state

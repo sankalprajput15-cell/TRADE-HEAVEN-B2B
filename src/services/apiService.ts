@@ -15,7 +15,8 @@ import {
   NormalizedB2BDatabase,
   NormalizedSupplier,
   NormalizedBuyerRfq,
-  NormalizedServiceProvider
+  NormalizedServiceProvider,
+  UserDeletionLogEntry
 } from '../types';
 import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS, NORMALIZED_B2B_DATABASE } from '../data/mockData';
 import { securityService } from './securityService';
@@ -41,6 +42,7 @@ const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Pr
 // Storage keys for reactive state persistence
 const USERS_STORAGE_KEY = 'th_registered_users_store';
 const DELETED_USERS_STORAGE_KEY = 'th_permanently_deleted_users_v1';
+const USER_DELETION_LOGS_STORAGE_KEY = 'th_user_deletion_logs_v1';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';
 const BUYERS_STORAGE_KEY = 'th_buyers_store';
 const RFQS_STORAGE_KEY = 'th_rfqs_store';
@@ -62,6 +64,51 @@ export function getPermanentlyDeletedUsers(): { ids: Set<string>; emails: Set<st
     }
   } catch {}
   return { ids, emails };
+}
+
+export function getUserDeletionLogs(): UserDeletionLogEntry[] {
+  try {
+    const raw = localStorage.getItem(USER_DELETION_LOGS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(Boolean);
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function saveUserDeletionLogs(logs: UserDeletionLogEntry[]) {
+  try {
+    localStorage.setItem(USER_DELETION_LOGS_STORAGE_KEY, JSON.stringify(logs));
+    window.dispatchEvent(new Event('tradeheaven_user_deletion_logs_updated'));
+  } catch {}
+}
+
+export function recordUserDeletionLog(entry: UserDeletionLogEntry): UserDeletionLogEntry[] {
+  const current = getUserDeletionLogs();
+  const cleanEmail = (entry.deletedUserEmail || '').toLowerCase().trim();
+  const cleanId = (entry.deletedUserId || '').trim();
+  const entryTime = new Date(entry.deletedAt).getTime();
+
+  const existingIdx = current.findIndex(item => {
+    if (item.id === entry.id) return true;
+    const sameEmail = cleanEmail && (item.deletedUserEmail || '').toLowerCase().trim() === cleanEmail;
+    const sameId = cleanId && item.deletedUserId === cleanId;
+    const withinWindow = Math.abs(entryTime - new Date(item.deletedAt).getTime()) < 15000;
+    return (sameEmail || sameId) && withinWindow;
+  });
+
+  let updated: UserDeletionLogEntry[];
+  if (existingIdx !== -1) {
+    updated = [...current];
+    updated[existingIdx] = { ...updated[existingIdx], ...entry };
+  } else {
+    updated = [entry, ...current];
+  }
+  saveUserDeletionLogs(updated);
+  return updated;
 }
 
 export function markUserPermanentlyDeleted(id?: string, email?: string) {
@@ -828,6 +875,11 @@ export const api = {
           (srvJson.deletedIds || []).forEach((id: string) => markUserPermanentlyDeleted(id, undefined));
           (srvJson.deletedEmails || []).forEach((em: string) => markUserPermanentlyDeleted(undefined, em));
         }
+        if (Array.isArray(srvJson?.deletionLogs)) {
+          (srvJson.deletionLogs as UserDeletionLogEntry[]).forEach(log => {
+            if (log && log.id) recordUserDeletionLog(log);
+          });
+        }
         const deletedNow = getPermanentlyDeletedUsers();
         const srvList: any[] = Array.isArray(srvJson?.data) ? srvJson.data : [];
         let changed = false;
@@ -987,13 +1039,51 @@ export const api = {
     };
   },
 
+  async getUserDeletionLogs(): Promise<UserDeletionLogEntry[]> {
+    try {
+      const res = await fetch('/api/admin/user-deletion-logs', {
+        method: 'GET',
+        headers: { Accept: 'application/json' }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json?.data)) {
+          json.data.forEach((log: UserDeletionLogEntry) => {
+            if (log && log.id) recordUserDeletionLog(log);
+          });
+        }
+      }
+    } catch {}
+    const logs = getUserDeletionLogs();
+    return logs.sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
+  },
+
   async adminDeleteUserPermanently(
     targetUserId: string,
     targetEmail?: string,
-    _adminCaller?: AuthUser | null
-  ): Promise<{ success: boolean; message: string }> {
+    adminCaller?: AuthUser | null,
+    meta?: {
+      deletedUserName?: string;
+      deletedUserRole?: string;
+      deletedUserCompany?: string;
+      deletedUserTier?: string;
+      deletedUserCountry?: string;
+      reason?: string;
+      deletionSource?: string;
+    }
+  ): Promise<{ success: boolean; message: string; deletionLog?: UserDeletionLogEntry }> {
     const cleanId = String(targetUserId || '').trim();
     const cleanEmail = String(targetEmail || '').toLowerCase().trim();
+
+    // Capture user snapshot before removing from stores
+    let matchedUser: AuthUser | undefined;
+    Object.keys(activeUsersStore).forEach(k => {
+      const u = activeUsersStore[k];
+      const uEmail = String(u?.email || '').toLowerCase().trim();
+      if (k === cleanId || (u && (u.id === cleanId || (cleanEmail && uEmail === cleanEmail)))) {
+        if (!matchedUser) matchedUser = u;
+      }
+    });
 
     markUserPermanentlyDeleted(cleanId, cleanEmail);
 
@@ -1026,14 +1116,59 @@ export const api = {
       persistStoredSuppliers(activeSuppliersStore);
     }
 
-    await bigrockApi.deleteUser(cleanId, cleanEmail);
+    const nowIso = new Date().toISOString();
+    const logId = `del-log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const resolvedEmail = matchedUser?.email || targetEmail || cleanEmail || 'unknown@tradeheaven.net';
+    const resolvedName =
+      meta?.deletedUserName ||
+      matchedUser?.name ||
+      (resolvedEmail.includes('@') ? resolvedEmail.split('@')[0] : cleanId);
+
+    const logEntry: UserDeletionLogEntry = {
+      id: logId,
+      deletedUserId: matchedUser?.id || cleanId || `user-${Date.now()}`,
+      deletedUserName: resolvedName,
+      deletedUserEmail: resolvedEmail,
+      deletedUserRole: meta?.deletedUserRole || matchedUser?.role || 'SUPPLIER',
+      deletedUserCompany: meta?.deletedUserCompany || matchedUser?.companyName || 'Registered Enterprise',
+      deletedUserTier: String(meta?.deletedUserTier || matchedUser?.tier || matchedUser?.membershipStatus || 'Standard'),
+      deletedUserCountry: meta?.deletedUserCountry || matchedUser?.country || 'Global',
+      deletedAt: nowIso,
+      deletedByAdminId: adminCaller?.id || 'user-admin-001',
+      deletedByAdminName: adminCaller?.name || 'Administrator (Yash Rajput)',
+      deletedByAdminEmail: adminCaller?.email || 'yr943334@gmail.com',
+      deletedByAdminRole: adminCaller?.role || 'ADMIN',
+      reason: meta?.reason || 'Permanent administrative account removal',
+      deletionSource: meta?.deletionSource || 'Admin Console (RBAC Users)',
+      complianceRef: `TH-COMP-DEL-${Date.now().toString().slice(-6)}`
+    };
+
+    recordUserDeletionLog(logEntry);
+
+    await bigrockApi.deleteUser(cleanId, cleanEmail, {
+      logId: logEntry.id,
+      deletedAt: logEntry.deletedAt,
+      deletedUserName: logEntry.deletedUserName,
+      deletedUserRole: logEntry.deletedUserRole,
+      deletedUserCompany: logEntry.deletedUserCompany,
+      deletedUserTier: logEntry.deletedUserTier,
+      deletedUserCountry: logEntry.deletedUserCountry,
+      deletedByAdminId: logEntry.deletedByAdminId,
+      deletedByAdminName: logEntry.deletedByAdminName,
+      deletedByAdminEmail: logEntry.deletedByAdminEmail,
+      deletedByAdminRole: logEntry.deletedByAdminRole,
+      reason: logEntry.reason,
+      deletionSource: logEntry.deletionSource
+    });
 
     try {
       window.dispatchEvent(new Event('tradeheaven_users_updated'));
+      window.dispatchEvent(new Event('tradeheaven_user_deletion_logs_updated'));
     } catch {}
 
     return {
       success: true,
+      deletionLog: logEntry,
       message: `User ${cleanEmail || cleanId} permanently deleted from all databases.`
     };
   },

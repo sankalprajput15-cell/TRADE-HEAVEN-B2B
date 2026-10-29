@@ -13,8 +13,10 @@ import {
   CheckCircle2, 
   Zap, 
   ArrowRight,
-  Crown
+  Crown,
+  Lock
 } from 'lucide-react';
+import { isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
 
 interface Props {
   rfq: RfqRequirement;
@@ -38,6 +40,9 @@ export const PitchBuyerModal: React.FC<Props> = ({
   const [supplierCompany, setSupplierCompany] = useState<string>(currentUser?.companyName || 'Verified Exporter Co.');
   const [supplierContact, setSupplierContact] = useState<string>(currentUser?.email || 'sales@exporter.com');
   const [isSent, setIsSent] = useState(false);
+
+  const isPaidLead = isPaidEntity(rfq);
+  const isCallerPaid = isPaidMemberUser(currentUser);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -91,158 +96,199 @@ export const PitchBuyerModal: React.FC<Props> = ({
 
         {/* Content */}
         <div className="p-5 sm:p-6 space-y-5">
-          {/* Go4WorldBusiness Community Warning */}
-          <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-950 text-xs flex items-start gap-2.5">
-            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-            <div className="space-y-1 leading-relaxed">
-              <span className="font-bold block">
-                (Note: Free leads are unvetted community inquiries—deals &amp; buyer legitimacy are not guaranteed).
-              </span>
-              <p className="text-[11px] text-amber-900/90 font-normal">
-                Always conduct due diligence and request Letters of Credit (L/C) or Trade Assurance escrow before dispatching containerized cargo.
-              </p>
-            </div>
-          </div>
-
-          {/* Unmasked Buyer Contact Info */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">
-              Direct Contact Details (Unlocked with Daily Free Credit)
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-[10px] text-slate-400">Buyer Company</div>
-                  <div className="font-bold text-slate-800 truncate">{rfq.buyerCompany}</div>
+          {isPaidLead && !isCallerPaid ? (
+            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-xl">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center mx-auto">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                  Protected Paid Member Data
                 </div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  Direct Contact Restricted to Paid Plans
+                </h3>
+                <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                  <strong>{rfq.buyerCompany}</strong> is a verified paid member. By platform policy, unpaid members cannot access contact channels or dispatch pitches to paid members using free daily credits.
+                </p>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-[10px] text-slate-400">Buyer Direct Email</div>
-                  <div className="font-mono font-bold text-slate-800 truncate">
-                    {rfq.buyerEmail || `${rfq.buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '')}@procurement.com`}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-indigo-600 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-[10px] text-slate-400">Telephone / WhatsApp</div>
-                  <div className="font-mono font-bold text-slate-800 truncate">
-                    {rfq.buyerPhone || '+1 (555) 382-9901'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {isSent ? (
-            <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-black text-emerald-900">Direct Pitch Dispatched!</h3>
-              <p className="text-xs text-emerald-800 max-w-md mx-auto leading-relaxed">
-                Your direct factory proposal was routed to the procurement department of <strong>{rfq.buyerCompany}</strong>. You can also follow up via direct WhatsApp or email.
-              </p>
-
-              <div className="pt-3 flex flex-wrap justify-center gap-3">
-                <a
-                  href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${whatsappText}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenUpgradeModal?.();
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Follow Up on WhatsApp</span>
-                </a>
-
+                  <Crown className="w-4 h-4 fill-slate-950" />
+                  <span>Upgrade to Paid Plan to Pitch Buyer</span>
+                </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
                 >
-                  Done
+                  Close
                 </button>
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSendPitch} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Your Factory / Trading Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={supplierCompany}
-                    onChange={(e) => setSupplierCompany(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Your Quoted Price ({curr.symbol} / {rfq.quantityUnit})
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    value={unitPrice}
-                    onChange={(e) => setUnitPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none font-mono"
-                  />
+            <>
+              {/* Go4WorldBusiness Community Warning */}
+              <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-amber-950 text-xs flex items-start gap-2.5">
+                <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-1 leading-relaxed">
+                  <span className="font-bold block">
+                    (Note: Free leads are unvetted community inquiries—deals &amp; buyer legitimacy are not guaranteed).
+                  </span>
+                  <p className="text-[11px] text-amber-900/90 font-normal">
+                    Always conduct due diligence and request Letters of Credit (L/C) or Trade Assurance escrow before dispatching containerized cargo.
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Your Direct Proposal &amp; Terms
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  value={pitchMessage}
-                  onChange={(e) => setPitchMessage(e.target.value)}
-                  className="w-full p-3 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none leading-relaxed"
-                />
-              </div>
+              {/* Unmasked Buyer Contact Info for free community leads */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">
+                  Direct Contact Details (Unlocked with Daily Free Credit)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-400">Buyer Company</div>
+                      <div className="font-bold text-slate-800 truncate">{rfq.buyerCompany}</div>
+                    </div>
+                  </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                <a
-                  href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${whatsappText}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4 text-emerald-600" />
-                  <span>Direct WhatsApp Pitch</span>
-                </a>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-400">Buyer Direct Email</div>
+                      <div className="font-mono font-bold text-slate-800 truncate">
+                        {rfq.buyerEmail || `${rfq.buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '')}@procurement.com`}
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send Free Direct Pitch</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-slate-400">Telephone / WhatsApp</div>
+                      <div className="font-mono font-bold text-slate-800 truncate">
+                        {rfq.buyerPhone || '+1 (555) 382-9901'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </form>
+
+              {isSent ? (
+                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-black text-emerald-900">Direct Pitch Dispatched!</h3>
+                  <p className="text-xs text-emerald-800 max-w-md mx-auto leading-relaxed">
+                    Your direct factory proposal was routed to the procurement department of <strong>{rfq.buyerCompany}</strong>. You can also follow up via direct WhatsApp or email.
+                  </p>
+
+                  <div className="pt-3 flex flex-wrap justify-center gap-3">
+                    <a
+                      href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${whatsappText}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Follow Up on WhatsApp</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSendPitch} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Your Factory / Trading Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={supplierCompany}
+                        onChange={(e) => setSupplierCompany(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                        Your Quoted Price ({curr.symbol} / {rfq.quantityUnit})
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        required
+                        value={unitPrice}
+                        onChange={(e) => setUnitPrice(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Your Direct Proposal &amp; Terms
+                    </label>
+                    <textarea
+                      rows={4}
+                      required
+                      value={pitchMessage}
+                      onChange={(e) => setPitchMessage(e.target.value)}
+                      className="w-full p-3 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                    <a
+                      href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${whatsappText}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 text-emerald-600" />
+                      <span>Direct WhatsApp Pitch</span>
+                    </a>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Free Direct Pitch</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </>
           )}
 
           {/* Upgrade Prompt Footer */}

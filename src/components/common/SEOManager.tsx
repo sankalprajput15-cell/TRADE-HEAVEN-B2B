@@ -190,6 +190,13 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
         keywords="Trade Heaven refund policy, escrow dispute resolution terms, supplier cancellation policy, investigation-based refund conditions, inspection failure claims, trade assurance refund terms"
         canonicalUrl="https://tradeheaven.net/?view=REFUND_POLICY"
       />;
+    case 'TRADE_ASSURANCE_CERTIFICATE':
+      return <SEO 
+        title="Trade Assurance Certificate Registry & Verification | Trade Heaven"
+        description="Request an official Trade Heaven Trade Assurance Certificate ($150k–$2M USD escrow coverage) by paying annual audit fees, or verify any certificate serial number online."
+        keywords="Trade Heaven Trade Assurance Certificate, verify trade assurance certificate number, THC-2026 certificate lookup, apply for trade assurance certificate, B2B escrow protection certificate, SGS factory audit certificate, TradeHeaven certificate verification, supplier compliance credential"
+        canonicalUrl="https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE"
+      />;
     default:
       return <SEO />;
   }

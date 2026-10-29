@@ -53,6 +53,7 @@ import { CATEGORIES_TREE, MOCK_RFQS } from '../../data/mockData';
 import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { Product, RfqRequirement } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
 
 export type QuickFilterMode = 'ALL' | 'PRODUCTS' | 'SUPPLIERS' | 'RFQ_LEADS';
 
@@ -270,8 +271,8 @@ export const SearchRegistrationGate: React.FC<SearchRegistrationGateProps> = ({
       companyName: 'Titan Global Imports Pvt Ltd',
       country: 'India',
       isVerified: true,
-      isPremium: true,
-      membershipStatus: 'paid' as const,
+      isPremium: false,
+      membershipStatus: 'free' as const,
       status: 'ACTIVE' as const
     };
     setCurrentUser(demoUser);
@@ -324,18 +325,6 @@ export const SearchRegistrationGate: React.FC<SearchRegistrationGateProps> = ({
             <span>Sign In</span>
           </button>
 
-          <button
-            type="button"
-            data-testid="panel-demo-login-btn"
-            onClick={handleQuickDemo}
-            onMouseDown={handleQuickDemo}
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
-            title="Instantly sign in as a demo buyer to test search and quick filters"
-          >
-            <Zap className="w-4 h-4 text-slate-950 fill-slate-950" />
-            <span>1-Click Demo Buyer Access</span>
-          </button>
-
           {onClearSearch && cleanQuery && (
             <button
               type="button"
@@ -360,85 +349,97 @@ export const SearchRegistrationGate: React.FC<SearchRegistrationGateProps> = ({
   return (
     <div
       id="search-dropdown-registration-gate"
-      className="p-5 sm:p-6 bg-white text-center space-y-4"
+      className="p-4 sm:p-5 bg-gradient-to-b from-amber-50/70 via-white to-white border-b border-slate-200 text-center space-y-3.5 overscroll-contain"
     >
-      <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
-        <Lock className="w-5 h-5" />
+      <div className="flex items-center justify-between gap-2 bg-amber-100/80 border border-amber-300 rounded-xl px-3 py-1.5 max-w-md mx-auto">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+          <span className="text-[10px] sm:text-[11px] font-black text-amber-950 uppercase tracking-wide truncate">
+            Verified Member Directory Protection
+          </span>
+        </div>
+        <span className="text-[9px] sm:text-[10px] font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-full shrink-0">
+          Free B2B Registration
+        </span>
       </div>
 
-      <div className="space-y-1.5">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full inline-block border border-amber-200/80">
-          Registration Required
-        </div>
-        <div className="text-sm font-black text-slate-900">
+      <div className="space-y-1">
+        <div className="text-xs sm:text-sm font-black text-slate-900 leading-snug">
           {cleanQuery
-            ? `Search Results for "${cleanQuery}" Are Protected`
-            : 'Marketplace Search is Protected for Registered Members'}
+            ? `Verified Member Contacts for "${cleanQuery}" Are Protected`
+            : 'Register Free to Access Verified Supplier & Buyer Contacts'}
         </div>
-        <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-          Sign in or create a free Trade Heaven corporate account to unlock verified manufacturers, live pricing tiers, and RFQ leads.
+        <p className="text-[11px] text-slate-600 max-w-md mx-auto leading-relaxed">
+          Product categories and general trade listings can be browsed freely below. Register your free Trade Heaven account to unlock verified phone numbers, direct email, and priority trade leads.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+      {/* Prominent Action-Oriented Primary Registration Button */}
+      <div className="pt-0.5">
         <button
           type="button"
           data-testid="gate-register-btn"
           onClick={handleRegister}
           onMouseDown={handleRegister}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+          className="w-full max-w-md mx-auto group px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-xs sm:text-sm inline-flex items-center justify-center gap-3 shadow-md shadow-blue-600/25 transition-all transform hover:scale-[1.01] active:scale-[0.99] cursor-pointer ring-2 ring-blue-500/20"
+          title="Open registration modal to create your free Trade Heaven account in 30 seconds"
         >
-          <UserPlus className="w-3.5 h-3.5" />
-          <span>Register Free to Unlock</span>
+          <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+            <UserPlus className="w-4 h-4 text-white" />
+          </div>
+          <div className="text-left flex-1 min-w-0">
+            <div className="text-xs sm:text-sm font-black leading-tight flex items-center gap-1.5">
+              <span>Register Free to Unlock Verified Contacts</span>
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-400 text-slate-950">
+                Fast 30s
+              </span>
+            </div>
+            <div className="text-[10px] text-blue-100 font-normal truncate">
+              Access verified supplier contacts, direct WhatsApp &amp; global trade leads
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-1" />
         </button>
+      </div>
 
+      {/* 3-Pillar Fast Onboarding Highlights */}
+      <div className="grid grid-cols-3 gap-2 max-w-md mx-auto text-left pt-0.5">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-center">
+          <div className="text-[10px] font-bold text-slate-900 flex items-center justify-center gap-1">
+            <Zap className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
+            <span className="truncate">Instant Access</span>
+          </div>
+          <div className="text-[9px] text-slate-500 truncate">Zero approval delay</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-center">
+          <div className="text-[10px] font-bold text-slate-900 flex items-center justify-center gap-1">
+            <Building2 className="w-3 h-3 text-blue-600 shrink-0" />
+            <span className="truncate">Verified Exporters</span>
+          </div>
+          <div className="text-[9px] text-slate-500 truncate">Direct factory contacts</div>
+        </div>
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-center">
+          <div className="text-[10px] font-bold text-slate-900 flex items-center justify-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+            <span className="truncate">100% Free</span>
+          </div>
+          <div className="text-[9px] text-slate-500 truncate">No credit card needed</div>
+        </div>
+      </div>
+
+      {/* Secondary Quick Action Row: Sign In */}
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 border-t border-slate-100">
+        <span className="text-[11px] text-slate-500 font-medium">Already registered?</span>
         <button
           type="button"
           data-testid="gate-login-btn"
           onClick={handleLogin}
           onMouseDown={handleLogin}
-          className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-3 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <LogIn className="w-3.5 h-3.5" />
+          <LogIn className="w-3 h-3" />
           <span>Sign In</span>
         </button>
-
-        <button
-          type="button"
-          data-testid="gate-demo-login-btn"
-          onClick={handleQuickDemo}
-          onMouseDown={handleQuickDemo}
-          className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-          title="Instantly sign in as a demo buyer to test search and quick filters"
-        >
-          <Zap className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
-          <span>1-Click Demo Access</span>
-        </button>
-
-        {onPreview && (
-          <button
-            type="button"
-            data-testid="gate-preview-btn"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onPreview();
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onPreview();
-            }}
-            className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80"
-          >
-            <span>Preview Results</span>
-          </button>
-        )}
-      </div>
-
-      <div className="pt-2.5 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
-        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-        <span>Instant verification · Zero registration fee · Free access</span>
       </div>
     </div>
   );
@@ -1141,7 +1142,7 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
                             <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                           </div>
                           <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5">
-                            {supp.contactPerson && (
+                            {isPaidMemberUser(currentUser) && supp.contactPerson && (
                               <>
                                 <span className="text-slate-700">
                                   <HighlightedMatch text={supp.contactPerson} query={trimmed} />
@@ -1208,7 +1209,12 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
                           </div>
                           <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5">
                             <span>
-                              Buyer: <HighlightedMatch text={rfq.buyerCompany} query={trimmed} />
+                              Buyer:{' '}
+                              {isPaidMemberUser(currentUser) || !isPaidEntity(rfq) ? (
+                                <HighlightedMatch text={rfq.buyerCompany} query={trimmed} />
+                              ) : (
+                                <span className="text-amber-700 font-semibold">Protected Paid Member</span>
+                              )}
                             </span>
                             <span aria-hidden="true">·</span>
                             <span>{rfq.buyerCountry}</span>

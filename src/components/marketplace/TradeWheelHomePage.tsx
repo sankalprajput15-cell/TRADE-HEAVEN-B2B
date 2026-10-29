@@ -36,6 +36,8 @@ import {
   X
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
+import { securityService } from '../../services/securityService';
+import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
 
 interface Props {
   products: Product[];
@@ -83,9 +85,17 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const [activeMobileNav, setActiveMobileNav] = React.useState<'HOME' | 'SEARCH' | 'RFQS' | 'DASHBOARD'>('HOME');
   const mobileSearchInputRef = React.useRef<HTMLInputElement>(null);
 
-  const activeRfqsPool = rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS;
+  const isUserPaidMember = isPaidMemberUser(currentUser);
+  const activeRfqsPool = React.useMemo(
+    () => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r => securityService.gateRfqRequirement(r, currentUser)),
+    [rfqs, currentUser]
+  );
   const displayedRfqs = activeRfqsPool.slice(0, 12);
-  const displayedCompanies = showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6);
+  const gatedCompanies = React.useMemo(
+    () => MOCK_COMPANIES.map(c => securityService.gateCompanyProfile(c, currentUser)),
+    [currentUser]
+  );
+  const displayedCompanies = showAllSuppliers ? gatedCompanies : gatedCompanies.slice(0, 6);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -270,8 +280,24 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </button>
         </div>
 
+        {!isUserPaidMember && (
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="font-semibold">
+                Paid Members&apos; Direct Factory Contact Data, Liaison Officers, Phones, Emails &amp; Street Addresses are Strictly Protected.
+              </span>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-200/80 text-amber-950 shrink-0">
+              Paid Members Only
+            </span>
+          </div>
+        )}
+
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5">
-          {displayedCompanies.map((company, index) => (
+          {displayedCompanies.map((company, index) => {
+            const paidSupplier = isPaidEntity(company);
+            return (
             <div
               key={company.id || index}
               onClick={() => onOpenStorefront(company.id)}
@@ -286,7 +312,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                     fetchPriority="high"
                   />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                         {company.tier}
                       </span>
@@ -318,6 +344,26 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Gated Contact Status Bar */}
+                <div className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-[10px]">
+                  <span className="text-slate-600 font-semibold truncate">
+                    {isUserPaidMember
+                      ? (company.contactPerson ? `Liaison: ${company.contactPerson}` : 'Direct Factory Contact')
+                      : 'Direct Contact & Address'}
+                  </span>
+                  {isUserPaidMember ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                      <span>Unlocked</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
+                      <Lock className="w-2.5 h-2.5 text-amber-600" />
+                      <span>{paidSupplier ? 'Paid Members Only' : 'Gated'}</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-semibold">
@@ -325,7 +371,8 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Section 4 Footer Toggle */}

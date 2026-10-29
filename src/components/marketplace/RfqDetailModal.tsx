@@ -32,7 +32,7 @@ import {
   UserPlus,
   Share2
 } from 'lucide-react';
-import { isRfqClaimedFree, claimDailyFreeLead, getFreeLeadStatus, FreeLeadState } from '../../services/freeLeadService';
+import { isRfqClaimedFree, claimDailyFreeLead, getFreeLeadStatus, FreeLeadState, isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
 import { PitchBuyerModal } from './PitchBuyerModal';
 
 interface Props {
@@ -74,6 +74,8 @@ export const RfqDetailModal: React.FC<Props> = ({
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [showPitchModal, setShowPitchModal] = useState(false);
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
+  const isPaidLead = isPaidEntity(rfq);
+  const isCallerPaid = isPaidMemberUser(currentUser);
   const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
 
   // Sync activeTab to URL rfqTab parameter
@@ -415,35 +417,30 @@ export const RfqDetailModal: React.FC<Props> = ({
 
                   {/* Gated Contacts / Unmasked Free Lead Contacts */}
                   <div>
-                    {!isClaimed && !currentUser && (
-                      <div className="mb-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-slate-800 space-y-2 shadow-2xs">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 text-xs font-black text-amber-950">
-                            <Zap className="w-3.5 h-3.5 text-amber-700 fill-amber-700" />
-                            <span>1 Free Buy Order Available</span>
-                          </div>
-                          <span className="text-[10px] font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full">
-                            Free Member Benefit
+                    {isPaidLead && !isCallerPaid ? (
+                      <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-amber-400/50 space-y-3 shadow-md text-xs">
+                        <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
+                          <span className="flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Paid Member Information Protected</span>
+                          </span>
+                          <span className="font-mono text-[9px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded font-black border border-amber-400/30">
+                            Paid Plans Only
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                          Register as a free member on the Trade Heaven portal to claim this buy order and unmask direct buyer contact channels at zero cost.
+                        <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                          This buyer is a verified paid member. By platform policy, unpaid members cannot access contact details of paid suppliers, buyers, or users using free daily credits. Upgrade to a paid plan to unlock direct contact and export channels.
                         </p>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (onOpenRegisterFree) onOpenRegisterFree();
-                            else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
-                          }}
-                          className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 animate-scale-pulse"
+                          onClick={() => onOpenUpgradeModal?.()}
+                          className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
                         >
-                          <UserPlus className="w-3.5 h-3.5 text-slate-950" />
-                          <span>Register Free to Claim &amp; Unmask</span>
+                          <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                          <span>Upgrade to Paid Plan to View Paid Buyer</span>
                         </button>
                       </div>
-                    )}
-
-                    {isClaimed ? (
+                    ) : isClaimed ? (
                       <div className="space-y-1.5 text-xs text-slate-800 bg-amber-50/90 p-3.5 rounded-xl border border-amber-300 shadow-2xs">
                         <div className="flex items-center justify-between text-[10px] font-black text-amber-950 pb-1 border-b border-amber-200">
                           <span className="flex items-center gap-1">
@@ -465,27 +462,57 @@ export const RfqDetailModal: React.FC<Props> = ({
                         </div>
                       </div>
                     ) : (
-                      <PremiumContactGate
-                        currentUser={currentUser}
-                        onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
-                        isMasked={Boolean(rfq.isContactMasked)}
-                        resourceTitle="Buyer Direct Procurement Desk"
-                      >
-                        <div className="space-y-1.5 text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
-                          <div><strong>Contact Officer:</strong> {rfq.buyerName || 'Contact Representative'}</div>
-                          <div className="flex items-center flex-wrap gap-1">
-                            <strong>Email:</strong> 
-                            {rfq.buyerEmail ? (
-                              <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
-                            ) : (
-                              <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
-                                Contact via Trade Heaven
-                              </a>
-                            )}
+                      <>
+                        {!currentUser && (
+                          <div className="mb-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-slate-800 space-y-2 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 text-xs font-black text-amber-950">
+                                <Zap className="w-3.5 h-3.5 text-amber-700 fill-amber-700" />
+                                <span>1 Free Buy Order Available</span>
+                              </div>
+                              <span className="text-[10px] font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full">
+                                Free Member Benefit
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                              Register as a free member on the Trade Heaven portal to claim this community buy order and unmask direct buyer contact channels at zero cost.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onOpenRegisterFree) onOpenRegisterFree();
+                                else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
+                              }}
+                              className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 animate-scale-pulse"
+                            >
+                              <UserPlus className="w-3.5 h-3.5 text-slate-950" />
+                              <span>Register Free to Claim &amp; Unmask</span>
+                            </button>
                           </div>
-                          <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
-                        </div>
-                      </PremiumContactGate>
+                        )}
+                        <PremiumContactGate
+                          currentUser={currentUser}
+                          onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                          isMasked={Boolean(rfq.isContactMasked)}
+                          paidMembersOnly={isPaidLead}
+                          resourceTitle={isPaidLead ? "Paid Member Protected Desk Contact" : "Buyer Direct Procurement Desk"}
+                        >
+                          <div className="space-y-1.5 text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
+                            <div><strong>Contact Officer:</strong> {rfq.buyerName || 'Contact Representative'}</div>
+                            <div className="flex items-center flex-wrap gap-1">
+                              <strong>Email:</strong> 
+                              {rfq.buyerEmail ? (
+                                <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
+                              ) : (
+                                <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
+                                  Contact via Trade Heaven
+                                </a>
+                              )}
+                            </div>
+                            <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
+                          </div>
+                        </PremiumContactGate>
+                      </>
                     )}
                   </div>
                 </div>
@@ -788,7 +815,17 @@ export const RfqDetailModal: React.FC<Props> = ({
             )}
 
             {/* 1 Free Buy Order Direct Pitch / Claim Action */}
-            {isClaimed ? (
+            {isPaidLead && !isCallerPaid ? (
+              <button
+                type="button"
+                onClick={onOpenUpgradeModal}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-400 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="This lead belongs to a verified paid member. Upgrade to unlock."
+              >
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>🔒 Paid Member Order (Upgrade to Unlock)</span>
+              </button>
+            ) : isClaimed ? (
               <button
                 type="button"
                 onClick={() => setShowPitchModal(true)}
@@ -813,13 +850,13 @@ export const RfqDetailModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => {
-                  claimDailyFreeLead(rfq.id);
+                  claimDailyFreeLead(rfq.id, rfq, currentUser);
                   setShowPitchModal(true);
                 }}
                 className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
               >
                 <Zap className="w-4 h-4 text-amber-700 fill-amber-700" />
-                <span>⚡ Claim 1 Free Buy Order to Pitch</span>
+                <span>⚡ Claim 1 Free Community Order to Pitch</span>
               </button>
             ) : null}
 

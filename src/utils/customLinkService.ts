@@ -132,7 +132,13 @@ export const VIEW_ALIASES: Record<string, ActiveView> = {
   wallets: 'MEDIATOR_ENGINE',
   'direct-transfer-guide': 'DIRECT_TRANSFER_GUIDE',
   'payment-guide': 'DIRECT_TRANSFER_GUIDE',
-  'transfer-guide': 'DIRECT_TRANSFER_GUIDE'
+  'transfer-guide': 'DIRECT_TRANSFER_GUIDE',
+  'trade-assurance-certificate': 'TRADE_ASSURANCE_CERTIFICATE',
+  'trade-assurance': 'TRADE_ASSURANCE_CERTIFICATE',
+  'trade-protection': 'TRADE_ASSURANCE_CERTIFICATE',
+  certificate: 'TRADE_ASSURANCE_CERTIFICATE',
+  'verify-certificate': 'TRADE_ASSURANCE_CERTIFICATE',
+  'certificate-verification': 'TRADE_ASSURANCE_CERTIFICATE'
 };
 
 /**

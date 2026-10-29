@@ -13,7 +13,7 @@ import {
   UserPlus,
   UserCheck
 } from 'lucide-react';
-import { getFreeLeadStatus, FreeLeadState, claimDailyFreeLead } from '../../services/freeLeadService';
+import { getFreeLeadStatus, FreeLeadState, claimDailyFreeLead, isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
 import { RfqRequirement, AuthUser } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
@@ -65,6 +65,8 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
     }
   };
 
+  const isFeaturedPaid = Boolean(featuredRfq && isPaidEntity(featuredRfq));
+
   const handleQuickClaimFeatured = () => {
     if (!isAuthenticated) {
       handleOpenRegister();
@@ -72,7 +74,11 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
     }
 
     if (featuredRfq && status.canClaim) {
-      const nextState = claimDailyFreeLead(featuredRfq.id);
+      if (isFeaturedPaid && !isPaidMember) {
+        if (onUpgradeToPlans) onUpgradeToPlans();
+        return;
+      }
+      const nextState = claimDailyFreeLead(featuredRfq.id, featuredRfq, currentUser);
       setStatus(nextState);
       if (onClaimLead) {
         onClaimLead(featuredRfq);
@@ -80,23 +86,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
     }
   };
 
-  const isPaidMember = Boolean(
-    currentUser && (
-      currentUser.role === 'ADMIN' ||
-      currentUser.isVerifiedAdmin === true ||
-      currentUser.isPremium === true ||
-      currentUser.membershipStatus === 'paid' ||
-      (currentUser.membershipStatus as string) === 'basic' ||
-      String(currentUser.tier || '').toLowerCase().includes('basic') ||
-      String(currentUser.tier || '').toLowerCase().includes('vip') ||
-      String(currentUser.tier || '').toLowerCase().includes('gold') ||
-      String(currentUser.tier || '').toLowerCase().includes('paid') ||
-      String(currentUser.tier || '').toLowerCase().includes('enterprise') ||
-      String(currentUser.tier || '').toLowerCase().includes('establishment') ||
-      String(currentUser.tier || '').toLowerCase().includes('featured') ||
-      (currentUser.plan && !String(currentUser.plan).toLowerCase().includes('free'))
-    )
-  );
+  const isPaidMember = isPaidMemberUser(currentUser);
 
   if (isPaidMember) {
     return null;
@@ -168,7 +158,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
         <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
           <p className="font-semibold leading-relaxed">
-            (Note: Free buy orders are accessible only after registering as a free member on the portal. Inquiries are unvetted community requests—deals &amp; buyer legitimacy are not guaranteed).
+            (Note: Free buy orders are accessible only after registering as a free member on the portal. Inquiries are unvetted community requests—deals &amp; buyer legitimacy are not guaranteed. Information of paid suppliers, buyers, and users is strictly protected and cannot be accessed by unpaid members).
           </p>
         </div>
 
@@ -187,7 +177,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
               ) : status.canClaim ? (
                 <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Your 24-Hour Free Buy Order Pass is Active! Click any tender card below to claim &amp; unlock contact info.</span>
+                  <span>Your 24-Hour Free Buy Order Pass is Active! Click any free tender card below to claim &amp; unlock contact info.</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
@@ -213,14 +203,26 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
                 <span>Register Free to Claim Buy Order</span>
               </button>
             ) : status.canClaim && featuredRfq ? (
-              <button
-                type="button"
-                onClick={handleQuickClaimFeatured}
-                className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                <Zap className="w-3.5 h-3.5 fill-slate-950" />
-                <span>Claim Top Buy Order: #{featuredRfq.id}</span>
-              </button>
+              isFeaturedPaid && !isPaidMember ? (
+                <button
+                  type="button"
+                  onClick={() => onUpgradeToPlans?.()}
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  title="This lead is from a verified paid member. Upgrade to unlock paid member data."
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Paid Member Order: Upgrade to Unlock (#{featuredRfq.id})</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleQuickClaimFeatured}
+                  className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-slate-950" />
+                  <span>Claim Top Free Order: #{featuredRfq.id}</span>
+                </button>
+              )
             ) : null}
 
             {isAuthenticated && !status.canClaim && status.claimedRfqId && onSelectClaimedRfq ? (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { RfqRequirement, Currency, AuthUser } from '../../types';
+import { RfqRequirement, Currency, AuthUser, ActiveView } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
@@ -32,7 +32,11 @@ import {
   Tag,
   X,
   Package,
-  Share2
+  Share2,
+  CheckCircle2,
+  DollarSign,
+  Bookmark,
+  BookmarkCheck
 } from 'lucide-react';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
@@ -40,7 +44,9 @@ import { DailyFreeLeadBanner } from '../marketplace/DailyFreeLeadBanner';
 import { PitchBuyerModal } from '../marketplace/PitchBuyerModal';
 import { PaginationControls } from '../common/PaginationControls';
 import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
-import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState } from '../../services/freeLeadService';
+import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState, isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
+import { LeadAccessValueModal } from '../marketplace/LeadAccessValueModal';
+import { getSavedLeadIds, toggleSaveLead, subscribeToSavedLeads } from '../../services/savedLeadsService';
 
 interface Props {
   selectedCurrency: Currency;
@@ -49,6 +55,7 @@ interface Props {
   currentUser?: AuthUser | null;
   onOpenUpgradeModal?: () => void;
   onOpenRegisterFree?: () => void;
+  onNavigate?: (view: ActiveView) => void;
 }
 
 const QUICK_SEARCH_CHIPS = [
@@ -67,24 +74,69 @@ const QUICK_SEARCH_CHIPS = [
   'Lithium Battery'
 ];
 
+export const BUDGET_RANGES = [
+  { id: 'ALL', label: 'All Budgets (Any Deal Size)' },
+  { id: 'UNDER_25K', label: 'Under $25,000' },
+  { id: '25K_100K', label: '$25,000 – $100,000' },
+  { id: '100K_500K', label: '$100,000 – $500,000' },
+  { id: '500K_2M', label: '$500,000 – $2,000,000' },
+  { id: 'OVER_2M', label: 'Over $2,000,000 (Mega Tenders)' },
+  { id: 'CUSTOM', label: 'Custom Range...' }
+] as const;
+
 export const BuyLeadsView: React.FC<Props> = ({
   selectedCurrency,
   onSelectRfq,
   onOpenCreateRfq,
   currentUser = null,
   onOpenUpgradeModal,
-  onOpenRegisterFree
+  onOpenRegisterFree,
+  onNavigate
 }) => {
   const [itemsPerPage, setItemsPerPage] = useState(18);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [selectedCountry, setSelectedCountry] = useState('ALL');
+  const [selectedBudgetRange, setSelectedBudgetRange] = useState<string>('ALL');
+  const [minBudget, setMinBudget] = useState('');
+  const [maxBudget, setMaxBudget] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'bids' | 'volume' | 'price-high' | 'price-low'>('newest');
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pitchRfq, setPitchRfq] = useState<RfqRequirement | null>(null);
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
+  const [leadAccessModalRfq, setLeadAccessModalRfq] = useState<RfqRequirement | null>(null);
+  const [isLeadAccessModalOpen, setIsLeadAccessModalOpen] = useState(false);
+
+  const handleOpenLeadAccessModal = (rfq: RfqRequirement) => {
+    setLeadAccessModalRfq(rfq);
+    setIsLeadAccessModalOpen(true);
+  };
+
+  const handleProceedToPremiumServices = () => {
+    setIsLeadAccessModalOpen(false);
+    if (onNavigate) {
+      onNavigate('PREMIUM_SERVICES');
+    } else if (onOpenUpgradeModal) {
+      onOpenUpgradeModal();
+    }
+  };
+
+  const [savedLeadIds, setSavedLeadIds] = useState<string[]>(() => 
+    getSavedLeadIds(currentUser?.email)
+  );
+
+  useEffect(() => {
+    setSavedLeadIds(getSavedLeadIds(currentUser?.email));
+    const unsub = subscribeToSavedLeads((ids) => setSavedLeadIds(ids));
+    return () => unsub();
+  }, [currentUser?.email]);
+
+  const handleToggleSaveLead = (rfq: RfqRequirement) => {
+    toggleSaveLead(rfq, currentUser?.email);
+  };
 
   useEffect(() => {
     const handleFreeLeadUpdated = () => {
@@ -102,7 +154,13 @@ export const BuyLeadsView: React.FC<Props> = ({
       else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
       return;
     }
-    const updated = claimDailyFreeLead(rfq.id);
+    const isPaidLead = isPaidEntity(rfq);
+    const isCallerPaid = isPaidMemberUser(currentUser);
+    if (isPaidLead && !isCallerPaid) {
+      if (onOpenUpgradeModal) onOpenUpgradeModal();
+      return;
+    }
+    const updated = claimDailyFreeLead(rfq.id, rfq, currentUser);
     setFreeLeadStatus(updated);
     setPitchRfq(rfq);
   };
@@ -160,6 +218,50 @@ export const BuyLeadsView: React.FC<Props> = ({
     return ['ALL', ...Array.from(set)];
   }, [rfqs]);
 
+  // Dynamic Country List & Counts
+  const countries = useMemo(() => {
+    const set = new Set<string>();
+    rfqs.forEach(r => {
+      if (r.buyerCountry && r.buyerCountry.trim()) {
+        set.add(r.buyerCountry.trim());
+      }
+    });
+    return ['ALL', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [rfqs]);
+
+  const countryCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: rfqs.length };
+    rfqs.forEach(r => {
+      if (r.buyerCountry && r.buyerCountry.trim()) {
+        const c = r.buyerCountry.trim();
+        counts[c] = (counts[c] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [rfqs]);
+
+  // Helper to compute total deal value in USD
+  const getDealBudgetUsd = (r: RfqRequirement): number => {
+    if (r.targetPriceUsd && r.targetQuantity) {
+      return r.targetPriceUsd * r.targetQuantity;
+    }
+    return r.targetPriceUsd || 0;
+  };
+
+  // Dynamic Budget Range Counts
+  const budgetCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: rfqs.length };
+    rfqs.forEach(r => {
+      const val = getDealBudgetUsd(r);
+      if (val > 0 && val < 25000) counts['UNDER_25K'] = (counts['UNDER_25K'] || 0) + 1;
+      else if (val >= 25000 && val <= 100000) counts['25K_100K'] = (counts['25K_100K'] || 0) + 1;
+      else if (val >= 100000 && val <= 500000) counts['100K_500K'] = (counts['100K_500K'] || 0) + 1;
+      else if (val >= 500000 && val <= 2000000) counts['500K_2M'] = (counts['500K_2M'] || 0) + 1;
+      else if (val > 2000000) counts['OVER_2M'] = (counts['OVER_2M'] || 0) + 1;
+    });
+    return counts;
+  }, [rfqs]);
+
   // Robust multi-token filtering & sorting
   const filtered = useMemo(() => {
     let list = [...rfqs];
@@ -189,8 +291,40 @@ export const BuyLeadsView: React.FC<Props> = ({
       });
     }
 
+    // Category filter
     if (selectedCategory !== 'ALL') {
       list = list.filter(r => (r.category || '').toLowerCase() === selectedCategory.toLowerCase());
+    }
+
+    // Country filter
+    if (selectedCountry !== 'ALL') {
+      list = list.filter(r => (r.buyerCountry || '').trim().toLowerCase() === selectedCountry.trim().toLowerCase());
+    }
+
+    // Budget range filter
+    if (selectedBudgetRange !== 'ALL') {
+      list = list.filter(r => {
+        const val = getDealBudgetUsd(r);
+        switch (selectedBudgetRange) {
+          case 'UNDER_25K':
+            return val > 0 && val < 25000;
+          case '25K_100K':
+            return val >= 25000 && val <= 100000;
+          case '100K_500K':
+            return val >= 100000 && val <= 500000;
+          case '500K_2M':
+            return val >= 500000 && val <= 2000000;
+          case 'OVER_2M':
+            return val > 2000000;
+          case 'CUSTOM': {
+            const minVal = minBudget !== '' ? parseFloat(minBudget) : 0;
+            const maxVal = maxBudget !== '' ? parseFloat(maxBudget) : Infinity;
+            return val >= minVal && val <= maxVal;
+          }
+          default:
+            return true;
+        }
+      });
     }
 
     if (urgentOnly) {
@@ -211,12 +345,11 @@ export const BuyLeadsView: React.FC<Props> = ({
     }
 
     return list;
-  }, [rfqs, searchTerm, selectedCategory, urgentOnly, sortBy, curr]);
+  }, [rfqs, searchTerm, selectedCategory, selectedCountry, selectedBudgetRange, minBudget, maxBudget, urgentOnly, sortBy, curr]);
 
-  
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory, urgentOnly, sortBy]);
+  }, [searchTerm, selectedCategory, selectedCountry, selectedBudgetRange, minBudget, maxBudget, urgentOnly, sortBy]);
   
   const isUserPremium = currentUser?.role === 'ADMIN' || currentUser?.isPremium === true;
 
@@ -224,11 +357,23 @@ export const BuyLeadsView: React.FC<Props> = ({
     setCurrentPage(1);
     setSearchTerm('');
     setSelectedCategory('ALL');
+    setSelectedCountry('ALL');
+    setSelectedBudgetRange('ALL');
+    setMinBudget('');
+    setMaxBudget('');
     setUrgentOnly(false);
     setSortBy('newest');
   };
 
-  const hasActiveFilters = searchTerm.trim() !== '' || selectedCategory !== 'ALL' || urgentOnly || sortBy !== 'newest';
+  const hasActiveFilters = 
+    searchTerm.trim() !== '' || 
+    selectedCategory !== 'ALL' || 
+    selectedCountry !== 'ALL' || 
+    selectedBudgetRange !== 'ALL' || 
+    minBudget !== '' || 
+    maxBudget !== '' || 
+    urgentOnly || 
+    sortBy !== 'newest';
 
   
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -252,6 +397,22 @@ export const BuyLeadsView: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate('DASHBOARD');
+                window.dispatchEvent(new CustomEvent('tradeheaven_open_dashboard_tab', { detail: { tab: 'SAVED_LEADS' } }));
+                window.dispatchEvent(new CustomEvent('tradeheaven_dashboard_tab', { detail: { tab: 'SAVED_LEADS' } }));
+              }}
+              className="px-4 py-3 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold text-xs flex items-center gap-2 border border-amber-300 transition-all cursor-pointer shadow-2xs"
+              title="Open your bookmarked saved leads in the Dashboard"
+            >
+              <Bookmark className={`w-4 h-4 ${savedLeadIds.length > 0 ? 'text-amber-600 fill-amber-500' : 'text-amber-600'}`} />
+              <span>Saved Leads ({savedLeadIds.length})</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -286,7 +447,7 @@ export const BuyLeadsView: React.FC<Props> = ({
       {/* 1 Free Buy Order Daily Banner */}
       <DailyFreeLeadBanner
         onUpgradeToPlans={onOpenUpgradeModal}
-        featuredRfq={filtered[0] || rfqs[0] || null}
+        featuredRfq={filtered.find(r => !isPaidEntity(r)) || rfqs.find(r => !isPaidEntity(r)) || null}
         onClaimLead={handleClaimLead}
         currentUser={currentUser}
         onOpenRegisterFree={onOpenRegisterFree}
@@ -380,6 +541,282 @@ export const BuyLeadsView: React.FC<Props> = ({
             </button>
           </div>
         </div>
+
+        {/* Tier 1.5: Smart Sourcing Filter Matrix (Country, Category, Budget Range) */}
+        <div className="pt-3 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* 1. Buyer Country Filter */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="buy-leads-country-filter" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Globe2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Buyer Country:</span>
+              </span>
+              {selectedCountry !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCountry('ALL')}
+                  className="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </label>
+            <div className="relative">
+              <select
+                id="buy-leads-country-filter"
+                value={selectedCountry}
+                onChange={e => setSelectedCountry(e.target.value)}
+                className={`w-full appearance-none pl-3 pr-8 py-2.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+                  selectedCountry !== 'ALL'
+                    ? 'bg-blue-50/70 border-blue-300 text-blue-900 shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <option value="ALL">All Countries / Global ({rfqs.length})</option>
+                {countries.filter(c => c !== 'ALL').map(country => (
+                  <option key={country} value={country}>
+                    {country} ({countryCounts[country] || 0})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Product Category Filter */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="buy-leads-category-filter" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Product Category:</span>
+              </span>
+              {selectedCategory !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('ALL')}
+                  className="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </label>
+            <div className="relative">
+              <select
+                id="buy-leads-category-filter"
+                value={selectedCategory}
+                onChange={e => setSelectedCategory(e.target.value)}
+                className={`w-full appearance-none pl-3 pr-8 py-2.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-100 ${
+                  selectedCategory !== 'ALL'
+                    ? 'bg-indigo-50/70 border-indigo-300 text-indigo-900 shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <option value="ALL">All Product Categories ({rfqs.length})</option>
+                {categories.filter(c => c !== 'ALL').map(cat => (
+                  <option key={cat} value={cat}>
+                    {cat} ({categoryCounts[cat] || 0})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Budget Range Filter */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="buy-leads-budget-filter" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Budget / Deal Size:</span>
+              </span>
+              {selectedBudgetRange !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBudgetRange('ALL');
+                    setMinBudget('');
+                    setMaxBudget('');
+                  }}
+                  className="text-[10px] font-bold text-rose-600 hover:underline cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </label>
+            <div className="relative">
+              <select
+                id="buy-leads-budget-filter"
+                value={selectedBudgetRange}
+                onChange={e => setSelectedBudgetRange(e.target.value)}
+                className={`w-full appearance-none pl-3 pr-8 py-2.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-100 ${
+                  selectedBudgetRange !== 'ALL'
+                    ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <option value="ALL">All Budgets ({rfqs.length})</option>
+                <option value="UNDER_25K">Under $25,000 ({budgetCounts['UNDER_25K'] || 0})</option>
+                <option value="25K_100K">$25,000 – $100,000 ({budgetCounts['25K_100K'] || 0})</option>
+                <option value="100K_500K">$100,000 – $500,000 ({budgetCounts['100K_500K'] || 0})</option>
+                <option value="500K_2M">$500,000 – $2,000,000 ({budgetCounts['500K_2M'] || 0})</option>
+                <option value="OVER_2M">Over $2,000,000 Mega Tenders ({budgetCounts['OVER_2M'] || 0})</option>
+                <option value="CUSTOM">Custom Range...</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Min/Max Budget Inputs (when CUSTOM is chosen) */}
+        {selectedBudgetRange === 'CUSTOM' && (
+          <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200 flex flex-wrap items-center gap-3 animate-in fade-in duration-200">
+            <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5 shrink-0">
+              <DollarSign className="w-4 h-4 text-emerald-700" />
+              <span>Custom Deal Budget Range (USD):</span>
+            </span>
+            <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                <input
+                  type="number"
+                  placeholder="Min Budget"
+                  value={minBudget}
+                  onChange={e => setMinBudget(e.target.value)}
+                  className="w-full bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl pl-6 pr-2 py-1.5 text-xs font-mono font-bold text-slate-900 focus:outline-none"
+                />
+              </div>
+              <span className="text-slate-400 text-xs font-bold">to</span>
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">$</span>
+                <input
+                  type="number"
+                  placeholder="Max Budget"
+                  value={maxBudget}
+                  onChange={e => setMaxBudget(e.target.value)}
+                  className="w-full bg-white border border-emerald-300 focus:border-emerald-500 rounded-xl pl-6 pr-2 py-1.5 text-xs font-mono font-bold text-slate-900 focus:outline-none"
+                />
+              </div>
+              {(minBudget || maxBudget) && (
+                <button
+                  type="button"
+                  onClick={() => { setMinBudget(''); setMaxBudget(''); }}
+                  className="px-2 py-1 text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline shrink-0 cursor-pointer"
+                >
+                  Clear Min/Max
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Active Filter Tags Bar (Shows when any filter is active) */}
+        {hasActiveFilters && (
+          <div className="pt-2 border-t border-slate-100 flex items-center gap-2 flex-wrap text-xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <Filter className="w-3 h-3 text-slate-400" />
+              <span>Active filters:</span>
+            </span>
+
+            {selectedCountry !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-100 text-blue-900 font-bold text-[11px] border border-blue-200">
+                <Globe2 className="w-3 h-3 text-blue-700" />
+                <span>Country: {selectedCountry}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCountry('ALL')}
+                  className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                  title="Remove Country Filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedCategory !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-100 text-indigo-900 font-bold text-[11px] border border-indigo-200">
+                <Package className="w-3 h-3 text-indigo-700" />
+                <span>Category: {selectedCategory}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('ALL')}
+                  className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                  title="Remove Category Filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedBudgetRange !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-900 font-bold text-[11px] border border-emerald-200">
+                <DollarSign className="w-3 h-3 text-emerald-700" />
+                <span>
+                  Budget:{' '}
+                  {selectedBudgetRange === 'CUSTOM'
+                    ? `$${minBudget || '0'} – $${maxBudget || '∞'}`
+                    : (BUDGET_RANGES.find(b => b.id === selectedBudgetRange)?.label || selectedBudgetRange)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBudgetRange('ALL');
+                    setMinBudget('');
+                    setMaxBudget('');
+                  }}
+                  className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                  title="Remove Budget Filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {urgentOnly && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-100 text-rose-900 font-bold text-[11px] border border-rose-200">
+                <Zap className="w-3 h-3 text-rose-600 fill-rose-600" />
+                <span>Urgent Only</span>
+                <button
+                  type="button"
+                  onClick={() => setUrgentOnly(false)}
+                  className="hover:text-rose-700 ml-0.5 cursor-pointer"
+                  title="Remove Urgent Filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {searchTerm.trim() !== '' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold text-[11px] border border-slate-200">
+                <Search className="w-3 h-3 text-slate-600" />
+                <span>Keyword: "{searchTerm.trim()}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="hover:text-rose-600 ml-0.5 cursor-pointer"
+                  title="Clear Keyword Search"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer ml-auto"
+            >
+              <X className="w-3 h-3" />
+              <span>Clear All ({filtered.length} matches)</span>
+            </button>
+          </div>
+        )}
 
         {/* Tier 2: Category Filter Horizontal Scrolling Pills */}
         <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
@@ -477,22 +914,36 @@ export const BuyLeadsView: React.FC<Props> = ({
         <EmptyState
           type="rfqs"
           title="No Active Buying Leads Found"
-          description={hasActiveFilters ? `No live buyer inquiries match "${searchTerm || selectedCategory}". Try clearing your search parameters or selecting "All Categories".` : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."}
+          description={
+            hasActiveFilters 
+              ? `No live buyer inquiries match your active filters (${[
+                  selectedCountry !== 'ALL' ? `Country: ${selectedCountry}` : null,
+                  selectedCategory !== 'ALL' ? `Category: ${selectedCategory}` : null,
+                  selectedBudgetRange !== 'ALL' ? `Budget: ${selectedBudgetRange === 'CUSTOM' ? `$${minBudget || '0'} – $${maxBudget || '∞'}` : (BUDGET_RANGES.find(b => b.id === selectedBudgetRange)?.label || selectedBudgetRange)}` : null,
+                  urgentOnly ? 'Urgent Tenders' : null,
+                  searchTerm.trim() ? `Keyword: "${searchTerm.trim()}"` : null
+                ].filter(Boolean).join(', ')}). Try adjusting or resetting your filter criteria.` 
+              : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."
+          }
           actionLabel="Clear All Search Filters"
           onAction={handleClearFilters}
         />
       ) : (
                 <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-            {currentItems.map(rfq => {
+            {currentItems.map((rfq, idx) => {
+              const isPaidLead = isPaidEntity(rfq);
+              const isCallerPaid = isPaidMemberUser(currentUser);
               const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
 
               return (
                 <div
                   key={rfq.id}
                   className={`bg-white border rounded-2xl p-5 transition-all flex flex-col justify-between h-full shadow-sm ${
-                    isClaimed
+                    isClaimed && !isPaidLead
                       ? 'border-amber-400 ring-2 ring-amber-300/40 hover:border-amber-500'
+                      : isPaidLead
+                      ? 'border-slate-800/80 hover:border-amber-500 hover:shadow-md'
                       : 'border-slate-200 hover:border-blue-500 hover:shadow-md'
                   }`}
                 >
@@ -508,10 +959,20 @@ export const BuyLeadsView: React.FC<Props> = ({
                             <Clock className="w-2.5 h-2.5 text-blue-500 shrink-0" />
                             <span>{getFreshRfqDate(rfq)}</span>
                           </span>
-                          {isClaimed && (
+                          {isPaidLead ? (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-400/40 flex items-center gap-1 shadow-2xs shrink-0">
+                              <Lock className="w-2.5 h-2.5 text-amber-400" />
+                              <span>Paid Member Lead</span>
+                            </span>
+                          ) : isClaimed ? (
                             <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 border border-amber-500 flex items-center gap-1 shadow-2xs shrink-0">
                               <Zap className="w-2.5 h-2.5 fill-slate-950" />
-                              <span>Free Lead</span>
+                              <span>Free Lead Unlocked</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shrink-0">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>Free Claimable</span>
                             </span>
                           )}
                         </div>
@@ -578,12 +1039,51 @@ export const BuyLeadsView: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    {/* Description with fixed height container */}
-                    <div className="h-10">
-                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-medium">
-                        "{rfq.detailedDescription}"
-                      </p>
-                    </div>
+                    {/* Description Snippet Preview (Blurred for Free Users) */}
+                    {!isCallerPaid && (!isClaimed || isPaidLead) ? (
+                      (() => {
+                        const fullDesc = rfq.detailedDescription || 'Bulk purchase specifications, delivery schedules, and compliance standards.';
+                        const splitIndex = fullDesc.indexOf(' ', 32);
+                        const safeSplit = splitIndex > 15 && splitIndex < 55 ? splitIndex : 35;
+                        const previewSnippet = fullDesc.slice(0, safeSplit);
+                        const blurredSnippet = fullDesc.slice(safeSplit) || '... technical compliance, packaging specs, inspection certification, and delivery timeline required.';
+
+                        return (
+                          <div
+                            onClick={() => handleOpenLeadAccessModal(rfq)}
+                            className="relative h-14 p-2.5 rounded-xl bg-slate-50/90 hover:bg-amber-50/50 border border-slate-200 hover:border-amber-400 transition-all cursor-pointer group overflow-hidden shadow-2xs"
+                            title="Click to upgrade and unlock full procurement specifications and buyer requirements"
+                          >
+                            <div className="text-[11px] leading-relaxed text-slate-700 select-none pr-1">
+                              <span className="font-semibold text-slate-800">
+                                "{previewSnippet}
+                              </span>
+                              <span className="blur-[3px] select-none text-slate-400 opacity-60">
+                                {' '}{blurredSnippet}"
+                              </span>
+                            </div>
+
+                            {/* Floating bottom blur shield with Upgrade CTA badge */}
+                            <div className="absolute inset-x-0 bottom-0 pt-3 pb-1 px-2.5 bg-gradient-to-t from-white via-white/85 to-transparent flex items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 group-hover:text-amber-900 truncate">
+                                <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span className="truncate">Full description blurred for free members</span>
+                              </div>
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-950 bg-amber-300 hover:bg-amber-400 px-2 py-0.5 rounded-full border border-amber-400/80 shadow-2xs shrink-0 group-hover:scale-105 transition-transform">
+                                <Crown className="w-2.5 h-2.5 fill-amber-950" />
+                                <span>Upgrade to View</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="h-14 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 overflow-hidden">
+                        <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed font-medium">
+                          "{rfq.detailedDescription}"
+                        </p>
+                      </div>
+                    )}
 
                     {/* Buyer Company area */}
                     <div className="pt-2 border-t border-slate-100">
@@ -598,7 +1098,35 @@ export const BuyLeadsView: React.FC<Props> = ({
 
                       {/* Gated Buyer Email & Phone with uniform height container */}
                       <div className="pt-2">
-                        {isClaimed ? (
+                        {isPaidLead && !isCallerPaid ? (
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-amber-400/50 space-y-2 text-xs h-[180px] flex flex-col justify-between shadow-xs">
+                            <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
+                              <span className="flex items-center gap-1.5">
+                                <Lock className="w-3 h-3 text-amber-400" />
+                                <span>Paid Member Protected Data</span>
+                              </span>
+                              <span className="font-mono text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-400/30">
+                                Paid Only
+                              </span>
+                            </div>
+                            <div className="space-y-1 text-slate-300 text-[11px]">
+                              <p className="leading-snug text-slate-300 font-medium">
+                                Verified Paid Member Buyer: Contact details of paid members are strictly protected from unpaid members and cannot be claimed via free daily credits.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenLeadAccessModal(rfq)}
+                              style={{
+                                animationDelay: `${Math.min(idx * 60, 400)}ms`
+                              }}
+                              className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 animate-subtle-pop"
+                            >
+                              <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                              <span>Upgrade to View</span>
+                            </button>
+                          </div>
+                        ) : isClaimed ? (
                           <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-300 space-y-2 text-xs h-[180px] flex flex-col justify-between">
                             <div className="flex items-center justify-between text-[10px] font-black text-amber-950 pb-1.5 border-b border-amber-200">
                               <span className="flex items-center gap-1">
@@ -627,9 +1155,10 @@ export const BuyLeadsView: React.FC<Props> = ({
                           <div className="h-[180px] flex flex-col">
                             <PremiumContactGate
                               currentUser={currentUser}
-                              onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
+                              onOpenUpgradeModal={() => handleOpenLeadAccessModal(rfq)}
                               isMasked={Boolean(rfq.isContactMasked)}
-                              resourceTitle="Buyer Direct Desk Contact"
+                              paidMembersOnly={isPaidLead}
+                              resourceTitle={isPaidLead ? "Paid Member Protected Desk Contact" : "Buyer Direct Desk Contact"}
                               className="h-full flex flex-col justify-between"
                             >
                               <div className="space-y-1 text-xs text-slate-700">
@@ -663,15 +1192,33 @@ export const BuyLeadsView: React.FC<Props> = ({
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
 
-                      <a
-                        href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-sm text-center shrink-0"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
-                      </a>
+                      {!isCallerPaid && (
+                        <button
+                          type="button"
+                          data-testid={`upgrade-to-view-btn-${rfq.id}`}
+                          onClick={() => handleOpenLeadAccessModal(rfq)}
+                          style={{
+                            animationDelay: `${Math.min(idx * 60, 400)}ms`
+                          }}
+                          className="animate-subtle-pop py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer active:scale-95 shrink-0"
+                          title="Upgrade to view direct corporate buyer contact details and full lead specifications"
+                        >
+                          <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                          <span>Upgrade to View</span>
+                        </button>
+                      )}
+
+                      {isPaidLead && !isCallerPaid ? null : (
+                        <a
+                          href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-sm text-center shrink-0"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
 
                       <button
                         type="button"
@@ -693,6 +1240,25 @@ export const BuyLeadsView: React.FC<Props> = ({
                         aria-label="Share this RFQ"
                       >
                         <Share2 className="w-4 h-4" />
+                      </button>
+
+                      {/* Save Lead to Dashboard Button */}
+                      <button
+                        type="button"
+                        data-testid={`save-lead-btn-${rfq.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleSaveLead(rfq);
+                        }}
+                        className={`p-2 rounded-xl border transition-all cursor-pointer shrink-0 flex items-center justify-center ${
+                          savedLeadIds.includes(rfq.id)
+                            ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100 shadow-2xs'
+                            : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300'
+                        }`}
+                        title={savedLeadIds.includes(rfq.id) ? "Saved in your Dashboard! Click to remove bookmark." : "Save Lead to your Dashboard"}
+                        aria-label={savedLeadIds.includes(rfq.id) ? "Remove saved lead" : "Save this lead to dashboard"}
+                      >
+                        <Bookmark className={`w-4 h-4 ${savedLeadIds.includes(rfq.id) ? 'fill-amber-500 text-amber-600' : ''}`} />
                       </button>
                     </div>
                   </div>
@@ -726,6 +1292,15 @@ export const BuyLeadsView: React.FC<Props> = ({
           onOpenUpgradeModal={onOpenUpgradeModal}
         />
       )}
+
+      {/* Contextual Modal Explaining Value of Full Lead Access */}
+      <LeadAccessValueModal
+        rfq={leadAccessModalRfq}
+        isOpen={isLeadAccessModalOpen}
+        onClose={() => setIsLeadAccessModalOpen(false)}
+        onProceedToPremiumServices={handleProceedToPremiumServices}
+        selectedCurrency={selectedCurrency}
+      />
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { SafeImage } from '../common/SafeImage';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PaginationControls } from '../common/PaginationControls';
 import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
+import { isPaidEntity } from '../../services/freeLeadService';
 import { 
   Building2, 
   Search, 
@@ -88,7 +89,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginatedBuyers = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const isUserPremium = currentUser?.role === 'ADMIN' || currentUser?.isPremium === true;
+  const isUserPremium = securityService.isAllowedToViewContacts(currentUser);
 
   return (
     <div id="buyers-directory-root" className="space-y-6">
@@ -310,12 +311,13 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                       currentUser={currentUser}
                       onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
                       isMasked={Boolean(buyer.isContactMasked)}
-                      resourceTitle="Buyer Procurement Desk Contact"
+                      paidMembersOnly={isPaidEntity(buyer)}
+                      resourceTitle={isPaidEntity(buyer) ? "Paid Member Protected Desk Contact" : "Buyer Procurement Desk Contact"}
                     >
                       <div className="space-y-1 text-xs text-slate-700">
                         <div><strong>Lead:</strong> {buyer.contactPerson} ({buyer.contactDesignation})</div>
-                        <div><strong>Email:</strong> {buyer.contactEmail ? securityService.maskEmailAddress(buyer.contactEmail) : 'Contact via Inquiry Form'}</div>
-                        <div><strong>Phone:</strong> {buyer.contactPhone ? securityService.maskPhoneNumber(buyer.contactPhone) : 'Contact via Inquiry Form'}</div>
+                        <div><strong>Email:</strong> {buyer.contactEmail || 'Contact via Inquiry Form'}</div>
+                        <div><strong>Phone:</strong> {buyer.contactPhone || 'Contact via Inquiry Form'}</div>
                       </div>
                     </PremiumContactGate>
                   </div>

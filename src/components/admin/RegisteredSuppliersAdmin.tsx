@@ -20,7 +20,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
+import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { api, getPermanentlyDeletedUsers } from '../../services/apiService';
+import { useAuth } from '../../context/AuthContext';
 
 export interface RegisteredSupplier {
   id: string | number;
@@ -39,6 +41,7 @@ export interface RegisteredSupplier {
 }
 
 export const RegisteredSuppliersAdmin: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [suppliers, setSuppliers] = useState<RegisteredSupplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,6 +53,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [expandedEmailHistoryId, setExpandedEmailHistoryId] = useState<string | number | null>('user-supplier-mark-johnson');
   const [supplierToDeletePermanently, setSupplierToDeletePermanently] = useState<RegisteredSupplier | null>(null);
+  const [deletionReason, setDeletionReason] = useState('Administrative supplier compliance & directory cleanup');
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
 
   const fetchSuppliers = async () => {
@@ -213,9 +217,18 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       setSuppliers(prev =>
         prev.filter(s => String(s.id) !== cleanId && String(s.email || '').toLowerCase().trim() !== cleanEmail)
       );
-      await api.adminDeleteUserPermanently(cleanId, cleanEmail);
+      await api.adminDeleteUserPermanently(cleanId, cleanEmail, currentUser, {
+        deletedUserName: sup.name,
+        deletedUserRole: sup.role || 'SUPPLIER',
+        deletedUserCompany: sup.company_name || sup.companyName || sup.name,
+        deletedUserTier: sup.tier || 'Supplier Account',
+        deletedUserCountry: sup.country || 'Global',
+        reason: deletionReason.trim() || 'Administrative supplier compliance & directory cleanup',
+        deletionSource: 'Registered Suppliers Admin'
+      });
       setSupplierToDeletePermanently(null);
-      setStatusBanner(`✓ Permanently deleted user "${sup.name}" (${sup.email}) from database.`);
+      setDeletionReason('Administrative supplier compliance & directory cleanup');
+      setStatusBanner(`✓ Permanently deleted user "${sup.name}" (${sup.email}) and logged in User Deletion Log.`);
       setTimeout(() => setStatusBanner(null), 4000);
     } finally {
       setActionLoadingId(null);
@@ -228,11 +241,19 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
     try {
       const targets = suppliers.filter(s => selectedIds.has(s.id));
       for (const sup of targets) {
-        await api.adminDeleteUserPermanently(String(sup.id), sup.email);
+        await api.adminDeleteUserPermanently(String(sup.id), sup.email, currentUser, {
+          deletedUserName: sup.name,
+          deletedUserRole: sup.role || 'SUPPLIER',
+          deletedUserCompany: sup.company_name || sup.companyName || sup.name,
+          deletedUserTier: sup.tier || 'Supplier Account',
+          deletedUserCountry: sup.country || 'Global',
+          reason: 'Bulk permanent deletion from Registered Suppliers Admin',
+          deletionSource: 'Registered Suppliers Admin (Bulk)'
+        });
       }
       setSuppliers(prev => prev.filter(s => !selectedIds.has(s.id)));
       setSelectedIds(new Set());
-      setStatusBanner(`✓ Permanently deleted ${targets.length} selected user(s) from database.`);
+      setStatusBanner(`✓ Permanently deleted ${targets.length} selected user(s) and recorded in User Deletion Log.`);
       setTimeout(() => setStatusBanner(null), 4000);
     } finally {
       setIsBulkProcessing(false);
@@ -704,11 +725,24 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
             <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-1.5">
               <div className="font-black text-rose-900 text-xs flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>Warning: Permanent Database Removal</span>
+                <span>Warning: Permanent Database Removal &amp; Compliance Logging</span>
               </div>
               <p className="text-[11px] text-rose-800 leading-relaxed">
-                This will permanently remove <strong>{supplierToDeletePermanently.name}</strong> ({supplierToDeletePermanently.email}) from the database.
+                This will permanently remove <strong>{supplierToDeletePermanently.name}</strong> ({supplierToDeletePermanently.email}) from the database and record the action in the <strong>User Deletion Log</strong>.
               </p>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Compliance / Deletion Reason
+              </label>
+              <input
+                type="text"
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                placeholder="Reason for permanent deletion..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-rose-500"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -731,6 +765,9 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Compliance User Deletion Log */}
+      <UserDeletionLogModule compact currentUser={currentUser} />
     </div>
   );
 };

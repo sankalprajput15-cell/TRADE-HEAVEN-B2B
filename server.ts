@@ -387,14 +387,35 @@ function logServerActivity(
 const REGISTERED_USERS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'registered-users.json');
 const DELETED_USERS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'deleted-users.json');
 
+interface ServerUserDeletionLogEntry {
+  id: string;
+  deletedUserId: string;
+  deletedUserName: string;
+  deletedUserEmail: string;
+  deletedUserRole: string;
+  deletedUserCompany?: string;
+  deletedUserTier?: string;
+  deletedUserCountry?: string;
+  deletedAt: string;
+  deletedByAdminId: string;
+  deletedByAdminName: string;
+  deletedByAdminEmail: string;
+  deletedByAdminRole: string;
+  reason?: string;
+  deletionSource?: string;
+  complianceRef?: string;
+}
+
 interface DeletedUsersRegistry {
   ids: string[];
   emails: string[];
+  logs: ServerUserDeletionLogEntry[];
 }
 
-function loadDeletedUsersRegistry(): { ids: Set<string>; emails: Set<string> } {
+function loadDeletedUsersRegistry(): { ids: Set<string>; emails: Set<string>; logs: ServerUserDeletionLogEntry[] } {
   const ids = new Set<string>();
   const emails = new Set<string>();
+  let logs: ServerUserDeletionLogEntry[] = [];
   try {
     if (fs.existsSync(DELETED_USERS_FILE)) {
       const raw = fs.readFileSync(DELETED_USERS_FILE, 'utf-8');
@@ -405,11 +426,14 @@ function loadDeletedUsersRegistry(): { ids: Set<string>; emails: Set<string> } {
       if (Array.isArray(parsed.emails)) {
         parsed.emails.forEach(em => em && emails.add(String(em).toLowerCase().trim()));
       }
+      if (Array.isArray(parsed.logs)) {
+        logs = parsed.logs.filter(Boolean);
+      }
     }
   } catch (err) {
     console.warn('[ServerUsersStore] Failed to load deleted-users.json:', err);
   }
-  return { ids, emails };
+  return { ids, emails, logs };
 }
 
 let serverDeletedUsersRegistry = loadDeletedUsersRegistry();
@@ -422,7 +446,8 @@ function saveDeletedUsersRegistry() {
     }
     const payload: DeletedUsersRegistry = {
       ids: Array.from(serverDeletedUsersRegistry.ids),
-      emails: Array.from(serverDeletedUsersRegistry.emails)
+      emails: Array.from(serverDeletedUsersRegistry.emails),
+      logs: serverDeletedUsersRegistry.logs || []
     };
     fs.writeFileSync(DELETED_USERS_FILE, JSON.stringify(payload, null, 2), 'utf-8');
   } catch (err) {
@@ -641,7 +666,27 @@ function saveServerUsersToDisk() {
 // Persist initial seed on startup so registered-users.json is always warm
 saveServerUsersToDisk();
 
-function permanentlyDeleteServerUser(id?: string, email?: string): ServerUserRecord | null {
+interface DeletionAuditMeta {
+  deletedUserName?: string;
+  deletedUserRole?: string;
+  deletedUserCompany?: string;
+  deletedUserTier?: string;
+  deletedUserCountry?: string;
+  deletedByAdminId?: string;
+  deletedByAdminName?: string;
+  deletedByAdminEmail?: string;
+  deletedByAdminRole?: string;
+  reason?: string;
+  deletionSource?: string;
+  logId?: string;
+  deletedAt?: string;
+}
+
+function permanentlyDeleteServerUser(
+  id?: string,
+  email?: string,
+  meta: DeletionAuditMeta = {}
+): { matchedUser: ServerUserRecord | null; logEntry: ServerUserDeletionLogEntry } {
   const cleanId = String(id || '').trim();
   const cleanEmail = String(email || '').toLowerCase().trim();
 
@@ -657,6 +702,59 @@ function permanentlyDeleteServerUser(id?: string, email?: string): ServerUserRec
 
   if (cleanId) serverDeletedUsersRegistry.ids.add(cleanId);
   if (cleanEmail) serverDeletedUsersRegistry.emails.add(cleanEmail);
+
+  const resolvedUserId = matchedUser?.id || cleanId || `user-${cleanEmail || Date.now()}`;
+  const resolvedUserEmail = matchedUser?.email || cleanEmail || 'unknown@tradeheaven.net';
+  const resolvedUserName =
+    meta.deletedUserName ||
+    matchedUser?.name ||
+    (resolvedUserEmail.includes('@') ? resolvedUserEmail.split('@')[0] : resolvedUserId);
+  const resolvedUserRole = meta.deletedUserRole || matchedUser?.role || 'SUPPLIER';
+  const resolvedUserCompany = meta.deletedUserCompany || matchedUser?.companyName || 'Registered Enterprise';
+  const resolvedUserTier = meta.deletedUserTier || matchedUser?.tier || matchedUser?.membershipStatus || 'Standard';
+  const resolvedUserCountry = meta.deletedUserCountry || matchedUser?.country || 'Global';
+  const nowIso = meta.deletedAt || new Date().toISOString();
+
+  // Deduplicate if the same deletion was logged in the last 15 seconds (e.g., via dual /api.php and /api/admin/users/delete calls)
+  const existingIdx = (serverDeletedUsersRegistry.logs || []).findIndex(l => {
+    const sameEmail = cleanEmail && (l.deletedUserEmail || '').toLowerCase().trim() === cleanEmail;
+    const sameId = cleanId && l.deletedUserId === cleanId;
+    const sameLogId = meta.logId && l.id === meta.logId;
+    const recent = Math.abs(new Date(nowIso).getTime() - new Date(l.deletedAt).getTime()) < 15000;
+    return sameLogId || ((sameEmail || sameId) && recent);
+  });
+
+  const logEntry: ServerUserDeletionLogEntry = {
+    id: meta.logId || (existingIdx !== -1 ? serverDeletedUsersRegistry.logs[existingIdx].id : `del-log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+    deletedUserId: resolvedUserId,
+    deletedUserName: resolvedUserName,
+    deletedUserEmail: resolvedUserEmail,
+    deletedUserRole: resolvedUserRole,
+    deletedUserCompany: resolvedUserCompany,
+    deletedUserTier: resolvedUserTier,
+    deletedUserCountry: resolvedUserCountry,
+    deletedAt: existingIdx !== -1 ? serverDeletedUsersRegistry.logs[existingIdx].deletedAt : nowIso,
+    deletedByAdminId: meta.deletedByAdminId || 'user-admin-001',
+    deletedByAdminName: meta.deletedByAdminName || 'Administrator (Yash Rajput)',
+    deletedByAdminEmail: meta.deletedByAdminEmail || ADMIN_EMAIL || 'yr943334@gmail.com',
+    deletedByAdminRole: meta.deletedByAdminRole || 'ADMIN',
+    reason: meta.reason || (existingIdx !== -1 ? serverDeletedUsersRegistry.logs[existingIdx].reason : undefined) || 'Permanent administrative account removal',
+    deletionSource: meta.deletionSource || (existingIdx !== -1 ? serverDeletedUsersRegistry.logs[existingIdx].deletionSource : undefined) || 'Admin Console (RBAC Users)',
+    complianceRef: `TH-COMP-DEL-${Date.now().toString().slice(-6)}`
+  };
+
+  if (!Array.isArray(serverDeletedUsersRegistry.logs)) {
+    serverDeletedUsersRegistry.logs = [];
+  }
+  if (existingIdx !== -1) {
+    serverDeletedUsersRegistry.logs[existingIdx] = {
+      ...serverDeletedUsersRegistry.logs[existingIdx],
+      ...logEntry
+    };
+  } else {
+    serverDeletedUsersRegistry.logs.unshift(logEntry);
+  }
+
   saveDeletedUsersRegistry();
 
   serverUsersStore = serverUsersStore.filter(u => {
@@ -668,7 +766,7 @@ function permanentlyDeleteServerUser(id?: string, email?: string): ServerUserRec
   });
 
   saveServerUsersToDisk();
-  return matchedUser;
+  return { matchedUser, logEntry };
 }
 
 function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
@@ -2818,14 +2916,28 @@ app.post('/api.php', async (req, res) => {
   if (action === 'delete_user' || action === 'permanently_delete_user') {
     const targetId = String(input.id || '');
     const targetEmail = String(input.email || '').toLowerCase().trim();
-    const deletedRecord = permanentlyDeleteServerUser(targetId, targetEmail);
+    const { matchedUser: deletedRecord, logEntry } = permanentlyDeleteServerUser(targetId, targetEmail, {
+      deletedUserName: input.deletedUserName || input.name,
+      deletedUserRole: input.deletedUserRole || input.role,
+      deletedUserCompany: input.deletedUserCompany || input.companyName,
+      deletedUserTier: input.deletedUserTier || input.tier,
+      deletedUserCountry: input.deletedUserCountry || input.country,
+      deletedByAdminId: input.deletedByAdminId,
+      deletedByAdminName: input.deletedByAdminName,
+      deletedByAdminEmail: input.deletedByAdminEmail,
+      deletedByAdminRole: input.deletedByAdminRole,
+      reason: input.reason,
+      deletionSource: input.deletionSource,
+      logId: input.logId,
+      deletedAt: input.deletedAt
+    });
     logServerActivity(
       req,
       'USER_DELETED_PERMANENTLY',
-      ADMIN_EMAIL,
+      logEntry.deletedByAdminEmail || ADMIN_EMAIL,
       'ADMIN',
       '/api.php?action=delete_user',
-      `User account permanently deleted from database: ${deletedRecord?.name || targetId} (${deletedRecord?.email || targetEmail}).`,
+      `User account permanently deleted from database: ${deletedRecord?.name || logEntry.deletedUserName || targetId} (${deletedRecord?.email || targetEmail}) by ${logEntry.deletedByAdminName} (${logEntry.deletedByAdminEmail}).`,
       'SUCCESS'
     );
     return res.json({
@@ -2833,6 +2945,7 @@ app.post('/api.php', async (req, res) => {
       status: 'success',
       deletedId: targetId,
       deletedEmail: targetEmail,
+      deletionLog: logEntry,
       message: `User ${deletedRecord?.email || targetEmail || targetId} permanently deleted.`
     });
   }
@@ -2844,12 +2957,13 @@ app.post('/api.php', async (req, res) => {
   });
 });
 
-// Dedicated Admin Users CRUD endpoints (/api/admin/users, /api/admin/users/create, /api/admin/users/delete)
+// Dedicated Admin Users CRUD endpoints (/api/admin/users, /api/admin/users/create, /api/admin/users/delete, /api/admin/user-deletion-logs)
 app.get('/api/admin/users', (_req, res) => {
   return res.json({
     success: true,
     deletedIds: Array.from(serverDeletedUsersRegistry.ids),
     deletedEmails: Array.from(serverDeletedUsersRegistry.emails),
+    deletionLogs: serverDeletedUsersRegistry.logs || [],
     data: serverUsersStore.map(u => ({
       id: u.id,
       name: u.name,
@@ -2868,6 +2982,34 @@ app.get('/api/admin/users', (_req, res) => {
       tier: u.tier || (u.isPremium ? 'VIP' : 'Verified Supplier'),
       avatarUrl: u.avatarUrl
     }))
+  });
+});
+
+app.get('/api/admin/user-deletion-logs', (_req, res) => {
+  return res.json({
+    success: true,
+    data: serverDeletedUsersRegistry.logs || []
+  });
+});
+
+app.post('/api/admin/user-deletion-logs', (req, res) => {
+  const entry = req.body as ServerUserDeletionLogEntry;
+  if (!entry || (!entry.deletedUserEmail && !entry.deletedUserId)) {
+    return res.status(400).json({ success: false, message: 'Valid deletion log payload is required.' });
+  }
+  if (!Array.isArray(serverDeletedUsersRegistry.logs)) {
+    serverDeletedUsersRegistry.logs = [];
+  }
+  const existingIdx = serverDeletedUsersRegistry.logs.findIndex(l => l.id === entry.id);
+  if (existingIdx !== -1) {
+    serverDeletedUsersRegistry.logs[existingIdx] = { ...serverDeletedUsersRegistry.logs[existingIdx], ...entry };
+  } else {
+    serverDeletedUsersRegistry.logs.unshift(entry);
+  }
+  saveDeletedUsersRegistry();
+  return res.status(201).json({
+    success: true,
+    data: serverDeletedUsersRegistry.logs
   });
 });
 
@@ -2916,20 +3058,35 @@ app.post('/api/admin/users/delete', (req, res) => {
   if (!targetId && !targetEmail) {
     return res.status(400).json({ success: false, message: 'User ID or email is required for permanent deletion.' });
   }
-  const deletedRecord = permanentlyDeleteServerUser(targetId, targetEmail);
+  const { matchedUser: deletedRecord, logEntry } = permanentlyDeleteServerUser(targetId, targetEmail, {
+    deletedUserName: input.deletedUserName || input.name,
+    deletedUserRole: input.deletedUserRole || input.role,
+    deletedUserCompany: input.deletedUserCompany || input.companyName,
+    deletedUserTier: input.deletedUserTier || input.tier,
+    deletedUserCountry: input.deletedUserCountry || input.country,
+    deletedByAdminId: input.deletedByAdminId,
+    deletedByAdminName: input.deletedByAdminName,
+    deletedByAdminEmail: input.deletedByAdminEmail,
+    deletedByAdminRole: input.deletedByAdminRole,
+    reason: input.reason,
+    deletionSource: input.deletionSource,
+    logId: input.logId,
+    deletedAt: input.deletedAt
+  });
   logServerActivity(
     req,
     'USER_DELETED_PERMANENTLY',
-    ADMIN_EMAIL,
+    logEntry.deletedByAdminEmail || ADMIN_EMAIL,
     'ADMIN',
     '/api/admin/users/delete',
-    `User permanently deleted from database: ${deletedRecord?.name || targetId} (${deletedRecord?.email || targetEmail}).`,
+    `User permanently deleted from database: ${deletedRecord?.name || logEntry.deletedUserName || targetId} (${deletedRecord?.email || targetEmail}) by ${logEntry.deletedByAdminName} (${logEntry.deletedByAdminEmail}).`,
     'SUCCESS'
   );
   return res.json({
     success: true,
     deletedId: targetId,
     deletedEmail: targetEmail,
+    deletionLog: logEntry,
     message: `User ${deletedRecord?.name || targetEmail || targetId} permanently deleted from database.`
   });
 });
@@ -2937,20 +3094,36 @@ app.post('/api/admin/users/delete', (req, res) => {
 app.delete('/api/admin/users/:id', (req, res) => {
   const targetId = String(req.params.id || '').trim();
   const targetEmail = String(req.query.email || req.body?.email || '').toLowerCase().trim();
-  const deletedRecord = permanentlyDeleteServerUser(targetId, targetEmail);
+  const input = req.body || {};
+  const { matchedUser: deletedRecord, logEntry } = permanentlyDeleteServerUser(targetId, targetEmail, {
+    deletedUserName: input.deletedUserName || input.name,
+    deletedUserRole: input.deletedUserRole || input.role,
+    deletedUserCompany: input.deletedUserCompany || input.companyName,
+    deletedUserTier: input.deletedUserTier || input.tier,
+    deletedUserCountry: input.deletedUserCountry || input.country,
+    deletedByAdminId: input.deletedByAdminId,
+    deletedByAdminName: input.deletedByAdminName,
+    deletedByAdminEmail: input.deletedByAdminEmail,
+    deletedByAdminRole: input.deletedByAdminRole,
+    reason: input.reason,
+    deletionSource: input.deletionSource,
+    logId: input.logId,
+    deletedAt: input.deletedAt
+  });
   logServerActivity(
     req,
     'USER_DELETED_PERMANENTLY',
-    ADMIN_EMAIL,
+    logEntry.deletedByAdminEmail || ADMIN_EMAIL,
     'ADMIN',
     `/api/admin/users/${targetId}`,
-    `User permanently deleted from database: ${deletedRecord?.name || targetId} (${deletedRecord?.email || targetEmail}).`,
+    `User permanently deleted from database: ${deletedRecord?.name || logEntry.deletedUserName || targetId} (${deletedRecord?.email || targetEmail}) by ${logEntry.deletedByAdminName} (${logEntry.deletedByAdminEmail}).`,
     'SUCCESS'
   );
   return res.json({
     success: true,
     deletedId: targetId,
     deletedEmail: targetEmail,
+    deletionLog: logEntry,
     message: `User ${deletedRecord?.name || targetEmail || targetId} permanently deleted from database.`
   });
 });
@@ -4568,19 +4741,13 @@ async function startServer() {
             </div>
           </div>
         `;
-        await automatedSmtpService.sendCustomAdminEmail(
-          'mjohnson@atlanticpowerequip.com',
+        await automatedSmtpService.sendCustomAdminEmail({
+          recipientEmail: 'mjohnson@atlanticpowerequip.com',
           subject,
-          htmlBody,
-          '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
-          {
-            recipientName: 'Mark Johnson (President)',
-            companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
-            companyId: 'comp-atlantic-power-equip',
-            category: 'BUYER_INQUIRY',
-            summaryText: 'GOLDEN LEAD [VIP Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali VIP Upgrade Offer dispatched to Mark Johnson (mjohnson@atlanticpowerequip.com).'
-          }
-        );
+          rawHtmlOverride: htmlBody,
+          recipientName: 'Mark Johnson (President)',
+          companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)'
+        });
         console.log('[SMTP Auto-Dispatch] Sent Golden Lead (10 Generators to Canada + 100% Advance + Diwali Offer) to mjohnson@atlanticpowerequip.com');
       } catch (err) {
         console.warn('[SMTP Auto-Dispatch] Notice:', err);

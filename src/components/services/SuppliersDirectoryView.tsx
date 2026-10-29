@@ -251,15 +251,20 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                       <h3 className="font-bold text-sm text-slate-900 hover:text-blue-600 transition-colors line-clamp-1">
                         {company.companyName}
                       </h3>
-                      {company.contactPerson && (
+                      {isUserPremium && company.contactPerson ? (
                         <div className="text-[11px] font-semibold text-blue-700 flex items-center gap-1 mt-0.5">
                           <Users className="w-3 h-3 text-blue-600 shrink-0" />
                           <span className="truncate">Supplier: {company.contactPerson}</span>
                         </div>
+                      ) : (
+                        <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 mt-0.5">
+                          <Lock className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                          <span className="truncate">Protected Liaison (Paid Members Only)</span>
+                        </div>
                       )}
                       <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                         <MapPin className="w-3 h-3 text-rose-500" />
-                        <span>{isMelissaCompany ? 'SYDNEY, Australia' : company.country}</span>
+                        <span>{isUserPremium && isMelissaCompany ? 'SYDNEY, Australia' : company.country}</span>
                       </div>
                     </div>
                   </div>

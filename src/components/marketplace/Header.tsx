@@ -355,8 +355,8 @@ export const Header: React.FC<Props> = ({
     { label: 'Products', view: 'PRODUCT_DIRECTORY', activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', activeMatch: ['BUY_LEADS', 'RFQ_HUB'] },
-    { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] },
-    { label: 'Direct Transfer Guide', view: 'DIRECT_TRANSFER_GUIDE', activeMatch: ['DIRECT_TRANSFER_GUIDE'] }
+    { label: 'Trade Assurance Certificate', view: 'TRADE_ASSURANCE_CERTIFICATE', activeMatch: ['TRADE_ASSURANCE_CERTIFICATE'] },
+    { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] }
   ];
 
   // Marketplace & directory options inside the Account Toggle menu
@@ -368,6 +368,7 @@ export const Header: React.FC<Props> = ({
     authOnly?: boolean;
   }[] = [
     { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
+    { label: 'Trade Assurance Certificate', view: 'TRADE_ASSURANCE_CERTIFICATE', icon: ShieldCheck, activeMatch: ['TRADE_ASSURANCE_CERTIFICATE'] },
     { label: 'Dashboard & Ledger', view: 'DASHBOARD', icon: LayoutDashboard, activeMatch: ['DASHBOARD'] },
     { label: 'Wallet Funds Top-Up', view: 'WALLET_TOPUP', icon: Wallet, activeMatch: ['WALLET_TOPUP', 'MEDIATOR_ENGINE', 'DASHBOARD'] },
     { label: 'Direct Transfer & Mediation Guide', view: 'DIRECT_TRANSFER_GUIDE', icon: ShieldCheck, activeMatch: ['DIRECT_TRANSFER_GUIDE'] },
@@ -590,7 +591,7 @@ export const Header: React.FC<Props> = ({
                           Trade Heaven Account
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
-                          Sign in to view Wallet Balance &amp; RFQs
+                          Sign in to view RFQs
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -622,72 +623,66 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* All Marketplace & Directory Options */}
-                <div className="pt-1 pb-1">
-                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
-                    Marketplace &amp; Directories
-                  </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {visibleMenuOptions.map(item => {
-                      const Icon = item.icon;
-                      const isActive = item.activeMatch.includes(activeView);
-                      return (
-                        <button
-                          key={item.view}
-                          type="button"
-                          onClick={() => {
-                            if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                              if (!currentUser) {
-                                handleQuickDemoSession('BUYER');
-                              } else {
+                {/* All Marketplace & Directory Options (Registered Users Only) */}
+                {currentUser && (
+                  <div className="pt-1 pb-1">
+                    <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                      Marketplace &amp; Directories
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {visibleMenuOptions.map(item => {
+                        const Icon = item.icon;
+                        const isActive = item.activeMatch.includes(activeView);
+                        return (
+                          <button
+                            key={item.view}
+                            type="button"
+                            onClick={() => {
+                              if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
                                 handleOpenFundsTopUp();
-                              }
-                            } else if (item.label.includes('Dashboard')) {
-                              if (!currentUser) {
-                                handleQuickDemoSession('BUYER');
-                              } else {
+                              } else if (item.label.includes('Dashboard')) {
                                 handleNavClick('DASHBOARD');
+                              } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                                setUserMenuOpen(false);
+                                onOpenOnboardModal();
+                              } else {
+                                handleNavClick(item.view);
                               }
-                            } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
-                              setUserMenuOpen(false);
-                              onOpenOnboardModal();
-                            } else {
-                              handleNavClick(item.view);
-                            }
-                          }}
-                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-600 font-semibold'
-                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                          }`}
-                        >
-                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
+                            }}
+                            className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                              isActive
+                                ? 'bg-blue-50 text-blue-600 font-semibold'
+                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                            }`}
+                          >
+                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        if (onOpenContactModal) {
-                          onOpenContactModal();
-                        } else {
-                          handleNavClick('CONTACT_US');
-                        }
-                      }}
-                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                        activeView === 'CONTACT_US'
-                          ? 'bg-blue-50 text-blue-600 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                      }`}
-                    >
-                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="truncate">Contact Desk</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          if (onOpenContactModal) {
+                            onOpenContactModal();
+                          } else {
+                            handleNavClick('CONTACT_US');
+                          }
+                        }}
+                        className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                          activeView === 'CONTACT_US'
+                            ? 'bg-blue-50 text-blue-600 font-semibold'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                        }`}
+                      >
+                        <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">Contact Desk</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Quick Utilities: Language, Currency & Share Page */}
                 <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">

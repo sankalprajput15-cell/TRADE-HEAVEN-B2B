@@ -45,6 +45,7 @@ import {
   triggerRegistrationModal,
   triggerLoginModal
 } from '../common/SearchAutoSuggestDropdown';
+import { isPaidEntity } from '../../services/freeLeadService';
 
 interface Props {
   onSearch: (query: string, category: string, targetMode?: 'PRODUCTS' | 'RFQS' | 'SUPPLIERS') => void;
@@ -356,10 +357,6 @@ export const HeroSection: React.FC<Props> = ({
     e.preventDefault();
     setIsSearchPopoverOpen(false);
     setIsCategoryMenuOpen(false);
-    if (!isRegistered) {
-      triggerRegistrationModal();
-      return;
-    }
     const effectiveMode =
       searchTargetMode === 'SUPPLIERS' || (searchQuery.trim() && searchResults.suppliers.length > 0 && searchResults.products.length === 0)
         ? 'SUPPLIERS'
@@ -393,7 +390,11 @@ export const HeroSection: React.FC<Props> = ({
     }
   };
 
-  const handleSupplierClick = (companyId: string) => {
+  const handleSupplierClick = (companyId: string, isPaidMember?: boolean) => {
+    if (isPaidMember && !isRegistered) {
+      triggerRegistrationModal();
+      return;
+    }
     setIsSearchPopoverOpen(false);
     if (onOpenStorefront) {
       onOpenStorefront(companyId);
@@ -403,6 +404,11 @@ export const HeroSection: React.FC<Props> = ({
   };
 
   const handleRfqClick = (rfq: RfqRequirement) => {
+    const isVipLead = isPaidEntity(rfq);
+    if (isVipLead && !isRegistered) {
+      triggerRegistrationModal();
+      return;
+    }
     setIsSearchPopoverOpen(false);
     if (onSelectRfq) {
       onSelectRfq(rfq);
@@ -448,7 +454,10 @@ export const HeroSection: React.FC<Props> = ({
   };
 
   return (
-    <div id="trade-heaven-hero" className="relative bg-slate-900 overflow-hidden min-h-[580px] rounded-3xl flex items-center shadow-2xl border border-slate-800 group">
+    <div
+      id="trade-heaven-hero"
+      className={`relative bg-slate-900 ${isSearchPopoverOpen || isCategoryMenuOpen ? 'overflow-visible' : 'overflow-hidden'} min-h-[580px] rounded-3xl flex items-center shadow-2xl border border-slate-800 group`}
+    >
       
       {/* Live Visual Edit Trigger Button (Strictly Admin / Creator Only) */}
       {isAdmin && isLiveEditMode && (
@@ -463,7 +472,7 @@ export const HeroSection: React.FC<Props> = ({
       )}
 
       {/* Background Image with Dynamic Placeholder, Optimized Aspect Ratio & Blur-Up Effect */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden rounded-3xl pointer-events-none">
         <OptimizedHeroImage
           imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1920, 85)}
           src={
@@ -732,43 +741,9 @@ export const HeroSection: React.FC<Props> = ({
           {isSearchPopoverOpen && (
             <div 
               id="hero-omnibar-results-popover"
-              className="absolute top-full left-0 right-0 mt-2.5 z-40 bg-white text-slate-900 border border-slate-200 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+              className="absolute top-full left-0 right-0 mt-2.5 z-40 bg-white text-slate-900 border border-slate-200 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-[min(82vh,640px)] overflow-y-auto overscroll-contain focus:outline-none"
             >
-              {!isRegistered ? (
-                <>
-                  <div className="p-3.5 sm:p-4 bg-slate-900 text-white border-b border-slate-800 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span className="text-xs font-bold text-slate-200 truncate">
-                        {searchQuery.trim() ? (
-                          <>Protected Search for <span className="text-amber-400 font-black">"{searchQuery}"</span></>
-                        ) : (
-                          <>Protected Global Search Directory</>
-                        )}
-                      </span>
-                    </div>
-                    <span className="text-[10px] bg-slate-800 text-amber-400 px-2.5 py-0.5 rounded-full border border-slate-700 font-bold shrink-0">
-                      Registration Required
-                    </span>
-                  </div>
-                  <SearchRegistrationGate
-                    query={searchQuery}
-                    variant="dropdown"
-                    onRegister={() => {
-                      if (onOpenRegisterFree) onOpenRegisterFree();
-                      triggerRegistrationModal();
-                    }}
-                    onLogin={() => {
-                      triggerLoginModal();
-                    }}
-                    onPreview={() => {
-                      setPreviewUnlocked(true);
-                    }}
-                  />
-                </>
-              ) : (
-                <>
-              {/* Header with Search Query & Filter Tabs */}
+              {/* Header with Search Query & Filter Tabs: div:nth-of-type(1) */}
               <div className="p-3.5 sm:p-4 bg-slate-900 text-white border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <Search className="w-4 h-4 text-amber-400 shrink-0" />
@@ -887,6 +862,24 @@ export const HeroSection: React.FC<Props> = ({
                   )}
                 </div>
               </div>
+
+              {/* Data Access Policy & Paid Member Gate: div#search-dropdown-registration-gate:nth-of-type(2) */}
+              {!isRegistered && (
+                <SearchRegistrationGate
+                  query={searchQuery}
+                  variant="dropdown"
+                  onRegister={() => {
+                    if (onOpenRegisterFree) onOpenRegisterFree();
+                    triggerRegistrationModal();
+                  }}
+                  onLogin={() => {
+                    triggerLoginModal();
+                  }}
+                  onPreview={() => {
+                    setPreviewUnlocked(true);
+                  }}
+                />
+              )}
 
               {/* Scrollable Results Feed */}
               <div className="max-h-[480px] sm:max-h-[540px] overflow-y-auto p-3.5 sm:p-5 space-y-6 bg-slate-50/50">
@@ -1217,40 +1210,70 @@ export const HeroSection: React.FC<Props> = ({
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {(activeFilter === 'SUPPLIERS' ? searchResults.suppliers : searchResults.suppliers.slice(0, 6)).map(supp => (
-                            <div
-                              key={supp.id}
-                              onClick={() => handleSupplierClick(supp.id)}
-                              className="p-3 rounded-2xl border border-slate-200/90 hover:border-amber-500 hover:bg-amber-50/30 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
-                            >
-                              <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
-                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                                  <SafeImage src={supp.logoUrl} alt={supp.companyName} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
-                                  <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
-                                    <HighlightedMatch text={supp.companyName} query={searchQuery} />
+                          {(activeFilter === 'SUPPLIERS' ? searchResults.suppliers : searchResults.suppliers.slice(0, 6)).map(supp => {
+                            const isPaidMember = Boolean(
+                              supp.tier?.toLowerCase().includes('paid') ||
+                              supp.tier?.toLowerCase().includes('vip') ||
+                              supp.tier?.toLowerCase().includes('gold') ||
+                              supp.tier?.toLowerCase().includes('basic plan') ||
+                              supp.contactEmail?.toLowerCase().includes('atlanticpowerequip') ||
+                              supp.contactEmail?.toLowerCase().includes('midforkcap') ||
+                              supp.contactEmail?.toLowerCase().includes('mpcommoditybroker') ||
+                              supp.contactEmail?.toLowerCase().includes('joybambooforestfarm') ||
+                              supp.contactEmail?.toLowerCase().includes('sorkindon') ||
+                              (supp as any).isPremium ||
+                              (supp as any).membershipStatus === 'paid'
+                            );
+                            const hidePaidData = isPaidMember && !isRegistered;
+                            return (
+                              <div
+                                key={supp.id}
+                                onClick={() => handleSupplierClick(supp.id, isPaidMember)}
+                                className="p-3 rounded-2xl border border-slate-200/90 hover:border-amber-500 hover:bg-amber-50/30 transition-all cursor-pointer flex items-center justify-between gap-3 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
+                              >
+                                <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
+                                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                    <SafeImage src={supp.logoUrl} alt={supp.companyName} className="w-full h-full object-cover" />
                                   </div>
-                                  {supp.contactPerson && (
-                                    <div className="text-[11px] font-semibold text-blue-600 truncate">
-                                      Supplier: <HighlightedMatch text={supp.contactPerson} query={searchQuery} />
+                                  <div className="min-w-0 flex-1 space-y-0.5 overflow-hidden">
+                                    <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-amber-700 transition-colors line-clamp-1 truncate">
+                                      <HighlightedMatch text={supp.companyName} query={searchQuery} />
                                     </div>
-                                  )}
-                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
-                                    <span className="truncate">{supp.country}</span>
-                                    <span>•</span>
-                                    <span className="font-semibold text-emerald-600 shrink-0 flex items-center gap-0.5">
-                                      <CheckCircle2 className="w-3 h-3" />
-                                      {supp.trustScore}% Trust Score
-                                    </span>
+                                    {hidePaidData ? (
+                                      <div className="text-[11px] font-bold text-amber-700 flex items-center gap-1">
+                                        <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                                        <span>Paid Member Data (Click to Unlock)</span>
+                                      </div>
+                                    ) : supp.contactPerson ? (
+                                      <div className="text-[11px] font-semibold text-blue-600 truncate flex items-center gap-1.5">
+                                        <span>Supplier: <HighlightedMatch text={supp.contactPerson} query={searchQuery} /></span>
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">Open Data</span>
+                                      </div>
+                                    ) : (
+                                      <div className="text-[10px] text-emerald-600 font-semibold">
+                                        ✓ Mock Data &amp; Free Member Directory
+                                      </div>
+                                    )}
+                                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 min-w-0">
+                                      <span className="truncate">{supp.country}</span>
+                                      <span>•</span>
+                                      <span className="font-semibold text-emerald-600 shrink-0 flex items-center gap-0.5">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        {supp.trustScore}% Trust Score
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
+                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border shrink-0 ${
+                                  isPaidMember
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                    : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                }`}>
+                                  {isPaidMember ? (hidePaidData ? '🔒 VIP Paid Member' : supp.tier) : (supp.tier || 'Free Member')}
+                                </span>
                               </div>
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 shrink-0">
-                                {supp.tier}
-                              </span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -1389,10 +1412,6 @@ export const HeroSection: React.FC<Props> = ({
                   onClick={() => {
                     setIsSearchPopoverOpen(false);
                     setIsCategoryMenuOpen(false);
-                    if (!isRegistered) {
-                      triggerRegistrationModal();
-                      return;
-                    }
                     onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat, 'PRODUCTS');
                     onNavigate?.('PRODUCT_DIRECTORY');
                   }}
@@ -1402,8 +1421,6 @@ export const HeroSection: React.FC<Props> = ({
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-                </>
-              )}
             </div>
           )}
         </div>

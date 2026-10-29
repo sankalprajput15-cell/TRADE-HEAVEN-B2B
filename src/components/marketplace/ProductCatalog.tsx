@@ -5,6 +5,7 @@ import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
+import { isPaidMemberUser } from '../../services/freeLeadService';
 import {
   SearchAutoSuggestDropdown,
   useSearchAutoSuggest,
@@ -266,20 +267,24 @@ export const ProductCatalog: React.FC<Props> = ({
   // Available unique categories extracted from products
   const availableCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
 
-  // Match Suppliers by Supplier Name (contactPerson), Company Name, or Email when searching
+  // Match Suppliers by Company Name (and Contact Person/Email only for Paid Members)
+  const isUserPaidMember = isPaidMemberUser(user);
   const matchedSuppliers = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return [];
     const allSuppliers = getAllSuppliersWithUsers();
     return allSuppliers.filter(s => {
       if (!s) return false;
-      return (
-        (s.companyName && s.companyName.toLowerCase().includes(term)) ||
-        (s.contactPerson && s.contactPerson.toLowerCase().includes(term)) ||
-        (s.contactEmail && s.contactEmail.toLowerCase().includes(term))
-      );
+      if (s.companyName && s.companyName.toLowerCase().includes(term)) return true;
+      if (isUserPaidMember) {
+        return (
+          (s.contactPerson && s.contactPerson.toLowerCase().includes(term)) ||
+          (s.contactEmail && s.contactEmail.toLowerCase().includes(term))
+        );
+      }
+      return false;
     }).slice(0, 6);
-  }, [searchTerm]);
+  }, [searchTerm, isUserPaidMember]);
 
   const matchedSupplierIds = React.useMemo(() => new Set(matchedSuppliers.map(s => s.id)), [matchedSuppliers]);
   const matchedSupplierCompanyNames = React.useMemo(
@@ -749,9 +754,13 @@ export const ProductCatalog: React.FC<Props> = ({
                     <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 truncate">
                       {supp.companyName}
                     </div>
-                    {supp.contactPerson && (
+                    {isUserPaidMember && supp.contactPerson ? (
                       <div className="text-[11px] font-semibold text-blue-700 truncate">
                         Supplier: {supp.contactPerson}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] font-semibold text-amber-700 truncate">
+                        🔒 Contact Protected (Paid Members Only)
                       </div>
                     )}
                     <div className="text-[10px] text-slate-500 truncate">

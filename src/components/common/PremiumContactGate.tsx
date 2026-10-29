@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock, Crown, ShieldCheck, ArrowRight, CheckCircle2, Eye } from 'lucide-react';
 import { AuthUser } from '../../types';
 import { SecureContactVerificationModal } from './SecureContactVerificationModal';
+import { isPaidMemberUser } from '../../services/freeLeadService';
 
 interface Props {
   currentUser: AuthUser | null;
@@ -27,15 +28,7 @@ export const PremiumContactGate: React.FC<Props> = ({
   const [isVerifiedLocally, setIsVerifiedLocally] = useState<boolean>(false);
   const [showVerificationModal, setShowVerificationModal] = useState<boolean>(false);
 
-  const isPaidMemberOrAdmin = 
-    currentUser?.role === 'ADMIN' || 
-    currentUser?.isVerifiedAdmin === true ||
-    currentUser?.isPremium === true || 
-    currentUser?.membershipStatus === 'paid' ||
-    (currentUser?.membershipStatus as string) === 'basic' ||
-    String(currentUser?.tier || '').toLowerCase().includes('basic') ||
-    String(currentUser?.tier || '').toLowerCase().includes('vip') ||
-    String(currentUser?.tier || '').toLowerCase().includes('gold');
+  const isPaidMemberOrAdmin = isPaidMemberUser(currentUser);
 
   const handleOpenPrompt = () => {
     if (paidMembersOnly) {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Currency, PaymentTerms, AuthUser, UserRole, MembershipStatus, AccountStatus, SecurityAuditLog } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
-import { api, getPermanentlyDeletedUsers } from '../../services/apiService';
+import { api, getPermanentlyDeletedUsers, getUserDeletionLogs } from '../../services/apiService';
+import { UserDeletionLogModule } from '../admin/UserDeletionLogModule';
 import { useAuth } from '../../context/AuthContext';
 import { securityService } from '../../services/securityService';
 import { AdminActivityLogger, adminActivityBus } from '../admin/AdminActivityLogger';
@@ -78,16 +79,16 @@ export const ClientAdminView: React.FC<Props> = ({
     isPremium: true,
     membershipStatus: 'paid'
   };
-  const [activeTab, setActiveTabState] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM'>(() => {
+  const [activeTab, setActiveTabState] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM' | 'USER_DELETION_LOG'>(() => {
     try {
       const savedTab = sessionStorage.getItem('th_client_admin_active_tab');
-      if (savedTab === 'INQUIRIES' || savedTab === 'RBAC_USERS' || savedTab === 'LISTINGS' || savedTab === 'FAQS' || savedTab === 'SETTINGS' || savedTab === 'TREASURY' || savedTab === 'AUDIT_LOGS' || savedTab === 'ACTION_LOGGER') {
+      if (savedTab === 'INQUIRIES' || savedTab === 'RBAC_USERS' || savedTab === 'LISTINGS' || savedTab === 'FAQS' || savedTab === 'SETTINGS' || savedTab === 'TREASURY' || savedTab === 'AUDIT_LOGS' || savedTab === 'ACTION_LOGGER' || savedTab === 'USER_DELETION_LOG') {
         return savedTab;
       }
     } catch {}
     return 'RBAC_USERS';
   });
-  const setActiveTab = (tab: 'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM') => {
+  const setActiveTab = (tab: 'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM' | 'USER_DELETION_LOG') => {
     setActiveTabState(tab);
     try {
       sessionStorage.setItem('th_client_admin_active_tab', tab);
@@ -109,7 +110,9 @@ export const ClientAdminView: React.FC<Props> = ({
   const [recentlyAddedEmail, setRecentlyAddedEmail] = useState<string | null>('mjohnson@atlanticpowerequip.com');
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userPendingPermanentDelete, setUserPendingPermanentDelete] = useState<AuthUser | null>(null);
+  const [deletionReason, setDeletionReason] = useState('Administrative compliance & database cleanup');
   const [isDeletingUserPermanently, setIsDeletingUserPermanently] = useState(false);
+  const [deletionLogsCount, setDeletionLogsCount] = useState<number>(() => getUserDeletionLogs().length);
   const [usersList, setUsersList] = useState<AuthUser[]>(() => {
     const deleted = getPermanentlyDeletedUsers();
     const initial: AuthUser[] = [
@@ -339,8 +342,15 @@ export const ClientAdminView: React.FC<Props> = ({
         });
       });
     };
+    const handleDeletionLogsUpdated = () => {
+      setDeletionLogsCount(getUserDeletionLogs().length);
+    };
     window.addEventListener('tradeheaven_users_updated', handleUsersUpdated);
-    return () => window.removeEventListener('tradeheaven_users_updated', handleUsersUpdated);
+    window.addEventListener('tradeheaven_user_deletion_logs_updated', handleDeletionLogsUpdated);
+    return () => {
+      window.removeEventListener('tradeheaven_users_updated', handleUsersUpdated);
+      window.removeEventListener('tradeheaven_user_deletion_logs_updated', handleDeletionLogsUpdated);
+    };
   }, [currentUser]);
 
   useEffect(() => {
@@ -624,7 +634,17 @@ export const ClientAdminView: React.FC<Props> = ({
         setExpandedEmailHistoryUid(null);
       }
 
-      await api.adminDeleteUserPermanently(cleanId, cleanEmail, effectiveAdminUser);
+      await api.adminDeleteUserPermanently(cleanId, cleanEmail, effectiveAdminUser, {
+        deletedUserName: targetUser.name,
+        deletedUserRole: targetUser.role,
+        deletedUserCompany: targetUser.companyName,
+        deletedUserTier: String(targetUser.tier || targetUser.membershipStatus || 'Standard'),
+        deletedUserCountry: targetUser.country,
+        reason: deletionReason.trim() || 'Administrative compliance & database cleanup',
+        deletionSource: 'Core Database (RBAC Users)'
+      });
+
+      setDeletionLogsCount(getUserDeletionLogs().length);
 
       securityService.logSecurityEvent({
         actorUid: effectiveAdminUser.id,
@@ -632,21 +652,22 @@ export const ClientAdminView: React.FC<Props> = ({
         actorRole: effectiveAdminUser.role,
         action: 'USER_DELETED_PERMANENTLY',
         targetResource: `/api/admin/users/${cleanId}`,
-        details: `Permanently deleted user account ${targetUser.name} (${targetUser.email}) from all databases.`,
+        details: `Permanently deleted user account ${targetUser.name} (${targetUser.email}) by ${effectiveAdminUser.name} (${effectiveAdminUser.email}). Reason: ${deletionReason.trim() || 'Administrative compliance & database cleanup'}`,
         status: 'SUCCESS'
       });
 
       adminActivityBus.logActivity(
-        'PRIVILEGE_MUTATION',
-        `Permanently deleted user ${targetUser.name} (${targetUser.email}) from database`,
+        'USER_PRIVILEGE_UPDATE',
+        `Permanently deleted user ${targetUser.name} (${targetUser.email}) from database by ${effectiveAdminUser.name}`,
         'SUCCESS',
         effectiveAdminUser.name || 'Admin'
       );
 
       setUserPendingPermanentDelete(null);
+      setDeletionReason('Administrative compliance & database cleanup');
       showToast(
         'success',
-        `✓ User "${targetUser.name}" (${targetUser.email}) has been permanently deleted from the database.`
+        `✓ User "${targetUser.name}" (${targetUser.email}) permanently deleted and recorded in User Deletion Log.`
       );
     } catch (err: any) {
       showToast('error', 'Failed to permanently delete user: ' + (err?.message || 'Unknown error'));
@@ -1028,6 +1049,27 @@ export const ClientAdminView: React.FC<Props> = ({
         >
           <Terminal className="w-4 h-4 text-amber-600" />
           <span>Action Logger</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('USER_DELETION_LOG')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'USER_DELETION_LOG'
+              ? 'bg-rose-600 text-white shadow-sm'
+              : 'bg-white text-rose-800 hover:bg-rose-50 border border-rose-200'
+          }`}
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>User Deletion Log</span>
+          <span
+            className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              activeTab === 'USER_DELETION_LOG'
+                ? 'bg-white/20 text-white'
+                : 'bg-rose-100 text-rose-800'
+            }`}
+          >
+            {deletionLogsCount}
+          </span>
         </button>
       </div>
 
@@ -1573,6 +1615,9 @@ export const ClientAdminView: React.FC<Props> = ({
               </table>
             </div>
           </div>
+
+          {/* Compliance User Deletion Log directly accessible under RBAC Users */}
+          <UserDeletionLogModule compact currentUser={effectiveAdminUser} />
         </div>
       )}
 
@@ -1597,10 +1642,10 @@ export const ClientAdminView: React.FC<Props> = ({
             <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 space-y-1.5">
               <div className="font-black text-rose-900 text-xs flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>Warning: Permanent Database Removal</span>
+                <span>Warning: Permanent Database Removal &amp; Compliance Logging</span>
               </div>
               <p className="text-[11px] text-rose-800 leading-relaxed">
-                You are about to permanently delete this user from both the local store and backend MySQL database. This action cannot be undone unless the user is manually re-registered.
+                You are about to permanently delete this user from both the local store and backend MySQL database. For compliance and data traceability, this deletion will be logged in the <strong>User Deletion Log</strong> with your administrator identity and timestamp.
               </p>
             </div>
 
@@ -1623,6 +1668,25 @@ export const ClientAdminView: React.FC<Props> = ({
                   {userPendingPermanentDelete.role} • {userPendingPermanentDelete.tier || userPendingPermanentDelete.membershipStatus || 'Standard'}
                 </span>
               </div>
+              <div className="flex items-center justify-between pt-1 mt-1 border-t border-slate-200">
+                <span className="text-slate-500 font-semibold">Deleted By Admin:</span>
+                <span className="font-mono font-bold text-slate-900">
+                  {effectiveAdminUser.name} ({effectiveAdminUser.email})
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Compliance / Deletion Reason
+              </label>
+              <input
+                type="text"
+                value={deletionReason}
+                onChange={(e) => setDeletionReason(e.target.value)}
+                placeholder="e.g., GDPR erasure request, duplicate account, policy violation..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-rose-500"
+              />
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -2340,6 +2404,8 @@ export const ClientAdminView: React.FC<Props> = ({
               </table>
             </div>
           </div>
+
+          <UserDeletionLogModule compact currentUser={effectiveAdminUser} />
         </div>
       )}
 
@@ -2348,6 +2414,13 @@ export const ClientAdminView: React.FC<Props> = ({
       {/* ========================================================================= */}
       {activeTab === 'ACTION_LOGGER' && (
         <AdminActivityLogger currentUser={currentUser} />
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 9: USER DELETION LOG (COMPLIANCE & DATA TRACEABILITY) */}
+      {/* ========================================================================= */}
+      {activeTab === 'USER_DELETION_LOG' && (
+        <UserDeletionLogModule currentUser={effectiveAdminUser} />
       )}
     </div>
   );

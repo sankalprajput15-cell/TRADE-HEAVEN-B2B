@@ -58,6 +58,33 @@ html, body {
   animation: scalePulse 2.2s ease-in-out infinite;
 }
 
+/* Subtle Pop Animation for Upgrade to View CTA Buttons */
+@keyframes subtlePop {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.7;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6);
+  }
+  45% {
+    transform: scale(1.08);
+    opacity: 1;
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+  70% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+}
+
+.animate-subtle-pop {
+  animation: subtlePop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: center;
+}
+
 /* SVG World Map Active Trade Corridor Flow Animations */
 @keyframes tradeFlowDash {
   0% {
@@ -110,6 +137,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .animate-subtle-pop,
   .trade-flow-line-active,
   .trade-flow-line-ambient,
   .trade-flow-packet,

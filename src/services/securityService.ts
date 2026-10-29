@@ -1,4 +1,5 @@
-import { AuthUser, JWTPayload, SecurityAuditLog, UserRole, MembershipStatus, AccountStatus, CompanyProfile, DetailedBuyerProfile, RfqRequirement, SupplierTier } from '../types';
+import { AuthUser, JWTPayload, SecurityAuditLog, UserRole, MembershipStatus, AccountStatus, CompanyProfile, DetailedBuyerProfile, DetailedVendorProfile, RfqRequirement, SupplierTier } from '../types';
+import { isPaidMemberUser, isPaidEntity, redactSensitiveContactText } from './freeLeadService';
 
 export const PROTECTED_SYSTEM_FIELDS = [
   'role',
@@ -341,19 +342,8 @@ class SecurityService {
   public isAllowedToViewContacts(caller: AuthUser | JWTPayload | null): boolean {
     if (!caller) return false;
     if (caller.role === 'ADMIN' || (caller as any).isVerifiedAdmin === true) return true;
-    
-    // Check if user is approved paid member (including Basic Plan $1,100 USD, Verified, Gold, Platinum, VIP)
-    const tierStr = String(caller.tier || '').toLowerCase();
-    const isPaid =
-      caller.isPremium === true ||
-      caller.membershipStatus === 'paid' ||
-      (caller.membershipStatus as string) === 'basic' ||
-      (caller.membershipStatus as string) === 'verified' ||
-      tierStr.includes('basic') ||
-      tierStr.includes('vip') ||
-      tierStr.includes('gold') ||
-      tierStr.includes('silver') ||
-      tierStr.includes('platinum');
+
+    const isPaid = isPaidMemberUser(caller);
     const isActive = (caller.status || 'ACTIVE') === 'ACTIVE';
     return isPaid && isActive;
   }
@@ -390,7 +380,11 @@ class SecurityService {
     caller: AuthUser | JWTPayload | null
   ): CompanyProfile {
     const canView = this.isAllowedToViewContacts(caller);
-    const isOwner = caller && ('uid' in caller ? caller.uid : caller.id) === company.ownerUid;
+    const isOwner = Boolean(
+      caller &&
+      (('uid' in caller ? caller.uid : caller.id) === company.ownerUid ||
+        (caller.email && company.contactEmail && caller.email.toLowerCase() === company.contactEmail.toLowerCase()))
+    );
 
     if (canView || isOwner) {
       return {
@@ -401,10 +395,65 @@ class SecurityService {
 
     return {
       ...company,
+      contactPerson: '🔒 Protected Representative (Paid Members Only)',
       contactPhone: this.maskPhoneNumber(company.contactPhone),
       contactEmail: this.maskEmailAddress(company.contactEmail),
       whatsapp: undefined,
-      address: `${company.city || 'Verified Industrial Hub'}, ${company.country} [🔒 Full Street Address Gated - Premium Members Only]`,
+      address: `${company.country || 'Verified Industrial Hub'} [🔒 Full Street Address Gated - Paid Members Only]`,
+      description: redactSensitiveContactText(company.description, false),
+      isContactMasked: true
+    };
+  }
+
+  public gateDetailedVendorProfile(
+    profile: DetailedVendorProfile,
+    caller: AuthUser | JWTPayload | null
+  ): DetailedVendorProfile {
+    const canView = this.isAllowedToViewContacts(caller);
+    const isOwner = Boolean(
+      caller &&
+      (caller.email && profile.contactEmail && caller.email.toLowerCase() === profile.contactEmail.toLowerCase())
+    );
+
+    if (canView || isOwner) {
+      return {
+        ...profile,
+        isContactMasked: false
+      };
+    }
+
+    return {
+      ...profile,
+      legalRegistrationNumber: '🔒 Verified Registry (Paid Only)',
+      taxVatNumber: '🔒 Protected',
+      dunsNumber: '🔒 Protected',
+      city: profile.country || 'Verified Export Hub',
+      address: `${profile.country || 'Global Hub'} [🔒 Full Street Address Gated - Paid Members Only]`,
+      description: redactSensitiveContactText(profile.description, false),
+      tagline: redactSensitiveContactText(profile.tagline, false),
+      contactPerson: '🔒 Protected Representative (Paid Members Only)',
+      contactPhone: this.maskPhoneNumber(profile.contactPhone),
+      contactEmail: this.maskEmailAddress(profile.contactEmail),
+      whatsapp: undefined,
+      contactPersonDetails: profile.contactPersonDetails
+        ? {
+            ...profile.contactPersonDetails,
+            name: '🔒 Protected Representative',
+            email: this.maskEmailAddress(profile.contactPersonDetails.email),
+            phone: this.maskPhoneNumber(profile.contactPersonDetails.phone),
+            whatsapp: undefined
+          }
+        : undefined,
+      factoryDetails: profile.factoryDetails
+        ? {
+            ...profile.factoryDetails,
+            tourGallery: (profile.factoryDetails.tourGallery || []).map(item => ({
+              ...item,
+              department: redactSensitiveContactText(item.department, false),
+              caption: redactSensitiveContactText(item.caption, false)
+            }))
+          }
+        : undefined,
       isContactMasked: true
     };
   }
@@ -414,7 +463,7 @@ class SecurityService {
     caller: AuthUser | JWTPayload | null
   ): RfqRequirement {
     const canView = this.isAllowedToViewContacts(caller);
-    const isOwner = caller && ('uid' in caller ? caller.uid : caller.id) === rfq.ownerUid;
+    const isOwner = Boolean(caller && ('uid' in caller ? caller.uid : caller.id) === rfq.ownerUid);
 
     if (canView || isOwner) {
       return {
@@ -423,10 +472,16 @@ class SecurityService {
       };
     }
 
+    const isPaid = isPaidEntity(rfq);
+
     return {
       ...rfq,
+      buyerName: isPaid ? '🔒 Paid Member Buyer Representative' : rfq.buyerName,
+      buyerCompany: isPaid ? `Verified Paid Importer (${rfq.buyerCountry || 'Global'})` : rfq.buyerCompany,
       buyerEmail: rfq.buyerEmail ? this.maskEmailAddress(rfq.buyerEmail) : undefined,
       buyerPhone: rfq.buyerPhone ? this.maskPhoneNumber(rfq.buyerPhone) : undefined,
+      detailedDescription: redactSensitiveContactText(rfq.detailedDescription, false),
+      detailedRequirements: redactSensitiveContactText(rfq.detailedRequirements, false),
       isContactMasked: true
     };
   }
@@ -436,7 +491,7 @@ class SecurityService {
     caller: AuthUser | JWTPayload | null
   ): DetailedBuyerProfile {
     const canView = this.isAllowedToViewContacts(caller);
-    const isOwner = caller && ('uid' in caller ? caller.uid : caller.id) === buyer.ownerUid;
+    const isOwner = Boolean(caller && ('uid' in caller ? caller.uid : caller.id) === buyer.ownerUid);
 
     if (canView || isOwner) {
       return {
@@ -447,10 +502,15 @@ class SecurityService {
 
     return {
       ...buyer,
+      legalRegistrationNumber: '🔒 Verified Registry (Paid Only)',
+      dunsNumber: '🔒 Protected',
+      taxVatNumber: '🔒 Protected',
+      contactPerson: '🔒 Protected Procurement Officer',
       contactPhone: this.maskPhoneNumber(buyer.contactPhone),
       contactEmail: this.maskEmailAddress(buyer.contactEmail),
       whatsapp: undefined,
-      address: `${buyer.city || 'Verified Trade Center'}, ${buyer.country} [🔒 Full Corporate Address Gated - Premium Members Only]`,
+      address: `${buyer.country || 'Verified Trade Center'} [🔒 Full Corporate Address Gated - Paid Members Only]`,
+      description: redactSensitiveContactText(buyer.description, false),
       isContactMasked: true
     };
   }

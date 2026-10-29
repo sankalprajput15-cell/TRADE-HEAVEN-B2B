@@ -37,8 +37,17 @@ import {
   BookOpen,
   Globe,
   Wallet,
-  Lock
+  Lock,
+  Bookmark,
+  BookmarkCheck,
+  Trash2,
+  Crown,
+  ArrowRight
 } from 'lucide-react';
+import { ActiveView } from '../../types';
+import { getSavedLeads, removeSavedLead, subscribeToSavedLeads } from '../../services/savedLeadsService';
+import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
+import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 
 interface Props {
   currentUser: AuthUser | null;
@@ -47,7 +56,10 @@ interface Props {
   rfqs?: RfqRequirement[];
   onOpenCreateRfq: () => void;
   onOpenStorefront: (companyId: string) => void;
-  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS';
+  onNavigate?: (view: ActiveView) => void;
+  onSelectRfq?: (rfq: RfqRequirement) => void;
+  onOpenUpgradeModal?: () => void;
+  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
 }
 
 const AVAILABLE_CATEGORIES = [
@@ -84,11 +96,27 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   rfqs = MOCK_RFQS,
   onOpenCreateRfq,
   onOpenStorefront,
+  onNavigate,
+  onSelectRfq,
+  onOpenUpgradeModal,
   initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
     initialTab || 'TRANSACTION_LEDGER'
   );
+
+  const [savedLeadList, setSavedLeadList] = useState<RfqRequirement[]>(() => 
+    getSavedLeads(rfqs, currentUser?.email)
+  );
+
+  useEffect(() => {
+    const syncSaved = () => {
+      setSavedLeadList(getSavedLeads(rfqs, currentUser?.email));
+    };
+    syncSaved();
+    const unsub = subscribeToSavedLeads(() => syncSaved());
+    return () => unsub();
+  }, [rfqs, currentUser?.email]);
 
   useEffect(() => {
     const handleDashboardTab = (e: Event) => {
@@ -553,6 +581,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 icon: FileText
               },
               {
+                id: 'SAVED_LEADS',
+                label: `Saved Leads (${savedLeadList.length})`,
+                icon: Bookmark
+              },
+              {
                 id: 'SETTINGS',
                 label: 'Alerts & Settings',
                 icon: Settings
@@ -844,6 +877,280 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Tab Content: SAVED_LEADS */}
+      {activeTab === 'SAVED_LEADS' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Saved Leads Header Banner */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                  <Bookmark className="w-4 h-4 fill-amber-500 text-amber-600" />
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                  Saved Procurement Leads &amp; Tender Bookmarks
+                </h3>
+              </div>
+              <p className="text-xs text-slate-600 max-w-2xl">
+                Review your bookmarked high-value tenders, prepare quotation proposals, and unlock direct corporate buyer contact channels.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {onNavigate && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('BUY_LEADS')}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Browse More Buy Leads</span>
+                </button>
+              )}
+              {savedLeadList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to remove all saved leads from your dashboard?")) {
+                      savedLeadList.forEach(lead => removeSavedLead(lead.id, currentUser?.email));
+                    }
+                  }}
+                  className="px-3 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Clear all saved leads from your account"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Clear All</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar when leads exist */}
+          {savedLeadList.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Bookmark className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Total Saved Tenders</span>
+                </div>
+                <div className="text-xl font-bold font-mono text-slate-900">
+                  {savedLeadList.length} <span className="text-xs font-normal text-slate-500">leads bookmarked</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Estimated Deal Volume</span>
+                </div>
+                <div className="text-xl font-bold font-mono text-emerald-700">
+                  {formatPrice(
+                    savedLeadList.reduce((acc, lead) => {
+                      const val = (lead.targetPriceUsd && lead.targetQuantity) ? lead.targetPriceUsd * lead.targetQuantity : (lead.targetPriceUsd || 0);
+                      return acc + val;
+                    }, 0)
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-1 shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Buyer Geographies</span>
+                </div>
+                <div className="text-xl font-bold font-mono text-slate-900">
+                  {new Set(savedLeadList.map(l => l.buyerCountry).filter(Boolean)).size} <span className="text-xs font-normal text-slate-500">unique countries</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Saved Leads Cards Grid or Empty State */}
+          {savedLeadList.length === 0 ? (
+            <div className="p-12 text-center bg-white border border-slate-200 rounded-3xl space-y-4 shadow-xs">
+              <div className="w-16 h-16 rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
+                <Bookmark className="w-8 h-8" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h4 className="text-lg font-bold text-slate-900">No Saved Leads in Your Dashboard</h4>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  You haven't bookmarked any procurement leads yet. Browse verified tenders in the Buy Leads Hub and click the bookmark button on any lead to store it here for quick quotes and follow-ups.
+                </p>
+              </div>
+              {onNavigate && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('BUY_LEADS')}
+                  className="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Browse Buy Leads Hub</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
+              {savedLeadList.map(rfq => {
+                const isPaidLead = isPaidEntity(rfq);
+                const isCallerPaid = isPaidMemberUser(currentUser);
+                const isClaimed = Boolean(currentUser) && (localStorage.getItem(`tradeheaven_claimed_rfq_${rfq.id}`) === 'true');
+
+                return (
+                  <div
+                    key={rfq.id}
+                    className="bg-white border border-slate-200 hover:border-blue-400 rounded-2xl p-5 transition-all flex flex-col justify-between h-full shadow-xs hover:shadow-md"
+                  >
+                    <div className="space-y-3 flex-1 flex flex-col">
+                      {/* Top Header */}
+                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 min-h-[52px]">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
+                              {rfq.id}
+                            </span>
+                            <span className="text-[10px] text-blue-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-200/80 shrink-0">
+                              <Clock className="w-2.5 h-2.5 text-blue-500 shrink-0" />
+                              <span>{getFreshRfqDate(rfq)}</span>
+                            </span>
+                            {isPaidLead && (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-400/40 flex items-center gap-1 shadow-2xs shrink-0">
+                                <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                <span>Paid VIP Lead</span>
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
+                        </div>
+
+                        {/* Remove Bookmark Button */}
+                        <button
+                          type="button"
+                          onClick={() => removeSavedLead(rfq.id, currentUser?.email)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                          title="Remove lead from saved bookmarks"
+                          aria-label="Remove bookmark"
+                        >
+                          <BookmarkCheck className="w-4 h-4 text-amber-600 fill-amber-500" />
+                        </button>
+                      </div>
+
+                      {/* Product Name & Image */}
+                      <div className="flex items-center gap-3 h-13">
+                        <div className="w-12 h-12 rounded-lg border border-slate-200 shrink-0 bg-slate-100 shadow-2xs flex items-center justify-center overflow-hidden">
+                          {(rfq.image || rfq.images?.[0]) ? (
+                            <img
+                              src={rfq.image || rfq.images?.[0]}
+                              alt={rfq.productName}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="w-6 h-6 text-slate-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
+                            {rfq.productName}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Volume & Destination Matrix */}
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-slate-500 shrink-0">Target Volume:</span>
+                          <span className="font-mono font-bold text-slate-900 text-right truncate">
+                            {rfq.targetQuantity?.toLocaleString()} {rfq.quantityUnit}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-slate-500 shrink-0">Destination:</span>
+                          <span className="font-semibold text-slate-800 text-right truncate">{rfq.destinationPort || 'Global Port'}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-slate-500 shrink-0">Incoterms / Target:</span>
+                          <span className="font-mono font-bold text-emerald-700 text-right truncate">
+                            {rfq.preferredIncoterm} • {formatPrice(rfq.targetPriceUsd)}/unit
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Description Snippet */}
+                      <div className="h-12 overflow-hidden text-xs text-slate-600 font-medium p-2 bg-slate-50/70 rounded-xl border border-slate-100">
+                        {!isCallerPaid && (!isClaimed || isPaidLead) ? (
+                          <div className="relative h-full flex items-center justify-between">
+                            <span className="line-clamp-2 pr-1">
+                              "{rfq.detailedDescription?.slice(0, 35)}
+                              <span className="blur-[2px] opacity-60">
+                                {' '}{rfq.detailedDescription?.slice(35) || '... technical compliance standards and requirements.'}"
+                              </span>
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="line-clamp-2">
+                            "{rfq.detailedDescription}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Buyer Company */}
+                      <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-600 flex items-center justify-between">
+                        <span className="font-bold text-slate-800 truncate">
+                          🏢 {rfq.buyerCompany} ({rfq.buyerCountry})
+                        </span>
+                        <span className="font-mono text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold border border-blue-200">
+                          {rfq.quotesCount} Bids
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions Bar */}
+                    <div className="pt-4 mt-3 border-t border-slate-100 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onSelectRfq) {
+                            onSelectRfq(rfq);
+                          } else if (onNavigate) {
+                            onNavigate('BUY_LEADS');
+                          }
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-xs cursor-pointer"
+                      >
+                        <span>Quote Tender</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+
+                      {!isCallerPaid && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenUpgradeModal?.()}
+                          className="py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs shrink-0 cursor-pointer"
+                          title="Upgrade to view direct buyer contact details"
+                        >
+                          <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                          <span>Upgrade</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => removeSavedLead(rfq.id, currentUser?.email)}
+                        className="p-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-slate-500 transition-colors cursor-pointer shrink-0"
+                        title="Remove from saved leads"
+                        aria-label="Remove lead"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

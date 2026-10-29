@@ -41,6 +41,8 @@ import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
 import { AboutUs } from './components/marketplace/AboutUs';
 import { TrustAndSafety } from './components/marketplace/TrustAndSafety';
 import { InsightsBlog } from './components/marketplace/InsightsBlog';
+import { ProductCatalog } from './components/marketplace/ProductCatalog';
+import { TradeHeavenMediatorView } from './components/marketplace/TradeHeavenMediatorView';
 
 // Helper for retryable lazy loaded views
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -83,7 +85,6 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
 }
 
 // Views
-const ProductCatalog = lazyWithRetry(() => import('./components/marketplace/ProductCatalog'), 'ProductCatalog');
 const RfqComparisonView = lazyWithRetry(() => import('./components/marketplace/RfqComparisonView'), 'RfqComparisonView');
 const TradeNegotiationChat = lazyWithRetry(() => import('./components/marketplace/TradeNegotiationChat'), 'TradeNegotiationChat');
 const BuyerSupplierDashboard = lazyWithRetry(() => import('./components/marketplace/BuyerSupplierDashboard'), 'BuyerSupplierDashboard');
@@ -104,9 +105,9 @@ const LandingPageView = lazyWithRetry(() => import('./components/marketplace/Lan
 const VendorProfilePage = lazyWithRetry(() => import('./components/vendor/VendorProfilePage'), 'VendorProfilePage');
 const BuyerProfilePage = lazyWithRetry(() => import('./components/buyer/BuyerProfilePage'), 'BuyerProfilePage');
 const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace/CountryTradeHubView'), 'CountryTradeHubView');
-const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
+const TradeAssuranceCertificateView = lazyWithRetry(() => import('./components/services/TradeAssuranceCertificateView'), 'TradeAssuranceCertificateView');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
 const ProductDetailModal = lazyWithRetry(() => import('./components/marketplace/ProductDetailModal'), 'ProductDetailModal');
@@ -170,6 +171,7 @@ const MainApp: React.FC = () => {
       }
       if (params.get('article') || params.get('post')) return 'INSIGHTS';
       if (params.get('buyer') || params.get('buyerId')) return 'BUYER_PROFILE';
+      if (params.get('cert') || params.get('certificate')) return 'TRADE_ASSURANCE_CERTIFICATE';
       // Check action param
       const action = params.get('action');
       if (action === 'post-sell') return 'POST_SELL_OFFER';
@@ -1117,6 +1119,12 @@ const MainApp: React.FC = () => {
           keywords = 'verified buyer profile, importer purchasing history, corporate sourcing criteria, buyer credit rating, target procurement volume, annual import requirements, verified KYC importer, corporate purchasing profile, Trade Heaven';
           canonical = 'https://tradeheaven.net/?view=BUYER_PROFILE';
           break;
+        case 'TRADE_ASSURANCE_CERTIFICATE':
+          title = 'Trade Assurance Certificate Registry & Verification | Trade Heaven';
+          description = 'Apply for an official Trade Heaven Trade Assurance Certificate ($150k–$2M USD escrow protection) by paying verification fees, or search and verify any certificate serial number online.';
+          keywords = 'Trade Heaven Trade Assurance Certificate, verify trade assurance certificate number, THC-2026 certificate lookup, apply for trade assurance certificate, B2B escrow protection certificate, SGS factory audit certificate, TradeHeaven certificate verification';
+          canonical = 'https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE';
+          break;
       }
     }
 
@@ -1484,7 +1492,11 @@ const MainApp: React.FC = () => {
       setActiveView('PLAN_PRICING_ADMIN');
       return;
     }
-    if (target === 'TRADE_PROTECTION' || target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
+    if (target === 'TRADE_ASSURANCE_CERTIFICATE' || target === 'TRADE_ASSURANCE' || target === 'TRADE_PROTECTION' || target === 'VERIFY_CERTIFICATE' || target === 'CERTIFICATE') {
+      setActiveView('TRADE_ASSURANCE_CERTIFICATE');
+      return;
+    }
+    if (target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
       setActiveView('DASHBOARD');
       return;
     }
@@ -1866,6 +1878,12 @@ const MainApp: React.FC = () => {
                     rfqs={rfqs}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     onOpenStorefront={handleOpenStorefront}
+                    onNavigate={handleNavigate}
+                    onSelectRfq={(rfq) => {
+                      setSelectedRfqId(rfq.id);
+                      setSelectedRfqForModal(rfq);
+                    }}
+                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
                   />
                 );
 
@@ -1874,6 +1892,7 @@ const MainApp: React.FC = () => {
                   <IncotermsCalculator selectedCurrency={selectedCurrency} />
                 );
 
+              case 'PREMIUM_SERVICES':
               case 'PREMIUM_MEMBERSHIP':
                 return (
                   <PremiumServicesView
@@ -1904,6 +1923,7 @@ const MainApp: React.FC = () => {
                     currentUser={currentUser}
                     onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
                     onOpenRegisterFree={handleOpenRegisterFree}
+                    onNavigate={handleNavigate}
                   />
                 );
 
@@ -2171,6 +2191,17 @@ const MainApp: React.FC = () => {
                   />
                 );
 
+              case 'TRADE_ASSURANCE_CERTIFICATE':
+                return (
+                  <TradeAssuranceCertificateView
+                    selectedCurrency={selectedCurrency}
+                    currentUser={currentUser}
+                    onOpenPaymentCheckout={handleOpenPaymentCheckout}
+                    onOpenStorefront={handleOpenStorefront}
+                    onNavigate={handleNavigate}
+                  />
+                );
+
               default:
                 return (
                   <TradeWheelHomePage
@@ -2217,7 +2248,7 @@ const MainApp: React.FC = () => {
         <TradeHeavenSocialBar onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
       </div>
 
-      <CustomerReviews />
+      {activeView === 'HOME' && <CustomerReviews />}
 
       {/* 5. GLOBAL FOOTER */}
       <TradeHeavenFooter

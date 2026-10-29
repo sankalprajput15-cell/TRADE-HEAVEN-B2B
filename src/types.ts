@@ -121,11 +121,30 @@ export interface SecurityAuditLog {
   actorUid: string;
   actorEmail: string;
   actorRole: UserRole;
-  action: 'AUTH_LOGIN' | 'AUTH_LOGOUT' | 'UNAUTHORIZED_ACCESS_BLOCKED' | 'FIELD_WRITE_BLOCKED' | 'OWNERSHIP_VIOLATION_BLOCKED' | 'PREMIUM_TOGGLED' | 'MEMBERSHIP_STATUS_CHANGED' | 'CONTACT_REVEALED' | 'PROFILE_UPDATED' | 'SECURITY_RULE_EVAL' | 'USER_CREATE_FAILED' | 'USER_CREATED';
+  action: 'AUTH_LOGIN' | 'AUTH_LOGOUT' | 'UNAUTHORIZED_ACCESS_BLOCKED' | 'FIELD_WRITE_BLOCKED' | 'OWNERSHIP_VIOLATION_BLOCKED' | 'PREMIUM_TOGGLED' | 'MEMBERSHIP_STATUS_CHANGED' | 'CONTACT_REVEALED' | 'PROFILE_UPDATED' | 'SECURITY_RULE_EVAL' | 'USER_CREATE_FAILED' | 'USER_CREATED' | 'USER_DELETED_PERMANENTLY' | string;
   targetResource: string;
   details: string;
   status: 'SUCCESS' | 'FORBIDDEN_403' | 'UNAUTHORIZED_401' | 'DENIED';
   ipAddress?: string;
+}
+
+export interface UserDeletionLogEntry {
+  id: string;
+  deletedUserId: string;
+  deletedUserName: string;
+  deletedUserEmail: string;
+  deletedUserRole: string;
+  deletedUserCompany?: string;
+  deletedUserTier?: string;
+  deletedUserCountry?: string;
+  deletedAt: string;
+  deletedByAdminId: string;
+  deletedByAdminName: string;
+  deletedByAdminEmail: string;
+  deletedByAdminRole: string;
+  reason?: string;
+  deletionSource?: string;
+  complianceRef?: string;
 }
 
 export type SupplierTier = 'FREE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'VIP';
@@ -482,7 +501,8 @@ export type ActiveView =
   | 'PRODUCT_IMAGE_ADMIN'
   | 'MEDIATOR_ENGINE'
   | 'WALLET_TOPUP'
-  | 'DIRECT_TRANSFER_GUIDE';
+  | 'DIRECT_TRANSFER_GUIDE'
+  | 'TRADE_ASSURANCE_CERTIFICATE';
 
 export * from './types/planPricingTypes';
 

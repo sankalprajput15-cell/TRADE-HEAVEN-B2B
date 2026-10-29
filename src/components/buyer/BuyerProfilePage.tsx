@@ -12,6 +12,7 @@ import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { SafeImage } from '../common/SafeImage';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
+import { isPaidEntity } from '../../services/freeLeadService';
 import { 
   ShieldCheck, 
   Award, 
@@ -92,9 +93,8 @@ export const BuyerProfilePage: React.FC<Props> = ({
     return 'OVERVIEW';
   });
   const [profile, setProfile] = useState<DetailedBuyerProfile>(() => {
-    if (initialBuyer) return initialBuyer;
-    const found = MOCK_BUYER_PROFILES.find(b => b.id === buyerId);
-    return found || MOCK_BUYER_PROFILES[0];
+    const raw = initialBuyer || MOCK_BUYER_PROFILES.find(b => b.id === buyerId) || MOCK_BUYER_PROFILES[0];
+    return securityService.gateBuyerProfile(raw, currentUser);
   });
   const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -524,20 +524,21 @@ export const BuyerProfilePage: React.FC<Props> = ({
                   currentUser={currentUser}
                   onOpenUpgradeModal={onOpenUpgradeModal || (() => {})}
                   isMasked={isContactMasked}
-                  resourceTitle="Corporate Buyer Direct Contact"
+                  paidMembersOnly={isPaidEntity(profile)}
+                  resourceTitle={isPaidEntity(profile) ? "Paid Member Protected Direct Contact" : "Corporate Buyer Direct Contact"}
                 >
                   <div className="space-y-2.5 pt-2 text-xs text-slate-700">
                     <div className="flex items-center gap-2">
                       <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">{profile.contactEmail ? securityService.maskEmailAddress(profile.contactEmail) : 'Contact via Inquiry Form'}</span>
+                      <span className="font-mono">{profile.contactEmail || 'Contact via Inquiry Form'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono">{profile.contactPhone ? securityService.maskPhoneNumber(profile.contactPhone) : 'Contact via Inquiry Form'}</span>
+                      <span className="font-mono">{profile.contactPhone || 'Contact via Inquiry Form'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MessageCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      <span className="font-mono">{profile.whatsapp || profile.contactPhone ? securityService.maskPhoneNumber(profile.whatsapp || profile.contactPhone) : 'Contact via Inquiry Form'}</span>
+                      <span className="font-mono">{profile.whatsapp || profile.contactPhone || 'Contact via Inquiry Form'}</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
