@@ -19,6 +19,8 @@ import { BatchImageCsvImporter } from './BatchImageCsvImporter';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
 import { CustomEmailDispatcherAdminModule } from './CustomEmailDispatcherAdminModule';
+import { RenewalOfferEmailHtmlManager } from './RenewalOfferEmailHtmlManager';
+import { RenewalInsightsAdminModule } from './RenewalInsightsAdminModule';
 import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
@@ -48,11 +50,15 @@ import {
   AlertTriangle,
   RefreshCw,
   Mail,
-  Bell
+  Bell,
+  Code2,
+  TrendingUp
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
   | 'CUSTOM_EMAIL_DISPATCHER'
+  | 'RENEWAL_INSIGHTS'
+  | 'RENEWAL_EMAIL_HTML_EDITOR'
   | 'PRODUCT_IMAGE_SYSTEM' 
   | 'CMS' 
   | 'DATABASE' 
@@ -458,6 +464,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const navigationItems = [
     { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
+    { id: 'RENEWAL_INSIGHTS', label: '📈 Renewal Insights', icon: TrendingUp },
+    { id: 'RENEWAL_EMAIL_HTML_EDITOR', label: '💻 Renewal Offer HTML Editor', icon: Code2 },
     { id: 'PRODUCT_IMAGE_SYSTEM', label: '📸 Product Image System (All)', icon: ImageIcon },
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
@@ -849,7 +857,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* VIEW CONDITIONAL RENDERING */}
         {activeTab === 'CUSTOM_EMAIL_DISPATCHER' && (
           <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0">
+                  <Code2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-black">
+                    Manage Automated &lsquo;Renewal Offer&rsquo; HTML Templates &amp; Conversion Insights
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Edit raw HTML source with dynamic placeholders (<code className="text-amber-300 font-mono">{'{{userName}}'}</code>, <code className="text-emerald-300 font-mono">{'{{planName}}'}</code>) or monitor open rates, CTR, and conversion status.
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('RENEWAL_INSIGHTS')}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>Renewal Insights →</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('RENEWAL_EMAIL_HTML_EDITOR')}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>Renewal HTML Editor →</span>
+                </button>
+              </div>
+            </div>
             <CustomEmailDispatcherAdminModule onOpenPaymentCheckout={onOpenPaymentCheckout} />
+          </div>
+        )}
+
+        {activeTab === 'RENEWAL_INSIGHTS' && (
+          <div className="space-y-4">
+            <RenewalInsightsAdminModule
+              onOpenPaymentCheckout={onOpenPaymentCheckout}
+              onNavigateToHtmlEditor={() => setActiveTab('RENEWAL_EMAIL_HTML_EDITOR')}
+              onNavigateToDispatcher={() => setActiveTab('CUSTOM_EMAIL_DISPATCHER')}
+            />
+          </div>
+        )}
+
+        {activeTab === 'RENEWAL_EMAIL_HTML_EDITOR' && (
+          <div className="space-y-4">
+            <RenewalOfferEmailHtmlManager onOpenPaymentCheckout={onOpenPaymentCheckout} />
           </div>
         )}
 

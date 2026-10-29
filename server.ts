@@ -20,6 +20,15 @@ import {
 
 dotenv.config();
 
+process.on('uncaughtException', (err) => {
+  console.warn('[Server Resilience] Uncaught exception intercepted:', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Server Resilience] Unhandled promise rejection intercepted:', reason);
+});
+
+
 // Helper to get active alert recipients (multi-recipient)
 function getAlertRecipients(): string[] {
   const defaults = ['sankalprajput15@gmail.com', 'solutionthe87@gmail.com', 'yr943334@gmail.com'];
@@ -1320,6 +1329,22 @@ app.post('/api/v1/admin/send-custom-email', async (req, res) => {
       }
     }
 
+    if (payload.isMembershipRenewal) {
+      recordRenewalDispatchInInsights({
+        recipientEmail: payload.recipientEmail,
+        recipientName: payload.decisionMakerName || payload.recipientName || 'Ali Charley Ezekiah',
+        companyName: payload.companyName || 'ACE Intermediary',
+        address: payload.address || '1241 Hackberry Avenue Corsicana Texas 75110',
+        paymentMethod: payload.paymentMethod || 'Debit Card',
+        planId: payload.renewalPlanId || 'basic-business-plan',
+        renewalAmountUsd: typeof payload.renewalAmountUsd === 'number' ? payload.renewalAmountUsd : 990,
+        subject: payload.subject,
+        delivered: receipt.success,
+        adminCopySent: Boolean(adminCopyReceipt?.success),
+        adminCopyEmail: (payload.adminCopyEmail || 'yr943334@gmail.com').trim()
+      });
+    }
+
     logServerActivity(
       req,
       'CUSTOM_ADMIN_EMAIL_DISPATCH',
@@ -1367,6 +1392,19 @@ app.post('/api/v1/admin/send-membership-renewal-email', async (req, res) => {
       adminCopyEmail
     });
 
+    recordRenewalDispatchInInsights({
+      recipientEmail: email,
+      recipientName: payload.decisionMakerName || payload.recipientName || 'Ali Charley Ezekiah',
+      companyName: payload.companyName || 'ACE Intermediary',
+      address: payload.address || '1241 Hackberry Avenue Corsicana Texas 75110',
+      paymentMethod: payload.paymentMethod || 'Debit Card',
+      planId: payload.planId || payload.renewalPlanId || 'basic-business-plan',
+      renewalAmountUsd: typeof payload.renewalAmountUsd === 'number' ? payload.renewalAmountUsd : 990,
+      delivered: receipt.success,
+      adminCopySent: Boolean(receipt.adminCopyReceipt?.success),
+      adminCopyEmail
+    });
+
     logServerActivity(
       req,
       'MEMBERSHIP_RENEWAL_EMAIL_DISPATCH',
@@ -1393,6 +1431,519 @@ app.post('/api/v1/admin/send-membership-renewal-email', async (req, res) => {
     });
   }
 });
+
+// In-memory store for the Admin-editable 'Renewal Offer' HTML Email Template & Supplier Segment Branding
+let serverRenewalOfferTemplateStore: {
+  subjectTemplate: string;
+  htmlTemplate: string;
+  defaultVariables?: Record<string, any>;
+  activeSegmentId?: string;
+  segmentBranding?: Record<string, any>;
+  updatedAt: string;
+} = {
+  subjectTemplate:
+    '💎 {{planName}} Renewal Offer ({{offerPrice}}/yr — {{discountPercent}}) & Exciting B2B Deals for {{companyName}} (Attn: {{userName}})',
+  htmlTemplate: '',
+  activeSegmentId: 'GLOBAL_B2B',
+  segmentBranding: {},
+  updatedAt: new Date().toISOString()
+};
+
+app.get('/api/v1/admin/renewal-offer-template', (_req, res) => {
+  return res.json({
+    success: true,
+    template: serverRenewalOfferTemplateStore
+  });
+});
+
+app.put('/api/v1/admin/renewal-offer-template', (req, res) => {
+  const { subjectTemplate, htmlTemplate, defaultVariables, activeSegmentId, segmentBranding } =
+    req.body || {};
+  serverRenewalOfferTemplateStore = {
+    subjectTemplate:
+      typeof subjectTemplate === 'string' && subjectTemplate.trim()
+        ? subjectTemplate
+        : serverRenewalOfferTemplateStore.subjectTemplate,
+    htmlTemplate:
+      typeof htmlTemplate === 'string'
+        ? htmlTemplate
+        : serverRenewalOfferTemplateStore.htmlTemplate,
+    defaultVariables: defaultVariables || serverRenewalOfferTemplateStore.defaultVariables,
+    activeSegmentId: activeSegmentId || serverRenewalOfferTemplateStore.activeSegmentId || 'GLOBAL_B2B',
+    segmentBranding: segmentBranding || serverRenewalOfferTemplateStore.segmentBranding || {},
+    updatedAt: new Date().toISOString()
+  };
+
+  logServerActivity(
+    req,
+    'RENEWAL_EMAIL_TEMPLATE_UPDATED',
+    ADMIN_EMAIL,
+    'ADMIN',
+    '/api/v1/admin/renewal-offer-template',
+    `Updated automated Renewal Offer HTML email template and supplier segment branding (${serverRenewalOfferTemplateStore.activeSegmentId}).`,
+    'SUCCESS'
+  );
+
+  return res.json({
+    success: true,
+    message: 'Automated Renewal Offer HTML email template & supplier segment branding saved.',
+    template: serverRenewalOfferTemplateStore
+  });
+});
+
+app.post('/api/v1/admin/renewal-offer-template/upload-asset', (req, res) => {
+  try {
+    const { dataUrl, fileName, slot, segmentId } = req.body || {};
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid base64 image dataUrl is required.'
+      });
+    }
+
+    const match = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+    if (!match) {
+      return res.status(400).json({
+        success: false,
+        message: 'Malformed image dataUrl.'
+      });
+    }
+
+    const rawExt = match[1].toLowerCase();
+    const ext = rawExt === 'jpeg' ? 'jpg' : rawExt === 'svg+xml' ? 'svg' : rawExt;
+    const base64Data = match[2];
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'renewal-branding');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const cleanSegment = String(segmentId || 'global').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const cleanSlot = String(slot || 'header').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const safeName = `${cleanSegment}-${cleanSlot}-${Date.now()}.${ext}`;
+    const filePath = path.join(uploadDir, safeName);
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/renewal-branding/${safeName}`;
+
+    logServerActivity(
+      req,
+      'RENEWAL_BRAND_ASSET_UPLOADED',
+      ADMIN_EMAIL,
+      'ADMIN',
+      '/api/v1/admin/renewal-offer-template/upload-asset',
+      `Uploaded custom ${cleanSlot} image (${fileName || safeName}) for supplier segment ${segmentId || 'GLOBAL_B2B'}.`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      url: publicUrl,
+      dataUrl,
+      slot: cleanSlot,
+      segmentId: segmentId || 'GLOBAL_B2B',
+      message: `Uploaded custom ${cleanSlot} brand image for ${segmentId || 'Global B2B'} segment.`
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to upload renewal branding image.'
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// RENEWAL INSIGHTS & EMAIL PERFORMANCE ANALYTICS STORE
+// -------------------------------------------------------------
+interface ServerRenewalInsightRecord {
+  id: string;
+  recipientName: string;
+  decisionMakerName: string;
+  recipientEmail: string;
+  companyName: string;
+  address: string;
+  paymentMethod: string;
+  planId: string;
+  planName: string;
+  offerTitle: string;
+  standardAmountUsd: number;
+  renewalAmountUsd: number;
+  discountLabel: string;
+  promoCode: string;
+  subject: string;
+  sentAt: string;
+  delivered: boolean;
+  adminCopySent: boolean;
+  adminCopyEmail?: string;
+  opened: boolean;
+  openCount: number;
+  lastOpenedAt?: string;
+  clicked: boolean;
+  clickCount: number;
+  lastClickedAt?: string;
+  conversionStatus: 'CONVERTED' | 'CHECKOUT_INITIATED' | 'CLICKED' | 'OPENED' | 'SENT';
+  convertedAt?: string;
+  orderId?: string;
+}
+
+let serverRenewalInsightsRecords: ServerRenewalInsightRecord[] = [
+  {
+    id: 'ren-ali-ace-001',
+    recipientName: 'Ali Charley Ezekiah',
+    decisionMakerName: 'Ali Charley Ezekiah',
+    recipientEmail: 'ezekiahali355@gmail.com',
+    companyName: 'ACE Intermediary',
+    address: '1241 Hackberry Avenue Corsicana Texas 75110',
+    paymentMethod: 'Debit Card',
+    planId: 'basic-business-plan',
+    planName: 'Basic Business Plan',
+    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr) + New Exciting Deals',
+    standardAmountUsd: 1100,
+    renewalAmountUsd: 990,
+    discountLabel: '10% OFF',
+    promoCode: 'DIWALI10',
+    subject:
+      '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+    sentAt: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: true,
+    openCount: 3,
+    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+    clicked: true,
+    clickCount: 2,
+    lastClickedAt: new Date(Date.now() - 1000 * 60 * 9).toISOString(),
+    conversionStatus: 'CHECKOUT_INITIATED'
+  },
+  {
+    id: 'ren-mark-atlantic-002',
+    recipientName: 'Mark Johnson',
+    decisionMakerName: 'Mark Johnson (President)',
+    recipientEmail: 'mjohnson@atlanticpowerequip.com',
+    companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    address: 'P.O. Box 1176, Marmora, NJ 08223 USA',
+    paymentMethod: 'Debit Card',
+    planId: 'vip-business-plan',
+    planName: 'VIP Business Plan',
+    offerTitle: 'VIP Business Plan Renewal — 10% OFF ($5,490/yr) + Golden Lead Access',
+    standardAmountUsd: 6100,
+    renewalAmountUsd: 5490,
+    discountLabel: '10% OFF',
+    promoCode: 'DIWALI10',
+    subject:
+      '💎 VIP Business Plan Renewal Offer ($5,490/yr — 10% OFF) & Exciting B2B Deals for Atlantic Power & Equipment Co.',
+    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: true,
+    openCount: 5,
+    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    clicked: true,
+    clickCount: 3,
+    lastClickedAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
+    conversionStatus: 'CONVERTED',
+    convertedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    orderId: 'ORD-REN-884920'
+  },
+  {
+    id: 'ren-randy-middlefox-003',
+    recipientName: 'Mr. Randy',
+    decisionMakerName: 'Mr. Randy',
+    recipientEmail: 'randy@midforkcap.com',
+    companyName: 'Middle Fox LLC',
+    address: 'Billings, Montana 59101, United States',
+    paymentMethod: 'Corporate Wire / Debit Card',
+    planId: 'premium-partner-plan',
+    planName: 'Premium Partner Plan',
+    offerTitle: 'Premium Partner Plan Renewal — 10% OFF ($1,890/yr vs $2,100/yr)',
+    standardAmountUsd: 2100,
+    renewalAmountUsd: 1890,
+    discountLabel: '10% OFF',
+    promoCode: 'RENEW10',
+    subject: '💎 Premium Partner Plan Renewal Offer ($1,890/yr — 10% OFF) & Buyer Tenders for Middle Fox LLC',
+    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: true,
+    openCount: 4,
+    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+    clicked: true,
+    clickCount: 2,
+    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    conversionStatus: 'CONVERTED',
+    convertedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    orderId: 'ORD-REN-773104'
+  },
+  {
+    id: 'ren-marcus-apex-004',
+    recipientName: 'Marcus Vance',
+    decisionMakerName: 'Marcus Vance (VP Global Sourcing)',
+    recipientEmail: 'm.vance@apexglobal.com',
+    companyName: 'Apex Global Logistics & Sourcing',
+    address: '450 Mission Street, San Francisco, CA 94105 USA',
+    paymentMethod: 'Debit Card',
+    planId: 'basic-business-plan',
+    planName: 'Basic Business Plan',
+    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
+    standardAmountUsd: 1100,
+    renewalAmountUsd: 990,
+    discountLabel: '10% OFF',
+    promoCode: 'DIWALI10',
+    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Apex Global Logistics & Sourcing',
+    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: true,
+    openCount: 2,
+    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+    clicked: true,
+    clickCount: 1,
+    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
+    conversionStatus: 'CLICKED'
+  },
+  {
+    id: 'ren-elena-apexmicro-005',
+    recipientName: 'Elena Zhao',
+    decisionMakerName: 'Elena Zhao (Export Director)',
+    recipientEmail: 'elena.zhao@apexmicro.cn',
+    companyName: 'Shenzhen Apex Microelectronics Co., Ltd.',
+    address: 'Nanshan Hi-Tech Industrial Park, Shenzhen, China',
+    paymentMethod: 'Debit Card / SWIFT',
+    planId: 'premium-partner-plan',
+    planName: 'Premium Partner Plan',
+    offerTitle: 'Premium Partner Plan Renewal — 10% OFF ($1,890/yr)',
+    standardAmountUsd: 2100,
+    renewalAmountUsd: 1890,
+    discountLabel: '10% OFF',
+    promoCode: 'DIWALI10',
+    subject: '💎 Premium Partner Plan Renewal Offer ($1,890/yr — 10% OFF) for Shenzhen Apex Microelectronics',
+    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: true,
+    openCount: 3,
+    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    clicked: true,
+    clickCount: 2,
+    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 11).toISOString(),
+    conversionStatus: 'CONVERTED',
+    convertedAt: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
+    orderId: 'ORD-REN-662019'
+  },
+  {
+    id: 'ren-carlos-iberia-006',
+    recipientName: 'Carlos Mendez',
+    decisionMakerName: 'Carlos Mendez',
+    recipientEmail: 'cmendez@iberiaparts.es',
+    companyName: 'Iberia Clean Energy Solutions',
+    address: 'Paseo de la Castellana 95, Madrid, Spain',
+    paymentMethod: 'Debit Card',
+    planId: 'basic-business-plan',
+    planName: 'Basic Business Plan',
+    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
+    standardAmountUsd: 1100,
+    renewalAmountUsd: 990,
+    discountLabel: '10% OFF',
+    promoCode: 'DIWALI10',
+    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Iberia Clean Energy Solutions',
+    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 38).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: true,
+    openCount: 1,
+    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 19).toISOString(),
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'OPENED'
+  },
+  {
+    id: 'ren-vikram-apex-007',
+    recipientName: 'Vikram Mehta',
+    decisionMakerName: 'Vikram Mehta (Managing Director)',
+    recipientEmail: 'vmehta@apexmachinery.in',
+    companyName: 'Apex Precision Engineering Ltd.',
+    address: 'Andheri East, Mumbai, Maharashtra 400069, India',
+    paymentMethod: 'Debit Card',
+    planId: 'basic-business-plan',
+    planName: 'Basic Business Plan',
+    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
+    standardAmountUsd: 1100,
+    renewalAmountUsd: 990,
+    discountLabel: '10% OFF',
+    promoCode: 'DIWALI10',
+    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Apex Precision Engineering Ltd.',
+    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 46).toISOString(),
+    delivered: true,
+    adminCopySent: false,
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
+  }
+];
+
+function recordRenewalDispatchInInsights(params: {
+  recipientEmail: string;
+  recipientName: string;
+  companyName: string;
+  address: string;
+  paymentMethod: string;
+  planId: string;
+  renewalAmountUsd: number;
+  subject?: string;
+  delivered: boolean;
+  adminCopySent: boolean;
+  adminCopyEmail?: string;
+}) {
+  const cleanEmail = params.recipientEmail.trim().toLowerCase();
+  const planName =
+    params.planId === 'vip-business-plan'
+      ? 'VIP Business Plan'
+      : params.planId === 'premium-partner-plan'
+      ? 'Premium Partner Plan'
+      : 'Basic Business Plan';
+  const standardAmountUsd =
+    params.planId === 'vip-business-plan'
+      ? 6100
+      : params.planId === 'premium-partner-plan'
+      ? 2100
+      : 1100;
+
+  const existingIdx = serverRenewalInsightsRecords.findIndex(
+    (r) => r.recipientEmail.toLowerCase() === cleanEmail
+  );
+
+  if (existingIdx !== -1) {
+    serverRenewalInsightsRecords[existingIdx] = {
+      ...serverRenewalInsightsRecords[existingIdx],
+      recipientName: params.recipientName,
+      decisionMakerName: params.recipientName,
+      companyName: params.companyName,
+      address: params.address,
+      paymentMethod: params.paymentMethod,
+      planId: params.planId,
+      planName,
+      standardAmountUsd,
+      renewalAmountUsd: params.renewalAmountUsd,
+      sentAt: new Date().toISOString(),
+      delivered: params.delivered,
+      adminCopySent: params.adminCopySent,
+      adminCopyEmail: params.adminCopyEmail
+    };
+  } else {
+    serverRenewalInsightsRecords.unshift({
+      id: `ren-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      recipientName: params.recipientName,
+      decisionMakerName: params.recipientName,
+      recipientEmail: cleanEmail,
+      companyName: params.companyName,
+      address: params.address,
+      paymentMethod: params.paymentMethod,
+      planId: params.planId,
+      planName,
+      offerTitle: `${planName} Renewal — 10% OFF ($${params.renewalAmountUsd}/yr)`,
+      standardAmountUsd,
+      renewalAmountUsd: params.renewalAmountUsd,
+      discountLabel: '10% OFF',
+      promoCode: 'DIWALI10',
+      subject:
+        params.subject ||
+        `💎 ${planName} Renewal Offer ($${params.renewalAmountUsd}/yr — 10% OFF) for ${params.companyName}`,
+      sentAt: new Date().toISOString(),
+      delivered: params.delivered,
+      adminCopySent: params.adminCopySent,
+      adminCopyEmail: params.adminCopyEmail,
+      opened: false,
+      openCount: 0,
+      clicked: false,
+      clickCount: 0,
+      conversionStatus: 'SENT'
+    });
+  }
+}
+
+app.get('/api/v1/admin/renewal-insights', (_req, res) => {
+  return res.json({
+    success: true,
+    records: serverRenewalInsightsRecords
+  });
+});
+
+app.post('/api/v1/admin/renewal-insights/track', (req, res) => {
+  const { recordId, email, eventType, orderId } = req.body || {};
+  const nowIso = new Date().toISOString();
+
+  serverRenewalInsightsRecords = serverRenewalInsightsRecords.map((rec) => {
+    const matchesId = recordId && rec.id === recordId;
+    const matchesEmail =
+      email && rec.recipientEmail.toLowerCase().trim() === String(email).toLowerCase().trim();
+    if (!matchesId && !matchesEmail) return rec;
+
+    if (eventType === 'OPEN') {
+      return {
+        ...rec,
+        opened: true,
+        openCount: rec.openCount + 1,
+        lastOpenedAt: nowIso,
+        conversionStatus: rec.conversionStatus === 'SENT' ? 'OPENED' : rec.conversionStatus
+      };
+    }
+    if (eventType === 'CLICK') {
+      return {
+        ...rec,
+        opened: true,
+        openCount: Math.max(1, rec.openCount),
+        lastOpenedAt: rec.lastOpenedAt || nowIso,
+        clicked: true,
+        clickCount: rec.clickCount + 1,
+        lastClickedAt: nowIso,
+        conversionStatus:
+          rec.conversionStatus === 'SENT' || rec.conversionStatus === 'OPENED'
+            ? 'CLICKED'
+            : rec.conversionStatus
+      };
+    }
+    if (eventType === 'CHECKOUT_INITIATED') {
+      return {
+        ...rec,
+        opened: true,
+        openCount: Math.max(1, rec.openCount),
+        clicked: true,
+        clickCount: Math.max(1, rec.clickCount),
+        lastClickedAt: nowIso,
+        conversionStatus: rec.conversionStatus === 'CONVERTED' ? 'CONVERTED' : 'CHECKOUT_INITIATED'
+      };
+    }
+    if (eventType === 'CONVERT') {
+      return {
+        ...rec,
+        opened: true,
+        openCount: Math.max(1, rec.openCount),
+        clicked: true,
+        clickCount: Math.max(1, rec.clickCount),
+        conversionStatus: 'CONVERTED',
+        convertedAt: nowIso,
+        orderId: orderId || rec.orderId || `ORD-REN-${Math.floor(100000 + Math.random() * 900000)}`
+      };
+    }
+    return rec;
+  });
+
+  return res.json({
+    success: true,
+    records: serverRenewalInsightsRecords
+  });
+});
+
+
 
 // -------------------------------------------------------------
 // SCHEDULED EMAIL AUTOMATION ENGINE (BulkEntityCrmModule)
@@ -4688,10 +5239,15 @@ async function startServer() {
     const vitePromise = createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
-    }).then((vite) => {
-      viteMiddleware = vite.middlewares;
-      return vite;
-    });
+    })
+      .then((vite) => {
+        viteMiddleware = vite.middlewares;
+        return vite;
+      })
+      .catch((err) => {
+        console.error('[Vite Middleware Error]', err);
+        return null;
+      });
 
     app.use(async (req, res, next) => {
       try {
@@ -4714,7 +5270,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
 
     // Automatically dispatch the Golden Lead (10 Generators to Canada, 100% Advance Payment, VIP-Only Access + Diwali Offer) email to Mark Johnson
@@ -4815,7 +5371,13 @@ async function startServer() {
       }
     }, 1500);
   });
+
+  httpServer.on('error', (err: any) => {
+    console.error('[HTTP Server Error]', err?.message || err);
+  });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('[Server Startup Error]', err);
+});
 

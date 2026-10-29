@@ -2465,6 +2465,19 @@ const MainApp: React.FC = () => {
               paymentMethod: checkoutData?.preferredPaymentMethod || 'Debit Card'
             });
 
+            // Sync conversion status with Admin Renewal Insights
+            const targetEmail =
+              checkoutData?.clientEmail || currentUser?.email || 'ezekiahali355@gmail.com';
+            fetch('/api/v1/admin/renewal-insights/track', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: targetEmail,
+                eventType: 'CONVERT',
+                orderId
+              })
+            }).catch(() => {});
+
             addNotification({
               type: 'ORDER',
               title: 'Membership Renewal Complete — Account Updated',
