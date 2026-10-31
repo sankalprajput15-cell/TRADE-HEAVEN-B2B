@@ -190,7 +190,7 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
         <button
           type="button"
           onClick={() => setPopoverOpen(prev => !prev)}
-          className={`h-8 sm:h-9 p-1 pr-2.5 rounded-full border flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shadow-2xs group active:scale-95 bg-white ${
+          className={`h-8 sm:h-9 p-1 sm:pr-2.5 rounded-full border flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer shadow-2xs group active:scale-95 bg-white ${
             pulseHighlight
               ? 'border-emerald-500 ring-2 ring-emerald-500/20'
               : isActiveView || popoverOpen
@@ -202,13 +202,13 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
           data-testid="header-wallet-toggle-button"
         >
           {/* Left Emerald Icon Pill */}
-          <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-mono font-bold text-xs flex items-center gap-1.5 shadow-2xs group-hover:bg-emerald-700 transition-colors shrink-0">
+          <span className="px-1.5 sm:px-2.5 py-1 rounded-full bg-emerald-600 text-white font-mono font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 shadow-2xs group-hover:bg-emerald-700 transition-colors shrink-0">
             <Wallet className="w-3.5 h-3.5 text-white shrink-0" />
-            <span>Wallet</span>
+            <span className="hidden md:inline">Wallet</span>
           </span>
 
           <ChevronDown
-            className={`w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 transition-transform duration-200 shrink-0 ${
+            className={`hidden sm:block w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 group-hover:text-emerald-700 transition-transform duration-200 shrink-0 ${
               popoverOpen ? 'rotate-180 text-emerald-700' : ''
             }`}
           />
@@ -216,7 +216,7 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
 
         {/* Wallet Breakdown Dropdown Popover */}
         {popoverOpen && (
-          <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200/90 overflow-hidden z-50 animate-fadeIn">
+          <div className="fixed inset-x-2.5 top-15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200/90 overflow-hidden z-50 animate-fadeIn">
             {/* Header */}
             <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">

@@ -136,7 +136,7 @@ import { DETAILED_VENDOR_PROFILES } from './data/detailedVendorProfiles';
 import { bigrockApi } from './services/bigrockApi';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { GuardedRootView } from './components/admin/GuardedRootView';
-import { Loader2, Mail, CheckCircle2, AlertCircle, Send, Tag, X } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, AlertCircle, Send, Tag, X, Home, Package, FileText, Landmark, LayoutDashboard } from 'lucide-react';
 import { TradeHeavenDataLoader } from './components/common/TradeHeavenDataLoader';
 import { EditableText } from './components/EditableText';
 import { EditableImage } from './components/EditableImage';
@@ -1658,7 +1658,7 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans pb-16 md:pb-0">
       {/* Scroll restoration anchor */}
       <ScrollToTop activeView={activeView} />
       {/* Dynamic SEO Meta Tags Manager */}
@@ -2384,7 +2384,104 @@ const MainApp: React.FC = () => {
         onOpenStorefront={handleOpenStorefront}
       />
 
-      
+      {/* 7. GLOBAL PERSISTENT MOBILE BOTTOM NAVIGATION BAR (< md) */}
+      <nav
+        id="global-mobile-bottom-nav"
+        aria-label="Mobile Marketplace Navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-6px_20px_-6px_rgba(15,23,42,0.12)] px-1.5 py-1"
+      >
+        <div className="grid grid-cols-5 items-center max-w-md mx-auto gap-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              handleNavigate('HOMEPAGE');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              activeView === 'HOMEPAGE' || activeView === 'MARKETPLACE_HOME' || activeView === 'LANDING_PAGE'
+                ? 'text-blue-600 bg-blue-50/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5 leading-tight truncate">Home</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleNavigate('PRODUCT_DIRECTORY');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              activeView === 'PRODUCT_DIRECTORY'
+                ? 'text-blue-600 bg-blue-50/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5 leading-tight truncate">Products</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleNavigate('BUY_LEADS');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`relative flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              activeView === 'BUY_LEADS' || activeView === 'RFQ_HUB'
+                ? 'text-emerald-600 bg-emerald-50/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <div className="relative">
+              <FileText className="w-4 h-4" />
+              <span className="absolute -top-1 -right-2.5 px-1 min-w-[14px] h-3.5 rounded-full bg-emerald-600 text-white text-[8px] font-black flex items-center justify-center">
+                {rfqs.length > 99 ? '99+' : rfqs.length}
+              </span>
+            </div>
+            <span className="text-[10px] mt-0.5 leading-tight truncate">RFQs</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleNavigate('SUPPLIER_WITHDRAWAL');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              activeView === 'SUPPLIER_WITHDRAWAL' || activeView === 'WALLET_TOPUP'
+                ? 'text-indigo-600 bg-indigo-50/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <Landmark className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5 leading-tight truncate">Withdraw</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              handleNavigate('DASHBOARD');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className={`relative flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
+              activeView === 'DASHBOARD'
+                ? 'text-blue-600 bg-blue-50/80 font-bold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <div className="relative">
+              <LayoutDashboard className="w-4 h-4" />
+              {currentUser && (
+                <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white" />
+              )}
+            </div>
+            <span className="text-[10px] mt-0.5 leading-tight truncate">Dashboard</span>
+          </button>
+        </div>
+      </nav>
 
       {/* 8. QUICK SECTION LIVE EDIT MODAL (Strictly Creator & Admin Only) */}
       

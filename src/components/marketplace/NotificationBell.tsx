@@ -45,10 +45,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative h-9 w-9 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+        className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
         title="Notifications"
       >
-        <Bell className="w-4 h-4 shrink-0" />
+        <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -57,7 +57,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-[320px] sm:w-[380px] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="fixed inset-x-2.5 top-15 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:mt-2 w-auto sm:w-[380px] bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <h3 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
               Notifications {unreadCount > 0 && <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-[9px]">{unreadCount} New</span>}

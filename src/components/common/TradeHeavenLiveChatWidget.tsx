@@ -225,13 +225,13 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
   };
 
   return (
-    <div id="trade-heaven-live-chat-root" className="fixed bottom-20 right-3 sm:right-6 md:bottom-6 z-40 flex flex-col items-end pointer-events-none">
+    <div id="trade-heaven-live-chat-root" className="fixed bottom-16 right-2.5 sm:right-6 md:bottom-6 z-40 flex flex-col items-end pointer-events-none">
       
       {/* 1. CHAT WINDOW (WHEN EXPANDED) */}
       {isOpen && (
         <div 
-          className={`pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 w-[92vw] sm:w-[420px] mb-3 ${
-            isMinimized ? 'h-14' : 'h-[580px] max-h-[85vh]'
+          className={`pointer-events-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-300 w-[calc(100vw-1.25rem)] sm:w-[400px] mb-2.5 sm:mb-3 ${
+            isMinimized ? 'h-14' : 'h-[72vh] sm:h-[560px] max-h-[80vh]'
           }`}
           style={{ boxShadow: '0 20px 40px -10px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.08)' }}
         >
@@ -539,7 +539,7 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
       )}
 
       {/* 2. FLOATING ACTION BUTTONS DOCK (WHEN COLLAPSED OR EXPANDED) */}
-      <div className="pointer-events-auto flex items-center gap-2.5">
+      <div className="pointer-events-auto flex items-center gap-2">
         {/* DIRECT WHATSAPP FLOATING BUTTON - ICON ONLY */}
         <a
           id="floating-whatsapp-btn"
@@ -547,11 +547,11 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
           target="_blank"
           rel="noopener noreferrer"
           title="WhatsApp: +91 8532934479"
-          className="group relative w-12 h-12 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 border-white/40 hover:scale-110 active:scale-95 shrink-0"
+          className="group relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 border-white/40 hover:scale-105 active:scale-95 shrink-0"
         >
-          <MessageCircle className="w-6 h-6 fill-white text-[#25D366]" />
-          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 fill-white text-[#25D366]" />
+          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-white flex items-center justify-center">
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           </span>
           
           {/* Floating Tooltip */}
@@ -572,7 +572,7 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
             if (isMinimized) setIsMinimized(false);
             setUnreadCount(0);
           }}
-          className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border hover:scale-105 ${
+          className={`relative flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border hover:scale-105 ${
             isOpen
               ? 'bg-slate-900 text-white border-slate-700'
               : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white border-blue-400/30'
@@ -580,20 +580,20 @@ export const TradeHeavenLiveChatWidget: React.FC<Props> = ({
           title="Open 24/7 Live Trade Desk"
         >
           <div className="relative">
-            <MessageSquare className="w-5 h-5 text-white" />
+            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           </div>
           <div className="flex flex-col text-left">
-            <span className="text-xs font-black tracking-wide leading-tight">
-              {isOpen ? 'Close Desk' : '24/7 Trade Desk'}
+            <span className="text-[11px] sm:text-xs font-black tracking-wide leading-tight">
+              {isOpen ? 'Close' : 'Trade Desk'}
             </span>
-            <span className="text-[9px] text-blue-200 leading-none">
+            <span className="hidden sm:block text-[9px] text-blue-200 leading-none">
               Live Sourcing Support
             </span>
           </div>
           {/* Unread badge */}
           {unreadCount > 0 && !isOpen && (
-            <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+            <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center shadow-xs">
               {unreadCount}
             </span>
           )}

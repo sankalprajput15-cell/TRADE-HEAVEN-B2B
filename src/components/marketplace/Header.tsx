@@ -356,9 +356,6 @@ export const Header: React.FC<Props> = ({
     { label: 'Products', view: 'PRODUCT_DIRECTORY', activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', activeMatch: ['BUY_LEADS', 'RFQ_HUB'] },
-    ...(isAdmin
-      ? [{ label: '📈 Mail Open Rate', view: 'RENEWAL_INSIGHTS' as ActiveView, activeMatch: ['RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_EDITOR'] as ActiveView[] }]
-      : []),
     { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] }
   ];
 
@@ -396,9 +393,9 @@ export const Header: React.FC<Props> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
-      <div className="max-w-[1440px] mx-auto w-full px-2.5 sm:px-5 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
+      <div className="max-w-[1440px] mx-auto w-full px-2 sm:px-4 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2.5 lg:gap-4 min-w-0">
         {/* Zone 1: Brand Identity & Primary Navigation */}
-        <div className="flex items-center gap-2 sm:gap-3 lg:gap-5 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0 min-w-0">
           <button
             type="button"
             onClick={() => handleNavClick('HOMEPAGE')}
@@ -408,7 +405,7 @@ export const Header: React.FC<Props> = ({
           </button>
 
           {/* Primary Inline Navigation Links */}
-          <nav aria-label="Main Navigation" className="hidden xl:flex items-center gap-1.5 h-16 shrink-0">
+          <nav aria-label="Main Navigation" className="hidden xl:flex items-center gap-1 h-16 shrink-0">
             {primaryNavItems.map(item => {
               const isActive = item.activeMatch.includes(activeView);
               return (
@@ -416,7 +413,7 @@ export const Header: React.FC<Props> = ({
                   key={item.view}
                   type="button"
                   onClick={() => handleNavClick(item.view)}
-                  className={`relative h-full px-2.5 text-xs font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap shrink-0 ${
+                  className={`relative h-full px-2 2xl:px-2.5 text-xs font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'text-blue-600'
                       : 'text-slate-600 hover:text-slate-950'
@@ -424,7 +421,7 @@ export const Header: React.FC<Props> = ({
                 >
                   <span>{item.label}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 inset-x-2.5 h-0.5 bg-blue-600 rounded-full" />
+                    <span className="absolute bottom-0 inset-x-2 h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
               );
@@ -433,9 +430,9 @@ export const Header: React.FC<Props> = ({
         </div>
 
         {/* Zone 2: Global Search Bar with Real-Time Category & Supplier Auto-Suggest Dropdown */}
-        <div ref={searchWrapperRef} className="relative flex-1 max-w-xs sm:max-w-sm lg:max-w-md mx-1 sm:mx-2 min-w-[130px]">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-            <Search className="absolute left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+        <div ref={searchWrapperRef} className="relative flex-1 min-w-0 max-w-xs sm:max-w-sm lg:max-w-md mx-0.5 sm:mx-2">
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center min-w-0">
+            <Search className="absolute left-2.5 sm:left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
               id="header-global-search-input"
               type="text"
@@ -447,8 +444,8 @@ export const Header: React.FC<Props> = ({
                 setActiveSuggestIndex(-1);
               }}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search categories, suppliers, products..."
-              className="w-full h-8 sm:h-9 pl-8 pr-7 rounded-xl bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 text-xs text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              placeholder="Search products, suppliers..."
+              className="w-full min-w-0 h-8 sm:h-9 pl-7 sm:pl-8 pr-6 sm:pr-7 rounded-xl bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 text-[11px] sm:text-xs text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               autoComplete="off"
               aria-autocomplete="list"
               aria-expanded={searchFocused && searchTerm.trim().length > 0}
@@ -477,13 +474,13 @@ export const Header: React.FC<Props> = ({
               onSelectSupplier={handleSelectSuggestedSupplier}
               onSelectProduct={handleSelectSuggestedProduct}
               onViewAllResults={() => handleSearchSubmit()}
-              className="absolute top-full left-0 right-0 mt-1.5 min-w-[290px] sm:min-w-[380px]"
+              className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:right-0 sm:mt-1.5 sm:min-w-[380px] z-50"
             />
           )}
         </div>
 
         {/* Zone 3: Wallet Balance, Primary CTA & Account Menu */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 shrink-0">
           {/* Authenticated & Paid Registered Buyers/Suppliers Wallet Balance */}
           {isPaidAndRegisteredMember && currentUser && (
             <HeaderWalletBalance
@@ -495,12 +492,12 @@ export const Header: React.FC<Props> = ({
             />
           )}
 
-          {/* Quick Access: Mail Open Rate & Renewal Insights (Admin Only) */}
+          {/* Quick Access: Mail Open Rate & Renewal Insights (Admin Only - Wide Desktop) */}
           {isAdmin && (
             <button
               type="button"
               onClick={() => handleNavClick('RENEWAL_INSIGHTS')}
-              className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
+              className={`hidden 2xl:flex h-8 sm:h-9 px-2.5 rounded-lg font-bold text-xs items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
                 activeView === 'RENEWAL_INSIGHTS' || activeView === 'RENEWAL_EMAIL_EDITOR'
                   ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
                   : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
@@ -512,30 +509,11 @@ export const Header: React.FC<Props> = ({
             </button>
           )}
 
-          {/* 1-Click Login as Zac (Admin Impersonation Only) */}
-          {isAdmin && currentUser?.email?.toLowerCase() !== 'zac@otec.ltd' && (
-            <button
-              type="button"
-              onClick={async () => {
-                const res = await login('zac@otec.ltd', 'Zac@0011');
-                if (res.success && res.user) {
-                  setCurrentUser(res.user);
-                  handleNavClick('DASHBOARD');
-                }
-              }}
-              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
-              title="1-Click Sign In as Zac (Zachary Aldin • zac@otec.ltd)"
-            >
-              <LogIn className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span>Login as Zac</span>
-            </button>
-          )}
-
           {/* Primary Action: Post RFQ */}
           <button
             type="button"
             onClick={onOpenCreateRfq}
-            className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+            className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Post RFQ</span>
@@ -547,12 +525,12 @@ export const Header: React.FC<Props> = ({
           {/* Account Toggle Dropdown */}
           <div className="relative shrink-0" ref={userMenuRef}>
             {currentUser ? (
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen(prev => !prev)}
-                  className="h-8 sm:h-9 pl-1.5 sm:pl-2 pr-2 sm:pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-1.5 sm:gap-2 transition-colors text-left cursor-pointer shrink-0"
-                  title="Open Account Menu"
+                  className="h-8 sm:h-9 pl-1.5 sm:pl-2 pr-1.5 sm:pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-1 sm:gap-1.5 transition-colors text-left cursor-pointer shrink-0"
+                  title="Open Account & Navigation Menu"
                 >
                   <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0">
                     <SafeImage
@@ -561,7 +539,7 @@ export const Header: React.FC<Props> = ({
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="hidden lg:block leading-none max-w-[96px]">
+                  <div className="hidden lg:block leading-none max-w-[84px]">
                     <div className="text-xs font-semibold text-slate-900 truncate">
                       {currentUser.name.split(' ')[0]}
                     </div>
@@ -576,16 +554,16 @@ export const Header: React.FC<Props> = ({
                   />
                 </button>
 
-                {/* Direct Logout Button */}
+                {/* Direct Logout Button (Hidden on smaller screens; available inside Account menu) */}
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
+                  className="hidden lg:flex h-8 sm:h-9 px-2 xl:px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
                   title="Sign Out / Logout"
                   data-testid="header-logout-button"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span className="hidden xl:inline">Logout</span>
                 </button>
               </div>
             ) : (
@@ -606,7 +584,7 @@ export const Header: React.FC<Props> = ({
 
             {/* Account Toggle Menu Dropdown */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-[calc(100vw-1.25rem)] sm:w-96 max-w-sm max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
+              <div className="fixed inset-x-2.5 top-15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 max-h-[80vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
                 {/* User Identity or Sign In Header */}
                 {currentUser ? (
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 space-y-2">
@@ -691,66 +669,64 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* All Marketplace & Directory Options (Registered Users Only) */}
-                {currentUser && (
-                  <div className="pt-1 pb-1">
-                    <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
-                      Marketplace &amp; Directories
-                    </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {visibleMenuOptions.map(item => {
-                        const Icon = item.icon;
-                        const isActive = item.activeMatch.includes(activeView);
-                        return (
-                          <button
-                            key={item.view}
-                            type="button"
-                            onClick={() => {
-                              if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                                handleOpenFundsTopUp();
-                              } else if (item.label.includes('Dashboard')) {
-                                handleNavClick('DASHBOARD');
-                              } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
-                                setUserMenuOpen(false);
-                                onOpenOnboardModal();
-                              } else {
-                                handleNavClick(item.view);
-                              }
-                            }}
-                            className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                              isActive
-                                ? 'bg-blue-50 text-blue-600 font-semibold'
-                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                            }`}
-                          >
-                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          if (onOpenContactModal) {
-                            onOpenContactModal();
-                          } else {
-                            handleNavClick('CONTACT_US');
-                          }
-                        }}
-                        className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                          activeView === 'CONTACT_US'
-                            ? 'bg-blue-50 text-blue-600 font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                        }`}
-                      >
-                        <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span className="truncate">Contact Desk</span>
-                      </button>
-                    </div>
+                {/* All Marketplace & Directory Options */}
+                <div className="pt-1 pb-1">
+                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                    Marketplace &amp; Directories
                   </div>
-                )}
+                  <div className="grid grid-cols-2 gap-1">
+                    {visibleMenuOptions.map(item => {
+                      const Icon = item.icon;
+                      const isActive = item.activeMatch.includes(activeView);
+                      return (
+                        <button
+                          key={item.view}
+                          type="button"
+                          onClick={() => {
+                            if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
+                              handleOpenFundsTopUp();
+                            } else if (item.label.includes('Dashboard')) {
+                              handleNavClick('DASHBOARD');
+                            } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                              setUserMenuOpen(false);
+                              onOpenOnboardModal();
+                            } else {
+                              handleNavClick(item.view);
+                            }
+                          }}
+                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-600 font-semibold'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                          }`}
+                        >
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        if (onOpenContactModal) {
+                          onOpenContactModal();
+                        } else {
+                          handleNavClick('CONTACT_US');
+                        }
+                      }}
+                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                        activeView === 'CONTACT_US'
+                          ? 'bg-blue-50 text-blue-600 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
+                    >
+                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">Contact Desk</span>
+                    </button>
+                  </div>
+                </div>
 
                 {/* Quick Utilities: Language, Currency & Share Page */}
                 <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">
@@ -877,6 +853,39 @@ export const Header: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Mobile & Tablet Scrollable Quick-Navigation Strip (< xl) */}
+      <nav
+        aria-label="Mobile Quick Navigation"
+        className="xl:hidden border-t border-slate-200/70 bg-slate-50/90 px-2.5 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar"
+      >
+        {[
+          { label: 'Home', view: 'HOMEPAGE' as ActiveView, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] as ActiveView[] },
+          { label: 'Products', view: 'PRODUCT_DIRECTORY' as ActiveView, activeMatch: ['PRODUCT_DIRECTORY'] as ActiveView[] },
+          { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY' as ActiveView, activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] as ActiveView[] },
+          { label: 'Buy Leads', view: 'BUY_LEADS' as ActiveView, activeMatch: ['BUY_LEADS', 'RFQ_HUB'] as ActiveView[] },
+          { label: 'Dashboard', view: 'DASHBOARD' as ActiveView, activeMatch: ['DASHBOARD'] as ActiveView[] },
+          { label: 'Bank & Withdraw', view: 'SUPPLIER_WITHDRAWAL' as ActiveView, activeMatch: ['SUPPLIER_WITHDRAWAL'] as ActiveView[] },
+          { label: 'Wallet Top-Up', view: 'WALLET_TOPUP' as ActiveView, activeMatch: ['WALLET_TOPUP'] as ActiveView[] },
+          { label: 'Services', view: 'PREMIUM_SERVICES' as ActiveView, activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] as ActiveView[] },
+        ].map((item) => {
+          const isActive = item.activeMatch.includes(activeView);
+          return (
+            <button
+              key={item.view}
+              type="button"
+              onClick={() => handleNavClick(item.view)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+                isActive
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
     </header>
   );
 };

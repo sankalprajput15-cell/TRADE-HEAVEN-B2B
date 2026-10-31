@@ -456,7 +456,7 @@ export const HeroSection: React.FC<Props> = ({
   return (
     <div
       id="trade-heaven-hero"
-      className={`relative bg-slate-900 ${isSearchPopoverOpen || isCategoryMenuOpen ? 'overflow-visible' : 'overflow-hidden'} min-h-[580px] rounded-3xl flex items-center shadow-2xl border border-slate-800 group`}
+      className={`relative bg-slate-900 ${isSearchPopoverOpen || isCategoryMenuOpen ? 'overflow-visible' : 'overflow-hidden'} min-h-[420px] sm:min-h-[560px] rounded-2xl sm:rounded-3xl flex items-center shadow-2xl border border-slate-800 group`}
     >
       
       {/* Live Visual Edit Trigger Button (Strictly Admin / Creator Only) */}
@@ -472,7 +472,7 @@ export const HeroSection: React.FC<Props> = ({
       )}
 
       {/* Background Image with Dynamic Placeholder, Optimized Aspect Ratio & Blur-Up Effect */}
-      <div className="absolute inset-0 z-0 overflow-hidden rounded-3xl pointer-events-none">
+      <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl sm:rounded-3xl pointer-events-none">
         <OptimizedHeroImage
           imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1920, 85)}
           src={
@@ -487,21 +487,21 @@ export const HeroSection: React.FC<Props> = ({
           eager={true}
         />
         {/* Balanced gradient overlay ensuring high text readability while keeping tanker and ocean berth colors clear */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-900/45 to-slate-900/15 pointer-events-none z-[2]"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/60 to-slate-900/25 pointer-events-none z-[2]"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-8 sm:py-16 lg:py-20 w-full">
         <div className="max-w-3xl">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 mb-6 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 mb-3.5 sm:mb-6 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-200 truncate">
               {t('heroBadge')}
             </span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15] mb-6 flex flex-wrap items-center gap-2.5">
+          <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black tracking-tight text-white leading-[1.2] sm:leading-[1.15] mb-3 sm:mb-6 flex flex-wrap items-center gap-x-2 gap-y-1">
             <EditableText contentKey="homepage.heroHeadline" defaultText={t('heroTitle1')} />
             <span className="text-amber-400">
               <EditableText contentKey="homepage.heroHeadlineGradient" defaultText={t('heroTitleGradient')} />
@@ -509,7 +509,7 @@ export const HeroSection: React.FC<Props> = ({
             <EditableText contentKey="homepage.heroHeadlineSuffix" defaultText={t('heroTitle2')} />
           </h1>
 
-          <p className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl font-normal leading-relaxed">
+          <p className="text-xs sm:text-lg lg:text-xl text-slate-300 mb-5 sm:mb-8 max-w-2xl font-normal leading-relaxed">
             <EditableText contentKey="homepage.heroSubheadline" defaultText={t('heroSubtitle')} />
           </p>
 
@@ -612,7 +612,7 @@ export const HeroSection: React.FC<Props> = ({
                 {isCategoryMenuOpen && (
                   <div 
                     id="hero-categories-downward-menu"
-                    className="absolute top-full left-0 mt-2 z-50 w-72 sm:w-80 bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+                    className="absolute top-full left-0 right-0 sm:right-auto mt-2 z-50 w-full sm:w-80 bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
                   >
                     <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
                       <span className="uppercase tracking-wider">{t('categoriesHeading')}</span>

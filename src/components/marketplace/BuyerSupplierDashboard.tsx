@@ -429,17 +429,17 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   };
 
   return (
-    <div id="buyer-supplier-dashboard" className="max-w-[1440px] mx-auto space-y-6">
+    <div id="buyer-supplier-dashboard" className="max-w-[1440px] mx-auto space-y-4 sm:space-y-6">
       {/* Top Header */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
-            <LayoutDashboard className="w-3.5 h-3.5" />
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold text-blue-600">
+            <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
             <span>Enterprise B2B Trade &amp; Escrow Protection Center</span>
             <span aria-hidden="true">·</span>
             <span className="text-slate-500 font-mono">KYC Level 3 Verified</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
             {currentUserRole === 'SUPPLIER'
               ? 'Manufacturer & Exporter Console'
               : 'Global Procurement & Treasury Dashboard'}
@@ -449,30 +449,30 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('BANK_ACCOUNTS')}
-            className="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            className="col-span-2 sm:col-span-1 h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
           >
-            <Landmark className="w-4 h-4" />
+            <Landmark className="w-4 h-4 shrink-0" />
             <span>Bank Details &amp; Withdrawals</span>
           </button>
           <button
             type="button"
             onClick={onOpenCreateRfq}
-            className="h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-4 h-4 shrink-0" />
             <span>Post New RFQ</span>
           </button>
           <a
             href={OFFICIAL_WHATSAPP_DATA.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-10 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-2 transition-colors whitespace-nowrap"
+            className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
           >
-            <MessageCircle className="w-4 h-4 text-emerald-600" />
+            <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>Trade Desk</span>
           </a>
         </div>
@@ -564,7 +564,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       </div>
 
       {/* Unified Single-Line Segmented Tab Interface */}
-      <div className="bg-white border border-slate-200 rounded-xl p-1.5 overflow-x-auto">
+      <div className="bg-white border border-slate-200 rounded-xl p-1.5 overflow-x-auto no-scrollbar">
         <div
           role="tablist"
           aria-label="Dashboard Sections"

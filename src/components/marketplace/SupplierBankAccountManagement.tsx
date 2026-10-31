@@ -446,19 +446,19 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Security & Balance Header */}
-      <div className="bg-slate-900 text-white rounded-xl p-6 border border-slate-800 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
-              <Lock className="w-3.5 h-3.5" />
+      <div className="bg-slate-900 text-white rounded-xl p-4 sm:p-6 border border-slate-800 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+            <div className="flex items-center gap-2 text-emerald-400 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+              <Lock className="w-3.5 h-3.5 shrink-0" />
               <span>Encrypted Beneficiary Bank Vault • Direct Trade Heaven Settlement</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+            <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">
               Supplier Bank Account Management &amp; Fund Withdrawals
             </h2>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Input and save your verified corporate bank account details (
               <span className="text-white font-medium">Bank Name</span>,{' '}
               <span className="text-white font-medium">Account Number / IBAN</span>, and{' '}
@@ -467,27 +467,27 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
             </p>
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-stretch gap-3 shrink-0">
-            <div className="bg-slate-800/90 border border-slate-700 rounded-lg px-4 py-3 min-w-[175px]">
-              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+          <div className="grid grid-cols-2 sm:flex items-stretch gap-2.5 sm:gap-3 shrink-0">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-lg px-3.5 sm:px-4 py-2.5 sm:py-3 sm:min-w-[175px]">
+              <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 uppercase tracking-wider">
                 Withdrawable Balance
               </div>
-              <div className="text-xl font-bold text-emerald-400 font-mono tabular-nums mt-1">
+              <div className="text-base sm:text-xl font-bold text-emerald-400 font-mono tabular-nums mt-1 truncate">
                 {nativeAvailFormatted.nativeAmount}
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">
-                Cleared in Trade Heaven Wallet
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate">
+                Cleared in Wallet
               </div>
             </div>
 
-            <div className="bg-slate-800/90 border border-slate-700 rounded-lg px-4 py-3 min-w-[175px]">
-              <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-lg px-3.5 sm:px-4 py-2.5 sm:py-3 sm:min-w-[175px]">
+              <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 uppercase tracking-wider">
                 Saved Bank Accounts
               </div>
-              <div className="text-xl font-bold text-white font-mono tabular-nums mt-1">
+              <div className="text-base sm:text-xl font-bold text-white font-mono tabular-nums mt-1">
                 {savedBanks.length} Verified
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">
+              <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate">
                 Primary: {selectedBank?.rail || 'SWIFT'} Wire
               </div>
             </div>
