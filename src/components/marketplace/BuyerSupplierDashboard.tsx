@@ -5,10 +5,12 @@ import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { TradeHeavenMediatorView } from './TradeHeavenMediatorView';
 import { TopUpWallet } from './TopUpWallet';
 import { TransactionLedgerView } from './TransactionLedgerView';
+import { SupplierBankAccountManagement } from './SupplierBankAccountManagement';
 import { tradeHeavenMediationService, MediationSystemState } from '../../services/tradeHeavenMediatorEngine';
 import { formatBalanceInNativeCurrency } from '../../utils/entityCurrency';
 import { 
   LayoutDashboard, 
+  Landmark,
   ShieldCheck, 
   Package, 
   FileText, 
@@ -59,7 +61,7 @@ interface Props {
   onNavigate?: (view: ActiveView) => void;
   onSelectRfq?: (rfq: RfqRequirement) => void;
   onOpenUpgradeModal?: () => void;
-  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
+  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
 }
 
 const AVAILABLE_CATEGORIES = [
@@ -101,7 +103,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenUpgradeModal,
   initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
     initialTab || 'TRANSACTION_LEDGER'
   );
 
@@ -450,6 +452,14 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
+            onClick={() => setActiveTab('BANK_ACCOUNTS')}
+            className="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Landmark className="w-4 h-4" />
+            <span>Bank Details &amp; Withdrawals</span>
+          </button>
+          <button
+            type="button"
             onClick={onOpenCreateRfq}
             className="h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
           >
@@ -476,13 +486,20 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               <Wallet className="w-3.5 h-3.5 text-emerald-600" />
               Your Account Balance
             </span>
-            <button 
-              onClick={() => setActiveTab('TOPUP_WALLET')}
-              className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 transition-colors"
-            >
-              Top Up
-              <PlusCircle className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => setActiveTab('TOPUP_WALLET')}
+                className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-0.5 cursor-pointer bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 transition-colors"
+              >
+                Top Up
+              </button>
+              <button 
+                onClick={() => setActiveTab('BANK_ACCOUNTS')}
+                className="text-[10px] font-bold text-slate-700 hover:text-slate-900 flex items-center gap-0.5 cursor-pointer bg-slate-100 px-2 py-0.5 rounded border border-slate-200 transition-colors"
+              >
+                Withdraw
+              </button>
+            </div>
           </div>
           <div className="text-2xl font-bold text-slate-900 font-mono tabular-nums tracking-tight">
             {userBalance.avail}
@@ -498,10 +515,10 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               )}
             </div>
             <button 
-              onClick={() => setActiveTab('TOPUP_WALLET')}
-              className="text-[9px] text-slate-400 hover:text-blue-600 transition-colors text-left"
+              onClick={() => setActiveTab('BANK_ACCOUNTS')}
+              className="text-[10px] text-emerald-700 hover:text-emerald-800 font-medium transition-colors text-left cursor-pointer"
             >
-              Top up via funds transfer for mail confirmation & screenshot verification →
+              Manage saved bank accounts (SWIFT/IFSC) &amp; withdraw funds →
             </button>
           </div>
         </div>
@@ -566,6 +583,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 icon: CreditCard
               },
               {
+                id: 'BANK_ACCOUNTS',
+                label: 'Bank Accounts & Withdrawals',
+                icon: Landmark
+              },
+              {
                 id: 'MEDIATION_WALLET',
                 label: 'Escrow Mediation Engine',
                 icon: Layers
@@ -624,6 +646,23 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           })}
         </div>
       </div>
+
+      {/* Tab Content: Bank Accounts & Fund Withdrawals */}
+      {activeTab === 'BANK_ACCOUNTS' && (
+        <SupplierBankAccountManagement
+          currentUser={
+            currentUser
+              ? {
+                  id: currentUser.id,
+                  name: currentUser.name,
+                  company: currentUser.companyName,
+                  email: currentUser.email,
+                  role: currentUser.role,
+                }
+              : null
+          }
+        />
+      )}
 
       {/* Tab Content: Transaction Ledger */}
       {activeTab === 'TRANSACTION_LEDGER' && (
