@@ -3375,6 +3375,93 @@ app.post('/api/v1/admin/marketing-suite/trigger-campaign', async (req, res) => {
 });
 
 
+// POST /api/v1/admin/send-ad-launched-email - Dispatch Ad Launched Success mail to Melissa / Zac & admin copies
+app.post('/api/v1/admin/send-ad-launched-email', async (req, res) => {
+  try {
+    const { recipientEmail = 'zac@otec.ltd', recipientName = 'Melissa / Zachary Aldin', companyName = 'IMPORTATION FADE-TECH (OTEC LTD)' } = req.body || {};
+    const trackingId = `ms-trk-ad-launched-${Date.now().toString(36)}`;
+    
+    const mailOptions = {
+      from: `"Trade Heaven Advertising & Media Desk" <noreply@tradeheaven.net>`,
+      replyTo: 'help@tradeheaven.net',
+      to: [recipientEmail, 'yr943334@gmail.com', 'sankalprajput15@gmail.com'],
+      subject: `🚀 Success: Your Sponsored Ad Campaign Has Launched Successfully and is Now Running Live on Trade Heaven!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #3b82f6; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding: 36px 24px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #34d399; text-transform: uppercase; margin-bottom: 10px; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.35); padding: 4px 12px; border-radius: 9999px;">
+              TRADE HEAVEN • SPONSORED ADS LIVE STATUS
+            </div>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; line-height: 1.25;">
+              Ad Campaign Launched Successfully &amp; Running!
+            </h1>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #93c5fd;">
+              Confirmed Active for ${companyName} (${recipientEmail})
+            </p>
+          </div>
+          <div style="padding: 30px 24px; color: #1e293b;">
+            <p style="font-size: 15px; line-height: 1.6; margin: 0 0 14px 0;">
+              Dear <strong>${recipientName}</strong>,
+            </p>
+            <p style="font-size: 14px; line-height: 1.65; margin: 0 0 20px 0; color: #334155;">
+              We are thrilled to officially confirm that your sponsored advertising and commodity spotlight campaign for <strong>${companyName}</strong> has passed all compliance checks, launched successfully, and is <strong>now actively running live</strong> across the Trade Heaven Global B2B Marketplace!
+            </p>
+            <div style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 12px; padding: 18px; margin: 0 0 22px 0;">
+              <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 800; color: #166534;">📊 Campaign Active Status Overview:</h3>
+              <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #15803d; line-height: 1.6;">
+                <li><strong>Status:</strong> Active &amp; Serving Impressions (🟢 LIVE)</li>
+                <li><strong>Targeting:</strong> Global Wholesale Buyers &amp; Verified Importers</li>
+                <li><strong>Placement:</strong> Homepage Spotlight Banner &amp; Category Search Top Feed</li>
+                <li><strong>Real-Time Tracking:</strong> MailSuite Telemetry Enabled (Open &amp; Click Tracking Active)</li>
+              </ul>
+            </div>
+            <p style="font-size: 14px; line-height: 1.6; margin: 0 0 24px 0; color: #334155;">
+              International procurement officers and verified buyers are now viewing your export listings. You will receive real-time email notifications as buyer inquiries and quote requests arrive in your dashboard.
+            </p>
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="https://www.tradeheaven.net/?view=DASHBOARD" style="background: #2563eb; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 800; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+                View Live Dashboard &amp; Ad Metrics →
+              </a>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+            <p style="font-size: 12px; color: #64748b; margin: 0; text-align: center;">
+              Trade Heaven Advertising &amp; Media Desk • Support: help@tradeheaven.net
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const receipts = await serverDeliveryQueueManager.enqueue(mailOptions);
+    const success = receipts.length > 0 && receipts.some(r => r.success);
+
+    logServerActivity(
+      req,
+      'AD_LAUNCHED_SUCCESS_MAIL_DISPATCH',
+      recipientEmail,
+      'ADMIN',
+      '/api/v1/admin/send-ad-launched-email',
+      `Dispatched LIVE Ad Launched Success Mail to ${recipientName} (${recipientEmail} • ${companyName}) [MailSuite Tracking ID: ${trackingId}].`,
+      success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success,
+      message: success
+        ? `Successfully dispatched Ad Launched Success Mail to ${recipientEmail} and admin copies!`
+        : `Failed to dispatch email.`,
+      receipts,
+      trackingId
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to send ad launched email: ${err?.message || err}`
+    });
+  }
+});
+
+
 // POST /api/v1/auth/test-email - Trigger manual test email alert via serialized SMTP queue
 app.post('/api/v1/auth/test-email', async (req, res) => {
   const { customTargetEmail, testSmtpHost, testSmtpPort, testSmtpUser, testSmtpPass } = req.body;
