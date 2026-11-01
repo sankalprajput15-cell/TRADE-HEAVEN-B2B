@@ -19,9 +19,12 @@ import { BatchImageCsvImporter } from './BatchImageCsvImporter';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
 import { CustomEmailDispatcherAdminModule } from './CustomEmailDispatcherAdminModule';
+import { AutomatedEmailMarketingSuite } from './AutomatedEmailMarketingSuite';
 import { RenewalOfferEmailHtmlManager } from './RenewalOfferEmailHtmlManager';
 import { RenewalInsightsAdminModule } from './RenewalInsightsAdminModule';
 import { UserDeletionLogModule } from './UserDeletionLogModule';
+import { ClientUploadsAdminModule } from './ClientUploadsAdminModule';
+import { UniversalSiteUploadsVault } from './UniversalSiteUploadsVault';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -36,26 +39,32 @@ import {
   Trash2, 
   Edit, 
   Search, 
-  ArrowLeft,
-  ChevronRight,
-  Info,
-  CheckCircle2,
-  FileText,
-  Activity,
-  Terminal,
-  Building2,
-  FileSpreadsheet,
-  Image as ImageIcon,
-  Upload,
-  AlertTriangle,
-  RefreshCw,
-  Mail,
-  Bell,
-  Code2,
-  TrendingUp
+  ArrowLeft, 
+  ChevronRight, 
+  Info, 
+  CheckCircle2, 
+  FileText, 
+  Activity, 
+  Terminal, 
+  Building2, 
+  FileSpreadsheet, 
+  Image as ImageIcon, 
+  Upload, 
+  AlertTriangle, 
+  RefreshCw, 
+  Mail, 
+  Bell, 
+  Code2, 
+  TrendingUp, 
+  Zap, 
+  FileCheck,
+  FolderLock
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
+  | 'MASTER_UPLOADS_VAULT'
+  | 'CLIENT_UPLOADS'
+  | 'AUTOMATED_EMAIL_SUITE'
   | 'CUSTOM_EMAIL_DISPATCHER'
   | 'RENEWAL_INSIGHTS'
   | 'RENEWAL_EMAIL_HTML_EDITOR'
@@ -90,7 +99,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onOpenPaymentCheckout,
   onUpdateCurrentUser
 }) => {
-  const [activeTab, setActiveTab] = useState<AdminDashboardTabId>(initialTab);
+  const getInitialTab = (): AdminDashboardTabId => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) {
+        const normalized = tabParam.toUpperCase().replace(/-/g, '_');
+        if (normalized === 'MASTER_UPLOADS_VAULT' || normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
+          return 'MASTER_UPLOADS_VAULT';
+        }
+        if (normalized === 'CLIENT_UPLOADS' || normalized === 'UPLOADS' || normalized === 'WIRE_SLIPS') {
+          return 'CLIENT_UPLOADS';
+        }
+      }
+    }
+    return initialTab;
+  };
+
+  const [activeTab, setActiveTab] = useState<AdminDashboardTabId>(getInitialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const effectiveAdminUser: AuthUser = currentUser && currentUser.role === 'ADMIN'
@@ -111,6 +137,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam) {
+        const normalized = tabParam.toUpperCase().replace(/-/g, '_');
+        if (normalized === 'MASTER_UPLOADS_VAULT' || normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
+          setActiveTab('MASTER_UPLOADS_VAULT');
+          return;
+        }
+        if (normalized === 'CLIENT_UPLOADS' || normalized === 'UPLOADS' || normalized === 'WIRE_SLIPS') {
+          setActiveTab('CLIENT_UPLOADS');
+          return;
+        }
+      }
+    }
     setActiveTab(initialTab);
   }, [initialTab]);
 
@@ -484,9 +525,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
 
   const navigationItems = [
+    { id: 'MASTER_UPLOADS_VAULT', label: '🌐 Universal Site Uploads & Files Vault', icon: FolderLock },
+    { id: 'CLIENT_UPLOADS', label: '📄 Client Uploads & Wire Slips', icon: FileCheck },
+    { id: 'AUTOMATED_EMAIL_SUITE', label: '🚀 Automated Email & Tracking Suite', icon: Zap },
+    { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
     { id: 'RENEWAL_INSIGHTS', label: '📈 Renewal Insights (Open Rate)', icon: TrendingUp },
     { id: 'RENEWAL_EMAIL_HTML_EDITOR', label: '💻 Renewal Offer HTML Editor', icon: Code2 },
-    { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
     { id: 'PRODUCT_IMAGE_SYSTEM', label: '📸 Product Image System (All)', icon: ImageIcon },
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
@@ -666,6 +710,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={() => handleSelectSidebarTab('MASTER_UPLOADS_VAULT')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'MASTER_UPLOADS_VAULT'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
+              }`}
+            >
+              <FolderLock className="w-4 h-4" />
+              <span>🌐 Universal Uploads Hub (Check &amp; Do Anything)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('CLIENT_UPLOADS')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'CLIENT_UPLOADS'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
+              }`}
+            >
+              <FileCheck className="w-4 h-4" />
+              <span>📄 Client Uploads &amp; Wire Slips</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('AUTOMATED_EMAIL_SUITE')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'AUTOMATED_EMAIL_SUITE'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
+              }`}
+            >
+              <Zap className="w-4 h-4" />
+              <span>🚀 Automated Email Marketing &amp; Tracking Suite</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleSelectSidebarTab('RENEWAL_INSIGHTS')}
               className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
                 activeTab === 'RENEWAL_INSIGHTS'
@@ -688,6 +771,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Code2 className="w-4 h-4" />
               <span>💻 Renewal Offer HTML &amp; Brand Header/Footer Studio</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('MAIL_DELIVERY_HISTORY')}
+              className="px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200"
+              title="Open full Mail Delivery History & Telemetry Hub page"
+            >
+              <Mail className="w-4 h-4 text-purple-600" />
+              <span>📬 Mail Delivery History &amp; Telemetry Hub</span>
             </button>
 
             <button
@@ -951,8 +1044,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* VIEW CONDITIONAL RENDERING */}
-        {activeTab === 'CUSTOM_EMAIL_DISPATCHER' && (
+        {activeTab === 'MASTER_UPLOADS_VAULT' && (
           <div className="space-y-4">
+            <UniversalSiteUploadsVault
+              currentUserEmail={effectiveAdminUser.email}
+            />
+          </div>
+        )}
+
+        {activeTab === 'CLIENT_UPLOADS' && (
+          <div className="space-y-4">
+            <ClientUploadsAdminModule
+              onOpenPaymentCheckout={onOpenPaymentCheckout}
+              currentUserEmail={effectiveAdminUser.email}
+            />
+          </div>
+        )}
+
+        {activeTab === 'AUTOMATED_EMAIL_SUITE' && (
+          <div className="space-y-4">
+            <AutomatedEmailMarketingSuite
+              onOpenPaymentCheckout={onOpenPaymentCheckout}
+              onSwitchToCustomDispatcher={() => handleSelectSidebarTab('CUSTOM_EMAIL_DISPATCHER')}
+            />
+          </div>
+        )}
+
+        {activeTab === 'CUSTOM_EMAIL_DISPATCHER' && (
+          <div className="space-y-6">
+            <AutomatedEmailMarketingSuite
+              onOpenPaymentCheckout={onOpenPaymentCheckout}
+            />
             <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-300 flex items-center justify-center shrink-0">

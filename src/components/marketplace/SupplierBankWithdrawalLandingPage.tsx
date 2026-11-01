@@ -129,7 +129,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
   );
 
   const primaryBank = useMemo(
-    () => savedBanks.find(b => b.isDefault) || savedBanks[0] || null,
+    () => savedBanks.find(b => b.isPrimary) || savedBanks[0] || null,
     [savedBanks]
   );
 
@@ -167,7 +167,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
               className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Wallet Top-Up Portal</span>
+              <span className="hidden sm:inline">Wallet Top-Up Portal</span>
             </button>
             <button
               type="button"
@@ -175,7 +175,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
               className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Escrow Mediation Engine</span>
+              <span className="hidden md:inline">Escrow Mediation Engine</span>
             </button>
             <button
               type="button"
@@ -183,7 +183,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
               className="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-slate-500" />
-              <span>My Dashboard</span>
+              <span className="hidden sm:inline">My Dashboard</span>
             </button>
             <button
               type="button"
@@ -216,7 +216,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
             </div>
 
             {/* Live Account Summary Pill Box */}
-            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-4 min-w-[280px] sm:min-w-[320px] space-y-3 shrink-0">
+            <div className="bg-slate-800/90 border border-slate-700 rounded-xl p-4 w-full sm:w-auto sm:min-w-[300px] space-y-3 shrink-0">
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-700">
                 <div className="flex items-center gap-2 min-w-0">
                   <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -261,7 +261,7 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
                 <div className="pt-1 flex items-center justify-between text-[11px] text-slate-300">
                   <span className="text-slate-400">Active Payout Bank:</span>
                   <span className="font-mono font-bold text-indigo-300 truncate max-w-[180px]">
-                    {primaryBank.bankName} ({primaryBank.payoutMethod})
+                    {primaryBank.bankName} ({primaryBank.rail})
                   </span>
                 </div>
               )}

@@ -685,51 +685,6 @@ export const AuthModal: React.FC<Props> = ({
                   <span>{isLoading ? 'Verifying Credentials...' : 'Sign In'}</span>
                 </button>
 
-                {/* Quick 1-Click Verified Supplier Sign-In for Zac (Zachary Aldin) */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-slate-800">
-                      Zac (Zachary Aldin • IMPORTATION FADE-TECH)
-                    </span>
-                    <span className="font-mono text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                      Basic Plan
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-mono">
-                    Email: <strong className="text-slate-800">zac@otec.ltd</strong> &bull; Password: <strong className="text-slate-800">Zac@0011</strong>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    onClick={async () => {
-                      setEmail('zac@otec.ltd');
-                      setPassword('Zac@0011');
-                      setError(null);
-                      setIsLoading(true);
-                      try {
-                        const res = await login('zac@otec.ltd', 'Zac@0011');
-                        if (res.success && res.user) {
-                          onLogin(res.user);
-                          setSuccess(`Authenticated as ${res.user.name} (IMPORTATION FADE-TECH).`);
-                          setTimeout(() => {
-                            setSuccess(null);
-                            onClose();
-                            if (onNavigate) onNavigate('DASHBOARD');
-                          }, 600);
-                        } else {
-                          setError(res.error || 'Could not sign in.');
-                        }
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    className="w-full py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>1-Click Sign In as Zac (zac@otec.ltd)</span>
-                  </button>
-                </div>
-
                 {/* Login UI WhatsApp Support Link for Any Sign-In / OTP Issues */}
                 <div className="p-3 rounded-xl bg-emerald-50/90 border border-emerald-200 flex items-center justify-between gap-2.5">
                   <div className="min-w-0">

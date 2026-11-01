@@ -3,6 +3,7 @@ import { RfqRequirement, Currency, AuthUser, ActiveView } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { SafeImage } from '../common/SafeImage';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { EmptyState } from '../EmptyState';
 import { 
@@ -929,338 +930,208 @@ export const BuyLeadsView: React.FC<Props> = ({
           onAction={handleClearFilters}
         />
       ) : (
-                <div className="space-y-8">
+        <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-            {currentItems.map((rfq, idx) => {
+            {currentItems.map((rfq) => {
               const isPaidLead = isPaidEntity(rfq);
               const isCallerPaid = isPaidMemberUser(currentUser);
               const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
+              const canViewDirectContact = isCallerPaid || isClaimed;
 
               return (
                 <div
                   key={rfq.id}
-                  className={`bg-white border rounded-2xl p-5 transition-all flex flex-col justify-between h-full shadow-sm ${
-                    isClaimed && !isPaidLead
-                      ? 'border-amber-400 ring-2 ring-amber-300/40 hover:border-amber-500'
-                      : isPaidLead
-                      ? 'border-slate-800/80 hover:border-amber-500 hover:shadow-md'
-                      : 'border-slate-200 hover:border-blue-500 hover:shadow-md'
-                  }`}
+                  className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-5 transition-all flex flex-col justify-between h-full shadow-2xs hover:shadow-md group"
                 >
-                  <div className="space-y-3 flex-1 flex flex-col">
-                    {/* Header with uniform height */}
-                    <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 min-h-[52px]">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
-                            {rfq.id}
-                          </span>
-                          <span className="text-[10px] text-blue-700 font-semibold flex items-center gap-1 bg-blue-50/80 px-2 py-0.5 rounded-full border border-blue-200/80 shrink-0">
-                            <Clock className="w-2.5 h-2.5 text-blue-500 shrink-0" />
-                            <span>{getFreshRfqDate(rfq)}</span>
-                          </span>
-                          {isPaidLead ? (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-400/40 flex items-center gap-1 shadow-2xs shrink-0">
-                              <Lock className="w-2.5 h-2.5 text-amber-400" />
-                              <span>Paid Member Lead</span>
-                            </span>
-                          ) : isClaimed ? (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 border border-amber-500 flex items-center gap-1 shadow-2xs shrink-0">
-                              <Zap className="w-2.5 h-2.5 fill-slate-950" />
-                              <span>Free Lead Unlocked</span>
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1 shrink-0">
-                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                              <span>Free Claimable</span>
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-500 font-bold mt-1 truncate">{rfq.category}</div>
+                  <div className="space-y-4 flex-1 flex flex-col">
+                    {/* Top Metadata Kicker — Clean Typography, No Lock Badges */}
+                    <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                      <div className="flex items-center gap-1.5 min-w-0 truncate">
+                        <span className="font-semibold text-blue-600 truncate">
+                          {rfq.category}
+                        </span>
+                        <span aria-hidden="true" className="text-slate-300">·</span>
+                        <span className="text-slate-400 font-mono text-[11px] shrink-0">
+                          {getFreshRfqDate(rfq)}
+                        </span>
                       </div>
 
-                      <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
-                        {rfq.urgency === 'URGENT' ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 shrink-0 flex items-center gap-0.5">
-                            <Zap className="w-2.5 h-2.5 fill-rose-600 text-rose-600" />
-                            <span>Urgent</span>
-                          </span>
-                        ) : null}
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
-                          {rfq.quotesCount} Bids
+                      <div className="flex items-center gap-2 shrink-0 text-[11px]">
+                        {rfq.urgency === 'URGENT' && (
+                          <>
+                            <span className="font-semibold text-rose-600">Priority</span>
+                            <span aria-hidden="true" className="text-slate-300">·</span>
+                          </>
+                        )}
+                        <span className="font-mono font-medium text-slate-600 tabular-nums">
+                          {rfq.quotesCount} {rfq.quotesCount === 1 ? 'quote' : 'quotes'}
                         </span>
                       </div>
                     </div>
 
-                    {/* Title & Product Image with uniform height */}
-                    <div className="flex items-center gap-3 h-13">
-                      <div className="w-12 h-12 rounded-lg border border-slate-200 shrink-0 bg-slate-100 shadow-2xs flex items-center justify-center overflow-hidden">
-                        {(rfq.image || rfq.images?.[0]) ? (
-                          (() => {
-                            const rawImg = rfq.image || rfq.images?.[0];
-                            const cbImg = rawImg ? `${rawImg}${rawImg.includes('?') ? '&' : '?'}v=1` : '';
-                            return (
-                              <img
-                                src={cbImg}
-                                alt={rfq.productName}
-                                referrerPolicy="no-referrer"
-                                className="w-full h-full object-cover"
-                              />
-                            );
-                          })()
-                        ) : (
-                          <Package className="w-6 h-6 text-slate-400" />
-                        )}
-                      </div>
+                    {/* Product Thumbnail & Title */}
+                    <div
+                      onClick={() => onSelectRfq(rfq)}
+                      className="flex items-start gap-3.5 cursor-pointer"
+                    >
+                      <SafeImage
+                        src={rfq.image || rfq.images?.[0]}
+                        alt={rfq.productName}
+                        productId={rfq.id}
+                        productTitle={rfq.productName}
+                        category={rfq.category}
+                        type="rfq"
+                        isThumbnail
+                        className="w-12 h-12 rounded-xl border border-slate-200/80 shrink-0 bg-slate-100"
+                        imgClassName="group-hover:scale-105 transition-transform duration-300"
+                      />
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
+                        <h3 className="font-bold text-[15px] text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
                           {rfq.productName}
                         </h3>
+                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                          Ref: {rfq.id}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Volume & Destination Matrix */}
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 shrink-0">Target Volume:</span>
-                        <span className="font-mono font-bold text-slate-900 text-right truncate">
+                    {/* Clean 3-Column Procurement Spec Strip */}
+                    <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 text-xs">
+                      <div className="min-w-0">
+                        <div className="text-[11px] text-slate-400">Quantity</div>
+                        <div className="font-mono font-semibold text-slate-900 tabular-nums truncate mt-0.5">
                           {rfq.targetQuantity?.toLocaleString()} {rfq.quantityUnit}
-                        </span>
+                        </div>
                       </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 shrink-0">Destination Port:</span>
-                        <span className="font-semibold text-slate-800 text-right truncate">{rfq.destinationPort || 'Global Port'}</span>
+                      <div className="min-w-0 border-l border-slate-100 pl-2.5">
+                        <div className="text-[11px] text-slate-400">Target Rate</div>
+                        <div className="font-mono font-semibold text-emerald-700 tabular-nums truncate mt-0.5">
+                          {formatPrice(rfq.targetPriceUsd)} <span className="text-[10px] font-normal text-slate-400">/{rfq.preferredIncoterm}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500 shrink-0">Incoterms / Target:</span>
-                        <span className="font-mono font-bold text-emerald-700 text-right truncate">
-                          {rfq.preferredIncoterm} • {formatPrice(rfq.targetPriceUsd)}/unit
-                        </span>
+                      <div className="min-w-0 border-l border-slate-100 pl-2.5">
+                        <div className="text-[11px] text-slate-400">Destination</div>
+                        <div className="font-medium text-slate-800 truncate mt-0.5" title={rfq.destinationPort || rfq.buyerCountry}>
+                          {rfq.destinationPort || rfq.buyerCountry || 'Global Port'}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Description Snippet Preview (Blurred for Free Users) */}
-                    {!isCallerPaid && (!isClaimed || isPaidLead) ? (
-                      (() => {
-                        const fullDesc = rfq.detailedDescription || 'Bulk purchase specifications, delivery schedules, and compliance standards.';
-                        const splitIndex = fullDesc.indexOf(' ', 32);
-                        const safeSplit = splitIndex > 15 && splitIndex < 55 ? splitIndex : 35;
-                        const previewSnippet = fullDesc.slice(0, safeSplit);
-                        const blurredSnippet = fullDesc.slice(safeSplit) || '... technical compliance, packaging specs, inspection certification, and delivery timeline required.';
+                    {/* Readable Specification Summary (No Blur Shield) */}
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed flex-1">
+                      {rfq.detailedDescription || 'Verified bulk procurement tender with standard export packaging, pre-shipment quality inspection, and scheduled port delivery.'}
+                    </p>
 
-                        return (
-                          <div
-                            onClick={() => handleOpenLeadAccessModal(rfq)}
-                            className="relative h-14 p-2.5 rounded-xl bg-slate-50/90 hover:bg-amber-50/50 border border-slate-200 hover:border-amber-400 transition-all cursor-pointer group overflow-hidden shadow-2xs"
-                            title="Click to upgrade and unlock full procurement specifications and buyer requirements"
-                          >
-                            <div className="text-[11px] leading-relaxed text-slate-700 select-none pr-1">
-                              <span className="font-semibold text-slate-800">
-                                "{previewSnippet}
-                              </span>
-                              <span className="blur-[3px] select-none text-slate-400 opacity-60">
-                                {' '}{blurredSnippet}"
-                              </span>
-                            </div>
-
-                            {/* Floating bottom blur shield with Upgrade CTA badge */}
-                            <div className="absolute inset-x-0 bottom-0 pt-3 pb-1 px-2.5 bg-gradient-to-t from-white via-white/85 to-transparent flex items-center justify-between gap-1.5">
-                              <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 group-hover:text-amber-900 truncate">
-                                <Lock className="w-3 h-3 text-amber-600 shrink-0" />
-                                <span className="truncate">Full description blurred for free members</span>
-                              </div>
-                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-950 bg-amber-300 hover:bg-amber-400 px-2 py-0.5 rounded-full border border-amber-400/80 shadow-2xs shrink-0 group-hover:scale-105 transition-transform">
-                                <Crown className="w-2.5 h-2.5 fill-amber-950" />
-                                <span>Upgrade to View</span>
-                              </span>
-                            </div>
+                    {/* Calm, Modern Buyer Organization & Liaison Row */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0">
+                          {(rfq.buyerCompany || 'B').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-slate-900 truncate">
+                            {rfq.buyerCompany}
                           </div>
-                        );
-                      })()
-                    ) : (
-                      <div className="h-14 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 overflow-hidden">
-                        <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed font-medium">
-                          "{rfq.detailedDescription}"
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Buyer Company area */}
-                    <div className="pt-2 border-t border-slate-100">
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 h-5">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate font-semibold text-slate-700">
-                            {rfq.buyerCompany} ({rfq.buyerCountry})
-                          </span>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
+                            <span>{rfq.buyerCountry}</span>
+                            <span aria-hidden="true">·</span>
+                            {canViewDirectContact ? (
+                              <span className="text-emerald-700 font-medium truncate">
+                                {rfq.buyerEmail || 'Direct Desk Active'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 truncate">
+                                Verified Importer
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Gated Buyer Email & Phone with uniform height container */}
-                      <div className="pt-2">
-                        {isPaidLead && !isCallerPaid ? (
-                          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-amber-400/50 space-y-2 text-xs h-[180px] flex flex-col justify-between shadow-xs">
-                            <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
-                              <span className="flex items-center gap-1.5">
-                                <Lock className="w-3 h-3 text-amber-400" />
-                                <span>Paid Member Protected Data</span>
-                              </span>
-                              <span className="font-mono text-[9px] bg-amber-400/20 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-400/30">
-                                Paid Only
-                              </span>
-                            </div>
-                            <div className="space-y-1 text-slate-300 text-[11px]">
-                              <p className="leading-snug text-slate-300 font-medium">
-                                Verified Paid Member Buyer: Contact details of paid members are strictly protected from unpaid members and cannot be claimed via free daily credits.
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenLeadAccessModal(rfq)}
-                              style={{
-                                animationDelay: `${Math.min(idx * 60, 400)}ms`
-                              }}
-                              className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 animate-subtle-pop"
-                            >
-                              <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                              <span>Upgrade to View</span>
-                            </button>
-                          </div>
-                        ) : isClaimed ? (
-                          <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-300 space-y-2 text-xs h-[180px] flex flex-col justify-between">
-                            <div className="flex items-center justify-between text-[10px] font-black text-amber-950 pb-1.5 border-b border-amber-200">
-                              <span className="flex items-center gap-1">
-                                <Zap className="w-3 h-3 text-amber-700 fill-amber-700" />
-                                <span>Unlocked with Daily Free Credit</span>
-                              </span>
-                              <span className="font-mono text-[9px] bg-amber-200 text-amber-900 px-1 py-0.5 rounded font-bold">Unvetted</span>
-                            </div>
-                            <div className="space-y-1.5 text-slate-800 text-[11px]">
-                              <div className="truncate">
-                                <strong>Email: </strong>
-                                <a href={`mailto:${rfq.buyerEmail || 'procurement@' + rfq.buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com'}`} className="text-blue-600 hover:underline font-mono font-bold">
-                                  {rfq.buyerEmail || `${rfq.buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '')}@procurement.com`}
-                                </a>
-                              </div>
-                              <div className="truncate">
-                                <strong>Phone: </strong>
-                                <span className="font-mono font-bold">{rfq.buyerPhone || '+1 (555) 382-9901'}</span>
-                              </div>
-                            </div>
-                            <div className="text-[10px] text-amber-900 font-medium italic pt-1 border-t border-amber-200/70 truncate">
-                              (Free community inquiry—deals not guaranteed).
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="h-[180px] flex flex-col">
-                            <PremiumContactGate
-                              currentUser={currentUser}
-                              onOpenUpgradeModal={() => handleOpenLeadAccessModal(rfq)}
-                              isMasked={Boolean(rfq.isContactMasked)}
-                              paidMembersOnly={isPaidLead}
-                              resourceTitle={isPaidLead ? "Paid Member Protected Desk Contact" : "Buyer Direct Desk Contact"}
-                              className="h-full flex flex-col justify-between"
-                            >
-                              <div className="space-y-1 text-xs text-slate-700">
-                                <div className="flex items-center flex-wrap gap-1">
-                                  <strong>Email:</strong> 
-                                  {rfq.buyerEmail ? (
-                                    <a href={`mailto:${rfq.buyerEmail}`} className="text-blue-600 hover:underline">{rfq.buyerEmail}</a>
-                                  ) : (
-                                    <a href="mailto:support@tradeheaven.net" className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-200 transition-colors font-medium">
-                                      Contact via Trade Heaven
-                                    </a>
-                                  )}
-                                </div>
-                                <div><strong>Phone:</strong> {rfq.buyerPhone || 'Not Provided'}</div>
-                              </div>
-                            </PremiumContactGate>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Bar */}
-                  <div className="pt-4 mt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onSelectRfq(rfq)}
-                        className="flex-1 py-2 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-sm cursor-pointer"
-                      >
-                        <span>Quote Tender</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-
-                      {!isCallerPaid && (
+                      {!canViewDirectContact ? (
                         <button
                           type="button"
                           data-testid={`upgrade-to-view-btn-${rfq.id}`}
                           onClick={() => handleOpenLeadAccessModal(rfq)}
-                          style={{
-                            animationDelay: `${Math.min(idx * 60, 400)}ms`
-                          }}
-                          className="animate-subtle-pop py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs hover:shadow-md cursor-pointer active:scale-95 shrink-0"
-                          title="Upgrade to view direct corporate buyer contact details and full lead specifications"
+                          className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer shrink-0"
+                          title="View buyer company background and direct procurement desk details"
                         >
-                          <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                          <span>Upgrade to View</span>
+                          Buyer Desk
                         </button>
-                      )}
-
-                      {isPaidLead && !isCallerPaid ? null : (
+                      ) : (
                         <a
-                          href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I am quoting on Buy Lead: "${rfq.productName}" for ${rfq.buyerCompany} (Target: ${rfq.targetQuantity} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd} ${rfq.preferredIncoterm}).`)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-sm text-center shrink-0"
+                          href={`mailto:${rfq.buyerEmail || 'support@tradeheaven.net'}`}
+                          className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors shrink-0"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
+                          Email Buyer
                         </a>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.dispatchEvent(
-                            new CustomEvent('tradeheaven_open_share', {
-                              detail: {
-                                type: 'RFQ',
-                                id: rfq.id,
-                                title: rfq.productName,
-                                subtitle: `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: ${rfq.targetQuantity?.toLocaleString()} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd}/unit`
-                              }
-                            })
-                          );
-                        }}
-                        className="p-2 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 text-slate-700 border border-slate-200 transition-colors cursor-pointer shrink-0"
-                        title={`Share direct link to RFQ ${rfq.id}: ${rfq.productName}`}
-                        aria-label="Share this RFQ"
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </button>
-
-                      {/* Save Lead to Dashboard Button */}
-                      <button
-                        type="button"
-                        data-testid={`save-lead-btn-${rfq.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleSaveLead(rfq);
-                        }}
-                        className={`p-2 rounded-xl border transition-all cursor-pointer shrink-0 flex items-center justify-center ${
-                          savedLeadIds.includes(rfq.id)
-                            ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100 shadow-2xs'
-                            : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300'
-                        }`}
-                        title={savedLeadIds.includes(rfq.id) ? "Saved in your Dashboard! Click to remove bookmark." : "Save Lead to your Dashboard"}
-                        aria-label={savedLeadIds.includes(rfq.id) ? "Remove saved lead" : "Save this lead to dashboard"}
-                      >
-                        <Bookmark className={`w-4 h-4 ${savedLeadIds.includes(rfq.id) ? 'fill-amber-500 text-amber-600' : ''}`} />
-                      </button>
                     </div>
+                  </div>
+
+                  {/* Clean Action Footer */}
+                  <div className="pt-3.5 mt-3.5 border-t border-slate-100 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onSelectRfq(rfq)}
+                      className="flex-1 py-2 px-3.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Send Quote</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+
+                    {(!isPaidLead || isCallerPaid) && (
+                      <a
+                        href={`${OFFICIAL_WHATSAPP_DATA.url}&text=${encodeURIComponent(`Hello TradeHeaven, I would like to submit a quote for "${rfq.productName}" (${rfq.id}) for ${rfq.buyerCompany}.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="py-2 px-3 rounded-xl border border-slate-200 hover:border-emerald-300 bg-white hover:bg-emerald-50/60 text-slate-700 hover:text-emerald-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shrink-0"
+                        title="Inquire via WhatsApp Trade Desk"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(
+                          new CustomEvent('tradeheaven_open_share', {
+                            detail: {
+                              type: 'RFQ',
+                              id: rfq.id,
+                              title: rfq.productName,
+                              subtitle: `Buyer: ${rfq.buyerCompany} (${rfq.buyerCountry}) • Target: ${rfq.targetQuantity?.toLocaleString()} ${rfq.quantityUnit} @ $${rfq.targetPriceUsd}/unit`
+                            }
+                          })
+                        );
+                      }}
+                      className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer shrink-0"
+                      title={`Share RFQ ${rfq.id}`}
+                      aria-label="Share this RFQ"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid={`save-lead-btn-${rfq.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleSaveLead(rfq);
+                      }}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer shrink-0 flex items-center justify-center ${
+                        savedLeadIds.includes(rfq.id)
+                          ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
+                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                      title={savedLeadIds.includes(rfq.id) ? "Saved in Dashboard" : "Bookmark Lead"}
+                      aria-label={savedLeadIds.includes(rfq.id) ? "Remove saved lead" : "Save this lead to dashboard"}
+                    >
+                      <Bookmark className={`w-4 h-4 ${savedLeadIds.includes(rfq.id) ? 'fill-amber-500 text-amber-600' : ''}`} />
+                    </button>
                   </div>
                 </div>
               );

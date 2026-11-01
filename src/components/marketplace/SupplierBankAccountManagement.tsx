@@ -85,7 +85,7 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
           (currentUser?.company &&
             w.company_name.toLowerCase().includes(currentUser.company.toLowerCase()))
       ) ||
-      mediationState.wallets.find((w) => w.entity_type === 'SUPPLIER') ||
+      mediationState.wallets.find((w) => w.wallet_type === 'SUPPLIER' || (w as any).entity_type === 'SUPPLIER') ||
       mediationState.wallets[1] ||
       null
     );

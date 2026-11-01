@@ -15,9 +15,18 @@ import {
   FileText,
   ShieldCheck,
   Sparkles,
+  Eye,
+  MousePointerClick,
+  Check,
+  CheckCheck,
   X
 } from 'lucide-react';
-import type { CompanyEmailHistoryEntry, EmailDispatchType, EmailHistoryCategory } from '../../services/smtpService';
+import type {
+  CompanyEmailHistoryEntry,
+  EmailDispatchType,
+  EmailHistoryCategory,
+  MailSuiteAnalyticsSummary
+} from '../../services/smtpService';
 
 export interface CompanyEmailHistorySectionProps {
   companyId?: string;
@@ -75,7 +84,9 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
   onOpenFullDispatcher
 }) => {
   const [entries, setEntries] = useState<CompanyEmailHistoryEntry[]>([]);
+  const [mailSuiteStats, setMailSuiteStats] = useState<MailSuiteAnalyticsSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [simulatingId, setSimulatingId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'ALL' | EmailDispatchType>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null);
@@ -105,6 +116,9 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
       });
       const data = await res.json();
       const serverEntries: CompanyEmailHistoryEntry[] = Array.isArray(data?.history) ? data.history : [];
+      if (data?.mailSuiteStats) {
+        setMailSuiteStats(data.mailSuiteStats);
+      }
 
       // Also merge any localStorage manual dispatches for this email/company that aren't already in serverEntries
       let localEntries: CompanyEmailHistoryEntry[] = [];
@@ -126,6 +140,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
               })
               .map((item: any) => ({
                 id: String(item.id || `local-${Date.now()}`),
+                trackingId: item.trackingId || `ms-trk-${item.id || 'local'}`,
                 recipient: String(item.recipientEmail || contactEmail),
                 recipientName: String(item.recipientName || contactName),
                 companyName: String(item.companyName || companyName),
@@ -139,7 +154,11 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
                 dispatchedAt: String(item.dispatchedAt || new Date().toISOString()),
                 enforcedDelayMs: 0,
                 error: item.error,
-                summaryText: `Manual dispatch via Admin Mail Center (${item.templatePreset || 'Custom Template'}).`
+                summaryText: `Manual dispatch via Admin Mail Center (${item.templatePreset || 'Custom Template'}).`,
+                opened: Boolean(item.opened),
+                openCount: Number(item.openCount || 0),
+                clicked: Boolean(item.clicked),
+                clickCount: Number(item.clickCount || 0)
               }));
           }
         }
@@ -169,6 +188,41 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
   useEffect(() => {
     fetchCompanyHistory();
   }, [fetchCompanyHistory]);
+
+  const handleSimulateMailSuiteEvent = async (
+    entry: CompanyEmailHistoryEntry,
+    eventType: 'OPEN' | 'CLICK'
+  ) => {
+    const key = entry.trackingId || entry.id;
+    setSimulatingId(`${key}-${eventType}`);
+    try {
+      const res = await fetch('/api/v1/admin/mailsuite/simulate-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          trackingId: entry.trackingId,
+          emailId: entry.id,
+          recipientEmail: entry.recipient,
+          eventType
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuickNotice({
+          type: 'success',
+          text: data.message
+        });
+        await fetchCompanyHistory();
+      }
+    } catch (err: any) {
+      setQuickNotice({
+        type: 'error',
+        text: err?.message || 'Failed to simulate tracking event.'
+      });
+    } finally {
+      setSimulatingId(null);
+    }
+  };
 
   const handleQuickSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -422,6 +476,67 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
         </form>
       )}
 
+      {/* MailSuite Open-Rate & Click-Through Analytics Bar */}
+      <div className="px-5 py-3.5 bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 text-white border-b border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-xs">
+              ✓✓
+            </span>
+            <div>
+              <div className="text-xs font-black tracking-tight text-white flex items-center gap-2">
+                <span>MailSuite Read-Receipt &amp; Open-Rate Tracker</span>
+                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  1x1 Pixel + Link Redirect Active
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-300">
+                Real-time tracking of email opens, read timestamps, recipient devices, and CTA link clicks
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+              <div className="text-[9px] uppercase font-bold text-slate-400">Open Rate</div>
+              <div className="text-sm font-black text-emerald-400">
+                {mailSuiteStats
+                  ? `${mailSuiteStats.openRatePercent}%`
+                  : entries.length > 0
+                  ? `${Math.round((entries.filter((e) => e.opened || (e.openCount || 0) > 0).length / entries.length) * 100)}%`
+                  : '0%'}
+              </div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+              <div className="text-[9px] uppercase font-bold text-slate-400">✓✓ Opened</div>
+              <div className="text-sm font-black text-white">
+                {mailSuiteStats
+                  ? `${mailSuiteStats.totalOpened}/${mailSuiteStats.totalDelivered} (${mailSuiteStats.totalOpensCount}x)`
+                  : `${entries.filter((e) => e.opened || (e.openCount || 0) > 0).length}/${entries.length}`}
+              </div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+              <div className="text-[9px] uppercase font-bold text-slate-400">Click Rate (CTR)</div>
+              <div className="text-sm font-black text-blue-400">
+                {mailSuiteStats
+                  ? `${mailSuiteStats.clickThroughRatePercent}%`
+                  : entries.length > 0
+                  ? `${Math.round((entries.filter((e) => e.clicked || (e.clickCount || 0) > 0).length / entries.length) * 100)}%`
+                  : '0%'}
+              </div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+              <div className="text-[9px] uppercase font-bold text-slate-400">🔗 Link Clicks</div>
+              <div className="text-sm font-black text-amber-300">
+                {mailSuiteStats
+                  ? `${mailSuiteStats.totalClicksCount} Clicks`
+                  : `${entries.reduce((s, e) => s + (e.clickCount || 0), 0)} Clicks`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Summary KPI & Filter Bar */}
       <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -478,7 +593,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
       </div>
 
       {/* Email History List */}
-      <div className="divide-y divide-slate-100 max-h-[460px] overflow-y-auto">
+      <div className="divide-y divide-slate-100 max-h-[520px] overflow-y-auto">
         {loading && entries.length === 0 ? (
           <div className="py-12 text-center text-slate-400">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
@@ -488,6 +603,10 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           filteredEntries.map((item) => {
             const catMeta = CATEGORY_LABELS[item.category] || CATEGORY_LABELS.CUSTOM_ADMIN;
             const isExpanded = expandedEmailId === item.id;
+            const isOpened = Boolean(item.opened || (item.openCount || 0) > 0);
+            const isClicked = Boolean(item.clicked || (item.clickCount || 0) > 0);
+            const openCount = item.openCount || 0;
+            const clickCount = item.clickCount || 0;
 
             return (
               <div
@@ -498,30 +617,52 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
                   <div className="flex items-start gap-3 min-w-0">
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
-                        item.dispatchType === 'AUTOMATED'
+                        isOpened
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-300'
+                          : item.dispatchType === 'AUTOMATED'
                           ? 'bg-indigo-50 text-indigo-600 border-indigo-200'
                           : 'bg-blue-50 text-blue-600 border-blue-200'
                       }`}
                       title={
-                        item.dispatchType === 'AUTOMATED'
-                          ? 'Automated System Email'
-                          : 'Manual Admin Email'
+                        isOpened
+                          ? `MailSuite Read Receipt: Opened ${openCount} time(s)`
+                          : 'Sent & Tracked with MailSuite (Unopened)'
                       }
                     >
-                      {item.dispatchType === 'AUTOMATED' ? (
-                        <Zap className="w-4 h-4" />
+                      {isOpened ? (
+                        <CheckCheck className="w-4 h-4 text-emerald-600" />
                       ) : (
-                        <Send className="w-4 h-4" />
+                        <Check className="w-4 h-4 text-slate-500" />
                       )}
                     </div>
 
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5">
+                        {/* MailSuite Double-Check Status Badge */}
+                        {isOpened ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
+                            <CheckCheck className="w-3 h-3 text-emerald-700" />
+                            <span>✓✓ OPENED ({openCount}x)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                            <Check className="w-3 h-3 text-slate-500" />
+                            <span>✓ SENT • TRACKING ACTIVE</span>
+                          </span>
+                        )}
+
+                        {isClicked && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">
+                            <MousePointerClick className="w-3 h-3 text-blue-700" />
+                            <span>🔗 CLICKED ({clickCount}x)</span>
+                          </span>
+                        )}
+
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${
                             item.dispatchType === 'AUTOMATED'
                               ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
-                              : 'bg-blue-100 text-blue-800 border-blue-200'
+                              : 'bg-blue-50 text-blue-800 border-blue-200'
                           }`}
                         >
                           {item.dispatchType === 'AUTOMATED' ? '⚡ AUTOMATED' : '👤 MANUAL'}
@@ -531,26 +672,6 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${catMeta.colorClass}`}
                         >
                           {catMeta.label}
-                        </span>
-
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                            item.success
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                          }`}
-                        >
-                          {item.success ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              <span>DELIVERED</span>
-                            </>
-                          ) : (
-                            <>
-                              <AlertTriangle className="w-3 h-3 text-rose-600" />
-                              <span>FAILED</span>
-                            </>
-                          )}
                         </span>
                       </div>
 
@@ -564,12 +685,21 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[10px] text-slate-400 font-mono">
                         <span>To: {item.recipient}</span>
+                        {item.trackingId && (
+                          <span className="text-indigo-700 font-semibold">
+                            MailSuite ID: {item.trackingId}
+                          </span>
+                        )}
+                        {item.lastOpenedAt && (
+                          <span className="text-emerald-700 font-bold">
+                            Last Read: {new Date(item.lastOpenedAt).toLocaleTimeString()}
+                          </span>
+                        )}
                         {item.messageId && (
-                          <span className="text-emerald-700 font-semibold">
+                          <span className="text-slate-500">
                             Message-ID: {item.messageId}
                           </span>
                         )}
-                        <span>From: noreply@tradeheaven.net</span>
                       </div>
                     </div>
                   </div>
@@ -580,25 +710,38 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
                       <span>{new Date(item.dispatchedAt).toLocaleString()}</span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setExpandedEmailId(isExpanded ? null : item.id)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <span>{isExpanded ? 'Hide Details' : 'Inspect Email'}</span>
-                      {isExpanded ? (
-                        <ChevronUp className="w-3 h-3" />
-                      ) : (
-                        <ChevronDown className="w-3 h-3" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={simulatingId === `${item.trackingId || item.id}-OPEN`}
+                        onClick={() => handleSimulateMailSuiteEvent(item, 'OPEN')}
+                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Test MailSuite 1x1 Open Pixel for this email"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Test Open</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setExpandedEmailId(isExpanded ? null : item.id)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <span>{isExpanded ? 'Hide Tracker' : 'MailSuite Log'}</span>
+                        {isExpanded ? (
+                          <ChevronUp className="w-3 h-3" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Expanded Email Metadata & Content Inspector */}
+                {/* Expanded Email Metadata & MailSuite Read-Receipt Inspector */}
                 {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-slate-200/80 bg-slate-50 rounded-xl p-3.5 space-y-2 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                  <div className="mt-3 pt-3 border-t border-slate-200/80 bg-slate-50 rounded-xl p-3.5 space-y-3 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
                       <div className="bg-white p-2.5 rounded-lg border border-slate-200">
                         <span className="text-[10px] font-bold uppercase text-slate-400 block">
                           Recipient &amp; Company
@@ -609,20 +752,100 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
                       </div>
                       <div className="bg-white p-2.5 rounded-lg border border-slate-200">
                         <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                          Dispatch Mode &amp; Queue Delay
+                          MailSuite Read Status
                         </span>
-                        <span className="font-bold text-slate-800">
-                          {item.dispatchType} • Queue Delay: {(item.enforcedDelayMs || 0) / 1000}s
+                        <span className={`font-black ${isOpened ? 'text-emerald-700' : 'text-slate-600'}`}>
+                          {isOpened
+                            ? `✓✓ Opened ${openCount}x (Unique: ${item.uniqueOpens || 1})`
+                            : '✓ Sent (Waiting for First Open)'}
                         </span>
                       </div>
                       <div className="bg-white p-2.5 rounded-lg border border-slate-200">
                         <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                          SMTP Transport Receipt
+                          CTA Link Engagement
                         </span>
-                        <span className="font-mono font-bold text-emerald-700 truncate block">
-                          {item.messageId || 'Verified Corporate Relay'}
+                        <span className={`font-black ${isClicked ? 'text-blue-700' : 'text-slate-600'}`}>
+                          {isClicked ? `🔗 Clicked ${clickCount}x` : 'No Link Clicks Yet'}
                         </span>
                       </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                          Tracking Pixel ID
+                        </span>
+                        <span className="font-mono font-bold text-indigo-700 truncate block">
+                          {item.trackingId || `ms-trk-${item.id}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* MailSuite Event History & Simulation Controls */}
+                    <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-[10px] font-black uppercase text-slate-700 flex items-center gap-1.5">
+                          <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>MailSuite Read-Receipt &amp; Click Activity Timeline</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSimulateMailSuiteEvent(item, 'OPEN')}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold cursor-pointer"
+                          >
+                            + Simulate Open Pixel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSimulateMailSuiteEvent(item, 'CLICK')}
+                            className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold cursor-pointer"
+                          >
+                            + Simulate CTA Click
+                          </button>
+                        </div>
+                      </div>
+
+                      {(item.openEvents && item.openEvents.length > 0) ||
+                      (item.clickEvents && item.clickEvents.length > 0) ? (
+                        <div className="space-y-1.5 pt-1">
+                          {(item.openEvents || []).map((op, i) => (
+                            <div
+                              key={op.id || i}
+                              className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-[11px]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-emerald-800">✓✓ OPEN #{i + 1}</span>
+                                <span className="text-slate-700 font-semibold">{op.clientDevice}</span>
+                                <span className="font-mono text-[10px] text-slate-500">IP: {op.ip}</span>
+                              </div>
+                              <span className="font-mono text-[10px] text-emerald-900 font-bold">
+                                {new Date(op.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                          {(item.clickEvents || []).map((cl, i) => (
+                            <div
+                              key={cl.id || i}
+                              className="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-blue-50/70 border border-blue-200 text-[11px]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-blue-800">🔗 CLICK #{i + 1}</span>
+                                <span className="text-slate-800 font-bold truncate max-w-xs">
+                                  &ldquo;{cl.label}&rdquo;
+                                </span>
+                                <span className="font-mono text-[10px] text-slate-500">
+                                  {cl.clientDevice} ({cl.ip})
+                                </span>
+                              </div>
+                              <span className="font-mono text-[10px] text-blue-900 font-bold">
+                                {new Date(cl.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-slate-500 py-2">
+                          1x1 Tracking Pixel is embedded in this email. As soon as {item.recipient} opens the email in Gmail, Outlook, or Apple Mail, read receipts will appear here in real time.
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-1">

@@ -33,6 +33,7 @@ import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage'
 import { DiwaliOfferBanner } from './components/marketplace/DiwaliOfferBanner';
 import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { MailDeliveryHistoryPage } from './components/admin/MailDeliveryHistoryPage';
 import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { ClientAdminView } from './components/services/ClientAdminView';
@@ -281,9 +282,12 @@ const MainApp: React.FC = () => {
   const [storefrontCompanyId, setStorefrontCompanyId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const sup = params.get('supplier') || params.get('supplierId') || params.get('company') || params.get('vendor');
-      if (sup) {
-        return resolveSupplierId(sup);
+      const isCheckoutUrl = params.get('action') === 'renew-membership' || params.get('pay_zac') === '1';
+      if (!isCheckoutUrl) {
+        const sup = params.get('supplier') || params.get('supplierId') || params.get('company') || params.get('vendor');
+        if (sup) {
+          return resolveSupplierId(sup);
+        }
       }
     }
     return null;
@@ -393,7 +397,8 @@ const MainApp: React.FC = () => {
         setSelectedBuyerId(resolveBuyerId(buyerIdParam) || buyerIdParam);
       }
 
-      if (supId) {
+      const isCheckoutUrl = params.get('action') === 'renew-membership' || params.get('pay_zac') === '1';
+      if (supId && !isCheckoutUrl) {
         setStorefrontCompanyId(resolveSupplierId(supId));
       } else {
         setStorefrontCompanyId(null);
@@ -902,7 +907,7 @@ const MainApp: React.FC = () => {
     };
   }, []);
 
-  // Guard against unauthenticated or non-admin visitors accessing admin views directly
+  // Guard against unauthenticated or non-admin visitors accessing admin or protected dashboard views directly
   useEffect(() => {
     const adminViews: ActiveView[] = [
       'CLIENT_ADMIN',
@@ -914,6 +919,12 @@ const MainApp: React.FC = () => {
       'RENEWAL_EMAIL_EDITOR'
     ];
     if (adminViews.includes(activeView) && (!currentUser || !isAdmin)) {
+      setActiveView('HOMEPAGE');
+      setAuthModalMode('LOGIN');
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (activeView === 'DASHBOARD' && !currentUser) {
       setActiveView('HOMEPAGE');
       setAuthModalMode('LOGIN');
       setIsAuthModalOpen(true);
@@ -1423,7 +1434,24 @@ const MainApp: React.FC = () => {
 
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('action') === 'renew-membership') {
+      if (params.get('pay_zac') === '1') {
+        const company = params.get('company') || 'IMPORTATION FADE-TECH (OTEC LTD)';
+        const email = params.get('email') || 'zac@otec.ltd';
+        const amountUsd = Number(params.get('amount') || params.get('amountUsd')) || 590;
+
+        setCheckoutData({
+          planId: 'ZAC-BALANCE-FUND-590',
+          title: `Full Plan Balance Settlement ($${amountUsd}.00 USD) — ${company}`,
+          description: `Remaining Plan Balance Settlement for Zachary Aldin (${company}) • Earlier Paid: $400.00 USD • Remaining Balance Due: $${amountUsd}.00 USD`,
+          amountUsd,
+          type: 'SUBSCRIPTION',
+          supplierCompany: company,
+          clientEmail: email,
+          billingName: `Zachary Aldin (${company})`,
+          decisionMakerName: 'Zachary Aldin',
+          preferredPaymentMethod: 'Direct Bank Wire Transfer'
+        });
+      } else if (params.get('action') === 'renew-membership') {
         const company = params.get('company') || 'ACE Intermediary';
         const email = params.get('email') || 'ezekiahali355@gmail.com';
         const decisionMaker = params.get('decisionMaker') || 'Ali Charley Ezekiah';
@@ -1564,6 +1592,11 @@ const MainApp: React.FC = () => {
       return;
     }
     if (target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
+      if (!currentUser) {
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
       setActiveView('DASHBOARD');
       return;
     }
@@ -1937,6 +1970,42 @@ const MainApp: React.FC = () => {
                 );
 
               case 'DASHBOARD':
+                if (!currentUser) {
+                  return (
+                    <div className="max-w-lg mx-auto my-12 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 text-center shadow-xs space-y-4">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mx-auto">
+                        <LayoutDashboard className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                          Registered Member Access Required
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-600">
+                          Only registered and signed-in Trade Heaven buyers and suppliers can open the User Dashboard.
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthModalMode('LOGIN');
+                            setIsAuthModalOpen(true);
+                          }}
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Sign In to Dashboard
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleOpenRegisterFree}
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Register Account
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <BuyerSupplierDashboard
                     currentUser={currentUser}
@@ -2131,6 +2200,15 @@ const MainApp: React.FC = () => {
                     onPostRfqForCountry={(req) => {
                       handleOpenCreateRfq();
                     }}
+                  />
+                );
+
+              case 'MAIL_DELIVERY_HISTORY':
+                return (
+                  <MailDeliveryHistoryPage
+                    currentUser={currentUser}
+                    onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                    onNavigate={handleNavigate}
                   />
                 );
 
@@ -2366,7 +2444,7 @@ const MainApp: React.FC = () => {
         <TradeHeavenSocialBar onContactClick={() => handleOpenContactModal({ targetType: 'GENERAL' })} />
       </div>
 
-      {activeView === 'HOME' && <CustomerReviews />}
+      {activeView === 'HOMEPAGE' && <CustomerReviews />}
 
       {/* 5. GLOBAL FOOTER */}
       <TradeHeavenFooter

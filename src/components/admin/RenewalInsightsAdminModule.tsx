@@ -30,6 +30,7 @@ export type RenewalConversionStatus =
 
 export interface RenewalOfferEmailRecord {
   id: string;
+  trackingId?: string;
   recipientName: string;
   decisionMakerName: string;
   recipientEmail: string;
@@ -61,7 +62,36 @@ export interface RenewalOfferEmailRecord {
 
 const DEFAULT_RENEWAL_RECORDS: RenewalOfferEmailRecord[] = [
   {
+    id: 'ren-zac-fadetech-000',
+    trackingId: 'ms-trk-zac-balance-fund-live-2026',
+    recipientName: 'Zachary Aldin (Zac)',
+    decisionMakerName: 'Zachary Aldin (Zac)',
+    recipientEmail: 'zac@otec.ltd',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+    paymentMethod: 'Bank Wire / Card ($400 Paid Earlier • $590 Balance Fund)',
+    planId: 'basic-business-plan',
+    planName: 'Basic Business Plan (Balance Fund Settlement)',
+    offerTitle: 'Payment of Balance Fund ($590.00 USD) Following Earlier $400.00 USD Deposit — Confirmed Right to Admin',
+    standardAmountUsd: 1100,
+    renewalAmountUsd: 590,
+    discountLabel: '10% OFF + $400 CREDITED',
+    promoCode: 'DIWALI10',
+    subject:
+      '💳 Payment of Balance Fund ($590.00 USD) — Full Basic Plan Settlement & Ads Reactivation for IMPORTATION FADE-TECH (OTEC LTD) (Ref: TRD-INV-27-0004)',
+    sentAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
+  },
+  {
     id: 'ren-ali-ace-001',
+    trackingId: 'ms-trk-ace-renewal-2026',
     recipientName: 'Ali Charley Ezekiah',
     decisionMakerName: 'Ali Charley Ezekiah',
     recipientEmail: 'ezekiahali355@gmail.com',
@@ -80,13 +110,11 @@ const DEFAULT_RENEWAL_RECORDS: RenewalOfferEmailRecord[] = [
     delivered: true,
     adminCopySent: true,
     adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 3,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    clicked: true,
-    clickCount: 2,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 9).toISOString(),
-    conversionStatus: 'CHECKOUT_INITIATED'
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
   },
   {
     id: 'ren-mark-atlantic-002',
@@ -108,15 +136,11 @@ const DEFAULT_RENEWAL_RECORDS: RenewalOfferEmailRecord[] = [
     delivered: true,
     adminCopySent: true,
     adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 5,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    clicked: true,
-    clickCount: 3,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
-    conversionStatus: 'CONVERTED',
-    convertedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    orderId: 'ORD-REN-884920'
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
   },
   {
     id: 'ren-randy-middlefox-003',
@@ -138,120 +162,6 @@ const DEFAULT_RENEWAL_RECORDS: RenewalOfferEmailRecord[] = [
     delivered: true,
     adminCopySent: true,
     adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 4,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    clicked: true,
-    clickCount: 2,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    conversionStatus: 'CONVERTED',
-    convertedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    orderId: 'ORD-REN-773104'
-  },
-  {
-    id: 'ren-marcus-apex-004',
-    recipientName: 'Marcus Vance',
-    decisionMakerName: 'Marcus Vance (VP Global Sourcing)',
-    recipientEmail: 'm.vance@apexglobal.com',
-    companyName: 'Apex Global Logistics & Sourcing',
-    address: '450 Mission Street, San Francisco, CA 94105 USA',
-    paymentMethod: 'Debit Card',
-    planId: 'basic-business-plan',
-    planName: 'Basic Business Plan',
-    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
-    standardAmountUsd: 1100,
-    renewalAmountUsd: 990,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Apex Global Logistics & Sourcing',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
-    delivered: true,
-    adminCopySent: true,
-    adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 2,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    clicked: true,
-    clickCount: 1,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
-    conversionStatus: 'CLICKED'
-  },
-  {
-    id: 'ren-elena-apexmicro-005',
-    recipientName: 'Elena Zhao',
-    decisionMakerName: 'Elena Zhao (Export Director)',
-    recipientEmail: 'elena.zhao@apexmicro.cn',
-    companyName: 'Shenzhen Apex Microelectronics Co., Ltd.',
-    address: 'Nanshan Hi-Tech Industrial Park, Shenzhen, China',
-    paymentMethod: 'Debit Card / SWIFT',
-    planId: 'premium-partner-plan',
-    planName: 'Premium Partner Plan',
-    offerTitle: 'Premium Partner Plan Renewal — 10% OFF ($1,890/yr)',
-    standardAmountUsd: 2100,
-    renewalAmountUsd: 1890,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Premium Partner Plan Renewal Offer ($1,890/yr — 10% OFF) for Shenzhen Apex Microelectronics',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-    delivered: true,
-    adminCopySent: true,
-    adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 3,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    clicked: true,
-    clickCount: 2,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 11).toISOString(),
-    conversionStatus: 'CONVERTED',
-    convertedAt: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
-    orderId: 'ORD-REN-662019'
-  },
-  {
-    id: 'ren-carlos-iberia-006',
-    recipientName: 'Carlos Mendez',
-    decisionMakerName: 'Carlos Mendez',
-    recipientEmail: 'cmendez@iberiaparts.es',
-    companyName: 'Iberia Clean Energy Solutions',
-    address: 'Paseo de la Castellana 95, Madrid, Spain',
-    paymentMethod: 'Debit Card',
-    planId: 'basic-business-plan',
-    planName: 'Basic Business Plan',
-    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
-    standardAmountUsd: 1100,
-    renewalAmountUsd: 990,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Iberia Clean Energy Solutions',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 38).toISOString(),
-    delivered: true,
-    adminCopySent: true,
-    adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 1,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 19).toISOString(),
-    clicked: false,
-    clickCount: 0,
-    conversionStatus: 'OPENED'
-  },
-  {
-    id: 'ren-vikram-apex-007',
-    recipientName: 'Vikram Mehta',
-    decisionMakerName: 'Vikram Mehta (Managing Director)',
-    recipientEmail: 'vmehta@apexmachinery.in',
-    companyName: 'Apex Precision Engineering Ltd.',
-    address: 'Andheri East, Mumbai, Maharashtra 400069, India',
-    paymentMethod: 'Debit Card',
-    planId: 'basic-business-plan',
-    planName: 'Basic Business Plan',
-    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
-    standardAmountUsd: 1100,
-    renewalAmountUsd: 990,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Apex Precision Engineering Ltd.',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 46).toISOString(),
-    delivered: true,
-    adminCopySent: false,
     opened: false,
     openCount: 0,
     clicked: false,
@@ -281,8 +191,8 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
     text: string;
   } | null>(null);
 
-  const fetchRenewalInsights = useCallback(async () => {
-    setIsLoading(true);
+  const fetchRenewalInsights = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await fetch('/api/v1/admin/renewal-insights');
       if (res.ok) {
@@ -294,23 +204,41 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
     } catch {
       // Fallback to local records
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void fetchRenewalInsights();
+    void fetchRenewalInsights(false);
+    const interval = setInterval(() => {
+      void fetchRenewalInsights(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, [fetchRenewalInsights]);
 
   const handleTrackEvent = async (
     recordId: string,
-    eventType: 'OPEN' | 'CLICK' | 'CONVERT' | 'CHECKOUT_INITIATED'
+    eventType: 'OPEN' | 'CLICK' | 'CONVERT' | 'CHECKOUT_INITIATED' | 'RESET'
   ) => {
     const nowIso = new Date().toISOString();
 
     setRecords((prev) =>
       prev.map((rec) => {
         if (rec.id !== recordId) return rec;
+        if (eventType === 'RESET') {
+          return {
+            ...rec,
+            opened: false,
+            openCount: 0,
+            lastOpenedAt: undefined,
+            clicked: false,
+            clickCount: 0,
+            lastClickedAt: undefined,
+            conversionStatus: 'SENT',
+            convertedAt: undefined,
+            orderId: undefined
+          };
+        }
         if (eventType === 'OPEN') {
           return {
             ...rec,
@@ -355,7 +283,7 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
             clickCount: Math.max(1, rec.clickCount),
             conversionStatus: 'CONVERTED',
             convertedAt: nowIso,
-            orderId: rec.orderId || `ORD-REN-${Math.floor(100000 + Math.random() * 900000)}`
+            orderId: rec.orderId || `ORD-REN-${rec.id.slice(-3).toUpperCase()}-2026`
           };
         }
         return rec;
@@ -383,7 +311,8 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
       OPEN: 'Email Open event recorded',
       CLICK: '"Renew Now" Click-Through event recorded',
       CHECKOUT_INITIATED: 'Checkout Initiated status updated',
-      CONVERT: 'Membership Renewal marked as Converted (Paid)'
+      CONVERT: 'Membership Renewal marked as Converted (Paid)',
+      RESET: 'Open & Click tracking counters reset to 0'
     };
     setToastBanner({
       type: 'success',
@@ -395,10 +324,16 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
     void handleTrackEvent(rec.id, 'CHECKOUT_INITIATED');
     const checkoutPayload: PaymentCheckoutData = {
       planId: rec.planId,
+      title: `${rec.planName} Renewal (${rec.companyName} — ${rec.discountLabel})`,
       planName: `${rec.planName} Renewal (${rec.companyName} — ${rec.discountLabel})`,
-      amount: rec.renewalAmountUsd,
+      description: `${rec.offerTitle} • Decision Maker: ${rec.decisionMakerName} • Address: ${rec.address}`,
+      amountUsd: Number(rec.renewalAmountUsd) || 590,
+      amount: Number(rec.renewalAmountUsd) || 590,
+      type: 'SUBSCRIPTION',
       currency: 'USD',
       billingCycle: 'ANNUAL',
+      supplierCompany: rec.companyName,
+      companyName: rec.companyName,
       clientEmail: rec.recipientEmail,
       billingName: rec.companyName,
       address: rec.address,
@@ -571,6 +506,39 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={async () => {
+                setIsLoading(true);
+                try {
+                  const res = await fetch('/api/v1/admin/send-zac-balance-fund-confirmation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({
+                      email: 'zac@otec.ltd',
+                      adminEmails: ['yr943334@gmail.com', 'sankalprajput15@gmail.com']
+                    })
+                  });
+                  const data = await res.json();
+                  setToastBanner({
+                    type: 'success',
+                    text:
+                      data?.message ||
+                      '✅ Sent Balance Fund ($590.00 USD) mail to Zac (zac@otec.ltd) + confirmed to Admin (yr943334@gmail.com) that the earlier Balance Fund mail was right!'
+                  });
+                  await fetchRenewalInsights(true);
+                } catch {
+                  // ignore
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading}
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Send Balance Fund Mail to Zac + Confirm Right to Admin</span>
+            </button>
             {onNavigateToHtmlEditor && (
               <button
                 type="button"
@@ -977,44 +945,59 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
 
                   {/* OPEN TRACKING */}
                   <td className="py-4 px-4 align-top">
-                    {rec.opened ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-50 text-violet-800 border border-violet-200 font-bold text-[11px]">
-                          <Eye className="w-3 h-3 text-violet-600" />
-                          <span>Opened ({rec.openCount}x)</span>
-                        </span>
-                        {rec.lastOpenedAt && (
+                    <div className="space-y-1">
+                      {rec.opened && rec.openCount > 0 ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-50 text-violet-800 border border-violet-200 font-bold text-[11px]">
+                            <Eye className="w-3 h-3 text-violet-600" />
+                            <span>Opened ({rec.openCount}x)</span>
+                          </span>
+                          {rec.lastOpenedAt && (
+                            <div className="text-[10px] text-slate-400">
+                              Last: {new Date(rec.lastOpenedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 font-bold text-[11px]">
+                            <Eye className="w-3 h-3 text-slate-400" />
+                            <span>0 Opens (Not Opened)</span>
+                          </span>
                           <div className="text-[10px] text-slate-400">
-                            Last: {new Date(rec.lastOpenedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            Awaiting recipient read
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-semibold text-[11px]">
-                        Not Opened Yet
-                      </span>
-                    )}
+                        </>
+                      )}
+                    </div>
                   </td>
 
                   {/* CLICK-THROUGH TRACKING */}
                   <td className="py-4 px-4 align-top">
-                    {rec.clicked ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px]">
-                          <MousePointerClick className="w-3 h-3 text-blue-600" />
-                          <span>Clicked CTA ({rec.clickCount}x)</span>
-                        </span>
-                        {rec.lastClickedAt && (
+                    <div className="space-y-1">
+                      {rec.clicked && rec.clickCount > 0 ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px]">
+                            <MousePointerClick className="w-3 h-3 text-blue-600" />
+                            <span>Clicked CTA ({rec.clickCount}x)</span>
+                          </span>
+                          {rec.lastClickedAt && (
+                            <div className="text-[10px] text-slate-400">
+                              Last: {new Date(rec.lastClickedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 font-semibold text-[11px]">
+                            <span>0 Clicks</span>
+                          </span>
                           <div className="text-[10px] text-slate-400">
-                            Last: {new Date(rec.lastClickedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            No CTA clicks yet
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-semibold text-[11px]">
-                        0 Clicks
-                      </span>
-                    )}
+                        </>
+                      )}
+                    </div>
                   </td>
 
                   {/* CONVERSION STATUS */}
@@ -1062,7 +1045,7 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
                         type="button"
                         onClick={() => void handleTrackEvent(rec.id, 'OPEN')}
                         className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold cursor-pointer transition-all"
-                        title="Simulate / log email open event"
+                        title="Record email open event"
                       >
                         +Open
                       </button>
@@ -1070,10 +1053,20 @@ export const RenewalInsightsAdminModule: React.FC<RenewalInsightsAdminModuleProp
                         type="button"
                         onClick={() => void handleTrackEvent(rec.id, 'CLICK')}
                         className="px-2 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold cursor-pointer transition-all"
-                        title="Simulate / log 'Renew Now' button click"
+                        title="Record 'Renew Now' button click"
                       >
                         +Click
                       </button>
+                      {(rec.openCount > 0 || rec.clickCount > 0 || rec.conversionStatus !== 'SENT') && (
+                        <button
+                          type="button"
+                          onClick={() => void handleTrackEvent(rec.id, 'RESET')}
+                          className="px-2 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold cursor-pointer transition-all"
+                          title="Reset open and click counters to 0"
+                        >
+                          Reset
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

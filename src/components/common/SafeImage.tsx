@@ -30,55 +30,69 @@ const FALLBACK_SEEDS: string[] = [
 
 const CATEGORY_POOLS: Record<string, string[]> = {
   GOLD: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   COAL: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   SEAFOOD: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   CHEMICALS: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   AGRICULTURE: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   MACHINERY: [
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     EVENING_TANKER_PORT_IMAGE
   ],
   TEXTILES: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   CONSTRUCTION: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   MEDICAL: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   ELECTRONICS: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   AUTOMOTIVE: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   RENEWABLE: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ],
   INDUSTRIAL: [
-    EVENING_TANKER_PORT_IMAGE,
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    EVENING_TANKER_PORT_IMAGE
   ]
 };
 
@@ -134,18 +148,9 @@ export const optimizeUnsplashUrl = (url: string, options: { width?: number; qual
 
   const targetWidth = options.width || (options.isThumbnail ? 320 : 800);
   const targetQuality = options.quality || 70;
+  const cleanBase = url.split('?')[0];
 
-  try {
-    const urlObj = new URL(url);
-    urlObj.searchParams.set('auto', 'format,compress');
-    urlObj.searchParams.set('fit', 'crop');
-    urlObj.searchParams.set('w', String(targetWidth));
-    urlObj.searchParams.set('q', String(targetQuality));
-    return urlObj.toString();
-  } catch (e) {
-    const sep = url.includes('?') ? '&' : '?';
-    return `${url}${sep}auto=format,compress&fit=crop&w=${targetWidth}&q=${targetQuality}`;
-  }
+  return `${cleanBase}?auto=format&fit=crop&w=${targetWidth}&q=${targetQuality}`;
 };
 
 // Deterministic string hashing
@@ -177,7 +182,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const [hasIntersected, setHasIntersected] = useState<boolean>(false);
+  const [hasIntersected, setHasIntersected] = useState<boolean>(true);
   const [attemptIndex, setAttemptIndex] = useState<number>(0);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
@@ -308,16 +313,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       list.push(fallbackSrc.trim());
     }
 
-    if (isLogoOrAvatar) {
-      // Add reliable generic business avatar / logo seeds
-      list.push(EVENING_TANKER_PORT_IMAGE);
-      list.push('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80');
-      return list;
-    }
-
     // Retrieve high-quality category pool
-    const pool = getCategoryPool(category, alt);
-    const seedString = `${productId || ''}-${category || ''}-${alt || 'industrial-product'}`;
+    const pool = getCategoryPool(category, productTitle || alt || resolvedAlt);
+    const seedString = `${productId || ''}-${category || ''}-${productTitle || alt || 'industrial-product'}`;
     const hash = getDeterministicHash(seedString);
 
     const primaryIndex = hash % pool.length;
@@ -414,7 +412,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
               src={currentCandidate}
               alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
               referrerPolicy="no-referrer"
-              loading={props.loading || 'lazy'}
+              loading={props.loading || (isThumbnail ? 'eager' : 'lazy')}
               decoding={props.decoding || 'async'}
               onLoad={handleLoad}
               onError={handleError}

@@ -1,0 +1,579 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Mail,
+  Send,
+  RefreshCw,
+  Search,
+  Filter,
+  CheckCircle2,
+  AlertTriangle,
+  Eye,
+  MousePointerClick,
+  Globe,
+  Clock,
+  Building2,
+  User,
+  ExternalLink,
+  Copy,
+  Check,
+  ShieldCheck,
+  Activity,
+  Layers,
+  ArrowLeft,
+  Smartphone,
+  Monitor,
+  Trash2
+} from 'lucide-react';
+import type { CompanyEmailHistoryEntry, MailSuiteAnalyticsSummary } from '../../services/smtpService';
+import { AdminRouteGuard } from './AdminRouteGuard';
+import { AuthUser, ActiveView } from '../../types';
+
+interface MailDeliveryHistoryPageProps {
+  currentUser: AuthUser | null;
+  onOpenAuthModal: () => void;
+  onNavigate: (view: ActiveView) => void;
+}
+
+export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = ({
+  currentUser,
+  onOpenAuthModal,
+  onNavigate
+}) => {
+  const [history, setHistory] = useState<CompanyEmailHistoryEntry[]>([]);
+  const [summary, setSummary] = useState<MailSuiteAnalyticsSummary | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [selectedEntry, setSelectedEntry] = useState<CompanyEmailHistoryEntry | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [statusBanner, setStatusBanner] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+  const fetchHistoryAndAnalytics = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/marketing-suite/state');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success) {
+          if (Array.isArray(data.history)) setHistory(data.history);
+          if (data.summary) setSummary(data.summary);
+        }
+      }
+    } catch (err: any) {
+      setStatusBanner({ type: 'error', message: `Failed to load email delivery history: ${err?.message || 'Network error'}` });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchHistoryAndAnalytics();
+  }, []);
+
+  const handleCopyText = (text: string, id: string) => {
+    try {
+      navigator.clipboard?.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {}
+  };
+
+  const handleRunSimulation = async (action: 'ALL_DELIVERED' | 'BATCH_OPENS' | 'BATCH_CLICKS' | 'SIMULATE_BOUNCE' | 'RESET_ALL') => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/marketing-suite/simulate-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        if (Array.isArray(data.history)) setHistory(data.history);
+        if (data.summary) setSummary(data.summary);
+        setStatusBanner({ type: 'success', message: data.message || `Simulation ${action} executed successfully.` });
+      } else {
+        setStatusBanner({ type: 'error', message: data?.message || 'Simulation failed.' });
+      }
+    } catch (err: any) {
+      setStatusBanner({ type: 'error', message: err?.message || 'Simulation communication failure.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredHistory = useMemo(() => {
+    return history.filter((item) => {
+      const matchesSearch =
+        !searchTerm.trim() ||
+        item.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.trackingId || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'DELIVERED' && item.success && item.mailSuiteStatus !== 'OPENED' && item.mailSuiteStatus !== 'CLICKED') ||
+        (statusFilter === 'OPENED' && item.opened) ||
+        (statusFilter === 'CLICKED' && item.clicked) ||
+        (statusFilter === 'BOUNCED' && (!item.success || item.mailSuiteStatus === 'BOUNCED'));
+
+      const matchesCategory = categoryFilter === 'ALL' || item.category === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [history, searchTerm, statusFilter, categoryFilter]);
+
+  return (
+    <AdminRouteGuard
+      currentUser={currentUser}
+      onOpenAuthModal={onOpenAuthModal}
+      onNavigate={onNavigate}
+      title="Mail Delivery History & Telemetry Hub"
+      description="Monitor full audit history, MailSuite open/click telemetry, SMTP delivery receipts, and recipient engagement for all dispatched emails."
+    >
+      <div className="max-w-[1440px] mx-auto px-4 py-8 space-y-6">
+        
+        {/* Top Header & Navigation */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-black uppercase tracking-wider">
+              <Mail className="w-3.5 h-3.5" />
+              <span>MailSuite™ Production Telemetry</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Email Delivery History &amp; Engagement Logs
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500">
+              Real-time delivery status, 1x1 open tracking pixels, click-through audit trails, and server response logs.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => onNavigate('RENEWAL_INSIGHTS')}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-500" />
+              <span>Back to Renewal Insights</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={fetchHistoryAndAnalytics}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Refreshing...' : 'Refresh Logs'}</span>
+            </button>
+          </div>
+        </div>
+
+        {statusBanner && (
+          <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs font-bold ${
+            statusBanner.type === 'success' ? 'bg-emerald-50 text-emerald-900 border-emerald-200' :
+            statusBanner.type === 'error' ? 'bg-rose-50 text-rose-900 border-rose-200' :
+            'bg-blue-50 text-blue-900 border-blue-200'
+          }`}>
+            <span>{statusBanner.message}</span>
+            <button type="button" onClick={() => setStatusBanner(null)} className="text-current opacity-70 hover:opacity-100 cursor-pointer">
+              &times;
+            </button>
+          </div>
+        )}
+
+        {/* Analytics Summary Cards */}
+        {summary && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Total Sent</div>
+              <div className="text-2xl font-black text-slate-900">{summary.totalSent}</div>
+              <div className="text-[10px] text-slate-400">Queued &amp; Dispatched</div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Delivered</div>
+              <div className="text-2xl font-black text-emerald-600">{summary.totalDelivered}</div>
+              <div className="text-[10px] text-emerald-700 font-medium">SMTP 250 OK Verified</div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Opened</div>
+              <div className="text-2xl font-black text-blue-600">{summary.totalOpened}</div>
+              <div className="text-[10px] text-blue-700 font-medium">{summary.openRatePercent}% Open Rate</div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Clicked</div>
+              <div className="text-2xl font-black text-indigo-600">{summary.totalClicked}</div>
+              <div className="text-[10px] text-indigo-700 font-medium">{summary.clickThroughRatePercent}% CTR</div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Total Opens</div>
+              <div className="text-2xl font-black text-slate-900">{summary.totalOpensCount}</div>
+              <div className="text-[10px] text-slate-400">Pixel Fetches</div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Total Clicks</div>
+              <div className="text-2xl font-black text-slate-900">{summary.totalClicksCount}</div>
+              <div className="text-[10px] text-slate-400">CTA Redirects</div>
+            </div>
+          </div>
+        )}
+
+        {/* Simulation Controls Toolbar */}
+        <div className="bg-slate-900 text-white p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center shrink-0">
+              <Activity className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-sm">MailSuite™ Mock Tracking Simulation Controls</div>
+              <div className="text-xs text-slate-400">Test opens, Clicks, and 250 OK delivery confirmations instantly.</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => handleRunSimulation('ALL_DELIVERED')}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              Simulate All Delivered
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRunSimulation('BATCH_OPENS')}
+              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              Simulate Batch Opens
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRunSimulation('BATCH_CLICKS')}
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              Simulate Batch Clicks
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRunSimulation('RESET_ALL')}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-700"
+            >
+              Reset Telemetry
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Filter Toolbar */}
+        <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="relative w-full lg:w-96">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by recipient email, name, company, subject..."
+              className="w-full h-10 pl-10 pr-4 rounded-xl bg-slate-100 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold text-slate-700">
+              {['ALL', 'DELIVERED', 'OPENED', 'CLICKED', 'BOUNCED'].map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setStatusFilter(st)}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    statusFilter === st ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-600 hover:text-slate-950'
+                  }`}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="h-10 px-3 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+            >
+              <option value="ALL">All Categories</option>
+              <option value="CUSTOM_ADMIN">Custom Admin</option>
+              <option value="CAMPAIGN">Campaign</option>
+              <option value="ONBOARDING">Onboarding</option>
+              <option value="BUYER_INQUIRY">Buyer Inquiry</option>
+              <option value="OTP_SECURITY">OTP Security</option>
+              <option value="LOGIN_ALERT">Login Alert</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Email Delivery History Table */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                  <th className="py-4 px-5">Recipient &amp; Company</th>
+                  <th className="py-4 px-5">Subject &amp; Category</th>
+                  <th className="py-4 px-5">Delivery Status</th>
+                  <th className="py-4 px-5">Engagement Telemetry</th>
+                  <th className="py-4 px-5">Tracking ID &amp; Message ID</th>
+                  <th className="py-4 px-5">Dispatched At</th>
+                  <th className="py-4 px-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
+                {filteredHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      No email delivery records found matching your filter criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredHistory.map((entry) => {
+                    const isOpened = Boolean(entry.opened || (entry.openCount || 0) > 0);
+                    const isClicked = Boolean(entry.clicked || (entry.clickCount || 0) > 0);
+                    const isBounced = !entry.success || entry.mailSuiteStatus === 'BOUNCED';
+
+                    return (
+                      <tr key={entry.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-4 px-5">
+                          <div className="font-bold text-slate-900 truncate max-w-[200px]">
+                            {entry.recipientName}
+                          </div>
+                          <div className="text-blue-600 font-mono text-[11px] truncate max-w-[200px]">
+                            {entry.recipient}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-[200px] mt-0.5">
+                            {entry.companyName}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-5">
+                          <div className="font-semibold text-slate-900 line-clamp-1 max-w-[280px]" title={entry.subject}>
+                            {entry.subject}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">
+                              {entry.category}
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[10px] font-bold">
+                              {entry.dispatchType}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-5">
+                          {isBounced ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
+                              <AlertTriangle className="w-3 h-3 shrink-0" />
+                              <span>Bounced</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                              <CheckCircle2 className="w-3 h-3 shrink-0" />
+                              <span>Delivered (250 OK)</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-5">
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isOpened ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-400'
+                            }`}>
+                              <Eye className="w-3 h-3" />
+                              <span>{entry.openCount || 0} Open{(entry.openCount || 0) === 1 ? '' : 's'}</span>
+                            </span>
+
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isClicked ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-slate-100 text-slate-400'
+                            }`}>
+                              <MousePointerClick className="w-3 h-3" />
+                              <span>{entry.clickCount || 0} Click{(entry.clickCount || 0) === 1 ? '' : 's'}</span>
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-5 font-mono text-[11px]">
+                          <div className="text-slate-700 truncate max-w-[160px]" title={entry.trackingId}>
+                            Trk: {entry.trackingId || 'N/A'}
+                          </div>
+                          <div className="text-slate-400 truncate max-w-[160px] text-[10px]" title={entry.messageId}>
+                            Msg: {entry.messageId || 'sent'}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-5 text-slate-500 whitespace-nowrap text-[11px]">
+                          {new Date(entry.dispatchedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                        </td>
+
+                        <td className="py-4 px-5 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEntry(entry)}
+                            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Details</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Details & HTML Preview Modal */}
+        {selectedEntry && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
+              
+              {/* Modal Header */}
+              <div className="p-6 bg-slate-900 text-white flex items-center justify-between shrink-0">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono text-[10px] font-bold uppercase">
+                    MailSuite™ Delivery Telemetry Report
+                  </div>
+                  <h3 className="text-lg font-black mt-1 text-white truncate max-w-xl">
+                    {selectedEntry.subject}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedEntry(null)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm font-bold cursor-pointer"
+                >
+                  &times;
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+                
+                {/* Metadata Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  <div>
+                    <div className="text-slate-400 font-bold uppercase text-[10px]">Recipient</div>
+                    <div className="font-bold text-slate-900 mt-0.5">{selectedEntry.recipientName}</div>
+                    <div className="text-blue-600 font-mono">{selectedEntry.recipient}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 font-bold uppercase text-[10px]">Company</div>
+                    <div className="font-bold text-slate-900 mt-0.5">{selectedEntry.companyName}</div>
+                    <div className="text-slate-500 text-[11px]">{selectedEntry.category} &bull; {selectedEntry.dispatchType}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 font-bold uppercase text-[10px]">Tracking IDs</div>
+                    <div className="font-mono text-slate-900 mt-0.5 truncate">Trk: {selectedEntry.trackingId}</div>
+                    <div className="font-mono text-slate-500 text-[10px] truncate">Msg: {selectedEntry.messageId || 'sent'}</div>
+                  </div>
+                </div>
+
+                {/* Summary Text / Summary Notice */}
+                <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 text-blue-900 space-y-1">
+                  <div className="font-bold uppercase text-[10px] tracking-wider text-blue-700">Audit Summary</div>
+                  <div className="leading-relaxed">{selectedEntry.summaryText}</div>
+                </div>
+
+                {/* Open & Click Event Logs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+                    <div className="font-bold text-slate-900 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-600" /> Open Events ({selectedEntry.openEvents?.length || 0})</span>
+                      <span className="text-[10px] text-slate-400 font-mono">1x1 Pixel Tracker</span>
+                    </div>
+                    {(!selectedEntry.openEvents || selectedEntry.openEvents.length === 0) ? (
+                      <div className="text-slate-400 text-[11px] italic py-2">No open events recorded yet.</div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {selectedEntry.openEvents.map((ev, i) => (
+                          <div key={ev.id || i} className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-0.5">
+                            <div className="flex items-center justify-between font-bold text-slate-800">
+                              <span>{ev.clientDevice}</span>
+                              <span className="text-[10px] text-slate-400">{new Date(ev.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div className="text-slate-500 font-mono text-[10px]">IP: {ev.ip}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+                    <div className="font-bold text-slate-900 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5"><MousePointerClick className="w-4 h-4 text-indigo-600" /> Click Events ({selectedEntry.clickEvents?.length || 0})</span>
+                      <span className="text-[10px] text-slate-400 font-mono">CTA Redirect</span>
+                    </div>
+                    {(!selectedEntry.clickEvents || selectedEntry.clickEvents.length === 0) ? (
+                      <div className="text-slate-400 text-[11px] italic py-2">No click events recorded yet.</div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {selectedEntry.clickEvents.map((cev, i) => (
+                          <div key={cev.id || i} className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-0.5">
+                            <div className="flex items-center justify-between font-bold text-slate-800">
+                              <span className="truncate max-w-[200px]" title={cev.label}>{cev.label}</span>
+                              <span className="text-[10px] text-slate-400">{new Date(cev.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div className="text-indigo-600 font-mono text-[10px] truncate" title={cev.url}>{cev.url}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* HTML Email Preview */}
+                <div className="space-y-2">
+                  <div className="font-bold text-slate-900 flex items-center justify-between">
+                    <span>Dispatched HTML Email Body &amp; Watermark Preview</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(selectedEntry.htmlPreview || '', 'html-body')}
+                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedId === 'html-body' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedId === 'html-body' ? 'Copied HTML' : 'Copy HTML'}</span>
+                    </button>
+                  </div>
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white p-4 max-h-96 overflow-y-auto shadow-inner">
+                    {selectedEntry.htmlPreview ? (
+                      <div dangerouslySetInnerHTML={{ __html: selectedEntry.htmlPreview }} />
+                    ) : (
+                      <div className="text-slate-400 italic py-8 text-center">No HTML preview stored for this entry.</div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedEntry(null)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer transition-all"
+                >
+                  Close Report
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+      </div>
+    </AdminRouteGuard>
+  );
+};

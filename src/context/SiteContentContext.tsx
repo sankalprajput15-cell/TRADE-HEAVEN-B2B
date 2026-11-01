@@ -325,6 +325,16 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
 
+    const emailLower = (user.email || '').trim().toLowerCase();
+    if (emailLower === 'zac@otec.ltd' || emailLower === 'zac@fadetech.com' || user.id === 'user-supplier-zac') {
+      return {
+        isAuthorized: false,
+        isSuperAdmin: false,
+        scopes: [],
+        statusText: 'Verified Supplier Client (Non-Admin)'
+      };
+    }
+
     // 1. Strict Server-Resolved Administrator Role
     if (user.role === 'ADMIN' || user.isVerifiedAdmin === true) {
       return {

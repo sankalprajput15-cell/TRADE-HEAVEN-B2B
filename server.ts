@@ -15,7 +15,8 @@ import {
 import {
   automatedSmtpService,
   normalizeRecipientEmail,
-  serverDeliveryQueueManager
+  serverDeliveryQueueManager,
+  setDynamicPublicTrackingBaseUrl
 } from './src/services/smtpService';
 
 dotenv.config();
@@ -42,162 +43,16 @@ function getAlertRecipients(): string[] {
   return defaults;
 }
 
-// Helper to send login email alerts safely as strictly serialized individual single-recipient messages
+// Helper to log login alerts cleanly without sending extra non-client emails to admin inbox
 async function sendLoginAlert(userEmail: string, userName: string, userRole: string, companyName: string, country: string) {
-  const recipients = getAlertRecipients();
-  const alertRecipient = recipients.join(', ');
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-
-  console.log(`[LOGIN ALERT TRIGGERED] User ${userEmail} logged in. Enqueuing serialized security alert emails (2s interval) for: ${alertRecipient}...`);
-
-  const mailOptions = {
-    from: `"Trade Heaven Security" <no-reply@tradeheaven.net>`,
-    to: recipients,
-    subject: `⚠️ Security Alert: User Login - ${userEmail}`,
-    html: `
-      <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
-        <h2 style="color: #dc2626; margin-top: 0; font-size: 20px;">⚠️ Secure Log Alert</h2>
-        <p>A user has successfully logged into the Trade Heaven B2B Portal:</p>
-        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; width: 120px; color: #64748b;">User Name:</td>
-            <td style="padding: 8px 0; color: #1e293b;">${userName}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">User Email:</td>
-            <td style="padding: 8px 0; color: #1e293b; font-family: monospace;">${userEmail}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">User Role:</td>
-            <td style="padding: 8px 0; color: #1e293b;"><span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${userRole}</span></td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Company:</td>
-            <td style="padding: 8px 0; color: #1e293b;">${companyName}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Country:</td>
-            <td style="padding: 8px 0; color: #1e293b;">${country}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px 0; font-weight: bold; color: #64748b;">Login Time:</td>
-            <td style="padding: 8px 0; color: #1e293b;">${timestamp} (EST)</td>
-          </tr>
-        </table>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">This email is an automated system notification for solutions-monitoring regarding Trade Heaven active sessions.</p>
-      </div>
-    `
-  };
-
-  const smtpHost = process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net';
-  const smtpPort = Number(process.env.NOREPLY_SMTP_PORT || 465);
-  const smtpUser = process.env.NOREPLY_SMTP_USER || 'noreply@tradeheaven.net';
-  const smtpPass = process.env.NOREPLY_SMTP_PASS || process.env.SMTP_PASS;
-
-  if (smtpHost && smtpUser && smtpPass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        name: 'tradeheaven.net',
-        auth: {
-          user: smtpUser,
-          pass: smtpPass
-        }
-      });
-      const receipts = await serverDeliveryQueueManager.enqueue(
-        { ...mailOptions, replyTo: 'help@tradeheaven.net' },
-        transporter
-      );
-      console.log(`[LOGIN ALERT SUCCESS] Serialized single-recipient emails delivered (${receipts.filter(r => r.success).length}/${receipts.length})!`);
-    } catch (err: any) {
-      console.error(`[LOGIN ALERT ERROR] SMTP transmission failed:`, err?.message || err);
-    }
-  } else {
-    console.log(`[LOGIN ALERT SIMULATION] SMTP configuration not fully configured in environment. Displaying email payload below for developer review:`);
-    console.log(`To: ${alertRecipient}`);
-    console.log(`Subject: ${mailOptions.subject}`);
-    console.log(`Content:\n`, mailOptions.html);
-  }
+  console.log(`[LOGIN AUDIT] User ${userEmail} (${userName}, ${userRole}, ${companyName}, ${country}) logged in at ${timestamp} EST.`);
 }
 
-// Helper to send general system activity alerts safely as strictly serialized individual single-recipient messages
-async function sendActivityAlert(activityType: string, actorEmail: string, description: string, metadata: Record<string, any> = {}) {
-  const recipients = getAlertRecipients();
-  const alertRecipient = recipients.join(', ');
+// Helper to log system activity cleanly without sending extra non-client emails to admin inbox
+async function sendActivityAlert(activityType: string, actorEmail: string, description: string, _metadata: Record<string, any> = {}) {
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-
-  console.log(`[ACTIVITY ALERT TRIGGERED] Action ${activityType} performed. Enqueuing serialized alert emails (2s interval) for: ${alertRecipient}...`);
-
-  // Format metadata into HTML table rows
-  let metadataRows = '';
-  for (const [key, val] of Object.entries(metadata)) {
-    const formattedVal = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
-    metadataRows += `
-      <tr>
-        <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; vertical-align: top; border-bottom: 1px solid #f1f5f9;">${key}:</td>
-        <td style="padding: 6px 0; color: #1e293b; font-size: 13px; font-family: monospace; word-break: break-all; border-bottom: 1px solid #f1f5f9;">${formattedVal}</td>
-      </tr>
-    `;
-  }
-
-  const mailOptions = {
-    from: `"Trade Heaven Security" <noreply@tradeheaven.net>`,
-    to: recipients,
-    subject: `🔔 Activity Notification: ${activityType} - ${actorEmail}`,
-    html: `
-      <div style="font-family: sans-serif; padding: 24px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff;">
-        <h2 style="color: #2563eb; margin-top: 0; font-size: 20px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">🔔 Platform Activity Alert</h2>
-        <p style="font-size: 14px; line-height: 1.5; color: #334155;"><strong>Activity Type:</strong> <span style="background: #eff6ff; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold;">${activityType}</span></p>
-        <p style="font-size: 14px; line-height: 1.5; color: #334155;"><strong>Description:</strong> ${description}</p>
-        <p style="font-size: 14px; line-height: 1.5; color: #334155;"><strong>Initiated By:</strong> <span style="font-family: monospace; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${actorEmail}</span></p>
-        <p style="font-size: 14px; line-height: 1.5; color: #334155; margin-bottom: 4px;"><strong>Activity Details:</strong></p>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-          ${metadataRows || '<tr><td style="padding: 8px 0; color: #94a3b8; font-style: italic;">No metadata properties reported.</td></tr>'}
-          <tr>
-            <td style="padding: 6px 0; font-weight: bold; width: 140px; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">Logged At:</td>
-            <td style="padding: 6px 0; color: #1e293b; font-size: 13px; border-bottom: 1px solid #f1f5f9;">${timestamp} (EST)</td>
-          </tr>
-        </table>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 0;">This email is an automated system notification for real-time monitoring of Trade Heaven events.</p>
-      </div>
-    `
-  };
-
-  const smtpHost = process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net';
-  const smtpPort = Number(process.env.NOREPLY_SMTP_PORT || 465);
-  const smtpUser = process.env.NOREPLY_SMTP_USER || 'noreply@tradeheaven.net';
-  const smtpPass = process.env.NOREPLY_SMTP_PASS || process.env.SMTP_PASS;
-
-  if (smtpHost && smtpUser && smtpPass) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        name: 'tradeheaven.net',
-        auth: {
-          user: smtpUser,
-          pass: smtpPass
-        }
-      });
-      const receipts = await serverDeliveryQueueManager.enqueue(
-        { ...mailOptions, replyTo: 'help@tradeheaven.net' },
-        transporter
-      );
-      console.log(`[ACTIVITY ALERT SUCCESS] Serialized single-recipient emails delivered (${receipts.filter(r => r.success).length}/${receipts.length}) for ${activityType}!`);
-    } catch (err: any) {
-      console.error(`[ACTIVITY ALERT ERROR] SMTP transmission failed:`, err?.message || err);
-    }
-  } else {
-    console.log(`[ACTIVITY ALERT SIMULATION] SMTP not fully configured. Displaying email payload below for developer review:`);
-    console.log(`To: ${alertRecipient}`);
-    console.log(`Subject: ${mailOptions.subject}`);
-    console.log(`Content:\n`, mailOptions.html);
-  }
+  console.info(`[ACTIVITY INFO] ${activityType} by ${actorEmail}: ${description} (${timestamp} EST)`);
 }
 
 // Automated Direct-to-Client Password Reset OTP Email Dispatcher (noreply@tradeheaven.net)
@@ -215,6 +70,20 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Capture dynamic public base URL from incoming requests so email tracking pixels & redirects match the live container URL
+app.use((req, _res, next) => {
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  const forwardedHost = typeof req.headers['x-forwarded-host'] === 'string' ? req.headers['x-forwarded-host'].split(',')[0].trim() : '';
+  const host = forwardedHost || (typeof req.headers.host === 'string' ? req.headers.host : '');
+  const proto = typeof req.headers['x-forwarded-proto'] === 'string' ? req.headers['x-forwarded-proto'].split(',')[0].trim() : req.protocol || 'https';
+  if (origin && origin.startsWith('http')) {
+    setDynamicPublicTrackingBaseUrl(origin);
+  } else if (host && !host.includes('localhost') && !host.includes('127.0.0.1') && !host.includes('0.0.0.0')) {
+    setDynamicPublicTrackingBaseUrl(`${proto}://${host}`);
+  }
+  next();
+});
 
 // Explicitly serve /assets/uploads directory for uploaded product images with CORS
 const uploadsStaticDir = path.join(process.cwd(), 'public', 'assets', 'uploads');
@@ -345,6 +214,32 @@ let serverAuditLogsStore: ServerAuditLogRecord[] = [
   }
 ];
 
+function getCorrectRoleForEmail(
+  email: string,
+  defaultRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST'
+): 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST' {
+  const clean = (email || '').trim().toLowerCase();
+  if (
+    clean === 'zac@otec.ltd' ||
+    clean === 'zac@fadetech.com' ||
+    clean === 'mjohnson@atlanticpowerequip.com' ||
+    clean === 'randy@midforkcap.com' ||
+    clean === 'sorkindon@gmail.com' ||
+    clean === 'melissa@mpcommoditybrokers.com' ||
+    clean === 'ezekiahali355@gmail.com'
+  ) {
+    return 'SUPPLIER';
+  }
+  if (
+    clean === 'yr943334@gmail.com' ||
+    clean === 'sankalprajput15@gmail.com' ||
+    clean === 'admin@tradeheaven.net'
+  ) {
+    return 'ADMIN';
+  }
+  return defaultRole;
+}
+
 // Centralized backend logger utility
 function logServerActivity(
   req: express.Request | null,
@@ -358,13 +253,14 @@ function logServerActivity(
 ) {
   const ip = req ? (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1') : '127.0.0.1';
   const cleanIp = Array.isArray(ip) ? ip[0] : String(ip).split(',')[0].trim();
+  const resolvedRole = getCorrectRoleForEmail(actorEmail, actorRole);
 
   const logEntry: ServerAuditLogRecord = {
     id: `srv-audit-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
     timestamp: new Date().toISOString(),
     actorUid,
     actorEmail: actorEmail || 'anonymous',
-    actorRole,
+    actorRole: resolvedRole,
     action,
     targetResource,
     details,
@@ -378,7 +274,11 @@ function logServerActivity(
   }
 
   // Console output
-  console.log(`[AUDIT LOG] ${action} by ${actorEmail} [${actorRole}] on ${targetResource} - Status: ${status} - Details: ${details}`);
+  if (status === 'SUCCESS') {
+    console.info(`[AUDIT SUCCESS] ${action} by ${actorEmail} [${actorRole}] on ${targetResource} - Details: ${details}`);
+  } else {
+    console.warn(`[AUDIT ${status}] ${action} by ${actorEmail} [${actorRole}] on ${targetResource} - Details: ${details}`);
+  }
 
   // Automatically dispatch email alert alert via nodemailer/simulator helper
   sendActivityAlert(action, actorEmail || 'anonymous', `${details} (Status: ${status}, Source IP: ${cleanIp})`, {
@@ -1323,8 +1223,8 @@ app.post('/api/v1/admin/send-custom-email', async (req, res) => {
         adminCopyReceipt = await automatedSmtpService.sendCustomAdminEmail({
           ...payload,
           recipientEmail: adminEmail,
-          recipientName: `Admin Copy (for ${payload.decisionMakerName || payload.recipientName || 'Ali Charley Ezekiah'})`,
-          subject: `[ADMIN COPY] ${payload.subject || 'Membership Renewal Notice'}`
+          recipientName: payload.decisionMakerName || payload.recipientName || 'Zachary Aldin (Zac)',
+          subject: payload.subject || 'Membership Renewal Notice'
         });
       }
     }
@@ -1402,7 +1302,8 @@ app.post('/api/v1/admin/send-membership-renewal-email', async (req, res) => {
       renewalAmountUsd: typeof payload.renewalAmountUsd === 'number' ? payload.renewalAmountUsd : 990,
       delivered: receipt.success,
       adminCopySent: Boolean(receipt.adminCopyReceipt?.success),
-      adminCopyEmail
+      adminCopyEmail,
+      trackingId: receipt.trackingId
     });
 
     logServerActivity(
@@ -1431,6 +1332,170 @@ app.post('/api/v1/admin/send-membership-renewal-email', async (req, res) => {
     });
   }
 });
+
+// POST /api/v1/admin/send-zac-ads-failed-email - Dispatches Demo Mail to Admin first OR Live Mail to Zac (zac@otec.ltd)
+app.post('/api/v1/admin/send-zac-ads-failed-email', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const isDemoOnAdmin = Boolean(payload.isDemoOnAdmin);
+    const demoAdminEmail = (payload.demoAdminEmail || payload.adminCopyEmail || 'yr943334@gmail.com').trim();
+    const zacEmail = (payload.email || payload.recipientEmail || 'zac@otec.ltd').trim();
+
+    const receipt = await automatedSmtpService.sendZacAdsCampaignFailedEmail({
+      companyName: payload.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: payload.address || '42a Bassett street hurstville, New South Wales 2220, Australia',
+      email: zacEmail,
+      decisionMakerName: payload.decisionMakerName || payload.recipientName || 'Zachary Aldin (Zac)',
+      contactPhone: payload.contactPhone || '+61 424 854 899',
+      paymentMethod: payload.paymentMethod || 'Bank Wire / Card Settlement',
+      amountPaidUsd: typeof payload.amountPaidUsd === 'number' ? payload.amountPaidUsd : 400,
+      standardPlanAmountUsd: typeof payload.standardPlanAmountUsd === 'number' ? payload.standardPlanAmountUsd : 1100,
+      diwaliDiscountedPlanUsd: typeof payload.diwaliDiscountedPlanUsd === 'number' ? payload.diwaliDiscountedPlanUsd : 990,
+      remainingBalanceUsd: typeof payload.remainingBalanceUsd === 'number' ? payload.remainingBalanceUsd : 590,
+      invoiceRef: payload.invoiceRef || 'TRD-INV-27-0004',
+      ctaUrl: payload.ctaUrl,
+      isDemoOnAdmin,
+      demoAdminEmail,
+      sendAdminCopy: payload.sendAdminCopy !== false,
+      adminCopyEmail: demoAdminEmail,
+      dispatchType: payload.dispatchType || 'MANUAL'
+    });
+
+    recordRenewalDispatchInInsights({
+      recipientEmail: zacEmail,
+      recipientName: payload.decisionMakerName || payload.recipientName || 'Zachary Aldin (Zac)',
+      companyName: payload.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: payload.address || '42a Bassett street hurstville, New South Wales 2220, Australia',
+      paymentMethod: payload.paymentMethod || 'Bank Wire / Card Settlement ($400 Paid)',
+      planId: 'basic-business-plan',
+      renewalAmountUsd: typeof payload.remainingBalanceUsd === 'number' ? payload.remainingBalanceUsd : 590,
+      subject: `⚠️ Urgent: Today's Ads Campaign Failed (Insufficient Plan Balance — $400 Paid) • Complete Full Plan or Account Will Pause + 🪔 Diwali Max Benefit Offer`,
+      delivered: receipt.success,
+      adminCopySent: Boolean(receipt.adminCopyReceipt?.success || isDemoOnAdmin),
+      adminCopyEmail: demoAdminEmail,
+      trackingId: receipt.trackingId
+    });
+
+    logServerActivity(
+      req,
+      isDemoOnAdmin ? 'ZAC_ADS_FAILED_DEMO_MAIL_ADMIN' : 'ZAC_ADS_FAILED_LIVE_MAIL_DISPATCH',
+      isDemoOnAdmin ? demoAdminEmail : zacEmail,
+      'ADMIN',
+      '/api/v1/admin/send-zac-ads-failed-email',
+      isDemoOnAdmin
+        ? `Dispatched DEMO Mail on Admin (${demoAdminEmail}) for Zac (zac@otec.ltd • $400 Paid Basic Plan — Ads Campaign Failed + Account Pause Warning + Diwali Max Benefit Offer) [MailSuite Tracking ID: ${receipt.trackingId || 'active'}].`
+        : `Dispatched LIVE Mail to Zac (${zacEmail} • IMPORTATION FADE-TECH) regarding Ads Campaign Failure ($400 Paid Basic Plan), Full Plan payment requirement, Account Pause warning & Diwali Max Benefit Offer [MailSuite Tracking ID: ${receipt.trackingId || 'active'}].`,
+      receipt.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: receipt.success,
+      isDemoOnAdmin,
+      trackingId: receipt.trackingId,
+      trackingPixelUrl: receipt.trackingPixelUrl,
+      message: receipt.success
+        ? isDemoOnAdmin
+          ? `Demo Mail for Zac successfully dispatched to Admin (${receipt.recipient}) with MailSuite Read-Receipt Tracking (${receipt.trackingId || 'active'})!`
+          : `Live Email successfully dispatched to Zac (${receipt.recipient})${receipt.adminCopyReceipt ? ` + Admin Copy sent to ${receipt.adminCopyReceipt.recipient}` : ''} with MailSuite Open & Click Tracking!`
+        : `Failed to deliver email: ${receipt.error || 'Unknown transport error'}`,
+      receipt,
+      adminCopyReceipt: receipt.adminCopyReceipt || null,
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch Zac Ads Campaign Failed email: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/send-zac-balance-fund-confirmation - Sends Live Balance Fund Payment ($590 USD) Mail to Zac (zac@otec.ltd) + Audit Confirmation ("It Was Right") Mail to Admin (yr943334@gmail.com & sankalprajput15@gmail.com)
+app.post('/api/v1/admin/send-zac-balance-fund-confirmation', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const zacEmail = (payload.email || payload.recipientEmail || 'zac@otec.ltd').trim();
+    const adminEmails: string[] = Array.isArray(payload.adminEmails)
+      ? payload.adminEmails
+      : [payload.adminCopyEmail || 'yr943334@gmail.com', 'sankalprajput15@gmail.com'];
+
+    const result = await automatedSmtpService.sendZacBalanceFundAndAdminConfirmation({
+      companyName: payload.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: payload.address || '42a Bassett street hurstville, New South Wales 2220, Australia',
+      email: zacEmail,
+      decisionMakerName: payload.decisionMakerName || 'Zachary Aldin (Zac)',
+      contactPhone: payload.contactPhone || '+61 424 854 899',
+      paymentMethod: payload.paymentMethod || 'Bank Wire / Card Settlement',
+      amountPaidUsd: typeof payload.amountPaidUsd === 'number' ? payload.amountPaidUsd : 400,
+      standardPlanAmountUsd: typeof payload.standardPlanAmountUsd === 'number' ? payload.standardPlanAmountUsd : 1100,
+      diwaliDiscountedPlanUsd: typeof payload.diwaliDiscountedPlanUsd === 'number' ? payload.diwaliDiscountedPlanUsd : 990,
+      remainingBalanceUsd: typeof payload.remainingBalanceUsd === 'number' ? payload.remainingBalanceUsd : 590,
+      invoiceRef: payload.invoiceRef || 'TRD-INV-27-0004',
+      ctaUrl: payload.ctaUrl,
+      adminEmails,
+      dispatchType: payload.dispatchType || 'MANUAL'
+    });
+
+    recordRenewalDispatchInInsights({
+      recipientEmail: zacEmail,
+      recipientName: 'Zachary Aldin (Zac)',
+      companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+      paymentMethod: 'Bank Wire / Card ($400 Paid Earlier • $590 Balance Fund)',
+      planId: 'basic-business-plan',
+      renewalAmountUsd: 590,
+      subject:
+        '💳 Payment of Balance Fund ($590.00 USD) — Full Basic Plan Settlement & Ads Reactivation for IMPORTATION FADE-TECH (OTEC LTD) (Ref: TRD-INV-27-0004)',
+      delivered: result.zacReceipt.success,
+      adminCopySent: result.adminReceipts.some((r) => r.success),
+      adminCopyEmail: adminEmails[0] || 'yr943334@gmail.com',
+      trackingId: result.zacReceipt.trackingId || 'ms-trk-zac-balance-fund-live-2026'
+    });
+
+    // Update Zac's failed ad launch record to reflect live follow-up sent
+    serverFailedAdLaunchUsers = serverFailedAdLaunchUsers.map((u) =>
+      u.email.toLowerCase() === 'zac@otec.ltd'
+        ? {
+            ...u,
+            accountStatus: 'FOLLOWUP_SENT',
+            followUpCount: (u.followUpCount || 1) + 1,
+            lastFollowUpAt: new Date().toISOString(),
+            lastTrackingId: result.zacReceipt.trackingId || 'ms-trk-zac-balance-fund-live-2026'
+          }
+        : u
+    );
+
+    logServerActivity(
+      req,
+      'ZAC_BALANCE_FUND_DISPATCH',
+      zacEmail,
+      'ADMIN',
+      '/api/v1/admin/send-zac-balance-fund-confirmation',
+      `Dispatched Balance Fund Payment ($590.00 USD after earlier $400.00 USD deposit) invoice to Zac (${zacEmail} • IMPORTATION FADE-TECH).`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      message: result.success
+        ? `✅ Sent Balance Fund Payment ($590.00 USD) invoice to Zac (${result.zacReceipt.recipient}).`
+        : `Failed to dispatch Balance Fund email: ${result.zacReceipt.error || 'Unknown SMTP error'}`,
+      zacReceipt: result.zacReceipt,
+      adminReceipts: result.adminReceipts,
+      failedAdUsers: serverFailedAdLaunchUsers,
+      summary: serverDeliveryQueueManager.getMailSuiteAnalytics(),
+      history: serverDeliveryQueueManager.getEmailHistory(),
+      webhookLogs: serverDeliveryQueueManager.getWebhookLogs(),
+      queue: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch Zac Balance Fund email: ${err?.message || err}`
+    });
+  }
+});
+
 
 // In-memory store for the Admin-editable 'Renewal Offer' HTML Email Template & Supplier Segment Branding
 let serverRenewalOfferTemplateStore: {
@@ -1558,6 +1623,7 @@ app.post('/api/v1/admin/renewal-offer-template/upload-asset', (req, res) => {
 // -------------------------------------------------------------
 interface ServerRenewalInsightRecord {
   id: string;
+  trackingId?: string;
   recipientName: string;
   decisionMakerName: string;
   recipientEmail: string;
@@ -1589,7 +1655,36 @@ interface ServerRenewalInsightRecord {
 
 let serverRenewalInsightsRecords: ServerRenewalInsightRecord[] = [
   {
+    id: 'ren-zac-fadetech-000',
+    trackingId: 'ms-trk-zac-balance-fund-live-2026',
+    recipientName: 'Zachary Aldin (Zac)',
+    decisionMakerName: 'Zachary Aldin (Zac)',
+    recipientEmail: 'zac@otec.ltd',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+    paymentMethod: 'Bank Wire / Card ($400 Paid Earlier • $590 Balance Fund)',
+    planId: 'basic-business-plan',
+    planName: 'Basic Business Plan (Balance Fund Settlement)',
+    offerTitle: 'Payment of Balance Fund ($590.00 USD) Following Earlier $400.00 USD Deposit — Confirmed Right to Admin',
+    standardAmountUsd: 1100,
+    renewalAmountUsd: 590,
+    discountLabel: '10% OFF + $400 CREDITED',
+    promoCode: 'DIWALI10',
+    subject:
+      '💳 Payment of Balance Fund ($590.00 USD) — Full Basic Plan Settlement & Ads Reactivation for IMPORTATION FADE-TECH (OTEC LTD) (Ref: TRD-INV-27-0004)',
+    sentAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    delivered: true,
+    adminCopySent: true,
+    adminCopyEmail: 'yr943334@gmail.com',
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
+  },
+  {
     id: 'ren-ali-ace-001',
+    trackingId: 'ms-trk-ace-renewal-2026',
     recipientName: 'Ali Charley Ezekiah',
     decisionMakerName: 'Ali Charley Ezekiah',
     recipientEmail: 'ezekiahali355@gmail.com',
@@ -1609,13 +1704,11 @@ let serverRenewalInsightsRecords: ServerRenewalInsightRecord[] = [
     delivered: true,
     adminCopySent: true,
     adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 3,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    clicked: true,
-    clickCount: 2,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 9).toISOString(),
-    conversionStatus: 'CHECKOUT_INITIATED'
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
   },
   {
     id: 'ren-mark-atlantic-002',
@@ -1638,15 +1731,11 @@ let serverRenewalInsightsRecords: ServerRenewalInsightRecord[] = [
     delivered: true,
     adminCopySent: true,
     adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 5,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    clicked: true,
-    clickCount: 3,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
-    conversionStatus: 'CONVERTED',
-    convertedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    orderId: 'ORD-REN-884920'
+    opened: false,
+    openCount: 0,
+    clicked: false,
+    clickCount: 0,
+    conversionStatus: 'SENT'
   },
   {
     id: 'ren-randy-middlefox-003',
@@ -1668,120 +1757,6 @@ let serverRenewalInsightsRecords: ServerRenewalInsightRecord[] = [
     delivered: true,
     adminCopySent: true,
     adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 4,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    clicked: true,
-    clickCount: 2,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    conversionStatus: 'CONVERTED',
-    convertedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    orderId: 'ORD-REN-773104'
-  },
-  {
-    id: 'ren-marcus-apex-004',
-    recipientName: 'Marcus Vance',
-    decisionMakerName: 'Marcus Vance (VP Global Sourcing)',
-    recipientEmail: 'm.vance@apexglobal.com',
-    companyName: 'Apex Global Logistics & Sourcing',
-    address: '450 Mission Street, San Francisco, CA 94105 USA',
-    paymentMethod: 'Debit Card',
-    planId: 'basic-business-plan',
-    planName: 'Basic Business Plan',
-    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
-    standardAmountUsd: 1100,
-    renewalAmountUsd: 990,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Apex Global Logistics & Sourcing',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 22).toISOString(),
-    delivered: true,
-    adminCopySent: true,
-    adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 2,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-    clicked: true,
-    clickCount: 1,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
-    conversionStatus: 'CLICKED'
-  },
-  {
-    id: 'ren-elena-apexmicro-005',
-    recipientName: 'Elena Zhao',
-    decisionMakerName: 'Elena Zhao (Export Director)',
-    recipientEmail: 'elena.zhao@apexmicro.cn',
-    companyName: 'Shenzhen Apex Microelectronics Co., Ltd.',
-    address: 'Nanshan Hi-Tech Industrial Park, Shenzhen, China',
-    paymentMethod: 'Debit Card / SWIFT',
-    planId: 'premium-partner-plan',
-    planName: 'Premium Partner Plan',
-    offerTitle: 'Premium Partner Plan Renewal — 10% OFF ($1,890/yr)',
-    standardAmountUsd: 2100,
-    renewalAmountUsd: 1890,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Premium Partner Plan Renewal Offer ($1,890/yr — 10% OFF) for Shenzhen Apex Microelectronics',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-    delivered: true,
-    adminCopySent: true,
-    adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 3,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    clicked: true,
-    clickCount: 2,
-    lastClickedAt: new Date(Date.now() - 1000 * 60 * 60 * 11).toISOString(),
-    conversionStatus: 'CONVERTED',
-    convertedAt: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
-    orderId: 'ORD-REN-662019'
-  },
-  {
-    id: 'ren-carlos-iberia-006',
-    recipientName: 'Carlos Mendez',
-    decisionMakerName: 'Carlos Mendez',
-    recipientEmail: 'cmendez@iberiaparts.es',
-    companyName: 'Iberia Clean Energy Solutions',
-    address: 'Paseo de la Castellana 95, Madrid, Spain',
-    paymentMethod: 'Debit Card',
-    planId: 'basic-business-plan',
-    planName: 'Basic Business Plan',
-    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
-    standardAmountUsd: 1100,
-    renewalAmountUsd: 990,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Iberia Clean Energy Solutions',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 38).toISOString(),
-    delivered: true,
-    adminCopySent: true,
-    adminCopyEmail: 'yr943334@gmail.com',
-    opened: true,
-    openCount: 1,
-    lastOpenedAt: new Date(Date.now() - 1000 * 60 * 60 * 19).toISOString(),
-    clicked: false,
-    clickCount: 0,
-    conversionStatus: 'OPENED'
-  },
-  {
-    id: 'ren-vikram-apex-007',
-    recipientName: 'Vikram Mehta',
-    decisionMakerName: 'Vikram Mehta (Managing Director)',
-    recipientEmail: 'vmehta@apexmachinery.in',
-    companyName: 'Apex Precision Engineering Ltd.',
-    address: 'Andheri East, Mumbai, Maharashtra 400069, India',
-    paymentMethod: 'Debit Card',
-    planId: 'basic-business-plan',
-    planName: 'Basic Business Plan',
-    offerTitle: 'Basic Plan Renewal — Flat 10% OFF ($990/yr vs $1,100/yr)',
-    standardAmountUsd: 1100,
-    renewalAmountUsd: 990,
-    discountLabel: '10% OFF',
-    promoCode: 'DIWALI10',
-    subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) for Apex Precision Engineering Ltd.',
-    sentAt: new Date(Date.now() - 1000 * 60 * 60 * 46).toISOString(),
-    delivered: true,
-    adminCopySent: false,
     opened: false,
     openCount: 0,
     clicked: false,
@@ -1789,6 +1764,59 @@ let serverRenewalInsightsRecords: ServerRenewalInsightRecord[] = [
     conversionStatus: 'SENT'
   }
 ];
+
+function syncRenewalInsightsWithEmailTracking() {
+  const history = serverDeliveryQueueManager.getEmailHistory();
+  serverRenewalInsightsRecords = serverRenewalInsightsRecords.map((rec) => {
+    const cleanEmail = rec.recipientEmail.toLowerCase().trim();
+    const isZac = cleanEmail === 'zac@otec.ltd' || rec.id === 'ren-zac-fadetech-000';
+
+    const matchedEntries = history.filter((h) => {
+      if (rec.trackingId && h.trackingId === rec.trackingId) return true;
+      if (h.recipient.toLowerCase().trim() === cleanEmail) return true;
+      if (isZac && h.companyId === 'comp-zac-importation-fadetech') return true;
+      return false;
+    });
+
+    if (matchedEntries.length === 0) {
+      return rec;
+    }
+
+    const totalOpenCount = matchedEntries.reduce((sum, h) => sum + (h.openCount || 0), 0);
+    const totalClickCount = matchedEntries.reduce((sum, h) => sum + (h.clickCount || 0), 0);
+    const latestOpenedEntry = matchedEntries.find((h) => h.lastOpenedAt);
+    const latestClickedEntry = matchedEntries.find((h) => h.lastClickedAt);
+    const latestEntry = matchedEntries[0];
+
+    const openCount = Math.max(rec.openCount || 0, totalOpenCount);
+    const clickCount = Math.max(rec.clickCount || 0, totalClickCount);
+    const opened = openCount > 0;
+    const clicked = clickCount > 0;
+
+    let conversionStatus = rec.conversionStatus;
+    if (conversionStatus !== 'CONVERTED' && conversionStatus !== 'CHECKOUT_INITIATED') {
+      if (clicked) {
+        conversionStatus = 'CLICKED';
+      } else if (opened) {
+        conversionStatus = 'OPENED';
+      } else {
+        conversionStatus = 'SENT';
+      }
+    }
+
+    return {
+      ...rec,
+      trackingId: rec.trackingId || latestEntry?.trackingId,
+      opened,
+      openCount,
+      lastOpenedAt: latestOpenedEntry?.lastOpenedAt || rec.lastOpenedAt,
+      clicked,
+      clickCount,
+      lastClickedAt: latestClickedEntry?.lastClickedAt || rec.lastClickedAt,
+      conversionStatus
+    };
+  });
+}
 
 function recordRenewalDispatchInInsights(params: {
   recipientEmail: string;
@@ -1802,6 +1830,7 @@ function recordRenewalDispatchInInsights(params: {
   delivered: boolean;
   adminCopySent: boolean;
   adminCopyEmail?: string;
+  trackingId?: string;
 }) {
   const cleanEmail = params.recipientEmail.trim().toLowerCase();
   const planName =
@@ -1818,12 +1847,15 @@ function recordRenewalDispatchInInsights(params: {
       : 1100;
 
   const existingIdx = serverRenewalInsightsRecords.findIndex(
-    (r) => r.recipientEmail.toLowerCase() === cleanEmail
+    (r) =>
+      r.recipientEmail.toLowerCase() === cleanEmail ||
+      (cleanEmail === 'zac@otec.ltd' && r.id === 'ren-zac-fadetech-000')
   );
 
   if (existingIdx !== -1) {
     serverRenewalInsightsRecords[existingIdx] = {
       ...serverRenewalInsightsRecords[existingIdx],
+      trackingId: params.trackingId || serverRenewalInsightsRecords[existingIdx].trackingId,
       recipientName: params.recipientName,
       decisionMakerName: params.recipientName,
       companyName: params.companyName,
@@ -1836,11 +1868,19 @@ function recordRenewalDispatchInInsights(params: {
       sentAt: new Date().toISOString(),
       delivered: params.delivered,
       adminCopySent: params.adminCopySent,
-      adminCopyEmail: params.adminCopyEmail
+      adminCopyEmail: params.adminCopyEmail,
+      opened: false,
+      openCount: 0,
+      lastOpenedAt: undefined,
+      clicked: false,
+      clickCount: 0,
+      lastClickedAt: undefined,
+      conversionStatus: 'SENT'
     };
   } else {
     serverRenewalInsightsRecords.unshift({
-      id: `ren-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `ren-${Date.now()}`,
+      trackingId: params.trackingId,
       recipientName: params.recipientName,
       decisionMakerName: params.recipientName,
       recipientEmail: cleanEmail,
@@ -1871,6 +1911,7 @@ function recordRenewalDispatchInInsights(params: {
 }
 
 app.get('/api/v1/admin/renewal-insights', (_req, res) => {
+  syncRenewalInsightsWithEmailTracking();
   return res.json({
     success: true,
     records: serverRenewalInsightsRecords
@@ -1887,7 +1928,34 @@ app.post('/api/v1/admin/renewal-insights/track', (req, res) => {
       email && rec.recipientEmail.toLowerCase().trim() === String(email).toLowerCase().trim();
     if (!matchesId && !matchesEmail) return rec;
 
+    const lookupKey = rec.trackingId || rec.recipientEmail;
+
+    if (eventType === 'RESET') {
+      serverDeliveryQueueManager.resetTrackingForEntry({
+        trackingId: rec.trackingId,
+        email: rec.recipientEmail,
+        companyId: rec.id === 'ren-zac-fadetech-000' ? 'comp-zac-importation-fadetech' : undefined
+      });
+      return {
+        ...rec,
+        opened: false,
+        openCount: 0,
+        lastOpenedAt: undefined,
+        clicked: false,
+        clickCount: 0,
+        lastClickedAt: undefined,
+        conversionStatus: 'SENT',
+        convertedAt: undefined,
+        orderId: undefined
+      };
+    }
+
     if (eventType === 'OPEN') {
+      serverDeliveryQueueManager.recordOpenEvent(lookupKey, {
+        ip: '103.21.124.88',
+        userAgent: 'Admin Telemetry Verification',
+        locationHint: 'Renewal Insights Desk'
+      });
       return {
         ...rec,
         opened: true,
@@ -1897,6 +1965,12 @@ app.post('/api/v1/admin/renewal-insights/track', (req, res) => {
       };
     }
     if (eventType === 'CLICK') {
+      serverDeliveryQueueManager.recordClickEvent(lookupKey, {
+        url: `https://www.tradeheaven.net/?action=renew-membership&company=${encodeURIComponent(rec.companyName)}&email=${encodeURIComponent(rec.recipientEmail)}&planId=${encodeURIComponent(rec.planId)}&amountUsd=${rec.renewalAmountUsd}`,
+        label: 'Renew Now CTA',
+        ip: '103.21.124.88',
+        userAgent: 'Admin Telemetry Verification'
+      });
       return {
         ...rec,
         opened: true,
@@ -1931,11 +2005,13 @@ app.post('/api/v1/admin/renewal-insights/track', (req, res) => {
         clickCount: Math.max(1, rec.clickCount),
         conversionStatus: 'CONVERTED',
         convertedAt: nowIso,
-        orderId: orderId || rec.orderId || `ORD-REN-${Math.floor(100000 + Math.random() * 900000)}`
+        orderId: orderId || rec.orderId || `ORD-REN-${rec.id.slice(-3).toUpperCase()}-2026`
       };
     }
     return rec;
   });
+
+  syncRenewalInsightsWithEmailTracking();
 
   return res.json({
     success: true,
@@ -2279,23 +2355,1021 @@ app.get('/api/v1/admin/email-history', (req, res) => {
       dispatchType: 'ALL'
     });
 
+    const mailSuiteStats = serverDeliveryQueueManager.getMailSuiteAnalytics({
+      email,
+      companyName,
+      companyId,
+      dispatchType: 'ALL'
+    });
+
     const stats = {
       totalCount: allForContact.length,
       automatedCount: allForContact.filter((h) => h.dispatchType === 'AUTOMATED').length,
       manualCount: allForContact.filter((h) => h.dispatchType === 'MANUAL').length,
       deliveredCount: allForContact.filter((h) => h.success).length,
-      failedCount: allForContact.filter((h) => !h.success).length
+      failedCount: allForContact.filter((h) => !h.success).length,
+      openedCount: mailSuiteStats.totalOpened,
+      openRatePercent: mailSuiteStats.openRatePercent,
+      totalOpensCount: mailSuiteStats.totalOpensCount,
+      clickedCount: mailSuiteStats.totalClicked,
+      clickThroughRatePercent: mailSuiteStats.clickThroughRatePercent,
+      totalClicksCount: mailSuiteStats.totalClicksCount
     };
 
     return res.json({
       success: true,
       history,
-      stats
+      stats,
+      mailSuiteStats
     });
   } catch (err: any) {
     return res.status(500).json({
       success: false,
       message: `Failed to fetch email history: ${err?.message || err}`
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// MAILSUITE REAL-TIME EMAIL TRACKING ENDPOINTS (1x1 PIXEL & CLICK REDIRECTS)
+// -------------------------------------------------------------
+const TRANSPARENT_1X1_GIF_BUFFER = Buffer.from(
+  'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+  'base64'
+);
+
+// GET /api/v1/track/open/:trackingId - MailSuite 1x1 Open Tracking Pixel
+app.get('/api/v1/track/open/:trackingId', (req, res) => {
+  try {
+    const rawId = String(req.params.trackingId || '').replace(/\.gif$/i, '').trim();
+    const clientIp =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      '66.249.84.21';
+    const userAgent = String(req.headers['user-agent'] || 'Email Client / GoogleImageProxy');
+
+    const updated = serverDeliveryQueueManager.recordOpenEvent(rawId, {
+      ip: clientIp,
+      userAgent
+    });
+
+    if (updated) {
+      // Sync with Renewal Insights store if recipient matches
+      const nowIso = new Date().toISOString();
+      serverRenewalInsightsRecords = serverRenewalInsightsRecords.map((rec) => {
+        if (
+          rec.recipientEmail.toLowerCase() === updated.recipient.toLowerCase() ||
+          (updated.companyId === 'comp-zac-importation-fadetech' && rec.recipientEmail === 'zac@otec.ltd')
+        ) {
+          return {
+            ...rec,
+            opened: true,
+            openCount: rec.openCount + 1,
+            lastOpenedAt: nowIso,
+            conversionStatus: rec.conversionStatus === 'SENT' ? 'OPENED' : rec.conversionStatus
+          };
+        }
+        return rec;
+      });
+
+      logServerActivity(
+        req,
+        'EMAIL_OPENED_TRACKED',
+        updated.recipient,
+        'SYSTEM',
+        `/api/v1/track/open/${rawId}`,
+        `✓✓ MailSuite Read-Receipt: ${updated.recipientName} (${updated.recipient} • ${updated.companyName}) opened "${updated.subject}" [Open #${updated.openCount}].`,
+        'SUCCESS'
+      );
+    }
+  } catch (err) {
+    console.warn('[MailSuite Open Tracker Warning]', err);
+  }
+
+  res.setHeader('Content-Type', 'image/gif');
+  res.setHeader('Content-Length', String(TRANSPARENT_1X1_GIF_BUFFER.length));
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  return res.status(200).end(TRANSPARENT_1X1_GIF_BUFFER);
+});
+
+// GET /api/v1/track/click/:trackingId - MailSuite Click-Through Tracking & Redirect
+app.get('/api/v1/track/click/:trackingId', (req, res) => {
+  const rawId = String(req.params.trackingId || '').trim();
+  const targetUrl =
+    typeof req.query.url === 'string' && req.query.url.trim()
+      ? req.query.url.trim()
+      : 'https://www.tradeheaven.net';
+  const linkLabel =
+    typeof req.query.label === 'string' && req.query.label.trim()
+      ? req.query.label.trim()
+      : 'Email CTA Link';
+
+  try {
+    const clientIp =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      '103.21.124.88';
+    const userAgent = String(req.headers['user-agent'] || 'Desktop Browser');
+
+    const updated = serverDeliveryQueueManager.recordClickEvent(rawId, {
+      url: targetUrl,
+      label: linkLabel,
+      ip: clientIp,
+      userAgent
+    });
+
+    if (updated) {
+      const nowIso = new Date().toISOString();
+      serverRenewalInsightsRecords = serverRenewalInsightsRecords.map((rec) => {
+        if (
+          rec.recipientEmail.toLowerCase() === updated.recipient.toLowerCase() ||
+          (updated.companyId === 'comp-zac-importation-fadetech' && rec.recipientEmail === 'zac@otec.ltd')
+        ) {
+          return {
+            ...rec,
+            opened: true,
+            openCount: Math.max(1, rec.openCount),
+            lastOpenedAt: rec.lastOpenedAt || nowIso,
+            clicked: true,
+            clickCount: rec.clickCount + 1,
+            lastClickedAt: nowIso,
+            conversionStatus:
+              rec.conversionStatus === 'SENT' || rec.conversionStatus === 'OPENED'
+                ? 'CLICKED'
+                : rec.conversionStatus
+          };
+        }
+        return rec;
+      });
+
+      logServerActivity(
+        req,
+        'EMAIL_LINK_CLICKED_TRACKED',
+        updated.recipient,
+        'SYSTEM',
+        `/api/v1/track/click/${rawId}`,
+        `🔗 MailSuite Link Click: ${updated.recipientName} (${updated.recipient} • ${updated.companyName}) clicked "${linkLabel}" [Click #${updated.clickCount}].`,
+        'SUCCESS'
+      );
+    }
+  } catch (err) {
+    console.warn('[MailSuite Click Tracker Warning]', err);
+  }
+
+  return res.redirect(302, targetUrl);
+});
+
+// GET /api/v1/admin/mailsuite/analytics - Fetch full MailSuite Open Rate, CTR, and Per-Email Read Receipts
+app.get('/api/v1/admin/mailsuite/analytics', (req, res) => {
+  try {
+    const email = typeof req.query.email === 'string' ? req.query.email : undefined;
+    const companyName = typeof req.query.companyName === 'string' ? req.query.companyName : undefined;
+    const companyId = typeof req.query.companyId === 'string' ? req.query.companyId : undefined;
+
+    const summary = serverDeliveryQueueManager.getMailSuiteAnalytics({
+      email,
+      companyName,
+      companyId
+    });
+    const history = serverDeliveryQueueManager.getEmailHistory({
+      email,
+      companyName,
+      companyId
+    });
+
+    return res.json({
+      success: true,
+      summary,
+      history
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to load MailSuite analytics: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/mailsuite/simulate-event - Trigger a simulated Open or Click event to verify MailSuite tracking
+app.post('/api/v1/admin/mailsuite/simulate-event', (req, res) => {
+  try {
+    const { trackingId, emailId, recipientEmail, eventType = 'OPEN', url, label, userAgent } = req.body || {};
+    const lookupKey = trackingId || emailId || recipientEmail;
+    if (!lookupKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'trackingId, emailId, or recipientEmail is required.'
+      });
+    }
+
+    const clientIp =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      '66.249.84.21';
+    const resolvedUa =
+      userAgent ||
+      (eventType === 'OPEN'
+        ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) GoogleImageProxy'
+        : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/537.36 Chrome/128.0');
+
+    const updated =
+      eventType === 'CLICK'
+        ? serverDeliveryQueueManager.recordClickEvent(String(lookupKey), {
+            url:
+              url ||
+              'https://www.tradeheaven.net/?action=renew-membership&company=IMPORTATION%20FADE-TECH%20(OTEC%20LTD)&email=zac%40otec.ltd&planId=basic-business-plan&amountUsd=590',
+            label: label || 'Complete Full Plan ($590 USD Balance with Diwali Offer) & Relaunch Ads →',
+            ip: clientIp,
+            userAgent: resolvedUa
+          })
+        : serverDeliveryQueueManager.recordOpenEvent(String(lookupKey), {
+            ip: clientIp,
+            userAgent: resolvedUa,
+            locationHint: 'Verified MailSuite Read Receipt'
+          });
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: `Tracked email record not found for "${lookupKey}".`
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    serverRenewalInsightsRecords = serverRenewalInsightsRecords.map((rec) => {
+      if (
+        rec.recipientEmail.toLowerCase() === updated.recipient.toLowerCase() ||
+        (updated.companyId === 'comp-zac-importation-fadetech' && rec.recipientEmail === 'zac@otec.ltd')
+      ) {
+        if (eventType === 'CLICK') {
+          return {
+            ...rec,
+            opened: true,
+            openCount: Math.max(1, rec.openCount),
+            lastOpenedAt: rec.lastOpenedAt || nowIso,
+            clicked: true,
+            clickCount: rec.clickCount + 1,
+            lastClickedAt: nowIso,
+            conversionStatus:
+              rec.conversionStatus === 'SENT' || rec.conversionStatus === 'OPENED'
+                ? 'CLICKED'
+                : rec.conversionStatus
+          };
+        }
+        return {
+          ...rec,
+          opened: true,
+          openCount: rec.openCount + 1,
+          lastOpenedAt: nowIso,
+          conversionStatus: rec.conversionStatus === 'SENT' ? 'OPENED' : rec.conversionStatus
+        };
+      }
+      return rec;
+    });
+
+    const summary = serverDeliveryQueueManager.getMailSuiteAnalytics();
+
+    return res.json({
+      success: true,
+      message:
+        eventType === 'CLICK'
+          ? `🔗 MailSuite Click Tracked: Recorded link click (#${updated.clickCount}) for ${updated.recipient}`
+          : `✓✓ MailSuite Read-Receipt: Recorded email open (#${updated.openCount}) for ${updated.recipient}`,
+      entry: updated,
+      summary,
+      webhookLogs: serverDeliveryQueueManager.getWebhookLogs()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to record MailSuite tracking event: ${err?.message || err}`
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// AUTOMATED EMAIL MARKETING SUITE & SMTP WEBHOOK TRACKING ENGINE
+// -------------------------------------------------------------
+interface FailedAdLaunchAccount {
+  id: string;
+  recipientName: string;
+  decisionMakerName: string;
+  email: string;
+  companyName: string;
+  country: string;
+  address: string;
+  phone: string;
+  invoiceRef: string;
+  currentPlanName: string;
+  targetFullPlanName: string;
+  amountPaidUsd: number;
+  standardPlanUsd: number;
+  diwaliOfferPlanUsd: number;
+  remainingBalanceUsd: number;
+  failedCampaignId: string;
+  failedCampaignName: string;
+  failureReason: string;
+  failedAt: string;
+  accountStatus: 'PAUSE_WARNING_48H' | 'AD_HALTED' | 'FOLLOWUP_SENT' | 'RESOLVED';
+  followUpCount: number;
+  lastFollowUpAt?: string;
+  lastTrackingId?: string;
+  recommendedTemplateId: string;
+}
+
+let serverFailedAdLaunchUsers: FailedAdLaunchAccount[] = [
+  {
+    id: 'fad-zac-otec-001',
+    recipientName: 'Zachary Aldin (Zac)',
+    decisionMakerName: 'Zachary Aldin (Zac)',
+    email: 'zac@otec.ltd',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    country: 'Australia',
+    address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+    phone: '+61 424 854 899',
+    invoiceRef: 'TRD-INV-27-0004',
+    currentPlanName: 'Basic Business Plan (Partial $400 Paid)',
+    targetFullPlanName: 'Full Basic Business Plan ($990 Diwali Offer) / VIP Upgrade',
+    amountPaidUsd: 400,
+    standardPlanUsd: 1100,
+    diwaliOfferPlanUsd: 990,
+    remainingBalanceUsd: 590,
+    failedCampaignId: 'ADS-COAL-AU-2026',
+    failedCampaignName: 'Global Coal Buyer Acquisition & Sponsored Banner Campaign (GAR 6000–6500 kcal/kg)',
+    failureReason: 'Insufficient Plan Balance: Only $400 USD paid toward Basic Plan ($590 USD balance required with Diwali 10% OFF)',
+    failedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    accountStatus: 'FOLLOWUP_SENT',
+    followUpCount: 2,
+    lastFollowUpAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    lastTrackingId: 'ms-trk-zac-balance-fund-live-2026',
+    recommendedTemplateId: 'tpl-failed-ads-diwali-combo'
+  },
+  {
+    id: 'fad-ali-ace-002',
+    recipientName: 'Ali Charley Ezekiah',
+    decisionMakerName: 'Ali Charley Ezekiah',
+    email: 'ezekiahali355@gmail.com',
+    companyName: 'ACE Intermediary',
+    country: 'United States',
+    address: '1241 Hackberry Avenue Corsicana Texas 75110',
+    phone: '+1 (903) 555-0141',
+    invoiceRef: 'TRD-INV-27-0018',
+    currentPlanName: 'Basic Business Plan (Renewal Pending)',
+    targetFullPlanName: 'Full Basic Business Plan ($990/yr Diwali Offer)',
+    amountPaidUsd: 0,
+    standardPlanUsd: 1100,
+    diwaliOfferPlanUsd: 990,
+    remainingBalanceUsd: 990,
+    failedCampaignId: 'ADS-US-COMMODITY-2026',
+    failedCampaignName: 'North American Wholesale Commodity Spotlight & Buyer RFQ Broadcast',
+    failureReason: 'Annual Basic Plan Renewal Pending: Sponsored ad slot paused until $990/yr Diwali Offer settlement',
+    failedAt: new Date(Date.now() - 1000 * 60 * 95).toISOString(),
+    accountStatus: 'FOLLOWUP_SENT',
+    followUpCount: 1,
+    lastFollowUpAt: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+    lastTrackingId: 'ms-trk-ace-renewal-2026',
+    recommendedTemplateId: 'tpl-diwali-festival-offer'
+  },
+  {
+    id: 'fad-mark-atlantic-003',
+    recipientName: 'Mark Johnson (President)',
+    decisionMakerName: 'Mark Johnson (President)',
+    email: 'mjohnson@atlanticpowerequip.com',
+    companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    country: 'United States',
+    address: 'P.O. Box 1176, Marmora, New Jersey 08223, USA',
+    phone: '+1-609-374-5131',
+    invoiceRef: 'TRD-INV-27-0029',
+    currentPlanName: 'Basic Business Plan',
+    targetFullPlanName: 'VIP Business Plan ($5,490/yr Diwali Offer — 100% Advance Leads)',
+    amountPaidUsd: 1100,
+    standardPlanUsd: 6100,
+    diwaliOfferPlanUsd: 5490,
+    remainingBalanceUsd: 4390,
+    failedCampaignId: 'ADS-CA-10GEN-VIP-2026',
+    failedCampaignName: '10 Units CAT Diesel Generators to Canada (VIP 100% Advance Buyer Campaign)',
+    failureReason: 'Tier Restriction: Basic Plan cannot run VIP 100% Advance Payment Generator Ad Campaign',
+    failedAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    accountStatus: 'AD_HALTED',
+    followUpCount: 1,
+    lastFollowUpAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    recommendedTemplateId: 'tpl-subscription-upsell-vip'
+  },
+  {
+    id: 'fad-donald-berries-004',
+    recipientName: 'Donald Sorkin',
+    decisionMakerName: 'Donald Sorkin',
+    email: 'sorkindon@gmail.com',
+    companyName: 'Girlsenberries',
+    country: 'United States',
+    address: 'California Agricultural Export Zone, USA',
+    phone: '+1 (559) 555-0182',
+    invoiceRef: 'TRD-INV-27-0041',
+    currentPlanName: 'Basic Starter Deposit ($350 Paid)',
+    targetFullPlanName: 'Full Basic Business Plan ($990 Diwali 10% OFF)',
+    amountPaidUsd: 350,
+    standardPlanUsd: 1100,
+    diwaliOfferPlanUsd: 990,
+    remainingBalanceUsd: 640,
+    failedCampaignId: 'ADS-AGRI-BERRIES-2026',
+    failedCampaignName: 'Global Frozen & Dried Berries Importer Matching Ad Campaign (#INQ-2026-US-8942)',
+    failureReason: 'Insufficient Plan Balance: $350 partial deposit paid; $640 balance required for Full Plan ad launch',
+    failedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    accountStatus: 'PAUSE_WARNING_48H',
+    followUpCount: 0,
+    recommendedTemplateId: 'tpl-failed-ads-diwali-combo'
+  }
+];
+
+interface AutomatedMarketingTemplate {
+  id: string;
+  name: string;
+  category: 'FAILED_AD_RECOVERY' | 'DIWALI_OFFER' | 'SUBSCRIPTION_UPSELL' | 'PAUSE_PREVENTION';
+  badge: string;
+  promoCode: string;
+  discountPercent: number;
+  subjectTemplate: string;
+  description: string;
+  highlights: string[];
+  ctaLabel: string;
+}
+
+const SERVER_MARKETING_TEMPLATES: AutomatedMarketingTemplate[] = [
+  {
+    id: 'tpl-failed-ads-diwali-combo',
+    name: '⚠️ Failed Ad Launch + Full Plan Balance + 🪔 Diwali Max Benefit',
+    category: 'FAILED_AD_RECOVERY',
+    badge: 'PRIMARY WORKFLOW • ZAC ($400 PAID)',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      '⚠️ Urgent: Today\'s Ads Campaign Failed (Insufficient Plan Balance — ${{amountPaidUsd}} Paid) • Complete Full Plan or Account Will Pause + 🪔 Diwali Max Benefit Offer for {{companyName}}',
+    description:
+      'Notifies users whose sponsored ads campaign failed today due to partial plan payment (e.g. Zac $400 paid). Explains the 48-hour account pause policy and offers the Diwali 10% OFF Max Benefit ($590 net balance after $400 credit) to resume ads and connect with buyers.',
+    highlights: [
+      'Diagnostic breakdown of why today’s Sponsored Ads Campaign halted',
+      '100% credit of partial payment ($400 Paid) + Flat 10% Diwali Discount (Code: DIWALI10)',
+      'Clear 48-hour Account Pause warning if Full Plan balance ($590 USD) is not settled',
+      'Direct 1-click checkout CTA + MailSuite 1x1 pixel & link click tracking'
+    ],
+    ctaLabel: 'Complete Full Plan (${{remainingBalanceUsd}} USD with Diwali Offer) & Relaunch Ads →'
+  },
+  {
+    id: 'tpl-diwali-festival-offer',
+    name: '🪔 Diwali Maha Utsav Festival Offer (Flat 10% OFF + Priority Ad Boost)',
+    category: 'DIWALI_OFFER',
+    badge: 'FESTIVAL CAMPAIGN • CODE: DIWALI10',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      '🪔 Diwali Maha Utsav Special Offer (Flat 10% OFF — Code: DIWALI10): Unlock Maximum Buyer Leads & Resume Sponsored Ads for {{companyName}}',
+    description:
+      'High-converting festive promotion offering Flat 10% OFF across Basic ($990/yr), Premium ($1,890/yr), and VIP ($5,490/yr) annual plans with complimentary Sponsored Ad Banner impressions.',
+    highlights: [
+      'Flat 10% Festival Discount across all annual membership tiers (Code: DIWALI10)',
+      'Complimentary 2x Marketplace Banner Ads + Priority Buyer RFQ Matching',
+      'Full credit of any prior deposit toward annual plan settlement',
+      'Instant activation of verified buyer inquiry routing'
+    ],
+    ctaLabel: 'Claim Diwali 10% OFF Offer (Code: DIWALI10) & Activate Ads →'
+  },
+  {
+    id: 'tpl-subscription-upsell-vip',
+    name: '🚀 Subscription Upsell: Basic / Partial Plan → Full VIP Business Plan',
+    category: 'SUBSCRIPTION_UPSELL',
+    badge: 'VIP UPSELL • 100% ADVANCE BUYERS',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      '🚀 Upgrade {{companyName}} to VIP Business Plan (10% Diwali Offer) — Unlock 4x Sponsored Ad Campaigns & 100% Advance Payment Buyer Leads',
+    description:
+      'Upsells Basic or partial-plan suppliers to the Full VIP Business Plan ($5,490/yr with DIWALI10 vs $6,100/yr), unlocking 60+ verified buyers/month, 4x Sponsored Ads, and Direct On-Site Escrow Fund Transfers.',
+    highlights: [
+      'Unlock 60+ Verified International Buyer Orders/Month with Advance Payment terms',
+      '4x Marketplace Spotlight Banner Ads + Dedicated International Export Manager (IEM)',
+      'Enable Direct On-Site Buyer Funds Receiving & Mediation Escrow Wallet',
+      'Save $610 USD immediately with Diwali Code DIWALI10 + prior deposit credit'
+    ],
+    ctaLabel: 'Upgrade to Full VIP Plan & Unlock 100% Advance Buyers →'
+  },
+  {
+    id: 'tpl-account-pause-prevention',
+    name: '⏳ Final 48-Hour Account Pause Warning & Ad Reactivation Notice',
+    category: 'PAUSE_PREVENTION',
+    badge: 'URGENT COMPLIANCE • 48H HOLD NOTICE',
+    promoCode: 'DIWALI10',
+    discountPercent: 10,
+    subjectTemplate:
+      '⏳ FINAL NOTICE: {{companyName}} Storefront & Ad Campaign Scheduled for Account Pause — Settle ${{remainingBalanceUsd}} USD Balance Now',
+    description:
+      'Urgent compliance follow-up for accounts with halted ad campaigns that have not yet settled their remaining plan balance, offering a final 48-hour window with Diwali discount protection.',
+    highlights: [
+      'Urgent 48-hour countdown before supplier storefront and RFQ routing are paused',
+      'Itemized invoice ledger showing amount paid vs. net balance due',
+      'Preserves Diwali 10% OFF rate ($990/yr Basic Plan) if settled before pause deadline',
+      'Immediate automated ad campaign reactivation upon payment confirmation'
+    ],
+    ctaLabel: 'Prevent Account Pause & Settle ${{remainingBalanceUsd}} USD Balance →'
+  }
+];
+
+let serverMarketingAutomationRules = {
+  autoTriggerOnFailedAdLaunch: true,
+  autoAttachDiwaliPromo: true,
+  requireAdminDemoFirst: true,
+  defaultTemplateId: 'tpl-failed-ads-diwali-combo',
+  sendAdminCopyOnLiveDispatch: true,
+  adminNotificationEmail: 'yr943334@gmail.com',
+  webhookTrackingEnabled: true,
+  pixelTrackingEnabled: true,
+  updatedAt: new Date().toISOString()
+};
+
+interface AutomatedMarketingCampaignLog {
+  id: string;
+  name: string;
+  templateId: string;
+  templateName: string;
+  triggeredBy: string;
+  dispatchMode: 'DEMO_TO_ADMIN' | 'LIVE_CLIENT_CAMPAIGN';
+  createdAt: string;
+  totalRecipients: number;
+  deliveredCount: number;
+  openedCount: number;
+  clickedCount: number;
+  bouncedCount: number;
+  trackingIds: string[];
+  recipients: Array<{
+    userId: string;
+    recipientName: string;
+    email: string;
+    actualRecipientEmail: string;
+    companyName: string;
+    amountPaidUsd: number;
+    remainingBalanceUsd: number;
+    trackingId: string;
+    status: string;
+  }>;
+}
+
+let serverMarketingCampaignsStore: AutomatedMarketingCampaignLog[] = [
+  {
+    id: 'camp-zac-balance-fund-live-000',
+    name: 'Zac (zac@otec.ltd) — Payment of Balance Fund ($590 USD)',
+    templateId: 'tpl-failed-ads-diwali-combo',
+    templateName: '💳 Payment of Balance Fund ($590.00 USD) & Full Plan Activation',
+    triggeredBy: 'yr943334@gmail.com',
+    dispatchMode: 'LIVE_CLIENT_CAMPAIGN',
+    createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    totalRecipients: 2,
+    deliveredCount: 2,
+    openedCount: 0,
+    clickedCount: 0,
+    bouncedCount: 0,
+    trackingIds: ['ms-trk-zac-balance-fund-live-2026', 'ms-trk-zac-balance-fund-admin-right-2026'],
+    recipients: [
+      {
+        userId: 'fad-zac-otec-001',
+        recipientName: 'Zachary Aldin (Zac)',
+        email: 'zac@otec.ltd',
+        actualRecipientEmail: 'zac@otec.ltd',
+        companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+        amountPaidUsd: 400,
+        remainingBalanceUsd: 590,
+        trackingId: 'ms-trk-zac-balance-fund-live-2026',
+        status: 'DELIVERED'
+      },
+      {
+        userId: 'user-admin-root',
+        recipientName: 'Master Admin (Confirmed Right)',
+        email: 'yr943334@gmail.com',
+        actualRecipientEmail: 'yr943334@gmail.com',
+        companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+        amountPaidUsd: 400,
+        remainingBalanceUsd: 590,
+        trackingId: 'ms-trk-zac-balance-fund-admin-right-2026',
+        status: 'DELIVERED'
+      }
+    ]
+  },
+  {
+    id: 'camp-zac-demo-001',
+    name: 'Zac (IMPORTATION FADE-TECH) — Failed Ad Launch + Diwali Max Benefit [Admin Demo]',
+    templateId: 'tpl-failed-ads-diwali-combo',
+    templateName: '⚠️ Failed Ad Launch + Full Plan Balance + 🪔 Diwali Max Benefit',
+    triggeredBy: 'yr943334@gmail.com',
+    dispatchMode: 'DEMO_TO_ADMIN',
+    createdAt: new Date(Date.now() - 1000 * 60 * 14).toISOString(),
+    totalRecipients: 1,
+    deliveredCount: 1,
+    openedCount: 0,
+    clickedCount: 0,
+    bouncedCount: 0,
+    trackingIds: ['ms-trk-zac-demo-admin-2026'],
+    recipients: [
+      {
+        userId: 'fad-zac-otec-001',
+        recipientName: 'Zachary Aldin (Zac)',
+        email: 'zac@otec.ltd',
+        actualRecipientEmail: 'yr943334@gmail.com',
+        companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+        amountPaidUsd: 400,
+        remainingBalanceUsd: 590,
+        trackingId: 'ms-trk-zac-demo-admin-2026',
+        status: 'DELIVERED'
+      }
+    ]
+  },
+  {
+    id: 'camp-ace-diwali-002',
+    name: 'ACE Intermediary (Ali Charley Ezekiah) — Basic Plan Diwali 10% OFF Follow-Up',
+    templateId: 'tpl-diwali-festival-offer',
+    templateName: '🪔 Diwali Maha Utsav Festival Offer (Flat 10% OFF + Priority Ad Boost)',
+    triggeredBy: 'sankalprajput15@gmail.com',
+    dispatchMode: 'LIVE_CLIENT_CAMPAIGN',
+    createdAt: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+    totalRecipients: 1,
+    deliveredCount: 1,
+    openedCount: 0,
+    clickedCount: 0,
+    bouncedCount: 0,
+    trackingIds: ['ms-trk-ace-renewal-2026'],
+    recipients: [
+      {
+        userId: 'fad-ali-ace-002',
+        recipientName: 'Ali Charley Ezekiah',
+        email: 'ezekiahali355@gmail.com',
+        actualRecipientEmail: 'ezekiahali355@gmail.com',
+        companyName: 'ACE Intermediary',
+        amountPaidUsd: 0,
+        remainingBalanceUsd: 990,
+        trackingId: 'ms-trk-ace-renewal-2026',
+        status: 'DELIVERED'
+      }
+    ]
+  }
+];
+
+function syncCampaignsWithTrackingHistory() {
+  const history = serverDeliveryQueueManager.getEmailHistory();
+  serverMarketingCampaignsStore = serverMarketingCampaignsStore.map((camp) => {
+    let delivered = 0;
+    let opened = 0;
+    let clicked = 0;
+    let bounced = 0;
+
+    const updatedRecipients = camp.recipients.map((rec) => {
+      const matched = history.find(
+        (h) =>
+          (rec.trackingId && h.trackingId === rec.trackingId) ||
+          h.recipient.toLowerCase() === rec.actualRecipientEmail.toLowerCase()
+      );
+      if (matched) {
+        if (matched.success) delivered += 1;
+        else bounced += 1;
+        if (matched.opened) opened += 1;
+        if (matched.clicked) clicked += 1;
+        return {
+          ...rec,
+          status: matched.mailSuiteStatus || (matched.clicked ? 'CLICKED' : matched.opened ? 'OPENED' : matched.success ? 'DELIVERED' : 'BOUNCED')
+        };
+      }
+      delivered += 1;
+      return rec;
+    });
+
+    return {
+      ...camp,
+      deliveredCount: delivered,
+      openedCount: opened,
+      clickedCount: clicked,
+      bouncedCount: bounced,
+      recipients: updatedRecipients
+    };
+  });
+}
+
+// POST /api/v1/webhooks/smtp-delivery (and /api/v1/admin/mailsuite/webhook) - SMTP Webhook Ingestion Endpoint
+const handleSmtpWebhookRequest = (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body || {};
+    const rawEvent = String(body.eventType || body.event || 'DELIVERED').toUpperCase();
+    const validEvent: 'DELIVERED' | 'OPENED' | 'CLICKED' | 'BOUNCED' | 'DEFERRED' | 'DROPPED' =
+      rawEvent === 'OPEN' || rawEvent === 'OPENED'
+        ? 'OPENED'
+        : rawEvent === 'CLICK' || rawEvent === 'CLICKED'
+        ? 'CLICKED'
+        : rawEvent === 'BOUNCE' || rawEvent === 'BOUNCED'
+        ? 'BOUNCED'
+        : rawEvent === 'DEFER' || rawEvent === 'DEFERRED'
+        ? 'DEFERRED'
+        : rawEvent === 'DROP' || rawEvent === 'DROPPED'
+        ? 'DROPPED'
+        : 'DELIVERED';
+
+    const clientIp =
+      body.ip ||
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      '66.249.84.21';
+
+    const result = serverDeliveryQueueManager.recordSmtpWebhookEvent({
+      eventType: validEvent,
+      trackingId: body.trackingId,
+      emailId: body.emailId,
+      messageId: body.messageId,
+      recipientEmail: body.recipientEmail || body.recipient,
+      smtpResponse: body.smtpResponse || body.reason,
+      ip: clientIp,
+      userAgent: body.userAgent || req.headers['user-agent'],
+      targetUrl: body.targetUrl || body.url,
+      label: body.label,
+      source: body.source || 'SMTP_WEBHOOK'
+    });
+
+    syncCampaignsWithTrackingHistory();
+
+    logServerActivity(
+      req,
+      `SMTP_WEBHOOK_${validEvent}`,
+      result.webhookEvent.recipient,
+      'SYSTEM',
+      '/api/v1/webhooks/smtp-delivery',
+      `📡 SMTP Webhook [${validEvent}] ingested for ${result.webhookEvent.recipient} (trackingId=${result.webhookEvent.trackingId})`,
+      validEvent === 'BOUNCED' || validEvent === 'DROPPED' ? 'FAILED' : 'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      message: `SMTP Webhook event [${validEvent}] processed and logged for ${result.webhookEvent.recipient}.`,
+      entry: result.entry,
+      webhookEvent: result.webhookEvent,
+      summary: serverDeliveryQueueManager.getMailSuiteAnalytics(),
+      webhookLogs: serverDeliveryQueueManager.getWebhookLogs()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to process SMTP webhook: ${err?.message || err}`
+    });
+  }
+};
+
+app.post('/api/v1/webhooks/smtp-delivery', handleSmtpWebhookRequest);
+app.post('/api/v1/admin/mailsuite/webhook', handleSmtpWebhookRequest);
+
+// GET /api/v1/admin/marketing-suite/state - Get full state of the Automated Email Marketing Suite & Tracking Service
+app.get('/api/v1/admin/marketing-suite/state', (_req, res) => {
+  try {
+    syncCampaignsWithTrackingHistory();
+    const summary = serverDeliveryQueueManager.getMailSuiteAnalytics();
+    const history = serverDeliveryQueueManager.getEmailHistory();
+    const webhookLogs = serverDeliveryQueueManager.getWebhookLogs();
+
+    return res.json({
+      success: true,
+      failedAdUsers: serverFailedAdLaunchUsers,
+      templates: SERVER_MARKETING_TEMPLATES,
+      automationRules: serverMarketingAutomationRules,
+      campaigns: serverMarketingCampaignsStore,
+      summary,
+      history,
+      webhookLogs,
+      queueStatus: serverDeliveryQueueManager.getQueueStatus()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to load Automated Email Marketing Suite state: ${err?.message || err}`
+    });
+  }
+});
+
+// POST /api/v1/admin/marketing-suite/simulate-tracking - Mock Tracking Service Simulation (All Delivered, Batch Opens, Batch Clicks, Bounce, Reset)
+app.post(['/api/v1/admin/marketing-suite/simulate-tracking', '/api/v1/admin/mailsuite/simulate-batch'], (req, res) => {
+  try {
+    const { action = 'BATCH_OPENS', trackingId } = req.body || {};
+    const validAction: 'ALL_DELIVERED' | 'BATCH_OPENS' | 'BATCH_CLICKS' | 'SIMULATE_BOUNCE' | 'RESET_ALL' =
+      action === 'ALL_DELIVERED' || action === 'DELIVERED'
+        ? 'ALL_DELIVERED'
+        : action === 'BATCH_OPENS' || action === 'OPEN' || action === 'OPENS'
+        ? 'BATCH_OPENS'
+        : action === 'BATCH_CLICKS' || action === 'CLICK' || action === 'CLICKS'
+        ? 'BATCH_CLICKS'
+        : action === 'SIMULATE_BOUNCE' || action === 'BOUNCE'
+        ? 'SIMULATE_BOUNCE'
+        : action === 'RESET_ALL' || action === 'RESET'
+        ? 'RESET_ALL'
+        : 'BATCH_OPENS';
+
+    const result = serverDeliveryQueueManager.batchSimulateTracking(validAction, trackingId);
+    syncCampaignsWithTrackingHistory();
+
+    logServerActivity(
+      req,
+      `TRACKING_SIMULATION_${validAction}`,
+      ADMIN_EMAIL,
+      'ADMIN',
+      '/api/v1/admin/marketing-suite/simulate-tracking',
+      `[Mock Tracking Service Simulation] Action: ${validAction} — ${result.message} (affected=${result.affectedCount}).`,
+      validAction === 'SIMULATE_BOUNCE' ? 'FAILED' : 'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      action: validAction,
+      message: result.message,
+      affectedCount: result.affectedCount,
+      summary: result.summary,
+      history: result.history,
+      webhookLogs: serverDeliveryQueueManager.getWebhookLogs(),
+      campaigns: serverMarketingCampaignsStore
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to execute tracking simulation: ${err?.message || err}`
+    });
+  }
+});
+
+// PUT /api/v1/admin/marketing-suite/automation-rules - Update automated trigger rules
+app.put('/api/v1/admin/marketing-suite/automation-rules', (req, res) => {
+  const updates = req.body || {};
+  serverMarketingAutomationRules = {
+    ...serverMarketingAutomationRules,
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+
+  logServerActivity(
+    req,
+    'MARKETING_AUTOMATION_RULES_UPDATED',
+    ADMIN_EMAIL,
+    'ADMIN',
+    '/api/v1/admin/marketing-suite/automation-rules',
+    `Updated Automated Email Marketing rules (autoTriggerOnFailedAdLaunch=${serverMarketingAutomationRules.autoTriggerOnFailedAdLaunch}, defaultTemplate=${serverMarketingAutomationRules.defaultTemplateId}).`,
+    'SUCCESS'
+  );
+
+  return res.json({
+    success: true,
+    message: 'Automated email marketing rules saved.',
+    automationRules: serverMarketingAutomationRules
+  });
+});
+
+// POST /api/v1/admin/marketing-suite/trigger-campaign - Trigger automated follow-up campaign for failed ad launches
+app.post('/api/v1/admin/marketing-suite/trigger-campaign', async (req, res) => {
+  try {
+    const {
+      userIds,
+      templateId = 'tpl-failed-ads-diwali-combo',
+      isDemoOnAdmin = false,
+      demoAdminEmail = 'yr943334@gmail.com',
+      sendAdminCopy = true,
+      adminCopyEmail = 'yr943334@gmail.com',
+      customSubject,
+      campaignName
+    } = req.body || {};
+
+    const selectedTemplate =
+      SERVER_MARKETING_TEMPLATES.find((t) => t.id === templateId) || SERVER_MARKETING_TEMPLATES[0];
+
+    const targetUsers =
+      Array.isArray(userIds) && userIds.length > 0
+        ? serverFailedAdLaunchUsers.filter((u) => userIds.includes(u.id) || userIds.includes(u.email))
+        : [serverFailedAdLaunchUsers[0]];
+
+    if (targetUsers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No matching users with failed ad launches selected.'
+      });
+    }
+
+    const campaignId = `camp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+    const dispatchedRecipients: AutomatedMarketingCampaignLog['recipients'] = [];
+    const trackingIds: string[] = [];
+    let deliveredCount = 0;
+    let bouncedCount = 0;
+
+    for (const user of targetUsers) {
+      const receipt = await automatedSmtpService.sendZacAdsCampaignFailedEmail({
+        companyName: user.companyName,
+        address: user.address,
+        email: user.email,
+        decisionMakerName: user.decisionMakerName,
+        contactPhone: user.phone,
+        paymentMethod: `Bank Wire / Card ($${user.amountPaidUsd} Paid • $${user.remainingBalanceUsd} Balance)`,
+        amountPaidUsd: user.amountPaidUsd,
+        standardPlanAmountUsd: user.standardPlanUsd,
+        diwaliDiscountedPlanUsd: user.diwaliOfferPlanUsd,
+        remainingBalanceUsd: user.remainingBalanceUsd,
+        invoiceRef: user.invoiceRef,
+        isDemoOnAdmin: Boolean(isDemoOnAdmin),
+        demoAdminEmail: demoAdminEmail || 'yr943334@gmail.com',
+        sendAdminCopy: !isDemoOnAdmin && Boolean(sendAdminCopy),
+        adminCopyEmail: adminCopyEmail || 'yr943334@gmail.com',
+        dispatchType: 'AUTOMATED'
+      });
+
+      const trkId = receipt.trackingId || `ms-trk-${Date.now().toString(36)}`;
+      trackingIds.push(trkId);
+      if (receipt.success) {
+        deliveredCount += 1;
+      } else {
+        bouncedCount += 1;
+      }
+
+      // Update user follow-up status
+      user.followUpCount = (user.followUpCount || 0) + 1;
+      user.lastFollowUpAt = new Date().toISOString();
+      user.lastTrackingId = trkId;
+      if (!isDemoOnAdmin && receipt.success) {
+        user.accountStatus = 'FOLLOWUP_SENT';
+      }
+
+      recordRenewalDispatchInInsights({
+        recipientEmail: user.email,
+        recipientName: user.recipientName,
+        companyName: user.companyName,
+        address: user.address,
+        paymentMethod: `Bank Wire / Card ($${user.amountPaidUsd} Paid • $${user.remainingBalanceUsd} Balance)`,
+        planId: user.diwaliOfferPlanUsd >= 5000 ? 'vip-business-plan' : 'basic-business-plan',
+        renewalAmountUsd: user.remainingBalanceUsd,
+        subject: selectedTemplate.name,
+        delivered: receipt.success,
+        adminCopySent: Boolean(isDemoOnAdmin || sendAdminCopy),
+        adminCopyEmail: demoAdminEmail || 'yr943334@gmail.com',
+        trackingId: trkId
+      });
+
+      dispatchedRecipients.push({
+        userId: user.id,
+        recipientName: user.recipientName,
+        email: user.email,
+        actualRecipientEmail: receipt.recipient,
+        companyName: user.companyName,
+        amountPaidUsd: user.amountPaidUsd,
+        remainingBalanceUsd: user.remainingBalanceUsd,
+        trackingId: trkId,
+        status: receipt.success ? 'DELIVERED' : 'BOUNCED'
+      });
+    }
+
+    const newCampaign: AutomatedMarketingCampaignLog = {
+      id: campaignId,
+      name:
+        campaignName ||
+        `${selectedTemplate.name} (${targetUsers.map((u) => u.companyName).join(', ')})${
+          isDemoOnAdmin ? ' [Admin Demo]' : ''
+        }`,
+      templateId: selectedTemplate.id,
+      templateName: selectedTemplate.name,
+      triggeredBy: ADMIN_EMAIL,
+      dispatchMode: isDemoOnAdmin ? 'DEMO_TO_ADMIN' : 'LIVE_CLIENT_CAMPAIGN',
+      createdAt: new Date().toISOString(),
+      totalRecipients: targetUsers.length,
+      deliveredCount,
+      openedCount: 0,
+      clickedCount: 0,
+      bouncedCount,
+      trackingIds,
+      recipients: dispatchedRecipients
+    };
+
+    serverMarketingCampaignsStore.unshift(newCampaign);
+    syncCampaignsWithTrackingHistory();
+
+    logServerActivity(
+      req,
+      isDemoOnAdmin ? 'MARKETING_CAMPAIGN_DEMO_DISPATCHED' : 'MARKETING_CAMPAIGN_LIVE_DISPATCHED',
+      dispatchedRecipients[0]?.actualRecipientEmail || ADMIN_EMAIL,
+      'ADMIN',
+      '/api/v1/admin/marketing-suite/trigger-campaign',
+      `Triggered ${isDemoOnAdmin ? 'Admin Demo' : 'Live Automated Follow-Up'} campaign "${newCampaign.name}" to ${targetUsers.length} account(s) with MailSuite pixel & webhook tracking.`,
+      deliveredCount > 0 ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: deliveredCount > 0,
+      message: isDemoOnAdmin
+        ? `🧪 Demo Campaign dispatched to Admin (${demoAdminEmail}) for ${targetUsers.map((u) => u.recipientName).join(', ')} with MailSuite Pixel & Webhook Tracking!`
+        : `🚀 Live Automated Follow-Up Campaign dispatched to ${deliveredCount}/${targetUsers.length} failed-ad account(s) with MailSuite Open, Click & SMTP Webhook Tracking!`,
+      campaign: newCampaign,
+      failedAdUsers: serverFailedAdLaunchUsers,
+      campaigns: serverMarketingCampaignsStore,
+      summary: serverDeliveryQueueManager.getMailSuiteAnalytics(),
+      history: serverDeliveryQueueManager.getEmailHistory(),
+      webhookLogs: serverDeliveryQueueManager.getWebhookLogs()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to trigger automated marketing campaign: ${err?.message || err}`
     });
   }
 });
@@ -4087,6 +5161,640 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// CLIENT UPLOADED DOCUMENTS & WIRE CONFIRMATION STORAGE
+// -------------------------------------------------------------
+const CLIENT_UPLOADS_DIR = path.join(process.cwd(), 'public', 'assets', 'client-uploads');
+function ensureClientUploadsDir() {
+  if (!fs.existsSync(CLIENT_UPLOADS_DIR)) {
+    fs.mkdirSync(CLIENT_UPLOADS_DIR, { recursive: true });
+  }
+}
+
+interface ClientUploadRecord {
+  id: string;
+  orderId?: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  companyName: string;
+  planId?: string;
+  planTitle?: string;
+  amountUsd?: number;
+  currency?: string;
+  wireTxRef?: string;
+  fileName: string;
+  fileSize: string;
+  fileType: string;
+  fileUrl: string;
+  fileDataUrl?: string;
+  uploadedAt: string;
+  status: 'PENDING_REVIEW' | 'VERIFIED_APPROVED' | 'REJECTED';
+  notes?: string;
+  adminVerificationNotes?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+}
+
+let serverClientUploadsStore: ClientUploadRecord[] = [
+  {
+    id: 'cup-zac-balance-001',
+    orderId: 'ORD-TH-ZAC-590',
+    clientName: 'Zachary Aldin (Zac)',
+    clientEmail: 'zac@otec.ltd',
+    clientPhone: '+61 424 854 899',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    planId: 'basic-business-plan',
+    planTitle: 'Basic Business Plan ($590.00 USD Balance Fund • $400.00 Paid Earlier)',
+    amountUsd: 590,
+    currency: 'USD',
+    wireTxRef: 'UTR-2026-AU-984210 / MT103-AUSTRALIA',
+    fileName: 'Gmail - [ADMIN VERIFICATION CONFIRMED] Zac (zac@otec.ltd) Balance Fund Payment Mail ($590.00 USD Balance _ $400.00 USD Earlier Paid) Was Right.pdf',
+    fileSize: '412 KB',
+    fileType: 'application/pdf',
+    fileUrl: '/assets/aistudio/Gmail_-____ADMIN_VERIFICATION_CONFIRMED__Zac__zac_otec.ltd__Balance_Fund_Payment_Mail___590.00_USD_Balance____400.00_USD_Earlier_Paid__Was_Right___Sent_to_Zac_284a9c03.pdf',
+    uploadedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    status: 'VERIFIED_APPROVED',
+    notes: 'Admin verified Zac balance fund wire was right and confirmed. Earlier $400 USD paid + $590 USD balance settled.',
+    adminVerificationNotes: 'Wire proof confirmed against Currency Cloud Barclays SWIFT route TCCLGB3L. Ad launch campaigns unblocked.',
+    verifiedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    verifiedBy: 'yr943334@gmail.com (Admin)'
+  },
+  {
+    id: 'cup-elena-fasteners-002',
+    orderId: 'ORD-TH-842101',
+    clientName: 'Elena Rostova',
+    clientEmail: 'elena@vostoksourcing.com',
+    clientPhone: '+91 8532934479',
+    companyName: 'Vostok Sourcing Group LLC',
+    planId: 'ESCROW_DEPOSIT',
+    planTitle: 'Trade Protection Escrow - Industrial Fasteners Batch #9',
+    amountUsd: 12500,
+    currency: 'USD',
+    wireTxRef: 'GB81TCCL04140453340868-SWIFT-2026',
+    fileName: 'bank_wire_remittance_swift_receipt.pdf',
+    fileSize: '298 KB',
+    fileType: 'application/pdf',
+    fileUrl: '/assets/aistudio/Gmail_-____ADMIN_VERIFICATION_CONFIRMED__Zac__zac_otec.ltd__Balance_Fund_Payment_Mail___590.00_USD_Balance____400.00_USD_Earlier_Paid__Was_Right___Sent_to_Zac_284a9c03.pdf',
+    uploadedAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+    status: 'PENDING_REVIEW',
+    notes: 'Official SWIFT wire confirmation slip uploaded from Checkout modal.',
+    adminVerificationNotes: 'Awaiting SWIFT MT103 confirmation from Correspondent Bank.'
+  }
+];
+
+// GET /api/v1/client-uploads
+app.get('/api/v1/client-uploads', (req, res) => {
+  res.json({
+    success: true,
+    total: serverClientUploadsStore.length,
+    uploads: serverClientUploadsStore
+  });
+});
+
+// POST /api/v1/client-uploads
+app.post('/api/v1/client-uploads', (req, res) => {
+  try {
+    ensureClientUploadsDir();
+    const payload = req.body || {};
+    const {
+      orderId,
+      clientName,
+      clientEmail,
+      clientPhone,
+      companyName,
+      planId,
+      planTitle,
+      amountUsd,
+      currency = 'USD',
+      wireTxRef,
+      fileName = 'wire_confirmation_proof',
+      fileSize = '0 KB',
+      fileType = 'application/pdf',
+      fileDataUrl,
+      notes
+    } = payload;
+
+    let savedFileUrl = '';
+    if (fileDataUrl && typeof fileDataUrl === 'string' && fileDataUrl.startsWith('data:')) {
+      try {
+        const matches = fileDataUrl.match(/^data:([A-Za-z0-9-+/.]+);base64,(.+)$/);
+        if (matches) {
+          const rawBase64 = matches[2];
+          const buffer = Buffer.from(rawBase64, 'base64');
+          let ext = 'pdf';
+          if (fileType.includes('png') || fileName.endsWith('.png')) ext = 'png';
+          else if (fileType.includes('jpeg') || fileType.includes('jpg') || fileName.endsWith('.jpg')) ext = 'jpg';
+          else if (fileType.includes('webp')) ext = 'webp';
+
+          const sanitized = fileName.replace(/[^a-zA-Z0-9_-]/g, '-').slice(0, 40) || 'wire-slip';
+          const finalName = `${sanitized}-${Date.now()}.${ext}`;
+          const diskPath = path.join(CLIENT_UPLOADS_DIR, finalName);
+          fs.writeFileSync(diskPath, buffer);
+          savedFileUrl = `/assets/client-uploads/${finalName}`;
+        }
+      } catch (writeErr) {
+        console.warn('[ClientUploads] Failed to save file to disk, using data URL fallback:', writeErr);
+      }
+    }
+
+    const newRecord: ClientUploadRecord = {
+      id: `cup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      orderId: orderId || `ORD-TH-${Date.now().toString().slice(-6)}`,
+      clientName: clientName || 'Anonymous Client',
+      clientEmail: clientEmail || 'client@tradeheaven.net',
+      clientPhone,
+      companyName: companyName || 'Verified Corporate Client',
+      planId,
+      planTitle: planTitle || 'SWIFT Wire Transfer Order',
+      amountUsd: typeof amountUsd === 'number' ? amountUsd : undefined,
+      currency,
+      wireTxRef,
+      fileName,
+      fileSize,
+      fileType,
+      fileUrl: savedFileUrl || fileDataUrl || '',
+      fileDataUrl: fileDataUrl && fileDataUrl.length < 500000 ? fileDataUrl : undefined,
+      uploadedAt: new Date().toISOString(),
+      status: 'PENDING_REVIEW',
+      notes
+    };
+
+    serverClientUploadsStore.unshift(newRecord);
+
+    logServerActivity(
+      req,
+      'CLIENT_FILE_UPLOADED',
+      clientEmail || 'client@tradeheaven.net',
+      'BUYER',
+      `/api/v1/client-uploads/${newRecord.id}`,
+      `Client "${clientName}" (${companyName}) uploaded wire confirmation "${fileName}" for ${amountUsd ? `$${amountUsd} USD` : 'payment'}.`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      message: 'Wire confirmation proof uploaded and queued for admin review.',
+      record: newRecord
+    });
+  } catch (err: any) {
+    console.error('[ClientUploads] Error saving upload:', err);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to process client upload: ${err?.message || err}`
+    });
+  }
+});
+
+// PATCH /api/v1/client-uploads/:id/status
+app.patch('/api/v1/client-uploads/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status, adminVerificationNotes, verifiedBy } = req.body || {};
+
+  const idx = serverClientUploadsStore.findIndex(u => u.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: 'Upload record not found' });
+  }
+
+  serverClientUploadsStore[idx] = {
+    ...serverClientUploadsStore[idx],
+    status: status || serverClientUploadsStore[idx].status,
+    adminVerificationNotes: adminVerificationNotes !== undefined ? adminVerificationNotes : serverClientUploadsStore[idx].adminVerificationNotes,
+    verifiedAt: status === 'VERIFIED_APPROVED' ? new Date().toISOString() : serverClientUploadsStore[idx].verifiedAt,
+    verifiedBy: verifiedBy || 'Admin'
+  };
+
+  logServerActivity(
+    req,
+    'CLIENT_UPLOAD_VERIFIED',
+    verifiedBy || 'admin@tradeheaven.net',
+    'ADMIN',
+    `/api/v1/client-uploads/${id}`,
+    `Admin updated status to ${status} for uploaded wire slip ${serverClientUploadsStore[idx].fileName} (${serverClientUploadsStore[idx].companyName}).`,
+    'SUCCESS'
+  );
+
+  return res.json({
+    success: true,
+    record: serverClientUploadsStore[idx]
+  });
+});
+
+// DELETE /api/v1/client-uploads/:id
+app.delete('/api/v1/client-uploads/:id', (req, res) => {
+  const { id } = req.params;
+  serverClientUploadsStore = serverClientUploadsStore.filter(u => u.id !== id);
+  return res.json({ success: true, message: 'Upload record removed' });
+});
+
+// -------------------------------------------------------------
+// UNIVERSAL SITE UPLOADS & MASTER ASSET VAULT API
+// -------------------------------------------------------------
+interface MasterUploadItem {
+  id: string;
+  name: string;
+  originalName: string;
+  url: string;
+  sizeBytes: number;
+  sizeFormatted: string;
+  extension: string;
+  mimeType: string;
+  category: 'PAYMENT_SLIP' | 'CONTRACT_AGREEMENT' | 'SUPPLIER_KYC' | 'PRODUCT_MEDIA' | 'CHAT_DESK' | 'MARKETING_ASSET' | 'GENERAL_DOCUMENT';
+  categoryLabel: string;
+  uploaderName: string;
+  uploaderEmail: string;
+  uploaderRole: 'BUYER' | 'SUPPLIER' | 'ADMIN' | 'SYSTEM';
+  companyName: string;
+  status: 'APPROVED' | 'PENDING' | 'FLAGGED' | 'ARCHIVED';
+  uploadedAt: string;
+  diskPath?: string;
+  notes?: string;
+  referenceCode?: string;
+  amountUsd?: number;
+}
+
+let serverCustomMasterUploads: MasterUploadItem[] = [];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getMimeTypeFromExt(ext: string): string {
+  const lower = ext.toLowerCase();
+  if (lower === 'pdf') return 'application/pdf';
+  if (['jpg', 'jpeg'].includes(lower)) return 'image/jpeg';
+  if (lower === 'png') return 'image/png';
+  if (lower === 'webp') return 'image/webp';
+  if (lower === 'svg') return 'image/svg+xml';
+  if (lower === 'gif') return 'image/gif';
+  if (['csv', 'txt'].includes(lower)) return 'text/csv';
+  if (['xls', 'xlsx'].includes(lower)) return 'application/vnd.ms-excel';
+  if (['doc', 'docx'].includes(lower)) return 'application/msword';
+  return 'application/octet-stream';
+}
+
+function scanMasterAssetsFromDisk(): MasterUploadItem[] {
+  const items: MasterUploadItem[] = [];
+  const scannedUrls = new Set<string>();
+
+  const scanDir = (dirRelPath: string, defaultCat: MasterUploadItem['category']) => {
+    const fullPath = path.join(process.cwd(), 'public', dirRelPath);
+    if (!fs.existsSync(fullPath)) return;
+
+    try {
+      const files = fs.readdirSync(fullPath);
+      for (const file of files) {
+        if (file.startsWith('.') || file.endsWith('.json')) continue;
+        const filePath = path.join(fullPath, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isFile()) continue;
+
+          const ext = path.extname(file).replace('.', '').toLowerCase();
+          const publicUrl = `/${dirRelPath}/${file}`.replace(/\\/g, '/');
+          if (scannedUrls.has(publicUrl)) continue;
+          scannedUrls.add(publicUrl);
+
+          let category = defaultCat;
+          let uploaderName = 'Verified System User';
+          let uploaderEmail = 'support@tradeheaven.net';
+          let uploaderRole: MasterUploadItem['uploaderRole'] = 'SYSTEM';
+          let companyName = 'Trade Heaven Platform';
+          let status: MasterUploadItem['status'] = 'APPROVED';
+          let referenceCode = '';
+          let amountUsd: number | undefined;
+          let notes = '';
+
+          // Smart classification based on file names
+          const lowerName = file.toLowerCase();
+          if (lowerName.includes('zac') && lowerName.includes('agreement')) {
+            category = 'CONTRACT_AGREEMENT';
+            uploaderName = 'Zachary Aldin (Zac)';
+            uploaderEmail = 'zac@otec.ltd';
+            uploaderRole = 'SUPPLIER';
+            companyName = 'IMPORTATION FADE-TECH (OTEC LTD)';
+            referenceCode = 'AGR-ZAC-2026-FADETECH';
+            notes = 'Official bilateral trade assurance supply contract and supplier agency agreement.';
+          } else if (lowerName.includes('zac') && lowerName.includes('balance')) {
+            category = 'PAYMENT_SLIP';
+            uploaderName = 'Zachary Aldin (Zac)';
+            uploaderEmail = 'zac@otec.ltd';
+            uploaderRole = 'SUPPLIER';
+            companyName = 'IMPORTATION FADE-TECH (OTEC LTD)';
+            referenceCode = 'UTR-2026-AU-984210';
+            amountUsd = 590;
+            notes = 'Client balance fund payment confirmation ($590.00 USD Balance / $400.00 USD Earlier Paid).';
+          } else if (lowerName.includes('melissa') || lowerName.includes('security_alert')) {
+            category = 'SUPPLIER_KYC';
+            uploaderName = 'Melissa Prezios';
+            uploaderEmail = 'melissa@mpcommoditybrokers.com';
+            uploaderRole = 'SUPPLIER';
+            companyName = 'MP Commodity Brokers Australia Pty Ltd';
+            referenceCode = 'KYC-MELISSA-AU-2026';
+            notes = 'Supplier security verification and corporate KYC registration document.';
+          } else if (lowerName.includes('whatsapp')) {
+            category = 'CHAT_DESK';
+            uploaderName = 'WhatsApp Trade Desk Client';
+            uploaderEmail = 'desk-lead@tradeheaven.net';
+            uploaderRole = 'BUYER';
+            companyName = 'International Buyer Lead';
+            notes = 'Payment confirmation / spec sheet received on Trade Heaven 24/7 WhatsApp concierge desk.';
+          } else if (lowerName.includes('diwali')) {
+            category = 'MARKETING_ASSET';
+            uploaderName = 'Sarah Jenkins (Treasury Admin)';
+            uploaderEmail = 'yr943334@gmail.com';
+            uploaderRole = 'ADMIN';
+            companyName = 'Trade Heaven Marketing';
+            notes = 'Official Diwali Maha Utsav promotional banner for email campaigns.';
+          } else if (lowerName.includes('cargo') || lowerName.includes('vecteezy') || lowerName.includes('ship')) {
+            category = 'PRODUCT_MEDIA';
+            uploaderName = 'Global Freight Logistics';
+            uploaderEmail = 'freight@tradeheaven.net';
+            uploaderRole = 'SUPPLIER';
+            companyName = 'Ocean Freight & Logistics Co.';
+            notes = 'High-resolution vessel docking and container cargo shipping media.';
+          } else if (lowerName.includes('image00') || lowerName.includes('product')) {
+            category = 'PRODUCT_MEDIA';
+            uploaderName = 'Mark Johnson (President)';
+            uploaderEmail = 'mjohnson@atlanticpowerequip.com';
+            uploaderRole = 'SUPPLIER';
+            companyName = 'Shore Technical Equipment Inc.';
+            notes = 'Industrial technical equipment factory listing catalog asset.';
+          }
+
+          const catLabelMap: Record<MasterUploadItem['category'], string> = {
+            PAYMENT_SLIP: '💳 Payment & Wire Slips',
+            CONTRACT_AGREEMENT: '📜 Contracts & Legal Agreements',
+            SUPPLIER_KYC: '🛡️ Supplier KYC & Certifications',
+            PRODUCT_MEDIA: '📦 Product & Listing Media',
+            CHAT_DESK: '💬 WhatsApp & Chat Slips',
+            MARKETING_ASSET: '🎨 Marketing & Site Assets',
+            GENERAL_DOCUMENT: '📄 General Documents'
+          };
+
+          items.push({
+            id: `asset-disk-${file.slice(0, 20)}-${stats.mtimeMs}`,
+            name: file.replace(/^[a-zA-Z0-9]+_-+/, '').slice(0, 50),
+            originalName: file,
+            url: publicUrl,
+            sizeBytes: stats.size,
+            sizeFormatted: formatFileSize(stats.size),
+            extension: ext.toUpperCase(),
+            mimeType: getMimeTypeFromExt(ext),
+            category,
+            categoryLabel: catLabelMap[category],
+            uploaderName,
+            uploaderEmail,
+            uploaderRole,
+            companyName,
+            status,
+            uploadedAt: new Date(stats.mtime).toISOString(),
+            diskPath: filePath,
+            notes,
+            referenceCode,
+            amountUsd
+          });
+        } catch {}
+      }
+    } catch {}
+  };
+
+  scanDir('assets/aistudio', 'GENERAL_DOCUMENT');
+  scanDir('assets/uploads', 'PRODUCT_MEDIA');
+  scanDir('assets/client-uploads', 'PAYMENT_SLIP');
+
+  // Also include records from serverClientUploadsStore
+  for (const clientUp of serverClientUploadsStore) {
+    if (scannedUrls.has(clientUp.fileUrl)) continue;
+    scannedUrls.add(clientUp.fileUrl);
+
+    items.unshift({
+      id: `asset-client-${clientUp.id}`,
+      name: clientUp.fileName,
+      originalName: clientUp.fileName,
+      url: clientUp.fileUrl,
+      sizeBytes: 150000,
+      sizeFormatted: clientUp.fileSize,
+      extension: clientUp.fileType.includes('pdf') || clientUp.fileName.endsWith('.pdf') ? 'PDF' : 'IMAGE',
+      mimeType: clientUp.fileType,
+      category: 'PAYMENT_SLIP',
+      categoryLabel: '💳 Payment & Wire Slips',
+      uploaderName: clientUp.clientName,
+      uploaderEmail: clientUp.clientEmail,
+      uploaderRole: 'BUYER',
+      companyName: clientUp.companyName,
+      status: clientUp.status === 'VERIFIED_APPROVED' ? 'APPROVED' : clientUp.status === 'REJECTED' ? 'FLAGGED' : 'PENDING',
+      uploadedAt: clientUp.uploadedAt,
+      notes: clientUp.notes || 'Submitted via checkout modal',
+      referenceCode: clientUp.wireTxRef,
+      amountUsd: clientUp.amountUsd
+    });
+  }
+
+  // Prepend custom manual uploads
+  for (const custom of serverCustomMasterUploads) {
+    if (!scannedUrls.has(custom.url)) {
+      items.unshift(custom);
+    }
+  }
+
+  return items;
+}
+
+// GET /api/v1/admin/master-uploads
+app.get('/api/v1/admin/master-uploads', (req, res) => {
+  try {
+    const items = scanMasterAssetsFromDisk();
+    const totalBytes = items.reduce((sum, item) => sum + item.sizeBytes, 0);
+
+    const stats = {
+      totalCount: items.length,
+      totalSizeFormatted: formatFileSize(totalBytes),
+      approvedCount: items.filter(i => i.status === 'APPROVED').length,
+      pendingCount: items.filter(i => i.status === 'PENDING').length,
+      flaggedCount: items.filter(i => i.status === 'FLAGGED').length,
+      categories: {
+        paymentSlips: items.filter(i => i.category === 'PAYMENT_SLIP').length,
+        agreements: items.filter(i => i.category === 'CONTRACT_AGREEMENT').length,
+        supplierKyc: items.filter(i => i.category === 'SUPPLIER_KYC').length,
+        productMedia: items.filter(i => i.category === 'PRODUCT_MEDIA').length,
+        chatDesk: items.filter(i => i.category === 'CHAT_DESK').length,
+        marketing: items.filter(i => i.category === 'MARKETING_ASSET').length,
+        general: items.filter(i => i.category === 'GENERAL_DOCUMENT').length
+      }
+    };
+
+    return res.json({
+      success: true,
+      stats,
+      items
+    });
+  } catch (err: any) {
+    console.error('[MasterUploads] Error scanning assets:', err);
+    return res.status(500).json({ success: false, message: err?.message || 'Failed to scan uploaded assets' });
+  }
+});
+
+// POST /api/v1/admin/master-uploads - Universal file upload
+app.post('/api/v1/admin/master-uploads', (req, res) => {
+  try {
+    ensureUploadsDir();
+    const {
+      fileName = 'uploaded-file',
+      base64Data,
+      mimeType = 'application/octet-stream',
+      category = 'GENERAL_DOCUMENT',
+      uploaderName = 'System Administrator',
+      uploaderEmail = 'admin@tradeheaven.net',
+      uploaderRole = 'ADMIN',
+      companyName = 'Trade Heaven Administration',
+      notes = '',
+      referenceCode = '',
+      amountUsd
+    } = req.body || {};
+
+    if (!base64Data || typeof base64Data !== 'string') {
+      return res.status(400).json({ success: false, message: 'Missing base64Data in request.' });
+    }
+
+    const matches = base64Data.match(/^data:([A-Za-z0-9-+/.]+);base64,(.+)$/);
+    const detectedMime = matches ? matches[1] : mimeType;
+    const rawBase64 = matches ? matches[2] : base64Data;
+    const buffer = Buffer.from(rawBase64, 'base64');
+
+    let ext = 'bin';
+    if (fileName.includes('.')) {
+      ext = fileName.split('.').pop()!.toLowerCase();
+    } else if (detectedMime.includes('pdf')) {
+      ext = 'pdf';
+    } else if (detectedMime.includes('png')) {
+      ext = 'png';
+    } else if (detectedMime.includes('jpeg') || detectedMime.includes('jpg')) {
+      ext = 'jpg';
+    } else if (detectedMime.includes('webp')) {
+      ext = 'webp';
+    } else if (detectedMime.includes('csv')) {
+      ext = 'csv';
+    }
+
+    const sanitizedBase = path.basename(fileName, path.extname(fileName))
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 40) || 'uploaded-file';
+
+    const finalFileName = `${sanitizedBase}-${Date.now()}.${ext}`;
+    const diskPath = path.join(UPLOADS_DIR, finalFileName);
+    fs.writeFileSync(diskPath, buffer);
+
+    const uploadedUrl = `/assets/uploads/${finalFileName}`;
+    const nowIso = new Date().toISOString();
+
+    const catLabelMap: Record<MasterUploadItem['category'], string> = {
+      PAYMENT_SLIP: '💳 Payment & Wire Slips',
+      CONTRACT_AGREEMENT: '📜 Contracts & Legal Agreements',
+      SUPPLIER_KYC: '🛡️ Supplier KYC & Certifications',
+      PRODUCT_MEDIA: '📦 Product & Listing Media',
+      CHAT_DESK: '💬 WhatsApp & Chat Slips',
+      MARKETING_ASSET: '🎨 Marketing & Site Assets',
+      GENERAL_DOCUMENT: '📄 General Documents'
+    };
+
+    const newItem: MasterUploadItem = {
+      id: `asset-master-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: fileName,
+      originalName: finalFileName,
+      url: uploadedUrl,
+      sizeBytes: buffer.length,
+      sizeFormatted: formatFileSize(buffer.length),
+      extension: ext.toUpperCase(),
+      mimeType: detectedMime,
+      category: category as any,
+      categoryLabel: catLabelMap[category as MasterUploadItem['category']] || '📄 General Documents',
+      uploaderName,
+      uploaderEmail,
+      uploaderRole: (uploaderRole as any) || 'ADMIN',
+      companyName,
+      status: 'APPROVED',
+      uploadedAt: nowIso,
+      diskPath,
+      notes,
+      referenceCode,
+      amountUsd: typeof amountUsd === 'number' ? amountUsd : undefined
+    };
+
+    serverCustomMasterUploads.unshift(newItem);
+
+    logServerActivity(
+      req,
+      'MASTER_ASSET_UPLOADED',
+      uploaderEmail,
+      uploaderRole,
+      uploadedUrl,
+      `User ${uploaderName} (${companyName}) uploaded "${fileName}" (${formatFileSize(buffer.length)}) to ${category}.`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      message: `File "${fileName}" uploaded successfully and saved to asset vault.`,
+      item: newItem
+    });
+  } catch (err: any) {
+    console.error('[MasterUploads] Upload error:', err);
+    return res.status(500).json({ success: false, message: err?.message || 'Failed to upload asset' });
+  }
+});
+
+// PATCH /api/v1/admin/master-uploads/:id
+app.patch('/api/v1/admin/master-uploads/:id', (req, res) => {
+  const { id } = req.params;
+  const updates = req.body || {};
+
+  const existingIdx = serverCustomMasterUploads.findIndex(i => i.id === id);
+  if (existingIdx !== -1) {
+    serverCustomMasterUploads[existingIdx] = {
+      ...serverCustomMasterUploads[existingIdx],
+      ...updates
+    };
+    return res.json({ success: true, item: serverCustomMasterUploads[existingIdx] });
+  }
+
+  // Also check client uploads store if relevant
+  const clientIdx = serverClientUploadsStore.findIndex(u => `asset-client-${u.id}` === id || u.id === id);
+  if (clientIdx !== -1) {
+    if (updates.status) {
+      serverClientUploadsStore[clientIdx].status = updates.status === 'APPROVED' ? 'VERIFIED_APPROVED' : updates.status === 'FLAGGED' ? 'REJECTED' : 'PENDING_REVIEW';
+    }
+    if (updates.notes) {
+      serverClientUploadsStore[clientIdx].adminVerificationNotes = updates.notes;
+    }
+    return res.json({ success: true, message: 'Status updated' });
+  }
+
+  return res.json({ success: true, message: 'Updated metadata successfully' });
+});
+
+// DELETE /api/v1/admin/master-uploads/:id
+app.delete('/api/v1/admin/master-uploads/:id', (req, res) => {
+  const { id } = req.params;
+
+  const customIdx = serverCustomMasterUploads.findIndex(i => i.id === id);
+  if (customIdx !== -1) {
+    const item = serverCustomMasterUploads[customIdx];
+    if (item.diskPath && fs.existsSync(item.diskPath)) {
+      try { fs.unlinkSync(item.diskPath); } catch {}
+    }
+    serverCustomMasterUploads.splice(customIdx, 1);
+  }
+
+  // Also filter client uploads if applicable
+  serverClientUploadsStore = serverClientUploadsStore.filter(u => `asset-client-${u.id}` !== id && u.id !== id);
+
+  return res.json({ success: true, message: 'Asset removed successfully' });
+});
+
 // PUT /api/v1/admin/product-images - Update product image assignments (single, bulk, category, global, or URL replacement)
 app.put('/api/v1/admin/product-images', (req, res) => {
   try {
@@ -5272,104 +6980,6 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
-
-    // Automatically dispatch the Golden Lead (10 Generators to Canada, 100% Advance Payment, VIP-Only Access + Diwali Offer) email to Mark Johnson
-    setTimeout(async () => {
-      try {
-        const subject = '🌟 GOLDEN LEAD [VIP Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali Offer';
-        const htmlBody = `
-          <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 680px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #b45309 100%); padding: 28px 24px; color: #ffffff;">
-              <div style="display: inline-block; background-color: #f59e0b; color: #0f172a; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
-                🌟 GOLDEN LEAD ALERT • VIP MEMBER EXCLUSIVE • 100% ADVANCE PAYMENT
-              </div>
-              <h1 style="margin: 0; font-size: 22px; font-weight: 800; line-height: 1.3;">
-                Urgent Buyer Inquiry: 10 Units Industrial Diesel Generators to Canada
-              </h1>
-              <p style="margin: 8px 0 0 0; font-size: 14px; color: #fde68a;">
-                Matched to Shore Technical Equipment Inc. (DBA: Atlantic Power &amp; Equipment Co.) — CAT Earth Moving Machines &amp; Generators Catalog
-              </p>
-            </div>
-
-            <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
-              <p style="margin-top: 0;">Dear <strong>Mark Johnson (President)</strong>,</p>
-              <p>
-                Welcome to <strong>Trade Heaven Global B2B</strong>! Your supplier profile for <strong>Shore Technical Equipment Inc. (DBA: Atlantic Power &amp; Equipment Co.)</strong> has been activated under the <strong>Basic Plan</strong> for <strong>CAT Earth Moving Machines &amp; Industrial Generators</strong>.
-              </p>
-              <p>
-                Our North American Procurement Desk has just matched an urgent, pre-verified <strong>GOLDEN LEAD</strong> directly to your CAT Power &amp; Cummins Generator inventory:
-              </p>
-
-              <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 10px; padding: 18px; margin: 20px 0;">
-                <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px;">
-                  🍁 GOLDEN LEAD SPECIFICATION (REF: RFQ-GOLD-CA-10GEN-2026)
-                </h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b; width: 42%;"><strong>Required Equipment:</strong></td>
-                    <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">10 Units Heavy-Duty Industrial Diesel Generators (CAT / Cummins Power Generation, 500kW – 2,000kW)</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b;"><strong>Destination Country:</strong></td>
-                    <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">Canada (Toronto, ON / Calgary, AB Delivery Terminals)</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b;"><strong>Payment Terms:</strong></td>
-                    <td style="padding: 6px 0; color: #15803d; font-weight: 800;">100% ADVANCE PAYMENT (100% Upfront Wire / TT before dispatch)</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b;"><strong>Estimated Contract Value:</strong></td>
-                    <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">$950,000.00 USD (100% Advance Escrowed)</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 6px 0; color: #64748b;"><strong>Lead Access Policy:</strong></td>
-                    <td style="padding: 6px 0; color: #b91c1c; font-weight: 800;">🔒 ONLY ACCESSED BY VIP MEMBER (100% Advance Payment Settlement)</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 100%); color: #ffffff; border-radius: 10px; padding: 18px; margin: 20px 0;">
-                <div style="font-size: 12px; font-weight: 800; color: #fde68a; text-transform: uppercase; letter-spacing: 1px;">
-                  🪔 SPECIAL DIWALI OFFER — VIP MEMBERSHIP UPGRADE
-                </div>
-                <h4 style="margin: 6px 0 8px 0; font-size: 17px; color: #ffffff;">
-                  Upgrade from Basic Plan to VIP Member &amp; Unlock 100% Advance Payment Golden Leads!
-                </h4>
-                <p style="margin: 0 0 10px 0; font-size: 13px; color: #ffedd5;">
-                  Because your account is currently on the <strong>Basic Plan</strong>, direct buyer coordinates and 100% Advance Payment Golden Leads are locked for <strong>VIP Members Only</strong>. Take advantage of our <strong>Special Diwali Festival Offer (Promo Code: DIWALI10 — Flat 10% OFF + Priority VIP Fast-Track)</strong> to upgrade your membership today and claim this 10-Generator Canada contract with <strong>100% Advance Payment</strong>!
-                </p>
-              </div>
-
-              <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0;">
-                <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #0f172a;">Your Registered Supplier Profile &amp; Portal Credentials</h4>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Contact Person:</strong> Mark Johnson (President)</p>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Company:</strong> Shore Technical Equipment Inc. (DBA: Atlantic Power &amp; Equipment Co.)</p>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Address:</strong> P.O. Box 1176, Marmora, New Jersey 08223, USA</p>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Phone / WhatsApp:</strong> C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131</p>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Website:</strong> www.atlanticpowerequip.com</p>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Portal Login Email:</strong> mjohnson@atlanticpowerequip.com | <strong>Password:</strong> Atlantic@2026</p>
-                <p style="margin: 4px 0; font-size: 13px;"><strong>Current Plan:</strong> Basic Plan Member (CAT Earth Moving Machines &amp; Generators)</p>
-              </div>
-
-              <p style="margin-bottom: 0; font-size: 13px; color: #475569;">
-                Best regards,<br/>
-                <strong>Trade Heaven Global B2B — VIP Procurement &amp; Trade Assurance Desk</strong>
-              </p>
-            </div>
-          </div>
-        `;
-        await automatedSmtpService.sendCustomAdminEmail({
-          recipientEmail: 'mjohnson@atlanticpowerequip.com',
-          subject,
-          rawHtmlOverride: htmlBody,
-          recipientName: 'Mark Johnson (President)',
-          companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)'
-        });
-        console.log('[SMTP Auto-Dispatch] Sent Golden Lead (10 Generators to Canada + 100% Advance + Diwali Offer) to mjohnson@atlanticpowerequip.com');
-      } catch (err) {
-        console.warn('[SMTP Auto-Dispatch] Notice:', err);
-      }
-    }, 1500);
   });
 
   httpServer.on('error', (err: any) => {

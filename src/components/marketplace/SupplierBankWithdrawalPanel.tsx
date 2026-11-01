@@ -124,7 +124,7 @@ export function getSavedSupplierBanks(entityId?: string, companyName?: string): 
 }
 
 interface SupplierBankWithdrawalPanelProps {
-  currentUser: AuthUser;
+  currentUser: AuthUser | null;
   activeWallet?: WalletRecord | null;
   onSuccess?: (updatedState: MediationSystemState) => void;
   compact?: boolean;
@@ -136,9 +136,12 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
   onSuccess,
   compact = false
 }) => {
-  const entityId = activeWallet?.entity_id || currentUser.id || 'comp-melissa-mpcommodity';
-  const companyName = activeWallet?.company_name || currentUser.companyName || currentUser.name || 'Verified Supplier';
-  const currencyMeta = useMemo(() => getEntityCurrency(activeWallet || currentUser), [activeWallet, currentUser]);
+  const entityId = activeWallet?.entity_id || currentUser?.id || 'comp-melissa-mpcommodity';
+  const companyName = activeWallet?.company_name || currentUser?.companyName || currentUser?.name || 'Verified Supplier';
+  const currencyMeta = useMemo(
+    () => getEntityCurrency(activeWallet || currentUser || { id: entityId, name: companyName }),
+    [activeWallet, currentUser, entityId, companyName]
+  );
 
   const availablePaise = activeWallet?.available_balance || '0';
   const availableLocal = useMemo(
@@ -146,8 +149,8 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
     [availablePaise, entityId]
   );
   const nativeAvailFormatted = useMemo(
-    () => formatBalanceInNativeCurrency(availablePaise, activeWallet || currentUser),
-    [availablePaise, activeWallet, currentUser]
+    () => formatBalanceInNativeCurrency(availablePaise, activeWallet || currentUser || entityId),
+    [availablePaise, activeWallet, currentUser, entityId]
   );
 
   const [savedBanks, setSavedBanks] = useState<SavedSupplierBankAccount[]>(() =>
@@ -163,7 +166,7 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
   const [newBankName, setNewBankName] = useState<string>('');
   const [newAccountNumber, setNewAccountNumber] = useState<string>('');
   const [newIfscOrSwift, setNewIfscOrSwift] = useState<string>('');
-  const [newBranchCountry, setNewBranchCountry] = useState<string>(currentUser.country || 'United States');
+  const [newBranchCountry, setNewBranchCountry] = useState<string>(currentUser?.country || 'United States');
   const [newRail, setNewRail] = useState<'SWIFT' | 'IMPS' | 'NEFT' | 'RTGS' | 'ACH'>('SWIFT');
 
   const [withdrawalAmountLocal, setWithdrawalAmountLocal] = useState<string>(() => {
@@ -252,7 +255,7 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
       bankName: newBankName.trim(),
       accountNumber: newAccountNumber.trim(),
       ifscOrSwift: newIfscOrSwift.trim().toUpperCase(),
-      branchCountry: newBranchCountry.trim() || currentUser.country || 'International',
+      branchCountry: newBranchCountry.trim() || currentUser?.country || 'International',
       rail: newRail,
       isPrimary: savedBanks.length === 0,
       verifiedByTradeHeaven: true,
@@ -327,7 +330,7 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
             bankName: selectedBank.bankName,
             rail: selectedBank.rail
           },
-          currentUser.tier || 'VIP'
+          currentUser?.tier || 'VIP'
         );
         payoutResult = res.payoutResult;
         if (onSuccess) onSuccess(res.state);

@@ -297,8 +297,7 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
           offers: CERTIFICATE_PLANS.map(plan => ({
             '@type': 'Offer',
             name: plan.name,
-            description: `${plan.audience}. Includes up to $${plan.coverageLimitUsd.toLocaleString()} USD escrow protection limit and searchable certificate number.`,
-            description: 'Request Certificate — Fees will be told by Customer Executive',
+            description: `${plan.audience}. Includes up to $${plan.coverageLimitUsd.toLocaleString()} USD escrow protection limit and searchable certificate number. Request Certificate — Fees will be told by Customer Executive`,
             availability: 'https://schema.org/InStock',
             url: 'https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE'
           }))

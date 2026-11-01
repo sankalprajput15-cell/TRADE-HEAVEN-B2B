@@ -86,7 +86,11 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
   }
 
   // 2. Authenticated but Non-Admin Role (403 Forbidden)
-  if (currentUser.role !== 'ADMIN' && !currentUser.isVerifiedAdmin) {
+  const isZacClient =
+    currentUser.email?.toLowerCase() === 'zac@otec.ltd' ||
+    currentUser.email?.toLowerCase() === 'zac@fadetech.com' ||
+    currentUser.id === 'user-supplier-zac';
+  if (isZacClient || (currentUser.role !== 'ADMIN' && !currentUser.isVerifiedAdmin)) {
     return (
       <div 
         id="admin-guard-forbidden-403" 

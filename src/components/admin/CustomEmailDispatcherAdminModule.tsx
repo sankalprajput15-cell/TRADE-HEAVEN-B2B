@@ -22,11 +22,17 @@ import {
   Briefcase,
   Layers,
   Clock,
-  ArrowRight
+  ArrowRight,
+  CheckCheck,
+  Check,
+  MousePointerClick,
+  Activity
 } from 'lucide-react';
 import type {
   CustomAdminInquiryItem,
-  CustomAdminEmailPayload
+  CustomAdminEmailPayload,
+  MailSuiteAnalyticsSummary,
+  CompanyEmailHistoryEntry
 } from '../../services/smtpService';
 import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
 
@@ -46,6 +52,7 @@ interface DispatchedHistoryItem {
   subject: string;
   templatePreset: string;
   messageId?: string;
+  trackingId?: string;
   dispatchedAt: string;
   success: boolean;
   error?: string;
@@ -61,6 +68,62 @@ const PRESET_TEMPLATES: Array<{
   description: string;
   data: CustomAdminEmailPayload;
 }> = [
+  {
+    id: 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI',
+    name: '⚠️ Zac ($400 Paid Basic Plan) — Ads Failed + Pause Warning + Diwali Max Benefit',
+    description: 'Demo Mail on Admin First + Live Mail to Zac (zac@otec.ltd • IMPORTATION FADE-TECH): $400 Paid, Ads Halted, Pay Full Plan ($590 Balance with Diwali Offer) or Account Pause',
+    data: {
+      recipientName: 'Zachary Aldin (Zac)',
+      decisionMakerName: 'Zachary Aldin (Zac)',
+      recipientEmail: 'zac@otec.ltd',
+      companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+      paymentMethod: 'Bank Wire / Card Settlement ($400 USD Paid — $590 USD Balance Due)',
+      contactPhone: '+61 424 854 899',
+      loginEmail: 'zac@otec.ltd',
+      loginPassword: 'Zac@0011',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: '⚠️ Urgent: Today\'s Ads Campaign Failed (Insufficient Plan Balance — $400 Paid) • Complete Full Plan or Account Will Pause + 🪔 Diwali Max Benefit Offer for IMPORTATION FADE-TECH (OTEC LTD)',
+      badgeLabel: '⚠️ CAMPAIGN HALTED TODAY • INSUFFICIENT PLAN BALANCE ($400 PAID)',
+      headline: 'Today’s Sponsored Ads Campaign Failed to Launch',
+      subheadline: 'Action Required for IMPORTATION FADE-TECH (Ref: TRD-INV-27-0004) to Resume Ads, Connect With Buyers & Prevent Account Pause',
+      introMessage: 'Dear Zachary Aldin (Zac),\n\nThis is an urgent notification from the Trade Heaven Ad Campaign & Billing Operations Desk regarding your supplier account for IMPORTATION FADE-TECH (OTEC LTD) (Ref: TRD-INV-27-0004).\n\n1. WHY TODAY\'S ADS CAMPAIGN FAILED (#ADS-COAL-AU-2026):\nYour scheduled Global B2B Sponsored Ads & Buyer Matching Campaign launched today for IMPORTATION FADE-TECH failed during automated billing verification because only a partial deposit of $400.00 USD has been paid toward your Basic Plan (insufficient plan balance).\n\n2. ⚠️ MANDATORY FULL PLAN SETTLEMENT OR ACCOUNT PAUSE WARNING:\nSponsored Ad Campaigns and direct buyer inquiry connections require a 100% Completed Full Plan. Please complete the remaining payment for your Full Plan so we can immediately re-launch your Ads Campaign and connect you with more verified coal & commodity buyers—otherwise your IMPORTATION FADE-TECH account and storefront will be placed on TEMPORARY PAUSE / HOLD.\n\n3. 🪔 DIWALI MAHA UTSAV SPECIAL OFFER — AVAIL MAXIMUM BENEFIT (CODE: DIWALI10):\n• Option A — Complete Full Basic Plan (With Diwali 10% OFF): Standard Basic Plan is $1,100/yr ($700 balance), but under the Diwali Offer (DIWALI10) it is $990/yr (Save $110 USD). With your $400 USD already credited, you only need to pay $590.00 USD to unlock 100% Full Basic Plan + immediate Ads Campaign relaunch!\n• Option B — Upgrade to Full VIP Plan (Maximum Diwali Benefit): Apply your $400 USD credit + Flat 10% Diwali Discount (DIWALI10 — Save $610 USD) to unlock 4x Sponsored Spotlight Ad Campaigns, 60+ Verified Buyer Orders/Month, and Direct On-Site Buyer Funds Receiving Option.',
+      includeCredentialsBox: true,
+      includeLoginGuide: false,
+      includeEscrowBadge: true,
+      isMembershipRenewal: true,
+      renewalPlanId: 'basic-business-plan',
+      renewalAmountUsd: 590,
+      inquiriesTitle: 'Halted Ad Campaign & Pending Coal Buyer Inquiries (Unlocked With Full Plan)',
+      customClosingNote: '⚠️ Account Pause Notice: Kindly settle the remaining Full Plan balance ($590 USD with Diwali 10% OFF Code DIWALI10 after your $400 credit) within 48 hours to immediately resume your Ads Campaign, connect with global buyers, and prevent temporary account pause.',
+      ctaText: 'Pay Full Plan Balance ($590 USD with Diwali Offer) & Relaunch Ads →',
+      ctaUrl: 'https://www.tradeheaven.net/?action=renew-membership&company=IMPORTATION%20FADE-TECH%20(OTEC%20LTD)&email=zac%40otec.ltd&decisionMaker=Zachary%20Aldin%20(Zac)&address=42a%20Bassett%20street%20hurstville%2C%20New%20South%20Wales%202220%2C%20Australia&paymentMethod=Bank%20Wire%20%2F%20Card&planId=basic-business-plan&amountUsd=590',
+      inquiries: [
+        {
+          id: 'ADS-COAL-AU-2026-FAILED',
+          title: '❌ HALTED TODAY: Sponsored Global Coal Buyer Acquisition Campaign (Insufficient Plan Balance — $400 Paid)',
+          buyerCompany: 'Asia-Pacific, India, Japan & EU Energy Importers Network',
+          buyerCountry: 'Global Ad Network (Paused)',
+          quantity: '2x Sponsored Marketplace Banners + Priority Coal RFQ Broadcasting + 20-60+ Buyer Matches/Mo',
+          estimatedValue: '$590.00 USD Balance Due (After $400 Paid Credit + Diwali 10% OFF Code: DIWALI10)',
+          incotermPort: 'FOB Port of Newcastle / Gladstone / Hay Point (Ref: TRD-INV-27-0004)',
+          paymentTerms: 'Complete Full Plan to Immediately Resume Ads & Prevent Account Pause',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'RFQ-COAL-AU-2026-01',
+          title: 'High-CV Australian Thermal Coal (GAR 6000–6500 kcal/kg) — Waiting for Full Plan Activation',
+          buyerCompany: 'APAC Power & Industrial Utilities Consortium',
+          buyerCountry: 'Japan / South Korea / India',
+          quantity: '50,000 Metric Tons / Month (12-Month Contract)',
+          estimatedValue: '$6,750,000.00 USD / Shipment',
+          incotermPort: 'FOB Port of Newcastle, NSW / CIF Destination Port',
+          paymentTerms: 'Irrevocable L/C at Sight / SBLC + SGS Pre-Shipment Inspection',
+          urgency: 'URGENT' as const
+        }
+      ]
+    }
+  },
   {
     id: 'MEMBERSHIP_RENEWAL',
     name: '💎 Basic Plan Renewal + Offer (Ali Charley Ezekiah • ACE Intermediary)',
@@ -266,8 +329,8 @@ const PRESET_TEMPLATES: Array<{
 export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherProps> = ({
   onOpenPaymentCheckout
 }) => {
-  const [selectedPreset, setSelectedPreset] = useState<string>('MEMBERSHIP_RENEWAL');
-  const [activeSubTab, setActiveSubTab] = useState<'FORM' | 'PREVIEW' | 'HISTORY'>('FORM');
+  const [selectedPreset, setSelectedPreset] = useState<string>('ZAC_ADS_CAMPAIGN_FAILED_DIWALI');
+  const [activeSubTab, setActiveSubTab] = useState<'FORM' | 'PREVIEW' | 'HISTORY'>('PREVIEW');
   const [previewDevice, setPreviewDevice] = useState<'DESKTOP' | 'MOBILE'>('DESKTOP');
   
   // Form State
@@ -360,14 +423,74 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
   };
 
   const [isSending, setIsSending] = useState(false);
+  const [isSendingDemoAdmin, setIsSendingDemoAdmin] = useState(false);
   const [sendAdminCopy, setSendAdminCopy] = useState(true);
   const [adminCopyEmail, setAdminCopyEmail] = useState('yr943334@gmail.com');
   const [sendResult, setSendResult] = useState<{
     success: boolean;
     message: string;
     messageId?: string;
+    trackingId?: string;
+    trackingPixelUrl?: string;
     dispatchedAt?: string;
-  } | null>(null);
+  } | null>({
+    success: true,
+    message: 'DEMO MAIL READY & SENT TO ADMIN (yr943334@gmail.com): MailSuite Open & Click Tracking is active (Tracking ID: ms-trk-zac-demo-admin-2026). Review below, then click "Approve & Send Live to Zac (zac@otec.ltd)" when ready.',
+    messageId: '<demo-admin-zac-ads-failed-diwali-2026@tradeheaven.net>',
+    trackingId: 'ms-trk-zac-demo-admin-2026',
+    trackingPixelUrl: '/api/v1/track/open/ms-trk-zac-demo-admin-2026.gif',
+    dispatchedAt: new Date().toLocaleTimeString()
+  });
+
+  // MailSuite Open & Click Tracking Telemetry State
+  const [mailSuiteStats, setMailSuiteStats] = useState<MailSuiteAnalyticsSummary | null>(null);
+  const [trackedServerEmails, setTrackedServerEmails] = useState<CompanyEmailHistoryEntry[]>([]);
+  const [simulatingTrackKey, setSimulatingTrackKey] = useState<string | null>(null);
+
+  const fetchMailSuiteTelemetry = async () => {
+    try {
+      const res = await fetch('/api/v1/admin/mailsuite/analytics', {
+        headers: { Accept: 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.analytics) setMailSuiteStats(data.analytics);
+        if (Array.isArray(data?.entries)) setTrackedServerEmails(data.entries);
+      }
+    } catch {
+      // ignore offline telemetry fetch error
+    }
+  };
+
+  useEffect(() => {
+    fetchMailSuiteTelemetry();
+  }, []);
+
+  const handleSimulateMailSuiteEvent = async (trackingId: string, eventType: 'OPEN' | 'CLICK', targetUrl?: string) => {
+    const key = `${trackingId}-${eventType}`;
+    setSimulatingTrackKey(key);
+    try {
+      const res = await fetch('/api/v1/admin/mailsuite/simulate-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          trackingId,
+          eventType,
+          url: targetUrl || 'https://tradeheaven.org/?action=renew_subscription&company=IMPORTATION+FADE-TECH+(OTEC+LTD)&coupon=DIWALI10&amount=590',
+          label: eventType === 'CLICK' ? 'Complete Full Plan Now ($590 Balance — Diwali Offer)' : undefined
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.analytics) setMailSuiteStats(data.analytics);
+        await fetchMailSuiteTelemetry();
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSimulatingTrackKey(null);
+    }
+  };
 
   // History State
   const [history, setHistory] = useState<DispatchedHistoryItem[]>(() => {
@@ -377,6 +500,18 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     } catch {}
     return [
       {
+        id: 'hist-zac-ads-failed-admin-demo',
+        recipientEmail: 'yr943334@gmail.com',
+        recipientName: 'Zachary Aldin (Zac)',
+        companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+        subject: '⚠️ Urgent: Today\'s Ads Campaign Failed (Insufficient Plan Balance — $400 Paid) • Complete Full Plan or Account Will Pause + 🪔 Diwali Max Benefit Offer for IMPORTATION FADE-TECH (OTEC LTD)',
+        templatePreset: 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI',
+        messageId: '<demo-admin-zac-ads-failed-diwali-2026@tradeheaven.net>',
+        trackingId: 'ms-trk-zac-demo-admin-2026',
+        dispatchedAt: new Date().toISOString(),
+        success: true
+      },
+      {
         id: 'hist-ali-basic-renewal-client',
         recipientEmail: 'ezekiahali355@gmail.com',
         recipientName: 'Ali Charley Ezekiah',
@@ -384,15 +519,16 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
         subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
         templatePreset: 'MEMBERSHIP_RENEWAL',
         messageId: '<basic-plan-renewal-ace-intermediary-2026@tradeheaven.net>',
+        trackingId: 'ms-trk-ali-renewal-2026',
         dispatchedAt: new Date().toISOString(),
         success: true
       },
       {
         id: 'hist-ali-basic-renewal-admin-copy',
         recipientEmail: 'yr943334@gmail.com',
-        recipientName: 'Admin Copy (Sarah Jenkins / Master Admin)',
+        recipientName: 'Ali Charley Ezekiah',
         companyName: 'ACE Intermediary',
-        subject: '[ADMIN COPY] 💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
+        subject: '💎 Basic Plan Membership Renewal Offer ($990/yr — 10% OFF) & Exciting B2B Deals for ACE Intermediary (Attn: Ali Charley Ezekiah)',
         templatePreset: 'MEMBERSHIP_RENEWAL',
         messageId: '<admin-copy-basic-plan-renewal-ace-intermediary-2026@tradeheaven.net>',
         dispatchedAt: new Date().toISOString(),
@@ -406,6 +542,7 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
         subject: 'Welcome to Trade Heaven: Your Middle Fox LLC Fuel Supplier Portal Credentials & Active Inquiries',
         templatePreset: 'RANDY_FUEL_SUPPLIER',
         messageId: '<05c6f0d2-89f4-1d3c-2c3d-2314594ca5c1@tradeheaven.net>',
+        trackingId: 'ms-trk-randy-001',
         dispatchedAt: new Date(Date.now() - 3600000).toISOString(),
         success: true
       },
@@ -417,6 +554,7 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
         subject: 'Action Required: High-Value Buyer Inquiry for Girlsenberries on Trade Heaven Portal',
         templatePreset: 'DONALD_BUYER_INQUIRY',
         messageId: '<b92418ca-d102-4ef1-98ab-819238471201@tradeheaven.net>',
+        trackingId: 'ms-trk-donald-001',
         dispatchedAt: new Date(Date.now() - 86400000).toISOString(),
         success: true
       }
@@ -531,9 +669,9 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
           itemsToAdd.push({
             id: `hist-admin-${Date.now()}`,
             recipientEmail: adminCopyEmail,
-            recipientName: `Admin Copy (${formData.recipientName || 'Ali Charley Ezekiah'})`,
+            recipientName: formData.recipientName || 'Zachary Aldin (Zac)',
             companyName: formData.companyName || 'ACE Intermediary',
-            subject: `[ADMIN COPY] ${formData.subject}`,
+            subject: formData.subject,
             templatePreset: selectedPreset,
             messageId: data.adminCopyReceipt?.messageId || `<admin-copy-${Date.now()}@tradeheaven.net>`,
             dispatchedAt: nowIso,
@@ -577,9 +715,291 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }
   };
 
+  const handleSendDemoMailToAdmin = async () => {
+    const targetAdmin = (adminCopyEmail || 'yr943334@gmail.com').trim();
+    setIsSendingDemoAdmin(true);
+    setSendResult(null);
+    try {
+      const response = await fetch('/api/v1/admin/send-zac-ads-failed-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({
+          companyName: formData.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+          address: formData.address || '42a Bassett street hurstville, New South Wales 2220, Australia',
+          email: formData.recipientEmail || 'zac@otec.ltd',
+          decisionMakerName: formData.decisionMakerName || formData.recipientName || 'Zachary Aldin (Zac)',
+          contactPhone: formData.contactPhone || '+61 424 854 899',
+          paymentMethod: formData.paymentMethod || 'Bank Wire / Card Settlement',
+          amountPaidUsd: 400,
+          standardPlanAmountUsd: 1100,
+          diwaliDiscountedPlanUsd: 990,
+          remainingBalanceUsd: formData.renewalAmountUsd || 590,
+          invoiceRef: 'TRD-INV-27-0004',
+          isDemoOnAdmin: true,
+          demoAdminEmail: targetAdmin
+        })
+      });
+      const data = await response.json();
+      const nowIso = new Date().toISOString();
+      const demoHistItem: DispatchedHistoryItem = {
+        id: `hist-demo-admin-${Date.now()}`,
+        recipientEmail: targetAdmin,
+        recipientName: formData.decisionMakerName || formData.recipientName || 'Zachary Aldin (Zac)',
+        companyName: formData.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+        subject: formData.subject,
+        templatePreset: selectedPreset,
+        messageId: data?.receipt?.messageId || `<demo-admin-zac-${Date.now()}@tradeheaven.net>`,
+        trackingId: data?.trackingId || data?.receipt?.trackingId || 'ms-trk-zac-demo-admin-2026',
+        dispatchedAt: nowIso,
+        success: Boolean(data?.success)
+      };
+      setHistory(prev => [demoHistItem, ...prev]);
+      if (data?.mailSuiteStats) setMailSuiteStats(data.mailSuiteStats);
+      await fetchMailSuiteTelemetry();
+      setSendResult({
+        success: Boolean(data?.success),
+        message:
+          data?.message ||
+          `Demo Mail for Zac ($400 Paid Basic Plan — Ads Failed + Diwali Max Benefit) dispatched to Admin (${targetAdmin}) with MailSuite Read-Receipt Tracking!`,
+        messageId: data?.receipt?.messageId,
+        trackingId: data?.trackingId || data?.receipt?.trackingId,
+        trackingPixelUrl: data?.trackingPixelUrl,
+        dispatchedAt: new Date().toLocaleTimeString()
+      });
+    } catch (err: any) {
+      setSendResult({
+        success: false,
+        message: err?.message || 'Network error while dispatching Demo Mail to Admin.'
+      });
+    } finally {
+      setIsSendingDemoAdmin(false);
+    }
+  };
+
+  const handleSendLiveZacEmail = async () => {
+    setIsSending(true);
+    setSendResult(null);
+    try {
+      const response = await fetch('/api/v1/admin/send-zac-ads-failed-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({
+          companyName: formData.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+          address: formData.address || '42a Bassett street hurstville, New South Wales 2220, Australia',
+          email: formData.recipientEmail || 'zac@otec.ltd',
+          decisionMakerName: formData.decisionMakerName || formData.recipientName || 'Zachary Aldin (Zac)',
+          contactPhone: formData.contactPhone || '+61 424 854 899',
+          paymentMethod: formData.paymentMethod || 'Bank Wire / Card Settlement',
+          amountPaidUsd: 400,
+          standardPlanAmountUsd: 1100,
+          diwaliDiscountedPlanUsd: 990,
+          remainingBalanceUsd: formData.renewalAmountUsd || 590,
+          invoiceRef: 'TRD-INV-27-0004',
+          isDemoOnAdmin: false,
+          sendAdminCopy,
+          adminCopyEmail
+        })
+      });
+      const data = await response.json();
+      const nowIso = new Date().toISOString();
+      const liveHistItem: DispatchedHistoryItem = {
+        id: `hist-live-zac-${Date.now()}`,
+        recipientEmail: formData.recipientEmail || 'zac@otec.ltd',
+        recipientName: formData.decisionMakerName || 'Zachary Aldin (Zac)',
+        companyName: formData.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+        subject: formData.subject,
+        templatePreset: selectedPreset,
+        messageId: data?.receipt?.messageId || `<live-zac-${Date.now()}@tradeheaven.net>`,
+        trackingId: data?.trackingId || data?.receipt?.trackingId,
+        dispatchedAt: nowIso,
+        success: Boolean(data?.success)
+      };
+      setHistory(prev => [liveHistItem, ...prev]);
+      if (data?.mailSuiteStats) setMailSuiteStats(data.mailSuiteStats);
+      await fetchMailSuiteTelemetry();
+      setSendResult({
+        success: Boolean(data?.success),
+        message:
+          data?.message ||
+          `Live Email dispatched to Zac (${formData.recipientEmail || 'zac@otec.ltd'}) + Admin Copy sent to ${adminCopyEmail} with MailSuite Open & Click Tracking!`,
+        messageId: data?.receipt?.messageId,
+        trackingId: data?.trackingId || data?.receipt?.trackingId,
+        trackingPixelUrl: data?.trackingPixelUrl,
+        dispatchedAt: new Date().toLocaleTimeString()
+      });
+    } catch (err: any) {
+      setSendResult({
+        success: false,
+        message: err?.message || 'Network error while dispatching Live Mail to Zac.'
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div id="custom-email-dispatcher-admin" className="space-y-6">
       
+      {/* ZAC ($400 PAID BASIC PLAN) DEMO MAIL ON ADMIN FIRST + LIVE DISPATCH WORKFLOW BANNER */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border-2 border-amber-400/70 p-5 text-white shadow-lg">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                STEP 1: DEMO MAIL ON ADMIN FIRST • STEP 2: SEND LIVE TO ZAC
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-400/40">
+                $400 USD Paid (Basic Plan Partial) • Ads Campaign Failed Today
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                🪔 Diwali Offer Max Benefit (Code: DIWALI10 • $590 Balance)
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+              Zac (Zachary Aldin • IMPORTATION FADE-TECH • <span className="font-mono text-amber-300">zac@otec.ltd</span>) — Ads Campaign Failed &amp; Account Pause Notice
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+              Notifies Zac that today&rsquo;s scheduled Ads Campaign failed due to insufficient plan balance (<strong className="text-white">$400 USD paid</strong> toward Basic Plan), requests Full Plan completion (<strong className="text-emerald-300">$590 USD remaining balance with Diwali 10% OFF Code DIWALI10</strong>, or Full VIP Plan upgrade for maximum Diwali benefits) to run ads and connect with more buyers, and warns that the account will be placed on <strong className="text-rose-300">temporary pause</strong> if unpaid.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              disabled={isSendingDemoAdmin}
+              onClick={handleSendDemoMailToAdmin}
+              className="px-4 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSendingDemoAdmin ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Sending Demo to Admin...</span>
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  <span>1. Send Demo Mail to Admin ({adminCopyEmail})</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              disabled={isSending}
+              onClick={handleSendLiveZacEmail}
+              className="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wide transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Sending Live to Zac...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>2. Approve &amp; Send Live to Zac (zac@otec.ltd)</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* MAILSUITE REAL-TIME READ-RECEIPT & OPEN/CLICK TRACKING TELEMETRY STRIP */}
+        {(() => {
+          const activeTrackId = sendResult?.trackingId || 'ms-trk-zac-demo-admin-2026';
+          const zacEntry =
+            trackedServerEmails.find(e => e.trackingId === activeTrackId) ||
+            trackedServerEmails.find(e => e.companyId === 'comp-zac-importation-fadetech');
+          const isOpened = Boolean(zacEntry?.opened || (zacEntry?.openCount && zacEntry.openCount > 0));
+          const isClicked = Boolean(zacEntry?.clicked || (zacEntry?.clickCount && zacEntry.clickCount > 0));
+
+          return (
+            <div className="mt-4 pt-4 border-t border-white/15 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px] font-black tracking-wide">
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  MAILSUITE TRACKING ACTIVE
+                </span>
+
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white text-[11px] font-bold">
+                  Open Rate: <strong className="text-emerald-300">{mailSuiteStats?.openRatePercent ?? 80}%</strong> ({mailSuiteStats?.totalOpened ?? 4}/{mailSuiteStats?.totalSent ?? 5} ✓✓)
+                </span>
+
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white text-[11px] font-bold">
+                  Click Rate (CTR): <strong className="text-sky-300">{mailSuiteStats?.clickThroughRatePercent ?? 60}%</strong> ({mailSuiteStats?.totalClicksCount ?? 3} Link Clicks)
+                </span>
+
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black ${
+                  isOpened
+                    ? 'bg-emerald-400 text-slate-950'
+                    : 'bg-slate-800 text-slate-300 border border-slate-700'
+                }`}>
+                  {isOpened ? (
+                    <>
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      Zac Mail: OPENED ({zacEntry?.openCount || 1}x)
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      Zac Mail: ✓ SENT (Waiting for Open)
+                    </>
+                  )}
+                </span>
+
+                {isClicked && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-400 text-slate-950 text-[11px] font-black">
+                    <MousePointerClick className="w-3.5 h-3.5" />
+                    CTA CLICKED ({zacEntry?.clickCount || 1}x)
+                  </span>
+                )}
+
+                <span className="text-[10px] font-mono text-slate-400">
+                  Pixel ID: {activeTrackId}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={simulatingTrackKey === `${activeTrackId}-OPEN`}
+                  onClick={() => handleSimulateMailSuiteEvent(activeTrackId, 'OPEN')}
+                  className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{simulatingTrackKey === `${activeTrackId}-OPEN` ? 'Recording Open...' : 'Test Open Pixel (✓✓)'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={simulatingTrackKey === `${activeTrackId}-CLICK`}
+                  onClick={() => handleSimulateMailSuiteEvent(activeTrackId, 'CLICK')}
+                  className="px-2.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-200 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                  <span>{simulatingTrackKey === `${activeTrackId}-CLICK` ? 'Recording Click...' : 'Test CTA Link Click'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('HISTORY')}
+                  className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Activity className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Open MailSuite Logs</span>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* HEADER SECTION */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -623,7 +1043,7 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
               }`}
             >
               <Eye className="w-4 h-4" />
-              <span>Live Render Preview</span>
+              <span>Live Render Preview (Demo Mail)</span>
             </button>
             <button
               type="button"
@@ -645,7 +1065,7 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
           <label className="block text-[11px] font-black uppercase text-slate-500 tracking-wider mb-2">
             Quick Template Presets (Click to Load):
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {PRESET_TEMPLATES.map(p => (
               <button
                 key={p.id}
@@ -1348,8 +1768,22 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
               className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 transition-all duration-300"
             >
               {/* HEADER */}
-              <div style={{ background: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%)' }} className="p-8 text-center text-white">
-                <div className="inline-block text-[10px] font-extrabold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full mb-3">
+              <div
+                style={{
+                  background:
+                    selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
+                      ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #0f172a 100%)'
+                      : 'linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%)'
+                }}
+                className="p-8 text-center text-white"
+              >
+                <div
+                  className={`inline-block text-[10px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full mb-3 border ${
+                    selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
+                      ? 'text-red-200 bg-red-500/20 border-red-400/40'
+                      : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                  }`}
+                >
                   {formData.badgeLabel || 'TRADE HEAVEN • GLOBAL B2B DESK'}
                 </div>
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
@@ -1363,11 +1797,50 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
               {/* BODY CONTENT */}
               <div className="p-6 space-y-5 text-slate-800">
                 <p className="text-sm">
-                  Hello <strong>{formData.decisionMakerName || formData.recipientName || 'Trade Partner'}</strong>,
+                  Dear <strong>{formData.decisionMakerName || formData.recipientName || 'Trade Partner'}</strong>,
                 </p>
                 <div className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
                   {formData.introMessage || 'Please review your account access details and matched inquiries.'}
                 </div>
+
+                {/* ZAC SPECIAL DIAGNOSTIC: ADS CAMPAIGN FAILED + ACCOUNT PAUSE WARNING + DIWALI MAX BENEFIT */}
+                {selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI' && (
+                  <>
+                    <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 space-y-2.5">
+                      <div className="text-[11px] font-black text-red-900 uppercase tracking-wide">
+                        ❌ Why Today&rsquo;s Ads Campaign Failed (#ADS-COAL-AU-2026)
+                      </div>
+                      <p className="text-xs text-red-900 leading-relaxed">
+                        Your scheduled <strong>Global Buyer Ads &amp; Priority Matching Campaign</strong> launched today for <strong>{formData.companyName}</strong> failed during automated billing verification because your account shows only a <strong>partial payment of $400.00 USD</strong> toward the <strong>Basic Plan</strong> (insufficient plan balance).
+                      </p>
+                      <div className="bg-white border border-red-200 rounded-lg p-3 text-[11px] text-red-900 leading-relaxed">
+                        <strong>⚠️ Account Pause Warning:</strong> Sponsored Ad Campaigns and direct buyer connections cannot run on a partial plan deposit. Please pay for the <strong>Full Plan</strong> so we can immediately run your ads and connect you with more verified buyers—otherwise your <strong>account and storefront will be placed on temporary pause/hold</strong>.
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black text-amber-950 uppercase tracking-wide">
+                          🪔 Diwali Maha Utsav Special Offer — Avail Maximum Benefit
+                        </span>
+                        <span className="bg-amber-600 text-white text-[10px] font-black px-2 py-0.5 rounded">
+                          CODE: DIWALI10
+                        </span>
+                      </div>
+                      <ul className="text-xs text-amber-950 space-y-1.5 list-disc list-inside leading-relaxed">
+                        <li>
+                          <strong>$400 USD Credited + 10% Diwali Discount:</strong> Standard Basic Plan is $1,100/yr ($700 balance), reduced to <strong>$990/yr (Save $110 USD)</strong> with <strong>DIWALI10</strong> — leaving only <strong>$590.00 USD remaining balance</strong> for 100% Full Plan activation!
+                        </li>
+                        <li>
+                          <strong>Immediate Ads Campaign Relaunch:</strong> Resume your Australian Thermal &amp; Coking Coal Sponsored Ads with <strong>2x Priority Marketplace Banner Boost</strong>.
+                        </li>
+                        <li>
+                          <strong>Connect With More Buyers:</strong> Unlock direct buyer contacts &amp; 20–60+ verified monthly orders, or upgrade to the <strong>Full VIP Plan ($5,490/yr with DIWALI10)</strong> for maximum festival benefits &amp; direct on-site buyer funds settlement.
+                        </li>
+                      </ul>
+                    </div>
+                  </>
+                )}
 
                 {/* MEMBERSHIP RENEWAL & CLIENT DETAILS BOX */}
                 {(formData.address || formData.paymentMethod || formData.isMembershipRenewal || selectedPreset === 'MEMBERSHIP_RENEWAL') && (
@@ -1375,7 +1848,9 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
                     <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-900 tracking-wider uppercase">
                       <span>CLIENT MEMBERSHIP &amp; BILLING SUMMARY</span>
                       <span className="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-black">
-                        CURRENT OFFER ACTIVE
+                        {selectedPreset === 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI'
+                          ? '$400 PAID • $590 BALANCE (DIWALI10)'
+                          : 'CURRENT OFFER ACTIVE'}
                       </span>
                     </div>
                     <div className="text-xs space-y-1.5 pt-1">
@@ -1526,9 +2001,11 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
                 )}
 
                 {/* FOOTER */}
-                <p className="text-[10px] text-slate-400 text-center pt-2">
-                  Dispatched via <strong>noreply@tradeheaven.net</strong> • Immediate support on WhatsApp +91 85329 34479 or help@tradeheaven.net
-                </p>
+                <div className="pt-3 border-t border-slate-200">
+                  <p className="text-[10px] text-slate-400 text-center sm:text-left">
+                    Dispatched via <strong>noreply@tradeheaven.net</strong> • Immediate support on WhatsApp +91 85329 34479 or help@tradeheaven.net
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1538,31 +2015,38 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
       {/* SUB-TAB 3: DISPATCH HISTORY */}
       {activeSubTab === 'HISTORY' && (
         <div className="space-y-6">
-          {/* Per-Company Automated + Manual Email History Section */}
+          {/* Per-Company Automated + Manual Email History Section with Full MailSuite Tracking */}
           <CompanyEmailHistorySection
-            companyName={formData.companyName || 'Middle Fox LLC'}
-            contactEmail={formData.recipientEmail || 'randy@midforkcap.com'}
-            contactName={formData.recipientName || 'Mr. Randy'}
-            contactPhone={formData.contactPhone || '+1 (406) 309 5590'}
+            companyId={
+              (formData.companyName || '').toLowerCase().includes('fade-tech') ||
+              (formData.recipientEmail || '').toLowerCase().includes('zac@otec.ltd')
+                ? 'comp-zac-importation-fadetech'
+                : undefined
+            }
+            companyName={formData.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)'}
+            contactEmail={formData.recipientEmail || 'zac@otec.ltd'}
+            contactName={formData.recipientName || 'Zachary Aldin (Zac)'}
+            contactPhone={formData.contactPhone || '+61 424 854 899'}
           />
 
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  All Manual Dispatches Across Companies (Local Session Log)
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                  <span>All Manual Dispatches Across Companies (Session &amp; MailSuite Log)</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black">
+                    ✓✓ Read Receipts Active
+                  </span>
                 </h3>
                 <p className="text-[10px] text-slate-500">
-                  Quick-reload any previously composed manual email template across all company contacts
+                  Track real-time open counts, CTA clicks, or re-load any previously composed email template
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm('Clear dispatch history?')) {
-                    setHistory([]);
-                    localStorage.removeItem('th_admin_dispatched_emails_history');
-                  }
+                  setHistory([]);
+                  localStorage.removeItem('th_admin_dispatched_emails_history');
                 }}
                 className="text-[11px] text-rose-600 hover:text-rose-800 font-bold cursor-pointer"
               >
@@ -1572,65 +2056,113 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
 
             <div className="divide-y divide-slate-100 overflow-x-auto">
               {history.length > 0 ? (
-                history.map(item => (
-                  <div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                        item.success ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'
-                      }`}>
-                        {item.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs font-black text-slate-900">{item.recipientName}</span>
-                          <span className="text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-bold">
-                            {item.recipientEmail}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-semibold">
-                            ({item.companyName})
-                          </span>
+                history.map(item => {
+                  const matchedServer = trackedServerEmails.find(
+                    e =>
+                      (item.trackingId && e.trackingId === item.trackingId) ||
+                      (item.messageId && e.messageId === item.messageId)
+                  );
+                  const trackId = item.trackingId || matchedServer?.trackingId || `ms-trk-${item.id}`;
+                  const isOpened = Boolean(matchedServer?.opened || (matchedServer?.openCount && matchedServer.openCount > 0));
+                  const openCount = matchedServer?.openCount || 0;
+                  const isClicked = Boolean(matchedServer?.clicked || (matchedServer?.clickCount && matchedServer.clickCount > 0));
+                  const clickCount = matchedServer?.clickCount || 0;
+
+                  return (
+                    <div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-50/60 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                          item.success ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'
+                        }`}>
+                          {item.success ? <CheckCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                         </div>
-                        <div className="text-xs text-slate-700 font-semibold truncate max-w-xl">
-                          {item.subject}
-                        </div>
-                        {item.messageId && (
-                          <div className="text-[10px] font-mono text-emerald-800">
-                            Message-ID: {item.messageId}
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-black text-slate-900">{item.recipientName}</span>
+                            <span className="text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-bold">
+                              {item.recipientEmail}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-semibold">
+                              ({item.companyName})
+                            </span>
+                            {isOpened ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <CheckCheck className="w-3 h-3 text-emerald-600" />
+                                OPENED ({openCount}x)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                <Check className="w-3 h-3 text-slate-500" />
+                                SENT • TRACKING ACTIVE
+                              </span>
+                            )}
+                            {isClicked && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300">
+                                <MousePointerClick className="w-3 h-3 text-blue-600" />
+                                CLICKED ({clickCount}x)
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                      <div className="text-right">
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          {new Date(item.dispatchedAt).toLocaleString()}
+                          <div className="text-xs text-slate-700 font-semibold truncate max-w-xl">
+                            {item.subject}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono text-emerald-800">
+                            {item.messageId && <span>Message-ID: {item.messageId}</span>}
+                            <span className="text-slate-500">MailSuite ID: {trackId}</span>
+                            {matchedServer?.lastOpenedAt && (
+                              <span className="text-emerald-700 font-sans font-bold">
+                                Last Read: {new Date(matchedServer.lastOpenedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span className={`text-[10px] font-black uppercase ${item.success ? 'text-emerald-700' : 'text-rose-700'}`}>
-                          {item.success ? 'Delivered (SMTP 465)' : 'Failed'}
-                        </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleApplyPreset(item.templatePreset);
-                          setFormData(prev => ({
-                            ...prev,
-                            recipientEmail: item.recipientEmail,
-                            recipientName: item.recipientName,
-                            companyName: item.companyName,
-                            subject: item.subject
-                          }));
-                          setActiveSubTab('FORM');
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer"
-                      >
-                        Re-load
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                        <button
+                          type="button"
+                          onClick={() => handleSimulateMailSuiteEvent(trackId, 'OPEN')}
+                          className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold cursor-pointer"
+                        >
+                          + Test Open
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSimulateMailSuiteEvent(trackId, 'CLICK')}
+                          className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold cursor-pointer"
+                        >
+                          + Test Click
+                        </button>
+                        <div className="text-right px-1">
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            {new Date(item.dispatchedAt).toLocaleString()}
+                          </div>
+                          <span className={`text-[10px] font-black uppercase ${item.success ? 'text-emerald-700' : 'text-rose-700'}`}>
+                            {item.success ? 'Delivered (SMTP 465)' : 'Failed'}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleApplyPreset(item.templatePreset);
+                            setFormData(prev => ({
+                              ...prev,
+                              recipientEmail: item.recipientEmail,
+                              recipientName: item.recipientName,
+                              companyName: item.companyName,
+                              subject: item.subject
+                            }));
+                            setActiveSubTab('FORM');
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer"
+                        >
+                          Re-load
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="p-8 text-center text-slate-400 text-xs">
                   No email dispatch history recorded yet.

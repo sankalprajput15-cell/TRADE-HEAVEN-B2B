@@ -452,12 +452,38 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
           <button
             type="button"
+            onClick={() => setActiveTab('TOPUP_WALLET')}
+            className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'TOPUP_WALLET'
+                ? 'bg-indigo-700 text-white ring-2 ring-indigo-500/30'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            }`}
+          >
+            <CreditCard className="w-4 h-4 shrink-0" />
+            <span>Wallet Top-Up</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('BANK_ACCOUNTS')}
-            className="col-span-2 sm:col-span-1 h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'BANK_ACCOUNTS'
+                ? 'bg-emerald-700 text-white ring-2 ring-emerald-500/30'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+            }`}
           >
             <Landmark className="w-4 h-4 shrink-0" />
-            <span>Bank Details &amp; Withdrawals</span>
+            <span>Bank &amp; Withdraw</span>
           </button>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('SUPPLIER_WITHDRAWAL')}
+              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Withdrawal Portal</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onOpenCreateRfq}

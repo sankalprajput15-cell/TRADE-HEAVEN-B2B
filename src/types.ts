@@ -3,13 +3,20 @@ export type PaymentTerms = 'trade protection' | 'LC_AT_SIGHT' | 'TT_30_70' | 'DP
 
 export interface PaymentCheckoutData {
   planId: string;
-  title: string;
-  description: string;
-  amountUsd: number;
-  type: 'MEMBERSHIP' | 'SUBSCRIPTION' | 'ESCROW_DEPOSIT' | 'SAMPLE_ORDER' | 'AUDIT_PACKAGE' | string;
+  title?: string;
+  planName?: string;
+  description?: string;
+  amountUsd?: number;
+  amount?: number;
+  type?: 'MEMBERSHIP' | 'SUBSCRIPTION' | 'ESCROW_DEPOSIT' | 'SAMPLE_ORDER' | 'AUDIT_PACKAGE' | string;
+  currency?: string;
+  billingCycle?: string;
   supplierCompany?: string;
+  companyName?: string;
   clientEmail?: string;
+  customerEmail?: string;
   billingName?: string;
+  customerName?: string;
   address?: string;
   decisionMakerName?: string;
   preferredPaymentMethod?: string;
@@ -510,7 +517,8 @@ export type ActiveView =
   | 'DIRECT_TRANSFER_GUIDE'
   | 'TRADE_ASSURANCE_CERTIFICATE'
   | 'RENEWAL_INSIGHTS'
-  | 'RENEWAL_EMAIL_EDITOR';
+  | 'RENEWAL_EMAIL_EDITOR'
+  | 'MAIL_DELIVERY_HISTORY';
 
 export * from './types/planPricingTypes';
 

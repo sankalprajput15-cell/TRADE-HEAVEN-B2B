@@ -988,10 +988,16 @@ export const RenewalOfferEmailHtmlManager: React.FC<RenewalOfferEmailHtmlManager
   const handleTriggerRenewalPaymentPreview = () => {
     const checkoutPayload: PaymentCheckoutData = {
       planId: variables.planId || 'basic-business-plan',
+      title: `${variables.planName} Renewal (${variables.companyName} — ${variables.discountPercent})`,
       planName: `${variables.planName} Renewal (${variables.companyName} — ${variables.discountPercent})`,
-      amount: numericOfferAmount,
+      description: `${variables.offerDetails} • Decision Maker: ${variables.decisionMakerName || variables.userName} • Address: ${variables.address}`,
+      amountUsd: Number(numericOfferAmount) || 590,
+      amount: Number(numericOfferAmount) || 590,
+      type: 'SUBSCRIPTION',
       currency: 'USD',
       billingCycle: 'ANNUAL',
+      supplierCompany: variables.companyName,
+      companyName: variables.companyName,
       clientEmail: variables.email,
       billingName: variables.companyName,
       address: variables.address,
