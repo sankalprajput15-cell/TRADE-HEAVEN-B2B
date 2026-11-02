@@ -247,11 +247,6 @@ export function injectMailSuiteTrackingIntoHtml(
     return { html: rawHtml, trackingPixelUrl };
   }
 
-  // Avoid double injection if already tracked
-  if (rawHtml.includes(`/api/v1/track/open/`) || rawHtml.includes(`ms_trk=`)) {
-    return { html: rawHtml, trackingPixelUrl };
-  }
-
   const wrappedLinksHtml = rawHtml.replace(
     /<a\s+([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi,
     (fullMatch, beforeHref, hrefVal, afterHref, innerHtml) => {
@@ -285,11 +280,19 @@ export function injectMailSuiteTrackingIntoHtml(
         } catch {}
       }
 
+      if (directHref.includes('ms_trk=')) {
+        return `<a ${beforeHref}href="${directHref}"${afterHref}>${innerHtml}</a>`;
+      }
+
       const separator = directHref.includes('?') ? '&' : '?';
       const trackedDirectHref = `${directHref}${separator}ms_trk=${encodeURIComponent(trackingId)}`;
       return `<a ${beforeHref}href="${trackedDirectHref}"${afterHref}>${innerHtml}</a>`;
     }
   );
+
+  if (wrappedLinksHtml.includes('/api/v1/track/open/')) {
+    return { html: wrappedLinksHtml, trackingPixelUrl };
+  }
 
   const mailSuitePixelOnly = `<img src="${trackingPixelUrl}?t=${Date.now()}" width="1" height="1" alt="" style="display:block;width:1px!important;height:1px!important;border:0!important;margin:0!important;padding:0!important;opacity:0;" />`;
 

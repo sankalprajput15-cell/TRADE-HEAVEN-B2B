@@ -11,6 +11,9 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'lucide-react', 'jspdf'],
+    },
     build: {
       target: 'es2020',
       minify: 'esbuild',

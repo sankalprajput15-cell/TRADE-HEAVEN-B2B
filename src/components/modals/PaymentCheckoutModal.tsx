@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/apiService';
 import { tradeHeavenMediationService, WalletRecord } from '../../services/tradeHeavenMediatorEngine';
+import { ExportToPDF } from '../common/ExportToPDF';
 
 interface Props {
   isOpen: boolean;
@@ -357,6 +358,30 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
               <span>{isToppingUp ? 'Topping Up...' : 'Funds Top-Up'}</span>
             </button>
 
+            <ExportToPDF
+              mode="PAYMENT_RECEIPT"
+              receiptData={{
+                orderId: wireTxRef.trim() || `TH-INV-${Date.now().toString().slice(-6)}`,
+                issuedAt: new Date().toISOString().slice(0, 10),
+                title: resolvedTitle,
+                description: resolvedDescription,
+                type: resolvedType,
+                amountUsd: resolvedAmountUsd,
+                convertedAmountFormatted: `${formatPrice(convertedPrice)} (${selectedCurrency})`,
+                currency: selectedCurrency,
+                billingName,
+                companyName: resolvedSupplierCompany,
+                clientEmail,
+                clientPhone,
+                paymentMethod,
+                wireTxRef: wireTxRef.trim() || undefined,
+                status: isSuccess ? 'PAID' : 'PROFORMA / PENDING',
+                notes: paymentNotes
+              }}
+              buttonLabel="Receipt PDF"
+              variant="outline"
+            />
+
             <button
               type="button"
               disabled={isProcessing}
@@ -402,13 +427,38 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
                 ? `Your inquiry regarding ${resolvedTitle} (${formatPrice(convertedPrice)}) has been logged. Our Treasury Operations team will contact you at ${clientEmail} with complete payment information.`
                 : 'Your funds have been locked in Trade Heaven Mediated Escrow (ORDER_LOCK_ESCROW).'}
             </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
-            >
-              Close Window
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <ExportToPDF
+                mode="PAYMENT_RECEIPT"
+                receiptData={{
+                  orderId: wireTxRef.trim() || `ORD-TH-${Date.now().toString().slice(-6)}`,
+                  issuedAt: new Date().toISOString().slice(0, 10),
+                  title: resolvedTitle,
+                  description: resolvedDescription,
+                  type: resolvedType,
+                  amountUsd: resolvedAmountUsd,
+                  convertedAmountFormatted: `${formatPrice(convertedPrice)} (${selectedCurrency})`,
+                  currency: selectedCurrency,
+                  billingName,
+                  companyName: resolvedSupplierCompany,
+                  clientEmail,
+                  clientPhone,
+                  paymentMethod,
+                  wireTxRef: wireTxRef.trim() || undefined,
+                  status: 'PAID & LOGGED',
+                  notes: paymentNotes
+                }}
+                buttonLabel="Download Official Payment Receipt PDF"
+                variant="emerald"
+              />
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-colors"
+              >
+                Close Window
+              </button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleProcessPayment} className="p-4 sm:p-6 md:p-7 space-y-5 flex-1 overflow-y-auto text-xs">

@@ -249,9 +249,17 @@ export function resolveBuyerId(input?: string | null): string | null {
  */
 export function getBaseUrl(): string {
   if (typeof window !== 'undefined' && window.location.origin) {
-    return window.location.origin;
+    const rawOrigin = window.location.origin;
+    if (
+      !rawOrigin.includes('.run.app') &&
+      !rawOrigin.includes('aistudio.google.com') &&
+      !rawOrigin.includes('localhost') &&
+      !rawOrigin.includes('127.0.0.1')
+    ) {
+      return rawOrigin;
+    }
   }
-  return 'https://tradeheaven.net';
+  return 'https://www.tradeheaven.net';
 }
 
 /**

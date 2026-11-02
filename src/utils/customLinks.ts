@@ -123,7 +123,15 @@ export function resolveRfqId(idOrSlug: string, rfqPool: RfqRequirement[] = MOCK_
  * Generates an absolute custom deep link for any entity or view
  */
 export function buildCustomLink(options: CustomLinkOptions): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tradeheaven.net';
+  const rawOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://www.tradeheaven.net';
+  const origin =
+    !rawOrigin ||
+    rawOrigin.includes('.run.app') ||
+    rawOrigin.includes('aistudio.google.com') ||
+    rawOrigin.includes('localhost') ||
+    rawOrigin.includes('127.0.0.1')
+      ? 'https://www.tradeheaven.net'
+      : rawOrigin;
   const url = new URL(origin);
 
   switch (options.type) {

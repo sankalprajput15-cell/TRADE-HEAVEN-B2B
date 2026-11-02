@@ -1556,6 +1556,123 @@ app.put('/api/v1/admin/renewal-offer-template', (req, res) => {
   });
 });
 
+// POST /api/v1/admin/renewal-offer-template/dispatch - Dispatches the rendered HTML & copy from Renewal Email HTML Editor
+app.post('/api/v1/admin/renewal-offer-template/dispatch', async (req, res) => {
+  try {
+    const {
+      recipientEmail = 'zac@otec.ltd',
+      recipientName = 'Zachary Aldin (Zac)',
+      companyName = 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address = '42a Bassett street hurstville, New South Wales 2220, Australia',
+      paymentMethod = 'Bank Wire / Card Settlement',
+      planId = 'basic-business-plan',
+      renewalAmountUsd = 590,
+      subject,
+      renderedHtml,
+      renderedText,
+      isTestPreview = false,
+      testAdminEmail = 'yr943334@gmail.com',
+      sendAdminCopy = true,
+      adminCopyEmails = ['yr943334@gmail.com', 'sankalprajput15@gmail.com']
+    } = req.body || {};
+
+    if (!renderedHtml || typeof renderedHtml !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Rendered HTML content is required for dispatch.'
+      });
+    }
+
+    const trackingId = `ms-trk-renewal-editor-${Date.now().toString(36)}`;
+    const primaryTarget = isTestPreview
+      ? String(testAdminEmail || 'yr943334@gmail.com').trim().toLowerCase()
+      : String(recipientEmail || 'zac@otec.ltd').trim().toLowerCase();
+
+    const toList: string[] = [primaryTarget];
+    if (!isTestPreview && sendAdminCopy) {
+      const adminTargets = Array.isArray(adminCopyEmails)
+        ? adminCopyEmails
+        : ['yr943334@gmail.com', 'sankalprajput15@gmail.com'];
+      for (const adm of adminTargets) {
+        const cleanAdm = String(adm || '').trim().toLowerCase();
+        if (cleanAdm && cleanAdm.includes('@') && !toList.includes(cleanAdm)) {
+          toList.push(cleanAdm);
+        }
+      }
+    }
+
+    const finalSubject = isTestPreview
+      ? `[TEST PREVIEW] ${subject || `Membership Renewal Offer — ${companyName}`}`
+      : subject || `Membership Renewal Offer — ${companyName}`;
+
+    const receipts = await serverDeliveryQueueManager.enqueue({
+      from: `"Trade Heaven Membership & Billing Desk" <noreply@tradeheaven.net>`,
+      replyTo: 'help@tradeheaven.net',
+      to: toList,
+      subject: finalSubject,
+      text: renderedText || `${finalSubject}\n\nPrepared for ${recipientName} (${companyName} • ${recipientEmail}).`,
+      html: renderedHtml,
+      recipientName: isTestPreview ? `Admin Test Preview (${primaryTarget})` : recipientName,
+      companyName,
+      companyId:
+        recipientEmail.toLowerCase().includes('zac') || companyName.toUpperCase().includes('FADE-TECH')
+          ? 'comp-zac-importation-fadetech'
+          : undefined,
+      dispatchType: 'MANUAL',
+      category: 'CUSTOM_ADMIN',
+      trackingId,
+      summaryText: isTestPreview
+        ? `[RENEWAL HTML EDITOR TEST PREVIEW] Rendered test email sent to ${primaryTarget} for ${recipientName} (${companyName}).`
+        : `[RENEWAL HTML EDITOR LIVE DISPATCH] Dispatched customized membership renewal HTML email ("${finalSubject}") to ${recipientName} (${primaryTarget} • ${companyName}).`
+    });
+
+    const success = receipts.length > 0 && receipts.some((r) => r.success);
+
+    if (!isTestPreview) {
+      recordRenewalDispatchInInsights({
+        recipientEmail: primaryTarget,
+        recipientName,
+        companyName,
+        address,
+        paymentMethod,
+        planId,
+        renewalAmountUsd: Number(renewalAmountUsd) || 990,
+        subject: finalSubject,
+        delivered: success,
+        adminCopySent: Boolean(sendAdminCopy && toList.length > 1),
+        adminCopyEmail: toList[1] || 'yr943334@gmail.com',
+        trackingId
+      });
+    }
+
+    logServerActivity(
+      req,
+      isTestPreview ? 'RENEWAL_HTML_EDITOR_TEST_DISPATCH' : 'RENEWAL_HTML_EDITOR_LIVE_DISPATCH',
+      primaryTarget,
+      'ADMIN',
+      '/api/v1/admin/renewal-offer-template/dispatch',
+      `Dispatched ${isTestPreview ? 'Test Preview' : 'Live Renewal Email'} ("${finalSubject}") to ${toList.join(', ')} via Renewal Email HTML Editor [Tracking ID: ${trackingId}].`,
+      success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success,
+      trackingId,
+      receipts,
+      message: success
+        ? isTestPreview
+          ? `Test preview dispatched to ${primaryTarget}!`
+          : `Renewal email dispatched to ${primaryTarget}${toList.length > 1 ? ` (+ admin copies to ${toList.slice(1).join(', ')})` : ''}!`
+        : 'Failed to dispatch renewal email.'
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to dispatch renewal HTML email: ${err?.message || err}`
+    });
+  }
+});
+
 app.post('/api/v1/admin/renewal-offer-template/upload-asset', (req, res) => {
   try {
     const { dataUrl, fileName, slot, segmentId } = req.body || {};
@@ -7375,6 +7492,34 @@ app.post('/api/v1/mediation/payout', async (req, res) => {
     res.json({ success: true, payoutResult, state: getServerMediationState() });
   } catch (err: any) {
     res.status(400).json({ error: err?.message || 'Failed to process bank payout.' });
+  }
+});
+
+// GET /api/v1/trade-assurance/certificates - Fetch current Trade Assurance Certificate records for Brochure & Verification Registry
+app.get('/api/v1/trade-assurance/certificates', (_req, res) => {
+  try {
+    const certJsonPath = path.join(process.cwd(), 'src', 'data', 'tradeAssuranceCertificates.json');
+    if (fs.existsSync(certJsonPath)) {
+      const rawData = fs.readFileSync(certJsonPath, 'utf-8');
+      const certificates = JSON.parse(rawData);
+      return res.json({
+        success: true,
+        fetchedAt: new Date().toISOString(),
+        totalRecords: Array.isArray(certificates) ? certificates.length : 0,
+        certificates
+      });
+    }
+    res.json({
+      success: true,
+      fetchedAt: new Date().toISOString(),
+      totalRecords: 0,
+      certificates: []
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      error: err?.message || 'Failed to fetch Trade Assurance certificates'
+    });
   }
 });
 

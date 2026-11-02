@@ -21,6 +21,7 @@ import { DedicatedProductImageSystem } from './DedicatedProductImageSystem';
 import { CustomEmailDispatcherAdminModule } from './CustomEmailDispatcherAdminModule';
 import { AutomatedEmailMarketingSuite } from './AutomatedEmailMarketingSuite';
 import { RenewalOfferEmailHtmlManager } from './RenewalOfferEmailHtmlManager';
+import { RenewalEmailHtmlEditor } from './RenewalEmailHtmlEditor';
 import { RenewalInsightsAdminModule } from './RenewalInsightsAdminModule';
 import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { ClientUploadsAdminModule } from './ClientUploadsAdminModule';
@@ -1123,7 +1124,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {activeTab === 'RENEWAL_EMAIL_HTML_EDITOR' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            <RenewalEmailHtmlEditor
+              onOpenPaymentCheckout={onOpenPaymentCheckout}
+              onNavigateToInsights={() => handleSelectSidebarTab('RENEWAL_INSIGHTS')}
+            />
             <RenewalOfferEmailHtmlManager onOpenPaymentCheckout={onOpenPaymentCheckout} />
           </div>
         )}

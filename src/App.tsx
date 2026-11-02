@@ -1584,7 +1584,7 @@ const MainApp: React.FC = () => {
   // Centralized Email Link Handler:
   // Specifically parses incoming 'ms_trk' or custom email query params and programmatically
   // forces the app's activeView state (and associated checkout/modal state), overriding any
-  // failed default routing both on initial mount and after the application finishes initializing.
+  // failed default routing both on initial mount, after initialization, and on in-app email link clicks.
   useEffect(() => {
     const handleCustomPaymentEvent = (e: Event) => {
       const customEvent = e as CustomEvent<PaymentCheckoutData>;
@@ -1594,100 +1594,152 @@ const MainApp: React.FC = () => {
     };
     window.addEventListener('tradeheaven_open_payment_checkout', handleCustomPaymentEvent);
 
-    try {
-      const activeSearch =
-        typeof window !== 'undefined' && window.location.search
-          ? window.location.search
-          : initialEmailSearchRef.current;
-      const parsed = parseIncomingEmailLinkParams(activeSearch);
+    const applyEmailSearchRoute = (searchString: string, clickedUrl?: string) => {
+      try {
+        const parsed = parseIncomingEmailLinkParams(searchString);
 
-      // 1. Record MailSuite click telemetry once per session load if ms_trk is present
-      if (parsed.msTrk && !hasRecordedEmailClickRef.current) {
-        hasRecordedEmailClickRef.current = true;
-        fetch('/api/v1/admin/mailsuite/simulate-event', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trackingId: parsed.msTrk,
-            eventType: 'CLICK',
-            url: typeof window !== 'undefined' ? window.location.href : 'https://www.tradeheaven.net',
-            label: `Direct Email Link Click (${parsed.forcedView || 'HOMEPAGE'})`
-          })
-        }).catch(() => {});
-      }
+        // 1. Record MailSuite click telemetry if ms_trk is present
+        if (parsed.msTrk && (!hasRecordedEmailClickRef.current || clickedUrl)) {
+          hasRecordedEmailClickRef.current = true;
+          fetch('/api/v1/admin/mailsuite/simulate-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              trackingId: parsed.msTrk,
+              eventType: 'CLICK',
+              url: clickedUrl || (typeof window !== 'undefined' ? window.location.href : 'https://www.tradeheaven.net'),
+              label: `Direct Email Link Click (${parsed.forcedView || 'HOMEPAGE'})`
+            })
+          }).catch(() => {});
+        }
 
-      // 2. Programmatically force activeView when ms_trk or custom email query params are present,
-      // overriding any failed default routing after application initialization completes.
-      if (parsed.forcedView) {
-        emailLinkForcedViewRef.current = parsed.forcedView;
-        setActiveView(prev => (prev !== parsed.forcedView ? parsed.forcedView! : prev));
+        // 2. Programmatically force activeView when ms_trk or custom email query params are present,
+        // overriding any failed default routing after application initialization completes.
+        if (parsed.forcedView) {
+          emailLinkForcedViewRef.current = parsed.forcedView;
+          setActiveView(prev => (prev !== parsed.forcedView ? parsed.forcedView! : prev));
 
-        if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href);
-          if (parsed.forcedView !== 'HOMEPAGE') {
-            url.searchParams.set('view', parsed.forcedView);
-          }
-          if (parsed.msTrk && !url.searchParams.has('ms_trk')) {
-            url.searchParams.set('ms_trk', parsed.msTrk);
-          }
-          if (url.toString() !== window.location.href) {
-            window.history.replaceState({}, '', url.toString());
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (parsed.forcedView !== 'HOMEPAGE') {
+              url.searchParams.set('view', parsed.forcedView);
+            }
+            if (parsed.msTrk && !url.searchParams.has('ms_trk')) {
+              url.searchParams.set('ms_trk', parsed.msTrk);
+            }
+            if (url.toString() !== window.location.href) {
+              window.history.replaceState({}, '', url.toString());
+            }
           }
         }
+
+        // 3. Open pre-configured payment checkout modal for balance fund / membership renewal email links
+        const isZacBalanceLink =
+          parsed.payZac ||
+          (parsed.msTrk &&
+            (parsed.msTrk.toLowerCase().includes('zac-balance') ||
+              parsed.msTrk.toLowerCase().includes('zac-ads-failed') ||
+              parsed.msTrk.toLowerCase().includes('zac-demo')));
+
+        if (isZacBalanceLink) {
+          const company = parsed.company || 'IMPORTATION FADE-TECH (OTEC LTD)';
+          const email = parsed.email || 'zac@otec.ltd';
+          const amountUsd = parsed.amountUsd || 590;
+
+          setCheckoutData({
+            planId: 'ZAC-BALANCE-FUND-590',
+            title: `Full Plan Balance Settlement ($${amountUsd}.00 USD) — ${company}`,
+            description: `Remaining Plan Balance Settlement for Zachary Aldin (${company}) • Earlier Paid: $400.00 USD • Remaining Balance Due: $${amountUsd}.00 USD`,
+            amountUsd,
+            type: 'SUBSCRIPTION',
+            supplierCompany: company,
+            clientEmail: email,
+            billingName: `Zachary Aldin (${company})`,
+            decisionMakerName: 'Zachary Aldin',
+            preferredPaymentMethod: 'Direct Bank Wire Transfer'
+          });
+        } else if (parsed.action === 'renew-membership') {
+          const company = parsed.company || 'ACE Intermediary';
+          const email = parsed.email || 'ezekiahali355@gmail.com';
+          const decisionMaker = parsed.decisionMaker || 'Ali Charley Ezekiah';
+          const address = parsed.address || '1241 Hackberry Avenue Corsicana Texas 75110';
+          const paymentMethod = parsed.paymentMethod || 'Debit Card';
+          const planId = parsed.planId || 'VIP-RENEWAL-OFFER-2026';
+          const amountUsd = parsed.amountUsd || 1499;
+
+          setCheckoutData({
+            planId,
+            title: `Membership Renewal — Current Offer & Exciting Deals (${company})`,
+            description: `Annual Membership Renewal for ${company} (${address}) • Decision Maker: ${decisionMaker} • Preferred Payment: ${paymentMethod}`,
+            amountUsd,
+            type: 'SUBSCRIPTION',
+            supplierCompany: company,
+            clientEmail: email,
+            billingName: `${decisionMaker} (${company})`,
+            address,
+            decisionMakerName: decisionMaker,
+            preferredPaymentMethod: paymentMethod
+          });
+        }
+      } catch {}
+    };
+
+    const activeSearch =
+      typeof window !== 'undefined' && window.location.search
+        ? window.location.search
+        : initialEmailSearchRef.current;
+    applyEmailSearchRoute(activeSearch);
+
+    // Global click interceptor for any email preview / internal tradeheaven.net / ms_trk links
+    // so clicking links inside rendered email bodies routes inside the SPA instead of hitting iframe/403 errors.
+    const handleGlobalEmailAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const anchor = target?.closest?.('a');
+      if (!anchor) return;
+      const rawHref = anchor.getAttribute('href') || '';
+      if (
+        !rawHref ||
+        rawHref.startsWith('#') ||
+        rawHref.startsWith('mailto:') ||
+        rawHref.startsWith('tel:') ||
+        rawHref.startsWith('blob:') ||
+        anchor.hasAttribute('download')
+      ) {
+        return;
       }
 
-      // 3. Open pre-configured payment checkout modal for balance fund / membership renewal email links
-      const isZacBalanceLink =
-        parsed.payZac ||
-        (parsed.msTrk &&
-          (parsed.msTrk.toLowerCase().includes('zac-balance') ||
-            parsed.msTrk.toLowerCase().includes('zac-ads-failed') ||
-            parsed.msTrk.toLowerCase().includes('zac-demo')));
+      try {
+        let resolvedUrl = new URL(rawHref, 'https://www.tradeheaven.net');
+        if (resolvedUrl.pathname.includes('/api/v1/track/click/')) {
+          const nested = resolvedUrl.searchParams.get('url');
+          if (nested) {
+            resolvedUrl = new URL(nested, 'https://www.tradeheaven.net');
+          }
+        }
+        const host = resolvedUrl.hostname.toLowerCase();
+        const isTradeHeavenOrPreviewLink =
+          host.includes('tradeheaven.net') ||
+          host.includes('.run.app') ||
+          host.includes('aistudio.google.com') ||
+          (typeof window !== 'undefined' && host === window.location.hostname.toLowerCase());
 
-      if (isZacBalanceLink) {
-        const company = parsed.company || 'IMPORTATION FADE-TECH (OTEC LTD)';
-        const email = parsed.email || 'zac@otec.ltd';
-        const amountUsd = parsed.amountUsd || 590;
+        if (isTradeHeavenOrPreviewLink) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (resolvedUrl.search) {
+            applyEmailSearchRoute(resolvedUrl.search, resolvedUrl.toString());
+          } else {
+            setActiveView('HOMEPAGE');
+          }
+        }
+      } catch {}
+    };
 
-        setCheckoutData({
-          planId: 'ZAC-BALANCE-FUND-590',
-          title: `Full Plan Balance Settlement ($${amountUsd}.00 USD) — ${company}`,
-          description: `Remaining Plan Balance Settlement for Zachary Aldin (${company}) • Earlier Paid: $400.00 USD • Remaining Balance Due: $${amountUsd}.00 USD`,
-          amountUsd,
-          type: 'SUBSCRIPTION',
-          supplierCompany: company,
-          clientEmail: email,
-          billingName: `Zachary Aldin (${company})`,
-          decisionMakerName: 'Zachary Aldin',
-          preferredPaymentMethod: 'Direct Bank Wire Transfer'
-        });
-      } else if (parsed.action === 'renew-membership') {
-        const company = parsed.company || 'ACE Intermediary';
-        const email = parsed.email || 'ezekiahali355@gmail.com';
-        const decisionMaker = parsed.decisionMaker || 'Ali Charley Ezekiah';
-        const address = parsed.address || '1241 Hackberry Avenue Corsicana Texas 75110';
-        const paymentMethod = parsed.paymentMethod || 'Debit Card';
-        const planId = parsed.planId || 'VIP-RENEWAL-OFFER-2026';
-        const amountUsd = parsed.amountUsd || 1499;
-
-        setCheckoutData({
-          planId,
-          title: `Membership Renewal — Current Offer & Exciting Deals (${company})`,
-          description: `Annual Membership Renewal for ${company} (${address}) • Decision Maker: ${decisionMaker} • Preferred Payment: ${paymentMethod}`,
-          amountUsd,
-          type: 'SUBSCRIPTION',
-          supplierCompany: company,
-          clientEmail: email,
-          billingName: `${decisionMaker} (${company})`,
-          address,
-          decisionMakerName: decisionMaker,
-          preferredPaymentMethod: paymentMethod
-        });
-      }
-    } catch {}
+    document.addEventListener('click', handleGlobalEmailAnchorClick, true);
 
     return () => {
       window.removeEventListener('tradeheaven_open_payment_checkout', handleCustomPaymentEvent);
+      document.removeEventListener('click', handleGlobalEmailAnchorClick, true);
     };
   }, [isAppInitialized]);
 

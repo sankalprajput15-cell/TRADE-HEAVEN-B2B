@@ -59,6 +59,27 @@ export const TrustAndSafety: React.FC = () => {
           </div>
         </div>
 
+        {/* Trade Assurance Mishap & Stuck Payment Loss Coverage Banner */}
+        <div className="bg-emerald-950 text-white rounded-3xl p-8 md:p-10 border border-emerald-800 shadow-lg flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+          <div className="space-y-3 max-w-4xl">
+            <div className="inline-flex items-center gap-2 text-emerald-300 font-bold text-xs uppercase tracking-wider">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Full Assurance of Trade Heaven — Stuck Payment &amp; Mishap Protection</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              Protected Against Stuck Payments &amp; Trade Mishaps
+            </h2>
+            <p className="text-emerald-100/90 text-sm md:text-base leading-relaxed">
+              In case of any transactional mishap—such as a <strong>payment stuck in clearing</strong>, correspondent bank hold, or settlement bottleneck—where either the <strong>Supplier or the Buyer holds active Trade Assurance</strong>, losses are actively tried to be covered with the direct assistance of <strong>Trade Heaven</strong>, and <strong>Full Assurance is of Trade Heaven</strong> up to the certified escrow protection limit.
+            </p>
+          </div>
+          <div className="shrink-0 bg-emerald-900/70 border border-emerald-700/80 rounded-2xl p-5 text-left space-y-1.5">
+            <div className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">Assurance Underwriter</div>
+            <div className="text-lg font-black text-white">100% Trade Heaven Backed</div>
+            <div className="text-xs text-emerald-200">Covers Verified Suppliers &amp; Buyers</div>
+          </div>
+        </div>
+
         <div className="bg-slate-900 rounded-3xl p-8 md:p-12 text-center lg:text-left text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12">
           <div className="lg:w-2/3">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 font-display">Beware of Brand Impersonators</h2>

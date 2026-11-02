@@ -22,13 +22,19 @@ import {
   ChevronUp,
   BadgeCheck,
   FileText,
-  Scale
+  Scale,
+  Mail,
+  Send,
+  Loader2,
+  BookOpen
 } from 'lucide-react';
 import { AuthUser, Currency, PaymentCheckoutData, ActiveView } from '../../types';
 import { CURRENCY_RATES, MOCK_COMPANIES } from '../../data/mockData';
 import { DETAILED_VENDOR_PROFILES } from '../../data/detailedVendorProfiles';
 import { tradeHeavenMediationService } from '../../services/tradeHeavenMediatorEngine';
 import certificateDatabaseJson from '../../data/tradeAssuranceCertificates.json';
+import { ExportToPDF, generateTradeAssuranceBrochurePDF } from '../common/ExportToPDF';
+import { TradeAssuranceBrochure } from './TradeAssuranceBrochure';
 
 export interface TradeAssuranceCertificateRecord {
   certificateNumber: string;
@@ -247,6 +253,20 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
   const [applicationError, setApplicationError] = useState<string | null>(null);
   const [newlyIssuedCert, setNewlyIssuedCert] = useState<TradeAssuranceCertificateRecord | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+
+  // Brochure Export & Supplier/Buyer Email Dispatch State
+  const [brochureRecipientEmail, setBrochureRecipientEmail] = useState('');
+  const [brochureRecipientCompany, setBrochureRecipientCompany] = useState('');
+  const [brochureRecipientRole, setBrochureRecipientRole] = useState<'SUPPLIER' | 'BUYER' | 'BOTH'>('BOTH');
+  const [brochureCustomMessage, setBrochureCustomMessage] = useState(
+    'Please find enclosed the official Trade Heaven Trade Assurance Certificate Working Brochure detailing our 5-stage Custodial Escrow workflow, SGS/TÜV pre-shipment inspection protocol, and Full Assurance of Trade Heaven mishap & stuck-payment protection.'
+  );
+  const [autoDownloadPdfOnSend, setAutoDownloadPdfOnSend] = useState(true);
+  const [isSendingBrochureEmail, setIsSendingBrochureEmail] = useState(false);
+  const [brochureDispatchStatus, setBrochureDispatchStatus] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   const curr =
     (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) ||
@@ -493,6 +513,148 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleSendBrochureToPartners = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBrochureDispatchStatus(null);
+
+    const emails = brochureRecipientEmail
+      .split(/[,;\s]+/)
+      .map(item => item.trim())
+      .filter(item => item.includes('@'));
+
+    if (emails.length === 0) {
+      setBrochureDispatchStatus({
+        type: 'error',
+        message: 'Please enter at least one valid Supplier or Buyer email address.'
+      });
+      return;
+    }
+
+    setIsSendingBrochureEmail(true);
+    try {
+      const activeCert = selectedCertificate || verifiedLookupResult || certificates[0];
+      const partnerLabel =
+        brochureRecipientRole === 'SUPPLIER'
+          ? 'Verified Supplier & Exporter Partner'
+          : brochureRecipientRole === 'BUYER'
+            ? 'Global Buyer & Importer Partner'
+            : 'Global Supplier & Buyer Partner';
+
+      if (autoDownloadPdfOnSend) {
+        generateTradeAssuranceBrochurePDF(activeCert, {
+          selectedCurrency: String(selectedCurrency),
+          formattedCoverageLimit: activeCert ? formatPrice(activeCert.coverageLimitUsd) : '$2,000,000',
+          recipientRole: brochureRecipientRole,
+          recipientCompany: brochureRecipientCompany.trim() || undefined
+        });
+      }
+
+      const subject = `Official Brochure: How the Trade Heaven Trade Assurance Certificate Works${
+        brochureRecipientCompany.trim() ? ` — Prepared for ${brochureRecipientCompany.trim()}` : ''
+      }`;
+
+      const htmlBody = `
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 680px; margin: 0 auto; background: #ffffff; border: 2px solid #0f172a; border-radius: 14px; overflow: hidden; color: #0f172a;">
+          <div style="background: #0f172a; color: #ffffff; padding: 28px 24px; text-align: center;">
+            <div style="color: #fbbf24; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">
+              OFFICIAL B2B BROCHURE • SUPPLIER & BUYER PROTECTION GUIDE
+            </div>
+            <h1 style="margin: 10px 0 6px; font-size: 22px; color: #ffffff;">
+              How the Trade Heaven Trade Assurance Certificate Works
+            </h1>
+            <p style="margin: 0; font-size: 13px; color: #cbd5e1;">
+              Prepared for: <strong style="color: #34d399;">${brochureRecipientCompany.trim() || partnerLabel}</strong>
+            </p>
+          </div>
+
+          <div style="padding: 24px;">
+            <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+              ${brochureCustomMessage}
+            </p>
+
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin: 18px 0;">
+              <h2 style="margin: 0 0 10px; font-size: 15px; color: #0f172a;">
+                5-Stage Working of the Trade Assurance Certificate
+              </h2>
+              <ol style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; color: #334155;">
+                <li><strong>Corporate KYC, Tax/VAT & Factory Audit:</strong> Legal Registration, Tax/VAT ID, DUNS & ISO/SGS records are verified and assigned a searchable Serial Number (<code>THC-2026-XXXX</code>).</li>
+                <li><strong>Contract & Proforma Invoice Linking:</strong> Buyer and Supplier link their Purchase Order under Incoterms 2020 (FOB, CIF, CFR, DDP).</li>
+                <li><strong>ACID Custodial Escrow Fund Lock:</strong> Buyer locks order funds in the certificate’s designated Custodial Escrow Vault before production begins.</li>
+                <li><strong>SGS / TÜV Pre-Shipment Assay & Bill of Lading Check:</strong> Independent quality & quantity verification prior to cargo dispatch.</li>
+                <li><strong>Automated Milestone Release & Full Mishap Protection:</strong> 100% settlement is released to the Supplier upon verified shipment while protecting the Buyer against off-spec or delayed cargo.</li>
+              </ol>
+            </div>
+
+            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 10px; padding: 14px 16px; margin: 18px 0;">
+              <div style="font-size: 12px; font-weight: bold; color: #065f46; text-transform: uppercase;">
+                Full Assurance of Trade Heaven — Mishap & Stuck Payment Guarantee
+              </div>
+              <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: #064e3b;">
+                In case of any mishap—such as a payment stuck in intermediary bank clearing or settlement disruption—where the Supplier or Buyer holds active Trade Assurance, losses are actively tried to be covered with the direct help of <strong>Trade Heaven</strong>, and <strong>Full Assurance is of Trade Heaven</strong> up to $2,000,000 USD.
+              </p>
+            </div>
+
+            ${
+              activeCert
+                ? `<div style="background: #f1f5f9; border: 1px solid #94a3b8; border-radius: 10px; padding: 14px 16px; margin: 18px 0; font-size: 13px;">
+                    <div style="font-weight: bold; color: #0f172a; margin-bottom: 6px;">
+                      Featured Verified Certificate Credential Snapshot
+                    </div>
+                    <div><strong>Serial Number:</strong> <code>${activeCert.certificateNumber}</code> (${activeCert.status === 'ACTIVE_VERIFIED' ? 'ACTIVE & VERIFIED' : activeCert.status})</div>
+                    <div><strong>Certified Entity:</strong> ${activeCert.companyName} (${activeCert.country})</div>
+                    <div><strong>Escrow Protection Limit:</strong> $${activeCert.coverageLimitUsd.toLocaleString()} USD (${activeCert.tierTitle})</div>
+                    <div><strong>Escrow Vault ID:</strong> <code>${activeCert.escrowVaultId}</code></div>
+                  </div>`
+                : ''
+            }
+
+            <div style="text-align: center; margin: 24px 0 12px;">
+              <a href="https://www.tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE" style="display: inline-block; background: #0f172a; color: #fbbf24; text-decoration: none; font-weight: bold; font-size: 14px; padding: 12px 24px; border-radius: 8px;">
+                Verify Certificate & View Official Brochure Online
+              </a>
+            </div>
+          </div>
+
+          <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 14px 24px; text-align: center; font-size: 12px; color: #64748b;">
+            Issued by Tradeheaven ECOM Solution LLP • <a href="mailto:help@tradeheaven.net" style="color: #0f172a;">help@tradeheaven.net</a> • +91 8532934479 • <a href="https://www.tradeheaven.net" style="color: #0f172a;">www.tradeheaven.net</a>
+          </div>
+        </div>
+      `;
+
+      for (const email of emails) {
+        const res = await fetch('/api/v1/admin/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: email,
+            subject,
+            html: htmlBody
+          })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Failed to dispatch brochure to ${email}`);
+        }
+      }
+
+      setBrochureDispatchStatus({
+        type: 'success',
+        message: `Official 'Working of Trade Assurance' Brochure sent to ${emails.join(', ')}${
+          autoDownloadPdfOnSend ? ' and downloaded as a 2-page PDF brochure!' : '!'
+        }`
+      });
+    } catch (err: any) {
+      setBrochureDispatchStatus({
+        type: 'error',
+        message:
+          err?.message ||
+          'PDF Brochure was downloaded locally, but SMTP dispatch encountered an issue.'
+      });
+    } finally {
+      setIsSendingBrochureEmail(false);
+    }
+  };
+
   const selectedPlan = CERTIFICATE_PLANS.find(p => p.id === selectedPlanId) || CERTIFICATE_PLANS[1];
 
   const handleApplicationSubmit = async (e: React.FormEvent) => {
@@ -586,6 +748,11 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
       question: 'Can banks, customs brokers, and AI procurement assistants verify these certificates?',
       answer:
         'Yes. Every Trade Heaven Trade Assurance Certificate is indexed with Schema.org structured metadata and a unique serial number so trade finance banks (for MT700 DLC / SBLC underwriting), customs brokers, and AI search engines can verify the company’s standing and USD protection limit.'
+    },
+    {
+      question: 'What happens in case of a mishap like a stuck payment when the supplier or buyer has Trade Assurance?',
+      answer:
+        'In case of any transactional mishap—such as a payment stuck in clearing, correspondent bank hold, or settlement disruption—where the Supplier or Buyer holds active Trade Assurance, losses are actively tried to be covered with the direct help of Trade Heaven, and Full Assurance is of Trade Heaven up to the certificate’s USD protection limit.'
     }
   ];
 
@@ -622,6 +789,11 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
               Verify any supplier or buyer&apos;s official <strong>Trade Heaven Trade Assurance Certificate</strong> by serial number, or apply for your company&apos;s certified escrow coverage limit ($150,000 to $2,000,000 USD) with instant registry indexing.
             </p>
 
+            {/* Full Assurance of Trade Heaven - Stuck Payment & Mishap Protection Notice */}
+            <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-700/70 text-xs sm:text-sm text-emerald-100 leading-relaxed">
+              <strong className="text-emerald-300 font-bold">Mishap &amp; Stuck Payment Protection:</strong> In case of any mishap such as a stuck payment where the Supplier or Buyer holds Trade Assurance, losses are actively tried to be covered with the help of <strong>Trade Heaven</strong>, and <strong>Full Assurance is of Trade Heaven</strong>.
+            </div>
+
             {/* Primary Mode Switcher Buttons */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
@@ -656,6 +828,47 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
               >
                 <Award className="w-4 h-4 text-amber-300" />
                 <span>Request Trade Assurance Certificate</span>
+              </button>
+
+              <TradeAssuranceBrochure
+                mode="button"
+                selectedCertificate={selectedCertificate || verifiedLookupResult}
+                certificates={certificates}
+                selectedCurrency={selectedCurrency}
+                formattedCoverageLimit={
+                  selectedCertificate
+                    ? formatPrice(selectedCertificate.coverageLimitUsd)
+                    : '$2,000,000'
+                }
+                buttonLabel="Download Brochure"
+                buttonVariant="emerald"
+                className="py-2.5 px-4 shadow-md"
+              />
+
+              <ExportToPDF
+                mode="BROCHURE"
+                certificateData={selectedCertificate || verifiedLookupResult}
+                selectedCurrency={selectedCurrency}
+                formattedCoverageLimit={
+                  selectedCertificate
+                    ? formatPrice(selectedCertificate.coverageLimitUsd)
+                    : '$2,000,000'
+                }
+                buttonLabel="Download 'Working of Trade Assurance' PDF Brochure"
+                variant="emerald"
+                className="py-2.5 px-4 shadow-md"
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('trade-assurance-brochure-section');
+                  el?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send Brochure to Suppliers &amp; Buyers</span>
               </button>
             </div>
           </div>
@@ -782,262 +995,273 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* DEDICATED CERTIFICATE VERIFICATION SECTION (JSON DATABASE SERIAL LOOKUP) */}
+      {/* WORKING OF TRADE ASSURANCE CERTIFICATE — OFFICIAL PDF BROCHURE & SUPPLIER/BUYER DISPATCH STUDIO */}
       <section
-        id="certificate-verification-section"
-        aria-labelledby="certificate-verification-heading"
-        className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 lg:p-10 space-y-6"
+        id="trade-assurance-brochure-section"
+        aria-labelledby="brochure-studio-heading"
+        className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-emerald-500/40 shadow-xl space-y-6"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-700 uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Official JSON Registry Lookup</span>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
+              <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Official Supplier &amp; Buyer Educational PDF Brochure</span>
             </div>
-            <h2 id="certificate-verification-heading" className="text-xl sm:text-2xl font-black text-slate-900">
-              Certificate Verification
+            <h2 id="brochure-studio-heading" className="text-xl sm:text-2xl font-black text-white">
+              Export &ldquo;Working of Trade Assurance Certificate&rdquo; PDF Brochure &amp; Send to Suppliers / Buyers
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600">
-              Enter a Trade Assurance Certificate serial number to verify its current <strong>Status</strong>, <strong>Certificate Holder</strong>, and <strong>Expiry Date</strong> against the official Trade Heaven JSON certificate database.
+            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
+              Download the complete 2-page A4 executive PDF brochure explaining how the Trade Heaven Trade Assurance Certificate works (5-stage Escrow &amp; SGS inspection workflow, Supplier &amp; Buyer guarantees, and Full Assurance of Trade Heaven stuck-payment loss coverage) or dispatch it directly to your suppliers and buyers.
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono tabular-nums text-slate-600 bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200 self-start lg:self-auto">
-            <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>JSON Database Records: {(certificateDatabaseJson as TradeAssuranceCertificateRecord[]).length} Indexed</span>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <ExportToPDF
+              mode="BROCHURE"
+              certificateData={selectedCertificate || verifiedLookupResult}
+              selectedCurrency={selectedCurrency}
+              formattedCoverageLimit={
+                selectedCertificate
+                  ? formatPrice(selectedCertificate.coverageLimitUsd)
+                  : '$2,000,000'
+              }
+              recipientRole={brochureRecipientRole}
+              recipientCompany={brochureRecipientCompany.trim() || undefined}
+              buttonLabel="Download 2-Page PDF Brochure"
+              variant="secondary"
+              className="px-4 py-2.5 text-xs font-black shadow-lg"
+            />
+            <ExportToPDF
+              mode="BROCHURE"
+              certificateData={selectedCertificate || verifiedLookupResult}
+              selectedCurrency={selectedCurrency}
+              formattedCoverageLimit={
+                selectedCertificate
+                  ? formatPrice(selectedCertificate.coverageLimitUsd)
+                  : '$2,000,000'
+              }
+              recipientRole={brochureRecipientRole}
+              recipientCompany={brochureRecipientCompany.trim() || undefined}
+              openPrintDialog={true}
+              buttonLabel="Print Brochure"
+              variant="outline"
+              className="px-4 py-2.5 text-xs font-bold"
+            />
           </div>
         </div>
 
-        {/* Serial Number Search Bar */}
-        <form onSubmit={handleSerialVerificationSubmit} className="space-y-3">
-          <label htmlFor="certificate-serial-verification-input" className="block text-xs font-bold text-slate-700">
-            Certificate Serial Number Lookup
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
-              <input
-                id="certificate-serial-verification-input"
-                type="text"
-                value={serialVerificationInput}
-                onChange={e => {
-                  const val = e.target.value;
-                  setIsAutoRotatingCompany(false);
-                  setSerialVerificationInput(val);
-                  lookupCertificateBySerial(val);
-                }}
-                placeholder="Enter Certificate Serial Number (e.g. THC-2026-KRX-81042)..."
-                className="w-full pl-10 pr-20 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-blue-600 focus:bg-white text-xs sm:text-sm font-mono text-slate-900 placeholder-slate-400 focus:outline-none"
-              />
-              {serialVerificationInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSerialVerificationInput('');
-                    setVerifiedLookupResult(null);
-                    setHasSearchedSerial(false);
-                  }}
-                  className="absolute right-3 top-2.5 px-2 py-1 text-xs font-semibold text-slate-500 hover:text-slate-900 cursor-pointer"
-                >
-                  Clear
-                </button>
-              )}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left 7 Cols: Visual Summary of What's Inside the 2-Page PDF Brochure */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+              What Is Included Inside the Exported 2-Page PDF Brochure:
             </div>
-            <button
-              type="submit"
-              className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shrink-0"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Verify Serial Number</span>
-            </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
+                <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>1. 5-Stage Escrow &amp; Audit Workflow</span>
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Step-by-step diagram showing Corporate KYC onboarding, Proforma Invoice linking, ACID Custodial Escrow fund lock, SGS/TÜV inspection, and automated milestone payout.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
+                <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>2. Supplier &amp; Buyer Protection Benefits</span>
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Dedicated comparison explaining how Suppliers eliminate buyer payment default risk and how Buyers guarantee 100% pre-shipment quality &amp; on-time Bill of Lading delivery.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-600/50 space-y-1.5">
+                <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span>3. Stuck Payment &amp; Mishap Coverage</span>
+                </div>
+                <p className="text-emerald-100/90 leading-relaxed">
+                  Explicit guarantee that in case of any stuck payment or intermediary clearing delay, losses are actively tried to be covered with the help of Trade Heaven and Full Assurance is of Trade Heaven.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
+                <div className="font-bold text-blue-300 flex items-center gap-1.5">
+                  <Award className="w-4 h-4 shrink-0" />
+                  <span>4. Protection Tiers ($150k–$2M) &amp; Global Advantages</span>
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Full breakdown of Standard ($150k), Gold Audited ($500k), and VIP Sovereign ($2M) client protection tiers and strategic advantages for global trade.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Sample Serial Numbers from JSON Database */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-xs text-slate-500 font-medium">Sample Serials in JSON Database:</span>
-            {twentyRotatingCompanies.map((record, idx) => {
-              const serial = record.serialNumber || record.certificateNumber;
-              const isSelected = verifiedLookupResult?.certificateNumber === record.certificateNumber;
-              return (
-                <button
-                  key={serial}
-                  type="button"
-                  onClick={() => {
-                    setRotatingCompanyIndex(idx);
-                    setSerialVerificationInput(serial);
-                    lookupCertificateBySerial(serial);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-mono tabular-nums border transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-slate-900 text-amber-300 border-slate-900 font-bold'
-                      : record.status === 'NOT_TAKEN'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-300'
-                        : record.status === 'EXPIRED'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200 hover:border-rose-300'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
+          {/* Right 5 Cols: Send PDF Brochure to Suppliers & Buyers Form */}
+          <form
+            onSubmit={handleSendBrochureToPartners}
+            className="lg:col-span-5 bg-slate-800/95 border border-slate-700 rounded-2xl p-5 space-y-3.5"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-bold text-white">
+                <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Send Brochure to Suppliers &amp; Buyers</span>
+              </div>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                PDF + Email Dispatch
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                  Recipient Role
+                </label>
+                <select
+                  value={brochureRecipientRole}
+                  onChange={e =>
+                    setBrochureRecipientRole(e.target.value as 'SUPPLIER' | 'BUYER' | 'BOTH')
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none"
                 >
-                  {serial} {record.status === 'NOT_TAKEN' ? '(Not Taken Yet)' : record.status === 'EXPIRED' ? '(Expired)' : ''}
-                </button>
-              );
-            })}
-          </div>
-        </form>
+                  <option value="BOTH">Both Supplier &amp; Buyer</option>
+                  <option value="SUPPLIER">Supplier / Manufacturer</option>
+                  <option value="BUYER">Buyer / Importer</option>
+                </select>
+              </div>
 
-        {/* Verification Result Display */}
-        {hasSearchedSerial && (
-          <div aria-live="polite">
-            {verifiedLookupResult ? (
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                  Partner Company Name ( on PDF Cover )
+                </label>
+                <input
+                  type="text"
+                  value={brochureRecipientCompany}
+                  onChange={e => setBrochureRecipientCompany(e.target.value)}
+                  placeholder="e.g. Global Steel Corp..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                Supplier / Buyer Email Address(es) <span className="text-slate-400">(comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                value={brochureRecipientEmail}
+                onChange={e => setBrochureRecipientEmail(e.target.value)}
+                placeholder="supplier@company.com, buyer@importer.com"
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                Executive Note Included in Brochure Email
+              </label>
+              <textarea
+                rows={2}
+                value={brochureCustomMessage}
+                onChange={e => setBrochureCustomMessage(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={autoDownloadPdfOnSend}
+                onChange={e => setAutoDownloadPdfOnSend(e.target.checked)}
+                className="rounded border-slate-600 text-emerald-500 focus:ring-0"
+              />
+              <span>Also download the customized 2-Page PDF Brochure file when sending</span>
+            </label>
+
+            {brochureDispatchStatus && (
               <div
-                className={`rounded-2xl border-2 p-6 space-y-5 ${
-                  verifiedLookupResult.status === 'ACTIVE_VERIFIED'
-                    ? 'bg-emerald-50/40 border-emerald-500/70'
-                    : verifiedLookupResult.status === 'NOT_TAKEN'
-                      ? 'bg-amber-50/50 border-amber-400'
-                      : verifiedLookupResult.status === 'EXPIRED'
-                        ? 'bg-rose-50/40 border-rose-400'
-                        : 'bg-amber-50/40 border-amber-400'
+                className={`p-2.5 rounded-xl text-xs font-medium ${
+                  brochureDispatchStatus.type === 'success'
+                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-200'
+                    : 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80">
-                  <div className="flex items-center gap-2.5">
-                    {verifiedLookupResult.status === 'ACTIVE_VERIFIED' ? (
-                      <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-                    ) : (
-                      <AlertCircle className="w-6 h-6 text-amber-600 shrink-0" />
-                    )}
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-                        <span>
-                          {verifiedLookupResult.status === 'ACTIVE_VERIFIED'
-                            ? `Verification Match Confirmed · Serial #${verifiedLookupResult.serialNumber || verifiedLookupResult.certificateNumber}`
-                            : `Registry Lookup · Reference #${verifiedLookupResult.serialNumber || verifiedLookupResult.certificateNumber}`}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-mono text-[11px] normal-case">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                          Company {rotatingCompanyIndex + 1} of {twentyRotatingCompanies.length} · Changing Every 5s
-                        </span>
-                      </div>
-                      <h3 className="text-base sm:text-lg font-black text-slate-900">
-                        {verifiedLookupResult.holder || verifiedLookupResult.companyName}
-                      </h3>
-                      <div className="text-xs font-semibold text-emerald-800">
-                        {verifiedLookupResult.tierTitle} · {verifiedLookupResult.country}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary 3 Required Verification Fields: Status, Holder, Expiry Date */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* 1. Certificate Status */}
-                  <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
-                    <div className="text-xs font-semibold text-slate-500">Certificate Status</div>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <span
-                        className={`inline-flex items-center gap-1.5 text-sm font-black font-mono tabular-nums ${
-                          verifiedLookupResult.status === 'ACTIVE_VERIFIED'
-                            ? 'text-emerald-700'
-                            : verifiedLookupResult.status === 'NOT_TAKEN'
-                              ? 'text-amber-700'
-                              : verifiedLookupResult.status === 'EXPIRED'
-                                ? 'text-rose-700'
-                                : 'text-amber-700'
-                        }`}
-                      >
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full ${
-                            verifiedLookupResult.status === 'ACTIVE_VERIFIED'
-                              ? 'bg-emerald-500'
-                              : verifiedLookupResult.status === 'NOT_TAKEN'
-                                ? 'bg-amber-500'
-                                : verifiedLookupResult.status === 'EXPIRED'
-                                  ? 'bg-rose-500'
-                                  : 'bg-amber-500'
-                          }`}
-                        />
-                        {verifiedLookupResult.status === 'ACTIVE_VERIFIED'
-                          ? 'ACTIVE & VERIFIED'
-                          : verifiedLookupResult.status === 'NOT_TAKEN'
-                            ? 'NOT TAKEN YET (UNENROLLED)'
-                            : verifiedLookupResult.status === 'EXPIRED'
-                              ? 'EXPIRED'
-                              : verifiedLookupResult.status}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {verifiedLookupResult.status === 'NOT_TAKEN'
-                        ? 'This company has not purchased a Trade Assurance Certificate yet'
-                        : `Audited by ${verifiedLookupResult.auditingBody}`}
-                    </div>
-                  </div>
-
-                  {/* 2. Certificate Holder */}
-                  <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-slate-500">Certificate Holder</span>
-                      <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                        #{rotatingCompanyIndex + 1} of {twentyRotatingCompanies.length} (5s Live)
-                      </span>
-                    </div>
-                    <div className="text-sm sm:text-base font-black text-slate-900">
-                      {verifiedLookupResult.holder || verifiedLookupResult.companyName}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {verifiedLookupResult.country} · Reg: <span className="font-mono tabular-nums">{verifiedLookupResult.legalRegistrationNumber}</span>
-                    </div>
-                  </div>
-
-                  {/* 3. Expiry Date */}
-                  <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
-                    <div className="text-xs font-semibold text-slate-500">Expiry Date</div>
-                    <div
-                      className={`text-base font-black font-mono tabular-nums ${
-                        verifiedLookupResult.status === 'EXPIRED'
-                          ? 'text-rose-700'
-                          : verifiedLookupResult.status === 'NOT_TAKEN'
-                            ? 'text-amber-700'
-                            : 'text-slate-900'
-                      }`}
-                    >
-                      {verifiedLookupResult.status === 'NOT_TAKEN'
-                        ? 'N/A — Not Taken Yet'
-                        : verifiedLookupResult.expiryDate}
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
-                      {verifiedLookupResult.status === 'NOT_TAKEN'
-                        ? 'Coverage: $0 USD (Request Certificate — Fees Told by Customer Executive)'
-                        : `Issued: ${verifiedLookupResult.issueDate} · Coverage: ${formatPrice(verifiedLookupResult.coverageLimitUsd)}`}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 rounded-2xl border border-rose-200 bg-rose-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <div className="text-sm font-bold text-slate-900">
-                      No Certificate Found for Serial Number &ldquo;{serialVerificationInput}&rdquo;
-                    </div>
-                    <p className="text-xs text-slate-600">
-                      This serial number was not found in the Trade Heaven Trade Assurance JSON database. Please check the serial number format (e.g. <span className="font-mono">THC-2026-KRX-81042</span>) or select a sample serial above.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSerialVerificationInput('THC-2026-KRX-81042');
-                    lookupCertificateBySerial('THC-2026-KRX-81042');
-                  }}
-                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold cursor-pointer shrink-0 self-start sm:self-center"
-                >
-                  Load Default Certificate
-                </button>
+                {brochureDispatchStatus.message}
               </div>
             )}
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={isSendingBrochureEmail}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                {isSendingBrochureEmail ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Sending Brochure...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Brochure to Supplier / Buyer</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {/* MULTI-PAGE TRADE ASSURANCE BROCHURE COMPONENT (FEATURES OF TRADE HEAVEN & CLIENT BENEFITS) */}
+      <TradeAssuranceBrochure
+        mode="full"
+        buttonLabel="Download Features & Client Benefits PDF"
+        buttonVariant="emerald"
+      />
+
+      {/* DEDICATED FEATURES OF TRADE HEAVEN & CLIENT BENEFITS PDF SECTION */}
+      <section
+        id="certificate-verification-section"
+        aria-labelledby="certificate-verification-heading"
+        className="bg-slate-900 text-white border border-emerald-500/40 rounded-3xl p-6 sm:p-8 lg:p-10 space-y-6 shadow-xl"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-3xl">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
+              <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Dedicated Client Benefits PDF Document</span>
+            </div>
+            <h2
+              id="certificate-verification-heading"
+              className="text-xl sm:text-2xl font-black text-white"
+            >
+              PDF of Features of Trade Heaven &amp; How It Benefits Clients
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Download the clean, standalone PDF covering strictly the core features of <strong>Trade Heaven</strong> and how it benefits <strong>Buyers, Importers, Suppliers, and Exporters</strong> — including ACID Custodial Escrow Security, SGS/TÜV Factory Audit Verification, and Full Assurance of Trade Heaven stuck-payment loss coverage.
+            </p>
           </div>
-        )}
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <TradeAssuranceBrochure
+              mode="button"
+              buttonLabel="Download Features & Client Benefits PDF"
+              buttonVariant="emerald"
+              className="px-5 py-3 text-xs sm:text-sm font-black shadow-lg"
+            />
+            <ExportToPDF
+              mode="BROCHURE"
+              buttonLabel="Download Client Benefits Brochure PDF"
+              variant="secondary"
+              className="px-5 py-3 text-xs sm:text-sm font-black shadow-lg"
+            />
+          </div>
+        </div>
       </section>
 
       {/* 2. LIVE CERTIFICATE VERIFICATION RESULT & OFFICIAL CREDENTIAL PREVIEW */}
@@ -1055,8 +1279,31 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
               Click any record on the left or search by serial number to inspect the official Trade Heaven Trade Assurance Certificate.
             </p>
           </div>
-          <div className="text-xs text-slate-500 font-mono tabular-nums">
-            Showing {matchingCertificates.length} matching certificate(s)
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-xs text-slate-500 font-mono tabular-nums">
+              Showing {matchingCertificates.length} matching certificate(s)
+            </div>
+            {selectedCertificate && (
+              <>
+                <ExportToPDF
+                  mode="CERTIFICATE"
+                  certificateData={selectedCertificate}
+                  selectedCurrency={selectedCurrency}
+                  formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
+                  buttonLabel="Download as PDF"
+                  variant="primary"
+                />
+                <TradeAssuranceBrochure
+                  mode="button"
+                  selectedCertificate={selectedCertificate}
+                  certificates={certificates}
+                  selectedCurrency={selectedCurrency}
+                  formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
+                  buttonLabel="Download Brochure"
+                  buttonVariant="emerald"
+                />
+              </>
+            )}
           </div>
         </div>
 
@@ -1170,24 +1417,47 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div className="sm:text-right space-y-1">
-                    <div className="text-[11px] text-slate-500">Certificate Serial Number</div>
-                    <div className="flex items-center sm:justify-end gap-1.5">
-                      <span className="font-mono tabular-nums text-sm font-black text-slate-900 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
-                        {selectedCertificate.certificateNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopySerial(selectedCertificate.certificateNumber)}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 cursor-pointer"
-                        title="Copy Certificate Number"
-                      >
-                        {copiedCertNo === selectedCertificate.certificateNumber ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                  <div className="flex flex-col sm:items-end gap-2.5 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ExportToPDF
+                        mode="CERTIFICATE"
+                        certificateData={selectedCertificate}
+                        selectedCurrency={selectedCurrency}
+                        formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
+                        buttonLabel="Download Certificate PDF"
+                        variant="emerald"
+                        className="shadow-sm"
+                      />
+                      <TradeAssuranceBrochure
+                        mode="button"
+                        selectedCertificate={selectedCertificate}
+                        certificates={certificates}
+                        selectedCurrency={selectedCurrency}
+                        formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
+                        buttonLabel="Download Brochure"
+                        buttonVariant="amber"
+                        className="shadow-sm"
+                      />
+                    </div>
+                    <div className="sm:text-right space-y-1">
+                      <div className="text-[11px] text-slate-500">Certificate Serial Number</div>
+                      <div className="flex items-center sm:justify-end gap-1.5">
+                        <span className="font-mono tabular-nums text-sm font-black text-slate-900 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
+                          {selectedCertificate.certificateNumber}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopySerial(selectedCertificate.certificateNumber)}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 cursor-pointer"
+                          title="Copy Certificate Number"
+                        >
+                          {copiedCertNo === selectedCertificate.certificateNumber ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1266,13 +1536,22 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <ExportToPDF
+                      mode="CERTIFICATE"
+                      certificateData={selectedCertificate}
+                      selectedCurrency={selectedCurrency}
+                      formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
+                      buttonLabel="Download as PDF"
+                      variant="emerald"
+                    />
+
                     <button
                       type="button"
                       onClick={() => handleDownloadCertificateTxt(selectedCertificate)}
                       className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     >
                       <Download className="w-3.5 h-3.5" />
-                      <span>Download Credential</span>
+                      <span>Download TXT</span>
                     </button>
 
                     <button
@@ -1438,18 +1717,28 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                     <span className="font-mono tabular-nums underline">{newlyIssuedCert.certificateNumber}</span>
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCertificate(newlyIssuedCert);
-                    setSearchQuery(newlyIssuedCert.certificateNumber);
-                    const lookupEl = document.getElementById('certificate-lookup-section');
-                    lookupEl?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
-                >
-                  Inspect Live Certificate Above
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ExportToPDF
+                    mode="CERTIFICATE"
+                    certificateData={newlyIssuedCert}
+                    selectedCurrency={selectedCurrency}
+                    formattedCoverageLimit={formatPrice(newlyIssuedCert.coverageLimitUsd)}
+                    buttonLabel="Download Certificate PDF"
+                    variant="primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCertificate(newlyIssuedCert);
+                      setSearchQuery(newlyIssuedCert.certificateNumber);
+                      const lookupEl = document.getElementById('certificate-lookup-section');
+                      lookupEl?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
+                  >
+                    Inspect Live Certificate Above
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-emerald-800">
                 Your Trade Assurance Certificate for <strong>{newlyIssuedCert.companyName}</strong> with a guaranteed protection limit of{' '}

@@ -117,11 +117,11 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
           </div>
         </section>
 
-        {/* Article 3: Commercial Trade Protection Deposits */}
+        {/* Article 4: Commercial Trade Protection Deposits */}
         <section className="space-y-3 pt-4 border-t border-slate-100">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            3. Commercial Trade Protection Deposit Release Conditions
+            4. Commercial Trade Protection Deposit Release Conditions
           </h2>
           <p className="text-slate-600">
             For physical merchandise transactions secured with Trade Protection Certificates, buyer escrow deposits are held safely in segregated client trade vaults and released or refunded under specific contractual milestones:
@@ -142,11 +142,34 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
           </div>
         </section>
 
-        {/* Article 4: Investigation Filing Procedure & 30-Day Window */}
+        {/* Article 5: Trade Assurance Mishap & Stuck Payment Loss Coverage */}
+        <section className="space-y-3 pt-4 border-t border-slate-100">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            5. Trade Assurance Mishap &amp; Stuck Payment Loss Coverage (Full Assurance of Trade Heaven)
+          </h2>
+          <p className="text-slate-600 font-medium">
+            In the event of any transactional mishap—such as a <strong>payment stuck in transit</strong>, intermediary bank hold, cross-border settlement delay, or unforeseen clearing disruption—where either the <strong>Supplier or the Buyer holds active Trade Assurance</strong>:
+          </p>
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2.5 text-emerald-950">
+            <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 text-emerald-900">
+              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+              <span>Full Assurance &amp; Loss Recovery Backed by Trade Heaven</span>
+            </div>
+            <p className="text-xs sm:text-sm leading-relaxed text-emerald-900">
+              Any financial losses, stuck settlements, or transactional bottlenecks affecting Trade Assurance-enrolled Suppliers or Buyers are actively mediated, traced, and <strong>tried to be covered in full with the direct assistance of Trade Heaven</strong>.
+            </p>
+            <p className="text-xs sm:text-sm leading-relaxed font-semibold text-emerald-950">
+              Under this protection mandate, <u>Full Assurance is of Trade Heaven</u>: our Trade Assurance &amp; Escrow Compliance Desk intervenes directly with banking corridors, escrow vaults, and counterparties to recover stuck funds, indemnify verified trade losses up to the certified Trade Assurance coverage limit, and ensure neither the protected Supplier nor the protected Buyer suffers unmitigated loss.
+            </p>
+          </div>
+        </section>
+
+        {/* Article 6: Investigation Filing Procedure & 30-Day Window */}
         <section className="space-y-2.5 pt-4 border-t border-slate-100">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-amber-600" />
-            4. 30-Day Strict Eligibility Window &amp; Claim Submission Timeline
+            6. 30-Day Strict Eligibility Window &amp; Claim Submission Timeline
           </h2>
           <p className="text-slate-600 font-medium">
             Refunds are <strong>only accessible if requested within strictly 30 calendar days from the initial start date of the plan</strong>. Any refund request, inquiry, or dispute ticket submitted after 30 days from plan activation is permanently ineligible, non-accessible, and rejected under any circumstance.
