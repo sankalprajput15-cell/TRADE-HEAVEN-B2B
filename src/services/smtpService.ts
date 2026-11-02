@@ -172,7 +172,7 @@ export interface SerializedDeliveryReceipt {
   error?: string;
 }
 
-let dynamicPublicTrackingBaseUrl = '';
+let dynamicPublicTrackingBaseUrl = 'https://www.tradeheaven.net';
 
 export function setDynamicPublicTrackingBaseUrl(rawUrl?: string) {
   const clean = (rawUrl || '').trim().replace(/\/+$/, '');
@@ -180,21 +180,32 @@ export function setDynamicPublicTrackingBaseUrl(rawUrl?: string) {
     clean.startsWith('http') &&
     !clean.includes('localhost') &&
     !clean.includes('127.0.0.1') &&
-    !clean.includes('0.0.0.0')
+    !clean.includes('0.0.0.0') &&
+    !clean.includes('.run.app') &&
+    !clean.includes('aistudio.google.com')
   ) {
     dynamicPublicTrackingBaseUrl = clean;
   }
 }
 
 export function getPublicTrackingBaseUrl(): string {
-  if (dynamicPublicTrackingBaseUrl) {
+  if (
+    dynamicPublicTrackingBaseUrl &&
+    !dynamicPublicTrackingBaseUrl.includes('.run.app') &&
+    !dynamicPublicTrackingBaseUrl.includes('aistudio.google.com')
+  ) {
     return dynamicPublicTrackingBaseUrl;
   }
   const envUrl = (process.env.APP_URL || process.env.PUBLIC_APP_URL || '').trim().replace(/\/+$/, '');
-  if (envUrl && envUrl.startsWith('http')) {
+  if (
+    envUrl &&
+    envUrl.startsWith('http') &&
+    !envUrl.includes('.run.app') &&
+    !envUrl.includes('aistudio.google.com')
+  ) {
     return envUrl;
   }
-  return 'https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app';
+  return 'https://www.tradeheaven.net';
 }
 
 export function detectEmailClientDevice(userAgentRaw?: string): string {
@@ -216,15 +227,20 @@ export function detectEmailClientDevice(userAgentRaw?: string): string {
 }
 
 /**
- * Injects MailSuite-grade 1x1 open tracking pixel, footer read-receipt watermark,
- * and click-tracking redirect links into outgoing HTML emails.
+ * Injects MailSuite-grade 1x1 open tracking pixel and preserves direct production
+ * destination links (https://www.tradeheaven.net/...) with ms_trk query parameter
+ * so clicking links in external email clients never hits AI Studio 403 proxy gates.
  */
 export function injectMailSuiteTrackingIntoHtml(
   rawHtml: string,
   trackingId: string,
   baseUrl?: string
 ): { html: string; trackingPixelUrl: string } {
-  const rootUrl = (baseUrl || getPublicTrackingBaseUrl()).replace(/\/+$/, '');
+  const safeBase =
+    baseUrl && !baseUrl.includes('.run.app') && !baseUrl.includes('aistudio.google.com')
+      ? baseUrl
+      : getPublicTrackingBaseUrl();
+  const rootUrl = safeBase.replace(/\/+$/, '');
   const trackingPixelUrl = `${rootUrl}/api/v1/track/open/${encodeURIComponent(trackingId)}.gif`;
 
   if (!rawHtml || !rawHtml.trim()) {
@@ -232,11 +248,10 @@ export function injectMailSuiteTrackingIntoHtml(
   }
 
   // Avoid double injection if already tracked
-  if (rawHtml.includes(`/api/v1/track/open/`)) {
+  if (rawHtml.includes(`/api/v1/track/open/`) || rawHtml.includes(`ms_trk=`)) {
     return { html: rawHtml, trackingPixelUrl };
   }
 
-  let linkIndex = 0;
   const wrappedLinksHtml = rawHtml.replace(
     /<a\s+([^>]*?)href=["']([^"']+)["']([^>]*)>([\s\S]*?)<\/a>/gi,
     (fullMatch, beforeHref, hrefVal, afterHref, innerHtml) => {
@@ -245,22 +260,34 @@ export function injectMailSuiteTrackingIntoHtml(
         !cleanHref ||
         cleanHref.startsWith('mailto:') ||
         cleanHref.startsWith('tel:') ||
-        cleanHref.startsWith('#') ||
-        cleanHref.includes('/api/v1/track/click/')
+        cleanHref.startsWith('#')
       ) {
         return fullMatch;
       }
-      linkIndex += 1;
-      const plainLabel =
-        String(innerHtml || '')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 80) || `Email CTA Link #${linkIndex}`;
-      const trackedHref = `${rootUrl}/api/v1/track/click/${encodeURIComponent(
-        trackingId
-      )}?url=${encodeURIComponent(cleanHref)}&label=${encodeURIComponent(plainLabel)}`;
-      return `<a ${beforeHref}href="${trackedHref}"${afterHref}>${innerHtml}</a>`;
+
+      // Normalize any accidental .run.app or aistudio proxy host to https://www.tradeheaven.net
+      let directHref = cleanHref.replace(
+        /^https?:\/\/[^/]*(\.run\.app|aistudio\.google\.com)/i,
+        'https://www.tradeheaven.net'
+      );
+
+      // If it was previously wrapped in /api/v1/track/click/..., extract the direct url param
+      if (directHref.includes('/api/v1/track/click/')) {
+        try {
+          const parsed = new URL(directHref, 'https://www.tradeheaven.net');
+          const extracted = parsed.searchParams.get('url');
+          if (extracted) {
+            directHref = extracted.replace(
+              /^https?:\/\/[^/]*(\.run\.app|aistudio\.google\.com)/i,
+              'https://www.tradeheaven.net'
+            );
+          }
+        } catch {}
+      }
+
+      const separator = directHref.includes('?') ? '&' : '?';
+      const trackedDirectHref = `${directHref}${separator}ms_trk=${encodeURIComponent(trackingId)}`;
+      return `<a ${beforeHref}href="${trackedDirectHref}"${afterHref}>${innerHtml}</a>`;
     }
   );
 
@@ -1159,6 +1186,201 @@ const KNOWN_COMPANY_CONTACTS: Record<
 };
 
 const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
+  {
+    id: 'eh-zac-case-closed-extension-001',
+    trackingId: 'ms-trk-zac-case-closed-extension-2026',
+    recipient: 'zac@otec.ltd',
+    recipientName: 'Zachary Aldin (Zac)',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    companyId: 'comp-zac-importation-fadetech',
+    subject: '✅ Case Closed: Escalation Resolved via Approved Extension of Services — IMPORTATION FADE-TECH (OTEC LTD) (Ref: TRD-INV-27-0004)',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Compliance & Export Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<zac-case-closed-service-extension-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'LIVE CASE CLOSED NOTICE TO ZAC (zac@otec.ltd): Official confirmation from Senior Export Manager (David) & Compliance Desk that Escalation Case #ESC-REF-2026-0004 for IMPORTATION FADE-TECH (OTEC LTD) (Invoice Ref: TRD-INV-27-0004) has been formally closed upon approval of an Extension of Services to ensure uninterrupted marketplace visibility, catalog indexing, and buyer matchmaking.',
+    htmlPreview: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #10b981; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f172a 100%); padding: 34px 24px; text-align: center; color: #ffffff;">
+          <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #a7f3d0; text-transform: uppercase; margin-bottom: 10px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(167, 243, 208, 0.4); padding: 4px 12px; border-radius: 9999px;">
+            TRADE HEAVEN • COMPLIANCE &amp; EXPORT MANAGEMENT DESK
+          </div>
+          <h1 style="margin: 0; font-size: 22px; font-weight: 900; color: #ffffff; line-height: 1.3;">
+            Case Closed: Resolved on Extension of Services
+          </h1>
+          <p style="margin: 8px 0 0 0; font-size: 13px; color: #d1fae5;">
+            Case Reference: <strong>#ESC-REF-2026-0004</strong> • Supplier: <strong>IMPORTATION FADE-TECH (OTEC LTD)</strong>
+          </p>
+        </div>
+        <div style="padding: 28px 24px; color: #1e293b;">
+          <p style="font-size: 15px; line-height: 1.6; margin: 0 0 14px 0;">
+            Dear <strong>Zachary Aldin (Zac)</strong>,
+          </p>
+          <p style="font-size: 14px; line-height: 1.65; margin: 0 0 18px 0; color: #334155;">
+            Following the executive review conducted by your <strong>Senior Export Manager, Mr. David</strong>, and the <strong>Trade Heaven Compliance &amp; Operations Desk</strong>, we are writing to formally confirm that your escalated case (Ticket <strong>#ESC-REF-2026-0004</strong> under Agreement <strong>TRD-INV-27-0004</strong>) has been <strong>officially closed on the basis of an approved Extension of Services</strong> for <strong>IMPORTATION FADE-TECH (OTEC LTD)</strong> (<span style="font-family: monospace; color: #2563eb;">zac@otec.ltd</span>).
+          </p>
+          <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 14px; padding: 18px 20px; margin: 0 0 22px 0;">
+            <div style="font-size: 11px; font-weight: 900; color: #065f46; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px;">
+              ✅ FINAL CASE RESOLUTION &amp; SERVICE EXTENSION SUMMARY
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr>
+                <td style="padding: 6px 0; color: #334155; width: 185px; font-weight: 600;">Case Reference ID:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 800; font-family: monospace;">#ESC-REF-2026-0004</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #334155; font-weight: 600;">Supplier Organization:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">IMPORTATION FADE-TECH (OTEC LTD)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #334155; font-weight: 600;">Registered Supplier Email:</td>
+                <td style="padding: 6px 0; color: #2563eb; font-weight: 700; font-family: monospace;">zac@otec.ltd</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #334155; font-weight: 600;">Reviewing Export Officer:</td>
+                <td style="padding: 6px 0; color: #047857; font-weight: 900;">Mr. David — Senior Export Manager</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #334155; font-weight: 600;">Resolution Outcome:</td>
+                <td style="padding: 6px 0; color: #065f46; font-weight: 800;">Extension of Services Approved &amp; Applied</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #334155; font-weight: 600;">Final Case Status:</td>
+                <td style="padding: 6px 0;"><span style="background: #dcfce7; color: #166534; border: 1px solid #86efac; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 900;">CASE CLOSED • SERVICES EXTENDED</span></td>
+              </tr>
+            </table>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #059669; border-radius: 10px; padding: 14px 16px; margin: 0 0 22px 0; font-size: 13px; color: #1e293b; line-height: 1.6;">
+            <strong>What This Means for Your Account:</strong><br/>
+            • In accordance with Trade Heaven&rsquo;s Service Continuity &amp; Return Policy, your prior deposit credit ($400.00 USD under Ref: <strong>TRD-INV-27-0004</strong>) remains 100% protected and applied to your supplier profile.<br/>
+            • An official <strong>Extension of Services</strong> has been granted on your account so that your storefront, coal export product catalog, and international buyer matchmaking continue uninterrupted.<br/>
+            • Escalation ticket <strong>#ESC-REF-2026-0004</strong> is now formally marked as <strong>CLOSED</strong> in the compliance registry.
+          </div>
+          <div style="text-align: center; margin: 26px 0;">
+            <a href="https://www.tradeheaven.net/?view=DASHBOARD" style="background: #059669; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-size: 13px; font-weight: 800; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(5,150,105,0.25);">
+              Access Supplier Portal &amp; Extended Services →
+            </a>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 22px 0;" />
+          <p style="font-size: 12px; color: #64748b; margin: 0; text-align: center;">
+            Trade Heaven Compliance &amp; Export Management Desk • Approved by: Export Manager (David) • help@tradeheaven.net
+          </p>
+        </div>
+      </div>
+    `,
+    mailSuiteStatus: 'DELIVERED',
+    opened: false,
+    openCount: 0,
+    uniqueOpens: 0,
+    clicked: false,
+    clickCount: 0,
+    uniqueClicks: 0,
+    openEvents: [],
+    clickEvents: [],
+    trackingPixelUrl: `${getPublicTrackingBaseUrl()}/api/v1/track/open/ms-trk-zac-case-closed-extension-2026.gif`
+  },
+  {
+    id: 'eh-zac-refund-escalated-david-001',
+    trackingId: 'ms-trk-zac-refund-escalated-david-2026',
+    recipient: 'zac@otec.ltd',
+    recipientName: 'Zachary Aldin (Zac)',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    companyId: 'comp-zac-importation-fadetech',
+    subject: '⚖️ Case Escalated: Refund Request Escalated to Senior Export Manager (David) — IMPORTATION FADE-TECH (OTEC LTD) (Ref: TRD-INV-27-0004)',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Compliance & Export Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<zac-refund-case-escalated-david-2026@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'LIVE CASE ESCALATION NOTICE TO ZAC (zac@otec.ltd): Formal confirmation that upon supplier request, the refund inquiry for IMPORTATION FADE-TECH (OTEC LTD) (Invoice Ref: TRD-INV-27-0004 • $400.00 USD Part-Payment Deposit) has been officially escalated to Senior Export Manager (David) for compliance review under Trade Heaven Return & Refund Policy (Article 3: Part-Payment Non-Refundability & Article 4: 30-Day Eligibility Audit).',
+    htmlPreview: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 34px 24px; text-align: center; color: #ffffff;">
+          <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #fbbf24; text-transform: uppercase; margin-bottom: 10px; background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.35); padding: 4px 12px; border-radius: 9999px;">
+            TRADE HEAVEN • COMPLIANCE &amp; EXPORT MANAGEMENT DESK
+          </div>
+          <h1 style="margin: 0; font-size: 22px; font-weight: 900; color: #ffffff; line-height: 1.3;">
+            Refund Request Case Escalated to Export Manager (David)
+          </h1>
+          <p style="margin: 8px 0 0 0; font-size: 13px; color: #cbd5e1;">
+            Case Reference: <strong>#ESC-REF-2026-0004</strong> • Supplier: <strong>IMPORTATION FADE-TECH (OTEC LTD)</strong>
+          </p>
+        </div>
+        <div style="padding: 28px 24px; color: #1e293b;">
+          <p style="font-size: 15px; line-height: 1.6; margin: 0 0 14px 0;">
+            Dear <strong>Zachary Aldin (Zac)</strong>,
+          </p>
+          <p style="font-size: 14px; line-height: 1.65; margin: 0 0 18px 0; color: #334155;">
+            This is an official notification from the <strong>Trade Heaven Compliance &amp; Dispute Resolution Desk</strong> regarding your corporate supplier account for <strong>IMPORTATION FADE-TECH (OTEC LTD)</strong> (<span style="font-family: monospace; color: #2563eb;">zac@otec.ltd</span>).
+          </p>
+          <p style="font-size: 14px; line-height: 1.65; margin: 0 0 20px 0; color: #334155;">
+            Per your formal supplier request, your case regarding the <strong>refund inquiry</strong> on Invoice <strong>TRD-INV-27-0004</strong> has been <strong>officially escalated to your Senior Export Manager, Mr. David</strong>, for executive compliance review and case handling.
+          </p>
+          <div style="background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 14px; padding: 18px 20px; margin: 0 0 22px 0;">
+            <div style="font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px;">
+              📋 ESCALATED CASE DOSSIER &amp; ASSIGNMENT SUMMARY
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <tr>
+                <td style="padding: 6px 0; color: #475569; width: 185px; font-weight: 600;">Escalation Ticket ID:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 800; font-family: monospace;">#ESC-REF-2026-0004</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #475569; font-weight: 600;">Supplier Organization:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">IMPORTATION FADE-TECH (OTEC LTD)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #475569; font-weight: 600;">Registered Supplier Email:</td>
+                <td style="padding: 6px 0; color: #2563eb; font-weight: 700; font-family: monospace;">zac@otec.ltd</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #475569; font-weight: 600;">Assigned Escalation Officer:</td>
+                <td style="padding: 6px 0; color: #059669; font-weight: 900;">Mr. David — Senior Export Manager</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #475569; font-weight: 600;">Agreement / Invoice Ref:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">TRD-INV-27-0004 ($400.00 USD Part-Payment Paid)</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #475569; font-weight: 600;">Current Case Status:</td>
+                <td style="padding: 6px 0;"><span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800;">ESCALATED TO EXPORT MANAGER (DAVID)</span></td>
+              </tr>
+            </table>
+          </div>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; border-radius: 10px; padding: 14px 16px; margin: 0 0 22px 0; font-size: 12.5px; color: #92400e; line-height: 1.6;">
+            <strong>Important Policy Notice under Review:</strong> Please note that during Export Manager David&rsquo;s review, your case will be evaluated in accordance with the <strong>Trade Heaven Return &amp; Refund Policy</strong> (specifically <em>Article 3: Strict Non-Availability of Part-Payment / Partial Payment Refunds for Services</em> and <em>Article 4: 30-Day Strict Eligibility Window from Plan Start Date</em>).
+          </div>
+          <p style="font-size: 13.5px; line-height: 1.6; margin: 0 0 22px 0; color: #334155;">
+            <strong>Next Steps:</strong> Senior Export Manager <strong>David</strong> has received your complete account file, billing ledger, and campaign logs, and will reach out to you directly regarding the resolution and available options to protect your initial deposit credit toward full service activation.
+          </p>
+          <div style="text-align: center; margin: 26px 0;">
+            <a href="https://www.tradeheaven.net/?view=REFUND_POLICY" style="background: #0f172a; color: #ffffff; padding: 13px 26px; border-radius: 10px; font-size: 13px; font-weight: 800; text-decoration: none; display: inline-block;">
+              Review Official Refund Policy &amp; Case Terms →
+            </a>
+          </div>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 22px 0;" />
+          <p style="font-size: 12px; color: #64748b; margin: 0; text-align: center;">
+            Trade Heaven Compliance &amp; Export Management Desk • Assigned Officer: Export Manager (David) • help@tradeheaven.net
+          </p>
+        </div>
+      </div>
+    `,
+    mailSuiteStatus: 'DELIVERED',
+    opened: false,
+    openCount: 0,
+    uniqueOpens: 0,
+    clicked: false,
+    clickCount: 0,
+    uniqueClicks: 0,
+    openEvents: [],
+    clickEvents: [],
+    trackingPixelUrl: `${getPublicTrackingBaseUrl()}/api/v1/track/open/ms-trk-zac-refund-escalated-david-2026.gif`
+  },
   {
     id: 'eh-zac-balance-fund-live-001',
     trackingId: 'ms-trk-zac-balance-fund-live-2026',

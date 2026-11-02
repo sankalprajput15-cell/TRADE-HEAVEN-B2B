@@ -1,5 +1,5 @@
 import { NotificationProvider, useNotifications } from "./context/NotificationContext";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SiteContentProvider, useSiteContent } from './context/SiteContentContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
@@ -144,6 +144,148 @@ import { EditableImage } from './components/EditableImage';
 import { getDynamicHeroImageForView } from './utils/heroImageOptimization';
 import { OptimizedHeroImage } from './components/common/OptimizedHeroImage';
 
+interface ParsedEmailLinkRoute {
+  isEmailLink: boolean;
+  msTrk: string | null;
+  forcedView: ActiveView | null;
+  action: string | null;
+  payZac: boolean;
+  email: string | null;
+  company: string | null;
+  decisionMaker: string | null;
+  address: string | null;
+  paymentMethod: string | null;
+  planId: string | null;
+  amountUsd: number | null;
+}
+
+/**
+ * Centralized Email Link Parser:
+ * Parses incoming 'ms_trk' and custom email query parameters ('view', 'email_view',
+ * 'target_view', 'action', 'pay_zac', 'policy', 'case_id', 'ticket', 'email', 'company', etc.)
+ * and resolves the exact target ActiveView to force after initialization.
+ */
+function parseIncomingEmailLinkParams(rawSearch: string): ParsedEmailLinkRoute {
+  const params = new URLSearchParams(rawSearch || '');
+  const msTrk = (params.get('ms_trk') || params.get('trackingId') || params.get('trk') || '').trim() || null;
+  const rawView = (
+    params.get('view') ||
+    params.get('email_view') ||
+    params.get('target_view') ||
+    params.get('page') ||
+    ''
+  ).trim();
+  const action = (params.get('action') || '').trim().toLowerCase() || null;
+  const payZac = params.get('pay_zac') === '1' || params.get('pay_zac') === 'true';
+  const policy = (params.get('policy') || '').trim().toLowerCase();
+  const caseId = (params.get('case_id') || params.get('ticket') || params.get('ref') || '').trim();
+  const email = (params.get('email') || params.get('clientEmail') || params.get('recipient') || '').trim() || null;
+  const company = (params.get('company') || params.get('companyName') || '').trim() || null;
+  const decisionMaker = (params.get('decisionMaker') || '').trim() || null;
+  const address = (params.get('address') || '').trim() || null;
+  const paymentMethod = (params.get('paymentMethod') || '').trim() || null;
+  const planId = (params.get('planId') || '').trim() || null;
+  const rawAmount = Number(params.get('amount') || params.get('amountUsd'));
+  const amountUsd = !Number.isNaN(rawAmount) && rawAmount > 0 ? rawAmount : null;
+
+  const isEmailLink = Boolean(
+    msTrk ||
+      payZac ||
+      action === 'renew-membership' ||
+      action === 'pay-balance' ||
+      action === 'refund-policy' ||
+      action === 'case-closed' ||
+      policy ||
+      caseId ||
+      params.get('utm_source') === 'email' ||
+      params.get('from_email') === '1' ||
+      (rawView && (msTrk || email || company || caseId))
+  );
+
+  let forcedView: ActiveView | null = null;
+
+  // 1. Explicit view query param resolution
+  if (rawView) {
+    const lower = rawView.toLowerCase();
+    const upper = rawView.toUpperCase();
+    if (VIEW_ALIASES[lower]) {
+      forcedView = VIEW_ALIASES[lower];
+    } else if (upper === 'PRICING' || upper === 'PLANS' || upper === 'MEMBERSHIP') {
+      forcedView = 'PREMIUM_MEMBERSHIP';
+    } else if (upper === 'REFUND' || upper === 'REFUND_POLICY') {
+      forcedView = 'REFUND_POLICY';
+    } else if (upper === 'DASHBOARD' || upper === 'PORTAL' || upper === 'SUPPLIER_PORTAL') {
+      forcedView = 'DASHBOARD';
+    } else {
+      forcedView = upper as ActiveView;
+    }
+  }
+
+  // 2. Custom email action / policy / checkout query param resolution
+  if (!forcedView) {
+    if (payZac || action === 'renew-membership' || action === 'pay-balance') {
+      forcedView = 'PREMIUM_MEMBERSHIP';
+    } else if (policy === 'refund' || action === 'refund-policy' || caseId.toUpperCase().includes('ESC-REF')) {
+      forcedView = 'REFUND_POLICY';
+    } else if (policy === 'terms') {
+      forcedView = 'TERMS_OF_USE';
+    } else if (policy === 'privacy') {
+      forcedView = 'PRIVACY_POLICY';
+    } else if (action === 'case-closed' || action === 'portal-dashboard') {
+      forcedView = 'DASHBOARD';
+    } else if (action === 'post-sell') {
+      forcedView = 'POST_SELL_OFFER';
+    } else if (params.get('article') || params.get('post')) {
+      forcedView = 'INSIGHTS';
+    } else if (params.get('buyer') || params.get('buyerId')) {
+      forcedView = 'BUYER_PROFILE';
+    } else if (params.get('cert') || params.get('certificate')) {
+      forcedView = 'TRADE_ASSURANCE_CERTIFICATE';
+    } else if (params.get('supplier') || params.get('supplierId') || params.get('vendor')) {
+      forcedView = 'VENDOR_PROFILE';
+    }
+  }
+
+  // 3. Fallback inference directly from 'ms_trk' token when email clients strip or omit 'view'
+  if (!forcedView && msTrk) {
+    const trkLower = msTrk.toLowerCase();
+    if (trkLower.includes('refund') || trkLower.includes('escalat')) {
+      forcedView = 'REFUND_POLICY';
+    } else if (
+      trkLower.includes('balance') ||
+      trkLower.includes('ads-failed') ||
+      trkLower.includes('renewal') ||
+      trkLower.includes('diwali')
+    ) {
+      forcedView = 'PREMIUM_MEMBERSHIP';
+    } else if (
+      trkLower.includes('case-closed') ||
+      trkLower.includes('ad-launched') ||
+      trkLower.includes('onboarding') ||
+      trkLower.includes('ext')
+    ) {
+      forcedView = 'DASHBOARD';
+    } else {
+      forcedView = 'DASHBOARD';
+    }
+  }
+
+  return {
+    isEmailLink,
+    msTrk,
+    forcedView,
+    action,
+    payZac,
+    email,
+    company,
+    decisionMaker,
+    address,
+    paymentMethod,
+    planId,
+    amountUsd
+  };
+}
+
 const MainApp: React.FC = () => {
   const { 
     currentUser, 
@@ -163,22 +305,22 @@ const MainApp: React.FC = () => {
 
   const { addNotification } = useNotifications();
 
-  // Navigation & Currency State - Initialize from URL if present
+  // Capture initial URL search string before any startup effects can mutate or strip query params
+  const initialEmailSearchRef = useRef<string>(
+    typeof window !== 'undefined' ? window.location.search : ''
+  );
+  const initialParsedEmailRoute = parseIncomingEmailLinkParams(initialEmailSearchRef.current);
+  const emailLinkForcedViewRef = useRef<ActiveView | null>(initialParsedEmailRoute.forcedView);
+  const hasRecordedEmailClickRef = useRef<boolean>(false);
+  const [isAppInitialized, setIsAppInitialized] = useState<boolean>(false);
+
+  // Navigation & Currency State - Initialize from URL / Email Link Handler if present
   const getInitialView = (): ActiveView => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const rawView = params.get('view');
-      if (rawView) {
-        const lower = rawView.toLowerCase();
-        if (VIEW_ALIASES[lower]) return VIEW_ALIASES[lower];
-        return rawView as ActiveView;
+      const parsed = parseIncomingEmailLinkParams(window.location.search);
+      if (parsed.forcedView) {
+        return parsed.forcedView;
       }
-      if (params.get('article') || params.get('post')) return 'INSIGHTS';
-      if (params.get('buyer') || params.get('buyerId')) return 'BUYER_PROFILE';
-      if (params.get('cert') || params.get('certificate')) return 'TRADE_ASSURANCE_CERTIFICATE';
-      // Check action param
-      const action = params.get('action');
-      if (action === 'post-sell') return 'POST_SELL_OFFER';
     }
     return 'HOMEPAGE';
   };
@@ -187,10 +329,15 @@ const MainApp: React.FC = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
 
   // Global listener: on any unexpected error event, safely divert directly to HOMEPAGE
+  // UNLESS an incoming Email Link forced a specific target view.
   useEffect(() => {
     const handleDbError = (e: Event) => {
       const customEvent = e as CustomEvent<{ message: string; code?: string }>;
-      console.warn('[TradeHeaven Safety Handled Error - Diverting to Home]:', customEvent?.detail);
+      console.warn('[TradeHeaven Safety Handled Error]:', customEvent?.detail);
+      if (emailLinkForcedViewRef.current) {
+        setActiveView(emailLinkForcedViewRef.current);
+        return;
+      }
       setActiveView('HOMEPAGE');
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
@@ -832,8 +979,8 @@ const MainApp: React.FC = () => {
   };
 
   // 1. Fetch live data asynchronously in background without blocking UI
-  const initializeData = () => {
-    Promise.allSettled([
+  const initializeData = async () => {
+    await Promise.allSettled([
       fetchProducts(),
       fetchRFQs()
     ]);
@@ -858,7 +1005,7 @@ const MainApp: React.FC = () => {
     preFetchStaticData();
 
     let isMounted = true;
-    productImageManagerService.ensureHydrated().then(() => {
+    const hydrationPromise = productImageManagerService.ensureHydrated().then(() => {
       if (isMounted) {
         setProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
         setSelectedProduct(prev => {
@@ -869,8 +1016,12 @@ const MainApp: React.FC = () => {
       }
     });
 
-    // Run background fetch immediately without delay
-    initializeData();
+    // Run background fetch immediately without delay and mark initialization complete once settled
+    Promise.allSettled([initializeData(), hydrationPromise]).finally(() => {
+      if (isMounted) {
+        setIsAppInitialized(true);
+      }
+    });
 
     const handleRfqRefresh = () => {
       fetchRFQs();
@@ -925,6 +1076,13 @@ const MainApp: React.FC = () => {
       return;
     }
     if (activeView === 'DASHBOARD' && !currentUser) {
+      // If user arrived via an email link targeting DASHBOARD, keep activeView on DASHBOARD
+      // (which renders the dedicated Member Access Required card) and prompt sign-in modal.
+      if (emailLinkForcedViewRef.current === 'DASHBOARD') {
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
       setActiveView('HOMEPAGE');
       setAuthModalMode('LOGIN');
       setIsAuthModalOpen(true);
@@ -1423,6 +1581,10 @@ const MainApp: React.FC = () => {
     setCheckoutData(data);
   };
 
+  // Centralized Email Link Handler:
+  // Specifically parses incoming 'ms_trk' or custom email query params and programmatically
+  // forces the app's activeView state (and associated checkout/modal state), overriding any
+  // failed default routing both on initial mount and after the application finishes initializing.
   useEffect(() => {
     const handleCustomPaymentEvent = (e: Event) => {
       const customEvent = e as CustomEvent<PaymentCheckoutData>;
@@ -1433,11 +1595,59 @@ const MainApp: React.FC = () => {
     window.addEventListener('tradeheaven_open_payment_checkout', handleCustomPaymentEvent);
 
     try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('pay_zac') === '1') {
-        const company = params.get('company') || 'IMPORTATION FADE-TECH (OTEC LTD)';
-        const email = params.get('email') || 'zac@otec.ltd';
-        const amountUsd = Number(params.get('amount') || params.get('amountUsd')) || 590;
+      const activeSearch =
+        typeof window !== 'undefined' && window.location.search
+          ? window.location.search
+          : initialEmailSearchRef.current;
+      const parsed = parseIncomingEmailLinkParams(activeSearch);
+
+      // 1. Record MailSuite click telemetry once per session load if ms_trk is present
+      if (parsed.msTrk && !hasRecordedEmailClickRef.current) {
+        hasRecordedEmailClickRef.current = true;
+        fetch('/api/v1/admin/mailsuite/simulate-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trackingId: parsed.msTrk,
+            eventType: 'CLICK',
+            url: typeof window !== 'undefined' ? window.location.href : 'https://www.tradeheaven.net',
+            label: `Direct Email Link Click (${parsed.forcedView || 'HOMEPAGE'})`
+          })
+        }).catch(() => {});
+      }
+
+      // 2. Programmatically force activeView when ms_trk or custom email query params are present,
+      // overriding any failed default routing after application initialization completes.
+      if (parsed.forcedView) {
+        emailLinkForcedViewRef.current = parsed.forcedView;
+        setActiveView(prev => (prev !== parsed.forcedView ? parsed.forcedView! : prev));
+
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href);
+          if (parsed.forcedView !== 'HOMEPAGE') {
+            url.searchParams.set('view', parsed.forcedView);
+          }
+          if (parsed.msTrk && !url.searchParams.has('ms_trk')) {
+            url.searchParams.set('ms_trk', parsed.msTrk);
+          }
+          if (url.toString() !== window.location.href) {
+            window.history.replaceState({}, '', url.toString());
+          }
+        }
+      }
+
+      // 3. Open pre-configured payment checkout modal for balance fund / membership renewal email links
+      const isZacBalanceLink =
+        parsed.payZac ||
+        (parsed.msTrk &&
+          (parsed.msTrk.toLowerCase().includes('zac-balance') ||
+            parsed.msTrk.toLowerCase().includes('zac-ads-failed') ||
+            parsed.msTrk.toLowerCase().includes('zac-demo')));
+
+      if (isZacBalanceLink) {
+        const company = parsed.company || 'IMPORTATION FADE-TECH (OTEC LTD)';
+        const email = parsed.email || 'zac@otec.ltd';
+        const amountUsd = parsed.amountUsd || 590;
 
         setCheckoutData({
           planId: 'ZAC-BALANCE-FUND-590',
@@ -1451,14 +1661,14 @@ const MainApp: React.FC = () => {
           decisionMakerName: 'Zachary Aldin',
           preferredPaymentMethod: 'Direct Bank Wire Transfer'
         });
-      } else if (params.get('action') === 'renew-membership') {
-        const company = params.get('company') || 'ACE Intermediary';
-        const email = params.get('email') || 'ezekiahali355@gmail.com';
-        const decisionMaker = params.get('decisionMaker') || 'Ali Charley Ezekiah';
-        const address = params.get('address') || '1241 Hackberry Avenue Corsicana Texas 75110';
-        const paymentMethod = params.get('paymentMethod') || 'Debit Card';
-        const planId = params.get('planId') || 'VIP-RENEWAL-OFFER-2026';
-        const amountUsd = Number(params.get('amountUsd')) || 1499;
+      } else if (parsed.action === 'renew-membership') {
+        const company = parsed.company || 'ACE Intermediary';
+        const email = parsed.email || 'ezekiahali355@gmail.com';
+        const decisionMaker = parsed.decisionMaker || 'Ali Charley Ezekiah';
+        const address = parsed.address || '1241 Hackberry Avenue Corsicana Texas 75110';
+        const paymentMethod = parsed.paymentMethod || 'Debit Card';
+        const planId = parsed.planId || 'VIP-RENEWAL-OFFER-2026';
+        const amountUsd = parsed.amountUsd || 1499;
 
         setCheckoutData({
           planId,
@@ -1479,7 +1689,7 @@ const MainApp: React.FC = () => {
     return () => {
       window.removeEventListener('tradeheaven_open_payment_checkout', handleCustomPaymentEvent);
     };
-  }, []);
+  }, [isAppInitialized]);
 
   const handleOpenContactModal = (config?: Partial<typeof contactModalConfig>) => {
     setContactModalConfig({
@@ -1504,6 +1714,8 @@ const MainApp: React.FC = () => {
     view: ActiveView | string, 
     options?: { search?: string; category?: string; subcategory?: string; productId?: string }
   ) => {
+    // Release initial email-link forced view lock once the user manually navigates
+    emailLinkForcedViewRef.current = null;
     const target = String(view || '').trim().toUpperCase();
 
     if (options?.category) {
