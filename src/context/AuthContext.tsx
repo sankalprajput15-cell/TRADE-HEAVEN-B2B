@@ -104,13 +104,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return sanitizeUserRole(parsed);
         }
       }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('th_session_user', JSON.stringify(DEFAULT_MASTER_ADMIN_USER));
-      }
     } catch {}
-    return DEFAULT_MASTER_ADMIN_USER;
+    return null;
   });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!user);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [originalAdminUser, setOriginalAdminUser] = useState<AuthUser | null>(() => {
     try {

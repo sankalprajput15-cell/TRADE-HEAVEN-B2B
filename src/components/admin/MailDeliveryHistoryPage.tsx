@@ -79,6 +79,64 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     } catch {}
   };
 
+  const handleDownloadPdf = (entry: CompanyEmailHistoryEntry) => {
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) {
+      setStatusBanner({ type: 'error', message: 'Pop-up blocked. Please allow pop-ups to generate PDF reports.' });
+      return;
+    }
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>TradeHeaven_Mail_Telemetry_Report_${entry.recipient.replace(/[^a-z0-9]/gi, '_')}</title>
+        <style>
+          @page { size: A4; margin: 20mm; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; color: #1e293b; max-width: 750px; margin: auto; line-height: 1.5; background: #fff; }
+          h1 { color: #0f172a; font-size: 18px; border-bottom: 2px solid #2563eb; padding-bottom: 8px; margin-bottom: 16px; }
+          .meta { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 16px; font-size: 12px; }
+          .meta div { margin-bottom: 4px; }
+          .body-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-top: 16px; background: #fff; font-size: 13px; }
+          .footer { margin-top: 24px; font-size: 10px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1>Trade Heaven MailSuite™ Delivery &amp; Telemetry PDF Report</h1>
+        <div class="meta">
+          <div><strong>Recipient:</strong> ${entry.recipientName} (${entry.recipient})</div>
+          <div><strong>Company:</strong> ${entry.companyName}</div>
+          <div><strong>Subject:</strong> ${entry.subject}</div>
+          <div><strong>Category / Type:</strong> ${entry.category} / ${entry.dispatchType}</div>
+          <div><strong>Delivery Status:</strong> ${entry.success ? 'Delivered (250 OK)' : 'Bounced / Failed'}</div>
+          <div><strong>Tracking ID:</strong> ${entry.trackingId || 'N/A'}</div>
+          <div><strong>Message ID:</strong> ${entry.messageId || 'N/A'}</div>
+          <div><strong>Dispatched At:</strong> ${new Date(entry.dispatchedAt).toLocaleString()}</div>
+          <div><strong>Engagement:</strong> Opens: ${entry.openCount || 0} | Clicks: ${entry.clickCount || 0}</div>
+        </div>
+        <h3 style="font-size: 14px; margin: 12px 0 6px 0;">Audit Summary</h3>
+        <p style="font-size: 12px; color: #334155;">${entry.summaryText || 'No summary notes.'}</p>
+        <h3 style="font-size: 14px; margin: 16px 0 6px 0;">Dispatched Email Body Message (PDF Format)</h3>
+        <div class="body-box">
+          ${entry.htmlPreview || '<p>No HTML body stored.</p>'}
+        </div>
+        <div class="footer">
+          Trade Heaven Global B2B Platform • Secure MailSuite Telemetry Audit Record • Generated ${new Date().toLocaleString()}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    setStatusBanner({ type: 'success', message: `PDF print & download dialog opened for ${entry.recipient}. Select "Save as PDF" to download.` });
+  };
+
   const handleRunSimulation = async (action: 'ALL_DELIVERED' | 'BATCH_OPENS' | 'BATCH_CLICKS' | 'SIMULATE_BOUNCE' | 'RESET_ALL') => {
     setIsLoading(true);
     try {
@@ -559,7 +617,16 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPdf(selectedEntry)}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-md"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>📥 Generate &amp; Download Mail PDF Report</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setSelectedEntry(null)}

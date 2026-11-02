@@ -94,6 +94,29 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
           </div>
         </section>
 
+        {/* Article 3: Strict Non-Availability of Part-Payment / Partial Payment Refunds */}
+        <section className="space-y-3 pt-4 border-t border-slate-100">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-rose-600" />
+            3. Strict Non-Availability of Part-Payment / Partial Payment Refunds for Services
+          </h2>
+          <p className="text-slate-600 font-medium">
+            Trade Heaven maintains a strict policy regarding partial payments and installment deposits:
+          </p>
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-2 text-rose-950">
+            <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 text-rose-900">
+              <AlertCircle className="w-4 h-4 text-rose-700" />
+              <span>Partial / Part Payments Are 100% Non-Refundable</span>
+            </div>
+            <p className="text-xs sm:text-sm leading-relaxed text-rose-900">
+              Part-payments, partial deposits, or installment payments made toward any service, membership tier, or sponsored advertising campaign (such as partial deposits paid toward Basic or Premium plans) are <strong>strictly non-refundable</strong> under any circumstance. 
+            </p>
+            <p className="text-xs sm:text-sm leading-relaxed font-semibold text-rose-950">
+              Once a partial payment is processed and service provisioning or ad campaign staging begins, refunds for partial payments are <u>not available</u>. Partial payments cannot be reclaimed, reversed, or refunded; any remaining balance must be settled in full to complete service fulfillment and activate full platform features.
+            </p>
+          </div>
+        </section>
+
         {/* Article 3: Commercial Trade Protection Deposits */}
         <section className="space-y-3 pt-4 border-t border-slate-100">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
@@ -119,14 +142,17 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
           </div>
         </section>
 
-        {/* Article 4: Investigation Filing Procedure */}
+        {/* Article 4: Investigation Filing Procedure & 30-Day Window */}
         <section className="space-y-2.5 pt-4 border-t border-slate-100">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-amber-600" />
-            4. Claim Submission &amp; Audit Timeline
+            4. 30-Day Strict Eligibility Window &amp; Claim Submission Timeline
           </h2>
           <p className="text-slate-600 font-medium">
-            To request an investigation, users must submit a formal dispute ticket including account details, billing receipts, and specific grounds for review. Trade Heaven’s compliance desk reviews all documentation within 7 to 14 business days before issuing a final determination.
+            Refunds are <strong>only accessible if requested within strictly 30 calendar days from the initial start date of the plan</strong>. Any refund request, inquiry, or dispute ticket submitted after 30 days from plan activation is permanently ineligible, non-accessible, and rejected under any circumstance.
+          </p>
+          <p className="text-slate-600">
+            To request an investigation within the valid 30-day window, users must submit a formal dispute ticket including account details, billing receipts, and specific grounds for review. Trade Heaven’s compliance desk reviews all documentation within 7 to 14 business days before issuing a final determination.
           </p>
         </section>
 

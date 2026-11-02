@@ -3462,6 +3462,112 @@ app.post('/api/v1/admin/send-ad-launched-email', async (req, res) => {
 });
 
 
+// POST /api/v1/admin/send-zac-balance-payment-email - Send balance fund payment request email to Zac (zac@otec.ltd)
+app.post('/api/v1/admin/send-zac-balance-payment-email', async (req, res) => {
+  try {
+    const trackingId = 'ms-trk-zac-balance-fund-live-2026';
+    const recipientEmail = 'zac@otec.ltd';
+    const recipientName = 'Zachary Aldin (Zac)';
+    const companyName = 'IMPORTATION FADE-TECH (OTEC LTD)';
+    const checkoutUrl = 'https://www.tradeheaven.net/?action=renew-membership&company=IMPORTATION%20FADE-TECH%20(OTEC%20LTD)&email=zac%40otec.ltd&planId=basic-business-plan&amountUsd=590';
+
+    const mailOptions = {
+      from: `"Trade Heaven Billing & Advertising Desk" <noreply@tradeheaven.net>`,
+      replyTo: 'help@tradeheaven.net',
+      to: [recipientEmail, 'yr943334@gmail.com', 'sankalprajput15@gmail.com'],
+      subject: `💳 Action Required: Payment of $590 USD Balance Fund for Basic Plan to Relaunch Ads & Get More Buyers (${companyName})`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #3b82f6; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+          <div style="background: linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%); padding: 36px 24px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #fbbf24; text-transform: uppercase; margin-bottom: 10px; background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.35); padding: 4px 12px; border-radius: 9999px;">
+              TRADE HEAVEN • BALANCE FUND &amp; ADS DESK
+            </div>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; line-height: 1.25;">
+              Payment of $590.00 USD Balance Fund
+            </h1>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #cbd5e1;">
+              Required for ${companyName} (${recipientEmail}) to Relaunch Ads &amp; Get More Buyers
+            </p>
+          </div>
+          <div style="padding: 30px 24px; color: #1e293b;">
+            <p style="font-size: 15px; line-height: 1.6; margin: 0 0 14px 0;">
+              Dear <strong>${recipientName}</strong>,
+            </p>
+            <p style="font-size: 14px; line-height: 1.65; margin: 0 0 20px 0; color: #334155;">
+              To fully activate your export profile, resume your paused coal buyer ad campaign, and unlock a continuous stream of verified international buyer RFQs on Trade Heaven, please complete the settlement of your remaining balance fund.
+            </p>
+            <div style="background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 14px; padding: 20px; margin: 0 0 24px 0;">
+              <div style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>ACCOUNT BALANCE &amp; INVOICE SUMMARY</span>
+                <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">DIWALI 10% OFF APPLIED</span>
+              </div>
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; width: 175px; font-weight: 600;">Company Name:</td>
+                  <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${companyName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; font-weight: 600;">Registered Email:</td>
+                  <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${recipientEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; font-weight: 600;">Full Basic Plan (Diwali):</td>
+                  <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">$990.00 USD / Year</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; font-weight: 600;">Partial Amount Paid:</td>
+                  <td style="padding: 6px 0; color: #16a34a; font-weight: 800;">-$400.00 USD (Credited)</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #475569; font-weight: 600; border-top: 1px solid #e2e8f0; padding-top: 6px;">Net Balance Due:</td>
+                  <td style="padding: 6px 0; color: #dc2626; font-weight: 900; font-size: 15px; border-top: 1px solid #e2e8f0; padding-top: 6px;">$590.00 USD</td>
+                </tr>
+              </table>
+            </div>
+            <div style="text-align: center; margin: 28px 0;">
+              <a href="${checkoutUrl}" style="background: #2563eb; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: 800; text-decoration: none; display: inline-block; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+                Complete $590 USD Balance Payment &amp; Relaunch Ads →
+              </a>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+            <p style="font-size: 12px; color: #64748b; margin: 0; text-align: center;">
+              Trade Heaven Billing Desk • MailSuite Tracking ID: ${trackingId}
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const receipts = await serverDeliveryQueueManager.enqueue(mailOptions);
+    const success = receipts.length > 0 && receipts.some(r => r.success);
+
+    logServerActivity(
+      req,
+      'ZAC_ADS_FAILED_LIVE_MAIL_DISPATCH',
+      recipientEmail,
+      'ADMIN',
+      '/api/v1/admin/send-zac-balance-payment-email',
+      `Dispatched Balance Fund Payment Request Mail to ${recipientName} (${recipientEmail} • ${companyName}) for $590.00 USD [MailSuite Tracking ID: ${trackingId}].`,
+      success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success,
+      message: success
+        ? `Successfully dispatched Balance Fund Payment Request email to ${recipientEmail} and admin copies!`
+        : `Failed to dispatch balance payment email.`,
+      receipts,
+      trackingId
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to send balance payment email: ${err?.message || err}`
+    });
+  }
+});
+
+
 // POST /api/v1/auth/test-email - Trigger manual test email alert via serialized SMTP queue
 app.post('/api/v1/auth/test-email', async (req, res) => {
   const { customTargetEmail, testSmtpHost, testSmtpPort, testSmtpUser, testSmtpPass } = req.body;
