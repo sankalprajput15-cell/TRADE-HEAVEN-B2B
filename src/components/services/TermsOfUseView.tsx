@@ -364,6 +364,15 @@ export const TermsOfUseView: React.FC<Props> = ({
               The users acknowledge the risks of purchase and sale transactions when using the Site, and fully assume the risks of liability or harm of any kind in connection with such transactions. Such risks include mis-representation of products and services, fraudulent schemes, unsatisfactory quality, defective products, delay in delivery or payment, and transportation mishaps.
             </p>
           </div>
+          <div className="not-prose p-4.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs sm:text-sm text-rose-950 space-y-2">
+            <div className="font-bold flex items-center gap-1.5 text-rose-900 uppercase text-xs tracking-wider">
+              <Ban className="w-4 h-4 text-rose-600" />
+              <span>Instant Termination &amp; Non-Accountability for Off-Record Secret Communication</span>
+            </div>
+            <p className="leading-relaxed font-semibold text-rose-900">
+              If a supplier tries to communicate outside the record with buyers—such as via any other social media or external platform which is not known to the Export Manager and not under his eyes (where the Export Manager is not in communication)—and they deal secretly, <u>services are terminated instantly</u>, as <strong>Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed</strong>.
+            </p>
+          </div>
         </div>
       )
     },
@@ -374,11 +383,11 @@ export const TermsOfUseView: React.FC<Props> = ({
       category: 'Risk & Platform Conduct',
       badge: 'Zero Tolerance',
       icon: ShieldAlert,
-      summary: 'Immediate permanent termination for advance fee fraud, phishing, abusive behavior, and dynamic IP blocklists.',
+      summary: 'Immediate permanent termination for off-record secret dealing outside Export Manager supervision, advance fee fraud, phishing, and dynamic IP blocklists.',
       content: (
         <div className="space-y-4 text-slate-700 leading-relaxed">
           <p>
-            This website has a zero tolerance policy towards fraudsters, scammers, advance-fee lottery schemes, and inappropriate communication.
+            This website has a zero tolerance policy towards fraudsters, scammers, advance-fee lottery schemes, off-record secret dealings, and inappropriate communication.
           </p>
           <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-1.5">
@@ -393,6 +402,15 @@ export const TermsOfUseView: React.FC<Props> = ({
                 Access is dynamically blocked to high-risk IP origins. A "403 Forbidden" status indicates originating network designation as high risk by security threat partners.
               </p>
             </div>
+          </div>
+          <div className="not-prose p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-1.5">
+            <strong className="text-rose-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-rose-600" />
+              <span>Strict Ban on Off-Record Social Media Dealing Without Export Manager</span>
+            </strong>
+            <p className="text-xs text-rose-900 leading-relaxed font-medium">
+              If suppliers try to communicate outside the record with buyers (like any other social media which is not known to the Export Manager and not under his eyes, where he is not in communication) and they deal secretly, services are terminated instantly with zero refund, as Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed.
+            </p>
           </div>
           <div className="not-prose p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">
             <strong>Unsubscribe SLA:</strong> User unsubscribe notifications are processed within <strong>7 working days</strong>, and all promotional correspondence ceases within <strong>15 working days</strong>.
@@ -462,6 +480,10 @@ export const TermsOfUseView: React.FC<Props> = ({
               <li className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                 <span><strong>Pre-Activation Cancellations:</strong> Orders canceled prior to account provisioning and technical onboarding are processed within <strong>7 working days</strong>.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Ban className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                <span><strong>Instant Termination &amp; Forfeiture for Off-Record Secret Dealing:</strong> If suppliers try to communicate outside the record with buyers—such as on any other social media which is not known to the Export Manager and not under his eyes (like he is not in communication)—and they deal secretly, services are terminated instantly with zero refund eligibility, as Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed.</span>
               </li>
             </ul>
           </div>
@@ -782,7 +804,7 @@ export const TermsOfUseView: React.FC<Props> = ({
   }, [searchQuery, sections]);
 
   const handleCopyTerms = () => {
-    const textToCopy = `TRADE HEAVEN - TERMS OF USE AGREEMENT\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Office: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.net/?view=TERMS_OF_USE\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nImportant Highlights:\n- Consideration for access: acceptance of Terms of Use and Privacy Policy is required.\n- Trade Heaven is an independent B2B information & matchmaking platform.\n- Zero tolerance for fraudulent schemes, 419 sample scams, scraping, and prohibited items.\n- Refunds are available only upon formal investigation and explicit Trade Heaven approval. If rejected after investigation, no refund is granted and services continue as Trade Heaven has already invested in providing services.\n- Single user account policy with strict geolocation verification.\n- Governing Law: Laws of India (Uttar Pradesh / New Delhi jurisdiction).`;
+    const textToCopy = `TRADE HEAVEN - TERMS OF USE AGREEMENT\nLegal Entity: Tradeheaven ECOM Solution LLP\nRegistered Office: B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh - 206244, India\nWebsite: https://tradeheaven.net/?view=TERMS_OF_USE\nContact: help@tradeheaven.net | Phone/WhatsApp: ${OFFICIAL_WHATSAPP_DATA.phone}\n\nImportant Highlights:\n- Consideration for access: acceptance of Terms of Use and Privacy Policy is required.\n- Trade Heaven is an independent B2B information & matchmaking platform.\n- Zero tolerance for fraudulent schemes, 419 sample scams, scraping, and prohibited items.\n- Instant Termination for Off-Record Secret Communication: If suppliers try to communicate outside the record with buyers (like any other social media not known to the Export Manager and not under his eyes) and deal secretly, services are terminated instantly as Trade Heaven will not be accountable for any loss due to supplier's greed.\n- Refunds are available only upon formal investigation and explicit Trade Heaven approval. If rejected after investigation, no refund is granted and services continue as Trade Heaven has already invested in providing services.\n- Single user account policy with strict geolocation verification.\n- Governing Law: Laws of India (Uttar Pradesh / New Delhi jurisdiction).`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

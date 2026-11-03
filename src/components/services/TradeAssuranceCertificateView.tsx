@@ -845,20 +845,6 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                 className="py-2.5 px-4 shadow-md"
               />
 
-              <ExportToPDF
-                mode="BROCHURE"
-                certificateData={selectedCertificate || verifiedLookupResult}
-                selectedCurrency={selectedCurrency}
-                formattedCoverageLimit={
-                  selectedCertificate
-                    ? formatPrice(selectedCertificate.coverageLimitUsd)
-                    : '$2,000,000'
-                }
-                buttonLabel="Download 'Working of Trade Assurance' PDF Brochure"
-                variant="emerald"
-                className="py-2.5 px-4 shadow-md"
-              />
-
               <button
                 type="button"
                 onClick={() => {
@@ -1005,13 +991,13 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
               <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Official Supplier &amp; Buyer Educational PDF Brochure</span>
+              <span>Features of Trade Heaven &amp; Client Benefits — Official PDF</span>
             </div>
             <h2 id="brochure-studio-heading" className="text-xl sm:text-2xl font-black text-white">
-              Export &ldquo;Working of Trade Assurance Certificate&rdquo; PDF Brochure &amp; Send to Suppliers / Buyers
+              Export &ldquo;Features of Trade Heaven &amp; How It Benefits Clients&rdquo; PDF Brochure
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
-              Download the complete 2-page A4 executive PDF brochure explaining how the Trade Heaven Trade Assurance Certificate works (5-stage Escrow &amp; SGS inspection workflow, Supplier &amp; Buyer guarantees, and Full Assurance of Trade Heaven stuck-payment loss coverage) or dispatch it directly to your suppliers and buyers.
+              Download the official 2-page A4 executive PDF detailing the core features of Trade Heaven and how it benefits both Buyers and Suppliers (Escrow security, SGS/TÜV inspection, 5-stage protection workflow, and Full Assurance of Trade Heaven stuck-payment loss coverage).
             </p>
           </div>
 
@@ -1027,25 +1013,9 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
               }
               recipientRole={brochureRecipientRole}
               recipientCompany={brochureRecipientCompany.trim() || undefined}
-              buttonLabel="Download 2-Page PDF Brochure"
+              buttonLabel="Download Features & Client Benefits PDF"
               variant="secondary"
               className="px-4 py-2.5 text-xs font-black shadow-lg"
-            />
-            <ExportToPDF
-              mode="BROCHURE"
-              certificateData={selectedCertificate || verifiedLookupResult}
-              selectedCurrency={selectedCurrency}
-              formattedCoverageLimit={
-                selectedCertificate
-                  ? formatPrice(selectedCertificate.coverageLimitUsd)
-                  : '$2,000,000'
-              }
-              recipientRole={brochureRecipientRole}
-              recipientCompany={brochureRecipientCompany.trim() || undefined}
-              openPrintDialog={true}
-              buttonLabel="Print Brochure"
-              variant="outline"
-              className="px-4 py-2.5 text-xs font-bold"
             />
           </div>
         </div>
@@ -1217,53 +1187,6 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* MULTI-PAGE TRADE ASSURANCE BROCHURE COMPONENT (FEATURES OF TRADE HEAVEN & CLIENT BENEFITS) */}
-      <TradeAssuranceBrochure
-        mode="full"
-        buttonLabel="Download Features & Client Benefits PDF"
-        buttonVariant="emerald"
-      />
-
-      {/* DEDICATED FEATURES OF TRADE HEAVEN & CLIENT BENEFITS PDF SECTION */}
-      <section
-        id="certificate-verification-section"
-        aria-labelledby="certificate-verification-heading"
-        className="bg-slate-900 text-white border border-emerald-500/40 rounded-3xl p-6 sm:p-8 lg:p-10 space-y-6 shadow-xl"
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-3xl">
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
-              <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Dedicated Client Benefits PDF Document</span>
-            </div>
-            <h2
-              id="certificate-verification-heading"
-              className="text-xl sm:text-2xl font-black text-white"
-            >
-              PDF of Features of Trade Heaven &amp; How It Benefits Clients
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Download the clean, standalone PDF covering strictly the core features of <strong>Trade Heaven</strong> and how it benefits <strong>Buyers, Importers, Suppliers, and Exporters</strong> — including ACID Custodial Escrow Security, SGS/TÜV Factory Audit Verification, and Full Assurance of Trade Heaven stuck-payment loss coverage.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <TradeAssuranceBrochure
-              mode="button"
-              buttonLabel="Download Features & Client Benefits PDF"
-              buttonVariant="emerald"
-              className="px-5 py-3 text-xs sm:text-sm font-black shadow-lg"
-            />
-            <ExportToPDF
-              mode="BROCHURE"
-              buttonLabel="Download Client Benefits Brochure PDF"
-              variant="secondary"
-              className="px-5 py-3 text-xs sm:text-sm font-black shadow-lg"
-            />
-          </div>
-        </div>
-      </section>
-
       {/* 2. LIVE CERTIFICATE VERIFICATION RESULT & OFFICIAL CREDENTIAL PREVIEW */}
       <section
         id="certificate-lookup-section"
@@ -1283,27 +1206,6 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
             <div className="text-xs text-slate-500 font-mono tabular-nums">
               Showing {matchingCertificates.length} matching certificate(s)
             </div>
-            {selectedCertificate && (
-              <>
-                <ExportToPDF
-                  mode="CERTIFICATE"
-                  certificateData={selectedCertificate}
-                  selectedCurrency={selectedCurrency}
-                  formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
-                  buttonLabel="Download as PDF"
-                  variant="primary"
-                />
-                <TradeAssuranceBrochure
-                  mode="button"
-                  selectedCertificate={selectedCertificate}
-                  certificates={certificates}
-                  selectedCurrency={selectedCurrency}
-                  formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
-                  buttonLabel="Download Brochure"
-                  buttonVariant="emerald"
-                />
-              </>
-            )}
           </div>
         </div>
 
@@ -1428,16 +1330,6 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                         variant="emerald"
                         className="shadow-sm"
                       />
-                      <TradeAssuranceBrochure
-                        mode="button"
-                        selectedCertificate={selectedCertificate}
-                        certificates={certificates}
-                        selectedCurrency={selectedCurrency}
-                        formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
-                        buttonLabel="Download Brochure"
-                        buttonVariant="amber"
-                        className="shadow-sm"
-                      />
                     </div>
                     <div className="sm:text-right space-y-1">
                       <div className="text-[11px] text-slate-500">Certificate Serial Number</div>
@@ -1535,35 +1427,8 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <ExportToPDF
-                      mode="CERTIFICATE"
-                      certificateData={selectedCertificate}
-                      selectedCurrency={selectedCurrency}
-                      formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
-                      buttonLabel="Download as PDF"
-                      variant="emerald"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadCertificateTxt(selectedCertificate)}
-                      className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download TXT</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handlePrintCertificate}
-                      className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                    >
-                      <Printer className="w-3.5 h-3.5" />
-                      <span>Print</span>
-                    </button>
-
-                    {selectedCertificate.companyId && onOpenStorefront && (
+                  {selectedCertificate.companyId && onOpenStorefront && (
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() => onOpenStorefront(selectedCertificate.companyId!)}
@@ -1572,8 +1437,8 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                         <span>View Verified Storefront</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : null}

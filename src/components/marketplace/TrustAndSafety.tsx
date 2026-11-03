@@ -80,6 +80,20 @@ export const TrustAndSafety: React.FC = () => {
           </div>
         </div>
 
+        {/* Off-Record Secret Communication & Instant Service Termination Clause */}
+        <div className="bg-rose-950 text-white rounded-3xl p-8 md:p-10 border border-rose-800 shadow-lg space-y-3">
+          <div className="inline-flex items-center gap-2 text-rose-300 font-bold text-xs uppercase tracking-wider">
+            <Lock className="w-4 h-4 text-rose-400" />
+            <span>Mandatory Export Manager Supervision &amp; Anti-Circumvention Clause</span>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            Instant Service Termination for Off-Record Secret Dealing
+          </h2>
+          <p className="text-rose-100/90 text-sm md:text-base leading-relaxed">
+            If suppliers try to communicate outside the record with buyers—such as on any other social media or unauthorized channel which is not known to the <strong>Export Manager</strong> and not under his eyes (where he is not in communication)—and they deal secretly, <strong>services are terminated instantly</strong> with no refund eligibility, as <strong>Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed</strong>.
+          </p>
+        </div>
+
         <div className="bg-slate-900 rounded-3xl p-8 md:p-12 text-center lg:text-left text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12">
           <div className="lg:w-2/3">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 font-display">Beware of Brand Impersonators</h2>

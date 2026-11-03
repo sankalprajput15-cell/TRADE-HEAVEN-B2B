@@ -179,6 +179,29 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
           </p>
         </section>
 
+        {/* Article 7: Off-Record Communication, Secret Dealing & Instant Termination */}
+        <section id="off-record-communication-termination-clause" className="space-y-3 pt-4 border-t border-slate-100">
+          <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-rose-600" />
+            7. Instant Service Termination &amp; Non-Accountability for Off-Record Secret Communication
+          </h2>
+          <p className="text-slate-600 font-medium">
+            All buyer-supplier communications, trade negotiations, and commercial dealings must remain strictly on the official record and under the direct supervision of the assigned <strong>Export Manager</strong>.
+          </p>
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-2.5 text-rose-950">
+            <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 text-rose-900">
+              <Lock className="w-4 h-4 text-rose-700" />
+              <span>Mandatory Export Manager Supervision &amp; Zero-Tolerance Anti-Circumvention Clause</span>
+            </div>
+            <p className="text-xs sm:text-sm leading-relaxed text-rose-900 font-semibold">
+              If a supplier tries to communicate outside the record with buyers—such as on any other social media or external platform which is not known to the Export Manager and not under his eyes (where the Export Manager is not included in the communication)—and they deal secretly, <u>services are terminated instantly</u>, as <strong>Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed</strong>.
+            </p>
+            <p className="text-xs sm:text-sm leading-relaxed text-rose-950">
+              Any such off-record or secret dealing immediately voids all Trade Assurance protections, escrow guarantees, and membership entitlements, and renders the account permanently ineligible for any refund, credit, or loss recovery.
+            </p>
+          </div>
+        </section>
+
         {/* Contact Strip */}
         <div className="p-6 bg-slate-900 text-white rounded-2xl space-y-3">
           <h3 className="font-bold text-sm text-white flex items-center gap-2">
