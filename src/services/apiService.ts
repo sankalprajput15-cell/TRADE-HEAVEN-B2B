@@ -227,16 +227,54 @@ const THEMAX_BUYER_USER: AuthUser = {
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
 };
 
+const EMMANUEL_REVERSE_ENERGY_USER: AuthUser = {
+  id: 'user-supplier-emmanuel-reverse-energy',
+  name: 'Emmanuel (Bongani Mbele)',
+  email: 'reverseenergypty@gmail.com',
+  companyName: 'Reverse Energy Pty Ltd (Bongani Mbele)',
+  country: 'South Africa',
+  phone: '+27 73 402 7794',
+  role: 'SUPPLIER',
+  status: 'ACTIVE',
+  isVerified: false,
+  isPremium: false,
+  membershipStatus: 'free',
+  tier: 'Free Member' as any,
+  joinedDate: '2026-11-04',
+  avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+};
+
+const LARS_BARNHART_BLACKSTONE_JADE_USER: AuthUser = {
+  id: 'user-supplier-lars-blackstone-jade',
+  name: 'Lars Barnhart',
+  email: 'Larsbarnhart25@gmail.com',
+  companyName: 'Blackstone Jade Co',
+  country: 'United States (1521 north 9th street apt 126 coeurdalene Idaho 83814)',
+  phone: '+1 208-704-0146',
+  role: 'SUPPLIER',
+  status: 'ACTIVE',
+  isVerified: false,
+  isPremium: false,
+  membershipStatus: 'free',
+  tier: 'Free Member' as any,
+  joinedDate: '2026-11-04',
+  avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+};
+
 // In-memory custom users cache that survives localStorage QuotaExceededError
 const inMemoryCustomUsersMap: Record<string, AuthUser> = {
   'user-supplier-mark-johnson': MARK_JOHNSON_SUPPLIER_USER,
-  'user-buyer-themax0098': THEMAX_BUYER_USER
+  'user-buyer-themax0098': THEMAX_BUYER_USER,
+  'user-supplier-emmanuel-reverse-energy': EMMANUEL_REVERSE_ENERGY_USER,
+  'user-supplier-lars-blackstone-jade': LARS_BARNHART_BLACKSTONE_JADE_USER
 };
 
 function loadStoredUsers(): Record<string, AuthUser> {
   let base: Record<string, AuthUser> = {
     'user-supplier-mark-johnson': MARK_JOHNSON_SUPPLIER_USER,
     'user-buyer-themax0098': THEMAX_BUYER_USER,
+    'user-supplier-emmanuel-reverse-energy': EMMANUEL_REVERSE_ENERGY_USER,
+    'user-supplier-lars-blackstone-jade': LARS_BARNHART_BLACKSTONE_JADE_USER,
     ...DEFAULT_USERS,
     'user-supplier-melissa': MELISSA_SUPPLIER_USER,
     'user-supplier-svetlana': SVETLANA_SUPPLIER_USER,

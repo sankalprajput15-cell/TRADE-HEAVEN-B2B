@@ -781,7 +781,25 @@ export const ClientAdminView: React.FC<Props> = ({
         effectiveAdminUser.name || 'Admin'
       );
       setAuditLogs(securityService.getAuditLogs());
-      showToast('success', `✓ Updated ${targetUser?.name || targetUserId}: ${field} set to "${String(value).toUpperCase()}"`);
+      if (targetUser) {
+        try {
+          const raw = localStorage.getItem('th_supplier_tier_overrides_v2');
+          const currentOverrides = raw ? JSON.parse(raw) : {};
+          const sid = String(targetUser.id).toLowerCase().trim();
+          const semail = String(targetUser.email || '').toLowerCase().trim();
+          const overrideVal = {
+            tier: String(targetUser.tier || (value === 'free' ? 'Free Member' : 'Verified Supplier')),
+            membershipStatus: String(targetUser.membershipStatus || value),
+            isVerified: Boolean(targetUser.isVerified)
+          };
+          currentOverrides[sid] = overrideVal;
+          if (semail) currentOverrides[semail] = overrideVal;
+          localStorage.setItem('th_supplier_tier_overrides_v2', JSON.stringify(currentOverrides));
+        } catch {}
+      }
+
+      window.dispatchEvent(new CustomEvent('tradeheaven_users_updated'));
+
       if (onUpdateCurrentUser && currentUser?.id === targetUserId && res.data) {
         onUpdateCurrentUser(res.data);
       }
@@ -1442,9 +1460,57 @@ export const ClientAdminView: React.FC<Props> = ({
                                   Registered
                                 </span>
                               )}
+
+                              {/* Dedicated Membership Status Badge */}
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide border ${
+                                  getSelectMembershipValue(user) === 'paid'
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                    : getSelectMembershipValue(user) === 'verified'
+                                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                    : getSelectMembershipValue(user) === 'basic'
+                                    ? 'bg-blue-100 text-blue-900 border-blue-300'
+                                    : getSelectMembershipValue(user) === 'pending'
+                                    ? 'bg-rose-100 text-rose-900 border-rose-300'
+                                    : 'bg-slate-200 text-slate-800 border-slate-300'
+                                }`}
+                              >
+                                Membership: {getSelectMembershipValue(user)}
+                              </span>
                             </div>
                             <div className="text-[11px] text-slate-500 font-mono">{user.email}</div>
-                            <div className="text-[10px] text-slate-400">{user.companyName}</div>
+                            <div className="text-[10px] text-slate-400 mb-1.5">{user.companyName}</div>
+
+                            {/* Secure Admin-Only Membership Management Dropdown */}
+                            {effectiveAdminUser?.role === 'ADMIN' && (
+                              <div className="inline-flex items-center gap-1.5 bg-slate-100/90 border border-slate-200 px-2.5 py-1 rounded-xl shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Change Status:</span>
+                                <select
+                                  value={getSelectMembershipValue(user)}
+                                  onChange={(e) => {
+                                    handleAdminPrivilegeToggle(user.id, 'membershipStatus', e.target.value);
+                                  }}
+                                  className={`border rounded-lg px-2.5 py-1 font-bold text-[11px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                                    getSelectMembershipValue(user) === 'paid'
+                                      ? 'bg-amber-50 border-amber-300 text-amber-900'
+                                      : getSelectMembershipValue(user) === 'verified'
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                      : getSelectMembershipValue(user) === 'basic'
+                                      ? 'bg-blue-50 border-blue-300 text-blue-900'
+                                      : getSelectMembershipValue(user) === 'pending'
+                                      ? 'bg-rose-50 border-rose-300 text-rose-900'
+                                      : 'bg-white border-slate-200 text-slate-900'
+                                  }`}
+                                  title="Dedicated Admin Membership Status Controller"
+                                >
+                                  <option value="paid">Paid (VIP / Gold)</option>
+                                  <option value="verified">Verified (Silver)</option>
+                                  <option value="basic">Basic Plan</option>
+                                  <option value="pending">Pending Review</option>
+                                  <option value="free">Free Tier</option>
+                                </select>
+                              </div>
+                            )}
                           </td>
 
                           <td className="p-3 font-mono text-[11px] text-slate-600">

@@ -49,27 +49,83 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [statusBanner, setStatusBanner] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-  const fetchHistoryAndAnalytics = async () => {
-    setIsLoading(true);
+  const fetchHistoryAndAnalytics = async (silent: boolean | any = false) => {
+    const isSilent = silent === true;
+    if (!isSilent) setIsLoading(true);
     try {
       const res = await fetch('/api/v1/admin/marketing-suite/state');
       if (res.ok) {
         const data = await res.json();
         if (data?.success) {
-          if (Array.isArray(data.history)) setHistory(data.history);
+          if (Array.isArray(data.history)) {
+            setHistory(data.history);
+            setSelectedEntry((prev) => {
+              if (!prev) return null;
+              return data.history.find((h: CompanyEmailHistoryEntry) => h.id === prev.id || h.trackingId === prev.trackingId) || prev;
+            });
+          }
           if (data.summary) setSummary(data.summary);
         }
       }
     } catch (err: any) {
-      setStatusBanner({ type: 'error', message: `Failed to load email delivery history: ${err?.message || 'Network error'}` });
+      if (!isSilent) {
+        setStatusBanner({ type: 'error', message: `Failed to load email delivery history: ${err?.message || 'Network error'}` });
+      }
     } finally {
-      setIsLoading(false);
+      if (!isSilent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    void fetchHistoryAndAnalytics();
+    void fetchHistoryAndAnalytics(false);
+    const interval = setInterval(() => {
+      void fetchHistoryAndAnalytics(true);
+    }, 6000);
+    return () => clearInterval(interval);
   }, []);
+
+  const handleTriggerSingleTracking = async (entry: CompanyEmailHistoryEntry, eventType: 'OPEN' | 'CLICK') => {
+    const trkId = entry.trackingId || entry.id;
+    try {
+      if (eventType === 'OPEN') {
+        // Also fire the live 1x1 GIF pixel endpoint directly to verify end-to-end pixel tracking
+        await fetch(`/api/v1/track/open/${encodeURIComponent(trkId)}.gif?t=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store'
+        });
+        await fetchHistoryAndAnalytics(true);
+        setStatusBanner({
+          type: 'success',
+          message: `✓✓ Live 1x1 Tracking Pixel Fired: Open event recorded for ${entry.recipient} (${entry.companyName})!`
+        });
+        return;
+      }
+
+      const res = await fetch('/api/v1/admin/mailsuite/simulate-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackingId: trkId,
+          emailId: entry.id,
+          recipientEmail: entry.recipient,
+          eventType
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics(true);
+        setStatusBanner({
+          type: 'success',
+          message: data.message || `Recorded ${eventType} event for ${entry.recipient}.`
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || `Failed to record ${eventType} event.`
+      });
+    }
+  };
 
   const handleCopyText = (text: string, id: string) => {
     try {
@@ -222,6 +278,237 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     }
   };
 
+  const handleSendRandy10BuyersPetroleumAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-randy-10-buyers-petroleum-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '⛽ Dispatched message to Mr. Randy (randy@midforkcap.com • Middle Fox LLC): 10 verified buyers visited his profile and inquired to buy petroleum products!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch message to Mr. Randy.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching message to Mr. Randy.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendMarkJohnson15BuyersGeneratorsAndCranesAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-mark-johnson-15-buyers-generators-cranes-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '⚡🏗️ Dispatched message to Mark Johnson (mjohnson@atlanticpowerequip.com • Atlantic Power & Equipment Co.): 10 buyers visited his profile and inquired to buy generators and 5 for cranes!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch message to Mark Johnson.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching message to Mark Johnson.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendAli29BuyersFuelAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-ali-29-buyers-fuel-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminEmail: 'yr943334@gmail.com' })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '⛽ Dispatched message to Ali Charley Ezekiah (ezekiahali355@gmail.com • ACE Intermediary): 29 verified buyers showed buying fuel from him and contacted him via Trade Heaven + copy to yr943334@gmail.com!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch message to Ali.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching message to Ali.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendReverseEnergy47BuyersCoalAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-reverse-energy-47-buyers-coal-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminEmail: 'yr943334@gmail.com' })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '⚡⛏️ Dispatched message to Emmanuel (reverseenergypty@gmail.com • Reverse Energy Pty Ltd): 47 verified buyers for coal contacted them via Trade Heaven + copy to yr943334@gmail.com!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch message to Emmanuel.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching message to Emmanuel.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendDonald47BuyersCoalAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-donald-47-buyers-coal-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminEmail: 'yr943334@gmail.com' })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '⚡⛏️ Dispatched message to Donald Sorkin (sorkindon@gmail.com • Girlsenberries): 47 verified buyers for coal contacted them via Trade Heaven + copy to yr943334@gmail.com!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch message to Donald.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching message to Donald.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendBlackstoneJade59BuyersStonesAlert = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-blackstone-jade-59-buyers-stones-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminEmail: 'yr943334@gmail.com' })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '⚡💎 Dispatched message to Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 59 verified buyers offered on Trade Heaven to buy black jade and precious stones + copy to yr943334@gmail.com!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch message to Lars Barnhart.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching message to Lars Barnhart.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendRealisticClientGeniusDemoMail = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-realistic-client-demo-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientEmail: 'yr943334@gmail.com' })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        setStatusBanner({
+          type: 'success',
+          message:
+            data.message ||
+            '🏛️ Realistic genius client demo mail delivered to yr943334@gmail.com after all yesterday\'s mail!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to deliver realistic client demo mail.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while delivering realistic client demo mail.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
       const matchesSearch =
@@ -271,6 +558,76 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={handleSendRealisticClientGeniusDemoMail}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950 to-amber-700 hover:from-black hover:to-amber-800 text-white font-black text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-amber-400/50"
+            >
+              <Send className="w-3.5 h-3.5 text-amber-300" />
+              <span>🏛️ Send Realistic Genius Client Mail Demo (yr943334@gmail.com)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendMarkJohnson15BuyersGeneratorsAndCranesAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>⚡🏗️ Send Mark Johnson: 10 Buyers (Generators) &amp; 5 Buyers (Cranes)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendRandy10BuyersPetroleumAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>⛽ Send Randy: 10 Buyers Visited &amp; Inquired (Petroleum)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendAli29BuyersFuelAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>⛽ Send Ali (ACE Intermediary): 29 Buyers Contacted (Fuel)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendReverseEnergy47BuyersCoalAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-stone-800 to-amber-700 hover:from-black hover:to-amber-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-amber-500/40"
+            >
+              <Send className="w-3.5 h-3.5 text-amber-300" />
+              <span>⚡⛏️ Send Emmanuel (Reverse Energy): 47 Buyers (Coal)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendDonald47BuyersCoalAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-900 to-sky-800 hover:from-black hover:to-sky-900 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-sky-400/40"
+            >
+              <Send className="w-3.5 h-3.5 text-sky-300" />
+              <span>⚡⛏️ Send Donald: 47 Buyers (Coal)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendBlackstoneJade59BuyersStonesAlert}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-950 via-teal-900 to-cyan-900 hover:from-black hover:to-teal-950 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-teal-400/40"
+            >
+              <Send className="w-3.5 h-3.5 text-teal-300" />
+              <span>⚡💎 Send Lars Barnhart: 59 Buyers (Stones)</span>
+            </button>
+
             <button
               type="button"
               onClick={handleSendZacCaseClosedExtension}
@@ -526,21 +883,43 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
                         </td>
 
                         <td className="py-4 px-5">
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                              isOpened ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-400'
-                            }`}>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => void handleTriggerSingleTracking(entry, 'OPEN')}
+                              title="Click to fire 1x1 tracking pixel and record open receipt"
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                                isOpened
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700 border border-slate-200'
+                              }`}
+                            >
                               <Eye className="w-3 h-3" />
-                              <span>{entry.openCount || 0} Open{(entry.openCount || 0) === 1 ? '' : 's'}</span>
-                            </span>
+                              <span>
+                                {isOpened ? '✓✓ ' : ''}
+                                {entry.openCount || 0} Open{(entry.openCount || 0) === 1 ? '' : 's'}
+                              </span>
+                            </button>
 
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                              isClicked ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-slate-100 text-slate-400'
-                            }`}>
+                            <button
+                              type="button"
+                              onClick={() => void handleTriggerSingleTracking(entry, 'CLICK')}
+                              title="Click to record CTA link click"
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                                isClicked
+                                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-300 hover:bg-indigo-100'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200'
+                              }`}
+                            >
                               <MousePointerClick className="w-3 h-3" />
                               <span>{entry.clickCount || 0} Click{(entry.clickCount || 0) === 1 ? '' : 's'}</span>
-                            </span>
+                            </button>
                           </div>
+                          {entry.lastOpenedAt && (
+                            <div className="text-[10px] text-emerald-600 font-semibold mt-1">
+                              Last opened: {new Date(entry.lastOpenedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-4 px-5 font-mono text-[11px]">
@@ -557,14 +936,25 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
                         </td>
 
                         <td className="py-4 px-5 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedEntry(entry)}
-                            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Details</span>
-                          </button>
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => void handleTriggerSingleTracking(entry, 'OPEN')}
+                              className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
+                              title="Fire live 1x1 open tracking pixel"
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span>+Open</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedEntry(entry)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Details</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -627,6 +1017,36 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
                   <div className="leading-relaxed">{selectedEntry.summaryText}</div>
                 </div>
 
+                {/* Live 1x1 Pixel Verification & Open/Click Controls */}
+                <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="font-bold uppercase text-[10px] tracking-wider text-emerald-800">
+                      MailSuite™ Live 1x1 Tracking Pixel Endpoint
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-700 break-all mt-0.5">
+                      {selectedEntry.trackingPixelUrl || `/api/v1/track/open/${selectedEntry.trackingId || selectedEntry.id}.gif`}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void handleTriggerSingleTracking(selectedEntry, 'OPEN')}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Fire 1x1 Open Pixel (+1 Open)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleTriggerSingleTracking(selectedEntry, 'CLICK')}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+                    >
+                      <MousePointerClick className="w-3.5 h-3.5" />
+                      <span>Record Click (+1 Click)</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Open & Click Event Logs */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
@@ -644,7 +1064,7 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
                               <span>{ev.clientDevice}</span>
                               <span className="text-[10px] text-slate-400">{new Date(ev.timestamp).toLocaleTimeString()}</span>
                             </div>
-                            <div className="text-slate-500 font-mono text-[10px]">IP: {ev.ip}</div>
+                            <div className="text-slate-500 font-mono text-[10px]">IP: {ev.ip} {ev.locationHint ? `• ${ev.locationHint}` : ''}</div>
                           </div>
                         ))}
                       </div>

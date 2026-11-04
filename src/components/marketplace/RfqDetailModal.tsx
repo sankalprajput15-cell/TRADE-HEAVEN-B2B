@@ -76,7 +76,7 @@ export const RfqDetailModal: React.FC<Props> = ({
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
   const isPaidLead = isPaidEntity(rfq);
   const isCallerPaid = isPaidMemberUser(currentUser);
-  const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
+  const isClaimed = isRfqClaimedFree(rfq.id);
 
   // Sync activeTab to URL rfqTab parameter
   useEffect(() => {
@@ -463,7 +463,7 @@ export const RfqDetailModal: React.FC<Props> = ({
                       </div>
                     ) : (
                       <>
-                        {!currentUser && (
+                        {freeLeadStatus.canClaim && (
                           <div className="mb-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-slate-800 space-y-2 shadow-2xs">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5 text-xs font-black text-amber-950">
@@ -471,22 +471,22 @@ export const RfqDetailModal: React.FC<Props> = ({
                                 <span>1 Free Buy Order Available</span>
                               </div>
                               <span className="text-[10px] font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full">
-                                Free Member Benefit
+                                Registered or Unregistered
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                              Register as a free member on the Trade Heaven portal to claim this community buy order and unmask direct buyer contact channels at zero cost.
+                              Anyone—whether registered or unregistered—can claim this community buy order and unmask direct buyer contact channels at zero cost.
                             </p>
                             <button
                               type="button"
                               onClick={() => {
-                                if (onOpenRegisterFree) onOpenRegisterFree();
-                                else window.dispatchEvent(new CustomEvent('tradeheaven_open_register'));
+                                const updated = claimDailyFreeLead(rfq.id, rfq, currentUser);
+                                setFreeLeadStatus(updated);
                               }}
                               className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 animate-scale-pulse"
                             >
-                              <UserPlus className="w-3.5 h-3.5 text-slate-950" />
-                              <span>Register Free to Claim &amp; Unmask</span>
+                              <Zap className="w-3.5 h-3.5 text-slate-950 fill-slate-950" />
+                              <span>Claim Free Buy Order &amp; Unmask</span>
                             </button>
                           </div>
                         )}

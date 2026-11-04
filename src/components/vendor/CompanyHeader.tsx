@@ -20,6 +20,23 @@ export const CompanyHeader: React.FC<Props> = ({
   onCloseModal,
   activeTab = 'OVERVIEW'
 }) => {
+  const effectiveTier = (() => {
+    try {
+      const raw = localStorage.getItem('th_supplier_tier_overrides_v2');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const sid = String(profile.id || '').toLowerCase().trim();
+        const semail = String(profile.contactEmail || '').toLowerCase().trim();
+        const override = parsed[sid] || parsed[semail];
+        if (override) return override.tier;
+      }
+    } catch {}
+    return profile.memberTierLabel || `${profile.tier} Verified Exporter`;
+  })();
+
+  const isFreeMember = String(effectiveTier).toLowerCase().includes('free');
+  const isBasicPlan = profile.id === 'comp-zac-importation-fadetech' || String(effectiveTier).toLowerCase().includes('basic plan');
+
   const handleShareClick = () => {
     window.dispatchEvent(
       new CustomEvent('tradeheaven_open_share', {
@@ -76,24 +93,26 @@ export const CompanyHeader: React.FC<Props> = ({
                 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white object-cover shadow-2xl"
               />
               <div className={`absolute -bottom-2 -right-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider shadow-sm border ${
-                profile.id === 'comp-zac-importation-fadetech' || profile.memberTierLabel?.toLowerCase().includes('basic plan')
+                isFreeMember
+                  ? 'bg-slate-200 text-slate-800 border-slate-300'
+                  : isBasicPlan
                   ? 'bg-slate-200 text-slate-800 border-slate-300'
                   : 'bg-amber-400 text-slate-950 border-amber-300'
               }`}>
-                {profile.id === 'comp-zac-importation-fadetech' || profile.memberTierLabel?.toLowerCase().includes('basic plan')
-                  ? 'BASIC PLAN'
-                  : `${profile.tier} TIER`}
+                {isFreeMember ? 'FREE MEMBER' : isBasicPlan ? 'BASIC PLAN' : `${profile.tier} TIER`}
               </div>
             </div>
 
             <div className="text-white space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={`px-2.5 py-0.5 rounded-full text-white text-[10px] font-bold tracking-wide uppercase border shadow-xs ${
-                  profile.id === 'comp-zac-importation-fadetech' || profile.memberTierLabel?.toLowerCase().includes('basic plan')
+                  isFreeMember
+                    ? 'bg-slate-700/95 border-slate-500'
+                    : isBasicPlan
                     ? 'bg-slate-700/95 border-slate-500'
                     : 'bg-blue-600/90 border-blue-400'
                 }`}>
-                  {profile.memberTierLabel || `${profile.tier} Verified Exporter`}
+                  {effectiveTier}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold flex items-center gap-1 border border-emerald-400">
                   <ShieldCheck className="w-3 h-3" />

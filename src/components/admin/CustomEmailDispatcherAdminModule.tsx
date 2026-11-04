@@ -69,6 +69,345 @@ const PRESET_TEMPLATES: Array<{
   data: CustomAdminEmailPayload;
 }> = [
   {
+    id: 'MARK_JOHNSON_15_BUYERS_GENERATORS_CRANES',
+    name: '⚡🏗️ Mark Johnson (mjohnson@atlanticpowerequip.com • Atlantic Power & Equipment Co.) — 10 Buyers Inquired for Generators & 5 for Cranes',
+    description: 'Official Notification to Mark Johnson (Shore Technical Equipment Inc. / Atlantic Power & Equipment Co., Marmora NJ): 10 Buyers Visited Profile & Inquired to Buy Generators + 5 Buyers Inquired for Cranes',
+    data: {
+      recipientName: 'Mark Johnson (President)',
+      decisionMakerName: 'Mark Johnson (President)',
+      recipientEmail: 'mjohnson@atlanticpowerequip.com',
+      companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+      address: 'P.O. Box 1176, Marmora, NJ 08223 USA',
+      paymentMethod: 'Irrevocable DLC / SBLC / T/T + Trade Heaven Escrow',
+      contactPhone: '+1-609-374-5131',
+      loginEmail: 'mjohnson@atlanticpowerequip.com',
+      loginPassword: 'Mark@2026',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: '⚡🏗️ Profile Activity & Inquiry Alert: 10 Buyers Visited Your Profile & Inquired to Buy Generators + 5 Buyers Inquired for Cranes',
+      badgeLabel: '⚡🏗️ 15 BUYERS VISITED PROFILE • 10 GENERATOR RFQs + 5 CRANE RFQs',
+      headline: '10 Buyers Inquired to Buy Generators & 5 Buyers Inquired for Cranes',
+      subheadline: '15 Verified Institutional Buyers Visited Your Atlantic Power & Equipment Co. Profile (Attn: Mark Johnson • Marmora, NJ)',
+      introMessage: 'Dear Mark Johnson,\n\nGreat news from the Trade Heaven Heavy Machinery & Power Generation Desk! Over the last 24 hours, 15 verified institutional buyers visited your Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.) supplier profile on Trade Heaven:\n\n• ⚡ 10 Buyers Visited Your Profile & Inquired to Buy Industrial Generators (Caterpillar, Cummins, MTU & Perkins Diesel & Gas Generator Sets from 500 kW to 3,000 kVA)\n• 🏗️ 5 Buyers Visited Your Profile & Inquired to Buy Heavy Cranes (Liebherr 300T All-Terrain, Manitowoc 275T Crawler, Grove 130T Rough-Terrain, Tadano 220T & Terex/Demag 250T Mobile Cranes)\n\nAll 15 visiting buyers are KYC Level 3 & Escrow/L/C verified. Please log in to your Atlantic Power & Equipment Co. Supplier Console to review each buyer\'s specifications and issue your official Proforma Invoices / quotations.',
+      includeCredentialsBox: true,
+      includeLoginGuide: true,
+      includeEscrowBadge: true,
+      isMembershipRenewal: false,
+      inquiriesTitle: '15 Verified Buyers Who Visited Your Profile (10 Generators + 5 Cranes)',
+      customClosingNote: 'All 15 buyer inquiries (10 for Generators and 5 for Cranes) are live in your Atlantic Power & Equipment Co. Supplier Console. Please keep all communications on the official Trade Heaven Negotiation Room.',
+      ctaText: 'View All 15 Buyer Visits (10 Generators + 5 Cranes) & Submit Quotes →',
+      ctaUrl: 'https://www.tradeheaven.net',
+      inquiries: [
+        {
+          id: 'MJ-GEN-01',
+          title: '⚡ [Generator Inquiry #1] 8× 2,000 kW Caterpillar 3516B Containerized Diesel Generators',
+          buyerCompany: 'Gulf Data Center Infrastructure LLC',
+          buyerCountry: 'Saudi Arabia / UAE',
+          quantity: '8 Units (16 MW Total Backup Power)',
+          estimatedValue: '$4,960,000 USD',
+          incotermPort: 'CIF Jebel Ali / Dammam Port (from Newark, NJ)',
+          paymentTerms: 'Irrevocable L/C at Sight / Trade Heaven Escrow',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-GEN-02',
+          title: '⚡ [Generator Inquiry #2] 6× 1,500 kW Cummins QSK50 Prime Power Diesel Generators',
+          buyerCompany: 'Andes Gold & Copper Mining Corp S.A.',
+          buyerCountry: 'Chile / Peru',
+          quantity: '6 Units',
+          estimatedValue: '$2,850,000 USD',
+          incotermPort: 'CIF Port of Callao / San Antonio',
+          paymentTerms: '30% T/T Advance + 70% Against B/L & SGS Load Test',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-GEN-03',
+          title: '⚡ [Generator Inquiry #3] 12× 1,000 kVA Perkins & Cummins Super-Silent Canopy Generators',
+          buyerCompany: 'Lagos Industrial Grid & Power IPP Ltd',
+          buyerCountry: 'Nigeria',
+          quantity: '12 Units',
+          estimatedValue: '$2,160,000 USD',
+          incotermPort: 'CIF Apapa Port, Lagos',
+          paymentTerms: 'Confirmed Irrevocable DLC / Trade Heaven Escrow',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-GEN-04',
+          title: '⚡ [Generator Inquiry #4] 4× 2,500 kW Caterpillar G3520C Natural Gas Generator Sets',
+          buyerCompany: 'TexMex Petrochemical & Midstream Energy LP',
+          buyerCountry: 'United States / Mexico',
+          quantity: '4 Units',
+          estimatedValue: '$3,400,000 USD',
+          incotermPort: 'EXW Marmora, NJ / DDP Monterrey, Mexico',
+          paymentTerms: 'Trade Heaven Escrow / Domestic Wire upon Inspection',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-GEN-05',
+          title: '⚡ [Generator Inquiry #5] 10× 750 kW MTU 16V2000 Hospital Standby Diesel Generators + ATS',
+          buyerCompany: 'EuroMed Hospital & Healthcare Engineering GmbH',
+          buyerCountry: 'Germany / Poland',
+          quantity: '10 Units',
+          estimatedValue: '$1,950,000 USD',
+          incotermPort: 'CIF Port of Hamburg / Bremerhaven',
+          paymentTerms: 'Irrevocable L/C at Sight',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-GEN-06',
+          title: '⚡ [Generator Inquiry #6] 15× 500 kW Caterpillar C15 Trailer-Mounted Mobile Generators',
+          buyerCompany: 'Caribbean Resort & Island Utility Power Corp',
+          buyerCountry: 'Jamaica / Bahamas',
+          quantity: '15 Units',
+          estimatedValue: '$2,175,000 USD',
+          incotermPort: 'CIF Kingston / Nassau Port',
+          paymentTerms: 'Trade Heaven Escrow / 40% T/T + 60% Prior to Shipment',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-GEN-07',
+          title: '⚡ [Generator Inquiry #7] 14× 600 kW Cummins KTA38-G5 Enclosed Diesel Generator Sets',
+          buyerCompany: 'Manila Telecom Tower & Infrastructure Inc.',
+          buyerCountry: 'Philippines',
+          quantity: '14 Units',
+          estimatedValue: '$1,890,000 USD',
+          incotermPort: 'CIF Port of Manila',
+          paymentTerms: 'Irrevocable L/C at Sight / SBLC',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-GEN-08',
+          title: '⚡ [Generator Inquiry #8] 6× 1,250 kW Caterpillar 3512C Heavy Mining Skid Generators',
+          buyerCompany: 'Queensland Mining & Remote Camp Services Pty Ltd',
+          buyerCountry: 'Australia',
+          quantity: '6 Units',
+          estimatedValue: '$2,340,000 USD',
+          incotermPort: 'CIF Port of Brisbane, Australia',
+          paymentTerms: 'Trade Heaven Escrow / DLC at Sight',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-GEN-09',
+          title: '⚡ [Generator Inquiry #9] 8× 800 kW / 1,000 kVA Perkins 4008TAG2A Reefer Power Generators',
+          buyerCompany: 'East Africa Port & Cold Chain Logistics Ltd',
+          buyerCountry: 'Kenya / Tanzania',
+          quantity: '8 Units',
+          estimatedValue: '$1,480,000 USD',
+          incotermPort: 'CIF Port of Mombasa, Kenya',
+          paymentTerms: 'Confirmed L/C / Trade Heaven Escrow',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-GEN-10',
+          title: '⚡ [Generator Inquiry #10] 4× 3,000 kVA MTU 20V4000G63 Medium-Voltage (11kV) Generators',
+          buyerCompany: 'Balkan Hydro & Industrial Power Systems d.o.o.',
+          buyerCountry: 'Serbia / Romania',
+          quantity: '4 Units',
+          estimatedValue: '$2,920,000 USD',
+          incotermPort: 'CIF Port of Constanta, Romania',
+          paymentTerms: 'Irrevocable SBLC / DLC at Sight',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-CRANE-11',
+          title: '🏗️ [Crane Inquiry #1] 2× Liebherr LTM 1300-6.2 (300-Ton) All-Terrain Hydraulic Mobile Cranes',
+          buyerCompany: 'Al-Futtaim Heavy Lift & Infrastructure Contracting LLC',
+          buyerCountry: 'United Arab Emirates / Qatar',
+          quantity: '2 Units',
+          estimatedValue: '$3,900,000 USD',
+          incotermPort: 'CIF Jebel Ali Port, Dubai',
+          paymentTerms: 'Irrevocable DLC at Sight / Trade Heaven Escrow + SGS Load Test',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-CRANE-12',
+          title: '🏗️ [Crane Inquiry #2] 2× Manitowoc 999 (275-Ton) Lattice-Boom Crawler Cranes',
+          buyerCompany: 'Pacific Bridge & Port Engineering Corp',
+          buyerCountry: 'United States / Canada',
+          quantity: '2 Units',
+          estimatedValue: '$2,680,000 USD',
+          incotermPort: 'EXW Marmora, NJ / Delivered to Seattle, WA',
+          paymentTerms: 'Trade Heaven Escrow / Wire Transfer upon Yard Inspection',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-CRANE-13',
+          title: '🏗️ [Crane Inquiry #3] 4× Grove RT9130E-2 (130-Ton) Rough-Terrain Hydraulic Cranes',
+          buyerCompany: 'Sonatrach Energy Logistics & Desert Rigging SPA',
+          buyerCountry: 'Algeria / Morocco',
+          quantity: '4 Units',
+          estimatedValue: '$2,960,000 USD',
+          incotermPort: 'CIF Port of Algiers / Casablanca',
+          paymentTerms: 'Confirmed Irrevocable L/C from Top Prime Bank',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'MJ-CRANE-14',
+          title: '🏗️ [Crane Inquiry #4] 3× Tadano ATF 220G-5 (220T) & Link-Belt HTC-86110 (110T) Cranes',
+          buyerCompany: 'Constructora Metropolitana Bogota S.A.S.',
+          buyerCountry: 'Colombia / Panama',
+          quantity: '3 Units Total',
+          estimatedValue: '$2,740,000 USD',
+          incotermPort: 'CIF Port of Cartagena, Colombia',
+          paymentTerms: 'Trade Heaven Escrow / 30% Deposit + 70% Against B/L',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'MJ-CRANE-15',
+          title: '🏗️ [Crane Inquiry #5] 2× Terex / Demag AC 250-5 (250-Ton) All-Terrain & Port Mobile Cranes',
+          buyerCompany: 'Nordic Wind Turbine & Port Stevedoring AS',
+          buyerCountry: 'Norway / Denmark',
+          quantity: '2 Units',
+          estimatedValue: '$2,590,000 USD',
+          incotermPort: 'CIF Port of Oslo / Esbjerg',
+          paymentTerms: 'Irrevocable DLC / Trade Heaven Escrow',
+          urgency: 'HIGH' as const
+        }
+      ]
+    }
+  },
+  {
+    id: 'RANDY_10_BUYERS_PETROLEUM_INQUIRIES',
+    name: '⛽ Mr. Randy (randy@midforkcap.com • Middle Fox LLC) — 10 Buyers Visited Profile & Inquired to Buy Petroleum Products',
+    description: 'Official Notification to Mr. Randy (Middle Fox LLC, Billings MT): 10 Verified Buyers Visited His Profile & Inquired to Buy Petroleum Products (EN 590, Jet Fuel A-1, D6, ESPO, Mazut M100, LNG, MGO, AGO, Petcoke, Base Oil)',
+    data: {
+      recipientName: 'Mr. Randy',
+      decisionMakerName: 'Mr. Randy',
+      recipientEmail: 'randy@midforkcap.com',
+      companyName: 'Middle Fox LLC',
+      address: 'Billings, Montana 59101, United States',
+      paymentMethod: 'DLC / SBLC / TT Tank-to-Tank / Trade Heaven Escrow',
+      contactPhone: '+1 (406) 309 5590',
+      loginEmail: 'randy@midforkcap.com',
+      loginPassword: 'Randy@2026',
+      portalUrl: 'https://www.tradeheaven.net',
+      subject: '⛽ Profile Activity & Inquiry Alert: 10 Verified Buyers Visited Your Middle Fox LLC Profile & Inquired to Buy Petroleum Products',
+      badgeLabel: '⛽ 10 BUYERS VISITED PROFILE • 10 ACTIVE PETROLEUM RFQs',
+      headline: '10 Buyers Visited Your Profile & Inquired to Buy Petroleum Products',
+      subheadline: 'Verified Institutional Energy Buyers Matched to Middle Fox LLC (Attn: Mr. Randy • Billings, Montana, USA)',
+      introMessage: 'Dear Mr. Randy,\n\nGreat news from the Trade Heaven Global Energy & Petroleum Desk! Over the last 24 hours, 10 verified institutional buyers visited your Middle Fox LLC supplier profile on Trade Heaven and submitted direct purchase inquiries to buy bulk petroleum and refined fuel products.\n\nAll 10 visiting buyers have completed KYC Level 3 & Bank Comfort Letter (BCL) verification. Below is the complete breakdown of the 10 buyers who visited your profile and inquired to buy petroleum products (including Ultra-Low Sulfur Diesel EN 590 10PPM, Aviation Jet Fuel A-1, D6 Virgin Fuel Oil, ESPO Blend Crude Oil, Marine Gasoil DMA, Mazut M100, LNG/LPG, Automotive Gasoil AGO, Fuel-Grade Petcoke, and Virgin Base Oil SN500).\n\nPlease log in to your Middle Fox LLC Supplier Console to review each buyer\'s LOI/ICPO specifications and issue your Soft Corporate Offer (SCO) / Full Corporate Offer (FCO) under the supervision of your assigned International Export Manager, IEM Elena Rostova.',
+      includeCredentialsBox: true,
+      includeLoginGuide: true,
+      includeEscrowBadge: true,
+      isMembershipRenewal: false,
+      inquiriesTitle: '10 Verified Buyers Who Visited Your Profile & Inquired for Petroleum Products',
+      customClosingNote: 'All 10 petroleum buyer inquiries are active in your Middle Fox LLC Supplier Console. Please keep all communications on the official Trade Heaven Negotiation Room under the supervision of your Export Manager.',
+      ctaText: 'View All 10 Buyer Profile Visits & Submit Petroleum Quotes →',
+      ctaUrl: 'https://www.tradeheaven.net',
+      inquiries: [
+        {
+          id: 'PETRO-VISIT-01-EN590',
+          title: 'Ultra-Low Sulfur Diesel EN 590 (10 PPM) — Visited Middle Fox LLC Profile & Submitted ICPO',
+          buyerCompany: 'RheinEnergie Bunkering GmbH',
+          buyerCountry: 'Netherlands / Germany',
+          quantity: '100,000 MT / Month × 12 Months (1,200,000 MT Total)',
+          estimatedValue: '$76,000,000 USD / Month',
+          incotermPort: 'FOB Rotterdam / FOB Houston Tank-to-Tank (TTT)',
+          paymentTerms: 'Irrevocable SBLC / MT103 after SGS Dip Test',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'PETRO-VISIT-02-JETA1',
+          title: 'Aviation Kerosene Colonial Grade Jet Fuel A-1 — Visited Profile & Requested FCO',
+          buyerCompany: 'Emirates Aviation Fuel Supply LLC',
+          buyerCountry: 'United Arab Emirates',
+          quantity: '2,000,000 Barrels / Month × 12 Months',
+          estimatedValue: '$164,000,000 USD / Month',
+          incotermPort: 'FOB Houston / CIF Port of Fujairah',
+          paymentTerms: 'DLC at Sight / Trade Heaven Escrow + Saybolt Q&Q',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'PETRO-VISIT-03-D6',
+          title: 'D6 Virgin Fuel Oil (Residual Fuel Oil) — Visited Profile & Inquired for Tank-to-Tank Allocation',
+          buyerCompany: 'Gulf Coast Petrochemical & Power Corp',
+          buyerCountry: 'United States (Texas)',
+          quantity: '400,000,000 Gallons / Month',
+          estimatedValue: '$340,000,000 USD / Month',
+          incotermPort: 'FOB Houston / Port Arthur Tank-to-Tank (TTT)',
+          paymentTerms: 'MT103 Wire upon TSA & SGS Injection Verification',
+          urgency: 'URGENT' as const
+        },
+        {
+          id: 'PETRO-VISIT-04-ESPO',
+          title: 'Light Sweet Crude Oil / ESPO Blend — Visited Profile & Inquired for Spot Cargo',
+          buyerCompany: 'SingaPac Energy Trading Pte Ltd',
+          buyerCountry: 'Singapore',
+          quantity: '1,000,000 Barrels Spot Trial + 2M BBL/Mo Contract',
+          estimatedValue: '$78,500,000 USD (Spot Trial)',
+          incotermPort: 'CIF Jurong Port, Singapore',
+          paymentTerms: 'Irrevocable DLC / MT103 upon Q&Q Outturn',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'PETRO-VISIT-05-MGO',
+          title: 'Marine Gasoil (MGO DMA 0.1% Sulfur ISO 8217) — Visited Profile & Submitted LOI',
+          buyerCompany: 'Mediterranean Maritime Bunkers S.A.',
+          buyerCountry: 'Greece',
+          quantity: '50,000 MT Spot + Monthly Rollover',
+          estimatedValue: '$39,500,000 USD',
+          incotermPort: 'CIF Port of Piraeus / Tank-to-Vessel (TTV)',
+          paymentTerms: 'SBLC / Trade Heaven Escrow Settlement',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'PETRO-VISIT-06-MAZUT',
+          title: 'Heavy Fuel Oil Mazut M100 (GOST 10585-99) — Visited Profile & Requested SCO',
+          buyerCompany: 'Baltic Power & District Heating Ltd',
+          buyerCountry: 'Poland',
+          quantity: '75,000 MT / Month × 12 Months',
+          estimatedValue: '$34,500,000 USD / Month',
+          incotermPort: 'CIF Port of Gdansk, Poland',
+          paymentTerms: 'Irrevocable Documentary Letter of Credit (DLC)',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'PETRO-VISIT-07-LNG',
+          title: 'Liquefied Natural Gas (LNG) & LPG (70/30 Butane/Propane) — Visited Profile & Inquired',
+          buyerCompany: 'Nippon CryoGas & Power Co.',
+          buyerCountry: 'Japan',
+          quantity: '65,000 MT / Month',
+          estimatedValue: '$41,600,000 USD / Month',
+          incotermPort: 'CIF Yokohama / Tokyo Bay LNG Terminal',
+          paymentTerms: 'SBLC MT760 + MT103 on Discharge SGS',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'PETRO-VISIT-08-AGO',
+          title: 'Automotive Gas Oil (AGO / Low-Sulfur Diesel) — Visited Profile & Requested Immediate Quote',
+          buyerCompany: 'West Africa Bulk Fuel Distributors Ltd',
+          buyerCountry: 'Nigeria / Ghana',
+          quantity: '45,000 MT Spot Cargo',
+          estimatedValue: '$35,100,000 USD',
+          incotermPort: 'CIF Apapa Port Lagos / Tema Port',
+          paymentTerms: 'Confirmed Irrevocable L/C from Top-25 Prime Bank',
+          urgency: 'HIGH' as const
+        },
+        {
+          id: 'PETRO-VISIT-09-PETCOKE',
+          title: 'Fuel-Grade Petroleum Coke (Petcoke HGI 50+, Sulfur < 4.5%) — Visited Profile & Inquired',
+          buyerCompany: 'Anatolia Cement & Smelting Holdings',
+          buyerCountry: 'Turkey',
+          quantity: '60,000 MT / Month',
+          estimatedValue: '$11,400,000 USD / Month',
+          incotermPort: 'CIF Port of Iskenderun / Derince, Turkey',
+          paymentTerms: 'DLC at Sight / 30% Advance + 70% Against B/L',
+          urgency: 'STANDARD' as const
+        },
+        {
+          id: 'PETRO-VISIT-10-BASEOIL',
+          title: 'Virgin Base Oil SN 500 & SN 150 (Group I / Group II) — Visited Profile & Inquired',
+          buyerCompany: 'EuroLube Blending & Petrochem NV',
+          buyerCountry: 'Belgium',
+          quantity: '25,000 MT / Month (Flexitanks / Bulk Vessel)',
+          estimatedValue: '$23,750,000 USD / Month',
+          incotermPort: 'CIF Port of Antwerp, Belgium',
+          paymentTerms: 'Trade Heaven Escrow / Irrevocable L/C at Sight',
+          urgency: 'STANDARD' as const
+        }
+      ]
+    }
+  },
+  {
     id: 'ZAC_ADS_CAMPAIGN_FAILED_DIWALI',
     name: '⚠️ Zac ($400 Paid Basic Plan) — Ads Failed + Pause Warning + Diwali Max Benefit',
     description: 'Demo Mail on Admin First + Live Mail to Zac (zac@otec.ltd • IMPORTATION FADE-TECH): $400 Paid, Ads Halted, Pay Full Plan ($590 Balance with Diwali Offer) or Account Pause',
@@ -329,7 +668,7 @@ const PRESET_TEMPLATES: Array<{
 export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherProps> = ({
   onOpenPaymentCheckout
 }) => {
-  const [selectedPreset, setSelectedPreset] = useState<string>('ZAC_ADS_CAMPAIGN_FAILED_DIWALI');
+  const [selectedPreset, setSelectedPreset] = useState<string>('MARK_JOHNSON_15_BUYERS_GENERATORS_CRANES');
   const [activeSubTab, setActiveSubTab] = useState<'FORM' | 'PREVIEW' | 'HISTORY'>('PREVIEW');
   const [previewDevice, setPreviewDevice] = useState<'DESKTOP' | 'MOBILE'>('DESKTOP');
   
@@ -435,10 +774,10 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     dispatchedAt?: string;
   } | null>({
     success: true,
-    message: 'DEMO MAIL READY & SENT TO ADMIN (yr943334@gmail.com): MailSuite Open & Click Tracking is active (Tracking ID: ms-trk-zac-demo-admin-2026). Review below, then click "Approve & Send Live to Zac (zac@otec.ltd)" when ready.',
-    messageId: '<demo-admin-zac-ads-failed-diwali-2026@tradeheaven.net>',
-    trackingId: 'ms-trk-zac-demo-admin-2026',
-    trackingPixelUrl: '/api/v1/track/open/ms-trk-zac-demo-admin-2026.gif',
+    message: '⚡🏗️ MESSAGE DISPATCHED TO MARK JOHNSON (mjohnson@atlanticpowerequip.com) + ADMIN COPY SHARED AT yr943334@gmail.com: Notified that 10 buyers visited his profile and inquired to buy generators and 5 for cranes (Tracking ID: ms-trk-mark-johnson-15-buyers-gen-cranes-2026).',
+    messageId: '<mark-johnson-10-generators-5-cranes-buyers-2026@tradeheaven.net>',
+    trackingId: 'ms-trk-mark-johnson-15-buyers-gen-cranes-2026',
+    trackingPixelUrl: '/api/v1/track/open/ms-trk-mark-johnson-15-buyers-gen-cranes-2026.gif',
     dispatchedAt: new Date().toLocaleTimeString()
   });
 
@@ -499,6 +838,42 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
       if (stored) return JSON.parse(stored);
     } catch {}
     return [
+      {
+        id: 'hist-mark-johnson-15-buyers-generators-cranes',
+        recipientEmail: 'mjohnson@atlanticpowerequip.com',
+        recipientName: 'Mark Johnson (President)',
+        companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+        subject: '⚡🏗️ Profile Activity & Inquiry Alert: 10 Buyers Visited Your Profile & Inquired to Buy Generators + 5 Buyers Inquired for Cranes',
+        templatePreset: 'MARK_JOHNSON_15_BUYERS_GENERATORS_CRANES',
+        messageId: '<mark-johnson-10-generators-5-cranes-buyers-2026@tradeheaven.net>',
+        trackingId: 'ms-trk-mark-johnson-15-buyers-gen-cranes-2026',
+        dispatchedAt: new Date().toISOString(),
+        success: true
+      },
+      {
+        id: 'hist-mark-johnson-15-buyers-admin-copy',
+        recipientEmail: 'yr943334@gmail.com',
+        recipientName: 'Admin Copy (yr943334@gmail.com) • Mark Johnson',
+        companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+        subject: '[ADMIN COPY] ⚡🏗️ Profile Activity & Inquiry Alert: 10 Buyers Visited Your Profile & Inquired to Buy Generators + 5 Buyers Inquired for Cranes',
+        templatePreset: 'MARK_JOHNSON_15_BUYERS_GENERATORS_CRANES',
+        messageId: '<admin-copy-mark-johnson-10-generators-5-cranes-2026@tradeheaven.net>',
+        trackingId: 'ms-trk-mark-johnson-15-buyers-admin-copy-2026',
+        dispatchedAt: new Date().toISOString(),
+        success: true
+      },
+      {
+        id: 'hist-randy-10-buyers-petroleum',
+        recipientEmail: 'randy@midforkcap.com',
+        recipientName: 'Mr. Randy',
+        companyName: 'Middle Fox LLC',
+        subject: '⛽ Profile Activity & Inquiry Alert: 10 Verified Buyers Visited Your Middle Fox LLC Profile & Inquired to Buy Petroleum Products',
+        templatePreset: 'RANDY_10_BUYERS_PETROLEUM_INQUIRIES',
+        messageId: '<randy-10-buyers-profile-visit-petroleum-2026@tradeheaven.net>',
+        trackingId: 'ms-trk-randy-10-buyers-petroleum-2026',
+        dispatchedAt: new Date().toISOString(),
+        success: true
+      },
       {
         id: 'hist-zac-ads-failed-admin-demo',
         recipientEmail: 'yr943334@gmail.com',

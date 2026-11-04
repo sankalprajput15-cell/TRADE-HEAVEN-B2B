@@ -34,11 +34,40 @@ const NotificationContext = createContext<NotificationContextProps | undefined>(
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    const defaultMarkJohnsonNotif: AppNotification = {
+      id: 'notif-mark-johnson-15-buyers-generators-cranes-2026',
+      type: 'RFQ',
+      title: '⚡🏗️ Message to Mark Johnson (Atlantic Power & Equipment Co.): 10 Buyers Inquired for Generators & 5 for Cranes',
+      message:
+        'Dispatched to mjohnson@atlanticpowerequip.com: 10 verified buyers visited your profile and inquired to buy Industrial Generators (CAT, Cummins, MTU, Perkins) and 5 buyers inquired to buy Heavy Cranes (Liebherr, Manitowoc, Grove, Tadano, Demag).',
+      timestamp: Date.now(),
+      isRead: false,
+      linkView: 'DASHBOARD'
+    };
+    const defaultRandyNotif: AppNotification = {
+      id: 'notif-randy-10-buyers-petroleum-2026',
+      type: 'RFQ',
+      title: '⛽ Message to Mr. Randy (Middle Fox LLC): 10 Buyers Visited Profile & Inquired for Petroleum',
+      message:
+        'Dispatched to randy@midforkcap.com: 10 verified buyers visited your Middle Fox LLC profile and inquired to buy petroleum products (EN 590 10PPM, Jet Fuel A-1, D6, ESPO Crude, MGO, Mazut M100, LNG, AGO, Petcoke & Base Oil SN500).',
+      timestamp: Date.now() - 60000,
+      isRead: false,
+      linkView: 'DASHBOARD'
+    };
     try {
       const saved = localStorage.getItem('tradeheaven_notifications');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed: AppNotification[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(
+            (n) => n.id !== defaultMarkJohnsonNotif.id && n.id !== defaultRandyNotif.id
+          );
+          return [defaultMarkJohnsonNotif, defaultRandyNotif, ...filtered];
+        }
+      }
+      return [defaultMarkJohnsonNotif, defaultRandyNotif];
     } catch (e) {
-      return [];
+      return [defaultMarkJohnsonNotif, defaultRandyNotif];
     }
   });
 

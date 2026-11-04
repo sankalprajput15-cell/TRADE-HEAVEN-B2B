@@ -27,7 +27,8 @@ import {
   Wallet,
   PlusCircle,
   MessageCircle,
-  RefreshCw
+  RefreshCw,
+  UserCheck
 } from 'lucide-react';
 
 interface Props {
@@ -602,6 +603,81 @@ export const AuthModal: React.FC<Props> = ({
             {/* PRODUCTION SIGN-IN FORM: ONLY EMAIL & PASSWORD */}
             {authMode === 'LOGIN' && (
               <form onSubmit={handleSignIn} className="space-y-4 text-xs">
+                {/* 1-Click Select Verified Supplier Profile (Admin Only) */}
+                {currentUser?.role === 'ADMIN' && (
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/90 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Select Supplier Profile to Login (Admin Tool):</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-normal">Auto-fills credentials</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('ezekiahali355@gmail.com');
+                          setPassword('Ezekiah@2026');
+                        }}
+                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
+                          email === 'ezekiahali355@gmail.com'
+                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
+                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
+                        }`}
+                      >
+                        <div className="font-bold text-slate-900 text-xs truncate">Ali Charley Ezekiah</div>
+                        <div className="text-[10px] text-slate-500 truncate">ACE Intermediary</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('melissa@mpcommoditybrokers.com');
+                          setPassword('Password@123');
+                        }}
+                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
+                          email.includes('melissa')
+                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
+                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
+                        }`}
+                      >
+                        <div className="font-bold text-slate-900 text-xs truncate">Melissa Prezios</div>
+                        <div className="text-[10px] text-slate-500 truncate">MP Commodity Brokers</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('mjohnson@atlanticpowerequip.com');
+                          setPassword('Atlantic@2026');
+                        }}
+                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
+                          email.includes('atlanticpowerequip')
+                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
+                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
+                        }`}
+                      >
+                        <div className="font-bold text-slate-900 text-xs truncate">Mark Johnson</div>
+                        <div className="text-[10px] text-slate-500 truncate">Atlantic Power &amp; Equip</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('randy@midforkcap.com');
+                          setPassword('Randy@2026');
+                        }}
+                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
+                          email.includes('midforkcap')
+                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
+                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
+                        }`}
+                      >
+                        <div className="font-bold text-slate-900 text-xs truncate">Mr. Randy</div>
+                        <div className="text-[10px] text-slate-500 truncate">Middle Fox LLC</div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Corporate / Work Email</label>
                   <div className="relative">

@@ -183,21 +183,21 @@ export const RefundPolicyView: React.FC<Props> = ({ onOpenContactModal }) => {
         <section id="off-record-communication-termination-clause" className="space-y-3 pt-4 border-t border-slate-100">
           <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-rose-600" />
-            7. Instant Service Termination &amp; Non-Accountability for Off-Record Secret Communication
+            7. Instant Service Termination &amp; Non-Accountability for Off-Record Secret Communication (Registered or Unregistered)
           </h2>
           <p className="text-slate-600 font-medium">
-            All buyer-supplier communications, trade negotiations, and commercial dealings must remain strictly on the official record and under the direct supervision of the assigned <strong>Export Manager</strong>.
+            All buyer-supplier communications, trade negotiations, and commercial dealings—by anyone, <strong>whether he is registered or unregistered</strong>—must remain strictly on the official record and under the direct supervision of the assigned <strong>Export Manager</strong>.
           </p>
           <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-2.5 text-rose-950">
             <div className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 text-rose-900">
               <Lock className="w-4 h-4 text-rose-700" />
-              <span>Mandatory Export Manager Supervision &amp; Zero-Tolerance Anti-Circumvention Clause</span>
+              <span>Mandatory Export Manager Supervision &amp; Zero-Tolerance Anti-Circumvention Clause (Registered or Unregistered Users)</span>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed text-rose-900 font-semibold">
-              If a supplier tries to communicate outside the record with buyers—such as on any other social media or external platform which is not known to the Export Manager and not under his eyes (where the Export Manager is not included in the communication)—and they deal secretly, <u>services are terminated instantly</u>, as <strong>Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed</strong>.
+              If any supplier or user—<strong>whether he is registered or unregistered</strong>—tries to communicate outside the record with buyers (whether registered or unregistered), such as on any other social media or external platform which is not known to the Export Manager and not under his eyes (where the Export Manager is not included in the communication), and they deal secretly, <u>services are terminated instantly</u>, as <strong>Trade Heaven will not be accountable for any loss due to the supplier&apos;s greed</strong>.
             </p>
             <p className="text-xs sm:text-sm leading-relaxed text-rose-950">
-              Any such off-record or secret dealing immediately voids all Trade Assurance protections, escrow guarantees, and membership entitlements, and renders the account permanently ineligible for any refund, credit, or loss recovery.
+              Any such off-record or secret dealing by a registered or unregistered party immediately voids all Trade Assurance protections, escrow guarantees, and platform entitlements, and renders the party permanently ineligible for any refund, credit, or loss recovery. Furthermore, anyone—whether registered or unregistered—can view this policy, verify compliance, or report off-record secret communication directly to the Trade Heaven Compliance Desk.
             </p>
           </div>
         </section>

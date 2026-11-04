@@ -133,7 +133,7 @@ const CERTIFICATE_PLANS: CertificatePlan[] = [
   }
 ];
 
-const STORAGE_KEY = 'th_trade_assurance_certificates_v3_twenty_verified';
+const STORAGE_KEY = 'th_trade_assurance_certificates_v4_melissa_loss_only';
 
 const INITIAL_CERTIFICATES: TradeAssuranceCertificateRecord[] =
   certificateDatabaseJson as TradeAssuranceCertificateRecord[];
@@ -174,6 +174,11 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
   onOpenStorefront,
   onNavigate
 }) => {
+  const isAdmin =
+    currentUser?.role === 'ADMIN' &&
+    currentUser?.email?.toLowerCase() !== 'zac@otec.ltd' &&
+    currentUser?.email?.toLowerCase() !== 'zac@fadetech.com';
+
   const [certificates, setCertificates] = useState<TradeAssuranceCertificateRecord[]>(loadSavedCertificates);
   const [searchQuery, setSearchQuery] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -267,6 +272,62 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
     type: 'success' | 'error';
     message: string;
   } | null>(null);
+
+  // Direct Certificate PDF Email Dispatch State
+  const [certPdfEmailRecipient, setCertPdfEmailRecipient] = useState('yr943334@gmail.com');
+  const [isEmailingCertPdf, setIsEmailingCertPdf] = useState(false);
+  const [certPdfEmailStatus, setCertPdfEmailStatus] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>({
+    type: 'success',
+    message:
+      '✓ 2-Page Official PDF Draft (TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf) mailed to yr943334@gmail.com'
+  });
+
+  const handleEmailCertificatePdfDraft = async (
+    targetCert?: TradeAssuranceCertificateRecord | null,
+    overrideEmail?: string
+  ) => {
+    const certToUse = targetCert || selectedCertificate || verifiedLookupResult || certificates[0];
+    const emailTarget = (overrideEmail || certPdfEmailRecipient || 'yr943334@gmail.com').trim();
+    if (!emailTarget || !emailTarget.includes('@')) {
+      setCertPdfEmailStatus({
+        type: 'error',
+        message: 'Please enter a valid recipient email address.'
+      });
+      return;
+    }
+    setIsEmailingCertPdf(true);
+    setCertPdfEmailStatus(null);
+    try {
+      const res = await fetch('/api/v1/trade-assurance/email-certificate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: emailTarget,
+          certificate: certToUse
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || `Failed to email PDF draft to ${emailTarget}`);
+      }
+      setCertPdfEmailStatus({
+        type: 'success',
+        message:
+          data.message ||
+          `📄 Official 2-Page Certificate PDF (${data.filename || 'TradeHeaven-Certificate.pdf'}) emailed to ${emailTarget}!`
+      });
+    } catch (err: any) {
+      setCertPdfEmailStatus({
+        type: 'error',
+        message: err?.message || 'Failed to email Certificate PDF draft.'
+      });
+    } finally {
+      setIsEmailingCertPdf(false);
+    }
+  };
 
   const curr =
     (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) ||
@@ -497,6 +558,18 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
       `Effective Issue Date      : ${cert.issueDate}`,
       `Expiration Date           : ${cert.expiryDate}`,
       `Cryptographic Audit Hash  : ${cert.verificationHash}`,
+      '',
+      '--------------------------------------------------------------------',
+      'STRICT ACTUAL-LOSS-ONLY INSURANCE & INDEMNITY UNDERWRITING CLAUSE',
+      '--------------------------------------------------------------------',
+      '1. VERIFIED DIRECT LOSSES ONLY: Insurance and Trade Assurance indemnity',
+      '   strictly covers proven, quantifiable, direct actual financial or',
+      '   physical cargo losses only (verified via Trade Heaven Custodial',
+      '   Escrow ledger, Bill of Lading, and official SGS / Bureau Veritas /',
+      '   Marine Surveyor inspection reports).',
+      '2. NO UNCERTAIN OR SPECULATIVE CLAIMS: Uncertain, unsubstantiated,',
+      '   contingent, speculative, indirect, consequential, anticipated-profit,',
+      '   or market-price fluctuation claims are strictly excluded and void.',
       '',
       'Verify online anytime at: https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE',
       '===================================================================='
@@ -789,9 +862,14 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
               Verify any supplier or buyer&apos;s official <strong>Trade Heaven Trade Assurance Certificate</strong> by serial number, or apply for your company&apos;s certified escrow coverage limit ($150,000 to $2,000,000 USD) with instant registry indexing.
             </p>
 
-            {/* Full Assurance of Trade Heaven - Stuck Payment & Mishap Protection Notice */}
-            <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-700/70 text-xs sm:text-sm text-emerald-100 leading-relaxed">
-              <strong className="text-emerald-300 font-bold">Mishap &amp; Stuck Payment Protection:</strong> In case of any mishap such as a stuck payment where the Supplier or Buyer holds Trade Assurance, losses are actively tried to be covered with the help of <strong>Trade Heaven</strong>, and <strong>Full Assurance is of Trade Heaven</strong>.
+            {/* Full Assurance of Trade Heaven - Strict Verified Losses Only Notice */}
+            <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-700/70 text-xs sm:text-sm text-emerald-100 leading-relaxed space-y-1">
+              <div>
+                <strong className="text-emerald-300 font-bold">Strict Direct-Loss Insurance Coverage (No Uncertain Claims):</strong> Insurance &amp; Trade Assurance coverage applies strictly to <strong>verified, direct actual losses only</strong> (documented cargo loss/damage, verified non-shipment, or proven escrow clearing mishaps).
+              </div>
+              <div className="text-amber-200/95 text-xs">
+                <strong>Exclusion of Uncertain Claims:</strong> Uncertain, speculative, unsubstantiated, indirect, or market-fluctuation claims are strictly excluded from coverage.
+              </div>
             </div>
 
             {/* Primary Mode Switcher Buttons */}
@@ -830,32 +908,36 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                 <span>Request Trade Assurance Certificate</span>
               </button>
 
-              <TradeAssuranceBrochure
-                mode="button"
-                selectedCertificate={selectedCertificate || verifiedLookupResult}
-                certificates={certificates}
-                selectedCurrency={selectedCurrency}
-                formattedCoverageLimit={
-                  selectedCertificate
-                    ? formatPrice(selectedCertificate.coverageLimitUsd)
-                    : '$2,000,000'
-                }
-                buttonLabel="Download Brochure"
-                buttonVariant="emerald"
-                className="py-2.5 px-4 shadow-md"
-              />
+              {isAdmin && (
+                <>
+                  <TradeAssuranceBrochure
+                    mode="button"
+                    selectedCertificate={selectedCertificate || verifiedLookupResult}
+                    certificates={certificates}
+                    selectedCurrency={selectedCurrency}
+                    formattedCoverageLimit={
+                      selectedCertificate
+                        ? formatPrice(selectedCertificate.coverageLimitUsd)
+                        : '$2,000,000'
+                    }
+                    buttonLabel="Download Brochure"
+                    buttonVariant="emerald"
+                    className="py-2.5 px-4 shadow-md"
+                  />
 
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('trade-assurance-brochure-section');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Send Brochure to Suppliers &amp; Buyers</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('trade-assurance-brochure-section');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Brochure to Suppliers &amp; Buyers</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -981,211 +1063,213 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* WORKING OF TRADE ASSURANCE CERTIFICATE — OFFICIAL PDF BROCHURE & SUPPLIER/BUYER DISPATCH STUDIO */}
-      <section
-        id="trade-assurance-brochure-section"
-        aria-labelledby="brochure-studio-heading"
-        className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-emerald-500/40 shadow-xl space-y-6"
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
-              <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Features of Trade Heaven &amp; Client Benefits — Official PDF</span>
-            </div>
-            <h2 id="brochure-studio-heading" className="text-xl sm:text-2xl font-black text-white">
-              Export &ldquo;Features of Trade Heaven &amp; How It Benefits Clients&rdquo; PDF Brochure
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
-              Download the official 2-page A4 executive PDF detailing the core features of Trade Heaven and how it benefits both Buyers and Suppliers (Escrow security, SGS/TÜV inspection, 5-stage protection workflow, and Full Assurance of Trade Heaven stuck-payment loss coverage).
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <ExportToPDF
-              mode="BROCHURE"
-              certificateData={selectedCertificate || verifiedLookupResult}
-              selectedCurrency={selectedCurrency}
-              formattedCoverageLimit={
-                selectedCertificate
-                  ? formatPrice(selectedCertificate.coverageLimitUsd)
-                  : '$2,000,000'
-              }
-              recipientRole={brochureRecipientRole}
-              recipientCompany={brochureRecipientCompany.trim() || undefined}
-              buttonLabel="Download Features & Client Benefits PDF"
-              variant="secondary"
-              className="px-4 py-2.5 text-xs font-black shadow-lg"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left 7 Cols: Visual Summary of What's Inside the 2-Page PDF Brochure */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-              What Is Included Inside the Exported 2-Page PDF Brochure:
+      {/* WORKING OF TRADE ASSURANCE CERTIFICATE — OFFICIAL PDF BROCHURE & SUPPLIER/BUYER DISPATCH STUDIO (ADMIN ONLY) */}
+      {isAdmin && (
+        <section
+          id="trade-assurance-brochure-section"
+          aria-labelledby="brochure-studio-heading"
+          className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-emerald-500/40 shadow-xl space-y-6"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-300 uppercase tracking-wider">
+                <BookOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Features of Trade Heaven &amp; Client Benefits — Official PDF</span>
+              </div>
+              <h2 id="brochure-studio-heading" className="text-xl sm:text-2xl font-black text-white">
+                Export &ldquo;Features of Trade Heaven &amp; How It Benefits Clients&rdquo; PDF Brochure
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
+                Download the official 2-page A4 executive PDF detailing the core features of Trade Heaven and how it benefits both Buyers and Suppliers (Escrow security, SGS/TÜV inspection, 5-stage protection workflow, and Full Assurance of Trade Heaven stuck-payment loss coverage).
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
-                <div className="font-bold text-amber-300 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 shrink-0" />
-                  <span>1. 5-Stage Escrow &amp; Audit Workflow</span>
-                </div>
-                <p className="text-slate-300 leading-relaxed">
-                  Step-by-step diagram showing Corporate KYC onboarding, Proforma Invoice linking, ACID Custodial Escrow fund lock, SGS/TÜV inspection, and automated milestone payout.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
-                <div className="font-bold text-emerald-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>2. Supplier &amp; Buyer Protection Benefits</span>
-                </div>
-                <p className="text-slate-300 leading-relaxed">
-                  Dedicated comparison explaining how Suppliers eliminate buyer payment default risk and how Buyers guarantee 100% pre-shipment quality &amp; on-time Bill of Lading delivery.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-600/50 space-y-1.5">
-                <div className="font-bold text-emerald-300 flex items-center gap-1.5">
-                  <Lock className="w-4 h-4 shrink-0" />
-                  <span>3. Stuck Payment &amp; Mishap Coverage</span>
-                </div>
-                <p className="text-emerald-100/90 leading-relaxed">
-                  Explicit guarantee that in case of any stuck payment or intermediary clearing delay, losses are actively tried to be covered with the help of Trade Heaven and Full Assurance is of Trade Heaven.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
-                <div className="font-bold text-blue-300 flex items-center gap-1.5">
-                  <Award className="w-4 h-4 shrink-0" />
-                  <span>4. Protection Tiers ($150k–$2M) &amp; Global Advantages</span>
-                </div>
-                <p className="text-slate-300 leading-relaxed">
-                  Full breakdown of Standard ($150k), Gold Audited ($500k), and VIP Sovereign ($2M) client protection tiers and strategic advantages for global trade.
-                </p>
-              </div>
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <ExportToPDF
+                mode="BROCHURE"
+                certificateData={selectedCertificate || verifiedLookupResult}
+                selectedCurrency={selectedCurrency}
+                formattedCoverageLimit={
+                  selectedCertificate
+                    ? formatPrice(selectedCertificate.coverageLimitUsd)
+                    : '$2,000,000'
+                }
+                recipientRole={brochureRecipientRole}
+                recipientCompany={brochureRecipientCompany.trim() || undefined}
+                buttonLabel="Download Features & Client Benefits PDF"
+                variant="secondary"
+                className="px-4 py-2.5 text-xs font-black shadow-lg"
+              />
             </div>
           </div>
 
-          {/* Right 5 Cols: Send PDF Brochure to Suppliers & Buyers Form */}
-          <form
-            onSubmit={handleSendBrochureToPartners}
-            className="lg:col-span-5 bg-slate-800/95 border border-slate-700 rounded-2xl p-5 space-y-3.5"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-sm font-bold text-white">
-                <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Send Brochure to Suppliers &amp; Buyers</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left 7 Cols: Visual Summary of What's Inside the 2-Page PDF Brochure */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                What Is Included Inside the Exported 2-Page PDF Brochure:
               </div>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                PDF + Email Dispatch
-              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
+                  <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <span>1. 5-Stage Escrow &amp; Audit Workflow</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Step-by-step diagram showing Corporate KYC onboarding, Proforma Invoice linking, ACID Custodial Escrow fund lock, SGS/TÜV inspection, and automated milestone payout.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
+                  <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>2. Supplier &amp; Buyer Protection Benefits</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Dedicated comparison explaining how Suppliers eliminate buyer payment default risk and how Buyers guarantee 100% pre-shipment quality &amp; on-time Bill of Lading delivery.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-600/50 space-y-1.5">
+                  <div className="font-bold text-emerald-300 flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 shrink-0" />
+                    <span>3. Stuck Payment &amp; Mishap Coverage</span>
+                  </div>
+                  <p className="text-emerald-100/90 leading-relaxed">
+                    Explicit guarantee that in case of any stuck payment or intermediary clearing delay, losses are actively tried to be covered with the help of Trade Heaven and Full Assurance is of Trade Heaven.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 space-y-1.5">
+                  <div className="font-bold text-blue-300 flex items-center gap-1.5">
+                    <Award className="w-4 h-4 shrink-0" />
+                    <span>4. Protection Tiers ($150k–$2M) &amp; Global Advantages</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">
+                    Full breakdown of Standard ($150k), Gold Audited ($500k), and VIP Sovereign ($2M) client protection tiers and strategic advantages for global trade.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Right 5 Cols: Send PDF Brochure to Suppliers & Buyers Form */}
+            <form
+              onSubmit={handleSendBrochureToPartners}
+              className="lg:col-span-5 bg-slate-800/95 border border-slate-700 rounded-2xl p-5 space-y-3.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  <Mail className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Send Brochure to Suppliers &amp; Buyers</span>
+                </div>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  PDF + Email Dispatch
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Recipient Role
+                  </label>
+                  <select
+                    value={brochureRecipientRole}
+                    onChange={e =>
+                      setBrochureRecipientRole(e.target.value as 'SUPPLIER' | 'BUYER' | 'BOTH')
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none"
+                  >
+                    <option value="BOTH">Both Supplier &amp; Buyer</option>
+                    <option value="SUPPLIER">Supplier / Manufacturer</option>
+                    <option value="BUYER">Buyer / Importer</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Partner Company Name ( on PDF Cover )
+                  </label>
+                  <input
+                    type="text"
+                    value={brochureRecipientCompany}
+                    onChange={e => setBrochureRecipientCompany(e.target.value)}
+                    placeholder="e.g. Global Steel Corp..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                  Recipient Role
-                </label>
-                <select
-                  value={brochureRecipientRole}
-                  onChange={e =>
-                    setBrochureRecipientRole(e.target.value as 'SUPPLIER' | 'BUYER' | 'BOTH')
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:border-amber-400 focus:outline-none"
-                >
-                  <option value="BOTH">Both Supplier &amp; Buyer</option>
-                  <option value="SUPPLIER">Supplier / Manufacturer</option>
-                  <option value="BUYER">Buyer / Importer</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                  Partner Company Name ( on PDF Cover )
+                  Supplier / Buyer Email Address(es) <span className="text-slate-400">(comma-separated)</span>
                 </label>
                 <input
                   type="text"
-                  value={brochureRecipientCompany}
-                  onChange={e => setBrochureRecipientCompany(e.target.value)}
-                  placeholder="e.g. Global Steel Corp..."
+                  value={brochureRecipientEmail}
+                  onChange={e => setBrochureRecipientEmail(e.target.value)}
+                  placeholder="supplier@company.com, buyer@importer.com"
                   className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                Supplier / Buyer Email Address(es) <span className="text-slate-400">(comma-separated)</span>
-              </label>
-              <input
-                type="text"
-                value={brochureRecipientEmail}
-                onChange={e => setBrochureRecipientEmail(e.target.value)}
-                placeholder="supplier@company.com, buyer@importer.com"
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                Executive Note Included in Brochure Email
-              </label>
-              <textarea
-                rows={2}
-                value={brochureCustomMessage}
-                onChange={e => setBrochureCustomMessage(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={autoDownloadPdfOnSend}
-                onChange={e => setAutoDownloadPdfOnSend(e.target.checked)}
-                className="rounded border-slate-600 text-emerald-500 focus:ring-0"
-              />
-              <span>Also download the customized 2-Page PDF Brochure file when sending</span>
-            </label>
-
-            {brochureDispatchStatus && (
-              <div
-                className={`p-2.5 rounded-xl text-xs font-medium ${
-                  brochureDispatchStatus.type === 'success'
-                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-200'
-                    : 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
-                }`}
-              >
-                {brochureDispatchStatus.message}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                  Executive Note Included in Brochure Email
+                </label>
+                <textarea
+                  rows={2}
+                  value={brochureCustomMessage}
+                  onChange={e => setBrochureCustomMessage(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                />
               </div>
-            )}
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <button
-                type="submit"
-                disabled={isSendingBrochureEmail}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              >
-                {isSendingBrochureEmail ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Sending Brochure...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send Brochure to Supplier / Buyer</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
+              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoDownloadPdfOnSend}
+                  onChange={e => setAutoDownloadPdfOnSend(e.target.checked)}
+                  className="rounded border-slate-600 text-emerald-500 focus:ring-0"
+                />
+                <span>Also download the customized 2-Page PDF Brochure file when sending</span>
+              </label>
+
+              {brochureDispatchStatus && (
+                <div
+                  className={`p-2.5 rounded-xl text-xs font-medium ${
+                    brochureDispatchStatus.type === 'success'
+                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-200'
+                      : 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
+                  }`}
+                >
+                  {brochureDispatchStatus.message}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={isSendingBrochureEmail}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  {isSendingBrochureEmail ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending Brochure...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Brochure to Supplier / Buyer</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      )}
 
       {/* 2. LIVE CERTIFICATE VERIFICATION RESULT & OFFICIAL CREDENTIAL PREVIEW */}
       <section
@@ -1300,145 +1384,314 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Right Column: Official Printable Certificate Credential Document (7 cols) */}
+          {/* Right Column: Official Classic Sovereign Certificate Credential Document (7 cols) */}
           <div className="lg:col-span-7">
             {selectedCertificate ? (
-              <div className="border-2 border-slate-900 rounded-3xl p-6 sm:p-8 bg-white space-y-6">
-                {/* Certificate Top Header */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-slate-200">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
-                      <BadgeCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>OFFICIAL TRADE HEAVEN ESCROW &amp; AUDIT CREDENTIAL</span>
+              <div className="space-y-4">
+                {/* Action Toolbar Above Classic Certificate Canvas (ADMIN ONLY) */}
+                {isAdmin && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900 text-white border border-amber-500/40 shadow-md">
+                    <div className="space-y-0.5">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 shrink-0" />
+                        <span>Classic Sovereign Indenture &amp; Certificate Preview</span>
+                      </div>
+                      <div className="text-xs text-slate-300">
+                        Download or dispatch the 2-Page Classic A4 PDF Credential directly to email
+                      </div>
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                      Certificate of Trade Assurance
-                    </h3>
-                    <div className="text-xs text-slate-500">
-                      Issued by Tradeheaven ECOM Solution LLP · Global B2B Compliance Registry
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col sm:items-end gap-2.5 shrink-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <ExportToPDF
-                        mode="CERTIFICATE"
-                        certificateData={selectedCertificate}
-                        selectedCurrency={selectedCurrency}
-                        formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
-                        buttonLabel="Download Certificate PDF"
-                        variant="emerald"
-                        className="shadow-sm"
-                      />
-                    </div>
-                    <div className="sm:text-right space-y-1">
-                      <div className="text-[11px] text-slate-500">Certificate Serial Number</div>
-                      <div className="flex items-center sm:justify-end gap-1.5">
-                        <span className="font-mono tabular-nums text-sm font-black text-slate-900 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300">
-                          {selectedCertificate.certificateNumber}
-                        </span>
+                    <div className="flex flex-col sm:items-end gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <ExportToPDF
+                          mode="CERTIFICATE"
+                          certificateData={selectedCertificate}
+                          selectedCurrency={selectedCurrency}
+                          formattedCoverageLimit={formatPrice(selectedCertificate.coverageLimitUsd)}
+                          buttonLabel="Download Classic PDF"
+                          variant="emerald"
+                          className="shadow-sm"
+                        />
                         <button
                           type="button"
-                          onClick={() => handleCopySerial(selectedCertificate.certificateNumber)}
-                          className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 cursor-pointer"
-                          title="Copy Certificate Number"
+                          disabled={isEmailingCertPdf}
+                          onClick={() =>
+                            handleEmailCertificatePdfDraft(selectedCertificate, certPdfEmailRecipient)
+                          }
+                          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer transition-colors"
+                          title="Email Classic 2-Page Official Certificate PDF"
                         >
-                          {copiedCertNo === selectedCertificate.certificateNumber ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          {isEmailingCertPdf ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>Mailing Classic PDF...</span>
+                            </>
                           ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                            <>
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Mail Classic PDF to {certPdfEmailRecipient || 'yr943334@gmail.com'}</span>
+                            </>
                           )}
                         </button>
                       </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <input
+                          type="email"
+                          value={certPdfEmailRecipient}
+                          onChange={e => setCertPdfEmailRecipient(e.target.value)}
+                          placeholder="Recipient email (e.g. yr943334@gmail.com)"
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-white font-mono w-56 focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                      {certPdfEmailStatus && (
+                        <div
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border max-w-md sm:text-right ${
+                            certPdfEmailStatus.type === 'success'
+                              ? 'bg-emerald-950/90 border-emerald-500/60 text-emerald-200'
+                              : 'bg-rose-950/90 border-rose-500/60 text-rose-200'
+                          }`}
+                        >
+                          {certPdfEmailStatus.message}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Certified Entity & Escrow Coverage Highlight */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200">
-                  <div className="space-y-1">
-                    <div className="text-xs text-slate-500">Certified Legal Entity</div>
-                    <div className="text-base font-black text-slate-900">
-                      {selectedCertificate.companyName}
-                    </div>
-                    <div className="text-xs text-slate-600">
-                      {selectedCertificate.businessType} · {selectedCertificate.country}
+                {/* Classic Sovereign Parchment Certificate Frame */}
+                <div className="p-2.5 sm:p-3.5 bg-[#FCF9F2] border-4 border-[#122038] shadow-xl">
+                  <div className="border-2 border-[#B48A3E] p-1">
+                    <div className="border border-[#122038]/60 p-5 sm:p-8 bg-[#FCF9F2] text-[#122038] font-serif space-y-6 relative">
+                      {/* Top Sovereign Institution Crest & Header */}
+                      <div className="text-center space-y-2 border-b-2 border-[#B48A3E] pb-5">
+                        <div className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] uppercase text-[#8C6622]">
+                          TRADEHEAVEN ECOM SOLUTION LLP &bull; LONDON &bull; SINGAPORE &bull; SYDNEY &bull; NEW DELHI
+                        </div>
+
+                        <div className="flex items-center justify-center gap-3 py-1">
+                          <div className="h-[1px] w-16 sm:w-28 bg-[#B48A3E]" />
+                          <div className="w-10 h-10 rounded-full bg-[#122038] border-2 border-[#B48A3E] flex items-center justify-center text-[#F6D88C] font-bold text-xs tracking-wider shadow-sm">
+                            TH
+                          </div>
+                          <div className="h-[1px] w-16 sm:w-28 bg-[#B48A3E]" />
+                        </div>
+
+                        <div className="text-[11px] uppercase tracking-[0.14em] text-slate-600 font-sans font-semibold">
+                          Global Custodial Escrow, Commodity Brokerage &amp; Loss-Only Indemnity Registry
+                        </div>
+
+                        <h3 className="text-2xl sm:text-3xl font-bold tracking-wide text-[#0F1C34] uppercase pt-1">
+                          Certificate of Trade Assurance
+                        </h3>
+                        <div className="text-sm sm:text-base italic font-bold text-[#926218]">
+                          &amp; Direct Actual-Loss-Only Insurance Indenture
+                        </div>
+                      </div>
+
+                      {/* Classic Credential Ribbon Bar */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center bg-[#F5EFE0] border border-[#B48A3E] px-4 py-2.5 text-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-[#0F1C34]">
+                          <span>SERIAL NO:</span>
+                          <span className="font-mono">{selectedCertificate.certificateNumber}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopySerial(selectedCertificate.certificateNumber)}
+                            className="p-1 rounded hover:bg-[#E8DEC5] text-[#0F1C34] cursor-pointer"
+                            title="Copy Certificate Serial Number"
+                          >
+                            {copiedCertNo === selectedCertificate.certificateNumber ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-700" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        <div className=" sm:text-center font-bold text-[#0E5C3A] tracking-wide">
+                          &bull; OFFICIAL VERIFIED CREDENTIAL &bull;
+                        </div>
+                        <div className="sm:text-right font-bold text-[#0F1C34]">
+                          VAULT ID: <span className="font-mono">{selectedCertificate.escrowVaultId}</span>
+                        </div>
+                      </div>
+
+                      {/* Formal Proclamation Section */}
+                      <div className="text-center space-y-2 py-1">
+                        <div className="text-sm italic text-slate-600">
+                          This Official Instrument of Sovereign Assurance Witnesseth and Certifies That
+                        </div>
+                        <div className="text-xl sm:text-2xl font-bold text-[#0F1C34] border-b border-[#B48A3E] inline-block px-6 pb-1">
+                          {selectedCertificate.companyName}
+                        </div>
+                        {selectedCertificate.holder && (
+                          <div className="text-sm italic font-bold text-slate-800">
+                            Represented by Authorized Principal Signatory: {selectedCertificate.holder}
+                          </div>
+                        )}
+                        <div className="text-xs text-slate-700 font-sans">
+                          Jurisdiction: <strong>{selectedCertificate.country}</strong> &nbsp;|&nbsp; Corporate Reg / ABN: <strong className="font-mono">{selectedCertificate.legalRegistrationNumber}</strong> &nbsp;|&nbsp; Tax / GST: <strong className="font-mono">{selectedCertificate.taxOrVatId}</strong>
+                        </div>
+                        <div className="text-xs italic text-slate-600 pt-1">
+                          is duly admitted to the Trade Heaven Custodial Escrow &amp; Loss-Only Indemnity Registry for:
+                        </div>
+                        <div className="text-sm font-bold text-[#0F1C34]">
+                          {selectedCertificate.businessType}
+                        </div>
+                      </div>
+
+                      {/* Sovereign Indemnity Limit Plaque */}
+                      <div className="bg-[#F6F0E1] border-2 border-[#122038] p-4 text-center space-y-1 shadow-inner">
+                        <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8C6622] font-sans">
+                          Maximum Guaranteed Custodial Escrow &amp; Actual-Loss Indemnity Coverage Limit
+                        </div>
+                        <div className="text-xl sm:text-2xl font-bold text-[#0E5C3A] font-mono tabular-nums">
+                          USD ${selectedCertificate.coverageLimitUsd.toLocaleString()}.00 &nbsp;({formatPrice(selectedCertificate.coverageLimitUsd)} {selectedCurrency})
+                        </div>
+                        <div className="text-xs italic text-[#7C2D12]">
+                          Strictly Payable for Proven, Documented Direct Actual Financial or Cargo Losses Only &mdash; Zero Uncertain or Speculative Claims
+                        </div>
+                      </div>
+
+                      {/* Classic Engraved 2-Column Ledger Schedule */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 border border-[#122038] text-xs font-sans">
+                        <div className="p-3 border-b sm:border-r border-[#B48A3E] bg-[#FCF9F2]">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Corporate Registration &amp; Tax Identifiers
+                          </div>
+                          <div className="font-mono font-bold text-[#0F1C34] mt-0.5">
+                            {selectedCertificate.legalRegistrationNumber} &nbsp;|&nbsp; {selectedCertificate.taxOrVatId}
+                          </div>
+                        </div>
+
+                        <div className="p-3 border-b border-[#B48A3E] bg-[#FCF9F2]">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Global D-U-N-S &amp; Registry Class
+                          </div>
+                          <div className="font-mono font-bold text-[#0F1C34] mt-0.5">
+                            D-U-N-S: {selectedCertificate.dunsNumber || 'Verified'} &nbsp;|&nbsp; {selectedCertificate.tierCode}
+                          </div>
+                        </div>
+
+                        <div className="p-3 border-b sm:border-r border-[#B48A3E] bg-[#F7F2E6]">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Underwriting &amp; Certification Tier
+                          </div>
+                          <div className="font-bold text-[#0F1C34] mt-0.5">
+                            {selectedCertificate.tierTitle}
+                          </div>
+                        </div>
+
+                        <div className="p-3 border-b border-[#B48A3E] bg-[#F7F2E6]">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Independent Auditing &amp; Survey Authority
+                          </div>
+                          <div className="font-bold text-[#0F1C34] mt-0.5">
+                            {selectedCertificate.auditingBody}
+                          </div>
+                        </div>
+
+                        <div className="p-3 border-b sm:border-b-0 sm:border-r border-[#B48A3E] bg-[#FCF9F2]">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Effective Validity Term (Issue &mdash; Expiry)
+                          </div>
+                          <div className="font-mono font-bold text-[#0F1C34] mt-0.5">
+                            {selectedCertificate.issueDate} to {selectedCertificate.expiryDate}
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-[#FCF9F2]">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Approved Incoterms 2020 &amp; Standards
+                          </div>
+                          <div className="font-bold text-[#0F1C34] mt-0.5">
+                            {selectedCertificate.supportedIncoterms.join(', ')} &nbsp;|&nbsp; {selectedCertificate.isoStandards.slice(0, 2).join(' · ')}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mandatory Underwriting Covenant Box */}
+                      <div className="p-4 bg-[#FAF4E5] border-2 border-[#92400E] space-y-2 text-xs leading-relaxed">
+                        <div className="font-bold text-[#7C2D12] uppercase tracking-wider text-center border-b border-[#B48A3E] pb-1.5 flex items-center justify-center gap-1.5 font-sans">
+                          <Scale className="w-4 h-4 text-[#92400E] shrink-0" />
+                          <span>Mandatory Underwriting Covenant: Verified Actual Losses Only (No Uncertain Claims)</span>
+                        </div>
+                        <p className="text-[#0F1C34]">
+                          <strong>1. Clause 3.1 &mdash; Coverage Strictly Limited to Direct Actual Losses:</strong> Insurance and Trade Assurance indemnity under this Certificate covers <strong>strictly proven, direct, quantifiable financial or physical cargo losses only</strong> (documented transit loss/damage, verified non-delivery of escrowed orders in Vault <code className="font-mono font-bold">{selectedCertificate.escrowVaultId}</code>, or confirmed intermediary settlement holds) substantiated by Clean Bill of Lading, Custodial Escrow Receipt, and an independent <strong>SGS, Bureau Veritas, Intertek, or Lloyd&apos;s Survey Report</strong>.
+                        </p>
+                        <p className="text-[#881337] font-bold">
+                          <strong>2. Clause 3.2 &mdash; Categorical Exclusion of Uncertain &amp; Speculative Claims:</strong> Any uncertain, unverified, speculative, contingent, indirect, or consequential claims&mdash;including anticipated profit loss, market price fluctuations, currency shifts, undocumented allegations, or off-record dealings outside Export Manager supervision&mdash;are strictly excluded and non-payable.
+                        </p>
+                      </div>
+
+                      {/* Classic Engraved Signatures & Embossed Gold Seal */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-6 pt-3 text-center">
+                        <div className="space-y-1">
+                          <div className="text-lg italic font-bold text-[#162E58] font-serif">
+                            A. V. Sterling
+                          </div>
+                          <div className="border-t border-[#122038] pt-1 text-xs font-bold text-[#0F1C34]">
+                            Chief Underwriting Officer
+                          </div>
+                          <div className="text-[11px] italic text-slate-600">
+                            Directorate of Sovereign Trade Assurance
+                          </div>
+                        </div>
+
+                        <div className="flex justify-center">
+                          <div className="w-28 h-28 rounded-full bg-[#F8EABE] border-4 border-double border-[#A8792A] shadow-md flex flex-col items-center justify-center p-2 text-center">
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-[#8C6018] font-sans">
+                              Official Seal
+                            </span>
+                            <span className="text-[11px] font-bold text-[#0F1C34] tracking-wide mt-0.5">
+                              TRADE HEAVEN
+                            </span>
+                            <span className="text-[8.5px] font-bold text-[#0E5C3A] uppercase tracking-wider mt-0.5 font-sans">
+                              Verified Escrow
+                            </span>
+                            <span className="text-[8px] italic font-bold text-[#8C6018] mt-0.5">
+                              Loss-Only &bull; 2026
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="text-lg italic font-bold text-[#162E58] font-serif">
+                            R. K. Sharma
+                          </div>
+                          <div className="border-t border-[#122038] pt-1 text-xs font-bold text-[#0F1C34]">
+                            Registrar of Custodial Escrow
+                          </div>
+                          <div className="text-[11px] italic text-slate-600">
+                            Global Indemnity &amp; Bullion Settlement
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Cryptographic Registry Footer */}
+                      <div className="pt-4 border-t border-[#B48A3E] flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-sans text-xs">
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-[#785820]">
+                            Cryptographic Registry Hash
+                          </div>
+                          <div className="font-mono tabular-nums text-[11px] font-bold text-[#0F1C34] break-all">
+                            {selectedCertificate.verificationHash}
+                          </div>
+                        </div>
+
+                        {selectedCertificate.companyId && onOpenStorefront && (
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => onOpenStorefront(selectedCertificate.companyId!)}
+                              className="px-4 py-2 rounded-xl bg-[#122038] hover:bg-slate-800 text-[#F6D88C] text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap border border-[#B48A3E]"
+                            >
+                              <span>View Verified Storefront</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  <div className="sm:text-right space-y-1">
-                    <div className="text-xs text-slate-500">Guaranteed Escrow Protection Limit</div>
-                    <div className="text-2xl font-black font-mono tabular-nums text-emerald-700">
-                      {formatPrice(selectedCertificate.coverageLimitUsd)} ({selectedCurrency})
-                    </div>
-                    <div className="text-xs font-mono tabular-nums text-slate-500">
-                      USD Equivalent: ${selectedCertificate.coverageLimitUsd.toLocaleString()} USD
-                    </div>
-                  </div>
-                </div>
-
-                {/* Structured Verification Specification Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div className="text-slate-500">Certification Tier</div>
-                    <div className="font-bold text-slate-900">{selectedCertificate.tierTitle}</div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div className="text-slate-500">Auditing &amp; KYC Authority</div>
-                    <div className="font-bold text-slate-900">{selectedCertificate.auditingBody}</div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div className="text-slate-500">Corporate Registration &amp; Tax ID</div>
-                    <div className="font-mono tabular-nums font-bold text-slate-900">
-                      Reg: {selectedCertificate.legalRegistrationNumber} · Tax: {selectedCertificate.taxOrVatId}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div className="text-slate-500">Custodial Escrow Vault ID</div>
-                    <div className="font-mono tabular-nums font-bold text-blue-700">
-                      {selectedCertificate.escrowVaultId}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div className="text-slate-500">Validity Period (Issue — Expiry)</div>
-                    <div className="font-mono tabular-nums font-bold text-slate-900">
-                      {selectedCertificate.issueDate} to {selectedCertificate.expiryDate}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-slate-200 space-y-1">
-                    <div className="text-slate-500">Verified Compliance &amp; Incoterms</div>
-                    <div className="font-semibold text-slate-900">
-                      {selectedCertificate.isoStandards.join(' · ')} ({selectedCertificate.supportedIncoterms.join(', ')})
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cryptographic Seal & Action Buttons */}
-                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-0.5 text-xs">
-                    <div className="text-slate-500">Cryptographic Registry Hash</div>
-                    <div className="font-mono tabular-nums text-[11px] text-slate-700 break-all">
-                      {selectedCertificate.verificationHash}
-                    </div>
-                  </div>
-
-                  {selectedCertificate.companyId && onOpenStorefront && (
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => onOpenStorefront(selectedCertificate.companyId!)}
-                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                      >
-                        <span>View Verified Storefront</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : null}
@@ -1583,14 +1836,16 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <ExportToPDF
-                    mode="CERTIFICATE"
-                    certificateData={newlyIssuedCert}
-                    selectedCurrency={selectedCurrency}
-                    formattedCoverageLimit={formatPrice(newlyIssuedCert.coverageLimitUsd)}
-                    buttonLabel="Download Certificate PDF"
-                    variant="primary"
-                  />
+                  {isAdmin && (
+                    <ExportToPDF
+                      mode="CERTIFICATE"
+                      certificateData={newlyIssuedCert}
+                      selectedCurrency={selectedCurrency}
+                      formattedCoverageLimit={formatPrice(newlyIssuedCert.coverageLimitUsd)}
+                      buttonLabel="Download Certificate PDF"
+                      variant="primary"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => {

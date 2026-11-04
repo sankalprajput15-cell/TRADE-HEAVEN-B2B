@@ -68,11 +68,6 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
   const isFeaturedPaid = Boolean(featuredRfq && isPaidEntity(featuredRfq));
 
   const handleQuickClaimFeatured = () => {
-    if (!isAuthenticated) {
-      handleOpenRegister();
-      return;
-    }
-
     if (featuredRfq && status.canClaim) {
       if (isFeaturedPaid && !isPaidMember) {
         if (onUpgradeToPlans) onUpgradeToPlans();
@@ -100,12 +95,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
       {/* Decorative B2B Trade Bulletin Stamp */}
       <div className="absolute -right-6 -top-6 w-32 h-32 bg-amber-300/20 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute right-4 top-4 hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-200/80 border border-amber-300 text-amber-950 text-[11px] font-mono font-bold tracking-tight">
-        {!isAuthenticated ? (
-          <>
-            <Lock className="w-3.5 h-3.5 text-amber-800 shrink-0" />
-            <span>Free Member Registration Required</span>
-          </>
-        ) : status.canClaim ? (
+        {status.canClaim ? (
           <>
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping shrink-0" />
             <span>1 Daily Free Buy Order Credit Available</span>
@@ -127,12 +117,12 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
               <span>Trade Heaven Exclusive</span>
             </span>
 
-            {!isAuthenticated ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[11px] font-bold border border-blue-200">
-                <UserCheck className="w-3 h-3 text-blue-700" />
-                <span>Free Member Portal Access Only</span>
-              </span>
-            ) : status.canClaim ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[11px] font-bold border border-blue-200">
+              <UserCheck className="w-3 h-3 text-blue-700" />
+              <span>Open to Registered &amp; Unregistered Users</span>
+            </span>
+
+            {status.canClaim ? (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200">
                 <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                 <span>1/1 Free Credit Ready</span>
@@ -150,7 +140,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed max-w-3xl">
-            Register as a free member on the portal to unlock 1 open buy order inquiry every 24 hours—100% free. Pitch directly to prospective buyers and start exporting!
+            Anyone—whether registered or unregistered—can unlock 1 open buy order inquiry every 24 hours—100% free. Pitch directly to prospective buyers and start exporting!
           </p>
         </div>
 
@@ -158,7 +148,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
         <div className="p-3 sm:p-3.5 rounded-2xl bg-amber-100/70 border border-amber-300/80 text-amber-950 text-xs flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
           <p className="font-semibold leading-relaxed">
-            (Note: Free buy orders are accessible only after registering as a free member on the portal. Inquiries are unvetted community requests—deals &amp; buyer legitimacy are not guaranteed. Information of paid suppliers, buyers, and users is strictly protected and cannot be accessed by unpaid members).
+            (Note: Free buy orders are accessible to anyone whether registered or unregistered on the portal. Inquiries are unvetted community requests—deals &amp; buyer legitimacy are not guaranteed. Information of paid suppliers, buyers, and users is strictly protected and cannot be accessed by unpaid users).
           </p>
         </div>
 
@@ -166,15 +156,10 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
         <div className="p-4 rounded-2xl bg-white border border-amber-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-              Daily Free Sourcing Quota • Free Member Privilege
+              Daily Free Sourcing Quota • Registered &amp; Unregistered Access
             </span>
             <div className="flex items-center gap-2">
-              {!isAuthenticated ? (
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
-                  <Lock className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Free registration required: Create your free member account in 30 seconds to unlock today's free buy order.</span>
-                </div>
-              ) : status.canClaim ? (
+              {status.canClaim ? (
                 <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Your 24-Hour Free Buy Order Pass is Active! Click any free tender card below to claim &amp; unlock contact info.</span>
@@ -192,17 +177,7 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap shrink-0">
-            {!isAuthenticated ? (
-              <button
-                type="button"
-                id="banner-register-free-claim-btn"
-                onClick={handleOpenRegister}
-                className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 animate-scale-pulse"
-              >
-                <UserPlus className="w-4 h-4 text-slate-950" />
-                <span>Register Free to Claim Buy Order</span>
-              </button>
-            ) : status.canClaim && featuredRfq ? (
+            {status.canClaim && featuredRfq ? (
               isFeaturedPaid && !isPaidMember ? (
                 <button
                   type="button"

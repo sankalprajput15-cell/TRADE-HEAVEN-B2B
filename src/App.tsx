@@ -110,6 +110,7 @@ const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/market
 const SupplierBankWithdrawalLandingPage = lazyWithRetry(() => import('./components/marketplace/SupplierBankWithdrawalLandingPage'), 'SupplierBankWithdrawalLandingPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
 const TradeAssuranceCertificateView = lazyWithRetry(() => import('./components/services/TradeAssuranceCertificateView'), 'TradeAssuranceCertificateView');
+const VerifiedSupplierDedicatedDashboard = lazyWithRetry(() => import('./components/vendor/VerifiedSupplierDedicatedDashboard'), 'VerifiedSupplierDedicatedDashboard');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
 const ProductDetailModal = lazyWithRetry(() => import('./components/marketplace/ProductDetailModal'), 'ProductDetailModal');
@@ -214,7 +215,7 @@ function parseIncomingEmailLinkParams(rawSearch: string): ParsedEmailLinkRoute {
       forcedView = 'PREMIUM_MEMBERSHIP';
     } else if (upper === 'REFUND' || upper === 'REFUND_POLICY') {
       forcedView = 'REFUND_POLICY';
-    } else if (upper === 'DASHBOARD' || upper === 'PORTAL' || upper === 'SUPPLIER_PORTAL') {
+    } else if (upper === 'DASHBOARD' || upper === 'PORTAL' || upper === 'SUPPLIER_PORTAL' || upper === 'SUPPLIER_DASHBOARD') {
       forcedView = 'DASHBOARD';
     } else {
       forcedView = upper as ActiveView;
@@ -268,6 +269,20 @@ function parseIncomingEmailLinkParams(rawSearch: string): ParsedEmailLinkRoute {
     } else {
       forcedView = 'DASHBOARD';
     }
+  }
+
+  const restrictedAdminViews: ActiveView[] = [
+    'CLIENT_ADMIN',
+    'PLAN_PRICING_ADMIN',
+    'CMS_MANAGEMENT',
+    'BULK_ENTITY_CRM',
+    'PRODUCT_IMAGE_ADMIN',
+    'RENEWAL_INSIGHTS',
+    'RENEWAL_EMAIL_EDITOR',
+    'MAIL_DELIVERY_HISTORY'
+  ];
+  if (forcedView && restrictedAdminViews.includes(forcedView)) {
+    forcedView = null;
   }
 
   return {
@@ -896,22 +911,12 @@ const MainApp: React.FC = () => {
     };
     const handleSearchProductDirectory = (e: Event) => {
       const customEvent = e as CustomEvent<{ query?: string }>;
-      if (!currentUser) {
-        setAuthModalMode('REGISTER');
-        setIsAuthModalOpen(true);
-        return;
-      }
       const q = customEvent?.detail?.query ?? '';
       setCatalogSearch(q);
       setActiveView('PRODUCT_DIRECTORY');
     };
     const handleSearchRfqLeads = (e: Event) => {
       const customEvent = e as CustomEvent<{ rfq?: RfqRequirement; query?: string }>;
-      if (!currentUser) {
-        setAuthModalMode('REGISTER');
-        setIsAuthModalOpen(true);
-        return;
-      }
       if (customEvent?.detail?.rfq) {
         setSelectedRfqForModal(customEvent.detail.rfq);
         setSelectedRfqId(customEvent.detail.rfq.id);
@@ -1058,7 +1063,7 @@ const MainApp: React.FC = () => {
     };
   }, []);
 
-  // Guard against unauthenticated or non-admin visitors accessing admin or protected dashboard views directly
+  // Guard against unauthenticated or non-admin visitors accessing admin views directly
   useEffect(() => {
     const adminViews: ActiveView[] = [
       'CLIENT_ADMIN',
@@ -1067,25 +1072,19 @@ const MainApp: React.FC = () => {
       'BULK_ENTITY_CRM',
       'PRODUCT_IMAGE_ADMIN',
       'RENEWAL_INSIGHTS',
-      'RENEWAL_EMAIL_EDITOR'
+      'RENEWAL_EMAIL_EDITOR',
+      'MAIL_DELIVERY_HISTORY'
     ];
     if (adminViews.includes(activeView) && (!currentUser || !isAdmin)) {
       setActiveView('HOMEPAGE');
-      setAuthModalMode('LOGIN');
-      setIsAuthModalOpen(true);
-      return;
-    }
-    if (activeView === 'DASHBOARD' && !currentUser) {
-      // If user arrived via an email link targeting DASHBOARD, keep activeView on DASHBOARD
-      // (which renders the dedicated Member Access Required card) and prompt sign-in modal.
-      if (emailLinkForcedViewRef.current === 'DASHBOARD') {
-        setAuthModalMode('LOGIN');
-        setIsAuthModalOpen(true);
-        return;
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('view')) {
+          url.searchParams.delete('view');
+          window.history.replaceState({}, '', url.toString());
+        }
       }
-      setActiveView('HOMEPAGE');
-      setAuthModalMode('LOGIN');
-      setIsAuthModalOpen(true);
+      return;
     }
   }, [activeView, currentUser, isAdmin]);
 
@@ -1856,11 +1855,6 @@ const MainApp: React.FC = () => {
       return;
     }
     if (target === 'DASHBOARD' || target === 'MY_DASHBOARD') {
-      if (!currentUser) {
-        setAuthModalMode('LOGIN');
-        setIsAuthModalOpen(true);
-        return;
-      }
       setActiveView('DASHBOARD');
       return;
     }
@@ -2033,11 +2027,6 @@ const MainApp: React.FC = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onNavigateToSearch={(query) => {
-          if (!currentUser) {
-            setAuthModalMode('REGISTER');
-            setIsAuthModalOpen(true);
-            return;
-          }
           setCatalogCategory('ALL');
           setCatalogSearch(query);
           setSelectedProduct(null);
@@ -2234,40 +2223,16 @@ const MainApp: React.FC = () => {
                 );
 
               case 'DASHBOARD':
-                if (!currentUser) {
+              case 'SUPPLIER_DASHBOARD':
+                if (currentUser?.role === 'SUPPLIER' || activeView === 'SUPPLIER_DASHBOARD') {
                   return (
-                    <div className="max-w-lg mx-auto my-12 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 text-center shadow-xs space-y-4">
-                      <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mx-auto">
-                        <LayoutDashboard className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                          Registered Member Access Required
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-600">
-                          Only registered and signed-in Trade Heaven buyers and suppliers can open the User Dashboard.
-                        </p>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAuthModalMode('LOGIN');
-                            setIsAuthModalOpen(true);
-                          }}
-                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
-                        >
-                          Sign In to Dashboard
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleOpenRegisterFree}
-                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
-                        >
-                          Register Account
-                        </button>
-                      </div>
-                    </div>
+                    <VerifiedSupplierDedicatedDashboard
+                      currentUser={currentUser}
+                      selectedCurrency={selectedCurrency}
+                      onOpenStorefront={handleOpenStorefront}
+                      onNavigate={handleNavigate}
+                      onOpenCreateRfq={handleOpenCreateRfq}
+                    />
                   );
                 }
                 return (

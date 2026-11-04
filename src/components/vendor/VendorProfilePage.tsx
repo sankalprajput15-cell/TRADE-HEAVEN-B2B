@@ -9,7 +9,7 @@ import {
   Incoterm
 } from '../../types';
 import { CURRENCY_RATES, MOCK_PRODUCTS } from '../../data/mockData';
-import { DETAILED_VENDOR_PROFILES, getDetailedVendorProfile } from '../../data/detailedVendorProfiles';
+import { DETAILED_VENDOR_PROFILES, getDetailedVendorProfile, RANDY_10_PETROLEUM_BUYER_VISITS, MARK_JOHNSON_15_BUYER_VISITS } from '../../data/detailedVendorProfiles';
 import { loadCustomVendorProfile } from '../../utils/mediaUploadUtils';
 import { MediaManagementStudio } from './MediaManagementStudio';
 import { CompanyHeader } from './CompanyHeader';
@@ -318,6 +318,130 @@ export const VendorProfilePage: React.FC<Props> = ({
         onCloseModal={onCloseModal}
         activeTab={activeTab}
       />
+
+      {/* MARK JOHNSON (ATLANTIC POWER & EQUIPMENT CO.) — 10 BUYERS FOR GENERATORS & 5 BUYERS FOR CRANES BANNER */}
+      {(profile.id === 'comp-atlantic-power-equip' ||
+        profile.contactEmail?.toLowerCase() === 'mjohnson@atlanticpowerequip.com' ||
+        currentUser?.email?.toLowerCase() === 'mjohnson@atlanticpowerequip.com') && (
+        <div className="bg-gradient-to-br from-slate-900 via-amber-950 to-slate-900 text-white rounded-3xl border-2 border-amber-500/40 shadow-xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-black uppercase tracking-wider">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>Live Message for Mark Johnson (mjohnson@atlanticpowerequip.com • Atlantic Power &amp; Equipment Co.)</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                ⚡🏗️ 15 Verified Buyers Visited Your Profile: 10 Inquired to Buy Generators &amp; 5 Inquired for Cranes
+              </h2>
+              <p className="text-xs sm:text-sm text-amber-100/90 max-w-3xl">
+                Official notification dispatched to <span className="font-mono font-bold text-white">mjohnson@atlanticpowerequip.com</span> (Shore Technical Equipment Inc. / Atlantic Power &amp; Equipment Co. • Marmora, NJ 08223): 10 institutional buyers visited your profile and inquired to buy Industrial Generators (CAT, Cummins, MTU, Perkins) and 5 buyers inquired to buy Heavy Cranes (Liebherr, Manitowoc, Grove, Tadano, Demag).
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-black flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>10 Generator RFQs + 5 Crane RFQs</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {MARK_JOHNSON_15_BUYER_VISITS.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white/5 hover:bg-white/10 border border-white/15 rounded-2xl p-3.5 transition-all space-y-1.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">
+                    Buyer #{item.visitNumber} ({item.equipmentCategory === 'GENERATOR' ? '⚡ Generator' : '🏗️ Crane'}) • {item.visitedAtLabel}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black">
+                    {item.urgency}
+                  </span>
+                </div>
+                <div className="text-sm font-black text-white">
+                  {item.buyerCompany} <span className="text-xs font-semibold text-amber-200">({item.buyerCountry})</span>
+                </div>
+                <div className="text-xs font-bold text-sky-300">
+                  {item.equipmentCategory === 'GENERATOR' ? '⚡ Generator Inquired:' : '🏗️ Crane Inquired:'} {item.equipmentModelInquired}
+                </div>
+                <div className="text-[11px] text-slate-300">
+                  <strong className="text-white">Quantity:</strong> {item.quantityRequested} •{' '}
+                  <strong className="text-emerald-300">{item.estimatedContractValue}</strong>
+                </div>
+                <div className="text-[11px] text-slate-300">
+                  <strong className="text-white">Terms:</strong> {item.deliveryTerms} | {item.paymentTerms}
+                </div>
+                <p className="text-[11px] text-amber-100/80 italic pt-1 border-t border-white/10">
+                  &ldquo;{item.buyerMessage}&rdquo; — <span className="not-italic font-semibold text-white">{item.buyerContact}</span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MR. RANDY (MIDDLE FOX LLC) — 10 BUYERS VISITED PROFILE & INQUIRED FOR PETROLEUM PRODUCTS BANNER */}
+      {(profile.id === 'comp-middle-fox-llc' ||
+        profile.contactEmail?.toLowerCase() === 'randy@midforkcap.com' ||
+        currentUser?.email?.toLowerCase() === 'randy@midforkcap.com') && (
+        <div className="bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 text-white rounded-3xl border-2 border-sky-500/40 shadow-xl p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[11px] font-black uppercase tracking-wider">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>Live Message for Mr. Randy (randy@midforkcap.com • Middle Fox LLC)</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                ⛽ 10 Verified Buyers Visited Your Profile &amp; Inquired to Buy Petroleum Products
+              </h2>
+              <p className="text-xs sm:text-sm text-sky-100/90 max-w-3xl">
+                Official notification dispatched to <span className="font-mono font-bold text-white">randy@midforkcap.com</span> (+1 406 309 5590 • Billings, Montana 59101): 10 institutional energy buyers visited your Middle Fox LLC storefront and submitted active purchase inquiries for EN 590 (10PPM) Diesel, Jet Fuel A-1, D6 Virgin Fuel Oil, ESPO Crude, MGO, Mazut M100, LNG, AGO, Petcoke &amp; Base Oil SN500.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-black flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>10 Profile Visits • 10 Active Petroleum RFQs</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {RANDY_10_PETROLEUM_BUYER_VISITS.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white/5 hover:bg-white/10 border border-white/15 rounded-2xl p-3.5 transition-all space-y-1.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-sky-300">
+                    Buyer #{item.visitNumber} • {item.visitedAtLabel}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black">
+                    {item.urgency}
+                  </span>
+                </div>
+                <div className="text-sm font-black text-white">
+                  {item.buyerCompany} <span className="text-xs font-semibold text-sky-200">({item.buyerCountry})</span>
+                </div>
+                <div className="text-xs font-bold text-amber-300">
+                  ⛽ Product Inquired: {item.petroleumProduct}
+                </div>
+                <div className="text-[11px] text-slate-300">
+                  <strong className="text-white">Volume:</strong> {item.quantityRequested} •{' '}
+                  <strong className="text-emerald-300">{item.estimatedContractValue}</strong>
+                </div>
+                <div className="text-[11px] text-slate-300">
+                  <strong className="text-white">Terms:</strong> {item.deliveryTerms} | {item.paymentTerms}
+                </div>
+                <p className="text-[11px] text-sky-100/80 italic pt-1 border-t border-white/10">
+                  &ldquo;{item.buyerMessage}&rdquo; — <span className="not-italic font-semibold text-white">{item.buyerContact}</span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 2. STICKY NAVIGATION TAB BAR */}
       <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm p-1.5 flex items-center justify-between overflow-x-auto no-scrollbar gap-2">

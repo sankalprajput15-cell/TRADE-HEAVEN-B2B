@@ -50,6 +50,7 @@ import { ActiveView } from '../../types';
 import { getSavedLeads, removeSavedLead, subscribeToSavedLeads } from '../../services/savedLeadsService';
 import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
+import { RANDY_10_PETROLEUM_BUYER_VISITS, MARK_JOHNSON_15_BUYER_VISITS } from '../../data/detailedVendorProfiles';
 
 interface Props {
   currentUser: AuthUser | null;
@@ -428,8 +429,222 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
     return `${curr.symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
+  const [showRandyTenBuyersDetails, setShowRandyTenBuyersDetails] = useState(false);
+  const [sendingRandyAlert, setSendingRandyAlert] = useState(false);
+  const [randyAlertBanner, setRandyAlertBanner] = useState<string | null>(
+    '⛽ Message Sent to Mr. Randy (randy@midforkcap.com • Middle Fox LLC): 10 verified buyers visited his profile and inquired to buy petroleum products.'
+  );
+
+  const handleDispatchRandyPetroleumAlert = async () => {
+    setSendingRandyAlert(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-randy-10-buyers-petroleum-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setRandyAlertBanner(
+          data.message ||
+            '⛽ Dispatched message to Mr. Randy (randy@midforkcap.com • Middle Fox LLC): 10 buyers visited his profile and inquired to buy petroleum products!'
+        );
+      }
+    } catch {
+      // ignore offline error
+    } finally {
+      setSendingRandyAlert(false);
+    }
+  };
+
+  const [showMarkJohnsonBuyersDetails, setShowMarkJohnsonBuyersDetails] = useState(false);
+  const [sendingMarkJohnsonAlert, setSendingMarkJohnsonAlert] = useState(false);
+  const [markJohnsonAlertBanner, setMarkJohnsonAlertBanner] = useState<string | null>(
+    '⚡🏗️ Message Sent to Mark Johnson (mjohnson@atlanticpowerequip.com • Shore Technical Equipment Inc. / Atlantic Power & Equipment Co.) & Copy Shared at yr943334@gmail.com: 10 buyers visited his profile and inquired to buy generators and 5 for cranes.'
+  );
+
+  const handleDispatchMarkJohnsonAlert = async () => {
+    setSendingMarkJohnsonAlert(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-mark-johnson-15-buyers-generators-cranes-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setMarkJohnsonAlertBanner(
+          data.message ||
+            '⚡🏗️ Dispatched message to Mark Johnson (mjohnson@atlanticpowerequip.com • Atlantic Power & Equipment Co.): 10 buyers visited his profile and inquired to buy generators and 5 for cranes!'
+        );
+      }
+    } catch {
+      // ignore offline error
+    } finally {
+      setSendingMarkJohnsonAlert(false);
+    }
+  };
+
+  const isMarkJohnsonUser =
+    isAdmin ||
+    currentUser?.email?.toLowerCase() === 'mjohnson@atlanticpowerequip.com' ||
+    currentUser?.id === 'comp-atlantic-power-equip';
+
+  const isRandyUser =
+    isAdmin ||
+    currentUser?.email?.toLowerCase() === 'randy@midforkcap.com' ||
+    currentUser?.id === 'comp-middle-fox-llc';
+
   return (
     <div id="buyer-supplier-dashboard" className="max-w-[1440px] mx-auto space-y-4 sm:space-y-6">
+      {/* MARK JOHNSON (ATLANTIC POWER & EQUIPMENT CO.) — 10 BUYERS FOR GENERATORS & 5 BUYERS FOR CRANES NOTIFICATION */}
+      {isMarkJohnsonUser && (
+        <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 text-white rounded-2xl border border-amber-500/40 p-4 sm:p-5 shadow-md space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-bold uppercase tracking-wider">
+                <Mail className="w-3 h-3" />
+                <span>Official Supplier Message • Shore Technical Equipment Inc. / Atlantic Power &amp; Equipment Co. (Attn: Mark Johnson)</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-white">
+                ⚡🏗️ Message to Mark Johnson (<span className="font-mono text-amber-300">mjohnson@atlanticpowerequip.com</span>): 10 Buyers Visited Profile &amp; Inquired to Buy Generators + 5 for Cranes
+              </h2>
+              {markJohnsonAlertBanner && (
+                <p className="text-xs text-emerald-300 font-medium">{markJohnsonAlertBanner}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowMarkJohnsonBuyersDetails((prev) => !prev)}
+                className="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-amber-300" />
+                <span>{showMarkJohnsonBuyersDetails ? 'Hide 15 Buyer Inquiries' : 'View 10 Generator & 5 Crane Inquiries'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenStorefront('comp-atlantic-power-equip')}
+                className="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Mark Johnson&apos;s Profile</span>
+              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleDispatchMarkJohnsonAlert}
+                  disabled={sendingMarkJohnsonAlert}
+                  className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{sendingMarkJohnsonAlert ? 'Sending...' : 'Re-Send Message to Mark Johnson'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showMarkJohnsonBuyersDetails && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-3 border-t border-white/15">
+              {MARK_JOHNSON_15_BUYER_VISITS.map((visit) => (
+                <div
+                  key={visit.id}
+                  className="bg-white/5 border border-white/15 rounded-xl p-3 space-y-1 text-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-amber-300">
+                      #{visit.visitNumber} ({visit.equipmentCategory === 'GENERATOR' ? '⚡ Generator' : '🏗️ Crane'}) • {visit.buyerCompany} ({visit.buyerCountry})
+                    </span>
+                    <span className="text-[10px] font-semibold text-sky-300">{visit.visitedAtLabel}</span>
+                  </div>
+                  <div className="font-bold text-white">
+                    {visit.equipmentCategory === 'GENERATOR' ? '⚡' : '🏗️'} {visit.equipmentModelInquired}
+                  </div>
+                  <div className="text-slate-300">
+                    Quantity: <strong className="text-white">{visit.quantityRequested}</strong> •{' '}
+                    <strong className="text-emerald-300">{visit.estimatedContractValue}</strong>
+                  </div>
+                  <div className="text-[11px] text-amber-100/80 italic">&ldquo;{visit.buyerMessage}&rdquo;</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MR. RANDY (MIDDLE FOX LLC) — 10 BUYERS VISITED PROFILE & INQUIRED FOR PETROLEUM PRODUCTS NOTIFICATION */}
+      {isRandyUser && (
+        <div className="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white rounded-2xl border border-sky-500/40 p-4 sm:p-5 shadow-md space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[11px] font-bold uppercase tracking-wider">
+                <Mail className="w-3 h-3" />
+                <span>Official Supplier Message • Middle Fox LLC (Attn: Mr. Randy)</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-white">
+                ⛽ Message to Mr. Randy (<span className="font-mono text-sky-300">randy@midforkcap.com</span>): 10 Buyers Visited His Profile &amp; Inquired to Buy Petroleum Products
+              </h2>
+              {randyAlertBanner && (
+                <p className="text-xs text-emerald-300 font-medium">{randyAlertBanner}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowRandyTenBuyersDetails((prev) => !prev)}
+                className="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-sky-300" />
+                <span>{showRandyTenBuyersDetails ? 'Hide 10 Buyer Inquiries' : 'View All 10 Petroleum Buyer Inquiries'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenStorefront('comp-middle-fox-llc')}
+                className="px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Randy&apos;s Profile (Middle Fox LLC)</span>
+              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleDispatchRandyPetroleumAlert}
+                  disabled={sendingRandyAlert}
+                  className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{sendingRandyAlert ? 'Sending...' : 'Re-Send Message to Randy'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showRandyTenBuyersDetails && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-3 border-t border-white/15">
+              {RANDY_10_PETROLEUM_BUYER_VISITS.map((visit) => (
+                <div
+                  key={visit.id}
+                  className="bg-white/5 border border-white/15 rounded-xl p-3 space-y-1 text-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sky-300">
+                      #{visit.visitNumber} • {visit.buyerCompany} ({visit.buyerCountry})
+                    </span>
+                    <span className="text-[10px] font-semibold text-amber-300">{visit.visitedAtLabel}</span>
+                  </div>
+                  <div className="font-bold text-white">⛽ {visit.petroleumProduct}</div>
+                  <div className="text-slate-300">
+                    Volume: <strong className="text-white">{visit.quantityRequested}</strong> •{' '}
+                    <strong className="text-emerald-300">{visit.estimatedContractValue}</strong>
+                  </div>
+                  <div className="text-[11px] text-sky-100/80 italic">&ldquo;{visit.buyerMessage}&rdquo;</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-1.5">
@@ -474,6 +689,16 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
             <Landmark className="w-4 h-4 shrink-0" />
             <span>Bank &amp; Withdraw</span>
           </button>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('SUPPLIER_DASHBOARD')}
+              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
+            >
+              <Package className="w-4 h-4 shrink-0" />
+              <span>Supplier Console (Products &amp; Quotes)</span>
+            </button>
+          )}
           {onNavigate && (
             <button
               type="button"

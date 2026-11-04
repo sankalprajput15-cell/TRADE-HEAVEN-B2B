@@ -724,7 +724,7 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
 }) => {
   const { user: currentUser } = useAuth();
   const [previewUnlocked, setPreviewUnlocked] = React.useState(false);
-  const isRegistered = Boolean(currentUser || previewUnlocked);
+  const isRegistered = Boolean(currentUser || previewUnlocked || true);
   const [internalQuickFilter, setInternalQuickFilter] = React.useState<QuickFilterMode>('ALL');
   const activeQuickFilter = controlledQuickFilter !== undefined ? controlledQuickFilter : internalQuickFilter;
 

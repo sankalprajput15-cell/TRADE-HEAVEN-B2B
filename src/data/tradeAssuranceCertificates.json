@@ -1,5 +1,40 @@
 [
   {
+    "certificateNumber": "THC-2026-MPC-61648",
+    "serialNumber": "THC-2026-MPC-61648",
+    "holder": "MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)",
+    "companyId": "comp-melissa-mpcommodity",
+    "companyName": "MP Commodity Brokers Australia Pty Ltd",
+    "country": "Australia",
+    "businessType": "Fuel & Petroleum Commodity Broker (EN590 10PPM, Jet A-1, D6)",
+    "legalRegistrationNumber": "ABN-61-648-291-004",
+    "taxOrVatId": "AU-GST-61648291004",
+    "dunsNumber": "75-616-4804",
+    "tierCode": "VIP_SOVEREIGN",
+    "tierTitle": "VIP Sovereign Trade Assurance & Loss-Only Indemnity",
+    "coverageLimitUsd": 1100000,
+    "feePaidUsd": 1250,
+    "status": "ACTIVE_VERIFIED",
+    "issueDate": "2026-10-19",
+    "expiryDate": "2027-10-19",
+    "auditingBody": "SGS Australia Pty Ltd & ASIC Corporate Compliance Desk",
+    "isoStandards": [
+      "ISO 9001:2015",
+      "SGS Petroleum Dip-Test Verified",
+      "Actual-Loss-Only Underwriting"
+    ],
+    "escrowVaultId": "TH-VAULT-AU-61648",
+    "verificationHash": "0x7F8A61648291004MELISSAPREZIOS98B2",
+    "supportedIncoterms": [
+      "FOB",
+      "CIF",
+      "CFR",
+      "TTO"
+    ],
+    "applicantName": "Melissa Prezios",
+    "applicantEmail": "melissa@mpcommoditybrokers.com"
+  },
+  {
     "certificateNumber": "THC-2026-KRX-81042",
     "serialNumber": "THC-2026-KRX-81042",
     "holder": "KruppStahl Heavy Forging & Metallurgy AG",

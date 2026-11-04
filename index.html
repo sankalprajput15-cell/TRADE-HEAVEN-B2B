@@ -100,7 +100,19 @@
     <script>
       (function() {
         try {
-          // Clear any truly corrupted or orphaned non-standard state, but preserve active sessions
+          // Always clear any default/cached session keys on boot so Admin is never logged in by default
+          var authKeysToClear = [
+            'th_session_user',
+            'tradeheaven_user',
+            'tradeheaven_auth_user',
+            'th_session_jwt_token',
+            'th_admin_origin_user'
+          ];
+          for (var a = 0; a < authKeysToClear.length; a++) {
+            localStorage.removeItem(authKeysToClear[a]);
+            sessionStorage.removeItem(authKeysToClear[a]);
+          }
+
           var keys = Object.keys(localStorage);
           for (var k = 0; k < keys.length; k++) {
             var key = keys[k];

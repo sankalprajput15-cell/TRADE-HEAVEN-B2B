@@ -17,12 +17,15 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  LogIn,
+  UserCheck
 } from 'lucide-react';
 import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
 import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { api, getPermanentlyDeletedUsers } from '../../services/apiService';
 import { useAuth } from '../../context/AuthContext';
+import type { AuthUser } from '../../types';
 
 export interface RegisteredSupplier {
   id: string | number;
@@ -40,8 +43,36 @@ export interface RegisteredSupplier {
   created_at?: string;
 }
 
+const SUPPLIER_OVERRIDES_KEY = 'th_supplier_tier_overrides_v2';
+
+function getStoredSupplierOverrides(): Record<string, { tier: string; membershipStatus: string; isVerified: boolean }> {
+  try {
+    const raw = localStorage.getItem(SUPPLIER_OVERRIDES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveSupplierOverride(idOrEmail: string, override: { tier: string; membershipStatus: string; isVerified: boolean }) {
+  try {
+    const current = getStoredSupplierOverrides();
+    current[String(idOrEmail).toLowerCase().trim()] = override;
+    localStorage.setItem(SUPPLIER_OVERRIDES_KEY, JSON.stringify(current));
+  } catch {}
+}
+
+export const getSupplierTierValue = (tier?: string, status?: string): 'paid' | 'verified' | 'basic' | 'free' => {
+  const t = String(tier || '').toLowerCase();
+  const s = String(status || '').toLowerCase();
+  if (s === 'free' || t.includes('free')) return 'free';
+  if (s === 'paid' || t.includes('vip') || t.includes('gold')) return 'paid';
+  if (s === 'basic' || t.includes('basic')) return 'basic';
+  return 'verified';
+};
+
 export const RegisteredSuppliersAdmin: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, impersonateUser } = useAuth();
   const [suppliers, setSuppliers] = useState<RegisteredSupplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +86,28 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
   const [supplierToDeletePermanently, setSupplierToDeletePermanently] = useState<RegisteredSupplier | null>(null);
   const [deletionReason, setDeletionReason] = useState('Administrative supplier compliance & directory cleanup');
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
+
+  const handleLoginAsSupplier = (sup: RegisteredSupplier) => {
+    const authUser: AuthUser = {
+      id: String(sup.id || `sup-${Date.now()}`),
+      name: sup.name || 'Verified Supplier',
+      email: sup.email,
+      companyName: sup.companyName || sup.company_name || sup.name,
+      country: sup.country || 'United States',
+      role: 'SUPPLIER',
+      isVerified: true,
+      isPremium: true,
+      membershipStatus: 'paid',
+      tier: (sup.tier as any) || 'Verified Supplier',
+      avatarUrl: (sup as any).avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+      phone: sup.phone
+    };
+    if (impersonateUser) {
+      impersonateUser(authUser);
+    }
+    setStatusBanner(`Logged in as ${authUser.name} (${authUser.companyName}). Switched to Supplier session.`);
+    window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'DASHBOARD' }));
+  };
 
   const fetchSuppliers = async () => {
     setLoading(true);
@@ -134,14 +187,76 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       tier: 'Paid Basic Plan (Bamboo Forest Farm • Sebring, FL Pickup)',
       created_at: '2026-10-23 12:00:00 UTC'
     };
+    const aceIntermediarySupplier: RegisteredSupplier = {
+      id: 'fad-ali-ace-002',
+      name: 'Ali Charley Ezekiah',
+      email: 'ezekiahali355@gmail.com',
+      company_name: 'ACE Intermediary',
+      companyName: 'ACE Intermediary',
+      phone: '+1 (903) 872-1241',
+      country: 'United States (1241 Hackberry Avenue Corsicana Texas 75110)',
+      role: 'SUPPLIER',
+      status: 'ACTIVE',
+      is_verified: 1,
+      isVerified: true,
+      tier: 'Basic Business Plan (North American Commodity Spotlight RFQ Broadcast)',
+      created_at: '2026-10-24 10:00:00 UTC'
+    };
+    const emmanuelSupplier: RegisteredSupplier = {
+      id: 'user-supplier-emmanuel-reverse-energy',
+      name: 'Emmanuel (Bongani Mbele)',
+      email: 'reverseenergypty@gmail.com',
+      company_name: 'Reverse Energy Pty Ltd (Bongani Mbele)',
+      companyName: 'Reverse Energy Pty Ltd (Bongani Mbele)',
+      phone: '+27 73 402 7794',
+      country: 'South Africa (Johannesburg / Mpumalanga Coal Belt)',
+      role: 'SUPPLIER',
+      status: 'FREE',
+      is_verified: 0,
+      isVerified: false,
+      tier: 'Free Member (South African Coal Exporter • RB1 / RB2 / RB3 Steam & Thermal Coal)',
+      created_at: '2026-11-04 09:30:00 UTC'
+    };
+    const larsBarnhartSupplier: RegisteredSupplier = {
+      id: 'user-supplier-lars-blackstone-jade',
+      name: 'Lars Barnhart',
+      email: 'Larsbarnhart25@gmail.com',
+      company_name: 'Blackstone Jade Co',
+      companyName: 'Blackstone Jade Co',
+      phone: '+1 208-704-0146',
+      country: 'United States (1521 north 9th street apt 126 coeurdalene Idaho 83814)',
+      role: 'SUPPLIER',
+      status: 'FREE',
+      is_verified: 0,
+      isVerified: false,
+      tier: 'Free Member (Wyoming/Idaho Black Jade, Rough Matrix & Precious Gemstones Exporter)',
+      created_at: '2026-11-04 11:00:00 UTC'
+    };
 
     const filterOutDeleted = (list: RegisteredSupplier[]) => {
       const deleted = getPermanentlyDeletedUsers();
-      return list.filter(s => {
-        const sid = String(s.id || '').trim();
-        const em = String(s.email || '').toLowerCase().trim();
-        return !deleted.ids.has(sid) && !deleted.emails.has(em);
-      });
+      const overrides = getStoredSupplierOverrides();
+      return list
+        .filter(s => {
+          const sid = String(s.id || '').trim();
+          const em = String(s.email || '').toLowerCase().trim();
+          return !deleted.ids.has(sid) && !deleted.emails.has(em);
+        })
+        .map(s => {
+          const sid = String(s.id || '').toLowerCase().trim();
+          const em = String(s.email || '').toLowerCase().trim();
+          const override = overrides[sid] || overrides[em];
+          if (override) {
+            return {
+              ...s,
+              tier: override.tier,
+              status: override.membershipStatus.toUpperCase(),
+              is_verified: override.isVerified ? 1 : 0,
+              isVerified: override.isVerified
+            };
+          }
+          return s;
+        });
     };
 
     try {
@@ -179,16 +294,31 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         if (emailLower.includes('joybambooforestfarm')) {
           return { ...s, ...svetlanaSupplier };
         }
+        if (emailLower.includes('ezekiahali') || emailLower.includes('ace')) {
+          return { ...s, ...aceIntermediarySupplier };
+        }
+        if (emailLower.includes('reverseenergy') || emailLower.includes('reverseenergypty')) {
+          return { ...s, ...emmanuelSupplier };
+        }
+        if (emailLower.includes('larsbarnhart') || emailLower.includes('blackstone')) {
+          return { ...s, ...larsBarnhartSupplier };
+        }
         return s;
       });
 
+      const hasLars = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('larsbarnhart') || String(s.company_name || '').toLowerCase().includes('blackstone jade'));
+      const hasEmmanuel = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('reverseenergypty') || String(s.company_name || '').toLowerCase().includes('reverse energy'));
       const hasMark = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('atlanticpowerequip'));
       const hasRandy = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('midforkcap'));
       const hasDonald = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('sorkindon'));
       const hasMelissa = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('mpcommoditybroker'));
       const hasSvetlana = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('joybambooforestfarm'));
+      const hasAce = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('ezekiahali') || String(s.company_name || '').toLowerCase().includes('ace intermediary'));
 
       let merged = [...finalSuppliers];
+      if (!hasLars) merged = [larsBarnhartSupplier, ...merged];
+      if (!hasEmmanuel) merged = [emmanuelSupplier, ...merged];
+      if (!hasAce) merged = [aceIntermediarySupplier, ...merged];
       if (!hasMelissa) merged = [melissaSupplier, ...merged];
       if (!hasSvetlana) merged = [svetlanaSupplier, ...merged];
       if (!hasDonald) merged = [donaldSupplier, ...merged];
@@ -196,8 +326,8 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       if (!hasMark) merged = [markJohnsonSupplier, ...merged];
       setSuppliers(filterOutDeleted(merged));
     } catch (err: any) {
-      console.error('[RegisteredSuppliersAdmin] Failed to fetch suppliers:', err);
-      setSuppliers(filterOutDeleted([markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
+      console.warn('[RegisteredSuppliersAdmin] Using local supplier store:', err);
+      setSuppliers(filterOutDeleted([larsBarnhartSupplier, emmanuelSupplier, aceIntermediarySupplier, markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
     } finally {
       setLoading(false);
     }
@@ -258,6 +388,68 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
     } finally {
       setIsBulkProcessing(false);
     }
+  };
+
+  const handleSupplierTierChange = async (sup: RegisteredSupplier, val: string) => {
+    const newTier =
+      val === 'paid'
+        ? 'VIP Gold Exporter'
+        : val === 'basic'
+        ? 'Basic Plan'
+        : val === 'free'
+        ? 'Free Member'
+        : 'Verified Supplier';
+    const newIsVerified = val !== 'free';
+
+    saveSupplierOverride(String(sup.id), { tier: newTier, membershipStatus: val, isVerified: newIsVerified });
+    if (sup.email) {
+      saveSupplierOverride(String(sup.email), { tier: newTier, membershipStatus: val, isVerified: newIsVerified });
+    }
+
+    setSuppliers(prev =>
+      prev.map(s => {
+        if (s.id === sup.id || (sup.email && s.email === sup.email)) {
+          return {
+            ...s,
+            tier: newTier,
+            status: val === 'free' ? 'FREE' : val === 'paid' ? 'ACTIVE' : s.status,
+            is_verified: newIsVerified ? 1 : 0,
+            isVerified: newIsVerified
+          };
+        }
+        return s;
+      })
+    );
+
+    setStatusBanner(`✓ Updated status for ${sup.name || sup.email} to: ${newTier}`);
+    setTimeout(() => setStatusBanner(null), 3000);
+
+    try {
+      await fetch(`/api/admin/users/${sup.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: sup.id,
+          tier: newTier,
+          membershipStatus: val,
+          isPremium: val === 'paid',
+          isVerified: newIsVerified
+        })
+      });
+    } catch {}
+
+    try {
+      await api.adminUpdateUserPrivileges(
+        String(sup.id),
+        {
+          tier: newTier,
+          membershipStatus: val as any,
+          isPremium: val === 'paid',
+          isVerified: newIsVerified
+        },
+        currentUser
+      );
+    } catch {}
   };
 
   const handleToggleVerification = async (sup: RegisteredSupplier) => {
@@ -577,7 +769,21 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
                             </div>
                             <div>
                               <div className="font-black text-slate-900">{sup.name || 'Trade Partner'}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">ID: {sup.id}</div>
+                              <div className="text-[10px] text-slate-400 font-mono mb-1">ID: {sup.id}</div>
+                              {/* Admin Membership Status Controller */}
+                              <div className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase">Tier:</span>
+                                <select
+                                  value={getSupplierTierValue(sup.tier, sup.status)}
+                                  onChange={(e) => handleSupplierTierChange(sup, e.target.value)}
+                                  className="bg-white border border-slate-200 rounded px-1.5 py-0.5 font-bold text-[10px] text-slate-800 cursor-pointer focus:outline-none"
+                                >
+                                  <option value="paid">Paid (VIP)</option>
+                                  <option value="verified">Verified</option>
+                                  <option value="basic">Basic Plan</option>
+                                  <option value="free">Free Member</option>
+                                </select>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -618,6 +824,10 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>VERIFIED</span>
                               </span>
+                            ) : getSupplierTierValue(sup.tier, sup.status) === 'free' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-200 text-slate-700 border border-slate-300">
+                                <span>FREE MEMBER</span>
+                              </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
@@ -640,6 +850,15 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleLoginAsSupplier(sup)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+                              title={`Sign in and manage portal directly as ${sup.name} (${sup.companyName || sup.company_name})`}
+                            >
+                              <LogIn className="w-3.5 h-3.5" />
+                              <span>Login as Supplier</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() =>

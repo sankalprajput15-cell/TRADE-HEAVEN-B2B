@@ -129,11 +129,6 @@ export const Header: React.FC<Props> = ({
 
   const handleNavClick = (view: ActiveView | string, options?: any) => {
     setUserMenuOpen(false);
-    const target = String(view || '').trim().toUpperCase();
-    if ((target === 'DASHBOARD' || target === 'MY_DASHBOARD') && !currentUser) {
-      onOpenAuthModal();
-      return;
-    }
     if (onNavigate) {
       onNavigate(view, options);
     } else if (setActiveView) {
@@ -156,14 +151,6 @@ export const Header: React.FC<Props> = ({
     setSearchFocused(false);
     setUserMenuOpen(false);
     setActiveSuggestIndex(-1);
-    if (!currentUser) {
-      if (onOpenRegisterFree) {
-        onOpenRegisterFree();
-      } else {
-        onOpenAuthModal();
-      }
-      return;
-    }
     if (onNavigateToSearch) {
       onNavigateToSearch(trimmed);
     } else {
@@ -176,11 +163,6 @@ export const Header: React.FC<Props> = ({
   const handleSelectSuggestedCategory = (cat: CategorySuggestion) => {
     setSearchFocused(false);
     setActiveSuggestIndex(-1);
-    if (!currentUser) {
-      if (onOpenRegisterFree) onOpenRegisterFree();
-      else onOpenAuthModal();
-      return;
-    }
     setSearchTerm(cat.name);
     if (onNavigateToCategory) {
       if (cat.isSubcategory && cat.parentCategory) {
@@ -198,11 +180,6 @@ export const Header: React.FC<Props> = ({
   const handleSelectSuggestedSupplier = (supp: SupplierSuggestion) => {
     setSearchFocused(false);
     setActiveSuggestIndex(-1);
-    if (!currentUser) {
-      if (onOpenRegisterFree) onOpenRegisterFree();
-      else onOpenAuthModal();
-      return;
-    }
     setSearchTerm(supp.companyName);
     if (onOpenStorefront && supp.id && !supp.id.startsWith('supp-')) {
       onOpenStorefront(supp.id);
@@ -216,11 +193,6 @@ export const Header: React.FC<Props> = ({
   const handleSelectSuggestedProduct = (prod: Product) => {
     setSearchFocused(false);
     setActiveSuggestIndex(-1);
-    if (!currentUser) {
-      if (onOpenRegisterFree) onOpenRegisterFree();
-      else onOpenAuthModal();
-      return;
-    }
     setSearchTerm(prod.title);
     if (onSelectProduct) {
       onSelectProduct(prod);
@@ -233,15 +205,6 @@ export const Header: React.FC<Props> = ({
     if (e.key === 'Escape') {
       setSearchFocused(false);
       setActiveSuggestIndex(-1);
-      return;
-    }
-    if (!currentUser) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        setSearchFocused(false);
-        if (onOpenRegisterFree) onOpenRegisterFree();
-        else onOpenAuthModal();
-      }
       return;
     }
     const totalItems =
@@ -398,7 +361,7 @@ export const Header: React.FC<Props> = ({
     { label: 'Work With Us', view: 'ONBOARD_WITH_US', icon: UserPlus, activeMatch: ['ONBOARD_WITH_US'] }
   ];
 
-  const visibleMenuOptions = accountMenuOptions.filter(item => !item.authOnly || Boolean(currentUser));
+  const visibleMenuOptions = accountMenuOptions;
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">

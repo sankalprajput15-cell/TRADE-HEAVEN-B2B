@@ -72,13 +72,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       if (typeof window !== 'undefined') {
+        // Always purge any cached or default admin session keys on initial boot
+        localStorage.removeItem('th_session_user');
+        localStorage.removeItem('tradeheaven_user');
+        localStorage.removeItem('tradeheaven_auth_user');
+        localStorage.removeItem('th_session_jwt_token');
+        sessionStorage.removeItem('th_admin_origin_user');
+
         const params = new URLSearchParams(window.location.search);
         const paramEmail = (params.get('email') || '').trim().toLowerCase();
         if (params.get('pay_zac') === '1' || paramEmail === 'zac@otec.ltd' || paramEmail === 'zac@fadetech.com') {
-          localStorage.setItem('th_session_user', JSON.stringify(DEFAULT_ZAC_CLIENT_USER));
           return DEFAULT_ZAC_CLIENT_USER;
         }
-        if (params.get('action') === 'renew-membership' && paramEmail && paramEmail !== 'yr943334@gmail.com') {
+        if (
+          params.get('action') === 'renew-membership' &&
+          paramEmail &&
+          paramEmail !== 'yr943334@gmail.com' &&
+          paramEmail !== 'admin@tradeheaven.net'
+        ) {
           const clientRenewalUser: AuthUser = {
             id: `client-${paramEmail.replace(/[^a-z0-9]/g, '')}`,
             name: params.get('decisionMaker') || paramEmail.split('@')[0],
@@ -93,30 +104,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             tier: 'SILVER',
             status: 'ACTIVE'
           };
-          localStorage.setItem('th_session_user', JSON.stringify(clientRenewalUser));
           return clientRenewalUser;
-        }
-      }
-      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('th_session_user') : null;
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        if (parsed && typeof parsed === 'object') {
-          return sanitizeUserRole(parsed);
         }
       }
     } catch {}
     return null;
   });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!user);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => Boolean(user));
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [originalAdminUser, setOriginalAdminUser] = useState<AuthUser | null>(() => {
-    try {
-      const stored = sessionStorage.getItem('th_admin_origin_user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [originalAdminUser, setOriginalAdminUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     try {
@@ -125,18 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (params.get('pay_zac') === '1' || paramEmail === 'zac@otec.ltd' || paramEmail === 'zac@fadetech.com') {
         setUser(DEFAULT_ZAC_CLIENT_USER);
         setIsAuthenticated(true);
-        localStorage.setItem('th_session_user', JSON.stringify(DEFAULT_ZAC_CLIENT_USER));
         return;
-      }
-      const storedUser = localStorage.getItem('th_session_user');
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        if (parsed && typeof parsed === 'object') {
-          const sanitized = sanitizeUserRole(parsed);
-          setUser(sanitized);
-          setIsAuthenticated(true);
-          localStorage.setItem('th_session_user', JSON.stringify(sanitized));
-        }
       }
     } catch {}
   }, []);
@@ -144,26 +129,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const impersonateUser = (targetUser: AuthUser) => {
     const currentAdmin = originalAdminUser || user;
     if (currentAdmin && currentAdmin.role === 'ADMIN') {
-      try {
-        sessionStorage.setItem('th_admin_origin_user', JSON.stringify(currentAdmin));
-      } catch {}
       setOriginalAdminUser(currentAdmin);
     }
     setUser(targetUser);
     setIsAuthenticated(true);
-    try {
-      localStorage.setItem('th_session_user', JSON.stringify(targetUser));
-    } catch {}
   };
 
   const stopImpersonation = () => {
     if (originalAdminUser) {
       setUser(originalAdminUser);
       setIsAuthenticated(true);
-      try {
-        localStorage.setItem('th_session_user', JSON.stringify(originalAdminUser));
-        sessionStorage.removeItem('th_admin_origin_user');
-      } catch {}
       setOriginalAdminUser(null);
     }
   };
@@ -174,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
       
-      // 1. Check Master Admin statically (supports typo gmial.com & standard admin passwords)
+      // 1. Check Master Admin statically (requires explicit email & non-empty password)
       const isAdminEmail =
         cleanEmail === 'yr943334@gmail.com' ||
         cleanEmail === 'yr943334@gmial.com' ||
@@ -188,11 +163,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: canonicalEmail
         };
         
+        // Keep Admin session in memory only so Admin is never logged in by default on page reload
         setUser(adminUser);
         setIsAuthenticated(true);
-        try {
-          localStorage.setItem('th_session_user', JSON.stringify(adminUser));
-        } catch {}
         return { success: true, user: adminUser };
       }
       
@@ -207,12 +180,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const sanitizedUser = sanitizeUserRole(res.user);
         setUser(sanitizedUser);
         setIsAuthenticated(true);
-        try {
-          localStorage.setItem('th_session_user', JSON.stringify(sanitizedUser));
-          if (res.token) {
-            localStorage.setItem('th_session_jwt_token', res.token);
-          }
-        } catch {}
+        if (sanitizedUser.role !== 'ADMIN' && !sanitizedUser.isVerifiedAdmin) {
+          try {
+            localStorage.setItem('th_session_user', JSON.stringify(sanitizedUser));
+            if (res.token) {
+              localStorage.setItem('th_session_jwt_token', res.token);
+            }
+          } catch {}
+        }
 
         // Log login success
         fetch('/api/v1/admin/audit-logs', {
@@ -272,6 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setUser(null);
     setIsAuthenticated(false);
+    setOriginalAdminUser(null);
     try {
       localStorage.removeItem('tradeheaven_user');
       localStorage.removeItem('th_session_user');
@@ -286,9 +262,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sanitized = sanitizeUserRole(nextUser);
       setUser(sanitized);
       setIsAuthenticated(true);
-      try {
-        localStorage.setItem('th_session_user', JSON.stringify(sanitized));
-      } catch {}
+      if (sanitized.role !== 'ADMIN' && !sanitized.isVerifiedAdmin) {
+        try {
+          localStorage.setItem('th_session_user', JSON.stringify(sanitized));
+        } catch {}
+      } else {
+        try {
+          localStorage.removeItem('th_session_user');
+        } catch {}
+      }
     } else {
       logout();
     }

@@ -13,6 +13,7 @@ export default defineConfig(() => {
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'lucide-react', 'jspdf'],
+      exclude: ['nodemailer'],
     },
     build: {
       target: 'es2020',
