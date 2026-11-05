@@ -160,6 +160,7 @@ export interface SerializedMailOptions {
   recipientName?: string;
   summaryText?: string;
   trackingId?: string;
+  rawHtmlPreview?: string;
 }
 
 export interface SerializedDeliveryReceipt {
@@ -2869,7 +2870,12 @@ export class ServerDeliveryQueueManager {
             summaryText: mailOptions.summaryText,
             trackingId,
             trackingPixelUrl: injected.trackingPixelUrl,
-            rawHtmlPreview: typeof mailOptions.html === 'string' ? mailOptions.html : undefined
+            rawHtmlPreview:
+              typeof mailOptions.rawHtmlPreview === 'string'
+                ? mailOptions.rawHtmlPreview
+                : typeof mailOptions.html === 'string'
+                ? mailOptions.html
+                : undefined
           } as any,
           customTransporter,
           enqueuedAt: Date.now(),
@@ -3152,6 +3158,14 @@ export class ServerDeliveryQueueManager {
       ? 'OPENED'
       : 'DELIVERED';
 
+    let sanitizedHtmlPreview = entry.htmlPreview;
+    if (typeof sanitizedHtmlPreview === 'string') {
+      sanitizedHtmlPreview = sanitizedHtmlPreview
+        .replace(/cid:blackjadecabochon(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg')
+        .replace(/cid:turquoisematrix(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg')
+        .replace(/https:\/\/ais-(?:dev|pre)-[^"'\s\)]+\/assets\/aistudio\//gi, '/assets/aistudio/');
+    }
+
     return {
       ...entry,
       trackingId,
@@ -3168,6 +3182,7 @@ export class ServerDeliveryQueueManager {
       mailSuiteStatus,
       openEvents,
       clickEvents,
+      htmlPreview: sanitizedHtmlPreview,
       trackingPixelUrl: `${getPublicTrackingBaseUrl()}/api/v1/track/open/${encodeURIComponent(trackingId)}.gif`
     };
   }
@@ -6283,6 +6298,47 @@ export class AutomatedSmtpService {
       `To review buyer dossiers, download specifications, and submit your official quotations, please log in to your Blackstone Jade Co Supplier Portal at https://www.tradeheaven.net with Larsbarnhart25@gmail.com.\n\n` +
       `Warm regards,\nTrade Heaven Global Gemstones, Jade & Precious Minerals Desk\nInternational Gemological Trade Node`;
 
+    const blackJadeFilePath = path.resolve(
+      process.cwd(),
+      'public/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+    );
+    const turquoiseFilePath = path.resolve(
+      process.cwd(),
+      'public/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+    );
+    const hasBlackJade = fs.existsSync(blackJadeFilePath);
+    const hasTurquoise = fs.existsSync(turquoiseFilePath);
+
+    const blackJadeBase64 = hasBlackJade
+      ? `data:image/jpeg;base64,${fs.readFileSync(blackJadeFilePath).toString('base64')}`
+      : '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg';
+    const turquoiseBase64 = hasTurquoise
+      ? `data:image/jpeg;base64,${fs.readFileSync(turquoiseFilePath).toString('base64')}`
+      : '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg';
+
+    const mailAttachments: nodemailer.SendMailOptions['attachments'] = [
+      ...(hasBlackJade
+        ? [
+            {
+              filename: 'Black-Jade-Cabochon-Specimen.jpeg',
+              path: blackJadeFilePath,
+              cid: 'blackjadecabochon@tradeheaven.net',
+              contentDisposition: 'inline' as const
+            }
+          ]
+        : []),
+      ...(hasTurquoise
+        ? [
+            {
+              filename: 'Rough-Turquoise-Matrix-Specimen.jpeg',
+              path: turquoiseFilePath,
+              cid: 'turquoisematrix@tradeheaven.net',
+              contentDisposition: 'inline' as const
+            }
+          ]
+        : [])
+    ];
+
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #111827; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
         <div style="background: linear-gradient(135deg, #030712 0%, #111827 50%, #1f2937 100%); padding: 34px 24px; text-align: center; color: #ffffff;">
@@ -6301,7 +6357,7 @@ export class AutomatedSmtpService {
           <!-- Attached Stones Showcase Cards -->
           <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px;">
             <div style="flex: 1; min-width: 280px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 14px;">
-              <img src="https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg" alt="Black Jade Cabochon" style="width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid #111827;" />
+              <img src="cid:blackjadecabochon@tradeheaven.net" alt="Black Jade Cabochon" style="width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid #111827;" />
               <div>
                 <div style="font-size: 11px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Verified Catalog Item #1</div>
                 <div style="font-size: 13px; font-weight: 900; color: #111827;">Mirror-Polished Black Jade Cabochon</div>
@@ -6310,7 +6366,7 @@ export class AutomatedSmtpService {
             </div>
 
             <div style="flex: 1; min-width: 280px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; display: flex; align-items: center; gap: 14px;">
-              <img src="https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg" alt="Rough Turquoise Matrix" style="width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid #111827;" />
+              <img src="cid:turquoisematrix@tradeheaven.net" alt="Rough Turquoise Matrix" style="width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid #111827;" />
               <div>
                 <div style="font-size: 11px; font-weight: 800; color: #0d9488; text-transform: uppercase;">Verified Catalog Item #2</div>
                 <div style="font-size: 13px; font-weight: 900; color: #111827;">Natural Rough Turquoise &amp; Gem Matrix</div>
@@ -6387,7 +6443,7 @@ export class AutomatedSmtpService {
                 <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">41</td><td style="padding: 6px; font-weight: 700;">Toronto Luxury Lapidary</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">North American Black Jade Rough</td><td style="padding: 6px;">2,200 kg ($245,000 USD)</td><td style="padding: 6px;">Toronto Pearson (YYZ)</td></tr>
                 <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">42</td><td style="padding: 6px; font-weight: 700;">Vancouver Gemological Guild</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Pacific Rim Nephrite Blocks</td><td style="padding: 6px;">3,000 kg ($330,000 USD)</td><td style="padding: 6px;">Vancouver Int'l</td></tr>
                 <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">43</td><td style="padding: 6px; font-weight: 700;">Gübelin Gem Lab &amp; Jewellery</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Certified Idaho Black Jade Suites</td><td style="padding: 6px;">500 pcs ($180,000 USD)</td><td style="padding: 6px;">Zurich Airport</td></tr>
-                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">44</td><td style="padding: 6px; font-weight: 700;">SSEF Swiss Gem Institute Client Desk</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Research &amp; Master Grade Specimens</td><td style="padding: 6px;">300 kg ($95,000 USD)</td><td style="padding: 6px;">Basel-Mulhouse</td></tr>
+                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">44</td><td style="padding: 6px; font-weight: 700;">SSEF Swiss Gem Institute Client Desk</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Research &amp; Master Grade Specimens</td><td style="padding: 300 kg ($95,000 USD)</td><td style="padding: 6px;">Basel-Mulhouse</td></tr>
                 <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">45</td><td style="padding: 6px; font-weight: 700;">Taipei Palace Fine Crafts Guild</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Dense Black Jade Carving Blocks</td><td style="padding: 6px;">2,000 kg ($370,000 USD)</td><td style="padding: 6px;">Taipei Taoyuan</td></tr>
                 <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">46</td><td style="padding: 6px; font-weight: 700;">Singapore Diamond &amp; Gem Exchange</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Investment Black Jade &amp; Turquoise</td><td style="padding: 6px;">1,500 kg ($290,000 USD)</td><td style="padding: 6px;">Singapore Changi</td></tr>
                 <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 6px;">47</td><td style="padding: 6px; font-weight: 700;">Seoul Gangnam High Jewelry</td><td style="padding: 6px; color: #0369a1; font-weight: 700;">Contemporary Carved Jade Elements</td><td style="padding: 6px;">1,200 pcs ($160,000 USD)</td><td style="padding: 6px;">Seoul Incheon</td></tr>
@@ -6425,6 +6481,10 @@ export class AutomatedSmtpService {
       </div>
     `;
 
+    const rawHtmlPreview = html
+      .replace(/src="cid:blackjadecabochon@tradeheaven\.net"/g, `src="${blackJadeBase64}"`)
+      .replace(/src="cid:turquoisematrix@tradeheaven\.net"/g, `src="${turquoiseBase64}"`);
+
     const larsReceipt = await serverDeliveryQueueManager.enqueueSingle(
       larsEmail,
       {
@@ -6433,6 +6493,8 @@ export class AutomatedSmtpService {
         subject,
         text,
         html,
+        attachments: mailAttachments,
+        rawHtmlPreview,
         dispatchType: options?.dispatchType || 'MANUAL',
         category: 'CUSTOM_ADMIN',
         companyName: 'Blackstone Jade Co',
@@ -6455,6 +6517,8 @@ export class AutomatedSmtpService {
           subject: `[ADMIN COPY] ${subject}`,
           text,
           html,
+          attachments: mailAttachments,
+          rawHtmlPreview,
           dispatchType: options?.dispatchType || 'MANUAL',
           category: 'CUSTOM_ADMIN',
           companyName: 'Blackstone Jade Co',

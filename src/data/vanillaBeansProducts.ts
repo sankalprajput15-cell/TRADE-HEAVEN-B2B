@@ -1,6 +1,6 @@
 import { Product } from '../types';
 
-export const GLOBAL_VANILLA_PRODUCTS: any[] = [
+const RAW_VANILLA_PRODUCTS: any[] = [
   {
     id: 'prod-van-0',
     supplierId: 'comp-van-0',
@@ -642,3 +642,34 @@ export const GLOBAL_VANILLA_PRODUCTS: any[] = [
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   }
 ];
+
+export const GLOBAL_VANILLA_PRODUCTS: Product[] = RAW_VANILLA_PRODUCTS.map((p) => {
+  const moqNum = parseInt(p.minOrderQuantity || '10', 10) || 10;
+  const numbers = (p.priceRangeUsd || '').match(/\d+/g)?.map(Number) || [180, 360];
+  const minPrice = numbers[0] || 180;
+  const maxPrice = numbers[1] || Math.round(minPrice * 1.5);
+  const midPrice = Math.round((minPrice + maxPrice) / 2);
+
+  return {
+    ...p,
+    moq: moqNum,
+    moqUnit: 'KG',
+    unit: 'KG',
+    minOrderQuantity: `${moqNum} KG`,
+    priceRangeUsd: p.priceRangeUsd
+      ? (p.priceRangeUsd.includes('/ KG') ? p.priceRangeUsd : `${p.priceRangeUsd} / KG`)
+      : `$${minPrice} - $${maxPrice} / KG`,
+    fobPriceUsd: minPrice,
+    priceTiers: [
+      { minUnits: moqNum, maxUnits: moqNum * 3, priceUsd: maxPrice },
+      { minUnits: moqNum * 3 + 1, maxUnits: moqNum * 10, priceUsd: midPrice },
+      { minUnits: moqNum * 10 + 1, priceUsd: minPrice }
+    ],
+    leadTimeDays: p.leadTimeDays || 7,
+    portOfDispatch: p.portOfDispatch || 'Antananarivo (Air) / Toamasina Port / Jakarta Air Cargo',
+    supportedIncoterms: p.supportedIncoterms || ['FOB', 'CIF', 'DDP', 'EXW'],
+    sampleAvailable: true,
+    samplePriceUsd: Math.round(minPrice * 0.35),
+    packagingDetails: '1 kg or 5 kg food-grade vacuum-sealed barrier pouches in export cartons'
+  };
+});

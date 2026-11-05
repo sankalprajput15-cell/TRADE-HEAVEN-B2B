@@ -89,6 +89,23 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
 
   console.log(`[DEBUG_CATALOG_MAPPING] Product ID: ${product.id} | Title: ${product.title} | Image URL: ${product.images?.[0]}`);
 
+  const isAgriOrVanilla =
+    product.title?.toLowerCase().includes('vanilla') ||
+    product.category?.toLowerCase().includes('spices') ||
+    product.category?.toLowerCase().includes('agri') ||
+    product.subCategory?.toLowerCase().includes('spices') ||
+    product.unit?.toUpperCase() === 'KG';
+
+  const defaultUnit = isAgriOrVanilla ? 'KG' : 'Units';
+  const defaultUnitSingular = isAgriOrVanilla ? 'KG' : 'Unit';
+
+  const productUnit = product.moqUnit || product.unit || defaultUnit;
+  const productUnitSingular = product.moqUnit || product.unit || defaultUnitSingular;
+  const productMoq =
+    product.moq && product.moq > 0
+      ? product.moq
+      : (product.minOrderQuantity ? parseInt(product.minOrderQuantity, 10) : 0) || (isAgriOrVanilla ? 10 : 100);
+
   return (
     <div
       onClick={() => {
@@ -176,10 +193,10 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
             </div>
             <div className="text-sm sm:text-base font-black text-slate-800 font-mono mt-0.5 flex items-baseline gap-1 truncate">
               <span>Inquire for Price</span>
-              <span className="text-[11px] sm:text-xs font-normal text-slate-500 truncate"> / {product.moqUnit || 'Unit'}</span>
+              <span className="text-[11px] sm:text-xs font-normal text-slate-500 truncate"> / {productUnitSingular}</span>
             </div>
             <div className="text-[10px] sm:text-[11px] text-slate-600 mt-1.5 flex items-center justify-between font-medium pt-1.5 border-t border-slate-200/60 gap-1">
-              <span className="truncate">MOQ: <strong className="text-slate-900 font-bold">{(product.moq && product.moq > 0 ? product.moq : 100).toLocaleString()} {product.moqUnit || 'Units'}</strong></span>
+              <span className="truncate">MOQ: <strong className="text-slate-900 font-bold">{productMoq.toLocaleString()} {productUnit}</strong></span>
               <span className="shrink-0">Lead: <strong className="text-slate-900 font-bold">{product.leadTimeDays && product.leadTimeDays > 0 ? product.leadTimeDays : 15}d</strong></span>
             </div>
           </div>
@@ -225,7 +242,7 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
                   type: 'PRODUCT',
                   id: product.id,
                   title: product.title,
-                  subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${(product.moq || 100).toLocaleString()} ${product.moqUnit || 'Units'}`
+                  subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${productMoq.toLocaleString()} ${productUnit}`
                 }
               })
             );

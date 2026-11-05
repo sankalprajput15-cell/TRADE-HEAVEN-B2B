@@ -6922,7 +6922,11 @@ const BASE_MOCK_PRODUCTS: Product[] = [
       { minUnits: 200, priceUsd: 115 }
     ],
     moq: 10,
-    moqUnit: 'Kilograms',
+    moqUnit: 'KG',
+    unit: 'KG',
+    minOrderQuantity: '10 KG',
+    fobPriceUsd: 115,
+    priceRangeUsd: '$115 - $145 / KG',
     sampleAvailable: true,
     samplePriceUsd: 40,
     leadTimeDays: 7,

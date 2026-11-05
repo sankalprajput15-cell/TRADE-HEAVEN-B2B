@@ -46,7 +46,21 @@ export const ProductDetailModal: React.FC<Props> = ({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [selectedIncoterm, setSelectedIncoterm] = useState<Incoterm>(product?.supportedIncoterms?.[0] || 'FOB');
-  const [orderQuantity, setOrderQuantity] = useState<number>(product?.moq || 1);
+  const isAgriOrVanilla =
+    product?.title?.toLowerCase().includes('vanilla') ||
+    product?.category?.toLowerCase().includes('spices') ||
+    product?.category?.toLowerCase().includes('agri') ||
+    product?.subCategory?.toLowerCase().includes('spices') ||
+    product?.unit?.toUpperCase() === 'KG';
+
+  const defaultUnit = isAgriOrVanilla ? 'KG' : 'Units';
+  const defaultUnitSingular = isAgriOrVanilla ? 'KG' : 'Unit';
+
+  const effectiveMoqUnit = product?.moqUnit || product?.unit || defaultUnit;
+  const effectiveMoqUnitSingular = product?.moqUnit || product?.unit || defaultUnitSingular;
+  const effectiveMoq = product?.moq || (product?.minOrderQuantity ? parseInt(product.minOrderQuantity, 10) : 0) || (isAgriOrVanilla ? 10 : 1);
+
+  const [orderQuantity, setOrderQuantity] = useState<number>(effectiveMoq);
   const [customInquiryNote, setCustomInquiryNote] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
   const modalScrollRef = useRef<HTMLDivElement>(null);
@@ -55,6 +69,7 @@ export const ProductDetailModal: React.FC<Props> = ({
     if (modalScrollRef.current) {
       modalScrollRef.current.scrollTop = 0;
     }
+    setOrderQuantity(effectiveMoq);
   }, [product?.id]);
 
   const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
@@ -65,7 +80,7 @@ export const ProductDetailModal: React.FC<Props> = ({
       return orderQuantity >= tier.minUnits && orderQuantity <= tier.maxUnits;
     }
     return orderQuantity >= tier.minUnits;
-  }) || product?.priceTiers?.[0] || { minUnits: 1, maxUnits: 100, priceUsd: 100 };
+  }) || product?.priceTiers?.[0] || { minUnits: effectiveMoq, maxUnits: effectiveMoq * 5, priceUsd: product?.fobPriceUsd || 100 };
 
   const formatPrice = (usd: number) => {
     const converted = usd * curr.rateToUSD;
@@ -86,7 +101,7 @@ export const ProductDetailModal: React.FC<Props> = ({
         product_name: product.title,
         category: product.category,
         quantity: orderQuantity,
-        quantity_unit: product.moqUnit || 'Units',
+        quantity_unit: effectiveMoqUnit,
         target_price: matchedTier.priceUsd,
         incoterm: selectedIncoterm,
         destination_port: product.portOfDispatch || 'Port of Hamburg',
@@ -95,7 +110,7 @@ export const ProductDetailModal: React.FC<Props> = ({
         name: 'Procurement Buyer',
         email: 'buyer@tradeheaven.net',
         phone: '',
-        subject: `Direct Product Inquiry: ${orderQuantity} ${product.moqUnit || 'Units'} of ${product.title}`,
+        subject: `Direct Product Inquiry: ${orderQuantity} ${effectiveMoqUnit} of ${product.title}`,
         message: `Product ID: ${product.id} | Supplier: ${product.supplierName} (${product.supplierCountry}) | Incoterm: ${selectedIncoterm} | Target Unit Rate: $${matchedTier.priceUsd} | Buyer Note: ${customInquiryNote || 'Seeking FOB/CIF commercial quotation and lead times.'}`
       });
       window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created'));
@@ -127,7 +142,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                     type: 'PRODUCT',
                     id: product.id,
                     title: product.title,
-                    subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${product.moq || 100} ${product.moqUnit || 'units'}`
+                    subtitle: `${product.supplierName} (${product.supplierCountry}) • MOQ: ${effectiveMoq} ${effectiveMoqUnit}`
                   }
                 })
               );
@@ -283,12 +298,12 @@ export const ProductDetailModal: React.FC<Props> = ({
                         }`}
                       >
                         <div className="text-[10px] text-slate-500 font-medium">
-                          {tier.minUnits} {tier.maxUnits ? `- ${tier.maxUnits}` : '+'} {product.moqUnit || 'Units'}
+                          {tier.minUnits} {tier.maxUnits ? `- ${tier.maxUnits}` : '+'} {effectiveMoqUnit}
                         </div>
                         <div className="text-sm sm:text-base font-black text-emerald-700 font-mono mt-0.5">
                           {formatPrice(tier.priceUsd)}
                         </div>
-                        <div className="text-[10px] text-slate-400">per {product.moqUnit || 'Unit'}</div>
+                        <div className="text-[10px] text-slate-400">per {effectiveMoqUnitSingular}</div>
                       </div>
                     );
                   })}
@@ -301,15 +316,15 @@ export const ProductDetailModal: React.FC<Props> = ({
                   {/* Quantity Input */}
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Order Quantity (Min: {product.moq || 1} {product.moqUnit || 'Units'})
+                      Order Quantity (Min: {effectiveMoq} {effectiveMoqUnit})
                     </label>
                     <input
                       id="pdp-quantity-input"
                       type="number"
-                      min={product.moq || 1}
+                      min={effectiveMoq}
                       step="1"
                       value={orderQuantity}
-                      onChange={e => setOrderQuantity(Math.max(product.moq || 1, parseInt(e.target.value) || product.moq || 1))}
+                      onChange={e => setOrderQuantity(Math.max(effectiveMoq, parseInt(e.target.value) || effectiveMoq))}
                       className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:border-blue-500 focus:outline-none shadow-xs"
                     />
                   </div>
@@ -332,7 +347,7 @@ export const ProductDetailModal: React.FC<Props> = ({
                 {/* Subtotal Calculation */}
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-[10px] text-slate-500 font-medium">Estimated Cargo Value ({orderQuantity} {product.moqUnit || 'Units'})</div>
+                    <div className="text-[10px] text-slate-500 font-medium">Estimated Cargo Value ({orderQuantity} {effectiveMoqUnit})</div>
                     <div className="text-lg font-black text-slate-900 font-mono">
                       {formatPrice((matchedTier?.priceUsd || product.fobPriceUsd || (product.priceTiers && product.priceTiers[0]?.priceUsd) || 350) * orderQuantity)}
                     </div>

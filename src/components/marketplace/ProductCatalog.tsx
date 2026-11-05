@@ -951,70 +951,86 @@ export const ProductCatalog: React.FC<Props> = ({
                       key={product.id}
                       className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 hover:border-blue-400 hover:shadow-md transition-all shadow-2xs"
                     >
-                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                        <div 
-                          className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg sm:rounded-xl overflow-hidden shrink-0 cursor-pointer border border-slate-200"
-                          onClick={() => onSelectProduct(product)}
-                        >
-                          <SafeImage
-                            src={product.images?.[0]}
-                            alt={product.title}
-                            productTitle={product.title}
-                            supplierName={product.supplierName}
-                            category={product.category}
-                            productId={product.id}
-                            className="w-full h-full"
-                          />
-                        </div>
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            {getTierBadge(product.supplierTier)}
-                            <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{product.supplierCountry}</span>
-                          </div>
-                          <div 
-                            onClick={() => onSelectProduct(product)}
-                            className="font-bold text-xs sm:text-sm text-slate-900 hover:text-blue-600 transition-colors cursor-pointer truncate"
-                          >
-                            {product.title}
-                          </div>
-                          <div className="text-[10px] sm:text-xs text-slate-600 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                            <span className="truncate max-w-[120px]">{product.supplierName}</span>
-                            <span>•</span>
-                            <span>MOQ: <strong>{product.moq} {product.moqUnit}</strong></span>
-                            <span className="hidden sm:inline">•</span>
-                            <span className="hidden sm:inline">{product.leadTimeDays}d lead</span>
-                          </div>
-                        </div>
-                      </div>
+                      {(() => {
+                        const isAgriOrVanilla =
+                          product.title?.toLowerCase().includes('vanilla') ||
+                          product.category?.toLowerCase().includes('spices') ||
+                          product.category?.toLowerCase().includes('agri') ||
+                          product.subCategory?.toLowerCase().includes('spices') ||
+                          product.unit?.toUpperCase() === 'KG';
 
-                      <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                        <div className="text-left sm:text-right">
-                          <div className="flex items-center sm:justify-end gap-1 mb-0.5">
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                              <Lock className="w-2.5 h-2.5 text-amber-600" />
-                              <span>Protected FOB Rate</span>
-                            </span>
-                          </div>
-                          <div className="text-xs sm:text-base font-extrabold text-slate-800 font-mono">
-                            Inquire for Price
-                          </div>
-                          <div className="text-[9px] sm:text-[10px] text-slate-500">per {product.moqUnit || 'Unit'} (FOB)</div>
-                        </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <button
-                            onClick={() => onContactSupplier(product)}
-                            className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] sm:text-xs font-semibold transition-colors border border-slate-200 cursor-pointer"
-                          >
-                            Inquire
-                          </button>
-                          <button
-                            onClick={() => onSelectProduct(product)}
-                            className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold transition-colors shadow-2xs cursor-pointer"
-                          >
-                            Details
-                          </button>
-                        </div>
-                      </div>
+                        const itemUnit = product.moqUnit || product.unit || (isAgriOrVanilla ? 'KG' : 'Units');
+                        const itemMoq = product.moq || (product.minOrderQuantity ? parseInt(product.minOrderQuantity, 10) : 0) || (isAgriOrVanilla ? 10 : 100);
+
+                        return (
+                          <>
+                            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                              <div 
+                                className="w-16 h-16 sm:w-24 sm:h-24 rounded-lg sm:rounded-xl overflow-hidden shrink-0 cursor-pointer border border-slate-200"
+                                onClick={() => onSelectProduct(product)}
+                              >
+                                <SafeImage
+                                  src={product.images?.[0]}
+                                  alt={product.title}
+                                  productTitle={product.title}
+                                  supplierName={product.supplierName}
+                                  category={product.category}
+                                  productId={product.id}
+                                  className="w-full h-full"
+                                />
+                              </div>
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  {getTierBadge(product.supplierTier)}
+                                  <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{product.supplierCountry}</span>
+                                </div>
+                                <div 
+                                  onClick={() => onSelectProduct(product)}
+                                  className="font-bold text-xs sm:text-sm text-slate-900 hover:text-blue-600 transition-colors cursor-pointer truncate"
+                                >
+                                  {product.title}
+                                </div>
+                                <div className="text-[10px] sm:text-xs text-slate-600 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                  <span className="truncate max-w-[120px]">{product.supplierName}</span>
+                                  <span>•</span>
+                                  <span>MOQ: <strong>{itemMoq.toLocaleString()} {itemUnit}</strong></span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="hidden sm:inline">{product.leadTimeDays || 10}d lead</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                              <div className="text-left sm:text-right">
+                                <div className="flex items-center sm:justify-end gap-1 mb-0.5">
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                    <Lock className="w-2.5 h-2.5 text-amber-600" />
+                                    <span>Protected FOB Rate</span>
+                                  </span>
+                                </div>
+                                <div className="text-xs sm:text-base font-extrabold text-slate-800 font-mono">
+                                  Inquire for Price
+                                </div>
+                                <div className="text-[9px] sm:text-[10px] text-slate-500">per {itemUnit} (FOB)</div>
+                              </div>
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <button
+                                  onClick={() => onContactSupplier(product)}
+                                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] sm:text-xs font-semibold transition-colors border border-slate-200 cursor-pointer"
+                                >
+                                  Inquire
+                                </button>
+                                <button
+                                  onClick={() => onSelectProduct(product)}
+                                  className="px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  Details
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>

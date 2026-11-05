@@ -28,6 +28,14 @@ import type { CompanyEmailHistoryEntry, MailSuiteAnalyticsSummary } from '../../
 import { AdminRouteGuard } from './AdminRouteGuard';
 import { AuthUser, ActiveView } from '../../types';
 
+function sanitizeAndResolveEmailPreviewHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/cid:blackjadecabochon(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg')
+    .replace(/cid:turquoisematrix(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg')
+    .replace(/https:\/\/ais-(?:dev|pre)-[^"'\s\)]+\/assets\/aistudio\//gi, '/assets/aistudio/');
+}
+
 interface MailDeliveryHistoryPageProps {
   currentUser: AuthUser | null;
   onOpenAuthModal: () => void;
@@ -173,7 +181,7 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
         <p style="font-size: 12px; color: #334155;">${entry.summaryText || 'No summary notes.'}</p>
         <h3 style="font-size: 14px; margin: 16px 0 6px 0;">Dispatched Email Body Message (PDF Format)</h3>
         <div class="body-box">
-          ${entry.htmlPreview || '<p>No HTML body stored.</p>'}
+          ${sanitizeAndResolveEmailPreviewHtml(entry.htmlPreview || '') || '<p>No HTML body stored.</p>'}
         </div>
         <div class="footer">
           Trade Heaven Global B2B Platform • Secure MailSuite Telemetry Audit Record • Generated ${new Date().toLocaleString()}
@@ -1109,7 +1117,7 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
                   </div>
                   <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white p-4 max-h-96 overflow-y-auto shadow-inner">
                     {selectedEntry.htmlPreview ? (
-                      <div dangerouslySetInnerHTML={{ __html: selectedEntry.htmlPreview }} />
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeAndResolveEmailPreviewHtml(selectedEntry.htmlPreview) }} />
                     ) : (
                       <div className="text-slate-400 italic py-8 text-center">No HTML preview stored for this entry.</div>
                     )}
