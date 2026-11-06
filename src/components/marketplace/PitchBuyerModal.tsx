@@ -14,7 +14,8 @@ import {
   Zap, 
   ArrowRight,
   Crown,
-  Lock
+  Lock,
+  UserPlus
 } from 'lucide-react';
 import { isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
 
@@ -96,7 +97,44 @@ export const PitchBuyerModal: React.FC<Props> = ({
 
         {/* Content */}
         <div className="p-5 sm:p-6 space-y-5">
-          {isPaidLead && !isCallerPaid ? (
+          {!currentUser ? (
+            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-xl">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center mx-auto">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                  Buyer Contact Channels Protected
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-white">
+                  Account Registration or Login Required
+                </h3>
+                <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                  Direct buyer telephone and corporate email details are protected. Please register a free account or log in to claim free daily credits and pitch buyers directly.
+                </p>
+              </div>
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    window.dispatchEvent(new CustomEvent('tradeheaven_open_auth', { detail: { mode: 'REGISTER' } }));
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
+                >
+                  <UserPlus className="w-4 h-4 text-slate-950" />
+                  <span>Register / Log In Free to Pitch</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ) : isPaidLead && !isCallerPaid ? (
             <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4 shadow-xl">
               <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400 flex items-center justify-center mx-auto">
                 <Lock className="w-6 h-6" />

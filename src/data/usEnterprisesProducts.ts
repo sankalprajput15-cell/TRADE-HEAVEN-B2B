@@ -16,9 +16,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Health & Beauty",
     "subCategory": "Facial Aesthetics & Med Spa Services",
     "images": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Medical Aesthetic Lip & Dermal Hyaluronic Acid Injectable Gel Fillers supplied directly by Sweet Tea & Tox Beauty Boutique (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -111,9 +111,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Garage Doors & Access Openers",
     "images": [
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Commercial Heavy-Duty Insulated Roll-Up Garage Door & DC Belt Opener supplied directly by Ez2Fix Garage Doors & Automation (New Jersey, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -207,7 +207,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Car Audio & Power Electronics",
     "images": [
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance High-Output 350A Automotive Alternator & Monoblock 3000W Subwoofer Amplifier supplied directly by Amped Up Car Audio (North Carolina, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -301,9 +301,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Computer Software & Services",
     "subCategory": "AI Engineering & Cloud Microservices",
     "images": [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Enterprise AI Autonomous Agent & Cloud Transformation Software Architecture Suite supplied directly by CodingCops Software Solutions (Illinois, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -396,9 +396,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Flooring, Cabinetry & Luxury Renovation",
     "images": [
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Custom Prefabricated Solid Maple & Walnut Architectural Kitchen Cabinetry supplied directly by Home Improvement & Renovation NYC (New York, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -491,7 +491,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Home & Garden",
     "subCategory": "Commercial Landscaping & Irrigation",
     "images": [
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
@@ -587,8 +587,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Kitchen & Bath Remodeling",
     "images": [
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Polished Calacatta Gold Quartz Countertop Slabs for Kitchen & Bath Islands supplied directly by Reliable Brothers Remodeling & Construction (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -681,9 +681,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Whole House Renovations & Framing",
     "images": [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Engineered LVL Structural Framing Beams & Galvanized Seismic Steel Bracing Plates supplied directly by Sebastian Francese General Contractor (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -776,8 +776,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Health & Medical",
     "subCategory": "Oral Appliance Therapy & Sleep Devices",
     "images": [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Custom 3D-Printed Mandibular Advancement Sleep Apnea Oral Appliance (FDA Cleared) supplied directly by Pacific Sleep Apnea Center (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -871,9 +871,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "Stage Lighting & Concert Video Walls",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance High-Lumen IP65 Outdoor Concert LED Video Wall Panel Screen (500x1000mm) supplied directly by OnStage Hawai'i Event Productions (Hawaii, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -966,9 +966,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Business & Consulting Services",
     "subCategory": "Rhetoric & Debate Training Systems",
     "images": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Complete Forensic Speech & Debate Tournament Training Curriculum & LMS Portal supplied directly by Power Speakers Unlimited LLC (New Jersey, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1061,9 +1061,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Architectural Coatings & Wallcoverings",
     "images": [
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Non-Woven Luxury Metallic Grasscloth Designer Textured Wallpaper Rolls supplied directly by R&R Painting and Wallpaper (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1157,7 +1157,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Skincare, Henna & Threading Tools",
     "images": [
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance 100% Organic Extra-Strength Cotton Eyebrow Threading Spools (Antimicrobial Coated) supplied directly by Bollywood Threading Beauty Salon (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -1251,9 +1251,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Commercial & Industrial Supplies",
     "subCategory": "Consumer Electronics & Power Hardware",
     "images": [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Smart WiFi Low Voltage Outdoor AC-DC Transformer Power Station (300W IP67) supplied directly by Hold My Hand Wholesale Inc. (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1346,9 +1346,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Health & Medical",
     "subCategory": "Medical Weight Loss & Laser Tech",
     "images": [
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Medical IPL Photorejuvenation Laser Device with Skin Cooling Sapphire Tip supplied directly by Valley Medical Weight Loss & Med Spa (Arizona, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1441,7 +1441,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Residential Framing & Construction",
     "images": [
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
@@ -1537,8 +1537,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Dental Porcelain Veneers & Implants",
     "images": [
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Ultra-Translucent Dental Zirconia Multilayer Disc Blocks for CAD/CAM Milling supplied directly by 32ology Dentist Studio (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1631,9 +1631,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Paints, Sealants & Industrial Coatings",
     "images": [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Elastomeric Waterproof Exterior Wall Coating Paint (Anti-Cracking 100% Acrylic) supplied directly by OMG Painting Contractors (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1726,8 +1726,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Home & Garden",
     "subCategory": "Smart Blinds, Shutters & Solar Screens",
     "images": [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Smart Zigbee/WiFi Motorized Tubular Roller Shade Motors (Quiet < 30dB) supplied directly by Parisian Window Treatments (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -1821,9 +1821,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Epoxy Resins & Floor Coatings",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance High-Performance 100% Solids Industrial Metallic Epoxy & Polyaspartic Flooring System supplied directly by Babcock Restoration Flooring (Illinois, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -1916,9 +1916,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Kitchen Cabinets & Millwork",
     "images": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Solid Birch Wood Soft-Close Full Overlay Shaker Kitchen Cabinet Boxes supplied directly by Raleigh Custom Kitchens (North Carolina, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2011,9 +2011,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Electrical & Electronics",
     "subCategory": "Residential Electrical & Contracting",
     "images": [
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Smart WiFi Main Electrical Panel Energy Monitor & Circuit Breaker Hub (200 Amp) supplied directly by A Team Home Services (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2107,7 +2107,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Carpet, Tile & Hardwood",
     "images": [
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Heavy Traffic Commercial Nylon Carpet Tiles (50x50cm Modular with Bitumen Backing) supplied directly by Queens Carpet One Floor & Home (New York, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -2201,9 +2201,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Home & Garden",
     "subCategory": "Outdoor Stone & Landscape Materials",
     "images": [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Segmental Concrete Interlocking Retaining Wall Blocks & Geogrid Reinforcement supplied directly by Precise Outdoors Landscape Design (Missouri, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2296,9 +2296,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Computer Software & Services",
     "subCategory": "Mobile Apps, AI Agents & AR/VR",
     "images": [
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Autonomous Enterprise AI Agent Workflow Automation Engine & LLM Pipeline SDK supplied directly by Strateger AI Digital Innovation Labs (Delaware, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2391,7 +2391,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Health & Beauty",
     "subCategory": "Medical Aesthetic Lasers & Care",
     "images": [
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
@@ -2487,8 +2487,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Crude Oil & Energy Engineering",
     "images": [
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Light Sweet Crude Oil & Petroleum Refinery Technological Transformation Services supplied directly by Enterprise Excellence Execution LLC (Arizona, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2581,9 +2581,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Industrial Machinery & Plants",
     "subCategory": "Atmospheric FX & Cold Spark Generators",
     "images": [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Professional DMX Cold Spark Machine & Stadium Stage Pyrotechnic System supplied directly by Orlando Special Effects & Pyrotechnics (Florida, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2676,8 +2676,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Composite Decking & Pergolas",
     "images": [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Co-Extruded Capped Wood-Plastic Composite (WPC) Outdoor Decking Boards supplied directly by Wolf Spirit Deck Builders (Illinois, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -2771,9 +2771,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Automotive & Motorcycle Parts",
     "subCategory": "Auto Body Paint & Frame Straightening",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Hydraulic Auto Body Frame Machine Straightener & Laser Measuring Bench supplied directly by California Collision Center El Cajon (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2866,9 +2866,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Interior/Exterior Paint & Staining",
     "images": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Deep-Penetrating UV-Resistant Exterior Wood Fence & Deck Stain Sealant supplied directly by Grandview Painting Contractors (Iowa, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -2961,9 +2961,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Home Additions & Roofing Systems",
     "images": [
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Architectural Laminated Asphalt Roofing Shingles (Class A Fire & Wind Rated) supplied directly by Vision Construction & Design (Massachusetts, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3057,7 +3057,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Commercial Carpet & Restoration Gear",
     "images": [
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Commercial LGR Dehumidifier & Centrifugal Air Mover Water Damage Restoration Set supplied directly by Big Red Flooring & Restoration (Nebraska, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -3151,9 +3151,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Kitchen Fixtures, Islands & Sinks",
     "images": [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance 16-Gauge 304 Stainless Steel Undermount Kitchen Sink with Integrated Workstation supplied directly by Kitchen-Remodelling-Frisco (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3246,9 +3246,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Lighting & Lighting Accessories",
     "subCategory": "Low Voltage Permanent Accent Lighting",
     "images": [
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance RGBW Individually Addressable LED Track Lighting for Roof Eaves (IP68 Waterproof) supplied directly by Leading Edge Decorative Lighting (Arizona, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3341,7 +3341,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Asphalt Paving & Stone Masonry",
     "images": [
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
@@ -3437,8 +3437,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Interior Spaces & Weatherproof Decks",
     "images": [
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Frameless Heavy Tempered Glass Sliding Shower Door Enclosure with Matte Black Hardware supplied directly by MS Remodeling Group (Massachusetts, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3531,9 +3531,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Exterior Siding, Soffits & Trim",
     "images": [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Non-Combustible Fiber Cement Lap Siding Planks (Woodgrain Textured, Pre-Primed) supplied directly by Premier Siding & Exteriors (Washington, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3626,8 +3626,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Deck Framing & Outdoor Living Spaces",
     "images": [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Motorized Waterproof Aluminum Louvered Roof Pergola System with LED Strips supplied directly by Deck Science | Deck Builder and Remodeler (Minnesota, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -3721,9 +3721,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Home & Garden",
     "subCategory": "Garage Epoxy, Cabinets & Slatwall",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Heavy-Duty 24-Gauge Steel Modular Garage Storage Cabinet Workstation Suite supplied directly by Orgaspaces LLC Garage Renovation (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3816,9 +3816,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Computer Software & Services",
     "subCategory": "Nonprofit ERP & Financial Systems",
     "images": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Cloud Fund Accounting & Donor CRM Integration Platform for Non-Profit Enterprises supplied directly by Capital Business Solutions (Tennessee, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -3911,9 +3911,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Transportation & Logistics",
     "subCategory": "Moving Equipment & Logistics Systems",
     "images": [
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Heavy-Duty Multi-Layer Quilted Moving Blankets & Neoprene Floor Runner Protectors supplied directly by Horizon Boston Movers (Massachusetts, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4007,7 +4007,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Embroidery Files & Vector Art",
     "images": [
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance High-Precision 3D Puff Embroidery File Digitizing (DST / PES / EMB Formats) supplied directly by Impact Digitizing Studio (Georgia, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -4101,9 +4101,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Structural Remodeling & Masonry",
     "images": [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Heavy Gauge Structural Steel Studs & Track for Commercial Interior Framing supplied directly by A&A Pro General Contractor Inc. (New York, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4196,9 +4196,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Bathroom Fixtures, Showers & Tubs",
     "images": [
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Antimicrobial Non-Porous Acrylic Walk-In Shower Wall Surrounds & Low-Threshold Bases supplied directly by Bath Crest Home Solutions (Utah, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4291,7 +4291,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Gifts & Crafts",
     "subCategory": "Floral Arrangements & Vases",
     "images": [
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
@@ -4387,8 +4387,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Luxury Stone, Slabs & Millwork",
     "images": [
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Imported Honed Taj Mahal Quartzite Large Format Slabs for Luxury Countertops supplied directly by McDowell Mountain Builders (Arizona, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4481,9 +4481,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Architectural Windows, Flooring & Baths",
     "images": [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Impact-Resistant Aluminum Hurricane French Patio Doors with Thermal Break supplied directly by Unique Builders and Remodeling Houston (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4576,8 +4576,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Health & Medical",
     "subCategory": "Acoustic Soundproofing & Clinical Tech",
     "images": [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Medical-Grade White Noise Sound Masking Machine with Real-time Acoustic Damping supplied directly by Peace of Mind Counseling (Virginia, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -4671,9 +4671,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Home & Garden",
     "subCategory": "Drought-Tolerant Plants & Irrigation",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Commercial Smart Solar-Powered Two-Wire Decoder Irrigation Controller supplied directly by Landscapes USA San Diego (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4766,9 +4766,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Cabinet Boxes & Quartz Countertops",
     "images": [
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance All-Plywood Pre-Finished Modern Frameless European Slab Kitchen Cabinets supplied directly by Cabinet IQ of Overland Park (Kansas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4861,9 +4861,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Home & Garden",
     "subCategory": "Forestry & Landscape Equipment",
     "images": [
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Heavy-Duty Hydraulic Wood Chipper & Forestry Mulcher Attachment for Skid Steers supplied directly by AM Woodland Outdoor Design (Illinois, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -4957,7 +4957,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "PDR Tools & Auto Restoration",
     "images": [
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Professional LED PDR Light Board & Carbon Fiber Hail Dent Repair Rod Tool Kit supplied directly by Mobile Dent Experts (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -5051,9 +5051,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Building Materials & Supplies",
     "subCategory": "Deck Railings, Timber & Balusters",
     "images": [
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Powder-Coated Aluminum Deck Railing Panels with Tempered Glass Slat Inserts supplied directly by Madison Deck Co. (Wisconsin, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -5146,9 +5146,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Chemicals & Allied Products",
     "subCategory": "Slow-Release Fertilizers & Herbicides",
     "images": [
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Slow-Release Polymer-Coated Nitrogen Turf Fertilizer (30-0-10 with Iron & Micronutrients) supplied directly by Southern Scapes Turf Management (Ohio, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -5241,9 +5241,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Automotive & Motorcycle Parts",
     "subCategory": "Ceramic Coatings & Buffing Pads",
     "images": [
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance 10H Hardness Graphene Ceramic Coating Kit (5-Year Hydrophobic Paint Protection) supplied directly by AutoBlastSD Detailing & Ceramic Coating (California, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -5337,8 +5337,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "subCategory": "Desert Plants, Rocks & Synthetic Turf",
     "images": [
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Commercial Heavy-Duty UV-Stabilized Artificial Turf (90 oz Face Weight, Polyurethane Backing) supplied directly by Earthsculpt Commercial Landscaping Las Vegas (Nevada, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -5431,9 +5431,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Computer Software & Services",
     "subCategory": "QA Automation & Test Telemetry",
     "images": [
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Automated QA Testing Pipeline & Regression Test Suite Development Services supplied directly by RCEENetworks LLC Software & QA (Texas, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -5526,8 +5526,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Commercial & Advertising Equipment",
     "subCategory": "Vehicle Signage & Graphics",
     "images": [
-      "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-      "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Custom Magnetic Vehicle Advertising Signs & UV-Protected Reflective Fleet Graphics supplied directly by HTH Car Signs & Fleet Graphics (Florida, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
@@ -5621,9 +5621,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
     "category": "Electronic & Electrical Supplies",
     "subCategory": "Transformers & Power Supplies",
     "images": [
-      "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80"
     ],
     "description": "High-performance Smart Low-Voltage LED Step-Down Lighting Power Transformer (12V/24V IP67 Waterproof) supplied directly by Fvtled Smart Lighting Co. (Hawaii, USA). Manufactured and engineered to exceed North American ASTM/UL/ISO quality standards. Ready for export and commercial wholesale distribution with full Trade Assurance warranty.",
     "priceTiers": [
@@ -5716,9 +5716,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Crawler Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Heavy-Duty Crawler Excavators & Industrial Hydraulic Crane Systems supplied directly by Cwl Group Ltd (North Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -5798,9 +5798,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Precision Trenching & Underground Utility Earthmoving Excavation Services supplied directly by Angelo Underground LLC (Oregon, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -5881,7 +5881,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Bulldozer",
   "images": [
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Commercial Land Clearing, Precision Earthmoving & Pond Excavation Services supplied directly by Carolina United Grading LLC (North Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -5962,9 +5962,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Emergency Sewer Line Trenching & Rapid Hydro-Excavation Services supplied directly by Emergency Sewer Repair (Kansas, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6044,9 +6044,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Backhoe",
   "images": [
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Certified Gas Pipeline Trenching, Backfilling & Site Restoration Services supplied directly by Booth Gas Service, LLC (Pennsylvania, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6126,9 +6126,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Hydraulic Excavator",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Heavy Rock Excavation, Hydraulic Breaking & Precision Site Grading Services supplied directly by Big Rock Excavations (Pennsylvania, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6209,8 +6209,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Excavator",
   "images": [
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Structural Concrete Foundation Pouring & Deep Basement Excavation Engineering supplied directly by John Himchak Construction Company Inc. (Maryland, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6290,9 +6290,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Wheel Loader",
   "images": [
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Municipal Storm Drainage, Culvert Excavation & Civil Earthmoving supplied directly by Bellingrath Bros. Landscape & Design (Connecticut, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6372,8 +6372,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Central Connecticut Commercial Foundation Digging & Sewer Line Trenching supplied directly by Valley View Excavating, LLC (Connecticut, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -6454,9 +6454,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Deep Borehole Well Drilling, Submersible Pumps & Groundwater Excavation supplied directly by Chesterton Well & Pump Service (Indiana, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6536,9 +6536,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Wheel Loader",
   "images": [
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance JCB Heavy Excavators, Backhoe Loaders & Multi-Terrain Telehandlers supplied directly by Southwest JCB (Arizona, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6618,9 +6618,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Mini Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Tovisen KV & KE Series Electric/Diesel Compact Mini-Excavators & Skid Steers supplied directly by Jining Tovisen Intelligent Equipment Co., Ltd. (South Dakota, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6701,7 +6701,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Dump Truck",
   "images": [
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Commercial Tier-4 Heavy Articulated Dump Trucks & Earthmoving Wheel Loaders supplied directly by ROMCO Equipment Co. (Texas, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -6782,9 +6782,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Bulldozer",
   "images": [
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Forestry Mulching, High-Volume Site Excavation & Wildlife Habitat Grading supplied directly by JW Land Management (Wisconsin, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6864,9 +6864,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Bulldozer",
   "images": [
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Midlands Gravel Road Base Installation, Compaction & Earth Grading supplied directly by Grading & Gravel Driveway Co. (South Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -6946,9 +6946,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Aluminum & Steel Modular Trench Shoring Shields & Hydraulic Excavation Braces supplied directly by Icon Equipment Distributors (New Jersey, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7029,8 +7029,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Excavator",
   "images": [
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Severe-Terrain Excavation, Reinforced Concrete Vaults & Earthwork supplied directly by Valhalla Construction LLC (Idaho, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7110,9 +7110,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Luxury Custom In-Ground Swimming Pool Construction & Deep Excavation supplied directly by Santa Monica Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7192,8 +7192,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Sustainable Gunite Pool Engineering, Automated Sanitizers & Earth Excavation supplied directly by Santa Monica Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -7274,9 +7274,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Glendale Custom Spa & Swimming Pool Hydro-Excavation & Gunite Placement supplied directly by Glendale Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7356,9 +7356,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Architectural Commercial & Residential Swimming Pool Concrete Construction supplied directly by Aqualux Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7438,9 +7438,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Infinity Edge Custom Swimming Pool Design, Masonry & Earthmoving supplied directly by Encino Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7521,7 +7521,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Excavator",
   "images": [
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Hudson Valley Custom In-Ground Pool Engineering & Soil Excavation supplied directly by Romano Pool Builders (New York, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -7602,9 +7602,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Smart-Tech Automated Luxury Swimming Pools & Precision Foundation Digging supplied directly by Glendale Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7684,9 +7684,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Burbank Custom Gunite Pool Build, Decking & Deep Soil Excavation supplied directly by Burbank Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7766,9 +7766,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Infinity Edge Pool Construction, Structural Steel & Precision Excavation supplied directly by Lynwood Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7849,8 +7849,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Excavator",
   "images": [
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Custom Gunite Swimming Pool Renovation, Hardscaping & Excavation supplied directly by Burbank Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -7930,9 +7930,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Celebrity Estate Swimming Pool Engineering, PebbleTec & Soil Excavation supplied directly by Hollywood Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8012,8 +8012,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Outdoor Living Spas, Custom Concrete Pools & Site Excavation supplied directly by Coral Pacific Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -8094,9 +8094,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance SoCal Lifestyle Resort Swimming Pools, Wet Decks & Precision Earthwork supplied directly by Oasisblue Pool Contractors (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8176,9 +8176,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Architectural Geometric Pool Construction, Spa Integrations & Excavation supplied directly by Pasadena Pool Construction (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8258,9 +8258,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance 3D Rendered Custom Swimming Pools, Waterfalls & Gunite Excavation supplied directly by Suncrest Pool Builders (California, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8341,7 +8341,7 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Excavator",
   "images": [
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Heavy Municipal Sewer Line Excavation & Deep Septic Trenching supplied directly by The Sewer Kings (New Jersey, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -8422,9 +8422,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Bulldozer",
   "images": [
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Sub-Arctic Land Clearing, Permafrost Excavation & Gravel Pad Grading supplied directly by Norton Management Services (Alaska, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8504,9 +8504,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Bulldozer",
   "images": [
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Large-Volume Tractor Pull-Pan Scraper Earthmoving & Civil Site Prep supplied directly by Pull Pan Dave Inc. (Alabama, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8586,9 +8586,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator Bucket",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Severe-Duty Hydraulic Excavator Breakers, Rock Grapples & Pallet Forks supplied directly by Construction Attachments (North Carolina, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8669,8 +8669,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "subCategory": "Wheel Loader",
   "images": [
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Pneumatic Blower Truck Material Placement, Topsoil & Erosion Control supplied directly by Superior Groundcover (Georgia) (Georgia, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8750,9 +8750,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Commercial Crawl Space Encapsulation, Foundation Waterproofing & Excavation supplied directly by Premium Waterproofing, Inc. (Illinois, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [
@@ -8832,8 +8832,8 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Dump Truck",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Crushed Aggregate, Washed Gravel & Pneumatic Topsoil Material Supply supplied directly by Superior Groundcover (Indiana) (Indiana, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
@@ -8914,9 +8914,9 @@ export const GLOBAL_US_ENTERPRISES_PRODUCTS: Product[] = [
   "category": "Construction & Excavation Machinery",
   "subCategory": "Mini Excavator",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80",
     "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80"
+    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "High-performance Compact Excavators, Industrial Diesel Generators & Site Tool Rentals supplied directly by Pro Tool & Supply and Pro Equipment Rental (Massachusetts, USA). Engineered to exceed North American ASTM/OSHA/ISO standards with full Trade Assurance warranty.",
   "priceTiers": [

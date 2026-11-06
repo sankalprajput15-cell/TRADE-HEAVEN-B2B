@@ -1,4 +1,6 @@
 import { Product } from '../types';
+import { autoSeoEngine } from './autoSeoEngine';
+
 
 export interface ProductImageOverrideEntry {
   primary: string;
@@ -67,6 +69,62 @@ const PRODUCTS_CACHE_KEY = 'trade_heaven_v1_products_v2';
 
 const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
   {
+    id: 'builtin-black-jade-cabochon',
+    url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    name: 'Blackstone Jade Co - Natural Black Jade Cabochon.jpeg',
+    format: 'JPG',
+    uploadedAt: '2026-11-04T19:44:21Z'
+  },
+  {
+    id: 'builtin-turquoise-rough-matrix',
+    url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+    name: 'Blackstone Jade Co - Natural Turquoise Rough Matrix.jpeg',
+    format: 'JPG',
+    uploadedAt: '2026-11-04T19:44:20Z'
+  },
+  {
+    id: 'builtin-atlantic-cat-power',
+    url: '/assets/aistudio/image002_50ab7837.png',
+    name: 'Atlantic Power - CAT Power Diesel Generator.png',
+    format: 'PNG',
+    uploadedAt: '2026-10-25T10:00:00Z'
+  },
+  {
+    id: 'builtin-atlantic-cummins',
+    url: '/assets/aistudio/image003_6c1f0619.jpg',
+    name: 'Atlantic Power - Cummins Power Generation.jpg',
+    format: 'JPG',
+    uploadedAt: '2026-10-25T10:01:00Z'
+  },
+  {
+    id: 'builtin-atlantic-large-tanks',
+    url: '/assets/aistudio/image004_fa37a57a.png',
+    name: 'Atlantic Power - Large Fuel Storage Tanks (3,000-18,000 Gal).png',
+    format: 'PNG',
+    uploadedAt: '2026-10-25T10:02:00Z'
+  },
+  {
+    id: 'builtin-atlantic-heavy-fleet',
+    url: '/assets/aistudio/image005_20fe3db0.png',
+    name: 'Atlantic Power - Multi-Brand Heavy Construction Equipment.png',
+    format: 'PNG',
+    uploadedAt: '2026-10-25T10:03:00Z'
+  },
+  {
+    id: 'builtin-vanilla-bundle-01',
+    url: '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+    name: 'Madagascar Bourbon Vanilla Beans Bundle.jpg',
+    format: 'JPG',
+    uploadedAt: '2026-10-22T09:00:00Z'
+  },
+  {
+    id: 'builtin-vanilla-extract-02',
+    url: '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+    name: 'Gourmet Vanilla Beans & Pure Extract.jpg',
+    format: 'JPG',
+    uploadedAt: '2026-10-22T09:05:00Z'
+  },
+  {
     id: 'builtin-evening-cargo-port',
     url: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     name: 'Evening Cargo & Oil Ships Dock at Port.jpg',
@@ -128,10 +186,10 @@ class ProductImageManagerService {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
-          base.overrides = parsed.overrides || {};
-          base.globalDefaultImage = parsed.globalDefaultImage || null;
-          base.categoryOverrides = parsed.categoryOverrides || {};
-          base.urlReplacements = parsed.urlReplacements || {};
+          base.overrides = parsed.overrides && typeof parsed.overrides === 'object' ? { ...parsed.overrides } : {};
+          base.globalDefaultImage = typeof parsed.globalDefaultImage === 'string' ? parsed.globalDefaultImage : null;
+          base.categoryOverrides = parsed.categoryOverrides && typeof parsed.categoryOverrides === 'object' ? { ...parsed.categoryOverrides } : {};
+          base.urlReplacements = parsed.urlReplacements && typeof parsed.urlReplacements === 'object' ? { ...parsed.urlReplacements } : {};
           if (Array.isArray(parsed.mediaLibrary)) {
             const urls = new Set(parsed.mediaLibrary.map((m: MediaLibraryItem) => m.url));
             base.mediaLibrary = [
@@ -142,20 +200,20 @@ class ProductImageManagerService {
         }
       }
 
-      // Also merge legacy overrides if present
+      // Merge legacy overrides if present
       const legacyRaw = localStorage.getItem(LEGACY_OVERRIDES_KEY);
       if (legacyRaw) {
         const legacyParsed = JSON.parse(legacyRaw);
         if (legacyParsed && typeof legacyParsed === 'object') {
           for (const [key, val] of Object.entries(legacyParsed)) {
-            if (!base.overrides[key] && val && typeof val === 'object') {
+            if (val && typeof val === 'object') {
               const entry = val as any;
-              if (entry.primary) {
+              if (entry.primary && !base.overrides[key]) {
                 base.overrides[key] = {
                   primary: entry.primary,
                   gallery: Array.isArray(entry.gallery) && entry.gallery.length > 0 ? entry.gallery : [entry.primary],
                   format: this.detectFormatFromUrl(entry.primary),
-                  updatedAt: new Date().toISOString()
+                  updatedAt: entry.updatedAt || new Date().toISOString()
                 };
               }
             }
@@ -237,22 +295,38 @@ class ProductImageManagerService {
         const json = await res.json();
         if (json?.success && json?.data) {
           const srv: ProductImageSystemState = json.data;
-          // Merge server overrides with local overrides
-          this.state.overrides = {
-            ...this.state.overrides,
-            ...(srv.overrides || {})
-          };
-          if (srv.globalDefaultImage) {
-            this.state.globalDefaultImage = srv.globalDefaultImage;
+          const localOverrides = this.state.overrides || {};
+          const srvOverrides = srv.overrides || {};
+          const mergedOverrides: Record<string, ProductImageOverrideEntry> = { ...srvOverrides };
+          let localHasNewerOrMissingOnServer = false;
+
+          for (const [pid, localEntry] of Object.entries(localOverrides)) {
+            if (!localEntry?.primary) continue;
+            const srvEntry = srvOverrides[pid];
+            if (!srvEntry) {
+              mergedOverrides[pid] = localEntry;
+              localHasNewerOrMissingOnServer = true;
+            } else {
+              const localTime = Date.parse(localEntry.updatedAt || '') || 0;
+              const srvTime = Date.parse(srvEntry.updatedAt || '') || 0;
+              if (localTime > srvTime) {
+                mergedOverrides[pid] = localEntry;
+                localHasNewerOrMissingOnServer = true;
+              }
+            }
           }
+
+          this.state.overrides = mergedOverrides;
+          this.state.globalDefaultImage = srv.globalDefaultImage ?? this.state.globalDefaultImage ?? null;
           this.state.categoryOverrides = {
-            ...this.state.categoryOverrides,
+            ...(this.state.categoryOverrides || {}),
             ...(srv.categoryOverrides || {})
           };
           this.state.urlReplacements = {
-            ...this.state.urlReplacements,
+            ...(this.state.urlReplacements || {}),
             ...(srv.urlReplacements || {})
           };
+
           if (Array.isArray(srv.mediaLibrary)) {
             const seen = new Set<string>();
             const mergedMedia: MediaLibraryItem[] = [];
@@ -264,9 +338,21 @@ class ProductImageManagerService {
             }
             this.state.mediaLibrary = mergedMedia;
           }
+
           this.isHydratedFromServer = true;
           this.saveToLocalStorage();
           this.notifyListeners();
+
+          // If local browser state had overrides that the server didn't have (e.g. after server restart), push them back up to server
+          if (localHasNewerOrMissingOnServer && Object.keys(mergedOverrides).length > 0) {
+            fetch('/api/v1/admin/product-images', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                fullOverridesMap: mergedOverrides
+              })
+            }).catch(() => {});
+          }
         }
       }
     } catch {
@@ -339,7 +425,7 @@ class ProductImageManagerService {
       ? [...product.images]
       : product.image
         ? [product.image]
-        : ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'];
+        : ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'];
 
     if (product.id && this.state.overrides[product.id]) {
       const entry = this.state.overrides[product.id];
@@ -833,6 +919,30 @@ class ProductImageManagerService {
       }
     }
 
+    // Automatically run B2B & Export SEO optimization on the uploaded image and its assigned product(s)
+    try {
+      autoSeoEngine.autoOptimizeImageUpload({
+        imageId: mediaItem.id,
+        imageUrl: finalUrl,
+        fileName: finalName,
+        productId: options?.productId || (options?.productIds && options.productIds[0]) || undefined,
+        category: options?.category || 'Global B2B Export'
+      });
+      if (Array.isArray(options?.productIds)) {
+        for (const pid of options!.productIds) {
+          if (pid) {
+            autoSeoEngine.autoOptimizeImageUpload({
+              imageId: `${mediaItem.id}-${pid}`,
+              imageUrl: finalUrl,
+              fileName: finalName,
+              productId: pid,
+              category: options?.category || 'Global B2B Export'
+            });
+          }
+        }
+      }
+    } catch {}
+
     this.saveToLocalStorage();
     this.notifyListeners();
 
@@ -995,6 +1105,14 @@ class ProductImageManagerService {
       updatedAt: new Date().toISOString()
     };
 
+    try {
+      autoSeoEngine.autoOptimizeImageUpload({
+        imageUrl: cleanPrimary,
+        productId,
+        fileName: `product-${productId}.${format.toLowerCase()}`
+      });
+    } catch {}
+
     this.saveToLocalStorage();
     this.notifyListeners();
 
@@ -1041,6 +1159,18 @@ class ProductImageManagerService {
         updatedAt: nowIso
       };
     }
+
+    try {
+      for (const pid of productIds.slice(0, 50)) {
+        if (pid) {
+          autoSeoEngine.autoOptimizeImageUpload({
+            imageUrl: cleanPrimary,
+            productId: pid,
+            fileName: `bulk-product-${pid}.${format.toLowerCase()}`
+          });
+        }
+      }
+    } catch {}
 
     this.saveToLocalStorage();
     this.notifyListeners();
@@ -1232,6 +1362,16 @@ class ProductImageManagerService {
     this.state.globalDefaultImage = null;
     this.state.categoryOverrides = {};
     this.state.urlReplacements = {};
+    
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_OVERRIDES_KEY);
+        localStorage.removeItem(PRODUCTS_CACHE_KEY);
+        localStorage.removeItem('cached_products');
+      } catch {}
+    }
+
     this.saveToLocalStorage();
     this.notifyListeners();
 

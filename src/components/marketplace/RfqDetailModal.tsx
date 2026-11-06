@@ -76,7 +76,7 @@ export const RfqDetailModal: React.FC<Props> = ({
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
   const isPaidLead = isPaidEntity(rfq);
   const isCallerPaid = isPaidMemberUser(currentUser);
-  const isClaimed = isRfqClaimedFree(rfq.id);
+  const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
 
   // Sync activeTab to URL rfqTab parameter
   useEffect(() => {
@@ -417,7 +417,33 @@ export const RfqDetailModal: React.FC<Props> = ({
 
                   {/* Gated Contacts / Unmasked Free Lead Contacts */}
                   <div>
-                    {isPaidLead && !isCallerPaid ? (
+                    {!currentUser ? (
+                      <div className="p-4 rounded-2xl bg-slate-900 border border-amber-400/50 text-white space-y-3 shadow-md text-xs">
+                        <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
+                          <span className="flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Buyer Contact Channels Protected</span>
+                          </span>
+                          <span className="font-mono text-[9px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded font-black border border-amber-400/30">
+                            Login Required
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                          Direct buyer phone and corporate email details are protected. Please register a free account or log in to claim this buy order and unmask contact details.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onOpenRegisterFree?.();
+                          }}
+                          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-slate-950" />
+                          <span>Register / Log In Free to View Contact</span>
+                        </button>
+                      </div>
+                    ) : isPaidLead && !isCallerPaid ? (
                       <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-amber-400/50 space-y-3 shadow-md text-xs">
                         <div className="flex items-center justify-between text-[10px] font-black text-amber-400 pb-1.5 border-b border-slate-800">
                           <span className="flex items-center gap-1.5">
@@ -471,11 +497,11 @@ export const RfqDetailModal: React.FC<Props> = ({
                                 <span>1 Free Buy Order Available</span>
                               </div>
                               <span className="text-[10px] font-bold bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full">
-                                Registered or Unregistered
+                                Daily Credit
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                              Anyone—whether registered or unregistered—can claim this community buy order and unmask direct buyer contact channels at zero cost.
+                              Logged in members can claim this community buy order and unmask direct buyer contact channels at zero cost.
                             </p>
                             <button
                               type="button"

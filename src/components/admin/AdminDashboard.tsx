@@ -26,6 +26,7 @@ import { RenewalInsightsAdminModule } from './RenewalInsightsAdminModule';
 import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { ClientUploadsAdminModule } from './ClientUploadsAdminModule';
 import { UniversalSiteUploadsVault } from './UniversalSiteUploadsVault';
+import { SeoHealthDashboard } from './SeoHealthDashboard';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -81,7 +82,8 @@ export type AdminDashboardTabId =
   | 'USER_DELETION_LOG'
   | 'BULK_CSV_IMPORT' 
   | 'BATCH_IMAGE_IMPORT' 
-  | 'MULTI_FILE_UPLOAD';
+  | 'MULTI_FILE_UPLOAD'
+  | 'SEO_HEALTH';
 
 interface AdminDashboardProps {
   initialTab?: AdminDashboardTabId;
@@ -106,11 +108,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const tabParam = params.get('tab');
       if (tabParam) {
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
-        if (normalized === 'MASTER_UPLOADS_VAULT' || normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
+        
+        // Define all valid tabs for strict validation
+        const validTabs: string[] = [
+          'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
+          'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
+          'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
+          'REGISTERED_SUPPLIERS', 'COUNTRIES', 'CRM', 'PRICING',
+          'ACTIVITY_LOGS', 'USER_DELETION_LOG', 'BULK_CSV_IMPORT',
+          'BATCH_IMAGE_IMPORT', 'MULTI_FILE_UPLOAD', 'SEO_HEALTH'
+        ];
+
+        // Direct match
+        if (validTabs.includes(normalized)) {
+          return normalized as AdminDashboardTabId;
+        }
+
+        // Legacy & common aliases
+        if (normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
           return 'MASTER_UPLOADS_VAULT';
         }
-        if (normalized === 'CLIENT_UPLOADS' || normalized === 'UPLOADS' || normalized === 'WIRE_SLIPS') {
+        if (normalized === 'UPLOADS' || normalized === 'WIRE_SLIPS') {
           return 'CLIENT_UPLOADS';
+        }
+        if (normalized === 'SEO' || normalized === 'SEO_DASHBOARD' || normalized === 'HEALTH') {
+          return 'SEO_HEALTH';
         }
       }
     }
@@ -143,12 +165,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const tabParam = params.get('tab');
       if (tabParam) {
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
-        if (normalized === 'MASTER_UPLOADS_VAULT' || normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
+        
+        const validTabs: string[] = [
+          'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
+          'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
+          'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
+          'REGISTERED_SUPPLIERS', 'COUNTRIES', 'CRM', 'PRICING',
+          'ACTIVITY_LOGS', 'USER_DELETION_LOG', 'BULK_CSV_IMPORT',
+          'BATCH_IMAGE_IMPORT', 'MULTI_FILE_UPLOAD', 'SEO_HEALTH'
+        ];
+
+        if (validTabs.includes(normalized)) {
+          setActiveTab(normalized as AdminDashboardTabId);
+          return;
+        }
+
+        // Aliases
+        if (normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
           setActiveTab('MASTER_UPLOADS_VAULT');
           return;
         }
-        if (normalized === 'CLIENT_UPLOADS' || normalized === 'UPLOADS' || normalized === 'WIRE_SLIPS') {
+        if (normalized === 'UPLOADS' || normalized === 'WIRE_SLIPS') {
           setActiveTab('CLIENT_UPLOADS');
+          return;
+        }
+        if (normalized === 'SEO' || normalized === 'SEO_DASHBOARD' || normalized === 'HEALTH') {
+          setActiveTab('SEO_HEALTH');
           return;
         }
       }
@@ -317,10 +359,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     (n) => n.type === 'SYSTEM' && n.title.toLowerCase().includes('delivery queue')
   );
 
-  // Sync tab if initialTab prop changes
+  // Sync tab if initialTab prop changes or when tradeheaven_admin_switch_tab is dispatched
   useEffect(() => {
-    setActiveTab(initialTab);
+    const resolved = getInitialTab();
+    setActiveTab(resolved);
   }, [initialTab]);
+
+  useEffect(() => {
+    const handleAdminSwitchTab = (e: Event) => {
+      const custom = e as CustomEvent<{ tab?: string }>;
+      const rawTab = custom?.detail?.tab;
+      if (rawTab) {
+        const normalized = rawTab.toUpperCase().replace(/-/g, '_');
+        if (normalized === 'SEO_HEALTH' || normalized === 'SEO' || normalized === 'SEO_DASHBOARD' || normalized === 'HEALTH') {
+          setActiveTab('SEO_HEALTH');
+          return;
+        }
+        const resolved = getInitialTab();
+        setActiveTab(resolved);
+      }
+    };
+    window.addEventListener('tradeheaven_admin_switch_tab', handleAdminSwitchTab);
+    window.addEventListener('popstate', handleAdminSwitchTab);
+    return () => {
+      window.removeEventListener('tradeheaven_admin_switch_tab', handleAdminSwitchTab);
+      window.removeEventListener('popstate', handleAdminSwitchTab);
+    };
+  }, []);
 
   // --- COUNTRY PORTALS STATE ---
   const [allCountries, setAllCountries] = useState<any[]>([]);
@@ -541,6 +606,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'DIAGNOSTICS', label: '🔬 Registration Diagnostics', icon: Terminal },
     { id: 'REGISTERED_SUPPLIERS', label: '🏭 Registered Suppliers', icon: Building2 },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
+    { id: 'SEO_HEALTH', label: '📈 SEO Health Dashboard', icon: Activity },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
     { id: 'USER_DELETION_LOG', label: '🗑️ User Deletion Log', icon: Trash2 },
@@ -782,6 +848,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <Mail className="w-4 h-4 text-purple-600" />
               <span>📬 Mail Delivery History &amp; Telemetry Hub</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('SEO_HEALTH')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'SEO_HEALTH'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>📈 SEO Health &amp; Geo-Traffic</span>
             </button>
 
             <button
@@ -1211,6 +1290,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="space-y-4">
             <UserDeletionLogModule currentUser={effectiveAdminUser} />
           </div>
+        )}
+
+        {activeTab === 'SEO_HEALTH' && (
+          <SeoHealthDashboard />
         )}
 
         {activeTab === 'COUNTRIES' && (

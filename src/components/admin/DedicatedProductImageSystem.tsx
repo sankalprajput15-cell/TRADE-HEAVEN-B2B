@@ -15,6 +15,7 @@ import {
 import { SafeImage } from '../common/SafeImage';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
+import { autoSeoEngine, AutoSeoRecord } from '../../services/autoSeoEngine';
 import {
   Image as ImageIcon,
   Upload,
@@ -40,8 +41,18 @@ import {
   RotateCw,
   FileImage,
   ArrowRight,
-  Sun
+  Sun,
+  Edit,
+  AlertTriangle
 } from 'lucide-react';
+
+export interface DeleteImageConfirmationState {
+  mode: 'SINGLE_PRODUCT' | 'FORM_GALLERY_IMAGE' | 'BULK_SELECTED';
+  product?: Product;
+  imageUrl?: string;
+  imageIndex?: number;
+  targetIds?: string[];
+}
 
 interface DedicatedProductImageSystemProps {
   products?: Product[];
@@ -60,8 +71,11 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const [systemState, setSystemState] = useState<ProductImageSystemState>(() =>
     productImageManagerService.getState()
   );
-  const [activeSubTab, setActiveSubTab] = useState<'ALL_PRODUCTS' | 'BULK_DRAG_DROP_MAPPER' | 'BULK_GLOBAL' | 'BY_EXISTING_IMAGE' | 'MEDIA_LIBRARY'>('ALL_PRODUCTS');
+  const [activeSubTab, setActiveSubTab] = useState<'ALL_PRODUCTS' | 'BULK_DRAG_DROP_MAPPER' | 'BULK_GLOBAL' | 'BY_EXISTING_IMAGE' | 'MEDIA_LIBRARY' | 'AUTO_SEO_ENGINE'>('ALL_PRODUCTS');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
+  const [seoRecords, setSeoRecords] = useState<AutoSeoRecord[]>(() => autoSeoEngine.getAllSeoRecords());
+  const [seoFilterType, setSeoFilterType] = useState<'ALL' | 'product' | 'image' | 'article'>('ALL');
+  const [seoSearchTerm, setSeoSearchTerm] = useState('');
 
   // Search & Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,10 +102,20 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   // Active modals / overlays
   const [activeProductForModal, setActiveProductForModal] = useState<Product | null>(null);
   const [croppingTarget, setCroppingTarget] = useState<{ product: Product; imageUrl: string } | null>(null);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<DeleteImageConfirmationState | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
   const [dragOverProductId, setDragOverProductId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error';
+    message: string;
+    onUndo?: () => Promise<void> | void;
+  } | null>(null);
+  const [undoSecondsLeft, setUndoSecondsLeft] = useState<number>(5);
+  const [isUndoing, setIsUndoing] = useState<boolean>(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isBulkPlaceholderModalOpen, setIsBulkPlaceholderModalOpen] = useState<boolean>(false);
 
   // Bulk / Global tab states
   const [bulkTargetScope, setBulkTargetScope] = useState<'ALL_PRODUCTS' | 'CATEGORY' | 'SELECTED'>('ALL_PRODUCTS');
@@ -109,10 +133,61 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
   const mediaLibraryInputRef = useRef<HTMLInputElement>(null);
 
-  const showToast = (type: 'success' | 'error', message: string) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 4500);
+  const clearToastTimers = () => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    if (undoIntervalRef.current) {
+      clearInterval(undoIntervalRef.current);
+      undoIntervalRef.current = null;
+    }
   };
+
+  const showToast = (
+    type: 'success' | 'error',
+    message: string,
+    options?: { onUndo?: () => Promise<void> | void; durationMs?: number }
+  ) => {
+    clearToastTimers();
+    const duration = options?.onUndo ? (options.durationMs ?? 5000) : (options?.durationMs ?? 4500);
+    setToast({ type, message, onUndo: options?.onUndo });
+
+    if (options?.onUndo) {
+      const totalSec = Math.ceil(duration / 1000);
+      setUndoSecondsLeft(totalSec);
+      const startedAt = Date.now();
+      undoIntervalRef.current = setInterval(() => {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(1, Math.ceil((duration - elapsed) / 1000));
+        setUndoSecondsLeft(remaining);
+      }, 250);
+    }
+
+    toastTimerRef.current = setTimeout(() => {
+      clearToastTimers();
+      setToast(null);
+    }, duration);
+  };
+
+  const handleTriggerUndo = async () => {
+    if (!toast?.onUndo || isUndoing) return;
+    const undoFn = toast.onUndo;
+    clearToastTimers();
+    setIsUndoing(true);
+    try {
+      await undoFn();
+      showToast('success', 'Restored deleted product image!');
+    } catch (err: any) {
+      showToast('error', err?.message || 'Failed to undo image deletion');
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => clearToastTimers();
+  }, []);
 
   // Sync products and image state
   const refreshState = async () => {
@@ -128,6 +203,171 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
     if (onProductsUpdated) onProductsUpdated();
   };
 
+  // Full Product Edit / Create Modal State
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isAddingNewProduct, setIsAddingNewProduct] = useState<boolean>(false);
+  const [productForm, setProductForm] = useState<{
+    id: string;
+    title: string;
+    category: string;
+    subCategory: string;
+    priceUsd: number;
+    priceUnit: string;
+    moq: number;
+    moqUnit: string;
+    supplierName: string;
+    supplierCountry: string;
+    portOfDispatch: string;
+    description: string;
+    hsCode: string;
+    specifications: Array<{ name: string; value: string }>;
+    images: string[];
+  }>({
+    id: '',
+    title: '',
+    category: 'Vanilla Beans & Spices',
+    subCategory: 'Gourmet Grade Bourbon Vanilla',
+    priceUsd: 150,
+    priceUnit: 'Kg',
+    moq: 1,
+    moqUnit: 'Kgs',
+    supplierName: 'Trade Heaven Exporters Ltd',
+    supplierCountry: 'Madagascar',
+    portOfDispatch: 'Port of Toamasina',
+    description: '',
+    hsCode: '0905.10.00',
+    specifications: [
+      { name: 'Grade', value: 'Grade A Gourmet (16-18cm)' },
+      { name: 'Moisture Content', value: '30-35%' }
+    ],
+    images: []
+  });
+
+  const handleOpenAddProduct = () => {
+    setEditingProduct(null);
+    setProductForm({
+      id: `prod-${Date.now().toString().slice(-6)}`,
+      title: '',
+      category: categories[0] || 'Vanilla Beans & Spices',
+      subCategory: 'Export Grade',
+      priceUsd: 180,
+      priceUnit: 'Kg',
+      moq: 1,
+      moqUnit: 'Kgs',
+      supplierName: 'Trade Heaven Exporters Ltd',
+      supplierCountry: 'Madagascar',
+      portOfDispatch: 'Port of Toamasina',
+      description: 'High grade wholesale product direct from verified exporters.',
+      hsCode: '0905.10.00',
+      specifications: [
+        { name: 'Grade', value: 'Grade A Export Quality' },
+        { name: 'Moisture Content', value: '30-35%' }
+      ],
+      images: [
+        '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'
+      ]
+    });
+    setIsAddingNewProduct(true);
+  };
+
+  const handleOpenEditProductDetails = (product: Product) => {
+    setIsAddingNewProduct(false);
+    setEditingProduct(product);
+    setProductForm({
+      id: product.id,
+      title: product.title || '',
+      category: product.category || 'General',
+      subCategory: product.subCategory || '',
+      priceUsd: product.priceTiers?.[0]?.priceUsd || 100,
+      priceUnit: product.moqUnit || 'Kg',
+      moq: product.moq || 1,
+      moqUnit: product.moqUnit || 'Kgs',
+      supplierName: product.supplierName || 'Verified Exporter',
+      supplierCountry: product.supplierCountry || 'Global',
+      portOfDispatch: product.portOfDispatch || 'Port of Dispatch',
+      description: product.description || '',
+      hsCode: product.hsCode || '0905.10.00',
+      specifications: Array.isArray(product.specifications)
+        ? product.specifications.map((s: any) => ({ name: String(s.name || ''), value: String(s.value || '') }))
+        : typeof product.specifications === 'object' && product.specifications !== null
+        ? Object.entries(product.specifications).map(([name, value]) => ({ name, value: String(value) }))
+        : [
+            { name: 'Grade', value: 'Grade A' },
+            { name: 'Packaging', value: 'Vacuum Sealed' }
+          ],
+      images: product.images && product.images.length > 0 ? [...product.images] : ['/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg']
+    });
+  };
+
+  const handleSaveProductForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productForm.title.trim()) {
+      showToast('error', 'Product title is required.');
+      return;
+    }
+
+    const payload: Partial<Product> = {
+      id: productForm.id,
+      title: productForm.title.trim(),
+      category: productForm.category.trim(),
+      subCategory: productForm.subCategory.trim(),
+      moq: Number(productForm.moq) || 1,
+      moqUnit: productForm.moqUnit.trim(),
+      priceTiers: [
+        { minUnits: Number(productForm.moq) || 1, priceUsd: Number(productForm.priceUsd) || 100 }
+      ],
+      supplierName: productForm.supplierName.trim(),
+      supplierCountry: productForm.supplierCountry.trim(),
+      portOfDispatch: productForm.portOfDispatch.trim(),
+      description: productForm.description.trim(),
+      hsCode: productForm.hsCode.trim(),
+      specifications: productForm.specifications.filter(s => s.name.trim() && s.value.trim()),
+      images: productForm.images.filter(img => img.trim().length > 0)
+    };
+
+    setIsUploading(true);
+    try {
+      // Automatically run B2B & Export SEO Engine so this product & its images rank #1 in the search bar
+      const seoRec = autoSeoEngine.autoOptimizeProduct({
+        ...payload,
+        imageUrl: payload.images?.[0],
+        price: `$${productForm.priceUsd} / ${productForm.priceUnit}`,
+        moq: `${productForm.moq} ${productForm.moqUnit}`
+      }, true);
+      setSeoRecords(autoSeoEngine.getAllSeoRecords());
+
+      if (isAddingNewProduct) {
+        const res = await api.createProduct(payload);
+        if (res.success) {
+          showToast(
+            'success',
+            `Added "${payload.title}" & Auto-SEO Ranked #1 for B2B Export (SEO Score: ${seoRec.seoScore}/100)!`
+          );
+          setIsAddingNewProduct(false);
+          await refreshState();
+        } else {
+          showToast('error', res.message || 'Failed to create product');
+        }
+      } else if (editingProduct) {
+        const res = await api.updateProduct(editingProduct.id, payload);
+        if (res.success) {
+          showToast(
+            'success',
+            `Updated "${payload.title}" & refreshed B2B Export Auto-SEO (Ranked #1 in Search Bar)!`
+          );
+          setEditingProduct(null);
+          await refreshState();
+        } else {
+          showToast('error', res.message || 'Failed to update product');
+        }
+      }
+    } catch (err: any) {
+      showToast('error', err?.message || 'Error saving product');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   useEffect(() => {
     productImageManagerService.syncFromServer().then(() => {
       refreshState();
@@ -135,10 +375,19 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
     const handleUpdate = () => {
       const st = productImageManagerService.getState();
       setSystemState({ ...st });
-      setAllProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+      refreshState();
+    };
+    const handleSeoUpdated = () => {
+      setSeoRecords(autoSeoEngine.getAllSeoRecords());
     };
     window.addEventListener('tradeheaven_product_images_updated', handleUpdate);
-    return () => window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
+    window.addEventListener('tradeheaven_products_updated', handleUpdate);
+    window.addEventListener('tradeheaven_auto_seo_updated', handleSeoUpdated);
+    return () => {
+      window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
+      window.removeEventListener('tradeheaven_products_updated', handleUpdate);
+      window.removeEventListener('tradeheaven_auto_seo_updated', handleSeoUpdated);
+    };
   }, []);
 
   useEffect(() => {
@@ -203,7 +452,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const imageGroups = useMemo(() => {
     const map = new Map<string, { imageUrl: string; products: Product[] }>();
     for (const prod of allProducts) {
-      const primary = prod.images?.[0] || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
+      const primary = prod.images?.[0] || 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80';
       const existing = map.get(primary);
       if (existing) {
         existing.products.push(prod);
@@ -253,13 +502,20 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       return;
     }
 
+    // Snapshot existing images & overrides for 5-second Undo restoration
+    const idSet = new Set(idsToDelete);
+    const previousSnapshots = allProducts
+      .filter(p => idSet.has(p.id))
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        images: Array.isArray(p.images) ? [...p.images] : [],
+        hadOverride: Boolean(systemState.overrides[p.id])
+      }));
+
     setIsUploading(true);
     try {
-      const idSet = new Set(idsToDelete);
-      const titlesToDelete = allProducts
-        .filter(p => idSet.has(p.id))
-        .map(p => p.title)
-        .filter(Boolean);
+      const titlesToDelete = previousSnapshots.map(p => p.title).filter(Boolean);
 
       await productImageManagerService.deleteBulkProductImageAssociations(
         idsToDelete,
@@ -273,12 +529,99 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       await refreshState();
       showToast(
         'success',
-        `Deleted product image association(s) for ${idsToDelete.length} selected Product ID(s) and restored default catalog images!`
+        `Deleted product image association(s) for ${idsToDelete.length} selected Product ID(s).`,
+        {
+          durationMs: 5000,
+          onUndo: async () => {
+            for (const snap of previousSnapshots) {
+              if (snap.images.length > 0) {
+                await productImageManagerService.setProductImage(snap.id, snap.images[0], snap.images);
+              }
+            }
+            await refreshState();
+          }
+        }
       );
     } catch (err: any) {
       showToast('error', err?.message || 'Failed to delete selected product image associations');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Execute confirmed image deletion from the confirmation modal
+  const handleExecuteConfirmedDelete = async () => {
+    if (!deleteConfirmTarget) return;
+    const target = deleteConfirmTarget;
+    setDeleteConfirmTarget(null);
+
+    if (target.mode === 'FORM_GALLERY_IMAGE' && typeof target.imageIndex === 'number') {
+      const previousGalleryImages = [...productForm.images];
+      const removedIdx = target.imageIndex;
+      setProductForm(prev => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== removedIdx)
+      }));
+      showToast('success', `Removed gallery image #${removedIdx + 1} from product.`, {
+        durationMs: 5000,
+        onUndo: () => {
+          setProductForm(prev => ({
+            ...prev,
+            images: previousGalleryImages
+          }));
+        }
+      });
+      return;
+    }
+
+    if (target.mode === 'BULK_SELECTED') {
+      await handleDeleteSelectedAssociations(target.targetIds);
+      return;
+    }
+
+    if (target.mode === 'SINGLE_PRODUCT' && target.product) {
+      const prod = target.product;
+      const previousImages = Array.isArray(prod.images) && prod.images.length > 0
+        ? [...prod.images]
+        : target.imageUrl
+          ? [target.imageUrl]
+          : [];
+      const hadCustomOverride = Boolean(systemState.overrides[prod.id]);
+
+      setIsUploading(true);
+      try {
+        await productImageManagerService.resetProductImage(prod.id);
+        const remainingImages = (prod.images || []).filter(img => img && img !== target.imageUrl);
+        if (remainingImages.length > 0) {
+          await productImageManagerService.setProductImage(prod.id, remainingImages[0], remainingImages);
+          await api.updateProduct(prod.id, { images: remainingImages });
+        } else {
+          await api.updateProduct(prod.id, { images: [] });
+        }
+        await refreshState();
+        showToast(
+          'success',
+          `Removed image from "${prod.title.slice(0, 34)}..."`,
+          {
+            durationMs: 5000,
+            onUndo: async () => {
+              if (previousImages.length > 0) {
+                await api.updateProduct(prod.id, { images: previousImages });
+                if (hadCustomOverride) {
+                  await productImageManagerService.setProductImage(prod.id, previousImages[0], previousImages);
+                } else {
+                  await productImageManagerService.setProductImage(prod.id, previousImages[0], previousImages);
+                }
+              }
+              await refreshState();
+            }
+          }
+        );
+      } catch (err: any) {
+        showToast('error', err?.message || 'Failed to remove product image');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -308,13 +651,23 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         if (i === 0) {
           firstFormat = result.format;
           firstName = result.name;
+          autoSeoEngine.autoOptimizeImageUpload({
+            imageUrl: result.url,
+            fileName: result.name,
+            productId: product.id,
+            productTitle: product.title,
+            category: product.category,
+            supplierName: product.supplierName,
+            originCountry: product.supplierCountry
+          });
         }
       }
+      setSeoRecords(autoSeoEngine.getAllSeoRecords());
       showToast(
         'success',
         files.length > 1
-          ? `Uploaded & mapped ${files.length} images (${autoWebpLossless ? 'Lossless .WEBP' : firstFormat}) to Product ID "${product.id}"!`
-          : `Updated Product ID "${product.id}" with new ${autoWebpLossless ? 'Lossless .WEBP' : firstFormat} image (${firstName})!`
+          ? `Uploaded ${files.length} images to "${product.id}" & Auto-SEO Ranked #1 for B2B Export!`
+          : `Uploaded ${autoWebpLossless ? 'Lossless .WEBP' : firstFormat} (${firstName}) & Auto-SEO Boosted "${product.title.slice(0, 28)}..." to #1 in Search Bar!`
       );
       await refreshState();
     } catch (err: any) {
@@ -539,17 +892,44 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
 
   return (
     <div className="space-y-6">
-      {/* TOAST NOTIFICATION */}
+      {/* TOAST NOTIFICATION WITH 5-SECOND UNDO ACTION */}
       {toast && (
         <div
-          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-xl shadow-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-3 duration-200 ${
+          role="status"
+          aria-live="polite"
+          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-2xl shadow-2xl border flex items-center gap-3.5 animate-in fade-in slide-in-from-top-3 duration-200 ${
             toast.type === 'success'
-              ? 'bg-emerald-950 text-emerald-100 border-emerald-700'
+              ? 'bg-slate-900 text-white border-slate-700'
               : 'bg-rose-950 text-rose-100 border-rose-700'
           }`}
         >
           <CheckCircle2 className={`w-5 h-5 shrink-0 ${toast.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`} />
           <span className="text-xs font-bold">{toast.message}</span>
+
+          {toast.onUndo && (
+            <button
+              type="button"
+              disabled={isUndoing}
+              onClick={handleTriggerUndo}
+              className="ml-2 px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer shrink-0"
+              title="Restore the deleted image within 5 seconds"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{isUndoing ? 'Restoring...' : `Undo (${undoSecondsLeft}s)`}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              clearToastTimers();
+              setToast(null);
+            }}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Dismiss notification"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -693,6 +1073,19 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
               <FolderOpen className="w-4 h-4" />
               <span>5. Uploaded Media Library ({systemState.mediaLibrary.length})</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('AUTO_SEO_ENGINE')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeSubTab === 'AUTO_SEO_ENGINE'
+                  ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/40'
+                  : 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 hover:bg-emerald-900 hover:text-white'
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              <span>6. Auto-SEO &amp; Top Search Engine ({seoRecords.length})</span>
+            </button>
           </div>
 
           {(customizedCount > 0 || systemState.globalDefaultImage) && (
@@ -824,14 +1217,41 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onClick={handleOpenAddProduct}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  title="Add a new product with custom details, MOQ, specs, and images to marketplace catalog"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Add New Product</span>
+                </button>
+
+                <button
+                  type="button"
                   disabled={selectedProductIds.size === 0 || isUploading}
-                  onClick={() => handleDeleteSelectedAssociations()}
+                  onClick={() =>
+                    setDeleteConfirmTarget({
+                      mode: 'BULK_SELECTED',
+                      targetIds: Array.from(selectedProductIds)
+                    })
+                  }
                   className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                   title="Bulk-remove custom/incorrect product image associations for all selected Product IDs"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Delete Selected ({selectedProductIds.size})</span>
                 </button>
+
+                {selectedProductIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsBulkPlaceholderModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                    title="Bulk assign a single verified placeholder image to all selected items at once"
+                  >
+                    <ImageIcon className="w-4 h-4 text-amber-300" />
+                    <span>Assign Verified Placeholder ({selectedProductIds.size})</span>
+                  </button>
+                )}
 
                 <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs font-bold cursor-pointer select-none">
                   <input
@@ -1194,7 +1614,12 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
 
                   <button
                     type="button"
-                    onClick={() => handleDeleteSelectedAssociations()}
+                    onClick={() =>
+                      setDeleteConfirmTarget({
+                        mode: 'BULK_SELECTED',
+                        targetIds: Array.from(selectedProductIds)
+                      })
+                    }
                     disabled={isUploading}
                     className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                   >
@@ -1223,9 +1648,15 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                         </label>
                         <button
                           type="button"
-                          onClick={() => handleDeleteSelectedAssociations([prod.id])}
+                          onClick={() =>
+                            setDeleteConfirmTarget({
+                              mode: 'SINGLE_PRODUCT',
+                              product: prod,
+                              imageUrl: prod.images?.[0]
+                            })
+                          }
                           className="text-slate-400 hover:text-rose-400 cursor-pointer"
-                          title="Delete image association for this Product ID"
+                          title="Delete image for this Product ID"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -1385,6 +1816,21 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                           >
                             <Crop className="w-4 h-4" />
                           </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeleteConfirmTarget({
+                                mode: 'SINGLE_PRODUCT',
+                                product,
+                                imageUrl: currentPrimary
+                              })
+                            }
+                            className="p-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-md cursor-pointer"
+                            title="Delete Image from Product"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
 
                         {isProductUploading && (
@@ -1414,10 +1860,20 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
 
                     {/* Action Footer */}
                     <div className="p-3.5 pt-0 space-y-2">
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <label className="py-2 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-center">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditProductDetails(product)}
+                          className="py-2 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="Edit each and every detail of this product (title, category, price, MOQ, specs, images)"
+                        >
+                          <Edit className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">Edit</span>
+                        </button>
+
+                        <label className="py-2 px-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors text-center">
                           <Upload className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">Upload New</span>
+                          <span className="truncate">Upload</span>
                           <input
                             type="file"
                             accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.svg,.bmp"
@@ -1433,10 +1889,26 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                         <button
                           type="button"
                           onClick={() => setActiveProductForModal(product)}
-                          className="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                         >
                           <ImageIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span className="truncate">URL / Gallery</span>
+                          <span className="truncate">Gallery</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteConfirmTarget({
+                              mode: 'SINGLE_PRODUCT',
+                              product,
+                              imageUrl: currentPrimary
+                            })
+                          }
+                          className="py-2 px-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          title="Delete image from this product (opens confirmation modal)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">Delete</span>
                         </button>
                       </div>
 
@@ -1526,6 +1998,15 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                           </td>
                           <td className="p-3.5 text-right">
                             <div className="inline-flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditProductDetails(product)}
+                                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer"
+                                title="Edit each and every detail of this product"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span>Edit Details</span>
+                              </button>
                               <label className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer">
                                 <Upload className="w-3 h-3" />
                                 <span>Upload</span>
@@ -1554,6 +2035,21 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                                 title="Crop / Studio Editor"
                               >
                                 <Crop className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeleteConfirmTarget({
+                                    mode: 'SINGLE_PRODUCT',
+                                    product,
+                                    imageUrl: currentPrimary
+                                  })
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="Delete image from this product (opens confirmation modal)"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Delete</span>
                               </button>
                             </div>
                           </td>
@@ -2477,6 +2973,206 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       )}
 
       {/* =====================================================================
+          TAB 6: AUTOMATED B2B PORTAL & EXPORT SEO ENGINE (TOP SEARCH RANKER)
+      ===================================================================== */}
+      {activeSubTab === 'AUTO_SEO_ENGINE' && (() => {
+        const sched = autoSeoEngine.getAutonomousSchedulerStatus();
+        return (
+        <div className="space-y-5">
+          <div className="bg-slate-900 text-white border border-slate-800 rounded-2xl p-6 shadow-md">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-extrabold uppercase tracking-wider">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>24/7/365 Autonomous 30-Min SEO Daemon Active</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-mono font-bold uppercase">
+                    <span>Zero Permission Required (Admin Approval Bypassed)</span>
+                  </div>
+                </div>
+                <h2 className="text-xl font-black text-white">
+                  Trade Heaven Automated B2B Portal &amp; Export SEO Engine
+                </h2>
+                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
+                  Runs automatically <strong>every 30 minutes, 24 hours a day, 365 days a year (48x/day · 17,520x/year)</strong> without anyone&apos;s permission—plus instantly on every <strong>Image</strong>, <strong>Product</strong>, or <strong>Article</strong> upload—to maximize B2B portal &amp; export search visibility and rank items <strong>#1 in the Search Bar</strong>.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    autoSeoEngine.registerCatalogForAutonomousSeo(allProducts);
+                    const updatedSched = autoSeoEngine.runAutonomous30MinCycle('IMMEDIATE_VISIBILITY_BOOST');
+                    setSeoRecords(autoSeoEngine.getAllSeoRecords());
+                    showToast(
+                      'success',
+                      `Executed Autonomous SEO Cycle #${updatedSched.totalCyclesExecuted}! Next automatic 30-min cycle at ${new Date(updatedSched.nextRunAt).toLocaleTimeString()}.`
+                    );
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-2 shadow-sm cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Force Extra SEO Cycle Now</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddProduct}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Upload New Product (Auto-SEO)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 24/7/365 Unconditional 30-Minute Scheduler Telemetry Grid */}
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700">
+                <div className="text-[10px] font-mono uppercase text-slate-400">Autonomous Schedule</div>
+                <div className="text-sm font-black text-emerald-400 mt-0.5">Every 30 Minutes (24/7/365)</div>
+                <div className="text-[11px] text-slate-300 mt-0.5">48 runs/day · 17,520 runs/year</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700">
+                <div className="text-[10px] font-mono uppercase text-slate-400">Permission Governance</div>
+                <div className="text-sm font-black text-amber-300 mt-0.5">Unconditional (No Permission)</div>
+                <div className="text-[11px] text-slate-300 mt-0.5">Runs without user or admin approval</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700">
+                <div className="text-[10px] font-mono uppercase text-slate-400">Last Auto-SEO Cycle</div>
+                <div className="text-sm font-black text-white mt-0.5">
+                  {new Date(sched.lastRunAt).toLocaleTimeString()}
+                </div>
+                <div className="text-[11px] text-slate-300 mt-0.5">
+                  Cycle #{sched.totalCyclesExecuted} · {seoRecords.length} items indexed
+                </div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700">
+                <div className="text-[10px] font-mono uppercase text-slate-400">Next Auto-SEO Cycle</div>
+                <div className="text-sm font-black text-sky-300 mt-0.5">
+                  {new Date(sched.nextRunAt).toLocaleTimeString()}
+                </div>
+                <div className="text-[11px] text-slate-300 mt-0.5">
+                  Auto-updates Sitemap &amp; JSON-LD @graph
+                </div>
+              </div>
+            </div>
+
+
+            {/* Filter & Search Bar for SEO Index */}
+            <div className="mt-5 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(['ALL', 'product', 'image', 'article'] as const).map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setSeoFilterType(type)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase cursor-pointer transition-colors ${
+                      seoFilterType === type
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {type === 'ALL' ? `All Indexed (${seoRecords.length})` : `${type}s`}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={seoSearchTerm}
+                  onChange={e => setSeoSearchTerm(e.target.value)}
+                  placeholder="Search indexed SEO titles, B2B export keywords, or IDs..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SEO Records List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {seoRecords
+              .filter(r => seoFilterType === 'ALL' || r.entityType === seoFilterType)
+              .filter(r => {
+                if (!seoSearchTerm.trim()) return true;
+                const q = seoSearchTerm.toLowerCase();
+                return (
+                  r.title.toLowerCase().includes(q) ||
+                  r.seoTitle.toLowerCase().includes(q) ||
+                  r.entityId.toLowerCase().includes(q) ||
+                  r.keywords.some(k => k.toLowerCase().includes(q))
+                );
+              })
+              .slice(0, 30)
+              .map(rec => (
+                <div
+                  key={rec.id}
+                  className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between gap-3"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={rec.imageUrl}
+                          alt={rec.altText}
+                          className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono text-[10px] font-bold uppercase">
+                              {rec.entityType} · SEO {rec.seoScore}/100
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[10px] font-bold">
+                              #1 TOP SEARCH BOOST (+{rec.searchPriorityBoost})
+                            </span>
+                          </div>
+                          <div className="text-xs font-black text-slate-900 truncate" title={rec.seoTitle}>
+                            {rec.seoTitle}
+                          </div>
+                          <div className="text-[10px] font-mono text-slate-500 truncate">
+                            Canonical: {rec.canonicalUrl}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <strong className="text-slate-800">Meta Description:</strong> {rec.metaDescription}
+                    </p>
+
+                    <div className="text-[11px] text-slate-600">
+                      <strong className="text-slate-800">Auto Image Alt Text:</strong>{' '}
+                      <span className="italic">{rec.altText}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {rec.b2bExportTags.slice(0, 6).map(tag => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>Schema.org: {(rec.jsonLd as any)?.['@type'] || 'Product'} JSON-LD Active</span>
+                    <span>Updated: {new Date(rec.updatedAt).toLocaleTimeString()}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* =====================================================================
           MODAL 1: SINGLE PRODUCT IMAGE & GALLERY MANAGER MODAL
       ===================================================================== */}
       {activeProductForModal && (
@@ -2556,6 +3252,551 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
           }}
         />
       )}
+
+      {/* =====================================================================
+          EDIT PRODUCT DETAILS / ADD NEW PRODUCT MODAL
+      ===================================================================== */}
+      {(isAddingNewProduct || editingProduct) && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-4xl w-full border border-slate-200 shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white p-6 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center font-black text-white shrink-0">
+                  {isAddingNewProduct ? <Plus className="w-5 h-5" /> : <Edit className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-white">
+                    {isAddingNewProduct ? 'Add New Product to Marketplace Catalog' : `Edit All Details for Product (${productForm.id})`}
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    {isAddingNewProduct
+                      ? 'Specify complete product specs, pricing, MOQ, supplier info, and images to publish new listing.'
+                      : 'Update title, category, price range, MOQ, unit, specifications, description, and photo gallery.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingNewProduct(false);
+                  setEditingProduct(null);
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveProductForm} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+              {/* Section 1: Basic Metadata */}
+              <div className="space-y-4">
+                <div className="text-xs font-black uppercase tracking-wider text-blue-600 border-b border-slate-100 pb-2">
+                  1. Title, Category &amp; SKU ID
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="md:col-span-8 space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Product Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.title}
+                      onChange={e => setProductForm({ ...productForm, title: e.target.value })}
+                      placeholder="e.g. Gourmet Grade A Madagascar Bourbon Vanilla Beans"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4 space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Product ID / SKU *</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.id}
+                      onChange={e => setProductForm({ ...productForm, id: e.target.value })}
+                      placeholder="e.g. prod-vanilla-001"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                      disabled={!isAddingNewProduct}
+                    />
+                  </div>
+
+                  <div className="md:col-span-6 space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Category *</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.category}
+                      onChange={e => setProductForm({ ...productForm, category: e.target.value })}
+                      placeholder="e.g. Vanilla Beans & Spices"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="md:col-span-6 space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Sub-Category</label>
+                    <input
+                      type="text"
+                      value={productForm.subCategory}
+                      onChange={e => setProductForm({ ...productForm, subCategory: e.target.value })}
+                      placeholder="e.g. Bourbon Gourmet Grade A"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Pricing, MOQ & Sourcing Parameters */}
+              <div className="space-y-4">
+                <div className="text-xs font-black uppercase tracking-wider text-blue-600 border-b border-slate-100 pb-2">
+                  2. Pricing, Minimum Order Quantity (MOQ) &amp; Origin
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">FOB Price ($ USD)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={productForm.priceUsd}
+                      onChange={e => setProductForm({ ...productForm, priceUsd: Number(e.target.value) })}
+                      placeholder="180"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Price Unit</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.priceUnit}
+                      onChange={e => setProductForm({ ...productForm, priceUnit: e.target.value })}
+                      placeholder="Kg (e.g. $180 / Kg)"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Minimum Order Quantity (MOQ)</label>
+                    <input
+                      type="number"
+                      required
+                      value={productForm.moq}
+                      onChange={e => setProductForm({ ...productForm, moq: Number(e.target.value) })}
+                      placeholder="1"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">MOQ Unit</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.moqUnit}
+                      onChange={e => setProductForm({ ...productForm, moqUnit: e.target.value })}
+                      placeholder="Kgs (e.g. Kgs, Units, Metric Tons)"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Supplier / Exporter Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.supplierName}
+                      onChange={e => setProductForm({ ...productForm, supplierName: e.target.value })}
+                      placeholder="e.g. Trade Heaven Exporters Ltd"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Supplier Country</label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.supplierCountry}
+                      onChange={e => setProductForm({ ...productForm, supplierCountry: e.target.value })}
+                      placeholder="e.g. Madagascar"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Port of Dispatch / Location</label>
+                    <input
+                      type="text"
+                      value={productForm.portOfDispatch}
+                      onChange={e => setProductForm({ ...productForm, portOfDispatch: e.target.value })}
+                      placeholder="e.g. Port of Toamasina"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Description & Specifications */}
+              <div className="space-y-4">
+                <div className="text-xs font-black uppercase tracking-wider text-blue-600 border-b border-slate-100 pb-2">
+                  3. Description &amp; Technical Specifications
+                </div>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">Product Description</label>
+                    <textarea
+                      rows={3}
+                      value={productForm.description}
+                      onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                      placeholder="Detailed wholesale product description, quality guarantees, packaging specs..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
+                    />
+                  </div>
+
+                  {/* Specifications List Editor */}
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-slate-700 uppercase">Key Specifications</label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setProductForm({
+                            ...productForm,
+                            specifications: [...productForm.specifications, { name: '', value: '' }]
+                          })
+                        }
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Spec Row</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {productForm.specifications.map((spec, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="Attribute (e.g. Grade, Moisture)"
+                            value={spec.name}
+                            onChange={e => {
+                              const list = [...productForm.specifications];
+                              list[idx].name = e.target.value;
+                              setProductForm({ ...productForm, specifications: list });
+                            }}
+                            className="w-1/3 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Value (e.g. Grade A Gourmet 16-18cm)"
+                            value={spec.value}
+                            onChange={e => {
+                              const list = [...productForm.specifications];
+                              list[idx].value = e.target.value;
+                              setProductForm({ ...productForm, specifications: list });
+                            }}
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-900"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProductForm({
+                                ...productForm,
+                                specifications: productForm.specifications.filter((_, i) => i !== idx)
+                              })
+                            }
+                            className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Image Gallery */}
+              <div className="space-y-4">
+                <div className="text-xs font-black uppercase tracking-wider text-blue-600 border-b border-slate-100 pb-2">
+                  4. Product Image Gallery &amp; File Uploads
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-[11px] font-bold text-slate-700 uppercase">
+                      Current Images ({productForm.images.length})
+                    </label>
+
+                    <label className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload &amp; Add File(s)</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.svg,.bmp"
+                        className="hidden"
+                        onChange={async e => {
+                          const files = e.target.files;
+                          if (!files || files.length === 0) return;
+                          setIsUploading(true);
+                          try {
+                            const newUrls: string[] = [];
+                            for (let i = 0; i < files.length; i++) {
+                              const res = await productImageManagerService.uploadAndAssignImageFile(files[i], {
+                                targetFormat: autoWebpLossless ? 'webp' : outputFormat,
+                                quality: autoWebpLossless ? 1.0 : jpegQuality,
+                                autoWebpLossless
+                              });
+                              newUrls.push(res.url);
+                            }
+                            setProductForm(prev => ({
+                              ...prev,
+                              images: [...prev.images, ...newUrls]
+                            }));
+                            showToast('success', `Uploaded & attached ${newUrls.length} image(s)!`);
+                          } catch (err: any) {
+                            showToast('error', err?.message || 'Upload failed');
+                          } finally {
+                            setIsUploading(false);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Image Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    {productForm.images.map((imgUrl, idx) => (
+                      <div key={idx} className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group h-28">
+                        <img src={imgUrl} alt={`Product ${idx}`} className="w-full h-full object-cover" />
+                        <span className="absolute top-1 left-1 bg-slate-900/80 text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">
+                          {idx === 0 ? 'Primary' : `#${idx + 1}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteConfirmTarget({
+                              mode: 'FORM_GALLERY_IMAGE',
+                              product: editingProduct || undefined,
+                              imageUrl: imgUrl,
+                              imageIndex: idx
+                            })
+                          }
+                          className="absolute top-1 right-1 p-1 rounded-lg bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          title="Delete Image (Confirmation Required)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add URL Field */}
+                  <div className="flex gap-2 pt-2">
+                    <input
+                      type="text"
+                      placeholder="Paste image URL to attach..."
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = (e.target as HTMLInputElement).value.trim();
+                          if (val) {
+                            setProductForm({
+                              ...productForm,
+                              images: [...productForm.images, val]
+                            });
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 5: Live Automated B2B Portal & Export SEO Preview */}
+              {(() => {
+                const liveSeo = autoSeoEngine.previewProductSeo({
+                  id: productForm.id,
+                  title: productForm.title || 'New Wholesale Export Product',
+                  category: productForm.category || 'Global B2B Export',
+                  supplierName: productForm.supplierName || 'Trade Heaven Verified Exporter',
+                  supplierCountry: productForm.supplierCountry || 'Global',
+                  imageUrl: productForm.images[0],
+                  price: `$${productForm.priceUsd} / ${productForm.priceUnit}`,
+                  moq: `${productForm.moq} ${productForm.moqUnit}`
+                }, true);
+                return (
+                  <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                        <Search className="w-4 h-4 text-emerald-600" />
+                        <span>5. Automatic B2B Portal &amp; Export SEO (Auto-Generated on Save)</span>
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-mono text-[10px] font-bold">
+                        SEO SCORE: {liveSeo.seoScore}/100 · #1 TOP SEARCH BAR RANK
+                      </span>
+                    </div>
+                    <div className="text-xs font-bold text-blue-800 truncate">
+                      {liveSeo.seoTitle}
+                    </div>
+                    <div className="text-[11px] text-slate-700">
+                      {liveSeo.metaDescription}
+                    </div>
+                    <div className="text-[10px] font-mono text-emerald-800 truncate">
+                      <strong>Auto Image Alt:</strong> {liveSeo.altText}
+                    </div>
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {liveSeo.b2bExportTags.slice(0, 6).map(t => (
+                        <span
+                          key={t}
+                          className="px-2 py-0.5 rounded bg-white border border-emerald-200 text-emerald-800 text-[10px] font-bold"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Submit Buttons */}
+              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingNewProduct(false);
+                    setEditingProduct(null);
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploading}
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isAddingNewProduct ? 'Save & Auto-SEO Rank #1' : 'Save Changes & Update SEO'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: CONFIRM PERMANENT IMAGE DELETION
+      ===================================================================== */}
+      {deleteConfirmTarget && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={e => {
+            if (e.target === e.currentTarget) setDeleteConfirmTarget(null);
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-100 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 block">
+                    Deletion Safety Check
+                  </span>
+                  <h3 className="text-base font-black text-slate-900">
+                    Confirm Image Removal
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmTarget(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {deleteConfirmTarget.mode === 'BULK_SELECTED'
+                  ? `Are you sure you want to permanently remove the custom image associations for ${deleteConfirmTarget.targetIds?.length || 0} selected product(s)?`
+                  : deleteConfirmTarget.mode === 'FORM_GALLERY_IMAGE'
+                    ? `Are you sure you want to permanently remove this gallery image (#${(deleteConfirmTarget.imageIndex ?? 0) + 1}) from "${deleteConfirmTarget.product?.title || productForm.title || 'this product'}"?`
+                    : `Are you sure you want to permanently remove this image from "${deleteConfirmTarget.product?.title || 'this product'}" (ID: ${deleteConfirmTarget.product?.id || 'N/A'})?`}
+              </p>
+
+              {deleteConfirmTarget.imageUrl && (
+                <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 shrink-0">
+                    <SafeImage
+                      src={deleteConfirmTarget.imageUrl}
+                      alt={deleteConfirmTarget.product?.title || 'Target Image'}
+                      productId={deleteConfirmTarget.product?.id}
+                      productTitle={deleteConfirmTarget.product?.title}
+                      category={deleteConfirmTarget.product?.category}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    {deleteConfirmTarget.product && (
+                      <div className="text-xs font-bold text-slate-900 truncate">
+                        {deleteConfirmTarget.product.title}
+                      </div>
+                    )}
+                    <div className="text-[10px] font-mono text-slate-500 truncate">
+                      {deleteConfirmTarget.imageUrl}
+                    </div>
+                    <div className="text-[10px] font-semibold text-rose-600">
+                      This action prevents accidental deletions and will take effect immediately upon confirmation.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmTarget(null)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={handleExecuteConfirmedDelete}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Confirm &amp; Permanently Remove</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isBulkPlaceholderModalOpen && (
+        <BulkAssignPlaceholderModal
+          selectedCount={selectedProductIds.size}
+          selectedProductIds={selectedProductIds}
+          allProducts={allProducts}
+          onClose={() => setIsBulkPlaceholderModalOpen(false)}
+          onApplied={async (msg) => {
+            await refreshState();
+            showToast('success', msg);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -2581,14 +3822,34 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
   );
   const [newGalleryUrl, setNewGalleryUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [pendingGalleryDeleteIndex, setPendingGalleryDeleteIndex] = useState<number | null>(null);
+  const [galleryUndoState, setGalleryUndoState] = useState<{
+    previousGallery: string[];
+    previousPrimary: string;
+    secondsLeft: number;
+  } | null>(null);
+  const galleryUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const galleryUndoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [mediaLibrary, setMediaLibrary] = useState<MediaLibraryItem[]>(
     () => productImageManagerService.getState().mediaLibrary
   );
+
+  const clearGalleryUndoTimers = () => {
+    if (galleryUndoTimerRef.current) {
+      clearTimeout(galleryUndoTimerRef.current);
+      galleryUndoTimerRef.current = null;
+    }
+    if (galleryUndoIntervalRef.current) {
+      clearInterval(galleryUndoIntervalRef.current);
+      galleryUndoIntervalRef.current = null;
+    }
+  };
 
   useEffect(() => {
     productImageManagerService.syncFromServer().then(st => {
       setMediaLibrary(st.mediaLibrary);
     });
+    return () => clearGalleryUndoTimers();
   }, []);
 
   const handleFileUpload = async (file: File, applyToAllProducts = false) => {
@@ -2799,8 +4060,9 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
                     )}
                     <button
                       type="button"
-                      onClick={() => setGalleryUrls(prev => prev.filter((_, i) => i !== idx))}
+                      onClick={() => setPendingGalleryDeleteIndex(idx)}
                       className="p-1 rounded bg-rose-600 text-white cursor-pointer"
+                      title="Delete Gallery Image (Confirmation Required)"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -2808,6 +4070,85 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
                 </div>
               ))}
             </div>
+
+            {pendingGalleryDeleteIndex !== null && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-rose-800 font-bold">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>
+                    Confirm permanent removal of gallery image #{pendingGalleryDeleteIndex + 1}?
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPendingGalleryDeleteIndex(null)}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prevList = galleryUrls.filter(Boolean);
+                      const prevPrim = primaryUrl;
+                      const targetUrl = prevList[pendingGalleryDeleteIndex];
+                      const next = prevList.filter((_, i) => i !== pendingGalleryDeleteIndex);
+                      setGalleryUrls(next.length > 0 ? next : ['']);
+                      if (targetUrl === primaryUrl) {
+                        setPrimaryUrl(next[0] || '');
+                      }
+                      setPendingGalleryDeleteIndex(null);
+
+                      // Start 5-second Undo toast inside QuickProductImageModal
+                      clearGalleryUndoTimers();
+                      setGalleryUndoState({
+                        previousGallery: prevList,
+                        previousPrimary: prevPrim,
+                        secondsLeft: 5
+                      });
+                      const startedAt = Date.now();
+                      galleryUndoIntervalRef.current = setInterval(() => {
+                        const elapsed = Date.now() - startedAt;
+                        const remaining = Math.max(1, Math.ceil((5000 - elapsed) / 1000));
+                        setGalleryUndoState(prev => (prev ? { ...prev, secondsLeft: remaining } : null));
+                      }, 250);
+                      galleryUndoTimerRef.current = setTimeout(() => {
+                        clearGalleryUndoTimers();
+                        setGalleryUndoState(null);
+                      }, 5000);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black cursor-pointer"
+                  >
+                    Confirm Delete
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {galleryUndoState && (
+              <div className="p-3 rounded-xl bg-slate-900 text-white border border-slate-700 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Gallery image removed.</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGalleryUrls(galleryUndoState.previousGallery);
+                      setPrimaryUrl(galleryUndoState.previousPrimary);
+                      clearGalleryUndoTimers();
+                      setGalleryUndoState(null);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Undo ({galleryUndoState.secondsLeft}s)</span>
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="flex gap-2 pt-1">
               <input
                 type="text"
@@ -2894,3 +4235,220 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
     </div>
   );
 };
+
+export interface BulkAssignPlaceholderModalProps {
+  selectedCount: number;
+  selectedProductIds: Set<string>;
+  allProducts: Product[];
+  onClose: () => void;
+  onApplied: (message: string) => void;
+}
+
+export const VERIFIED_PLACEHOLDERS = [
+  {
+    id: 'vanilla-spices',
+    title: 'Gourmet Vanilla Beans & Spices',
+    category: 'Agriculture & Spices',
+    url: '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'
+  },
+  {
+    id: 'port-shipping',
+    title: 'Cargo Ships & Maritime Port Logistics',
+    category: 'Industrial Shipping & Port',
+    url: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+  },
+  {
+    id: 'agri-grains',
+    title: 'Bulk Grains, Harvest & Agriculture',
+    category: 'Agriculture & Food',
+    url: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'machinery-industry',
+    title: 'Heavy Industrial Machinery & Equipment',
+    category: 'Machinery & Tools',
+    url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'apparel-textiles',
+    title: 'Textiles, Fabrics & Apparel Wholesale',
+    category: 'Textiles & Garments',
+    url: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'construction-materials',
+    title: 'Steel, Cement & Construction Supplies',
+    category: 'Construction & Building',
+    url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'gold-bullion',
+    title: 'Refined Gold Bars & Precious Metals',
+    category: 'Metals & Mining',
+    url: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'seafood-coldstorage',
+    title: 'Fresh Seafood & Cold Storage Logistics',
+    category: 'Seafood & Cold Chain',
+    url: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800&auto=format&fit=crop&q=80'
+  }
+];
+
+export const BulkAssignPlaceholderModal: React.FC<BulkAssignPlaceholderModalProps> = ({
+  selectedCount,
+  selectedProductIds,
+  allProducts,
+  onClose,
+  onApplied
+}) => {
+  const [selectedUrl, setSelectedUrl] = useState<string>(VERIFIED_PLACEHOLDERS[0].url);
+  const [customUrlInput, setCustomUrlInput] = useState<string>('');
+  const [isApplying, setIsApplying] = useState<boolean>(false);
+
+  const selectedProductsList = useMemo(() => {
+    return allProducts.filter(p => selectedProductIds.has(p.id));
+  }, [allProducts, selectedProductIds]);
+
+  const effectiveUrl = customUrlInput.trim() || selectedUrl;
+
+  const handleApply = async () => {
+    if (!effectiveUrl) return;
+    setIsApplying(true);
+    try {
+      const ids = Array.from(selectedProductIds);
+      await productImageManagerService.setBulkProductImages(ids, effectiveUrl);
+      onApplied(`Successfully assigned verified placeholder image to ${ids.length} selected product(s).`);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in fade-in zoom-in duration-150">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase tracking-wider">
+                Admin Bulk Operations
+              </span>
+              <span className="text-xs font-bold text-slate-500">
+                {selectedCount} Item(s) Selected
+              </span>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mt-1">
+              Bulk Assign Verified Placeholder Image
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Selected Items Preview */}
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-2">
+          <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
+            <span>Target Selected Items ({selectedProductsList.length}):</span>
+            <span className="text-[11px] text-slate-500 font-normal">All selected products will be assigned this verified image</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+            {selectedProductsList.map(p => (
+              <span
+                key={p.id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-semibold text-slate-800 shadow-2xs"
+              >
+                <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span className="truncate max-w-[160px]">{p.title}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Preset Verified Placeholders Grid */}
+        <div className="space-y-2.5">
+          <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+            Select a Verified Placeholder Preset:
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-64 overflow-y-auto p-1">
+            {VERIFIED_PLACEHOLDERS.map(item => {
+              const isSelected = selectedUrl === item.url && !customUrlInput.trim();
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedUrl(item.url);
+                    setCustomUrlInput('');
+                  }}
+                  className={`relative rounded-2xl overflow-hidden border-2 text-left transition-all p-1.5 flex flex-col justify-between cursor-pointer ${
+                    isSelected
+                      ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20 shadow-md'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="relative h-20 w-full rounded-xl overflow-hidden bg-slate-100">
+                    <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5 bg-blue-600 text-white rounded-full p-1 shadow-sm">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-2 px-1 space-y-0.5">
+                    <div className="text-[11px] font-black text-slate-900 line-clamp-1">{item.title}</div>
+                    <div className="text-[9px] font-semibold text-slate-500">{item.category}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Or Custom URL Input */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-slate-700 block">
+            Or Enter Custom Verified Image URL:
+          </label>
+          <input
+            type="url"
+            value={customUrlInput}
+            onChange={e => setCustomUrlInput(e.target.value)}
+            placeholder="https://images.unsplash.com/photo-... or /assets/..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
+          />
+        </div>
+
+        {/* Footer Actions */}
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isApplying || !effectiveUrl}
+            onClick={handleApply}
+            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-black shadow-md flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Apply Placeholder to {selectedCount} Selected Item(s)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const ProductImageAdmin = DedicatedProductImageSystem;
+

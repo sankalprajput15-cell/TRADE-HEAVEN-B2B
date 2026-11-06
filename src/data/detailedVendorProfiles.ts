@@ -27,8 +27,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 520,
     factorySizeSqM: 38000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80&sig=1',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     tagline: 'Aerospace-Grade Precision Forged Alloy Wheels, Turbochargers & Monobloc Braking Hardware',
     description: 'Apex Dynamics is an IATF 16949-certified tier-1 manufacturer specializing in aerospace-grade forged 6061-T6 aluminum alloy wheels, CNC billet turbocharger systems, and monobloc racing brake assemblies. Serving professional motorsport series, supercar tuners, and wholesale distributors in over 45 countries with full custom engineering and OEM private label support.',
     acceptedPaymentTerms: [
@@ -62,7 +62,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     contactPhone: '+1 (317) 890-4420',
     whatsapp: '+13178904420',
     contactPersonDetails: {
-      avatarUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80&sig=3',
+      avatarUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
       name: 'Brett Vance',
       designation: 'Director of International Trade & Motorsport OEM Relations',
       email: 'contact@apexdynamics.mock',
@@ -82,8 +82,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'TÜV SÜD Automotive Bureau',
         issueDate: '2023-04-10',
         expiryDate: '2026-04-09',
-        documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80&sig=4',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80&sig=5',
+        documentUrl: 'https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Design, precision forging, CNC finishing, and structural verification of alloy wheels and powertrain hardware.'
@@ -96,8 +96,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'TÜV Rheinland Kraftfahrt GmbH (Germany)',
         issueDate: '2024-01-15',
         expiryDate: '2027-01-14',
-        documentUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80&sig=6',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80&sig=7',
+        documentUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Radial fatigue, dynamic cornering bending test, and 13-degree impact resistance compliance (ECE R124).'
@@ -110,8 +110,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'SGS United Kingdom Ltd.',
         issueDate: '2023-09-01',
         expiryDate: '2026-08-31',
-        documentUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80450133064473-71024230f91b?w=800&auto=format&fit=crop&q=80&sig=8',
-        thumbnailUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+        documentUrl: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Quality control across casting, 10,000-ton forging presses, anodizing, and multi-axis milling.'
@@ -124,8 +124,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'Japan Vehicle Inspection Association (VIA)',
         issueDate: '2024-03-01',
         expiryDate: '2027-02-28',
-        documentUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80&sig=10',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80&sig=11',
+        documentUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Official accreditation for lightweight forged wheels exported to Japanese domestic market.'
@@ -158,28 +158,28 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
           id: 'tour-1',
           title: '10,000-Ton Hydraulic Forging Press Line',
           department: 'Heavy Forging & Forming Bay',
-          imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=12',
+          imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80',
           caption: 'High-temperature forging of aerospace 6061-T6 aluminum billets into dense wheel blanks.'
         },
         {
           id: 'tour-2',
           title: '5-Axis DMG MORI CNC Machining Center',
           department: 'Precision Milling & Finishing',
-          imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=13',
+          imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
           caption: 'Ultra-precision high-speed 5-axis CNC machining creating intricate multi-spoke motorsport profiles.'
         },
         {
           id: 'tour-3',
           title: 'Automated Dust-Free Powder Coating & Anodizing',
           department: 'Surface Finishing & Treatment',
-          imageUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=14',
+          imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80',
           caption: 'Class-1000 cleanroom robotic electro-static coating with ceramic clear-coat thermal curing.'
         },
         {
           id: 'tour-4',
           title: 'Metrology & CMM Quality Testing Laboratory',
           department: 'QA & Metrology Center',
-          imageUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=15',
+          imageUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
           caption: 'Laser 3D coordinate validation guaranteeing runout tolerances within ±0.005mm.'
         }
       ]
@@ -210,8 +210,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 680,
     factorySizeSqM: 80000,
     productionLines: 20,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    bannerUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=17',
+    logoUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1624365169364-0640dd10e180?w=800&auto=format&fit=crop&q=80',
     tagline: 'Grade-A LiFePO4 Battery Cells, 48V Rack Storage & Commercial Solar Energy Systems',
     description: 'ApexPower is a tier-1 energy storage manufacturer operating 80,000 m² of automated cleanroom facilities in Shenzhen. Specializing in high-cycle LiFePO4 cells (6000+ cycles), residential solar storage batteries, server-rack UPS systems, and smart cloud-monitored battery management systems (BMS).',
     acceptedPaymentTerms: [
@@ -244,7 +244,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     contactPhone: '+86 755 8392 4110',
     whatsapp: '+8613800138000',
     contactPersonDetails: {
-      avatarUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80580489944761-15a19d654956?w=800&auto=format&fit=crop&q=80&sig=18',
+      avatarUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
       name: 'Elena Zhao',
       designation: 'Senior International Sales Director & Energy Storage Specialist',
       email: 'contact@apexpower.mock',
@@ -264,8 +264,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'Underwriters Laboratories (UL LLC)',
         issueDate: '2024-02-01',
         expiryDate: '2027-01-31',
-        documentUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=19',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=20',
+        documentUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Stationary battery energy storage systems, thermal runaway containment, and BMS safety logic.'
@@ -278,8 +278,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'SGS Fimko Ltd. (CE 0598)',
         issueDate: '2023-06-12',
         expiryDate: '2026-06-11',
-        documentUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=21',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=22',
+        documentUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Compliance with EN 62619, EN 61000-6-1/3 standards for grid-tied residential energy storage.'
@@ -292,8 +292,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'Shanghai Research Institute of Chemical Industry',
         issueDate: '2024-01-08',
         expiryDate: '2026-12-31',
-        documentUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=24',
+        documentUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Altitude simulation, thermal test, vibration, shock, external short circuit, impact, overcharge.'
@@ -318,21 +318,21 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
           id: 'tour-batt-1',
           title: 'Automated Cleanroom Cell Assembly Line',
           department: 'Cell Stacking & Packaging',
-          imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=25',
+          imageUrl: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
           caption: 'Class-10,000 humidity-controlled cleanroom for precision electrode winding and electrolyte filling.'
         },
         {
           id: 'tour-batt-2',
           title: 'Robotic Laser Welding & Busbar Bonding Bay',
           department: 'Pack Assembly Bay',
-          imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=26',
+          imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
           caption: 'High-speed robotic fiber lasers bonding copper-nickel busbars with zero heat degradation.'
         },
         {
           id: 'tour-batt-3',
           title: 'Full Aging & Formation Testing Center',
           department: 'Burn-In & QC Testing',
-          imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=27',
+          imageUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
           caption: 'Multi-cycle formation and thermal aging racks ensuring 100% capacity matching and zero early decay.'
         }
       ]
@@ -363,8 +363,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 390,
     factorySizeSqM: 65000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=28',
-    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=29',
+    logoUrl: 'https://images.unsplash.com/photo-1589758438368-0ad531db3366?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1624365169364-0640dd10e180?w=800&auto=format&fit=crop&q=80',
     tagline: 'Industrial Petrochemicals, Virgin HDPE Resins & Specialty Titanium Dioxide (TiO2)',
     description: 'Sudarshan Petrochem is an ISO 9001 and REACH-certified producer of chemical commodities, titanium dioxide pigment, polymer resins, industrial solvents, and water treatment compounds. Supplying international packaging converters, paint manufacturers, and industrial compounders across Europe, Middle East, and the Americas.',
     acceptedPaymentTerms: [
@@ -397,8 +397,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'European Chemicals Agency (ECHA)',
         issueDate: '2023-05-10',
         expiryDate: '2026-05-09',
-        documentUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=31',
+        documentUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Full registration of Titanium Dioxide (TiO2) and Polyethylene grades for European import.'
@@ -435,7 +435,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 0,
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=32',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     tagline: 'Bulk Commodity Exporter',
     description: 'Astra Commodities Llc is a bulk exporter specializing in commodities including diesel fuel, metals, and industrial materials.',
@@ -481,7 +481,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 0,
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=33',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     tagline: 'Largest Independent Inter-Dealer Broker',
     description: 'NetGas Energy is the largest independent inter-dealer broker of commodities, focusing on global commodity markets with high-quality execution and technological innovation.',
@@ -528,8 +528,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 284,
     factorySizeSqM: 18000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80&sig=34',
-    bannerUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=35',
+    logoUrl: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80',
     tagline: 'Premier European Wholesale Exporter of Agro Fertilizers, Pure Oils, Polymers, Machinery & Commodities',
     description: 'EEC POLAND SP ZOO is an accredited European wholesale trading and export house based in Warsaw, Poland. Supplying verified international buyers across 40+ countries with top-tier water-soluble MAP & NPK fertilizers, refined edible oils, fresh agricultural produce, recycled hot-washed PET polymer flakes, concrete mixers, go-karts, automotive components, and food commodities with certified Baltic sea freight and road transport.',
     acceptedPaymentTerms: [
@@ -563,7 +563,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     contactPhone: '+48 22 849 2011',
     whatsapp: '+48228492011',
     contactPersonDetails: {
-      avatarUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80&sig=36',
+      avatarUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
       name: 'Marek Kowalski',
       designation: 'Head of International Trade & Export Logistics',
       email: 'export@eecpoland.trade',
@@ -583,8 +583,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'Polish Centre for Testing and Certification (PCBC)',
         issueDate: '2024-02-10',
         expiryDate: '2027-02-09',
-        documentUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=38',
+        documentUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Wholesale, storage, and global export distribution of agricultural commodities, chemical fertilizers, polymers, and machinery.'
@@ -597,8 +597,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'TÜV Rheinland Polska Sp. z o.o.',
         issueDate: '2024-03-01',
         expiryDate: '2027-02-28',
-        documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=39',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=40',
+        documentUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Procurement, packaging, and export of edible oils, grains, fresh fruits, eggs, and food staples.'
@@ -611,8 +611,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'European Chemicals Agency (ECHA) Registered',
         issueDate: '2023-11-15',
         expiryDate: '2026-11-14',
-        documentUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=41',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=42',
+        documentUrl: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true,
         scope: 'Conformity of recycled PET flakes and technical fertilizer compounds with EU environmental thresholds.'
@@ -650,7 +650,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     factorySizeSqM: 45000,
     productionLines: 8,
     logoUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
-    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     tagline: 'Verified Australian Thermal & Coking Coal Exporter • Basic Plan Holder',
     description: 'IMPORTATION FADE-TECH is a Trade Heaven Basic Plan Holder. Specializing in high-calorific Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal for steelworks, and High-Carbon PCI Coal. Direct street address and authorized representative contact lines are protected for Paid Members.',
     acceptedPaymentTerms: ['Offline Bank Wire Transfer (Direct On-Site Transfer Disabled)', 'Irrevocable L/C at Sight', 'SBLC / DLC'],
@@ -699,8 +699,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'SGS Australia Inspection Services',
         issueDate: '2026-08-15',
         expiryDate: '2027-08-14',
-        documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true
       }
@@ -736,8 +736,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 168,
     factorySizeSqM: 28000,
     productionLines: 6,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     tagline: 'Verified Australian Fuel, EN590 10PPM Diesel, Jet A-1 & Petroleum Commodity Brokerage',
     description: 'MP Commodity Brokers Australia Pty Ltd is a verified Paid Basic Plan member with all platform services enabled. Specializing in bulk Fuel and Petroleum commodities including EN590 10PPM Ultra-Low Sulfur Diesel, Aviation Turbine Fuel (Jet A-1), D6 Virgin Fuel Oil, and Automotive/Marine Gasoil. Accepted Payment: Bank transfer.',
     acceptedPaymentTerms: ['Bank transfer', 'T/T Bank Wire Transfer', 'Irrevocable L/C at Sight', 'SBLC / DLC'],
@@ -802,14 +802,14 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
           id: 'tour-mp-1',
           title: 'Bulk Fuel Tank Farm & Petroleum Loading Terminal',
           department: 'Fuel Storage & Tanker Dispatch',
-          imageUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+          imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
           caption: 'Bulk fuel storage tanks and marine tanker loading terminal in Sydney, Australia.'
         },
         {
           id: 'tour-mp-2',
           title: 'SGS Fuel Assay, Octane & Sulfur Content Testing Lab',
           department: 'Petroleum Quality Control',
-          imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
+          imageUrl: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
           caption: 'Pre-shipment SGS dip test and ASTM D975 / EN590 laboratory certification.'
         }
       ]
@@ -841,8 +841,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 42,
     factorySizeSqM: 45000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
     tagline: 'Florida Farm-Grown Timber Bamboo Poles, Raw Culms & Agricultural Bamboo Supplier',
     description: 'Joy Bamboo Forest Farm LLC is a verified Paid Basic Plan supplier in the United States. Supplying Florida farm-grown timber bamboo poles, raw bamboo culms, and agricultural bamboo stakes. Direct mailing address, farm pickup coordinates, and manager contact lines are protected for Paid Members.',
     acceptedPaymentTerms: [
@@ -925,14 +925,14 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
           id: 'tour-jbff-1',
           title: 'Sebring, FL Bamboo Plantation & Direct Farm Pickup Yard',
           department: 'Bamboo Harvesting & Loading Yard (Sebring, FL)',
-          imageUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+          imageUrl: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
           caption: 'Farm address where the bamboo is harvested, graded, and picked up in Sebring, Florida.'
         },
         {
           id: 'tour-jbff-2',
           title: 'Corporate Office & Dispatch Administration',
           department: 'Corporate Mailing & Dispatch Office',
-          imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+          imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
           caption: 'Verified administrative headquarters and order coordination desk.'
         }
       ]
@@ -963,7 +963,7 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     factorySizeSqM: 85000,
     productionLines: 8,
     logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    bannerUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     tagline: 'Direct US & Global Exporter of EN 590 (10PPM) Diesel, Jet Fuel A-1, D6 Virgin Fuel Oil, ESPO Crude & Refined Petroleum Products',
     description:
       'Middle Fox LLC (headquartered in Billings, Montana 59101, United States, led by Mr. Randy) is a KYC Level 3 & SGS-audited petroleum and refined energy commodities supplier on Trade Heaven. Specializing in Tank-to-Tank (TTT), Tank-to-Vessel (TTV), FOB Houston/Rotterdam, and CIF global deliveries of Ultra-Low Sulfur Diesel EN 590 (10 PPM), Aviation Kerosene Jet Fuel A-1, D6 Virgin Fuel Oil, Light Sweet Crude / ESPO, Marine Gasoil (MGO DMA), Mazut M100, LNG/LPG, Automotive Gasoil (AGO), Petcoke, and Virgin Base Oils.',
@@ -1010,8 +1010,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'SGS North America & Saybolt',
         issueDate: '2026-01-10',
         expiryDate: '2028-01-10',
-        documentUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true
       },
@@ -1023,8 +1023,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'U.S. Energy & Tank Terminal Compliance Registry',
         issueDate: '2026-01-15',
         expiryDate: '2028-01-15',
-        documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true
       }
@@ -1060,8 +1060,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
     completedOrdersCount: 318,
     factorySizeSqM: 62000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
     tagline: 'Direct US Exporter of Industrial Diesel & Natural Gas Generators (500 kW – 3,000 kW) & Heavy Mobile, Crawler & Tower Cranes',
     description:
       'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.), headquartered in Marmora, NJ 08223 USA and led by President Mark Johnson, is a premier US supplier and global exporter of heavy-duty industrial diesel & gas generator sets (Caterpillar, Cummins, MTU, Perkins) and high-capacity hydraulic mobile, rough-terrain, crawler, and port cranes.',
@@ -1108,8 +1108,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'SGS North America & US EPA Compliance Registry',
         issueDate: '2026-01-05',
         expiryDate: '2028-01-05',
-        documentUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true
       },
@@ -1121,8 +1121,8 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
         issuingAuthority: 'U.S. Heavy Machinery & Maritime Export Bureau',
         issueDate: '2026-01-12',
         expiryDate: '2028-01-12',
-        documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
+        documentUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+        thumbnailUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
         type: 'IMAGE',
         verified: true
       }
@@ -1644,8 +1644,8 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
     completedOrdersCount: base.completedOrdersCount || 250,
     factorySizeSqM: base.factorySizeSqM || 25000,
     productionLines: base.productionLines || 6,
-    logoUrl: base.logoUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=43',
-    bannerUrl: base.bannerUrl || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: base.logoUrl || 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: base.bannerUrl || 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     tagline: 'Certified International Manufacturer & Direct Exporter',
     description: base.description || 'Verified manufacturer offering bulk wholesale manufacturing, OEM/ODM private labeling, and global logistics support with full trade assurance protection.',
     acceptedPaymentTerms: ['Trade Protection Certificate', 'L/C at Sight', '30% T/T + 70% B/L', 'D/P'],
@@ -1661,7 +1661,7 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
     contactPhone: base.contactPhone || '+1 (800) 555-0199',
     whatsapp: base.whatsapp || '+18005550199',
     contactPersonDetails: {
-      avatarUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=45',
+      avatarUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
       name: base.contactPerson || 'Export Liaison Officer',
       designation: 'Director of International Trade Relations',
       email: base.contactEmail || 'contact@companytrade.mock',
@@ -1680,8 +1680,8 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
       issuingAuthority: 'Accredited International Audit Bureau',
       issueDate: '2024-01-10',
       expiryDate: '2027-01-09',
-      documentUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=46',
-      thumbnailUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=47',
+      documentUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
       type: 'IMAGE',
       verified: true
     })),

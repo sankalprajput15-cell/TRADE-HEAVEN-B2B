@@ -1,6 +1,6 @@
 import { RFQ } from '../types';
 
-export const GLOBAL_VANILLA_RFQS: any[] = [
+const RAW_VANILLA_RFQS: any[] = [
   {
     id: 'rfq-van-0',
     buyerId: 'buy-van-0',
@@ -997,8 +997,29 @@ export const GLOBAL_VANILLA_RFQS: any[] = [
     targetPriceUsd: 298,
     preferredIncoterm: 'FAS',
     destinationPort: 'Port of Genoa, Italy',
-    paymentTerms: '100% T/T Advance',
-    urgency: 'STANDARD',
-    quotesCount: 0
   }
 ];
+
+const VANILLA_BEAN_IMAGES = [
+  '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+  '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+  '/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
+  '/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
+  '/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
+  '/assets/aistudio/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
+];
+
+export const GLOBAL_VANILLA_RFQS: any[] = RAW_VANILLA_RFQS.map((rfq, idx) => {
+  const imgCount = VANILLA_BEAN_IMAGES.length;
+  const primaryIdx = idx % imgCount;
+  const mainImg = VANILLA_BEAN_IMAGES[primaryIdx];
+  return {
+    ...rfq,
+    image: mainImg,
+    images: [
+      mainImg,
+      VANILLA_BEAN_IMAGES[(primaryIdx + 1) % imgCount],
+      VANILLA_BEAN_IMAGES[(primaryIdx + 2) % imgCount]
+    ]
+  };
+});

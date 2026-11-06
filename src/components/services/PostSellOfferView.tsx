@@ -33,7 +33,7 @@ export const PostSellOfferView: React.FC<Props> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(CATEGORIES_TREE[0]?.name || 'Industrial Machinery');
   const [subCategory, setSubCategory] = useState('CNC & Precision Tooling');
-  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
+  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80');
   const [productImages, setProductImages] = useState<ImagePreviewItem[]>([
     {
       id: 'default-img-1',
@@ -59,7 +59,7 @@ export const PostSellOfferView: React.FC<Props> = ({
       setTitle('580W TOPCon Bifacial Monocrystalline Commercial Solar PV Modules');
       setCategory('Renewable Energy & Solar');
       setSubCategory('Monocrystalline Solar Panels');
-      setImageUrl('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80');
+      setImageUrl('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80');
       setMoq(62);
       setMoqUnit('Pieces');
       setPriceTier1(78);
@@ -72,7 +72,7 @@ export const PostSellOfferView: React.FC<Props> = ({
       setTitle('Custom Forged Monoblock 6061-T6 Aluminum Motorsport Racing Wheels (18-21 Inch)');
       setCategory('Automotive Parts & Transportation');
       setSubCategory('Forged Alloy Wheels');
-      setImageUrl('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80');
+      setImageUrl('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80');
       setMoq(4);
       setMoqUnit('Pieces');
       setPriceTier1(480);
@@ -85,7 +85,7 @@ export const PostSellOfferView: React.FC<Props> = ({
       setTitle('Heavy-Duty 5-Axis High Precision CNC Machining Center with Siemens Sinumerik ONE');
       setCategory('Industrial Machinery & Automation');
       setSubCategory('CNC Machining Centers');
-      setImageUrl('https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
+      setImageUrl('https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80');
       setMoq(1);
       setMoqUnit('Sets');
       setPriceTier1(148000);
@@ -98,7 +98,7 @@ export const PostSellOfferView: React.FC<Props> = ({
       setTitle('High-Density Polyethylene (HDPE) Virgin Resin Granules (Blow Molding Grade)');
       setCategory('Chemicals, Polymers & Resins');
       setSubCategory('Virgin HDPE / Polypropylene');
-      setImageUrl('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80');
+      setImageUrl('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80');
       setMoq(25);
       setMoqUnit('Metric Tons');
       setPriceTier1(1120);

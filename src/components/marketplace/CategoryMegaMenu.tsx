@@ -146,7 +146,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
         description: (c.subcategories || []).join(', '),
         subcategories: c.subcategories || [],
         iconName: c.icon,
-        image: (c as any).image || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
+        image: (c as any).image || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-9583fe92d232?w=600&auto=format&fit=crop&q=80',
         badge: 'Verified',
         productCount: c.count || '25,000+ Items'
       }));

@@ -3,6 +3,7 @@ import { Product, Currency, SupplierTier, Incoterm } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import { autoSeoEngine } from '../../services/autoSeoEngine';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
 import { isPaidMemberUser } from '../../services/freeLeadService';
@@ -292,8 +293,8 @@ export const ProductCatalog: React.FC<Props> = ({
     [matchedSuppliers]
   );
 
-  // Filter logic (Robust matching including Supplier Name & Company Name)
-  const filtered = cachedProducts.filter(p => {
+  // Filter & Auto-SEO Rank logic (Uploaded & SEO-optimized products/images always rank on TOP for B2B portal & export)
+  const rawFiltered = cachedProducts.filter(p => {
     const term = searchTerm.trim().toLowerCase();
     const belongsToMatchedSupplier =
       term !== '' &&
@@ -306,14 +307,28 @@ export const ProductCatalog: React.FC<Props> = ({
         : String(p.specifications).toLowerCase()
       : '';
 
+    const seoRec = autoSeoEngine.getProductSeoRecord(p.id);
+    const seoSearchable = seoRec
+      ? `${seoRec.seoTitle} ${seoRec.metaDescription} ${seoRec.keywords.join(' ')} ${seoRec.b2bExportTags.join(' ')}`.toLowerCase()
+      : '';
+
+    const isGenericPortalTerm =
+      term === 'b2b' ||
+      term === 'export' ||
+      term === 'trade heaven' ||
+      term === 'b2b portal' ||
+      term === 'wholesale';
+
     const matchesSearch = term === '' || 
       belongsToMatchedSupplier ||
+      isGenericPortalTerm ||
       (p.title || '').toLowerCase().includes(term) ||
       (p.supplierName || '').toLowerCase().includes(term) ||
       (p.category || '').toLowerCase().includes(term) ||
       (p.subCategory && p.subCategory.toLowerCase().includes(term)) ||
       (p.description && p.description.toLowerCase().includes(term)) ||
-      (specString && specString.includes(term));
+      (specString && specString.includes(term)) ||
+      (seoSearchable && seoSearchable.includes(term));
       
     const matchesCat = activeCategory === 'ALL' || 
       p.category === activeCategory ||
@@ -331,6 +346,24 @@ export const ProductCatalog: React.FC<Props> = ({
 
     return matchesSearch && matchesCat && matchesTier && matchesCountry && matchesIncoterm && matchesMoq && matchesOwnership;
   });
+
+  const filtered = React.useMemo(() => {
+    const term = searchTerm.trim();
+    if (term) {
+      const ranked = autoSeoEngine.rankProductsForSearch(term, rawFiltered, rawFiltered.length);
+      if (ranked.length > 0) {
+        const rankedSet = new Set(ranked.map(r => r.id));
+        const remainder = rawFiltered.filter(p => !rankedSet.has(p.id));
+        return [...ranked, ...remainder];
+      }
+    }
+    // Even without a search term, keep newly uploaded / Auto-SEO boosted items at the top of the catalog
+    return [...rawFiltered].sort((a, b) => {
+      const aBoost = autoSeoEngine.isProductTopSeoBoosted(a.id) ? 1 : 0;
+      const bBoost = autoSeoEngine.isProductTopSeoBoosted(b.id) ? 1 : 0;
+      return bBoost - aBoost;
+    });
+  }, [rawFiltered, searchTerm]);
 
   React.useEffect(() => {
     console.log('[ProductCatalog Investigation] Search term:', searchTerm, '| Total products:', cachedProducts.length, '| Filtered results:', filtered.length);
@@ -1001,18 +1034,29 @@ export const ProductCatalog: React.FC<Props> = ({
                             </div>
 
                             <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 sm:gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                              <div className="text-left sm:text-right">
-                                <div className="flex items-center sm:justify-end gap-1 mb-0.5">
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                    <Lock className="w-2.5 h-2.5 text-amber-600" />
-                                    <span>Protected FOB Rate</span>
-                                  </span>
-                                </div>
-                                <div className="text-xs sm:text-base font-extrabold text-slate-800 font-mono">
-                                  Inquire for Price
-                                </div>
-                                <div className="text-[9px] sm:text-[10px] text-slate-500">per {itemUnit} (FOB)</div>
-                              </div>
+                              {(() => {
+                                const displayPrice = product.priceRangeUsd
+                                  ? product.priceRangeUsd
+                                  : product.fobPriceUsd
+                                  ? `${formatPrice(product.fobPriceUsd)} / ${itemUnit}`
+                                  : product.priceTiers && product.priceTiers.length > 0
+                                  ? `${formatPrice(product.priceTiers[product.priceTiers.length - 1].priceUsd)} - ${formatPrice(product.priceTiers[0].priceUsd)}`
+                                  : null;
+
+                                return (
+                                  <div className="text-left sm:text-right">
+                                    {displayPrice ? (
+                                      <div className="text-xs sm:text-base font-extrabold text-emerald-700 font-mono">
+                                        {displayPrice}
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs sm:text-sm font-semibold text-slate-500 font-mono">
+                                        FOB Rate on Request
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                               <div className="flex items-center gap-1.5 sm:gap-2">
                                 <button
                                   onClick={() => onContactSupplier(product)}

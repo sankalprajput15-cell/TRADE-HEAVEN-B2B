@@ -165,7 +165,7 @@ export const ClientAdminView: React.FC<Props> = ({
   const [newListingPrice, setNewListingPrice] = useState('1200');
   const [newListingMoq, setNewListingMoq] = useState(10);
   const [newListingSupplier, setNewListingSupplier] = useState('Trade Heaven Verified Supplier');
-  const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80');
+  const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80');
   const [isUploadingListingImage, setIsUploadingListingImage] = useState(false);
 
   // 4. FAQs State (Secure Database)

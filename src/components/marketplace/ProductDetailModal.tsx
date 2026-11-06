@@ -24,7 +24,8 @@ import {
   MessageCircle,
   ExternalLink,
   Lock,
-  Share2
+  Share2,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface Props {
@@ -180,15 +181,15 @@ export const ProductDetailModal: React.FC<Props> = ({
                   totalImages={product?.images?.length}
                   className="w-full h-full"
                 />
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setIsImageModalOpen(true)}
-                    className="absolute bottom-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Change / Upload Image (JPG/Any)</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setIsImageModalOpen(true)}
+                  className="absolute bottom-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-blue-600/90 hover:bg-blue-700 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer backdrop-blur-xs transition-all hover:scale-105"
+                  title="Admin: View & Upload/Change All Product Images directly"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-blue-200" />
+                  <span>Admin: Upload / Change Product Images</span>
+                </button>
               </div>
               {isImageModalOpen && (
                 <QuickProductImageModal

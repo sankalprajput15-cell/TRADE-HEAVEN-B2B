@@ -13,7 +13,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$1000 - $2000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1000 W/A' }
     ]
@@ -31,7 +31,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$1500 - $2500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1100 W/A' }
     ]
@@ -49,7 +49,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$2000 - $3000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1200 W/A' }
     ]
@@ -67,7 +67,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$2500 - $3500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1300 W/A' }
     ]
@@ -85,7 +85,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$3000 - $4000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1400 W/A' }
     ]
@@ -103,7 +103,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$3500 - $4500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1500 W/A' }
     ]
@@ -175,7 +175,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$5500 - $6500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '1900 W/A' }
     ]
@@ -193,7 +193,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$6000 - $7000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2000 W/A' }
     ]
@@ -211,7 +211,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$6500 - $7500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2100 W/A' }
     ]
@@ -229,7 +229,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$7000 - $8000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2200 W/A' }
     ]
@@ -247,7 +247,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$7500 - $8500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2300 W/A' }
     ]
@@ -265,7 +265,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$8000 - $9000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2400 W/A' }
     ]
@@ -283,7 +283,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$8500 - $9500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2500 W/A' }
     ]
@@ -319,7 +319,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$9500 - $10500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2700 W/A' }
     ]
@@ -355,7 +355,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$10500 - $11500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '2900 W/A' }
     ]
@@ -373,7 +373,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$11000 - $12000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3000 W/A' }
     ]
@@ -391,7 +391,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$11500 - $12500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3100 W/A' }
     ]
@@ -409,7 +409,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$12000 - $13000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3200 W/A' }
     ]
@@ -427,7 +427,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$12500 - $13500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3300 W/A' }
     ]
@@ -445,7 +445,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$13000 - $14000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3400 W/A' }
     ]
@@ -463,7 +463,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$13500 - $14500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3500 W/A' }
     ]
@@ -499,7 +499,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$14500 - $15500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3700 W/A' }
     ]
@@ -535,7 +535,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$15500 - $16500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '3900 W/A' }
     ]
@@ -553,7 +553,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$16000 - $17000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4000 W/A' }
     ]
@@ -571,7 +571,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$16500 - $17500',
     unit: 'Unit',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4100 W/A' }
     ]
@@ -589,7 +589,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$17000 - $18000',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4200 W/A' }
     ]
@@ -607,7 +607,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$17500 - $18500',
     unit: 'Unit',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4300 W/A' }
     ]
@@ -625,7 +625,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$18000 - $19000',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4400 W/A' }
     ]
@@ -643,7 +643,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$18500 - $19500',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4500 W/A' }
     ]
@@ -679,7 +679,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$19500 - $20500',
     unit: 'Unit',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4700 W/A' }
     ]
@@ -715,7 +715,7 @@ export const GLOBAL_WELDER_MACHINE_PRODUCTS: Product[] = [
     priceRangeUsd: '$20500 - $21500',
     unit: 'Unit',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
     specifications: [
       { name: 'Output Power', value: '4900 W/A' }
     ]

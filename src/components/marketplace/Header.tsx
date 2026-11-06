@@ -44,7 +44,8 @@ import {
   Package,
   Home,
   Wallet,
-  Landmark
+  Landmark,
+  Activity
 } from 'lucide-react';
 
 interface Props {
@@ -346,6 +347,7 @@ export const Header: React.FC<Props> = ({
     { label: 'Supplier Bank & Withdrawals', view: 'SUPPLIER_WITHDRAWAL', icon: Landmark, activeMatch: ['SUPPLIER_WITHDRAWAL'], authOnly: true },
     { label: 'Direct Transfer & Mediation Guide', view: 'DIRECT_TRANSFER_GUIDE', icon: ShieldCheck, activeMatch: ['DIRECT_TRANSFER_GUIDE'] },
     { label: 'Products Catalog', view: 'PRODUCT_DIRECTORY', icon: Package, activeMatch: ['PRODUCT_DIRECTORY'] },
+    { label: 'Admin: Product Media & Image Catalog Manager', view: 'PRODUCT_IMAGE_ADMIN' as ActiveView, icon: ImageIcon, activeMatch: ['PRODUCT_IMAGE_ADMIN' as ActiveView] },
     { label: 'Verified Suppliers', view: 'SUPPLIERS_DIRECTORY', icon: Building2, activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Verified Buyers', view: 'BUYERS_DIRECTORY', icon: Users, activeMatch: ['BUYERS_DIRECTORY', 'BUYER_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', icon: TrendingUp, activeMatch: ['BUY_LEADS'] },
@@ -464,9 +466,23 @@ export const Header: React.FC<Props> = ({
             />
           )}
 
-          {/* Quick Access: Mail Open Rate & Renewal Insights (Admin Only - Wide Desktop) */}
+          {/* Quick Access: SEO Health, Mail Open Rate & Renewal Insights (Admin Only) */}
           {isAdmin && (
-            <div className="hidden 2xl:flex items-center gap-1.5 shrink-0">
+            <div className="hidden lg:flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleNavClick('CLIENT_ADMIN', { tab: 'seo-health' })}
+                className={`flex h-8 sm:h-9 px-2.5 rounded-lg font-bold text-xs items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
+                  activeView === 'CLIENT_ADMIN' && new URLSearchParams(window.location.search).get('tab') === 'seo-health'
+                    ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                    : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-300'
+                }`}
+                title="Monitor Global Organic Traffic & Keyword Visibility Map"
+              >
+                <Activity className="w-3.5 h-3.5 shrink-0" />
+                <span>SEO Health</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleNavClick('RENEWAL_INSIGHTS')}
@@ -742,6 +758,15 @@ export const Header: React.FC<Props> = ({
                       Email Analytics &amp; Admin Controls
                     </div>
                     <div className="grid grid-cols-2 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleNavClick('CLIENT_ADMIN', { tab: 'seo-health' })}
+                        className="px-2.5 py-2 text-left text-xs font-bold bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center gap-2 text-blue-800 border border-blue-200 transition-colors cursor-pointer"
+                      >
+                        <Activity className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">SEO Health &amp; Map</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleNavClick('RENEWAL_INSIGHTS')}

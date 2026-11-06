@@ -29,89 +29,182 @@ const FALLBACK_SEEDS: string[] = [
 ];
 
 const CATEGORY_POOLS: Record<string, string[]> = {
+  JADE_GEMSTONE: [
+    '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+  ],
+  VANILLA: [
+    '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+    '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+    '/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
+    '/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
+    '/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
+    '/assets/aistudio/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
+  ],
+  AVOCADO: [
+    'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&auto=format&fit=crop&q=80'
+  ],
+  BROCCOLI: [
+    'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80'
+  ],
+  BAMBOO: [
+    'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'
+  ],
+  CASHEW: [
+    'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80'
+  ],
+  JAM: [
+    'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80'
+  ],
   GOLD: [
     'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1589758438368-0ad531db3366?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1624365169364-0640dd10e180?w=800&auto=format&fit=crop&q=80'
   ],
   COAL: [
-    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
+  ],
+  FUEL_PETROLEUM: [
+    '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
   ],
   SEAFOOD: [
     'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80'
   ],
   CHEMICALS: [
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
   ],
   AGRICULTURE: [
+    'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80'
   ],
   MACHINERY: [
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
+    '/assets/aistudio/image002_50ab7837.png',
+    '/assets/aistudio/image003_6c1f0619.jpg',
+    '/assets/aistudio/image004_fa37a57a.png',
+    '/assets/aistudio/image005_20fe3db0.png',
     'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'
   ],
   TEXTILES: [
     'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'
+  ],
+  HOTEL: [
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80'
   ],
   CONSTRUCTION: [
-    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
   ],
   MEDICAL: [
     'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=800&auto=format&fit=crop&q=80'
   ],
   ELECTRONICS: [
     'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
   ],
   AUTOMOTIVE: [
     'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80'
   ],
   RENEWABLE: [
     'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
   ],
   INDUSTRIAL: [
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    EVENING_TANKER_PORT_IMAGE
+    'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
   ]
 };
 
 const getCategoryPool = (categoryName?: string, titleName?: string): string[] => {
   const nameToSearch = `${categoryName || ''} ${titleName || ''}`.toUpperCase();
   
+  if (nameToSearch.includes('JADE') || nameToSearch.includes('TURQUOISE') || nameToSearch.includes('CABOCHON') || nameToSearch.includes('GEMSTONE') || nameToSearch.includes('NEPHRITE')) {
+    return CATEGORY_POOLS.JADE_GEMSTONE;
+  }
+  if (nameToSearch.includes('VANILLA') || nameToSearch.includes('BOURBON') || nameToSearch.includes('PLANIFOLIA')) {
+    return CATEGORY_POOLS.VANILLA;
+  }
+  if (nameToSearch.includes('AVOCADO')) {
+    return CATEGORY_POOLS.AVOCADO;
+  }
+  if (nameToSearch.includes('BROCCOLI') || nameToSearch.includes('CAULIFLOWER') || nameToSearch.includes('VEGETABLE')) {
+    return CATEGORY_POOLS.BROCCOLI;
+  }
+  if (nameToSearch.includes('BAMBOO') || nameToSearch.includes('INCENSE') || nameToSearch.includes('AGARBATTI')) {
+    return CATEGORY_POOLS.BAMBOO;
+  }
+  if (nameToSearch.includes('CASHEW') || nameToSearch.includes('ALMOND') || nameToSearch.includes('PISTACHIO') || nameToSearch.includes('WALNUT')) {
+    return CATEGORY_POOLS.CASHEW;
+  }
+  if (nameToSearch.includes('JAM') || nameToSearch.includes('MARMALADE') || nameToSearch.includes('JELLY') || nameToSearch.includes('SUNFLOWER OIL') || nameToSearch.includes('COOKING OIL')) {
+    return CATEGORY_POOLS.JAM;
+  }
   if (nameToSearch.includes('GOLD') || nameToSearch.includes('BULLION') || nameToSearch.includes('INGOT') || nameToSearch.includes('DORE')) {
     return CATEGORY_POOLS.GOLD;
   }
-  if (nameToSearch.includes('COAL') || nameToSearch.includes('ANTHRACITE') || nameToSearch.includes('BITUMINOUS') || nameToSearch.includes('LIGNITE')) {
+  if (nameToSearch.includes('COAL') || nameToSearch.includes('ANTHRACITE') || nameToSearch.includes('BITUMINOUS') || nameToSearch.includes('LIGNITE') || nameToSearch.includes('BRIQUETTE')) {
     return CATEGORY_POOLS.COAL;
   }
   if (nameToSearch.includes('LOBSTER') || nameToSearch.includes('SEAFOOD') || nameToSearch.includes('FISH') || nameToSearch.includes('SHRIMP') || nameToSearch.includes('CRAB') || nameToSearch.includes('TUNA') || nameToSearch.includes('SALMON')) {
     return CATEGORY_POOLS.SEAFOOD;
   }
-  if (nameToSearch.includes('CHEM') || nameToSearch.includes('POLYMER') || nameToSearch.includes('SULPHUR') || nameToSearch.includes('DIESEL') || nameToSearch.includes('OIL') || nameToSearch.includes('FUEL') || nameToSearch.includes('GAS') || nameToSearch.includes('UREA') || nameToSearch.includes('RESIN') || nameToSearch.includes('PETROLEUM') || nameToSearch.includes('EN590') || nameToSearch.includes('JET') || nameToSearch.includes('KEROSENE') || nameToSearch.includes('ACID') || nameToSearch.includes('PLASTIC') || nameToSearch.includes('ASPIRIN')) {
+  if (nameToSearch.includes('DIESEL') || nameToSearch.includes('EN590') || nameToSearch.includes('ESPO') || nameToSearch.includes('CRUDE') || nameToSearch.includes('JET FUEL') || nameToSearch.includes('AVIATION') || nameToSearch.includes('PETROLEUM') || nameToSearch.includes('KEROSENE') || nameToSearch.includes('BITUMEN')) {
+    return CATEGORY_POOLS.FUEL_PETROLEUM;
+  }
+  if (nameToSearch.includes('CHEM') || nameToSearch.includes('POLYMER') || nameToSearch.includes('SULPHUR') || nameToSearch.includes('UREA') || nameToSearch.includes('RESIN') || nameToSearch.includes('ACID') || nameToSearch.includes('PLASTIC') || nameToSearch.includes('ASPIRIN')) {
     return CATEGORY_POOLS.CHEMICALS;
   }
-  if (nameToSearch.includes('AGRI') || nameToSearch.includes('COMMOD') || nameToSearch.includes('WHEAT') || nameToSearch.includes('GRAIN') || nameToSearch.includes('CORN') || nameToSearch.includes('BEAN') || nameToSearch.includes('LENTIL') || nameToSearch.includes('COFFEE') || nameToSearch.includes('SUGAR') || nameToSearch.includes('RICE') || nameToSearch.includes('MAIZE') || nameToSearch.includes('BAMBOO') || nameToSearch.includes('COTTON') || nameToSearch.includes('JUTE') || nameToSearch.includes('SOY') || nameToSearch.includes('SPICE') || nameToSearch.includes('SEED') || nameToSearch.includes('FRUIT') || nameToSearch.includes('HARVEST') || nameToSearch.includes('VEGETABLE') || nameToSearch.includes('CASHEW') || nameToSearch.includes('VANILLA') || nameToSearch.includes('SUNFLOWER') || nameToSearch.includes('JAM') || nameToSearch.includes('HUSK')) {
+  if (nameToSearch.includes('HOTEL') || nameToSearch.includes('HOSPITALITY') || nameToSearch.includes('RESORT') || nameToSearch.includes('BEDDING')) {
+    return CATEGORY_POOLS.HOTEL;
+  }
+  if (nameToSearch.includes('AGRI') || nameToSearch.includes('COMMOD') || nameToSearch.includes('WHEAT') || nameToSearch.includes('GRAIN') || nameToSearch.includes('CORN') || nameToSearch.includes('BEAN') || nameToSearch.includes('LENTIL') || nameToSearch.includes('COFFEE') || nameToSearch.includes('SUGAR') || nameToSearch.includes('RICE') || nameToSearch.includes('MAIZE') || nameToSearch.includes('COTTON') || nameToSearch.includes('JUTE') || nameToSearch.includes('SOY') || nameToSearch.includes('SPICE') || nameToSearch.includes('SEED') || nameToSearch.includes('FRUIT') || nameToSearch.includes('HARVEST')) {
     return CATEGORY_POOLS.AGRICULTURE;
   }
   if (nameToSearch.includes('MACHINE') || nameToSearch.includes('EQUIP') || nameToSearch.includes('CNC') || nameToSearch.includes('TOOL') || nameToSearch.includes('FORG') || nameToSearch.includes('WELD') || nameToSearch.includes('ROBOT') || nameToSearch.includes('AUTOMAT') || nameToSearch.includes('ENGINE') || nameToSearch.includes('PUMP') || nameToSearch.includes('LASER') || nameToSearch.includes('CUTTER') || nameToSearch.includes('MOTOR') || nameToSearch.includes('EXCAVATOR') || nameToSearch.includes('CONVEYOR')) {
@@ -126,7 +219,7 @@ const getCategoryPool = (categoryName?: string, titleName?: string): string[] =>
   if (nameToSearch.includes('MEDIC') || nameToSearch.includes('DIAGNOS') || nameToSearch.includes('PHARMA') || nameToSearch.includes('GLOVE') || nameToSearch.includes('MASK') || nameToSearch.includes('SYRINGE') || nameToSearch.includes('HEALTH') || nameToSearch.includes('TEST') || nameToSearch.includes('VIAL') || nameToSearch.includes('BIOTECH') || nameToSearch.includes('CLINIC') || nameToSearch.includes('CAPSULE')) {
     return CATEGORY_POOLS.MEDICAL;
   }
-  if (nameToSearch.includes('ELECTRON') || nameToSearch.includes('SEMICOND') || nameToSearch.includes('CHIP') || nameToSearch.includes('MOTHERBOARD') || nameToSearch.includes('CIRCUIT') || nameToSearch.includes('PHONE') || nameToSearch.includes('LAPTOP') || nameToSearch.includes('SOFTWARE') || nameToSearch.includes('HARDWARE')) {
+  if (nameToSearch.includes('ELECTRON') || nameToSearch.includes('SEMICOND') || nameToSearch.includes('CHIP') || nameToSearch.includes('MOTHERBOARD') || nameToSearch.includes('CIRCUIT') || nameToSearch.includes('PHONE') || nameToSearch.includes('LAPTOP') || nameToSearch.includes('SOFTWARE') || nameToSearch.includes('HARDWARE') || nameToSearch.includes('GERMANIUM')) {
     return CATEGORY_POOLS.ELECTRONICS;
   }
   if (nameToSearch.includes('AUTO') || nameToSearch.includes('VEHIC') || nameToSearch.includes('CAR') || nameToSearch.includes('TRUCK') || nameToSearch.includes('TIRE') || nameToSearch.includes('BATTERY') || nameToSearch.includes('LITHIUM')) {
@@ -285,7 +378,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     };
   }, []);
 
-  // 2. Build prioritized candidate URLs list
+  // 2. Build prioritized candidate URLs list — ALWAYS respect effectiveSrc first!
   const candidates = useMemo(() => {
     const list: string[] = [];
 
@@ -299,17 +392,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         })
       : src;
 
-    // Prioritize effectiveSrc if non-empty and not a known generic broken string
-    if (effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim() && !effectiveSrc.includes('1579541300958-c0b7d3f114c0')) {
-      const cleanSrc = effectiveSrc.trim();
-      if (cleanSrc.includes('1518709268805') || cleanSrc.includes('518709268805')) {
-        list.push(EVENING_TANKER_PORT_IMAGE);
-      } else {
-        list.push(cleanSrc);
-      }
+    if (effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()) {
+      list.push(effectiveSrc.trim());
     }
 
-    if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim()) {
+    if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim() && !list.includes(fallbackSrc.trim())) {
       list.push(fallbackSrc.trim());
     }
 
@@ -333,14 +420,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
-    // Add fallback seeds
-    for (const seed of FALLBACK_SEEDS) {
-      if (!list.includes(seed)) {
-        list.push(seed);
-      }
-    }
-
-    return list.length > 0 ? list : FALLBACK_SEEDS;
+    return list.length > 0 ? list : pool;
   }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion]);
 
   const currentCandidate = useMemo(() => {

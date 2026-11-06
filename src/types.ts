@@ -254,6 +254,9 @@ export interface Product {
   createdDate?: string;
   ownerEmail?: string;
   ownerId?: string;
+  hsCode?: string;
+  warrantyMonths?: number;
+  isFeatured?: boolean;
 }
 
 export interface RfqRequirement {

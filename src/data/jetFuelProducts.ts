@@ -14,7 +14,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$13 - $21',
     unit: 'Gallons',
     minOrderQuantity: '8',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$86 - $119',
     unit: 'Barrels',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=3'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $153',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=4'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$4 - $50',
     unit: 'Gallons',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=5'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $136',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=6'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $54',
     unit: 'Gallons',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=7'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$13 - $53',
     unit: 'Gallons',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=8'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$95 - $151',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$6 - $28',
     unit: 'Gallons',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=10'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $141',
     unit: 'Barrels',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=11'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$9 - $18',
     unit: 'Gallons',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=12'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$92 - $140',
     unit: 'Barrels',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=13'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $151',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80&sig=14'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $120',
     unit: 'Barrels',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80&sig=15'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$11 - $25',
     unit: 'Gallons',
     minOrderQuantity: '5',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$3 - $23',
     unit: 'Gallons',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=17'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $163',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=18'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$11 - $47',
     unit: 'Gallons',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=19'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$88 - $131',
     unit: 'Barrels',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=20'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$98 - $130',
     unit: 'Barrels',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=21'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$6 - $36',
     unit: 'Gallons',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=22'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$91 - $139',
     unit: 'Barrels',
     minOrderQuantity: '6',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $27',
     unit: 'Gallons',
     minOrderQuantity: '17',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=24'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$11 - $37',
     unit: 'Gallons',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=25'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$5 - $56',
     unit: 'Gallons',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=26'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $151',
     unit: 'Barrels',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=27'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$93 - $145',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=28'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$85 - $117',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=29'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$92 - $152',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $165',
     unit: 'Barrels',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=31'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $18',
     unit: 'Gallons',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=32'],
+    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$4 - $7',
     unit: 'Gallons',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=33'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$8 - $38',
     unit: 'Gallons',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=34'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$100 - $137',
     unit: 'Barrels',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=35'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $121',
     unit: 'Barrels',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=36'],
+    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$7 - $22',
     unit: 'Gallons',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=38'],
+    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$91 - $161',
     unit: 'Barrels',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=39'],
+    images: ['https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$93 - $149',
     unit: 'Barrels',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=40'],
+    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   }
 ];

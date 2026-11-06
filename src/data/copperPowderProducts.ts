@@ -14,7 +14,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$150 - $317',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80&sig=1'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$47 - $109',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Morphology', value: 'Spherical' }, { name: 'Purity', value: '99.9%' }, { name: 'Particle Size', value: '15-45 µm' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$160 - $300',
     unit: 'KG',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80&sig=3'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8504 - $11021',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80621416894569-0f39ed31d247?w=800&auto=format&fit=crop&q=80&sig=4'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8508 - $11018',
     unit: 'MT',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80584438784894-089d6a62b8fa?w=800&auto=format&fit=crop&q=80&sig=5'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8504 - $11031',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80550565118-3a14e8d0386f?w=800&auto=format&fit=crop&q=80&sig=6'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$157 - $316',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80&sig=7'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$154 - $331',
     unit: 'KG',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80&sig=8'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -142,7 +142,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8509 - $11013',
     unit: 'MT',
     minOrderQuantity: '9',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$158 - $337',
     unit: 'KG',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=10'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8503 - $11040',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80569025743873-ea3a9ada89f9?w=800&auto=format&fit=crop&q=80&sig=11'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$158 - $322',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80578328819058-b69f3a3b0f6b?w=800&auto=format&fit=crop&q=80&sig=12'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$809 - $1214',
     unit: 'Grams',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80&sig=13'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.999% (5N)' }, { name: 'Particle Size', value: 'D50 1-2 µm' }, { name: 'Isotopic', value: 'Cu63/65' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8503 - $11037',
     unit: 'MT',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=14'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8502 - $11014',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=15'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$153 - $315',
     unit: 'KG',
     minOrderQuantity: '3',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$808 - $1234',
     unit: 'Grams',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=17'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.999% (5N)' }, { name: 'Particle Size', value: 'D50 1-2 µm' }, { name: 'Isotopic', value: 'Cu63/65' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$155 - $300',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=18'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -302,7 +302,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8501 - $11043',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=19'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8503 - $11010',
     unit: 'MT',
     minOrderQuantity: '4',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=20'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$160 - $321',
     unit: 'KG',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=21'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8501 - $11013',
     unit: 'MT',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=22'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$153 - $300',
     unit: 'KG',
     minOrderQuantity: '1',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$53 - $132',
     unit: 'KG',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=24'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Morphology', value: 'Spherical' }, { name: 'Purity', value: '99.9%' }, { name: 'Particle Size', value: '15-45 µm' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8501 - $11014',
     unit: 'MT',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=25'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$160 - $318',
     unit: 'KG',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=26'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8503 - $11022',
     unit: 'MT',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=27'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$51 - $122',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=28'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Morphology', value: 'Spherical' }, { name: 'Purity', value: '99.9%' }, { name: 'Particle Size', value: '15-45 µm' } ]
   },
   {
@@ -462,7 +462,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8508 - $11007',
     unit: 'MT',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=29'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$157 - $307',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$48 - $127',
     unit: 'KG',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=31'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Morphology', value: 'Spherical' }, { name: 'Purity', value: '99.9%' }, { name: 'Particle Size', value: '15-45 µm' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8507 - $11006',
     unit: 'MT',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=32'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$8502 - $11018',
     unit: 'MT',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=33'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.5%' }, { name: 'Apparent Density', value: '1.2-1.8 g/cm³' }, { name: 'Morphology', value: 'Dendritic' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$808 - $1230',
     unit: 'Grams',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=34'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.999% (5N)' }, { name: 'Particle Size', value: 'D50 1-2 µm' }, { name: 'Isotopic', value: 'Cu63/65' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$156 - $334',
     unit: 'KG',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=35'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$155 - $337',
     unit: 'KG',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=36'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$55 - $93',
     unit: 'KG',
     minOrderQuantity: '9',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Morphology', value: 'Spherical' }, { name: 'Purity', value: '99.9%' }, { name: 'Particle Size', value: '15-45 µm' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$805 - $1219',
     unit: 'Grams',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=38'],
+    images: ['https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Purity', value: '99.999% (5N)' }, { name: 'Particle Size', value: 'D50 1-2 µm' }, { name: 'Isotopic', value: 'Cu63/65' } ]
   },
   {
@@ -622,7 +622,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$160 - $326',
     unit: 'KG',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=39'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Particle Size', value: '50-100 nm' }, { name: 'Purity', value: '99.9%' }, { name: 'Surface Area', value: '10-15 m²/g' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_COPPER_POWDER_PRODUCTS: any[] = [
     priceRangeUsd: '$47 - $135',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=40'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Morphology', value: 'Spherical' }, { name: 'Purity', value: '99.9%' }, { name: 'Particle Size', value: '15-45 µm' } ]
   }
 ];

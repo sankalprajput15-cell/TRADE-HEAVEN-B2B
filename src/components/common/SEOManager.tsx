@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActiveView, Product } from '../../types';
 import { SEO } from './SEO';
+import { autoSeoEngine } from '../../services/autoSeoEngine';
 
 interface SEOManagerProps {
   activeView: ActiveView | string;
@@ -13,6 +14,44 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
   selectedProduct,
   products 
 }) => {
+  const [, setSeoTick] = useState(0);
+
+  // Automatically register catalog with the 24/7/365 30-minute Unconditional Auto-SEO Engine (no permission required)
+  useEffect(() => {
+    if (products && products.length > 0) {
+      autoSeoEngine.registerCatalogForAutonomousSeo(products);
+    }
+  }, [products]);
+
+  useEffect(() => {
+    const syncJsonLdToHead = () => {
+      try {
+        const nodes = autoSeoEngine.getTopJsonLdGraphNodes(12);
+        let script = document.getElementById('tradeheaven-auto-seo-jsonld') as HTMLScriptElement | null;
+        if (!script) {
+          script = document.createElement('script');
+          script.id = 'tradeheaven-auto-seo-jsonld';
+          script.type = 'application/ld+json';
+          document.head.appendChild(script);
+        }
+        script.text = JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': nodes
+        });
+      } catch {}
+    };
+
+    syncJsonLdToHead();
+    const handleSeoUpdate = () => {
+      setSeoTick(t => t + 1);
+      syncJsonLdToHead();
+    };
+    window.addEventListener('tradeheaven_auto_seo_updated', handleSeoUpdate);
+    return () => {
+      window.removeEventListener('tradeheaven_auto_seo_updated', handleSeoUpdate);
+    };
+  }, []);
+
   // 1. Check if a specific product listing page is targeted (either via prop or URL param)
   const targetProduct = selectedProduct || (
     typeof window !== 'undefined' && products ? (
@@ -29,23 +68,24 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
   );
 
   if (targetProduct) {
+    const autoRec = autoSeoEngine.getProductSeoRecord(targetProduct.id) || autoSeoEngine.previewProductSeo(targetProduct, false);
     const price = targetProduct.fobPriceUsd || (targetProduct.priceTiers && targetProduct.priceTiers[0]?.priceUsd) || 0;
     const priceDisplay = price > 0 ? `$${price}` : 'Factory Direct';
     const moqDisplay = `${targetProduct.moq || targetProduct.minOrderQuantity || 100} ${targetProduct.moqUnit || 'units'}`;
     const cleanDesc = targetProduct.description 
       ? targetProduct.description.slice(0, 160).trim()
       : `Buy ${targetProduct.title} in bulk directly from verified international factories.`;
-    const fullDesc = `${cleanDesc} Verified supplier ${targetProduct.supplierName} (${targetProduct.supplierCountry}). MOQ: ${moqDisplay}. FOB Price: ${priceDisplay}. 100% Escrow Trade Protection on Trade Heaven.`;
+    const fullDesc = autoRec?.metaDescription || `${cleanDesc} Verified supplier ${targetProduct.supplierName} (${targetProduct.supplierCountry}). MOQ: ${moqDisplay}. FOB Price: ${priceDisplay}. 100% Escrow Trade Protection on Trade Heaven.`;
 
     const productOgImage = (targetProduct.images && targetProduct.images.length > 0 && targetProduct.images[0])
       ? targetProduct.images[0]
-      : 'https://tradeheaven.net/og-image.png';
+      : autoRec?.imageUrl || 'https://tradeheaven.net/og-image.png';
 
     return (
       <SEO
-        title={`${targetProduct.title} - Wholesale ${targetProduct.category} | Trade Heaven`}
+        title={autoRec?.seoTitle || `${targetProduct.title} - Wholesale ${targetProduct.category} | Trade Heaven`}
         description={fullDesc}
-        keywords={`${targetProduct.title}, wholesale ${targetProduct.category}, ${targetProduct.subCategory ? `bulk ${targetProduct.subCategory}, ` : ''}${targetProduct.supplierCountry} manufacturers, factory direct ${targetProduct.title}, custom OEM ${targetProduct.title}, buy ${targetProduct.title} in bulk, ${targetProduct.title} supplier MOQ ${targetProduct.moq || 100}, verified ${targetProduct.supplierName}, international B2B sourcing, export container pricing, FOB wholesale rates, Trade Heaven`}
+        keywords={autoRec?.keywords?.join(', ') || `${targetProduct.title}, wholesale ${targetProduct.category}, ${targetProduct.subCategory ? `bulk ${targetProduct.subCategory}, ` : ''}${targetProduct.supplierCountry} manufacturers, factory direct ${targetProduct.title}, custom OEM ${targetProduct.title}, buy ${targetProduct.title} in bulk, ${targetProduct.title} supplier MOQ ${targetProduct.moq || 100}, verified ${targetProduct.supplierName}, international B2B sourcing, export container pricing, FOB wholesale rates, Trade Heaven`}
         canonicalUrl={`https://tradeheaven.net/?view=PRODUCT_DIRECTORY&productId=${encodeURIComponent(targetProduct.id)}`}
         ogImage={productOgImage}
         ogType="product"
@@ -67,6 +107,7 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
       />
     );
   }
+
 
   // 2. View-specific standard SEO tags
   switch (activeView) {

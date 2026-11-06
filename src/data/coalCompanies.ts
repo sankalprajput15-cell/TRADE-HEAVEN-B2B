@@ -18,7 +18,7 @@ export const GLOBAL_COAL_COMPANIES: any[] = [
     avgResponseTime: '< 30 mins',
     annualRevenueUsd: '35M - 70M USD',
     logoUrl: '/assets/aistudio/trade_heaven_agreement_zac__4__83a8fdf9.pdf',
-    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=1200&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     contactEmail: 'Zac@otec.ltd',
     contactPhone: '+61 424 854 899',
     whatsapp: '+61424854899',

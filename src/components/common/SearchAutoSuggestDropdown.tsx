@@ -54,6 +54,7 @@ import { getAllSuppliersWithUsers } from '../../services/apiService';
 import { Product, RfqRequirement } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { isPaidMemberUser, isPaidEntity } from '../../services/freeLeadService';
+import { autoSeoEngine, UploadedB2BArticle } from '../../services/autoSeoEngine';
 
 export type QuickFilterMode = 'ALL' | 'PRODUCTS' | 'SUPPLIERS' | 'RFQ_LEADS';
 
@@ -470,6 +471,7 @@ export interface AutoSuggestResults {
   suppliers: SupplierSuggestion[];
   products: Product[];
   rfqs: RfqRequirement[];
+  articles?: UploadedB2BArticle[];
   totalCount: number;
 }
 
@@ -519,7 +521,7 @@ export function useSearchAutoSuggest(
   return React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      return { categories: [], suppliers: [], products: [], rfqs: [], totalCount: 0 };
+      return { categories: [], suppliers: [], products: [], rfqs: [], articles: [], totalCount: 0 };
     }
 
     // Count products per category & supplier for rich context
@@ -657,18 +659,13 @@ export function useSearchAutoSuggest(
     rawSuppliers.sort((a, b) => b.score - a.score || b.productCount - a.productCount);
     const suppliers = rawSuppliers.slice(0, maxSuppliers);
 
-    // 3. Top matching products
-    const matchedProducts = products
-      .filter(
-        p =>
-          p &&
-          ((p.title || '').toLowerCase().includes(q) ||
-            (p.category || '').toLowerCase().includes(q) ||
-            (p.supplierName || '').toLowerCase().includes(q))
-      )
-      .slice(0, maxProducts);
+    // 3. Top matching products ranked by Automated B2B & Export SEO Engine (uploaded items boosted to #1)
+    const matchedProducts = autoSeoEngine.rankProductsForSearch(q, products, Math.max(maxProducts, 6));
 
-    // 4. Top matching RFQ Leads
+    // 4. Top matching SEO-optimized B2B Export Articles
+    const matchedArticles = autoSeoEngine.searchArticles(q, 3);
+
+    // 5. Top matching RFQ Leads
     const matchedRfqs = (rfqs || MOCK_RFQS)
       .filter(
         r =>
@@ -688,7 +685,8 @@ export function useSearchAutoSuggest(
       suppliers,
       products: matchedProducts,
       rfqs: matchedRfqs,
-      totalCount: categories.length + suppliers.length + matchedProducts.length + matchedRfqs.length
+      articles: matchedArticles,
+      totalCount: categories.length + suppliers.length + matchedProducts.length + matchedRfqs.length + matchedArticles.length
     };
   }, [query, products, maxCategories, maxSuppliers, maxProducts, rfqs, maxRfqs]);
 }
@@ -736,7 +734,7 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
     }
   };
 
-  const { categories, suppliers, products, rfqs = [] } = suggestions;
+  const { categories, suppliers, products, rfqs = [], articles = [] } = suggestions;
   const trimmed = query.trim();
 
   if (!trimmed) {
@@ -809,16 +807,18 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
   const visibleProducts = showProductsSection ? products : [];
   const visibleSuppliers = showSuppliersSection ? suppliers : [];
   const visibleRfqs = showRfqsSection ? rfqs : [];
+  const visibleArticles = activeQuickFilter === 'ALL' ? articles : [];
 
-  const productsBadgeCount = categories.length + (onSelectProduct ? products.length : 0);
+  const productsBadgeCount = categories.length + products.length;
   const suppliersBadgeCount = suppliers.length;
   const rfqsBadgeCount = rfqs.length;
 
   const hasVisibleResults =
     visibleCategories.length > 0 ||
     visibleSuppliers.length > 0 ||
-    (Boolean(onSelectProduct) && visibleProducts.length > 0) ||
-    visibleRfqs.length > 0;
+    visibleProducts.length > 0 ||
+    visibleRfqs.length > 0 ||
+    visibleArticles.length > 0;
 
   let runningIndex = -1;
 
@@ -968,7 +968,145 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
         </div>
       ) : (
         <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
-          {/* Section 1: Matching Product Categories with Domain Icons */}
+          {/* Section 1 (TOP PRIORITY): Auto-SEO Ranked B2B & Export Products */}
+          {visibleProducts.length > 0 && (
+            <div className="p-2 bg-gradient-to-b from-emerald-50/40 to-transparent">
+              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Package className="w-3 h-3 text-emerald-600" />
+                  <span>Top SEO Ranked B2B &amp; Export Products</span>
+                </span>
+                <span className="font-mono text-emerald-700">{visibleProducts.length}</span>
+              </div>
+              <div className="mt-0.5 space-y-0.5">
+                {visibleProducts.map((prod, idx) => {
+                  runningIndex += 1;
+                  const itemIndex = runningIndex;
+                  const isHighlighted = activeIndex === itemIndex;
+                  const isTopSeoBoosted = autoSeoEngine.isProductTopSeoBoosted(prod.id) || idx === 0;
+                  const thumb = (Array.isArray(prod.images) && prod.images[0]) || (prod as any).imageUrl;
+
+                  return (
+                    <button
+                      key={prod.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isHighlighted}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        if (onSelectProduct) {
+                          onSelectProduct(prod);
+                        } else {
+                          triggerProductDirectoryRedirect(prod.title);
+                        }
+                      }}
+                      className={`w-full px-2.5 py-2 rounded-xl text-left flex items-center justify-between gap-3 transition-colors cursor-pointer group ${
+                        isHighlighted ? 'bg-blue-50/80 text-slate-950' : 'hover:bg-slate-50 text-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt={prod.title}
+                            className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-sky-50 border border-sky-100 text-sky-700 flex items-center justify-center shrink-0 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                            <CategoryIcon
+                              categoryName={prod.category}
+                              className="w-4 h-4"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-xs text-slate-900 truncate group-hover:text-sky-700 flex items-center gap-1.5">
+                            <span className="truncate">
+                              <HighlightedMatch text={prod.title} query={trimmed} />
+                            </span>
+                            {isTopSeoBoosted && (
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white font-mono font-bold text-[9px] uppercase tracking-wider shrink-0">
+                                TOP SEO · B2B EXPORT
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5">
+                            <span>
+                              <HighlightedMatch text={prod.category} query={trimmed} />
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span>
+                              <HighlightedMatch text={prod.supplierName} query={trimmed} />
+                            </span>
+                            {prod.supplierCountry && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <span className="text-emerald-700 font-semibold">
+                                  {prod.supplierCountry}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Section 1B: Auto-SEO Indexed B2B Export Articles & Trade Insights */}
+          {visibleArticles.length > 0 && (
+            <div className="p-2">
+              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <FileText className="w-3 h-3 text-indigo-600" />
+                  <span>B2B Export Articles &amp; Trade Heaven SEO Insights</span>
+                </span>
+                <span className="font-mono">{visibleArticles.length}</span>
+              </div>
+              <div className="mt-0.5 space-y-0.5">
+                {visibleArticles.map((art) => (
+                  <button
+                    key={art.id}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      window.dispatchEvent(new CustomEvent('tradeheaven_navigate_view', { detail: { view: 'INSIGHTS', articleId: art.id } }));
+                      triggerProductDirectoryRedirect(art.title);
+                    }}
+                    className="w-full px-2.5 py-2 rounded-xl text-left flex items-center justify-between gap-3 hover:bg-indigo-50/60 text-slate-800 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img
+                        src={art.imageUrl}
+                        alt={art.title}
+                        className="w-8 h-8 rounded-lg object-cover border border-indigo-200 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs text-slate-900 truncate group-hover:text-indigo-700 flex items-center gap-1.5">
+                          <span className="truncate">
+                            <HighlightedMatch text={art.title} query={trimmed} />
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-indigo-600 text-white font-mono font-bold text-[9px] uppercase shrink-0">
+                            SEO ARTICLE
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {art.category} · {art.readTime}
+                        </div>
+                      </div>
+                    </div>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 2: Matching Product Categories with Domain Icons */}
           {visibleCategories.length > 0 && (
             <div className="p-2">
               <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
@@ -1033,66 +1171,6 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
                         </div>
                       </div>
                       <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Section 2: Matching Products (if callback provided) */}
-          {onSelectProduct && visibleProducts.length > 0 && (
-            <div className="p-2">
-              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Package className="w-3 h-3 text-blue-600" />
-                  <span>Matching Products</span>
-                </span>
-                <span className="font-mono">{visibleProducts.length}</span>
-              </div>
-              <div className="mt-0.5 space-y-0.5">
-                {visibleProducts.map((prod) => {
-                  runningIndex += 1;
-                  const itemIndex = runningIndex;
-                  const isHighlighted = activeIndex === itemIndex;
-
-                  return (
-                    <button
-                      key={prod.id}
-                      type="button"
-                      role="option"
-                      aria-selected={isHighlighted}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        onSelectProduct(prod);
-                      }}
-                      className={`w-full px-2.5 py-2 rounded-xl text-left flex items-center justify-between gap-3 transition-colors cursor-pointer group ${
-                        isHighlighted ? 'bg-blue-50/80 text-slate-950' : 'hover:bg-slate-50 text-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-100 text-sky-700 flex items-center justify-center shrink-0 group-hover:bg-sky-600 group-hover:text-white transition-colors">
-                          <CategoryIcon
-                            categoryName={prod.category}
-                            className="w-4 h-4"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs text-slate-900 truncate group-hover:text-sky-700">
-                            <HighlightedMatch text={prod.title} query={trimmed} />
-                          </div>
-                          <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5">
-                            <span>
-                              <HighlightedMatch text={prod.category} query={trimmed} />
-                            </span>
-                            <span aria-hidden="true">·</span>
-                            <span>
-                              <HighlightedMatch text={prod.supplierName} query={trimmed} />
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-600 shrink-0" />
                     </button>
                   );
                 })}

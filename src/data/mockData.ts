@@ -106,7 +106,7 @@ export const DEFAULT_USERS: Record<UserRole, AuthUser> = {
     isPremium: false,
     membershipStatus: 'free',
     joinedDate: '2024-03-15',
-    avatarUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80&sig=1'
+    avatarUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80'
   },
   SUPPLIER: {
     id: 'user-supp-001',
@@ -121,7 +121,7 @@ export const DEFAULT_USERS: Record<UserRole, AuthUser> = {
     isPremium: false,
     membershipStatus: 'free',
     joinedDate: '2023-08-20',
-    avatarUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+    avatarUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80'
   },
   VERIFIER: {
     id: 'user-verif-001',
@@ -135,7 +135,7 @@ export const DEFAULT_USERS: Record<UserRole, AuthUser> = {
     isPremium: false,
     membershipStatus: 'free',
     joinedDate: '2022-11-01',
-    avatarUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80&sig=3'
+    avatarUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'
   },
   ADMIN: {
     id: 'user-admin-001',
@@ -151,7 +151,7 @@ export const DEFAULT_USERS: Record<UserRole, AuthUser> = {
     isPremium: true,
     membershipStatus: 'paid',
     joinedDate: '2022-01-10',
-    avatarUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80&sig=4'
+    avatarUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80'
   }
 };
 
@@ -170,7 +170,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-bamboo-wood-products',
     name: 'Bamboo & Wood Products',
     icon: 'Trees',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80540555700478-4be289fbecef?w=800&auto=format&fit=crop&q=80&sig=99',
+    image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
     subcategories: [
       'Bamboo Sticks & Skewers',
       'Incense Raw Materials',
@@ -189,7 +189,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-hotel-supplies',
     name: 'Hotel Supplies',
     icon: 'Building2',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80&sig=54',
+    image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
     subcategories: [
       'Hotel Amenities & Toiletries',
       'Commercial Linens & Bedding',
@@ -210,7 +210,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-construction-excavation',
     name: 'Construction & Excavation Machinery',
     icon: 'Tractor',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=5',
+    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Excavator', 'Bulldozer', 'Wheel Loader', 'Backhoe', 'Crawler Excavator', 'Mini Excavator', 'Skid Steer Loader', 'Dump Truck', 'Excavator Bucket', 'Hydraulic Excavator'],
     count: '1,240+ Verified Suppliers | 560+ RFQs'
   },
@@ -218,7 +218,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-welding-equipment',
     name: 'Welding & Soldering Equipment',
     icon: 'Flame',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80504917595217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=6',
+    image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Welder Machine', 'Laser Welder', 'Laser Cutting Machine', 'Plastic Welding Machine', 'Spot Welder', 'Butt Welding Machine', 'Ultrasonic Welder', 'MIG Welder', 'TIG Welder', 'Submerged Arc Welder'],
     count: '980+ Verified Suppliers | 420+ RFQs'
   },
@@ -227,7 +227,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-computer-software',
     name: 'Computer Software & Hardware',
     icon: 'Laptop',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Accounting Financial & Banking Software', 'Anti Virus Software', 'CAD CAM Software', 'CD Drives', 'CD-ROM Writer', 'CD-ROMs', 'Call Centre Software', 'Communication Software', 'Computer - Motherboards', 'Computer - RAM & ROM'],
     count: '3,820+ Verified Suppliers | 2,430+ RFQs'
   },
@@ -235,7 +235,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-electrical-components',
     name: 'Electrical Household & Other Goods, Components',
     icon: 'Zap',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=8',
+    image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Adaptors', 'Batteries & Chargers', 'CVT', 'Cable Assemblies', 'Cable Glands & Reels', 'Capacitors', 'Coaxial Cables', 'Coffee & Tea Makers', 'DC AC Inverters & Converters', 'Diesel Generators'],
     count: '7,740+ Verified Suppliers | 4,320+ RFQs'
   },
@@ -243,7 +243,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-electronics-comm',
     name: 'Electronics & Communications',
     icon: 'Radio',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80&sig=9',
+    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     subcategories: ['ATM - Automated Teller Machines', 'Amplifiers', 'Audio & Video Broadcasting Equipments', 'Audio Amplifier & Mixer', 'Audio Cassette Parts', 'Banking Equipments', 'Bluetooth & Related Items', 'CD Players', 'CDs & Cassettes', 'CDs & DVDs Cases'],
     count: '3,950+ Verified Suppliers | 2,120+ RFQs'
   },
@@ -251,7 +251,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-machinery',
     name: 'Industrial Machinery & Automation',
     icon: 'Cpu',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=10',
+    image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     subcategories: ['CNC Machining Centers', 'Hydraulic Presses', 'Plastic Injection Molding', 'Laser Cutting Machines', 'Conveyor Systems', 'Robotic Welding Arms'],
     count: '24,800+ Products'
   },
@@ -259,7 +259,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-agri-machinery',
     name: 'Agri & Food Processing Machinery & Equipment',
     icon: 'Wrench',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80595246140625-573b715d11dc?w=800&auto=format&fit=crop&q=80&sig=11',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Agriculture Bags', 'Agriculture Choppers Shredders & Cutters', 'Agriculture Farm Tractors', 'Agriculture Grinders Multures', 'Agriculture Harvesters', 'Agriculture Nets', 'Agriculture Pumps', 'Agriculture Sheller', 'Agriculture Sprayers', 'Agriculture Thresher'],
     count: '3,840+ Verified Suppliers | 2,470+ RFQs'
   },
@@ -267,7 +267,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-farm-products',
     name: 'Farm Products - Grains, Fruits etc',
     icon: 'Wheat',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80&sig=12',
+    image: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Frozen Broccoli', 'IQF Vegetables', 'Frozen Strawberries', 'Frozen Cauliflower', 'Frozen Garlic', 'Sunflower Oil', 'Refined Sunflower Oil', '1121 Basmati Rice', 'Alfalfa Hay', 'Apples', 'Arabica Coffee', 'Avocados', 'Bananas', 'Barley', 'Basmati Rice', 'Black Pepper', 'Cashew Nuts'],
     count: '5,850+ Verified Suppliers | 4,120+ RFQs'
   },
@@ -275,7 +275,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-farm-inputs',
     name: 'Farm Inputs - Fertilizers, Pesticides & Seeds',
     icon: 'Sprout',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592982537447-7440770cbfc9?w=800&auto=format&fit=crop&q=80&sig=13',
+    image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Agricultural Seeds', 'Ammonium Nitrate', 'Ammonium Sulfate', 'Bio Fertilizers', 'Compost', 'Insecticides', 'Organic Fertilizers', 'NPK Fertilizers', 'Pesticides', 'Potash'],
     count: '2,980+ Verified Suppliers | 1,840+ RFQs'
   },
@@ -283,7 +283,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-processed-food',
     name: 'Processed Food & Beverages Products & By Products',
     icon: 'UtensilsCrossed',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Sunflower Oil', 'Olive Oil', 'Edible Cooking Oil', 'Almond Milk', 'Apple Cider Vinegar', 'Apple Juice', 'Apple Powder', 'Arabic Gum', 'Arabica Coffee', 'Bakery Ingredients', 'Canned Vegetables', 'Chocolate Products'],
     count: '4,450+ Verified Suppliers | 3,180+ RFQs'
   },
@@ -291,7 +291,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-livestock',
     name: 'Livestock, Poultry, Meat & Animal Products',
     icon: 'Beef',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80544025162-d76694265947?w=800&auto=format&fit=crop&q=80&sig=15',
+    image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Beef Meat', 'Chicken Eggs', 'Day-Old Chicks', 'Frozen Chicken', 'Frozen Pork', 'Halal Beef', 'Honey', 'Live Cattle', 'Live Sheep', 'Milk Powder'],
     count: '3,420+ Verified Suppliers | 2,160+ RFQs'
   },
@@ -299,7 +299,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-fish',
     name: 'Fish & Fish Products',
     icon: 'Fish',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80534483509719-3feaee7c30da?w=800&auto=format&fit=crop&q=80&sig=16',
+    image: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Anchovies', 'Canned Fish', 'Canned Tuna', 'Caviar', 'Cod Fish', 'Crab', 'Frozen Fish', 'Frozen Shrimp', 'Mackerel', 'Salmon'],
     count: '2,810+ Verified Suppliers | 1,790+ RFQs'
   },
@@ -307,7 +307,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-beverages-tobacco',
     name: 'Alcoholic Beverages Tobacco & Related Products',
     icon: 'Wine',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80510812431401-41d2bd2722f3?w=800&auto=format&fit=crop&q=80&sig=17',
+    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Absinthe', 'Alcoholic Beverages', 'Ale', 'Anisette', 'Beer', 'Brandy', 'Cachaça', 'Calvados', 'Champagne', 'Cider'],
     count: '1,950+ Verified Suppliers | 1,120+ RFQs'
   },
@@ -315,7 +315,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-bar-accessories',
     name: 'Bar Accessories and Related Products',
     icon: 'GlassWater',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80514362545857-3bc16c4c7d1b?w=800&auto=format&fit=crop&q=80&sig=18',
+    image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Alcohol Meter', 'Bar Accessories', 'Bar Sets', 'Beer Chillers', 'Beer Dispensers', 'Beer Glasses', 'Beer Kegs', 'Beer Towers', 'Beverage Dispensers'],
     count: '1,420+ Verified Suppliers | 890+ RFQs'
   },
@@ -323,7 +323,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-horticulture',
     name: 'Horticulture - Flowers, Plants & Related Products',
     icon: 'Flower2',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80485955900006-10f4d324d411?w=800&auto=format&fit=crop&q=80&sig=19',
+    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Artificial Grass', 'Artificial Plants', 'Bonsai Plants', 'Cut Flowers', 'Fresh Roses', 'Greenhouses', 'Hydroponics Systems', 'Plant Nursery Pots', 'Seedling Trays', 'Succulents'],
     count: '2,130+ Verified Suppliers | 1,350+ RFQs'
   },
@@ -331,7 +331,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-automotive',
     name: 'Automotive Parts & Transportation',
     icon: 'Car',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80&sig=20',
+    image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Forged Alloy Wheels', 'Turbochargers & Engine Assemblies', 'Big Brake Kits & Calipers', 'EV Powertrain & BMS', 'Carbon Fiber Aero Kits', 'Automotive Wire Harnesses'],
     count: '38,400+ Products'
   },
@@ -339,7 +339,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-electronics',
     name: 'Electronics & Component PCB',
     icon: 'Radio',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Multilayer PCBs', 'Semiconductors & ICs', 'Lithium LiFePO4 Batteries', 'Sensors & Transducers', 'Power Inverters', 'SMT Surface Mount Assemblies'],
     count: '42,100+ Products'
   },
@@ -347,7 +347,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-chemicals',
     name: 'Chemicals, Polymers & Resins',
     icon: 'FlaskConical',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=22',
+    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Virgin HDPE / Polypropylene', 'Industrial Solvents', 'Titanium Dioxide Pigments', 'Water Treatment Chemicals', 'Specialty Adhesives', 'Agrochemicals'],
     count: '18,300+ Products'
   },
@@ -355,7 +355,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-textiles',
     name: 'Textiles, Fabrics & Apparel',
     icon: 'Scissors',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80&sig=23',
+    image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Organic Cotton Fabrics', 'Raw Selvedge Denim', 'Technical Workwear', 'Polyester Filament Yarn', 'Non-Woven Geotextiles', 'Home Textile Linens'],
     count: '31,500+ Products'
   },
@@ -363,7 +363,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-medical',
     name: 'Medical Devices & Healthcare',
     icon: 'Stethoscope',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=24',
+    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Surgical Instruments', 'Hospital Beds & Equipment', 'Nitrile Examination Gloves', 'Diagnostic Test Kits', 'Orthopedic Titanium Implants', 'Dental Units'],
     count: '12,400+ Products'
   },
@@ -371,7 +371,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-renewable',
     name: 'Renewable Energy & Solar',
     icon: 'Sun',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=25',
+    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Monocrystalline Solar Panels', 'Hybrid Solar Inverters', 'Commercial ESS Battery Packs', 'Wind Turbine Generators', 'EV Fast Charging Stations', 'Solar Water Heaters'],
     count: '9,700+ Products'
   },
@@ -379,7 +379,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-packaging',
     name: 'Packaging, Paper & Logistics',
     icon: 'Box',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=26',
+    image: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Corrugated Shipping Cartons', 'Biodegradable Mailers', 'Glass Cosmetic Bottles', 'Aluminum Can Packaging', 'Custom Printed Stand-Up Pouches', 'Stretch Film Rolls'],
     count: '14,200+ Products'
   },
@@ -387,7 +387,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-builders-hardware',
     name: 'Builders Hardware, Construction Material & Equipment',
     icon: 'Building2',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80&sig=27',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Aggregates', 'Angles Frames', 'Bathroom Accessories', 'Bathtubs', 'Blocks Tiles & Slabs', 'Bricks', 'Building Construction Machineries and Equipments', 'Building Fittings', 'Buildings Sheds & Garages', 'Cement'],
     count: '7,000+ Verified Suppliers | 3,760+ RFQs'
   },
@@ -395,7 +395,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-carpets-floorings',
     name: 'Carpets, Mats, Rugs, Floorings',
     icon: 'Layers',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Acrylic Carpet', 'Area Rugs', 'Art Rugs', 'Artificial Grass Mats', 'Bath Mats', 'Bath Rugs', 'Car Mats', 'Carpet Tack Strip', 'Carpet Tiles', 'Carpets'],
     count: '4,040+ Verified Suppliers | 2,095+ RFQs'
   },
@@ -403,7 +403,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-elevators-escalators',
     name: 'Elevators & Escalators',
     icon: 'ArrowUpDown',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80546768292-fb12f6c92568?w=800&auto=format&fit=crop&q=80&sig=29',
+    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Elevator Parts'],
     count: '185+ Verified Suppliers | 95+ RFQs'
   },
@@ -411,7 +411,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-furniture-interior',
     name: 'Furniture, Interior Decoration & Furnishings',
     icon: 'Armchair',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80555041469-a586c61ea9bc?w=800&auto=format&fit=crop&q=80&sig=30',
+    image: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Accent Chairs', 'Acrylic Podiums', 'Adjustable Height Tables', 'Adjustable Racks', 'Advertising Equipments & Materials', 'Aluminum Furnitures', 'Antique Furniture', 'Antique Furnitures', 'Armrest Chairs', 'Auditorium Chairs'],
     count: '2,810+ Verified Suppliers | 1,465+ RFQs'
   },
@@ -419,7 +419,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-glass-ceramics',
     name: 'Glass & Ceramics',
     icon: 'Layers',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80578749556568-bc2c40e68b61?w=800&auto=format&fit=crop&q=80&sig=31',
+    image: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Bent Glass', 'Ceramic Cartridge', 'Ceramic Coasters', 'Ceramic Colors', 'Ceramic Fiber', 'Ceramic Filters', 'Ceramic Handicrafts', 'Ceramic Kitchenware', 'Ceramic Knobs', 'Ceramic Lamps'],
     count: '2,435+ Verified Suppliers | 1,245+ RFQs'
   },
@@ -427,7 +427,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-hvac',
     name: 'Heating, Air Conditioner & Ventilation',
     icon: 'Wind',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80&sig=32',
+    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Air Conditioner Parts'],
     count: '215+ Verified Suppliers | 105+ RFQs'
   },
@@ -435,7 +435,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-household-merchandise',
     name: 'Household & General Merchandise',
     icon: 'Home',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80583947215259-38e31be8751f?w=800&auto=format&fit=crop&q=80&sig=33',
+    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Air Freshners', 'Baby Bags', 'Baby Baskets', 'Baby Bassinet', 'Baby Bath Tub', 'Baby Bathrobes', 'Baby Bibs', 'Baby Booties', 'Baby Bottle Accessories', 'Baby Bottle Brush'],
     count: '3,350+ Verified Suppliers | 1,675+ RFQs'
   },
@@ -443,7 +443,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-jute-machinery',
     name: 'Jute - Raw Material, Processed & Related Machinery',
     icon: 'Package',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80&sig=34',
+    image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Coir Fibers', 'Coir Mat', 'Jute Boards', 'Jute Machinery', 'Jute Machinery Spare Parts', 'Jute Products', 'Jute Yarn & Fabric', 'Other Coir Products', 'Raw Jute'],
     count: '4,635+ Verified Suppliers | 2,435+ RFQs'
   },
@@ -451,7 +451,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-raw-wood',
     name: 'Raw wood and wood related products',
     icon: 'Trees',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Anti Termite Wood Products', 'Ash Wood', 'Bamboo', 'Bamboo Products', 'Beach Wood', 'Cedar Wood', 'Chopsticks', 'Cork Wood', 'Ebony Wood', 'Eucalyptus Wood'],
     count: '5,740+ Verified Suppliers | 3,045+ RFQs'
   },
@@ -459,7 +459,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-chemicals-allied',
     name: 'Chemicals & Allied Products',
     icon: 'FlaskConical',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=36',
+    image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Acetic Acid', 'Acetic Acid (Vinegar)', 'Acetone', 'Acids', 'Adhesive Sealants & Lubricants', 'Agricultural Chemicals', 'Aldehyde', 'Alum', 'Aluminum Oxide', 'Aluminum Sulfate'],
     count: '7,210+ Verified Suppliers | 3,850+ RFQs'
   },
@@ -467,7 +467,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-display-packaging',
     name: 'Display, Printing & Packaging Products',
     icon: 'Printer',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=37',
+    image: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Acrylic Boxes', 'Air Bubble Bags', 'Aluminium Containers', 'Aluminium Drum & Barrel', 'Aluminium Foil Tape', 'Aluminum Foil', 'BOPP Tape', 'Baffle Bags', 'Bakery Bags', 'Blister Foil'],
     count: '4,550+ Verified Suppliers | 2,390+ RFQs'
   },
@@ -475,7 +475,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-industrial-goods',
     name: 'Industrial Goods & Supplies',
     icon: 'Wrench',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=38',
+    image: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Abrasives', 'Anchors', 'Battery Scraps', 'Bearing', 'Bolts', 'Cement Bags', 'Clamps', 'Clips', 'Dies & Mouldings', 'Fasteners'],
     count: '5,730+ Verified Suppliers | 3,090+ RFQs'
   },
@@ -483,7 +483,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-industrial-machinery',
     name: 'Industrial Machinery & Plants',
     icon: 'Cog',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=39',
+    image: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Automobile Machinery', 'Bag Machinery', 'Beverages Machinery', 'Breweries & Distillery Machinery', 'CNC Machines & Spare Parts', 'Ceramic Machine', 'Charcoal/Briquette Making Machinery', 'Cigarette Making Machine/Tobacco Processing Machine', 'Coir Machinery', 'Dairy & Poultry Equipment'],
     count: '2,570+ Verified Suppliers | 1,280+ RFQs'
   },
@@ -491,7 +491,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-marine-equipment',
     name: 'Marine Equipment & Machinery',
     icon: 'Anchor',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=40',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Boats & Vessels', 'Marine Chemicals', 'Marine Engines', 'Marine Equipments & Spare Parts', 'Marine Oil', 'Marine Propellers', 'Marine Safety Products', 'Marine Valves', 'Nautical Items', 'Shipping Machinery Equipment & Spare Parts'],
     count: '2,350+ Verified Suppliers | 1,175+ RFQs'
   },
@@ -499,7 +499,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-metal-products',
     name: 'Metal & Metal Products',
     icon: 'Shield',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=41',
+    image: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     subcategories: ['Aluminium Alloy', 'Aluminium Ash', 'Aluminium Balls', 'Aluminium Billets', 'Aluminium Boring Scrap', 'Aluminium Bronze Scrap', 'Aluminium Cable Scrap', 'Aluminium Can Scrap', 'Aluminium Casting Scrap', 'Aluminium Coil Scrap'],
     count: '9,120+ Verified Suppliers | 4,960+ RFQs'
   },
@@ -507,7 +507,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-metallic-elements',
     name: 'Metallic Elements',
     icon: 'Shield',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Mercury'],
     count: '65+ Verified Suppliers | 30+ RFQs'
   },
@@ -515,7 +515,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-mining-metallurgy',
     name: 'Mining & Metallurgy',
     icon: 'Pickaxe',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80578328819058-b69f3a3b0f6b?w=800&auto=format&fit=crop&q=80&sig=43',
+    image: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Antimony Ore', 'Asbestos', 'Barite Ore', 'Bauxite & Aluminium Ore', 'Bentonite', 'Chrome Ore', 'Clay', 'Coltan Tantalite Ore', 'Copper Ore', 'Dolomite'],
     count: '8,880+ Verified Suppliers | 4,820+ RFQs'
   },
@@ -523,7 +523,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-non-metallic',
     name: 'Non Metallic Elements',
     icon: 'Layers',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=44',
+    image: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Silicon', 'Silicon Plates', 'Silicon Sealants', 'Silicon Sheets', 'Silicon Tubes', 'Silicon Wafer', 'Sulphur'],
     count: '4,770+ Verified Suppliers | 2,540+ RFQs'
   },
@@ -531,7 +531,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-paper-products',
     name: 'Paper & Paper Products',
     icon: 'FileText',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80&sig=45',
+    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     subcategories: ['ATM Paper Rolls', 'Absorbent Paper', 'Adhesive Paper', 'Air Filter Paper', 'Anti Rust Paper', 'Art Paper', 'Backing Paper', 'Billing Paper Rolls', 'Bituminised Waterproof Paper', 'Bleached Paper'],
     count: '4,110+ Verified Suppliers | 2,160+ RFQs'
   },
@@ -539,7 +539,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-petroleum-oil',
     name: 'Petroleum, Oil & Related Products',
     icon: 'Fuel',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
     subcategories: ['A1 Jet Fuel', 'Asphalt', 'Automotive Diesel', 'Automotive Diesel EN590', 'Aviation Fuel Oil', 'Base Oil', 'Biodiesel', 'Biodiesel EN590', 'Bitumen', 'Bitumen Asphalt'],
     count: '14,340+ Verified Suppliers | 8,000+ RFQs'
   },
@@ -547,7 +547,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-plastic-products',
     name: 'Plastic Products',
     icon: 'Box',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80591871937573-74dbba515c4c?w=800&auto=format&fit=crop&q=80&sig=47',
+    image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Bio-Degradable Plastic Product', 'Injection Moulded Products', 'Plastic Items', 'Plastic Moulds', 'Plastic Raw Materials', 'Plastic Scrap', 'Plastic Sheets Laminates', 'Recycled Plastic'],
     count: '6,030+ Verified Suppliers | 3,300+ RFQs'
   },
@@ -555,7 +555,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-power-plants',
     name: 'Power Plants',
     icon: 'Zap',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=48',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Power Plant Spares'],
     count: '160+ Verified Suppliers | 80+ RFQs'
   },
@@ -563,7 +563,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-refrigeration-storage',
     name: 'Refrigeration, Cold Storage',
     icon: 'Snowflake',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Compressors', 'Refrigerator Tubes'],
     count: '900+ Verified Suppliers | 475+ RFQs'
   },
@@ -571,7 +571,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-rubber-items',
     name: 'Rubber & Related Items',
     icon: 'CircleDot',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=50',
+    image: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Raw Rubber', 'Rubber Items', 'Rubber Machinery', 'Rubber Scrap', 'Synthetic Rubber'],
     count: '3,180+ Verified Suppliers | 1,705+ RFQs'
   },
@@ -579,7 +579,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-tools-instruments',
     name: 'Tools & Instruments',
     icon: 'Hammer',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80530124566582-a618bc2615dc?w=800&auto=format&fit=crop&q=80&sig=51',
+    image: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Axe', 'Dutch Hoe', 'Farmer Tools', 'Fork Jembe', 'Garden Hose', 'Garden Tools', 'Hand Trowel', 'Hoe', 'Knapsack Sprayer', 'Lawn Mower'],
     count: '2,460+ Verified Suppliers | 1,280+ RFQs'
   },
@@ -587,7 +587,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-transportation-components',
     name: 'Transportation - Air, Rail, Auto Components',
     icon: 'Plane',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=52',
+    image: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Aeroplane Models', 'Aerospace - Commercial & Military', 'Aircraft', 'Aircraft & Aerospace', 'Aircraft Engines & Spares', 'Ambulances Special Purpose Vehicles', 'Auto Rickshaw & Spare Parts', 'Automobile Body Parts', 'Automobile Bolts Nuts Springs & Bearings', 'Automobile Brakes & Spare Parts'],
     count: '2,745+ Verified Suppliers | 1,465+ RFQs'
   },
@@ -595,7 +595,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-fuel-energy-resources',
     name: 'Fuel & Energy Resources',
     icon: 'Fuel',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80582533561751-ef6f6ab93a2e?w=800&auto=format&fit=crop&q=80&sig=53',
+    image: 'https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Activated Carbon from Charcoal', 'Activated Charcoal', 'Agricultural Diesel', 'Anthracite Coal', 'Automotive Diesel Fuel', 'B100 Biodiesel', 'BBQ Charcoal', 'BS IV Diesel', 'BS VI Diesel', 'Bamboo Charcoal'],
     count: '8,045+ Verified Suppliers | 4,683+ RFQs'
   },
@@ -603,7 +603,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-hotel-restaurant',
     name: 'Hotel & Restaurant - Equipments & Products',
     icon: 'UtensilsCrossed',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80&sig=54',
+    image: 'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80',
     subcategories: [
       'PPE Equipment & Safety',
       'Cleaning Supplies & Chemicals',
@@ -624,7 +624,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-information-databases',
     name: 'Information Databases',
     icon: 'FileText',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80&sig=55',
+    image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Venture Capital Directories'],
     count: '42+ Verified Suppliers | 28+ RFQs'
   },
@@ -632,7 +632,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-medical-healthcare',
     name: 'Medical & HealthCare',
     icon: 'Stethoscope',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
     subcategories: ['1 Ply Face Mask', '2 Ply Face Mask', '3 Ply Face Mask', '4 Ply Face Mask', '5 Ply Face Mask', 'Acupuncture Products', 'Anti Virus Face Mask', 'Arm Pads', 'Aromatherapy Products', 'Autoclaves'],
     count: '3,248+ Verified Suppliers | 1,845+ RFQs'
   },
@@ -640,7 +640,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-office-stationery',
     name: 'Office Equipment, Stationery & Supplies',
     icon: 'Printer',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80&sig=57',
+    image: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Paper Shredder Paper Trimmers', 'Stationery'],
     count: '420+ Verified Suppliers | 227+ RFQs'
   },
@@ -648,7 +648,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-pollution-control',
     name: 'Pollution Control Equipments',
     icon: 'Wind',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80&sig=58',
+    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Air Filters', 'Air Fresheners'],
     count: '435+ Verified Suppliers | 240+ RFQs'
   },
@@ -656,7 +656,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-safety-security-equipment',
     name: 'Safety & Security Equipment',
     icon: 'Shield',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80557597774-9d273605dfa9?w=800&auto=format&fit=crop&q=80&sig=59',
+    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Army & Police Equipment', 'CCTV & Accessories', 'Fire Extinguishers & Products', 'Safes & Lockers', 'Surveillance Equipments'],
     count: '2,650+ Verified Suppliers | 1,540+ RFQs'
   },
@@ -664,7 +664,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-arts-antiques',
     name: 'Arts & Antiques',
     icon: 'Coins',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80582555172866-f73bb12a2ab3?w=800&auto=format&fit=crop&q=80&sig=60',
+    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Old Coin'],
     count: '85+ Verified Suppliers | 48+ RFQs'
   },
@@ -672,7 +672,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-books-music-entertainment',
     name: 'Books, Magazines, Music & Entertainment',
     icon: 'Music',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80511671782779-c97d3d27a1d4?w=800&auto=format&fit=crop&q=80&sig=61',
+    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Accordion', 'Acoustic Guitar', 'Books, Textbooks & Magazines', 'Clarinet', 'Dholak', 'Drum', 'Educational Material & Equipments', 'Electric Guitar', 'Flute', 'Harmonica'],
     count: '2,367+ Verified Suppliers | 1,316+ RFQs'
   },
@@ -680,7 +680,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-cosmetics-toiletries',
     name: 'Cosmetics, Toiletries & Hygiene Products',
     icon: 'Heart',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80522335789203-aabd1fc54bc9?w=800&auto=format&fit=crop&q=80&sig=62',
+    image: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Aftershave Lotions', 'Agarwood Oil (Oud Oil)', 'Alcohol Based Hand Sanitizer', 'Alcohol Disinfectant Wipes', 'Anti Aging Creams', 'Antibacterial Hand Wash', 'Antibacterial Wipes', 'Antiseptic Wipes', 'Argan Oil', 'Artificial Nails'],
     count: '5,300+ Verified Suppliers | 3,170+ RFQs'
   },
@@ -688,7 +688,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-fitness-sports',
     name: 'Fitness Equipment & Sports Goods',
     icon: 'Dumbbell',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Acupressure And Massage Balls', 'Acupressure Rollers', 'Archery Bows', 'Archery Accessories', 'Archery Arrows', 'Badminton Accessories', 'Badminton Net', 'Badminton Rackets', 'Badminton Shuttlecock', 'Baseball Accessories'],
     count: '2,660+ Verified Suppliers | 1,540+ RFQs'
   },
@@ -696,7 +696,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-gems-jewellery',
     name: 'Gems & Jewellery',
     icon: 'Gem',
-    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80&sig=64',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Agate Stones', 'Amber Gemstones', 'Amethyst Stones', 'Anklets', 'Aquamarine Gemstones', 'Aquamarine Stones', 'Artificial Anklets', 'Artificial Bangles', 'Artificial Bracelets', 'Artificial Brooches'],
     count: '3,270+ Verified Suppliers | 1,890+ RFQs'
   },
@@ -704,7 +704,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-handicrafts-decorative',
     name: 'Handicrafts, Gifts & Decorative',
     icon: 'Gift',
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80&sig=65',
+    image: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Aluminum Handicrafts', 'Artificial Flower', 'Bamboo Handicrafts', 'Bone Handicrafts', 'Brass Handicrafts', 'Candle Holder', 'Candles', 'Cane Handicrafts', 'Christmas Tree & Decoratives', 'Clay Handicrafts'],
     count: '4,150+ Verified Suppliers | 2,437+ RFQs'
   },
@@ -712,7 +712,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-leather-products',
     name: 'Leather & Leather Products',
     icon: 'Briefcase',
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80548036328-c9fa89d128fa?w=800&auto=format&fit=crop&q=80&sig=66',
+    image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Animal Leather', 'Bonded Leather', 'Buffalo Leather', 'Chamois Leather', 'Cow Leather', 'Crocodile Leather', 'Emu Leather', 'Finished Leather', 'Foam Leather', 'Goat Leather'],
     count: '4,615+ Verified Suppliers | 2,756+ RFQs'
   },
@@ -720,7 +720,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-pets-supplies',
     name: 'Pets & Pet Supplies',
     icon: 'Dog',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80583511655857-d19b40a7a54e?w=800&auto=format&fit=crop&q=80&sig=67',
+    image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Animal Food', 'Aquariums & Equipments', 'Dog Clothing & Strapping', 'Horse Equipments, Saddles & Tacks', 'Pet Cages', 'Pet Clothings', 'Pet Feeders', 'Pet Homes', 'Pet Straps', 'Pet Toys'],
     count: '3,990+ Verified Suppliers | 2,440+ RFQs'
   },
@@ -728,7 +728,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-photographic-optical',
     name: 'Photographic & Optical Equipment',
     icon: 'Camera',
-    image: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80&sig=68',
+    image: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Optical Brightening Agent', 'Optical Lenses', 'Optical Machinery & Equipment', 'Photo Film Roll', 'Photographic Equipment', 'Spectacle Frames', 'Spectacles, Sunglasses & Accessories'],
     count: '3,095+ Verified Suppliers | 1,835+ RFQs'
   },
@@ -736,7 +736,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-textiles-apparel-footwear',
     name: 'Textiles, Garment, Fashion Accessories & Footwear',
     icon: 'Shirt',
-    image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80&sig=69',
+    image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80',
     subcategories: ['Abaya', 'Acrylic Fiber', 'Acrylic Yarn', 'Activewear', 'Air Bags', 'Apparel, Clothing & Garments', 'Aprons', 'Artificial Jewelry', 'Asbestos Fiber', 'Baby Accessories'],
     count: '5,680+ Verified Suppliers | 3,425+ RFQs'
   }
@@ -807,8 +807,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 42,
     factorySizeSqM: 45000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80',
     description: 'Joy Bamboo Forest Farm LLC — Paid Basic Plan Supplier in the United States. Supplying farm-grown timber bamboo poles, raw bamboo culms, and agricultural bamboo stakes. Direct mailing address, farm pickup coordinates, and manager contact lines are protected for Paid Members.',
     contactPerson: 'Svetlana Brodskaya (Manager)',
     contactEmail: 'info@joybambooforestfarm.com',
@@ -839,8 +839,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 168,
     factorySizeSqM: 28000,
     productionLines: 6,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     description: 'MP Commodity Brokers Australia Pty Ltd — Paid Basic Plan Member with all platform services enabled. Specializing in bulk Fuel & Petroleum commodities (EN590 10PPM Diesel, Jet Fuel A-1, D6 Virgin Fuel Oil, Automotive & Marine Fuel). Direct street address and brokerage desk contacts are protected for Paid Members.',
     contactPerson: 'Melissa Prezios',
     contactEmail: 'melissa@mpcommoditybrokers.com',
@@ -873,8 +873,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 240,
     factorySizeSqM: 120000,
     productionLines: 8,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     description: 'Middle Fox LLC is a premier US-based merchant energy supplier and petroleum export group. Specializing in verified refinery allocations of Ultra-Low Sulfur Diesel Fuel EN 590 (10 PPM), Aviation Turbine Fuel (Jet A-1, ASTM D1655), Light Cycle Oil (LCO), and Virgin Fuel Oil D6. Delivering bulk ocean tanker shipments FOB Houston, Rotterdam, and Fujairah under 100% Escrow Trade Assurance.',
     contactPerson: 'Mr. Randy',
     contactEmail: 'randy@midforkcap.com',
@@ -914,8 +914,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 54,
     factorySizeSqM: 15000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     description: 'ACE Intermediary — Verified Supplier & Basic Business Plan Member on Trade Heaven. Based in Corsicana, Texas, USA, specializing in wholesale commodity trade facilitation, North American industrial sourcing, bulk goods brokerage, and verified buyer matchmaking. Decision Maker: Ali Charley Ezekiah. Payment Method: Debit Card.',
     contactPerson: 'Ali Charley Ezekiah (Decision Maker)',
     contactEmail: 'ezekiahali355@gmail.com',
@@ -981,7 +981,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+  "logoUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Engaged in the business of selling consumer products such as, edible oils, health supplements and cosmetics.",
   "contactPerson": "Samrit Thanakhun",
@@ -1012,7 +1012,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=71",
+  "logoUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "We use a reliable shipping company and achieve 100% success in all countries. Agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, wheat flour.",
   "contactPerson": "Andy Henderson",
@@ -1043,7 +1043,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=72",
+  "logoUrl": "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Soybeans, Sun Flower Seeds, Castor Seeds, Maize, Kidney Beans.",
   "contactPerson": "Noah Tess",
@@ -1074,7 +1074,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=73",
+  "logoUrl": "https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Manufacturer of Corn Oil, Soybean Oil, Peanut Oil, Rapeseed Oil, Sunflower Oil, Coconut Oil, Cooking Oil, Vegetable Oil, Edible Oil, Oils.",
   "contactPerson": "Erick Rodriguez",
@@ -1105,7 +1105,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=74",
+  "logoUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of METHYL OLEATE, EPOXIDIZED SOYBEAN OIL, ETHYL OLEATE, METHYL PALMITATE.",
   "contactPerson": "Patric wilsons",
@@ -1136,7 +1136,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=75",
+  "logoUrl": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "I have buyer seeking real suppliers for crude oil, diamonds, sugar, soybeans, and more.",
   "contactPerson": "Valerie Barner",
@@ -1167,7 +1167,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=76",
+  "logoUrl": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Soybean Oil, Non gmo soybean, Sugar, Chicken feet.",
   "contactPerson": "Paul Noar",
@@ -1198,7 +1198,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+  "logoUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Cooking oil, sunflower oil, wholesale sunflower oil sales, wholesale cooking oil, soybean oil, wholesale soybean oil.",
   "contactPerson": "Ramal Huseynov",
@@ -1229,7 +1229,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=78",
+  "logoUrl": "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Animal feed, Corn, Milk, Soybean Oil.",
   "contactPerson": "Rami Wilsons",
@@ -1260,7 +1260,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=79",
+  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
   "bannerUrl": "",
   "description": "Supplier of Halal Beef, Halal Chicken, Sugar, Soybeans, Rice, Halal Lamb, Crude Oil, Wheat.",
   "contactPerson": "Shahied Hanifa",
@@ -1291,7 +1291,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=80",
+  "logoUrl": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Manufacturer of sunflower oil, corn oil, jatropha oil, soybean oil, used cooking oil, rapeseed oil, RBD Palm Olein.",
   "contactPerson": "mike john",
@@ -1322,7 +1322,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=81",
+  "logoUrl": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Soybeans, Corn Maize, Wheat.",
   "contactPerson": "Bala Awad",
@@ -1353,7 +1353,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=82",
+  "logoUrl": "https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Soybeans, steel, Cigarettes, I.V supplies.",
   "contactPerson": "Chinel Stephens",
@@ -1384,7 +1384,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=83",
+  "logoUrl": "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of rice, corn, soybean.",
   "contactPerson": "One Arena",
@@ -1415,7 +1415,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+  "logoUrl": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of TVP, TSP, grain, seafood, hake, sesame, tomato paste, soybean meal, powder milk.",
   "contactPerson": "Tony Kwon",
@@ -1446,7 +1446,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=85",
+  "logoUrl": "https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of coal, coking coal, pet coke, wheat, corn, soybeans, sugar.",
   "contactPerson": "Jeff Davis",
@@ -1477,7 +1477,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=86",
+  "logoUrl": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of crude oil, SOYBEAN OIL, SUNFLOWER OIL, BITUMEN.",
   "contactPerson": "Adan Akishemohin",
@@ -1508,7 +1508,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=87",
+  "logoUrl": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of corn, yellow corn, maize, yellow maize, grain, animal feed, Soybeans, Hard Red Winter Wheat.",
   "contactPerson": "Aaron Culver",
@@ -1539,7 +1539,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=88",
+  "logoUrl": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of HIBISCUS FLOWERS, HIBISCUS PETALS, SESAME SEEDS, MORINGA POWDER, soybeans, cassava flakes (gari).",
   "contactPerson": "IBRAHEEM",
@@ -1570,7 +1570,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=89",
+  "logoUrl": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80",
   "bannerUrl": "",
   "description": "Supplier of Cooking Oil, Grains, Meat, Sugar, sunflower oil, corn oil, olive oil, soybean oil, rape-seed oil, wheat.",
   "contactPerson": "Mohamed Abdelghany",
@@ -1587,7 +1587,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=90',
+    logoUrl: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in White sugar, white rice, cooking oil.',
     contactPerson: 'Fred Bernard Zaziski',
@@ -1614,7 +1614,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Estate Planning Lawyer, Wills & Trusts, Estate Plans.',
     contactPerson: 'Stephen Rogers Brian Fillmore',
@@ -1641,7 +1641,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=92',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in copper cathodes, scrap metals, industrial metals.',
     contactPerson: 'Noel Brennan',
@@ -1668,7 +1668,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=93',
+    logoUrl: 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in sunflower oil, A4 paper, foodstuffs.',
     contactPerson: 'rodney Jenkins',
@@ -1695,7 +1695,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=94',
+    logoUrl: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Gourmet Grocery Store, seafood market, butcher shop.',
     contactPerson: 'Kelsey Headrick',
@@ -1722,7 +1722,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=95',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in aluminium scrap, copper, gold.',
     contactPerson: 'Peter Molly',
@@ -1749,7 +1749,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=96',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Ceramic cpu scrap, copper scrap, ubc scrap.',
     contactPerson: 'Frank Lawrence',
@@ -1776,7 +1776,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=97',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in C17200 beryllium copper, beryllium bronze.',
     contactPerson: 'zhangjiaye',
@@ -1803,7 +1803,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Copper Wire Scrap, EN590 10PPM, EN590 50PPM.',
     contactPerson: 'Jake',
@@ -1830,7 +1830,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80&sig=99',
+    logoUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Metal Scraps, Iron Scrap, Steel Scrap.',
     contactPerson: 'DEAN PARKER',
@@ -1857,7 +1857,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=100',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Copper, Powder, Ultrafine.',
     contactPerson: 'Sabrina Taylor',
@@ -1884,7 +1884,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=101',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in ceramic cpu scrap, copper scrap, ubc scrap.',
     contactPerson: 'Nitu',
@@ -1911,7 +1911,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=102',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Agro chemicals, urea fertilizer, ammonium.',
     contactPerson: 'Andy Henderson',
@@ -1938,7 +1938,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in copper cathode, used rail, copper scrap.',
     contactPerson: 'Benjamin Rule',
@@ -1965,7 +1965,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=104',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Gold, Copper.',
     contactPerson: 'Frederic Alua',
@@ -1992,7 +1992,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in copper scrap, Copper Wire Scraps 99% Best Quality Millbery Scraps.',
     contactPerson: 'JIMMY MORGAN',
@@ -2019,7 +2019,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80&sig=106',
+    logoUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in Mining, Gold, Copper.',
     contactPerson: 'Frederick Thomas',
@@ -2046,7 +2046,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80624365168968-f283d5162df9?w=800&auto=format&fit=crop&q=80&sig=107',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier specializing in earth rod, lightning rod, earth clamp.',
     contactPerson: 'Emily',
@@ -2087,7 +2087,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'TÜV Audited'],
     factorySizeSqM: 12000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=108',
+    logoUrl: 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of White sugar for sale, white rice for sale, cooking oil for sale, copper cathode for sale, aluminium ingot for sale.',
     contactPerson: 'Fred Bernard Zaziski',
@@ -2119,7 +2119,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 14001', 'Eco-Recycle Certified'],
     factorySizeSqM: 15000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=109',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Buyer of Recycling, Scrap Metal, Buy Scrap Metal, Copper, Buy Wire, Stainless Steel, All Type Of Metals, Buy Plastic Materials, Electric Motors, Aluminum Cans.',
     contactPerson: 'Miguel Hernandez',
@@ -2151,7 +2151,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['State Bar Verified'],
     factorySizeSqM: 500,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80589829545856-d10d557cf95f?w=800&auto=format&fit=crop&q=80&sig=110',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Estate Planning Lawyer, Wills & Trusts, Estate Plans. Trusted legal and asset protection counsel in Scottsdale, Arizona.',
     contactPerson: 'Stephen Rogers Brian Fillmore',
@@ -2183,7 +2183,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'TÜV Rheinland Certified'],
     factorySizeSqM: 22000,
     productionLines: 5,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80578328819058-b69f3a3b0f6b?w=800&auto=format&fit=crop&q=80&sig=111',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'Supplier of copper cathodes and high quality scrap metals and industrial metals through a global sourcing network built around quality transparency.',
     contactPerson: 'Noel Brennan',
@@ -2215,7 +2215,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Scrap Recycling Certified'],
     factorySizeSqM: 8000,
     productionLines: 2,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Buyer of Scrap Yard, Catalytic Converter, Scrap Metal Dealer, Scrap Metal, Aluminum Vehicles, Iron, Copper, Insulated Wire, Batteries.',
     contactPerson: 'Angela Brown',
@@ -2247,7 +2247,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'FDA Approved Food Export'],
     factorySizeSqM: 18000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=113',
+    logoUrl: 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of sunflower oil, A4 paper, foodstuffs, paper, frozen food, and import-export specialist in wide range of products.',
     contactPerson: 'rodney Jenkins',
@@ -2279,7 +2279,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['USDA Certified Butcher'],
     factorySizeSqM: 2000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80&sig=114',
+    logoUrl: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Gourmet market, seafood market, and butcher shop in West Knoxville, TN, specializing in chef-prepared meals, fresh seafood, and hand-cut steaks.',
     contactPerson: 'Kelsey Headrick',
@@ -2311,7 +2311,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'CE Marking', 'TÜV Certified'],
     factorySizeSqM: 50000,
     productionLines: 10,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Multinational trading and supply corporation dedicated to excellence in industrial machinery, agricultural commodities, scrap materials, and energy products.',
     contactPerson: 'Peter Molly',
@@ -2343,7 +2343,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'Eco-Scrap Certified'],
     factorySizeSqM: 60000,
     productionLines: 12,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=116',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Ceramic cpu scrap, copper scrap, ubc scrap, electric bike. WhatsApp contact available for instant bulk orders.',
     contactPerson: 'Frank Lawrence',
@@ -2375,7 +2375,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'RoHS', 'Beryllium Special Alloy Certified'],
     factorySizeSqM: 30000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=117',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Manufacturer of C17200 beryllium copper, beryllium bronze, and precision metal casting and forging solutions.',
     contactPerson: 'Executive Management',
@@ -2407,7 +2407,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['SGS Certified Petroleum & Metals'],
     factorySizeSqM: 5000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80618403088890-3d9fb6f4c8b1?w=800&auto=format&fit=crop&q=80&sig=118',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Copper Wire Scrap, EN590 10PPM/50PPM/500PPM, Jet Fuel A1, TS-1, D6 Virgin Fuel Oil, ESPO Origin.',
     contactPerson: 'Jake',
@@ -2439,7 +2439,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'LME Registered Trader'],
     factorySizeSqM: 25000,
     productionLines: 5,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Metal Scraps, Iron Scrap, Steel Scrap, Battery Scrap, Copper Scrap operating across 8 countries and 4 continents.',
     contactPerson: 'DEAN PARKER',
@@ -2471,7 +2471,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['IGAS Certified', 'Swiss Bullion & Metals Association'],
     factorySizeSqM: 20000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80&sig=120',
+    logoUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Copper, Powder, Ultrafine copper powder. Offering IGAS-certified, 99.9995% pure ultra-fine copper powder from Zurich vaults.',
     contactPerson: 'Sabrina Taylor',
@@ -2503,7 +2503,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 14001', 'Eco-Metals Certified'],
     factorySizeSqM: 14000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80&sig=121',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Specializes in sales of copper wire scrap, ceramic cpu gold intel processor scrap, aluminum ubc scrap, and fridge compressor scrap fully available in stock.',
     contactPerson: 'Nitu',
@@ -2535,7 +2535,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'Global Shipping Association'],
     factorySizeSqM: 35000,
     productionLines: 7,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=122',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, and wheat flour with 100% global shipping success.',
     contactPerson: 'Andy Henderson',
@@ -2567,7 +2567,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified Commodity Broker'],
     factorySizeSqM: 1000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80533090161767-e6ffed986c88?w=800&auto=format&fit=crop&q=80&sig=123',
+    logoUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Commodity Brokerage selling copper cathodes, copper scrap, used steel rail scrap, as well as other industrial commodities.',
     contactPerson: 'Benjamin Rule',
@@ -2599,7 +2599,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', '17 Years Metals Industry Experience'],
     factorySizeSqM: 10000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80&sig=124',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Leading supplier of high-quality gold and copper for industrial and commercial applications with 17 years of experience in the metals industry.',
     contactPerson: 'Frederic Alua',
@@ -2631,7 +2631,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'Verified Millbery Copper Exporter'],
     factorySizeSqM: 20000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80&sig=125',
+    logoUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of copper scrap. Copper Wire Scraps 99% Best Quality Millbery Scraps $3500.00-$4500.00/Metric Ton. Min Order 5.0 Metric Tons.',
     contactPerson: 'JIMMY MORGAN',
@@ -2663,7 +2663,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'UL Listed', 'CE Certified'],
     factorySizeSqM: 25000,
     productionLines: 5,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Manufacturer of earth rod, lightning rod, earth clamp, copper tape, exothermic weld. Founded in 2005 / 2021, Top Lightning & Grounding Protection Solutions provider.',
     contactPerson: 'Emily',
@@ -2695,7 +2695,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'Trade Service Certified'],
     factorySizeSqM: 4000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80609743522653-52354461eb27?w=800&auto=format&fit=crop&q=80&sig=127',
+    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'FTZ Global is an international business and trade service provider specializing in procurement and sales of commodities and commercial goods globally.',
     contactPerson: 'Christopher M Heck',
@@ -2727,7 +2727,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'Scrap Metal Recycling Certified'],
     factorySizeSqM: 18000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80605792657660-596af9009e82?w=800&auto=format&fit=crop&q=80&sig=128',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Specialized in sales of full metal scrap/ recycling material such as ac/fridge compressor, Ceramic Cpu Gold Processor Scraps, H.M.S 1&2, Copper wire scrap, Drained Battery Lead scrap.',
     contactPerson: 'Mark Parkes',
@@ -2759,7 +2759,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Precision Craft Certified'],
     factorySizeSqM: 5000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80&sig=129',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Manufacturer of Copper Ware, Home Décor, Kitchen Accessories, Bath Accessories, Garden Accessories, Table top crafted with precision.',
     contactPerson: 'Shahbaz ahmed pasha',
@@ -2791,7 +2791,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'Global Trade Leader'],
     factorySizeSqM: 100000,
     productionLines: 20,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80&sig=130',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of ceramic cpu scrap, copper scrap, ubc scrap, electric bike, Motorcycles, boat engine, jet ski, lawn mower, snow blower. Professional US trading company.',
     contactPerson: 'Joahan Executive',
@@ -2823,7 +2823,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'Milled Copper Ore Certified'],
     factorySizeSqM: 22000,
     productionLines: 5,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80599058917765-a780eda07a3e?w=800&auto=format&fit=crop&q=80&sig=131',
+    logoUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Manufacturer of copper ore. We are a manufacturer of milled Copper Ore from Colombia and offer spot and immediate supply and orders on demand.',
     contactPerson: 'John Moe',
@@ -2855,7 +2855,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Strategic Governance Certified'],
     factorySizeSqM: 8000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80&sig=132',
+    logoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Buyer of Copper Cathode. Worked extensively with Board and Executive teams, providing support and challenge on group level strategy and governance.',
     contactPerson: 'Kircher Jarsolav',
@@ -2887,7 +2887,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'Global Commodity Broker Certified'],
     factorySizeSqM: 10000,
     productionLines: 3,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Edible Oil, Non Edible Oil, Metal Scraps, General Commodities, oil plant, metal scrap, copper, copper scrap, oil products.',
     contactPerson: 'benjamin mathew',
@@ -2919,7 +2919,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Global Broker Network Certified'],
     factorySizeSqM: 3000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80582139329536-e7284fece509?w=800&auto=format&fit=crop&q=80&sig=134',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Buyer of sugar corn, copper, agricultural products, minerals. Commodities Broker and Intermediary with sizable network of Suppliers and Buyers worldwide.',
     contactPerson: 'Ervin C. Osvart',
@@ -2951,7 +2951,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 14001', 'Metal Recycling Solutions Certified'],
     factorySizeSqM: 16000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80526304640581-d334cdbbf45e?w=800&auto=format&fit=crop&q=80&sig=135',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of copper wire scrap, Aluminum Scrap, hdpe blue drum flakes, pp big bags, ldpe film. Provider of metal recycling solutions.',
     contactPerson: 'Radu',
@@ -2983,7 +2983,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'Rare Elements & Powder Certified'],
     factorySizeSqM: 8000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80610375461369-d613b564f4c4?w=800&auto=format&fit=crop&q=80&sig=136',
+    logoUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of Rare Elements, Energy, Gold, A7, Copper. Fast-growing startup specialized in Ultrafine copper powder, zinc powder, high purity aluminum ingots.',
     contactPerson: 'Abdul Kader Chanaah',
@@ -3015,7 +3015,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'MRI Room Shielding Certified', 'RoHS'],
     factorySizeSqM: 28000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80621416894569-0f39ed31d247?w=800&auto=format&fit=crop&q=80&sig=137',
+    logoUrl: 'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Manufacturer of mri room, rf cage, copper foil, lead glass. Copper Foils, Copper Mesh, Copper Tapes for MRI Room Installation, NdFeB Magnet Powder, LiPF6.',
     contactPerson: 'Julia',
@@ -3047,7 +3047,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Supply Chain Management Certified'],
     factorySizeSqM: 10000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=138',
+    logoUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of copper. Adroit is Sourcing, Production Management And Import Export And supply chain management Provider serving various industries globally.',
     contactPerson: 'Onel Athnaiel',
@@ -3079,7 +3079,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 14001', 'Metal Recycling Certified'],
     factorySizeSqM: 14000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80518186285589-2f7649de83e0?w=800&auto=format&fit=crop&q=80&sig=139',
+    logoUrl: 'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Supplier of copper wire, Aluminium. Copper wire, copper cathode, Used Rail, Hms1&2, Waste Alloy Steel Scrap, Aluminum, Electric Motors, Starters Alternator, Battery scrap, AC/Fridge Compressor Scrap, Aluminium UBC.',
     contactPerson: 'CPSR',
@@ -3111,7 +3111,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'Verified VIP Paid Client'],
     factorySizeSqM: 12000,
     productionLines: 4,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier of ceramic cpu scrap, copper scrap, ubc scrap, electric bike. Designed and equipped to offer top quality products and long term business relationships.',
     contactPerson: 'Mark Parkes',
@@ -3143,7 +3143,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client', 'Licensed Plumbing Contractor'],
     factorySizeSqM: 1000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80544717305-2782549b5136?w=800&auto=format&fit=crop&q=80&sig=141',
+    logoUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. When Sugar Hill residents need reliable plumbing help, Plumb Medic of Sugar Hill is the family-run name they call first.',
     contactPerson: 'Cameron Swadley',
@@ -3175,7 +3175,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 1500,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80589758438368-0ad531db3366?w=800&auto=format&fit=crop&q=80&sig=142',
+    logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Summit Event & Tent Rentals provides tables, chairs and other equipment to rent for events, parties and celebrations.',
     contactPerson: 'Sam Hemani',
@@ -3207,7 +3207,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 5000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80574607383476-f517f260d30b?w=800&auto=format&fit=crop&q=80&sig=143',
+    logoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Sugar IC45 buyers. Regarding your interest in our ICUMSA 45 sugar for your buyers, we are prepared to move forward.',
     contactPerson: 'Harry Shanklin',
@@ -3239,7 +3239,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 2000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80&sig=144',
+    logoUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of sugar, ICUMSA 45, cane, table sugar from Brazil.',
     contactPerson: 'Mieke Gonzalez',
@@ -3271,7 +3271,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 5000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=145',
+    logoUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Sugar, Oil A1, Oil EN590 Diesel, EN590 Diesel, Crude Oil, Crude Oil Buyer.',
     contactPerson: 'Guinevere Haworth',
@@ -3303,7 +3303,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 4000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80567427017947-545c5f8d16ad?w=800&auto=format&fit=crop&q=80&sig=146',
+    logoUrl: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Sugar, Flour, Rice, Maize, Yellow Corn, Shrimp, Chicken parts, Urea, Cement, crude oil, LNG, LPG D6.',
     contactPerson: 'Samuel (Al) Green',
@@ -3335,7 +3335,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 3000,
     productionLines: 1,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of sugar, oil, Gold. Specialize in the dynamic world of commodities.',
     contactPerson: 'Nicholas Medina',
@@ -3367,7 +3367,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client', 'GACC Certified'],
     factorySizeSqM: 2000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80550565118-3a14e8d0386f?w=800&auto=format&fit=crop&q=80&sig=148',
+    logoUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Sugar, ICUMSA 45. Brokers for GACC certified ICUMSA 45 sugar.',
     contactPerson: 'Abdullah Abdullah',
@@ -3399,7 +3399,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 3000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80&sig=149',
+    logoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Foundation Repair. Delivering concrete solutions to the Sugar Land, TX area since 1989.',
     contactPerson: 'Sugar Land Concrete Repair',
@@ -3431,7 +3431,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 1000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80&sig=150',
+    logoUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Buyer of ICUMSA 45 sugar. Company purchasing ICUMSA 45 Sugar at good price.',
     contactPerson: 'Aaron',
@@ -3463,7 +3463,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 8000,
     productionLines: 3,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80512496015851-a90fb38ba796?w=800&auto=format&fit=crop&q=80&sig=151',
+    logoUrl: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Manufacturer of energy drink, kitchen cabinet, rice/sugar, Gold.',
     contactPerson: 'Paul',
@@ -3495,7 +3495,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 1000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=152',
+    logoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Buyer of sugar products.',
     contactPerson: 'Thos A Rocket',
@@ -3527,7 +3527,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 2000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80569025743873-ea3a9ada89f9?w=800&auto=format&fit=crop&q=80&sig=153',
+    logoUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Sugar Oil. Financial Brokerage Services: We brokers facilitate the buying and selling of financial instruments.',
     contactPerson: 'Ibrahima Thiam',
@@ -3559,7 +3559,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 15000,
     productionLines: 1,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Aged Care. The Village at Sugar Land combines the highest quality care and the latest technology.',
     contactPerson: 'Village at sugarland',
@@ -3591,7 +3591,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 1000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80&sig=155',
+    logoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Buyer of chicken paws feet, sugar corns. Brokerage company looking to buy from the US to export to Vietnam and China.',
     contactPerson: 'KHOA HOANG',
@@ -3623,7 +3623,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 5000,
     productionLines: 2,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80&sig=156',
+    logoUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of sugar, meat, oil, and jet fuel A1. Extensive experience and reliable performance.',
     contactPerson: 'christian v lossley',
@@ -3655,7 +3655,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 12000,
     productionLines: 4,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80&sig=157',
+    logoUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of Cooking Oil, Grains, Meat, Sugar and process seeds, grains and cereals.',
     contactPerson: 'Mohamed Abdelghany',
@@ -3687,7 +3687,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['Verified VIP Paid Client'],
     factorySizeSqM: 3000,
     productionLines: 1,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80551232864-3f0890e580d9?w=800&auto=format&fit=crop&q=80&sig=158',
+    logoUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'VIP Paid Client & Buyer / Supplier. Supplier of sugar, sweetener, cane sugar, refined, oil, crude oil, oilgas, diesel, jet fuel, gasoline, A1 Jet Fuel.',
     contactPerson: 'Kenneth Witherspoon',
@@ -3720,8 +3720,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'CE Marking', 'TÜV Rheinland Certified', 'RoHS Compliance'],
     factorySizeSqM: 45000,
     productionLines: 12,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80445205170230-053b83016050?w=800&auto=format&fit=crop&q=80&sig=159',
-    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=160',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     description: 'Premier European manufacturer of 5-Axis CNC milling machines, precision laser cutting centers, and robotic assembly cells with over 30 years of industrial export excellence.',
     contactPerson: 'Dr. Klaus Becker (VP International Sales)',
     contactEmail: 'contact@kuka.in',
@@ -3752,7 +3752,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     factorySizeSqM: 38000,
     productionLines: 8,
     logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    bannerUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80&sig=162',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     description: 'Specialist OEM manufacturer of forged 6061-T6 aerospace-grade racing alloy wheels, high-flow billet turbochargers, monobloc brake kits, and high-performance automotive motorsport components.',
     contactPerson: 'Brett Vance (Director of Global Racing Sales)',
     contactEmail: 'contact@apexdynamics.in',
@@ -3782,8 +3782,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001', 'ISO 14001', 'UL 1973', 'CE', 'UN 38.3', 'IEC 62619'],
     factorySizeSqM: 80000,
     productionLines: 20,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=163',
-    bannerUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=164',
+    logoUrl: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     description: 'Tier-1 manufacturer of Grade-A LiFePO4 battery cells, 48V rack-mounted server rack batteries, commercial energy storage systems (BESS), and solar inverters.',
     contactPerson: 'Elena Zhao (Senior Export Director)',
     contactEmail: 'contact@apexpower.in',
@@ -3813,8 +3813,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'REACH Registered', 'GMP Certified', 'HALAL / KOSHER'],
     factorySizeSqM: 65000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=165',
-    bannerUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=166',
+    logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     description: 'Leading producer of virgin HDPE resin, specialty masterbatches, titanium dioxide (TiO2), industrial solvents, and water purification polymers.',
     contactPerson: 'Rajesh Singhania (Head of Global Trading)',
     contactEmail: 'contact@sudarshanpetro.in',
@@ -3844,8 +3844,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['GOTS Certified Organic', 'OEKO-TEX Standard 100', 'ISO 14001', 'SEDEX Audited'],
     factorySizeSqM: 32000,
     productionLines: 6,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80528458909336-e7a0adfed0a5?w=800&auto=format&fit=crop&q=80&sig=167',
-    bannerUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80',
     description: 'Certified manufacturer of 100% GOTS organic cotton yarn, luxury denim fabrics, non-woven geotextiles, and heavy-duty technical workwear fabrics.',
     contactPerson: 'Merve Yilmaz (Export Coordinator)',
     contactEmail: 'support@tradeheaven.net',
@@ -3875,8 +3875,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['HACCP Certified', 'ISO 22000:2018', 'FDA Registered', 'BRC Global Standard'],
     factorySizeSqM: 40000,
     productionLines: 5,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80&sig=169',
-    bannerUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80&sig=170',
+    logoUrl: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80',
     description: 'Premier exporter of Premium Jasmine & ST25 Fragrant Rice, W320/W240 Raw & Roasted Cashew Nuts, Robusta Green Coffee, and Black Pepper.',
     contactPerson: 'Nguyen Van Minh (Managing Director)',
     contactEmail: 'support@tradeheaven.net',
@@ -3900,7 +3900,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '11 - 50',
     annualRevenueUsd: '$30M - $60M',
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80479064555552-3ef4979f8908?w=800&auto=format&fit=crop&q=80&sig=171',
+    logoUrl: 'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Netgas Energy Services specializes in sulphur granules, sulphur powder, petroleum coke, EN590 diesel, urea fertilizer, organic fertilizer, and bulk industrial chemical supply.',
     contactPerson: 'BRENDA BLANCHE HAMEL',
@@ -3928,7 +3928,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: 'Above 1000',
     annualRevenueUsd: '$250M+',
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=80&sig=172',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Petro Munai Too is a premier Kazakhstan-based bulk exporter specializing in heavy oils, EN590 diesel, JET A1 fuel, JP54 aviation kerosene, and other high-grade refined petroleum products.',
     contactPerson: 'Erlan Sabenovich',
@@ -3955,7 +3955,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 1 hour',
     totalEmployees: '11 - 50',
     annualRevenueUsd: '$50M - $100M',
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80434389677669-e08b4cac3105?w=800&auto=format&fit=crop&q=80&sig=173',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'MEERBUSCH LLP stands as a beacon of innovation and excellence in the realm of oil and gas refining. Founded in the heart of the Republic of Kazakhstan, we have emerged as a trusted industry leader.',
     contactPerson: 'Natalie Ding',
@@ -3982,7 +3982,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 3 hours',
     totalEmployees: '11 - 50',
     annualRevenueUsd: '$15M - $30M',
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=174',
+    logoUrl: 'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'PT.TOO AMANAT PETROL specializes in regional bulk supply of EN590 diesel, JET FUEL, JP54, JET A1, LCO, PETCOKE, 10PPM sulfur products, and various other hydrocarbon solutions.',
     contactPerson: 'Shaufi Ramadhan',
@@ -4009,7 +4009,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '11 - 50',
     annualRevenueUsd: '$40M - $80M',
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Transitservicresurs LLC deals in bulk oil, gas, and petrochemical distribution. We work closely with major refineries to provide SCO, dip test authorizations, and reliable tank transfers.',
     contactPerson: 'ivanovich',
@@ -4036,7 +4036,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 1 hour',
     totalEmployees: '6 - 10',
     annualRevenueUsd: '$100M+',
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=176',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Ensco Holland B.V. has developed a state-of-the-art infrastructure hub unique to north-western Netherlands, providing fully commissioned gas processing facilities, fuel blending, and bulk supply.',
     contactPerson: 'Jaciuk, N.',
@@ -4063,7 +4063,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 4 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$5M - $15M',
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=177',
+    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Berkat Kiat Internasional Pt confirms availability of global allocations for EN590 diesel, LPG, MAZUT M100/75/99, D2 gasoil, D6 virgin fuel, and AGO JET FUEL.',
     contactPerson: 'Jeffry Sebayang',
@@ -4090,7 +4090,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '501 - 1000',
     annualRevenueUsd: '$500M+',
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80518152006812-edab29b069ac?w=800&auto=format&fit=crop&q=80&sig=178',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'LukArco B.V is the trusted partner of choice for specialty refining solutions. At LukArco we are focused on continuously improving our processes to ensure our offerings meet global requirements.',
     contactPerson: 'Lukarco.com',
@@ -4116,7 +4116,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 3 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$2M - $5M',
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80526304640581-d334cdbbf45e?w=800&auto=format&fit=crop&q=80&sig=179',
+    logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'International fuel trading and supply representative specializing in EN590 10PPM diesel, diesel fuel, and general petroleum products. We work with qualified buyers for spot and long-term contracts.',
     contactPerson: 'carlos cobo guillen',
@@ -4143,7 +4143,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$30M - $50M',
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=180',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'T-oil Group is an established exporter of crude oil, EN590, JET A1, D6, and LNG. Our refineries and trading operations execute on SPOT, TTO, and Tanker Takeover terms.',
     contactPerson: 'ANDREY OLEG',
@@ -4170,7 +4170,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 3 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$5M - $10M',
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=181',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'We provide premium petroleum products including crude oil, EN590, D2, Jetfuel, and JP54. Kindly share your buying inquiry via email for direct, secure trade setup.',
     contactPerson: 'UBAID UR REHMAN',
@@ -4197,7 +4197,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '51 - 100',
     annualRevenueUsd: '$20M - $45M',
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'OLABAY MARINE INTEGRATED SERVICES LIMITED is a Nigerian-registered trading company specializing in the sourcing and supply of crude oil and refined petroleum products.',
     contactPerson: 'uzonna umeh',
@@ -4224,7 +4224,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 1 hour',
     totalEmployees: 'Above 1000',
     annualRevenueUsd: '$350M+',
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80&sig=183',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'At Bayan Oil & Gas Ltd, we pride ourselves on building trusted global partnerships and ensuring smooth, transparent, and efficient transactions for EN590, D6, D2, Jet Fuel, LNG, and LPG.',
     contactPerson: 'BRIGHT BRIGS',
@@ -4251,7 +4251,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '6 - 10',
     annualRevenueUsd: '$15M - $30M',
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80469334031218-e382a71b716b?w=800&auto=format&fit=crop&q=80&sig=184',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'DG Inland Shipping B.V manages bulk tank storage and logistics solutions for all petroleum products. Secure allocations in ROTTERDAM, HOUSTON, UAE, JURONG, and SINGAPORE ports.',
     contactPerson: 'Adriaan Den Herder',
@@ -4278,7 +4278,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 3 hours',
     totalEmployees: '6 - 10',
     annualRevenueUsd: '$10M - $25M',
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80&sig=185',
+    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Gsp Energy is an international energy procurement and bulk fuel supply company specializing in the sourcing and structured delivery of large-volume petroleum products.',
     contactPerson: 'GSP ENERGY',
@@ -4305,7 +4305,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '51 - 100',
     annualRevenueUsd: '$80M - $150M',
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80&sig=186',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'Wenzhou Foreign Trade Industrial Product Co. is a long-established industrial exporter of EN590 10PPM, M100, LIGHT CRUDE, LNG, LPG, catalyst materials, and aviation fuel blends.',
     contactPerson: 'MARK WANG',
@@ -4332,7 +4332,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 1 hour',
     totalEmployees: '51 - 100',
     annualRevenueUsd: '$120M - $200M',
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80530124566582-a618bc2615dc?w=800&auto=format&fit=crop&q=80&sig=187',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'POST OIL B.V. is an authorized direct mandate representing top end-refineries for the bulk distribution of EN590 Diesel, Jet A1, JP54, ESPO Crude Oil, Light Cycle Oil, and fuel oils.',
     contactPerson: 'Dr. Matthias Schneider',
@@ -4359,7 +4359,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 3 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$8M - $15M',
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80&sig=188',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Humble Commodity Group specializes in the reliable supply of EN590 10ppm diesel, Jet A-1 aviation fuel, LPG, petroleum coke, bitumen, gasoline, and refined petroleum products.',
     contactPerson: 'Samuel King',
@@ -4386,7 +4386,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '51 - 100',
     annualRevenueUsd: '$60M - $120M',
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Llc Garantneftegaz is dedicated to building long-term partnerships for crude oil, EN590, LPG, Jet A1 aviation fuel, and D6 Virgin Fuel distribution.',
     contactPerson: 'Yeliseev Igorevich',
@@ -4413,7 +4413,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '11 - 50',
     annualRevenueUsd: '$25M - $50M',
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80541888946425-d0fbb186a5b7?w=800&auto=format&fit=crop&q=80&sig=190',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: '10014-1 LLC has spent over a decade and a half perfecting global supply chain management for EN590 10ppm diesel, Jet A1 Fuel, Virgin Fuel Oil D6, and ESPO crude oil.',
     contactPerson: 'Sean Grusd',
@@ -4486,7 +4486,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Engaged in the business of selling consumer products such as, edible oils, health supplements and cosmetics.",
-  "logoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80539109136881-3be0616acf4b?w=800&auto=format&fit=crop&q=80&sig=191"
+  "logoUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-1",
@@ -4523,7 +4523,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "We use a reliable shipping company and achieve 100% success in all countries. Agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, wheat flour.",
-  "logoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80&sig=192"
+  "logoUrl": "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
 },
   {
   "id": "buyer-ext2026-2",
@@ -4558,7 +4558,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Soybeans, Sun Flower Seeds, Castor Seeds, Maize, Kidney Beans.",
-  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80&sig=193"
+  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
 },
   {
   "id": "buyer-ext2026-3",
@@ -4598,7 +4598,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Manufacturer of Corn Oil, Soybean Oil, Peanut Oil, Rapeseed Oil, Sunflower Oil, Coconut Oil, Cooking Oil, Vegetable Oil, Edible Oil, Oils.",
-  "logoUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80&sig=194"
+  "logoUrl": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-4",
@@ -4632,7 +4632,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of METHYL OLEATE, EPOXIDIZED SOYBEAN OIL, ETHYL OLEATE, METHYL PALMITATE.",
-  "logoUrl": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80&sig=195"
+  "logoUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-5",
@@ -4667,7 +4667,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "I have buyer seeking real suppliers for crude oil, diamonds, sugar, soybeans, and more.",
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+  "logoUrl": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-6",
@@ -4701,7 +4701,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Soybean Oil, Non gmo soybean, Sugar, Chicken feet.",
-  "logoUrl": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80543163521-1bf539c55dd2?w=800&auto=format&fit=crop&q=80&sig=197"
+  "logoUrl": "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-7",
@@ -4737,7 +4737,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Cooking oil, sunflower oil, wholesale sunflower oil sales, wholesale cooking oil, soybean oil, wholesale soybean oil.",
-  "logoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80549298916-b41d501d3772?w=800&auto=format&fit=crop&q=80&sig=198"
+  "logoUrl": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-8",
@@ -4771,7 +4771,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Animal feed, Corn, Milk, Soybean Oil.",
-  "logoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80460353581641-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=199"
+  "logoUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-9",
@@ -4809,7 +4809,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Halal Beef, Halal Chicken, Sugar, Soybeans, Rice, Halal Lamb, Crude Oil, Wheat.",
-  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80508296695146-257a814070b4?w=800&auto=format&fit=crop&q=80&sig=200"
+  "logoUrl": "https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-10",
@@ -4846,7 +4846,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Manufacturer of sunflower oil, corn oil, jatropha oil, soybean oil, used cooking oil, rapeseed oil, RBD Palm Olein.",
-  "logoUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80516762689617-e1cffcef479d?w=800&auto=format&fit=crop&q=80&sig=201"
+  "logoUrl": "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-11",
@@ -4879,7 +4879,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Soybeans, Corn Maize, Wheat.",
-  "logoUrl": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80485968579580-b6d095142e6e?w=800&auto=format&fit=crop&q=80&sig=202"
+  "logoUrl": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-12",
@@ -4913,7 +4913,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Soybeans, steel, Cigarettes, I.V supplies.",
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+  "logoUrl": "https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-13",
@@ -4946,7 +4946,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of rice, corn, soybean.",
-  "logoUrl": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80515372039744-b8f02a3ae446?w=800&auto=format&fit=crop&q=80&sig=204"
+  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-14",
@@ -4985,7 +4985,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of TVP, TSP, grain, seafood, hake, sesame, tomato paste, soybean meal, powder milk.",
-  "logoUrl": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80&sig=205"
+  "logoUrl": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-15",
@@ -5022,7 +5022,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of coal, coking coal, pet coke, wheat, corn, soybeans, sugar.",
-  "logoUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80544441893-675973e31985?w=800&auto=format&fit=crop&q=80&sig=206"
+  "logoUrl": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-16",
@@ -5056,7 +5056,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of crude oil, SOYBEAN OIL, SUNFLOWER OIL, BITUMEN.",
-  "logoUrl": "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80509319117193-57bab727e09d?w=800&auto=format&fit=crop&q=80&sig=207"
+  "logoUrl": "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
 },
   {
   "id": "buyer-ext2026-17",
@@ -5094,7 +5094,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of corn, yellow corn, maize, yellow maize, grain, animal feed, Soybeans, Hard Red Winter Wheat.",
-  "logoUrl": "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80525507119028-ed4c629a60a3?w=800&auto=format&fit=crop&q=80&sig=208"
+  "logoUrl": "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
 },
   {
   "id": "buyer-ext2026-18",
@@ -5130,7 +5130,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of HIBISCUS FLOWERS, HIBISCUS PETALS, SESAME SEEDS, MORINGA POWDER, soybeans, cassava flakes (gari).",
-  "logoUrl": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80578932750294-f5075e85f44a?w=800&auto=format&fit=crop&q=80&sig=209"
+  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
 },
   {
   "id": "buyer-ext2026-19",
@@ -5170,7 +5170,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Cooking Oil, Grains, Meat, Sugar, sunflower oil, corn oil, olive oil, soybean oil, rape-seed oil, wheat.",
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+  "logoUrl": "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
 },
 
   {
@@ -5182,7 +5182,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     city: 'Global City',
     address: '123 Trade Ave',
     establishedYear: 2015,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80508427953056-b00b8d78ebf5?w=800&auto=format&fit=crop&q=80&sig=211',
+    logoUrl: 'https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Active buyer sourcing Recycling, Scrap Metal, Buy Scrap Metal.',
     contactPerson: 'Miguel Hernandez',
@@ -5198,7 +5198,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     ownerUid: 'user-generated-4',
     companyName: 'Brown\'s Aluminum & Catalytic Converters Recycling Center',
     country: 'United States - Alabama',
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80492707892479-7bc8d5a4ee93?w=800&auto=format&fit=crop&q=80&sig=212',
+    logoUrl: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Active buyer sourcing Scrap Yard, Catalytic Converter, Scrap Metal Dealer.',
     contactPerson: 'Angela Brown',
@@ -5240,8 +5240,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     activeRfqsCount: 5,
     completedImportsCount: 340,
     tradeAssuranceEscrowSecuredUsd: 3500000,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80502716119720-b23a93e5fe1b?w=800&auto=format&fit=crop&q=80&sig=213',
-    bannerUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=214',
+    logoUrl: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80',
     description: 'Fortune 500 supply chain procurement group managing high-volume international sourcing contracts for clean energy infrastructure, server rack batteries, and precision automation lines across North America.',
     contactPerson: 'David Sterling',
     contactDesignation: 'Chief Procurement Officer & Head of Global Sourcing',
@@ -5282,8 +5282,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     activeRfqsCount: 3,
     completedImportsCount: 195,
     tradeAssuranceEscrowSecuredUsd: 2200000,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80&sig=215',
-    bannerUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80497366216548-37526070297c?w=800&auto=format&fit=crop&q=80&sig=216',
+    logoUrl: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
     description: 'Leading Scandinavian renewable energy EPC contractor and grid-scale storage distributor sourcing solar PV panels, hybrid inverters, and battery management systems.',
     contactPerson: 'Marcus Vance',
     contactDesignation: 'VP of International Procurement',
@@ -5323,8 +5323,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     activeRfqsCount: 6,
     completedImportsCount: 580,
     tradeAssuranceEscrowSecuredUsd: 4800000,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    bannerUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80&sig=218',
+    logoUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
     description: 'Major Middle East distribution conglomerate supplying national infrastructure projects, industrial manufacturing plants, and heavy equipment fleets across GCC.',
     contactPerson: 'Tariq Al-Mansoor',
     contactDesignation: 'General Manager - Strategic Procurement & Import',
@@ -5364,8 +5364,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     activeRfqsCount: 3,
     completedImportsCount: 290,
     tradeAssuranceEscrowSecuredUsd: 2100000,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=219',
-    bannerUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80&sig=220',
+    logoUrl: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
     description: 'Direct Tier-1 aftermarket automotive parts supplier and distributor supplying European racing teams, OEM replacement networks, and tuning facilities.',
     contactPerson: 'Stefan Huber',
     contactDesignation: 'Procurement Director & QA Engineer',
@@ -5405,8 +5405,8 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     activeRfqsCount: 4,
     completedImportsCount: 160,
     tradeAssuranceEscrowSecuredUsd: 1400000,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=221',
-    bannerUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=80&sig=222',
+    logoUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80',
     description: 'High-end European apparel group and sustainable fashion network sourcing organic Aegean cotton fabrics, selvedge denim rolls, and luxury packaging.',
     contactPerson: 'Camille Laurent',
     contactDesignation: 'Head of Sustainable Fabric Sourcing',
@@ -5442,7 +5442,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['SGS Quality Tested', 'ISO 9001:2015', 'IATA Aviation Fuel Spec'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=223',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Premier supplier of EN590 10ppm diesel, Jet A1, JP54 aviation kerosene, and heavy fuel oil under FOB/CIF contract terms.',
     contactPerson: 'Frank Robetto',
@@ -5473,7 +5473,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['ASTM D975 Compliance', 'ISO 14001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'International commodity trading firm sourcing EN590 diesel and automotive gas oil for global maritime ports.',
     contactPerson: 'Davis Baker',
@@ -5504,7 +5504,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['Turkmenstandartlary ISO 9001', 'SGS Verified'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=225',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Central Asian petroleum exporter providing EN590 10ppm diesel, gas oil, and petrochemical derivatives.',
     contactPerson: 'Nurlan',
@@ -5535,7 +5535,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['US DOT Certified', 'ISO 9001', 'API Spec 11B'],
     factorySizeSqM: 120000,
     productionLines: 8,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=226',
+    logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Premier North American midstream energy and natural gas marketing enterprise facilitating large-scale energy exports.',
     contactPerson: 'Phil Gaisie',
@@ -5566,7 +5566,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['GOST-R Petroleum Spec', 'SGS Quality Certificate'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=227',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Energy sourcing & refinery allocation enterprise providing EN590 10ppm diesel and heavy gas oils.',
     contactPerson: 'Sunday',
@@ -5597,7 +5597,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['ISO 9001', 'ASTM D1655 Jet A Specs'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=228',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'US Gulf Coast petroleum marketer specializing in Jet A1 aviation fuel, EN590 10ppm diesel, and marine gas oil.',
     contactPerson: 'Richard Westbrook',
@@ -5628,7 +5628,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['Dubai Chamber Verified', 'SGS Inspectorate Clearance'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=229',
+    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Middle East general trading conglomerate brokering bulk fuel, refined diesel EN590, and industrial lubricants.',
     contactPerson: 'Ahmed Al Mansoori',
@@ -5659,7 +5659,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['NPA Ghana Licensed BDC', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=230',
+    logoUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Licensed West African bulk oil distribution agency supplying automotive gas oil and EN590 diesel across regional hubs.',
     contactPerson: 'Kwame Abass',
@@ -5690,7 +5690,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['Kazakhstan State Energy Board License', 'ISO 9001:2015', 'SGS Verified'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Leading Kazakh logistical & energy trading powerhouse exporting EN590 10ppm diesel, aviation kerosene, and heavy crude.',
     contactPerson: 'Timur Kasenov',
@@ -5721,7 +5721,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['SABS Certified', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=232',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'African energy and mineral commodities merchant supplying EN590 diesel fuel and heavy fuel oils for industrial plants.',
     contactPerson: 'Sello Moloi',
@@ -5752,7 +5752,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['GOST-R Certified', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=233',
+    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'Moscow-based petroleum trader and fuel allocation broker supplying EN590 diesel and fuel oils to international buyers.',
     contactPerson: 'Ivan Krivoluksky',
@@ -5783,7 +5783,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['GOST-R', 'SGS Verified Inspectorate'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=234',
+    logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Industrial fuel trading firm providing EN590 10ppm automotive diesel and fuel oil D6 under CIF terms.',
     contactPerson: 'Alexey Nekrasov',
@@ -5814,7 +5814,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['NFA Registered Broker', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80497366216548-37526070297c?w=800&auto=format&fit=crop&q=80&sig=235',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Global energy commodity financial and physical desk arranging bulk EN590 diesel and Jet fuel allocations.',
     contactPerson: 'Arthur C. Fleming',
@@ -5845,7 +5845,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['API Spec Certified', 'ISO 9001:2015', 'ASTM D975'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=236',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Leading US oil & gas distributor specializing in EN590 10ppm diesel, Jet A1, and marine gas oil exports.',
     contactPerson: 'Alexis Vance',
@@ -5876,7 +5876,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['ISO 9001', 'ASTM Certified Fuel Quality'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=237',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Texas energy trading house supplying bulk diesel EN590 and Jet fuel to international importers.',
     contactPerson: 'David M. Adams',
@@ -5907,7 +5907,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['NMDPRA Nigeria Licensed', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Nigerian energy & marine logistics conglomerate supplying EN590 diesel and automotive gas oil.',
     contactPerson: 'Love Omenogor',
@@ -5938,7 +5938,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['COREN Certified', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80589939705384-5185137a7f0f?w=800&auto=format&fit=crop&q=80&sig=239',
+    logoUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Electromechanical and industrial equipment & fuel sourcing provider for commercial installations.',
     contactPerson: 'Sunny O.',
@@ -5969,7 +5969,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['ADNOC Supplier Registration', 'ISO 9001:2015', 'SGS Approved'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80&sig=240',
+    logoUrl: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Authorized Gulf fuel mandate & petroleum desk facilitating bulk EN590 10ppm diesel, Jet A1, and crude oil sales.',
     contactPerson: 'Rashid Al Maktoum',
@@ -6000,7 +6000,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['ASTM D975', 'ISO 9001', 'EPA Verified Fuel Quality'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80&sig=241',
+    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Bulk petroleum marketer exporting EN590 diesel, automotive gas oil, and Jet fuel to global destinations.',
     contactPerson: 'Mark Best',
@@ -6031,7 +6031,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['NUPRC Registered', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80532996122724-e3c354a0b15b?w=800&auto=format&fit=crop&q=80&sig=242',
+    logoUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
     bannerUrl: '',
     description: 'Nigerian energy trading company supplying automotive gas oil (AGO) and refined petroleum products.',
     contactPerson: 'Chukwuma Lovy',
@@ -6054,7 +6054,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     subCategory: 'Diesel',
     images: [
       '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80&sig=244'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Direct supplier offering premium EN590 Automotive Gas Oil 10ppm, JP54 Aviation Kerosene, Jet Fuel, and Heavy Fuel Oil D6 under secure FOB/CIF terms.',
   fobPriceUsd: 515,
@@ -6075,8 +6075,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=246'
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Premium-refined EN590 Ultra-Low Sulfur Diesel with state-of-the-art QA. Safe logistics out of Jurong/Singapore ports.',
   fobPriceUsd: 525,
@@ -6097,8 +6097,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80&sig=247',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=248'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Bulk delivery of top quality EN590 10PPM, JET FUEL A1, Light Cycle Oil, and Petcoke from premier ASEAN terminals.',
   fobPriceUsd: 518,
@@ -6119,8 +6119,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=249',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=250'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Reliable delivery of North American and European refined EN590 diesel 10ppm, JET A1, and D6 fuels. All necessary certification documents (SGS, dip test) provided.',
   fobPriceUsd: 530,
@@ -6141,8 +6141,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584269600464-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=251',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'State-of-the-art blending and storage terminal offering high quality EN590 diesel fuel, Jetfuel, and refined Kerosene with ultra-fast tankers processing.',
   fobPriceUsd: 535,
@@ -6163,8 +6163,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=253',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=254'
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Allocations available for EN590 Diesel 10ppm, LPG, MAZUT M100, D2 Gasoil, D6 Virgin Fuel, and AGO Jet Fuel.',
   fobPriceUsd: 512,
@@ -6185,8 +6185,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80518152006812-edab29b069ac?w=800&auto=format&fit=crop&q=80&sig=255',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80541888946425-d0fbb186a5b7?w=800&auto=format&fit=crop&q=80&sig=256'
+      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Industrial-scale manufacturer providing high-grade EN590 Diesel, ESPO Crude Oil, Jet Fuel, and premium PetCoke direct from refinery terminals.',
   fobPriceUsd: 505,
@@ -6207,8 +6207,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80526304640581-d334cdbbf45e?w=800&auto=format&fit=crop&q=80&sig=257',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=258'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'International fuel supply representative providing qualified European standard EN590 10PPM, general diesel fuel, and petroleum products.',
   fobPriceUsd: 540,
@@ -6230,7 +6230,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     subCategory: 'Diesel',
     images: [
       '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=260'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Established exporter providing refined EN590 Diesel, JET A1 aviation kerosene, heavy D6 fuel, and LNG on SPOT, Tanker Takeover (TTO), and FOB terms.',
   fobPriceUsd: 522,
@@ -6251,8 +6251,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80&sig=261',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=262'
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Bulk energy trading service for crude oil petroleum, automotive gas oil (AGO) EN590, D2 gas oil, and JP54 aviation fuel.',
   fobPriceUsd: 510,
@@ -6273,8 +6273,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80605371924599-2d0365da1ae0?w=800&auto=format&fit=crop&q=80&sig=263',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80&sig=264'
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Reliable, West-African licensed trading house for bulk crude oil, refined EN590 10ppm diesel, and high-performance aviation fuels.',
   fobPriceUsd: 512,
@@ -6295,8 +6295,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=265',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Direct manufacturer representing prime West African petrochemical refining. Highest quality certified EN590, heavy fuel oil D6, and LPG solutions.',
   fobPriceUsd: 498,
@@ -6317,8 +6317,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80542744173-8e7e53415bb0?w=800&auto=format&fit=crop&q=80&sig=267',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=268'
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Professional tank storage operator providing secure fuel allocations for EN590 10PPM, JP54, and D6 at Rotterdam, Houston, and Singapore.',
   fobPriceUsd: 526,
@@ -6339,8 +6339,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80585338107529-13afc5f02586?w=800&auto=format&fit=crop&q=80&sig=269',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80577962917302-cd874c4e31d2?w=800&auto=format&fit=crop&q=80&sig=270'
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'International procurement supplier for high-volume EN590 diesel fuel, standard diesel, and various industrial heating fuels.',
   fobPriceUsd: 515,
@@ -6361,8 +6361,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80519074069444-1ba4fff16def?w=800&auto=format&fit=crop&q=80&sig=271',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80500937386664-56d1dfef3854?w=800&auto=format&fit=crop&q=80&sig=272'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Long-term government-approved export house offering industrial bulk cargo of EN590 10PPM diesel fuel, Mazut M100, light crude oil, LNG, and aviation kerosene.',
   fobPriceUsd: 508,
@@ -6383,8 +6383,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80530124566582-a618bc2615dc?w=800&auto=format&fit=crop&q=80&sig=274'
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'Authorized direct refinery mandates supplying bulk EN590 Diesel, Jet A1, JP54, and high cycle oils with fully validated certificates.',
   fobPriceUsd: 528,
@@ -6405,8 +6405,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=275',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=276'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'UK-based brokerage and trading specialists offering qualified supply of EN590 10ppm diesel, Jet A-1 aviation kerosene, and bitumen under secure escrow.',
   fobPriceUsd: 532,
@@ -6427,8 +6427,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80554469384-e58fac16e23a?w=800&auto=format&fit=crop&q=80&sig=277',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80&sig=278'
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Providing guaranteed allocations of EN590 automotive gas oil 10ppm, premium Jet A1, D6 virgin fuel, and LPG directly from reliable source refineries.',
   fobPriceUsd: 520,
@@ -6449,7 +6449,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80505705694340-019e1e335916?w=800&auto=format&fit=crop&q=80&sig=279',
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
       '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Over 15 years of global supply chain expertise delivering high-quality EN590 10ppm diesel, Jet A1 Fuel, and Virgin D6 Oil to international ports.',
@@ -6471,8 +6471,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80&sig=281',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80502005229762-ee1b2da97ba4?w=800&auto=format&fit=crop&q=80&sig=282'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Automotive Gas Oil AGO EN590 for Sale',
   fobPriceUsd: 520,
@@ -6493,9 +6493,9 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Automotive & Electric Vehicles',
     subCategory: 'Forged Alloy Wheels',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80&sig=283',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=80&sig=284',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80&sig=285'
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80'
     ],
     description: '10,000-ton forged aerospace 6061-T6 aluminum alloy motorsport wheels. Engineered for high-speed track endurance, circuit racing, and luxury performance vehicles. Custom PCD bolt patterns (5x112, 5x114.3, 5x120, Centerlock) and high-load ratings.',
     priceTiers: [
@@ -6536,8 +6536,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Automotive & Electric Vehicles',
     subCategory: 'Turbochargers & Engine Assemblies',
     images: [
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80517524008697-84bbe3c3fd98?w=800&auto=format&fit=crop&q=80&sig=286',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-performance motorsport turbocharger featuring point-milled billet compressor wheel, silicon nitride ceramic ball bearings, and Inconel 713C turbine wheel. Anti-surge ported shroud for high boost response.',
     priceTiers: [
@@ -6577,9 +6577,9 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Machinery & Industrial Equipment',
     subCategory: 'CNC Machining Centers',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=288',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=289',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80&sig=290'
+      'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'State-of-the-art 5-Axis CNC Milling Center designed for aerospace, automotive mold making, and medical titanium implants. Features direct-drive torque motors, 24,000 RPM high-speed spindle, and full thermodynamic compensation.',
     priceTiers: [
@@ -6620,9 +6620,9 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Electronics & Semiconductors',
     subCategory: 'Lithium LiFePO4 Batteries',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80518770660439-4636190af475?w=800&auto=format&fit=crop&q=80&sig=291',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80&sig=292',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80&sig=293'
+      'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Commercial 3U standard 19-inch rack-mounted lithium iron phosphate battery module. Compatible with Victron, Growatt, Deye, SMA, and GoodWe inverters via RS485 and CAN-bus communication.',
     priceTiers: [
@@ -6663,8 +6663,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Renewable Energy & Solar',
     subCategory: 'Monocrystalline Solar Panels',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80508873696983-2df57046475a?w=800&auto=format&fit=crop&q=80&sig=295'
+      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'N-Type TOPCon 144-half-cut bifacial dual-glass solar PV modules. Up to 25% additional rear-side power yield. Anti-PID, 30-year linear power warranty, and MC4-EVO2 connectors.',
     priceTiers: [
@@ -6704,9 +6704,9 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Virgin HDPE / Polypropylene',
     images: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80497440001374-f26997328c1b?w=800&auto=format&fit=crop&q=80&sig=296',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80&sig=298'
+      'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80'
     ],
     description: '100% Prime Virgin HDPE polymer granules specially engineered for industrial containers, jerry cans, lube oil bottles, and high-pressure chemical drums with outstanding environmental stress crack resistance (ESCR).',
     priceTiers: [
@@ -6746,9 +6746,9 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Textiles, Garments & Fabrics',
     subCategory: 'Organic Cotton Fabrics',
     images: [
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80&sig=299',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80528458909336-e7a0adfed0a5?w=800&auto=format&fit=crop&q=80&sig=300',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Eco-conscious raw denim roll fabric crafted from 100% Aegean organic long-staple cotton with sulfur-bottom pure indigo dye. Superb wash-down effects and soft hand-feel for luxury fashion brands.',
     priceTiers: [
@@ -6788,9 +6788,9 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Agriculture & Agro Commodities',
     subCategory: 'Basmati & Jasmine Rice',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80&sig=302',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80&sig=303',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80&sig=304'
+      'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Naturally pandan-scented ST25 long-grain white rice harvested from organic alluvial soil in Soc Trang province. Awarded World Best Rice title. Super soft texture that stays tender when cold.',
     priceTiers: [
@@ -6830,8 +6830,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Machinery & Industrial Equipment',
     subCategory: 'Laser Cutting Machines',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80&sig=305',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80624365168968-f283d5162df9?w=800&auto=format&fit=crop&q=80&sig=306'
+      'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Industrial heavy gantry fiber laser cutting system with dual interchangeable exchange tables. Capable of slicing up to 40mm carbon steel and 30mm stainless steel with micron-level edge cleanliness.',
     priceTiers: [
@@ -6871,8 +6871,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Medical & Diagnostic Supplies',
     subCategory: 'Medical PPE & Consumables',
     images: [
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80&sig=307',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'
     ],
     description: '100% synthetic nitrile examination gloves free from latex proteins. Tested against chemotherapy drugs under ASTM D6978 and compliant with EN 455 Parts 1-4 and FDA 510(k).',
     priceTiers: [
@@ -6912,8 +6912,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Agriculture & Agro Commodities',
     subCategory: 'Gourmet Spices & Extracts',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80618403088890-3d9fb6f4c8b1?w=800&auto=format&fit=crop&q=80&sig=309',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80596040033229-a9821ebd058d?w=800&auto=format&fit=crop&q=80&sig=310'
+      '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+      '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'
     ],
     description: 'Black whole gourmet Bourbon vanilla beans with high moisture content (30-35%) and rich oily luster. Organically hand-pollinated and traditionally sun-cured for artisan bakeries, chocolatiers, and flavor houses.',
     priceTiers: [
@@ -6957,8 +6957,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Electronics & Semiconductors',
     subCategory: 'PCB Assembly & Components',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80589782182703-2aaa69037b5b?w=800&auto=format&fit=crop&q=80&sig=311',
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80607604276583-eef5d076aa5f?w=800&auto=format&fit=crop&q=80&sig=312'
+      'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-speed automated SMT turn-key PCBA manufacturing utilizing Yamaha and Fuji pick-and-place lines. Supported components down to 01005 chips, BGA pitch 0.35mm with full X-Ray and 3D AOI inspection.',
     priceTiers: [
@@ -6998,8 +6998,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Building & Construction Materials',
     subCategory: 'Structural Steel & Beams',
     images: [
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80533090161767-e6ffed986c88?w=800&auto=format&fit=crop&q=80&sig=313',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80&sig=314'
+      'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Heavy structural carbon steel sections for commercial warehouses, high-rise frameworks, and bridge engineering. Hot-dipped galvanized coating > 85 microns for 50+ year marine rust resistance.',
     priceTiers: [
@@ -7039,8 +7039,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Renewable Energy & Solar',
     subCategory: 'Commercial Solar Inverters',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80628155930542-3c7a64e2c833?w=800&auto=format&fit=crop&q=80&sig=316'
+      'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-voltage commercial three-phase hybrid inverter with 150-800V battery voltage window. Features integrated UPS-grade 10ms seamless transfer switch, generator support, and cloud IoT monitoring.',
     priceTiers: [
@@ -7080,8 +7080,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Building & Construction Materials',
     subCategory: 'Porcelain & Sintered Slabs',
     images: [
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80&sig=317',
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80600565193348-f74bd3c7ccdf?w=800&auto=format&fit=crop&q=80&sig=318'
+      'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Ultra-durable sintered porcelain slabs manufactured with 30,000-ton Italian presses. Non-porous zero absorption (<0.05%), UV-resistant, scratch-proof, and suitable for kitchen countertops, facades, and luxury flooring.',
     priceTiers: [
@@ -7121,8 +7121,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Inorganic Pigments & Coatings',
     images: [
-      'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80609743522653-52354461eb27?w=800&auto=format&fit=crop&q=80&sig=319',
-      'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80605792657660-596af9009e82?w=800&auto=format&fit=crop&q=80&sig=320'
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Chloride-process high-grade rutile TiO2 surface treated with alumina, zirconia, and organic compounds. Delivers exceptional hiding power, gloss retention, and weatherability in architectural paints and masterbatches.',
     priceTiers: [
@@ -7162,8 +7162,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Medical & Diagnostic Supplies',
     subCategory: 'Medical Imaging Equipment',
     images: [
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80&sig=321',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'
     ],
     description: '30x30cm dynamic flat panel detector mobile C-arm for orthopedic, trauma, and vascular surgery. Features 4K dual touch monitors, pulsed fluoroscopy for minimum radiation dosage, and full DICOM 3.0 PACS connectivity.',
     priceTiers: [
@@ -7203,8 +7203,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Machinery & Industrial Equipment',
     subCategory: 'Eco Food Containers',
     images: [
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80&sig=323',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80&sig=324'
+      'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80'
     ],
     description: '100% compostable unbleached virgin kraft paper boxes lined with plant-based PLA corn-starch barrier. Leak-proof webbed corners, microwave safe, heat-resistant up to 100°C for hot takeout meals.',
     priceTiers: [
@@ -7408,6 +7408,132 @@ export const MOCK_PRODUCTS: Product[] = [
     reviewCount: 19
   },
   {
+    id: 'prod-blackstone-black-jade-cabochon',
+    title: 'Natural Hand-Polished Black Jade Cabochon Gemstones & Raw Nephrite Blocks (Wyoming Export Grade)',
+    category: 'Energy, Minerals & Metals',
+    subCategory: 'Gemstones, Jade & Mineral Specimens',
+    supplierId: 'comp-lars-barnhart-blackstone-jade',
+    supplierName: 'Blackstone Jade Co',
+    supplierCountry: 'United States',
+    supplierIsVerified: true,
+    supplierTier: 'GOLD',
+    minOrderQuantity: '1 Kg',
+    moq: 1,
+    moqUnit: 'Kgs',
+    priceRangeUsd: '$380 - $520 / Kg',
+    fobPriceUsd: 450,
+    priceTiers: [
+      { minUnits: 1, maxUnits: 10, priceUsd: 520 },
+      { minUnits: 11, maxUnits: 50, priceUsd: 450 },
+      { minUnits: 51, priceUsd: 380 }
+    ],
+    leadTimeDays: 5,
+    portOfDispatch: 'Port of Los Angeles / Air Courier Express (USA)',
+    supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
+    unit: 'Kgs',
+    images: [
+      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+    ],
+    description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). Direct quarry & lapidary export of 100% natural, untreated Black Jade cabochons, precision-domed gemstones, and raw nephrite jade blocks for fine jewelry manufacturers, lapidary studios, and collectors.',
+    specifications: {
+      'Supplier': 'Blackstone Jade Co',
+      'Representative': 'Lars Barnhart (lars.barnhart@gmail.com)',
+      'Gemstone Type': '100% Natural Untreated Black Nephrite Jade Cabochon & Rough',
+      'Origin': 'Wyoming / United States',
+      'Finish': 'Mirror-Polished High-Dome Cabochon & Raw Lapidary Slabs',
+      'Inspection': 'GIA / Gemological Authenticity Certificate Available'
+    },
+    featured: true,
+    inStock: true,
+    rating: 5.0,
+    reviewCount: 31
+  },
+  {
+    id: 'prod-blackstone-turquoise-rough-matrix',
+    title: 'Natural Uncut Turquoise Rough Mineral Matrix & Raw Lapidary Gemstone Specimens',
+    category: 'Energy, Minerals & Metals',
+    subCategory: 'Gemstones, Jade & Mineral Specimens',
+    supplierId: 'comp-lars-barnhart-blackstone-jade',
+    supplierName: 'Blackstone Jade Co',
+    supplierCountry: 'United States',
+    supplierIsVerified: true,
+    supplierTier: 'GOLD',
+    minOrderQuantity: '1 Kg',
+    moq: 1,
+    moqUnit: 'Kgs',
+    priceRangeUsd: '$580 - $750 / Kg',
+    fobPriceUsd: 680,
+    priceTiers: [
+      { minUnits: 1, maxUnits: 10, priceUsd: 750 },
+      { minUnits: 11, maxUnits: 50, priceUsd: 680 },
+      { minUnits: 51, priceUsd: 580 }
+    ],
+    leadTimeDays: 5,
+    portOfDispatch: 'Port of Los Angeles / Air Courier Express (USA)',
+    supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
+    unit: 'Kgs',
+    images: [
+      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+    ],
+    description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). High-grade natural blue-green turquoise rough in natural host mineral matrix stone, direct from American mines for wholesale lapidary cutting, cabochons, inlay work, and artisan jewelry.',
+    specifications: {
+      'Supplier': 'Blackstone Jade Co',
+      'Representative': 'Lars Barnhart (lars.barnhart@gmail.com)',
+      'Gemstone Type': 'Natural Uncut Turquoise Rough in Host Matrix',
+      'Origin': 'Southwestern United States',
+      'Grade': 'AAA Natural High-Color Lapidary & Specimen Rough',
+      'Treatment': '100% Natural Untreated Mine-Run Rough'
+    },
+    featured: true,
+    inStock: true,
+    rating: 5.0,
+    reviewCount: 27
+  },
+  {
+    id: 'prod-reverse-energy-sa-coal',
+    title: 'South African RB1 / RB2 / RB3 Steam Coal & Washed Peas Anthracite (Richards Bay FOB/CIF)',
+    category: 'Energy, Minerals & Metals',
+    subCategory: 'Coal, Coke & Solid Fuels',
+    supplierId: 'comp-reverse-energy-sa',
+    supplierName: 'Reverse Energy Pty Ltd',
+    supplierCountry: 'South Africa',
+    supplierIsVerified: true,
+    supplierTier: 'GOLD',
+    minOrderQuantity: '5,000 Metric Tons',
+    moq: 5000,
+    moqUnit: 'Metric Tons',
+    priceRangeUsd: '$98 - $115 / MT',
+    fobPriceUsd: 108,
+    priceTiers: [
+      { minUnits: 5000, maxUnits: 25000, priceUsd: 115 },
+      { minUnits: 25001, maxUnits: 50000, priceUsd: 108 },
+      { minUnits: 50001, priceUsd: 98 }
+    ],
+    leadTimeDays: 10,
+    portOfDispatch: 'Richards Bay Coal Terminal (RBCT) / Port of Durban, South Africa',
+    supportedIncoterms: ['FOB', 'CIF', 'CFR'],
+    unit: 'Metric Tons',
+    images: [
+      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+    ],
+    description: 'Supplied by Emmanuel, Reverse Energy Pty Ltd (Johannesburg, South Africa). High calorific value 6000 kcal/kg NAR South African RB1/RB2/RB3 thermal steam coal and washed industrial anthracite peas ready for bulk vessel charter.',
+    specifications: {
+      'Supplier': 'Reverse Energy Pty Ltd',
+      'Representative': 'Emmanuel (emmanuel@reverseenergy.co.za)',
+      'Grade': 'RB1 / RB2 / RB3 Thermal Steam Coal (5500 - 6000 kcal/kg NAR)',
+      'Total Moisture': 'Max 8.0% - 10.0%',
+      'Sulfur Content': '< 0.8%',
+      'Loading Port': 'Richards Bay Coal Terminal (RBCT), South Africa'
+    },
+    featured: true,
+    inStock: true,
+    rating: 4.9,
+    reviewCount: 24
+  },
+  {
     id: 'prod-middle-fox-en590',
     title: 'Automotive Diesel Fuel EN 590 (10 PPM) Ultra-Low Sulfur Diesel - Bulk Refinery Tanker Lots',
     category: 'Energy, Minerals & Metals',
@@ -7432,8 +7558,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'CFR', 'TTO', 'TTT'],
     unit: 'Metric Tons',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Bulk Ultra-Low Sulfur Diesel Fuel EN 590 10PPM Euro 5/6 compliant supplied by Middle Fox LLC under direct US refinery allocations. Density at 15°C: 0.820 - 0.845 kg/m³, Flash point: min 55°C, Cetane index: min 51, Sulfur content: max 10 ppm. Full commercial documentation (Commercial Invoice, SGS Q&Q Report, Certificate of Origin, Tank Storage Receipt). Contact Mr. Randy (randy@midforkcap.com | +1 406 309 5590).',
     specifications: {
@@ -7476,8 +7602,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'TTO', 'Dip and Pay'],
     unit: 'Barrels',
     images: [
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'Commercial Aviation Turbine Fuel Jet A-1 conforming to ASTM D1655 and UK DEF STAN 91-091 latest issue. Freezing Point: max -47°C, Flash Point: min +38°C, Density at 15°C: 0.775 - 0.840 kg/L. Full refinery batch test report, injection report, and unencumbered title transfer. Direct contracts through Middle Fox LLC. Contact Mr. Randy (randy@midforkcap.com | +1 406 309 5590).',
     specifications: {
@@ -7520,7 +7646,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'CFR', 'TTO'],
     unit: 'Metric Tons',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'Bulk EN590 10PPM Ultra-Low Sulfur Diesel, Jet Fuel A-1, and D6 Virgin Fuel Oil brokered by MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia). Paid Basic Plan verified supplier with all platform services enabled. Payment terms: Bank transfer.',
     specifications: {
@@ -7559,7 +7686,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'TTO'],
     unit: 'Barrels',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-grade D6 Virgin Fuel Oil and Marine Gasoil (MGO) supplied by MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia). Accepted payment: Bank transfer.',
     specifications: {
@@ -7601,7 +7729,6 @@ export const MOCK_PRODUCTS: Product[] = [
   ...GLOBAL_HOTEL_SUPPLIES_PRODUCTS,
   ...GLOBAL_TIRES_PRODUCTS,
   ...GLOBAL_GERMANIUM_PRODUCTS,
-  ...GLOBAL_BAMBOO_STICKS_PRODUCTS,
   {
   "id": "prod-ext2026-0-0",
   "title": "Sunflower oil (Bulk Wholesale)",
@@ -7616,7 +7743,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80563245372-f21724e3856d?w=800&auto=format&fit=crop&q=80&sig=325"
+    "/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg"
   ],
   "description": "Premium quality sunflower oil offered directly by UKKL Company Limited. Engaged in the business of selling consumer products such as, edible oils, health supplements and cosmetics.",
   "specifications": {
@@ -7644,7 +7771,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80582139329536-e7284fece509?w=800&auto=format&fit=crop&q=80&sig=326"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality soybeans oil offered directly by UKKL Company Limited. Engaged in the business of selling consumer products such as, edible oils, health supplements and cosmetics.",
   "specifications": {
@@ -7672,7 +7799,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80526304640581-d334cdbbf45e?w=800&auto=format&fit=crop&q=80&sig=327"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality edible oils offered directly by UKKL Company Limited. Engaged in the business of selling consumer products such as, edible oils, health supplements and cosmetics.",
   "specifications": {
@@ -7700,7 +7827,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80610375461369-d613b564f4c4?w=800&auto=format&fit=crop&q=80&sig=328"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Agro chemicals offered directly by Stacey Chem Sales. We use a reliable shipping company and achieve 100% success in all countries. Agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, wheat flour.",
   "specifications": {
@@ -7728,7 +7855,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality urea fertilizer offered directly by Stacey Chem Sales. We use a reliable shipping company and achieve 100% success in all countries. Agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, wheat flour.",
   "specifications": {
@@ -7756,7 +7883,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80&sig=330"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality ammonium offered directly by Stacey Chem Sales. We use a reliable shipping company and achieve 100% success in all countries. Agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, wheat flour.",
   "specifications": {
@@ -7784,7 +7911,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80518186285589-2f7649de83e0?w=800&auto=format&fit=crop&q=80&sig=331"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Soybeans offered directly by GTC Global Trade Company. Supplier of Soybeans, Sun Flower Seeds, Castor Seeds, Maize, Kidney Beans.",
   "specifications": {
@@ -7812,7 +7939,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80529400971008-f566de0e6dfc?w=800&auto=format&fit=crop&q=80&sig=332"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Sun Flower Seeds offered directly by GTC Global Trade Company. Supplier of Soybeans, Sun Flower Seeds, Castor Seeds, Maize, Kidney Beans.",
   "specifications": {
@@ -7840,7 +7967,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80544717305-2782549b5136?w=800&auto=format&fit=crop&q=80&sig=333"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Castor Seeds offered directly by GTC Global Trade Company. Supplier of Soybeans, Sun Flower Seeds, Castor Seeds, Maize, Kidney Beans.",
   "specifications": {
@@ -7868,7 +7995,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80589758438368-0ad531db3366?w=800&auto=format&fit=crop&q=80&sig=334"
+    "https://images.unsplash.com/photo-1508747703725-719777637510?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Corn Oil offered directly by Agc Export S.A. Manufacturer of Corn Oil, Soybean Oil, Peanut Oil, Rapeseed Oil, Sunflower Oil, Coconut Oil, Cooking Oil, Vegetable Oil, Edible Oil, Oils.",
   "specifications": {
@@ -7896,7 +8023,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80574607383476-f517f260d30b?w=800&auto=format&fit=crop&q=80&sig=335"
+    "https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Soybean Oil offered directly by Agc Export S.A. Manufacturer of Corn Oil, Soybean Oil, Peanut Oil, Rapeseed Oil, Sunflower Oil, Coconut Oil, Cooking Oil, Vegetable Oil, Edible Oil, Oils.",
   "specifications": {
@@ -7924,7 +8051,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Peanut Oil offered directly by Agc Export S.A. Manufacturer of Corn Oil, Soybean Oil, Peanut Oil, Rapeseed Oil, Sunflower Oil, Coconut Oil, Cooking Oil, Vegetable Oil, Edible Oil, Oils.",
   "specifications": {
@@ -7952,7 +8079,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80567427017947-545c5f8d16ad?w=800&auto=format&fit=crop&q=80&sig=337"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality METHYL OLEATE offered directly by KHM New-Energy ITL. Supplier of METHYL OLEATE, EPOXIDIZED SOYBEAN OIL, ETHYL OLEATE, METHYL PALMITATE.",
   "specifications": {
@@ -7980,7 +8107,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80584438784894-089d6a62b8fa?w=800&auto=format&fit=crop&q=80&sig=338"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality EPOXIDIZED SOYBEAN OIL offered directly by KHM New-Energy ITL. Supplier of METHYL OLEATE, EPOXIDIZED SOYBEAN OIL, ETHYL OLEATE, METHYL PALMITATE.",
   "specifications": {
@@ -8008,7 +8135,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80550565118-3a14e8d0386f?w=800&auto=format&fit=crop&q=80&sig=339"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality ETHYL OLEATE offered directly by KHM New-Energy ITL. Supplier of METHYL OLEATE, EPOXIDIZED SOYBEAN OIL, ETHYL OLEATE, METHYL PALMITATE.",
   "specifications": {
@@ -8036,7 +8163,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80&sig=340"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality soybean offered directly by Kingdom Investment Resources, LLC. I have buyer seeking real suppliers for crude oil, diamonds, sugar, soybeans, and more.",
   "specifications": {
@@ -8064,7 +8191,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80&sig=341"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality sugar offered directly by Kingdom Investment Resources, LLC. I have buyer seeking real suppliers for crude oil, diamonds, sugar, soybeans, and more.",
   "specifications": {
@@ -8092,7 +8219,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80512496015851-a90fb38ba796?w=800&auto=format&fit=crop&q=80&sig=342"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality scrap offered directly by Kingdom Investment Resources, LLC. I have buyer seeking real suppliers for crude oil, diamonds, sugar, soybeans, and more.",
   "specifications": {
@@ -8120,7 +8247,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Soybean Oil offered directly by Multi-Source B.V. Supplier of Soybean Oil, Non gmo soybean, Sugar, Chicken feet.",
   "specifications": {
@@ -8148,7 +8275,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80578328819058-b69f3a3b0f6b?w=800&auto=format&fit=crop&q=80&sig=344"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Non gmo soybean offered directly by Multi-Source B.V. Supplier of Soybean Oil, Non gmo soybean, Sugar, Chicken feet.",
   "specifications": {
@@ -8176,7 +8303,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80&sig=345"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Sugar offered directly by Multi-Source B.V. Supplier of Soybean Oil, Non gmo soybean, Sugar, Chicken feet.",
   "specifications": {
@@ -8204,7 +8331,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80&sig=346"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Cooking oil offered directly by Angel CR Inc. Supplier of Cooking oil, sunflower oil, wholesale sunflower oil sales, wholesale cooking oil, soybean oil, wholesale soybean oil.",
   "specifications": {
@@ -8232,7 +8359,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80&sig=347"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality sunflower oil offered directly by Angel CR Inc. Supplier of Cooking oil, sunflower oil, wholesale sunflower oil sales, wholesale cooking oil, soybean oil, wholesale soybean oil.",
   "specifications": {
@@ -8260,7 +8387,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80551232864-3f0890e580d9?w=800&auto=format&fit=crop&q=80&sig=348"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality wholesale sunflower oil sales offered directly by Angel CR Inc. Supplier of Cooking oil, sunflower oil, wholesale sunflower oil sales, wholesale cooking oil, soybean oil, wholesale soybean oil.",
   "specifications": {
@@ -8288,7 +8415,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80445205170230-053b83016050?w=800&auto=format&fit=crop&q=80&sig=349"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Animal feed offered directly by RW-Vermall.Inc. Supplier of Animal feed, Corn, Milk, Soybean Oil.",
   "specifications": {
@@ -8316,7 +8443,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Corn offered directly by RW-Vermall.Inc. Supplier of Animal feed, Corn, Milk, Soybean Oil.",
   "specifications": {
@@ -8344,7 +8471,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=80&sig=351"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Milk offered directly by RW-Vermall.Inc. Supplier of Animal feed, Corn, Milk, Soybean Oil.",
   "specifications": {
@@ -8372,7 +8499,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80434389677669-e08b4cac3105?w=800&auto=format&fit=crop&q=80&sig=352"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Halal Beef offered directly by Hanifi and Associates. Supplier of Halal Beef, Halal Chicken, Sugar, Soybeans, Rice, Halal Lamb, Crude Oil, Wheat.",
   "specifications": {
@@ -8400,7 +8527,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80469334031218-e382a71b716b?w=800&auto=format&fit=crop&q=80&sig=353"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Halal Chicken offered directly by Hanifi and Associates. Supplier of Halal Beef, Halal Chicken, Sugar, Soybeans, Rice, Halal Lamb, Crude Oil, Wheat.",
   "specifications": {
@@ -8428,7 +8555,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80&sig=354"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Sugar offered directly by Hanifi and Associates. Supplier of Halal Beef, Halal Chicken, Sugar, Soybeans, Rice, Halal Lamb, Crude Oil, Wheat.",
   "specifications": {
@@ -8456,7 +8583,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80&sig=355"
+    "https://images.unsplash.com/photo-1471193945509-9ad0617afabf?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality sunflower oil offered directly by Jedwards International Inc. Manufacturer of sunflower oil, corn oil, jatropha oil, soybean oil, used cooking oil, rapeseed oil, RBD Palm Olein.",
   "specifications": {
@@ -8484,7 +8611,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80&sig=356"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality corn oil offered directly by Jedwards International Inc. Manufacturer of sunflower oil, corn oil, jatropha oil, soybean oil, used cooking oil, rapeseed oil, RBD Palm Olein.",
   "specifications": {
@@ -8512,7 +8639,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality jatropha oil offered directly by Jedwards International Inc. Manufacturer of sunflower oil, corn oil, jatropha oil, soybean oil, used cooking oil, rapeseed oil, RBD Palm Olein.",
   "specifications": {
@@ -8540,7 +8667,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80539109136881-3be0616acf4b?w=800&auto=format&fit=crop&q=80&sig=358"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Soybeans offered directly by Awad & Griffith Global Trade LLC. Supplier of Soybeans, Corn Maize, Wheat.",
   "specifications": {
@@ -8568,7 +8695,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80&sig=359"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Corn Maize offered directly by Awad & Griffith Global Trade LLC. Supplier of Soybeans, Corn Maize, Wheat.",
   "specifications": {
@@ -8596,7 +8723,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80&sig=360"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Wheat offered directly by Awad & Griffith Global Trade LLC. Supplier of Soybeans, Corn Maize, Wheat.",
   "specifications": {
@@ -8624,7 +8751,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80503342217505-b0a15ec3261c?w=800&auto=format&fit=crop&q=80&sig=361"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Soybeans offered directly by Stephens International. Supplier of Soybeans, steel, Cigarettes, I.V supplies.",
   "specifications": {
@@ -8652,7 +8779,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80&sig=362"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality steel offered directly by Stephens International. Supplier of Soybeans, steel, Cigarettes, I.V supplies.",
   "specifications": {
@@ -8680,7 +8807,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80562157873-818bc0726f68?w=800&auto=format&fit=crop&q=80&sig=363"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Cigarettes offered directly by Stephens International. Supplier of Soybeans, steel, Cigarettes, I.V supplies.",
   "specifications": {
@@ -8708,7 +8835,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality rice offered directly by 1Arena. Supplier of rice, corn, soybean.",
   "specifications": {
@@ -8736,7 +8863,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80549298916-b41d501d3772?w=800&auto=format&fit=crop&q=80&sig=365"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality corn offered directly by 1Arena. Supplier of rice, corn, soybean.",
   "specifications": {
@@ -8764,7 +8891,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80460353581641-37b1b58a9fe7?w=800&auto=format&fit=crop&q=80&sig=366"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality soybean offered directly by 1Arena. Supplier of rice, corn, soybean.",
   "specifications": {
@@ -8792,7 +8919,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80508296695146-257a814070b4?w=800&auto=format&fit=crop&q=80&sig=367"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality TVP offered directly by AJ Global, LLC. Supplier of TVP, TSP, grain, seafood, hake, sesame, tomato paste, soybean meal, powder milk.",
   "specifications": {
@@ -8820,7 +8947,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80516762689617-e1cffcef479d?w=800&auto=format&fit=crop&q=80&sig=368"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality TSP offered directly by AJ Global, LLC. Supplier of TVP, TSP, grain, seafood, hake, sesame, tomato paste, soybean meal, powder milk.",
   "specifications": {
@@ -8848,7 +8975,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80485968579580-b6d095142e6e?w=800&auto=format&fit=crop&q=80&sig=369"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality grain offered directly by AJ Global, LLC. Supplier of TVP, TSP, grain, seafood, hake, sesame, tomato paste, soybean meal, powder milk.",
   "specifications": {
@@ -8876,7 +9003,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80520006403909-838d6b92c22e?w=800&auto=format&fit=crop&q=80&sig=370"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality coal offered directly by Jeron Group. Supplier of coal, coking coal, pet coke, wheat, corn, soybeans, sugar.",
   "specifications": {
@@ -8904,7 +9031,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality coking coal offered directly by Jeron Group. Supplier of coal, coking coal, pet coke, wheat, corn, soybeans, sugar.",
   "specifications": {
@@ -8932,7 +9059,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80&sig=372"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality pet coke offered directly by Jeron Group. Supplier of coal, coking coal, pet coke, wheat, corn, soybeans, sugar.",
   "specifications": {
@@ -8960,7 +9087,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80544441893-675973e31985?w=800&auto=format&fit=crop&q=80&sig=373"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality crude oil offered directly by Capital Funds International Inc.. Supplier of crude oil, SOYBEAN OIL, SUNFLOWER OIL, BITUMEN.",
   "specifications": {
@@ -8988,7 +9115,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80509319117193-57bab727e09d?w=800&auto=format&fit=crop&q=80&sig=374"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality SOYBEAN OIL offered directly by Capital Funds International Inc.. Supplier of crude oil, SOYBEAN OIL, SUNFLOWER OIL, BITUMEN.",
   "specifications": {
@@ -9016,7 +9143,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80525507119028-ed4c629a60a3?w=800&auto=format&fit=crop&q=80&sig=375"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality SUNFLOWER OIL offered directly by Capital Funds International Inc.. Supplier of crude oil, SOYBEAN OIL, SUNFLOWER OIL, BITUMEN.",
   "specifications": {
@@ -9044,7 +9171,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80578932750294-f5075e85f44a?w=800&auto=format&fit=crop&q=80&sig=376"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality corn offered directly by TradeBreeze Logitics. Supplier of corn, yellow corn, maize, yellow maize, grain, animal feed, Soybeans, Hard Red Winter Wheat.",
   "specifications": {
@@ -9072,7 +9199,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80506152983158-b4a74a01c721?w=800&auto=format&fit=crop&q=80&sig=377"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality yellow corn offered directly by TradeBreeze Logitics. Supplier of corn, yellow corn, maize, yellow maize, grain, animal feed, Soybeans, Hard Red Winter Wheat.",
   "specifications": {
@@ -9100,7 +9227,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality maize offered directly by TradeBreeze Logitics. Supplier of corn, yellow corn, maize, yellow maize, grain, animal feed, Soybeans, Hard Red Winter Wheat.",
   "specifications": {
@@ -9128,7 +9255,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80492707892479-7bc8d5a4ee93?w=800&auto=format&fit=crop&q=80&sig=379"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality HIBISCUS FLOWERS offered directly by Capital Merchants Inc. Supplier of HIBISCUS FLOWERS, HIBISCUS PETALS, SESAME SEEDS, MORINGA POWDER, soybeans, cassava flakes (gari).",
   "specifications": {
@@ -9156,7 +9283,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80502716119720-b23a93e5fe1b?w=800&auto=format&fit=crop&q=80&sig=380"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality HIBISCUS PETALS offered directly by Capital Merchants Inc. Supplier of HIBISCUS FLOWERS, HIBISCUS PETALS, SESAME SEEDS, MORINGA POWDER, soybeans, cassava flakes (gari).",
   "specifications": {
@@ -9184,7 +9311,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80&sig=381"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality SESAME SEEDS offered directly by Capital Merchants Inc. Supplier of HIBISCUS FLOWERS, HIBISCUS PETALS, SESAME SEEDS, MORINGA POWDER, soybeans, cassava flakes (gari).",
   "specifications": {
@@ -9212,7 +9339,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80&sig=382"
+    "https://images.unsplash.com/photo-1620706857370-e1b9770e8bb1?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Cooking Oil offered directly by Grand Liberty Group Corp. Supplier of Cooking Oil, Grains, Meat, Sugar, sunflower oil, corn oil, olive oil, soybean oil, rape-seed oil, wheat.",
   "specifications": {
@@ -9240,7 +9367,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80587293852726-70cdb56c2866?w=800&auto=format&fit=crop&q=80&sig=383"
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Grains offered directly by Grand Liberty Group Corp. Supplier of Cooking Oil, Grains, Meat, Sugar, sunflower oil, corn oil, olive oil, soybean oil, rape-seed oil, wheat.",
   "specifications": {
@@ -9268,7 +9395,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80&sig=384"
+    "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80"
   ],
   "description": "Premium quality Meat offered directly by Grand Liberty Group Corp. Supplier of Cooking Oil, Grains, Meat, Sugar, sunflower oil, corn oil, olive oil, soybean oil, rape-seed oil, wheat.",
   "specifications": {
@@ -9292,7 +9419,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: '100% Organic Cotton Yarn 30s/1 40s/1 Combed Compact Weaving Knitting',
     category: 'Textiles, Garments & Fabrics',
     subCategory: 'General',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 3.20,
@@ -9312,7 +9439,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Premium Quality Grade A Refined ICUMSA 45 White Sugar',
     category: 'Agriculture & Agro Commodities',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80&sig=386'],
+    images: ['https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 420.00,
@@ -9332,7 +9459,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'High Density Polyethylene HDPE Resin Granules for Blow Molding',
     category: 'Chemicals & Raw Polymers',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80&sig=387'],
+    images: ['https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 1150.00,
@@ -9352,7 +9479,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Heavy Duty Truck Air Brake Chamber Assemblies',
     category: 'Automotive & Electric Vehicles',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80&sig=388'],
+    images: ['https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 15.50,
@@ -9372,7 +9499,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Premium Glazed Porcelain Floor Tiles 600x600mm 800x800mm',
     category: 'Building & Construction Materials',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80&sig=389'],
+    images: ['https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 3.20,
@@ -9393,7 +9520,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'High-Performance EV Battery Cells 3.2V 280Ah LiFePO4',
     category: 'Automotive & Electric Vehicles',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092580497-e0d23cbdf1dc?w=800&auto=format&fit=crop&q=80&sig=390'],
+    images: ['https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 115.00,
@@ -9413,7 +9540,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'OEM Custom Forged Aluminum Alloy Car Wheels 18 19 20 21 22 Inch',
     category: 'Automotive & Electric Vehicles',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092160562-40aa08e78837?w=800&auto=format&fit=crop&q=80&sig=391'],
+    images: ['https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 145.00,
@@ -9433,7 +9560,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Commercial EV Charging Station Level 3 DC Fast Charger 120kW',
     category: 'Automotive & Electric Vehicles',
     subCategory: 'General',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 12500.00,
@@ -9453,7 +9580,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Tier-1 Mono Half-Cell Solar Panels 550W 600W PV Module',
     category: 'Renewable Energy & Solar',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80517336714731-489689fd1ca8?w=800&auto=format&fit=crop&q=80&sig=393'],
+    images: ['https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 85.00,
@@ -9473,7 +9600,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Commercial Hybrid Solar Inverter 50kW 100kW 3-Phase',
     category: 'Renewable Energy & Solar',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=80&sig=394'],
+    images: ['https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 4200.00,
@@ -9493,7 +9620,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Advanced SMD Microcontrollers 32-bit ARM Cortex-M4 MCU',
     category: 'Electronics & Semiconductors',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80&sig=395'],
+    images: ['https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 2.15,
@@ -9513,7 +9640,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Custom Flexible Rigid PCB Manufacturing Multilayer Printed Circuit Board',
     category: 'Electronics & Semiconductors',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80581091226033-d5c48150dbaa?w=800&auto=format&fit=crop&q=80&sig=396'],
+    images: ['https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 0.85,
@@ -9533,7 +9660,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Disposable Nitrile Examination Gloves Powder-Free',
     category: 'Medical & Diagnostic Supplies',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80&sig=397'],
+    images: ['https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 3.50,
@@ -9553,7 +9680,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Digital B&W/Color Doppler Ultrasound Machine Scanner',
     category: 'Medical & Diagnostic Supplies',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=80&sig=398'],
+    images: ['https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 2850.00,
@@ -9573,7 +9700,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Hot Rolled Deformed Steel Rebar HRB400 HRB500',
     category: 'Building & Construction Materials',
     subCategory: 'General',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 680.00,
@@ -9593,7 +9720,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Custom Extruded Aluminum Profiles for Architecture & Windows',
     category: 'Building & Construction Materials',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80581092162384-8987c1d64718?w=800&auto=format&fit=crop&q=80&sig=400'],
+    images: ['https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 2350.00,
@@ -9613,7 +9740,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Full Automatic Bottle Water Filling Machine Production Line',
     category: 'Machinery & Industrial Equipment',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80&sig=401'],
+    images: ['https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 15500.00,
@@ -9633,7 +9760,7 @@ export const MOCK_PRODUCTS: Product[] = [
     title: 'Industrial Heavy Duty Hydraulic Press Machine 500 Ton',
     category: 'Machinery & Industrial Equipment',
     subCategory: 'General',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80&sig=402'],
+    images: ['https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80'],
     leadTimeDays: 14,
     createdDate: '2026-08-01',
   fobPriceUsd: 32000.00,
@@ -12307,8 +12434,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "DLC at sight",
     detailedRequirements: "46% N Biuret max 1.0% Moisture max 0.5%. Packaging: 50 kg PP/PE bags.",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-01",
     expiryDate: "2026-12-01",
     urgency: "URGENT",
@@ -12332,8 +12459,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "100% SBLC/MT760",
     detailedRequirements: "46% N Anti-caking treated Biuret max 1.0%. Packaging: Bulk vessel discharge.",
-    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
-    images: ["https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80", "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-02",
     expiryDate: "2026-12-02",
     urgency: "URGENT",
@@ -12357,8 +12484,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CFR",
     paymentTerms: "100% Confirmed LC at sight",
     detailedRequirements: "18-46-0 Moisture max 1.5%. Packaging: 50 kg export bags.",
-    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-03",
     expiryDate: "2026-12-03",
     urgency: "STANDARD",
@@ -12382,8 +12509,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "DLC from Top 25 Bank",
     detailedRequirements: "60% K2O Granular Moisture max 0.5%. Packaging: 1 MT Jumbo bags.",
-    image: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-04",
     expiryDate: "2026-12-04",
     urgency: "STANDARD",
@@ -12407,8 +12534,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "LC 90 days",
     detailedRequirements: "60% K2O Standard Powder. Packaging: Bulk in hold.",
-    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
-    images: ["https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-05",
     expiryDate: "2026-12-05",
     urgency: "STANDARD",
@@ -12432,8 +12559,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "DLC at sight",
     detailedRequirements: "11-52-0 Water soluble P2O5 min 44%. Packaging: 50 kg PP bags palletized.",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-06",
     expiryDate: "2026-12-06",
     urgency: "URGENT",
@@ -12457,8 +12584,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "Irrevocable DLC at sight",
     detailedRequirements: "15-15-15 Balanced granular. Packaging: 50 kg branded PP bags.",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-07",
     expiryDate: "2026-12-07",
     urgency: "STANDARD",
@@ -12482,8 +12609,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CFR",
     paymentTerms: "100% LC vs BL/SGS",
     detailedRequirements: "20-10-10 High N Granular 2-4mm. Packaging: 50 kg bags with liner.",
-    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80",
-    images: ["/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"],
+    image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-08",
     expiryDate: "2026-12-08",
     urgency: "STANDARD",
@@ -12507,8 +12634,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "Irrevocable DLC at sight",
     detailedRequirements: "21% N 24% S White crystal. Packaging: 50 kg neutral bags.",
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-09",
     expiryDate: "2026-12-09",
     urgency: "STANDARD",
@@ -12532,8 +12659,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "100% Irrevocable LC",
     detailedRequirements: "21% N 24% S Granular 2-5mm. Packaging: 1.2 MT Jumbo bags.",
-    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-10",
     expiryDate: "2026-12-10",
     urgency: "STANDARD",
@@ -12557,8 +12684,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CFR",
     paymentTerms: "Confirmed DLC at sight",
     detailedRequirements: "46% P2O5 Granular 1-4mm. Packaging: Bulk vessel discharge.",
-    image: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-11",
     expiryDate: "2026-12-11",
     urgency: "URGENT",
@@ -12582,8 +12709,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "100% LC at sight",
     detailedRequirements: "16-18% P2O5 Granular. Packaging: 50 kg woven PP.",
-    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
-    images: ["https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1601039641847-7857b994d704?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-12",
     expiryDate: "2026-12-12",
     urgency: "STANDARD",
@@ -12607,8 +12734,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "SBLC MT760",
     detailedRequirements: "27% N 12% CaO Granular 2-5mm. Packaging: Bulk / Jumbo bags.",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-13",
     expiryDate: "2026-12-13",
     urgency: "STANDARD",
@@ -12632,8 +12759,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "DLC 100% against docs",
     detailedRequirements: "50% K2O 18% S Granular Low Cl. Packaging: 1 MT jumbo bags.",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80586771107445-d3ca888129ff?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-14",
     expiryDate: "2026-12-14",
     urgency: "STANDARD",
@@ -12657,8 +12784,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "Irrevocable LC 60 days",
     detailedRequirements: "52% K2O 18% S 100% soluble fertigation. Packaging: 25 kg bags palletized.",
-    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-    images: ["/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"],
+    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-15",
     expiryDate: "2026-12-15",
     urgency: "STANDARD",
@@ -12682,8 +12809,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "Transferable DLC",
     detailedRequirements: "46% N Agricultural Untreated. Packaging: Bulk vessel hold.",
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-16",
     expiryDate: "2026-12-16",
     urgency: "URGENT",
@@ -12707,8 +12834,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "Wire transfer / DLC",
     detailedRequirements: "Liquid solution 32% N total. Packaging: Parcel tanker liquid bulk.",
-    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-17",
     expiryDate: "2026-12-17",
     urgency: "STANDARD",
@@ -12732,8 +12859,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CFR",
     paymentTerms: "100% LC at sight",
     detailedRequirements: "18% P2O5 12% MgO. Packaging: 50 kg PP bags.",
-    image: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80592417817098-8f3d6eb26305?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1508747703725-719777637510?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-18",
     expiryDate: "2026-12-18",
     urgency: "STANDARD",
@@ -12757,8 +12884,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "DLC Tier-1 Bank",
     detailedRequirements: "16-16-16 SOP based Chlorine-free. Packaging: 50 kg bags with liner.",
-    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
-    images: ["https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-19",
     expiryDate: "2026-12-19",
     urgency: "STANDARD",
@@ -12782,8 +12909,8 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
     preferredIncoterm: "CIF",
     paymentTerms: "MT700 LC at sight",
     detailedRequirements: "46% N Formaldehyde treated Hardness >2kg. Packaging: Bulk discharge.",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80",
-    images: ["https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"],
+    image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80",
+    images: ["https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80"],
     postedDate: "2026-09-20",
     expiryDate: "2026-12-20",
     urgency: "URGENT",

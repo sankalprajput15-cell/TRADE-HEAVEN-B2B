@@ -125,13 +125,10 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
           className="relative h-40 sm:h-44 md:h-48 w-full bg-slate-100 overflow-hidden cursor-pointer"
         >
           {(() => {
-            const rawImg = product.images?.[0] || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
-            const normalizedImg = rawImg.includes('1518709268805') || rawImg.includes('518709268805')
-              ? '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
-              : rawImg;
+            const rawImg = product.images?.[0] || '';
             return (
               <SafeImage
-                src={normalizedImg}
+                src={rawImg}
                 alt={product.title}
                 productTitle={product.title}
                 supplierName={product.supplierName}
@@ -160,12 +157,6 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
               <span>Change Image</span>
             </button>
           )}
-          <div className="absolute bottom-2.5 right-2.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
-              <Lock className="w-2.5 h-2.5 text-amber-400" />
-              <span>Protected Rate</span>
-            </span>
-          </div>
         </div>
 
         {/* Content Body */}
@@ -182,24 +173,33 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
             {product.title}
           </div>
 
-          {/* Tiered FOB Price range with Confidential / Inquire Protection */}
-          <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-200 min-w-0">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider truncate">FOB Volume Price</span>
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                <Lock className="w-2.5 h-2.5 text-amber-600" />
-                <span>Protected Rate</span>
-              </span>
-            </div>
-            <div className="text-sm sm:text-base font-black text-slate-800 font-mono mt-0.5 flex items-baseline gap-1 truncate">
-              <span>Inquire for Price</span>
-              <span className="text-[11px] sm:text-xs font-normal text-slate-500 truncate"> / {productUnitSingular}</span>
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-slate-600 mt-1.5 flex items-center justify-between font-medium pt-1.5 border-t border-slate-200/60 gap-1">
-              <span className="truncate">MOQ: <strong className="text-slate-900 font-bold">{productMoq.toLocaleString()} {productUnit}</strong></span>
-              <span className="shrink-0">Lead: <strong className="text-slate-900 font-bold">{product.leadTimeDays && product.leadTimeDays > 0 ? product.leadTimeDays : 15}d</strong></span>
-            </div>
-          </div>
+          {/* Tiered FOB Price range */}
+          {(() => {
+            const displayPrice = product.priceRangeUsd
+              ? product.priceRangeUsd
+              : product.fobPriceUsd
+              ? `$${product.fobPriceUsd.toLocaleString()} / ${productUnitSingular}`
+              : product.priceTiers && product.priceTiers.length > 0
+              ? `$${product.priceTiers[product.priceTiers.length - 1].priceUsd.toLocaleString()} - $${product.priceTiers[0].priceUsd.toLocaleString()}`
+              : null;
+
+            return (
+              <div className="bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-200 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider truncate">FOB Volume Price</span>
+                </div>
+                {displayPrice && (
+                  <div className="text-sm sm:text-base font-black text-emerald-700 font-mono mt-0.5 flex items-baseline gap-1 truncate">
+                    <span>{displayPrice}</span>
+                  </div>
+                )}
+                <div className="text-[10px] sm:text-[11px] text-slate-600 mt-1.5 flex items-center justify-between font-medium pt-1.5 border-t border-slate-200/60 gap-1">
+                  <span className="truncate">MOQ: <strong className="text-slate-900 font-bold">{productMoq.toLocaleString()} {productUnit}</strong></span>
+                  <span className="shrink-0">Lead: <strong className="text-slate-900 font-bold">{product.leadTimeDays && product.leadTimeDays > 0 ? product.leadTimeDays : 15}d</strong></span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Supplier Trust Summary */}
           <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] gap-2 min-w-0">

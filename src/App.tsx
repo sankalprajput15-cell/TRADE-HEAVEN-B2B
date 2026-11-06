@@ -392,10 +392,34 @@ const MainApp: React.FC = () => {
     }
   }, []);
 
-  // Products and entities initialized with default rich marketplace dataset + active image overrides
-  const [products, setProducts] = useState<Product[]>(() =>
-    productImageManagerService.applyOverridesToProductList(MOCK_PRODUCTS)
-  );
+  // Products and entities initialized with default rich marketplace dataset + custom local products + active image overrides
+  const [products, setProducts] = useState<Product[]>(() => {
+    let baseList: Product[] = [...MOCK_PRODUCTS];
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+        if (rawCustom) {
+          const customList: Product[] = JSON.parse(rawCustom);
+          if (Array.isArray(customList) && customList.length > 0) {
+            const baseMap = new Map<string, Product>();
+            baseList.forEach(p => baseMap.set(p.id, p));
+            const newAdditions: Product[] = [];
+            customList.forEach(c => {
+              if (c && c.id) {
+                if (baseMap.has(c.id)) {
+                  baseMap.set(c.id, { ...baseMap.get(c.id)!, ...c });
+                } else {
+                  newAdditions.push(c);
+                }
+              }
+            });
+            baseList = [...newAdditions, ...Array.from(baseMap.values())];
+          }
+        }
+      }
+    } catch {}
+    return productImageManagerService.applyOverridesToProductList(baseList);
+  });
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
@@ -1039,13 +1063,18 @@ const MainApp: React.FC = () => {
         return updated || prev;
       });
     };
+    const handleProductsUpdated = () => {
+      fetchProducts();
+    };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
+    window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
 
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
       window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
+      window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
     };
   }, []);
 
@@ -1763,7 +1792,7 @@ const MainApp: React.FC = () => {
 
   const handleNavigate = (
     view: ActiveView | string, 
-    options?: { search?: string; category?: string; subcategory?: string; productId?: string }
+    options?: { search?: string; category?: string; subcategory?: string; productId?: string; tab?: string; [key: string]: any }
   ) => {
     // Release initial email-link forced view lock once the user manually navigates
     emailLinkForcedViewRef.current = null;
@@ -1784,6 +1813,26 @@ const MainApp: React.FC = () => {
       setSelectedProduct(null);
     }
     setStorefrontCompanyId(null);
+
+    // Sync specific options like 'tab' to URL immediately for components that read from window.location
+    if (typeof window !== 'undefined' && options) {
+      const url = new URL(window.location.href);
+      if (options.tab) {
+        url.searchParams.set('tab', options.tab);
+        window.dispatchEvent(
+          new CustomEvent('tradeheaven_admin_switch_tab', {
+            detail: { tab: options.tab }
+          })
+        );
+      }
+      // Handle other generic options
+      Object.entries(options).forEach(([key, val]) => {
+        if (key !== 'search' && key !== 'category' && key !== 'subcategory' && key !== 'productId' && key !== 'tab') {
+          url.searchParams.set(key, String(val));
+        }
+      });
+      window.history.pushState({}, '', url.toString());
+    }
 
     // Specific modal actions
     if (target === 'POST_BUY_REQUIREMENT' || target === 'CREATE_RFQ') {

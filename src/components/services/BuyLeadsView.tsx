@@ -916,8 +916,8 @@ export const BuyLeadsView: React.FC<Props> = ({
             {currentItems.map((rfq) => {
               const isPaidLead = isPaidEntity(rfq);
               const isCallerPaid = isPaidMemberUser(currentUser);
-              const isClaimed = isRfqClaimedFree(rfq.id);
-              const canViewDirectContact = isCallerPaid || isClaimed;
+              const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
+              const canViewDirectContact = Boolean(currentUser) && (isCallerPaid || isClaimed);
 
               return (
                 <div

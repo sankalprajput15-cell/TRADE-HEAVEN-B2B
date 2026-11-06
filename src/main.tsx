@@ -11,7 +11,7 @@ localStorage.removeItem('th_rfqs_store');
 localStorage.removeItem('th_quotes_store');
 localStorage.removeItem('th_registered_users_store');
 localStorage.removeItem('th_companies');
-localStorage.removeItem('cached_products');
+// Preserve user's customized product images and cached product edits across reloads
 localStorage.removeItem('th_session_user');
 localStorage.removeItem('tradeheaven_user');
 localStorage.removeItem('tradeheaven_auth_user');

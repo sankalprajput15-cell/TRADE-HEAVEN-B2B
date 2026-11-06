@@ -14,7 +14,7 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Inner Tubes & Accessories',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Manufactured with high-grade butyl rubber providing outstanding airtightness, elongation rate > 500%, and heat resistance for commercial truck tires, light vehicles, and agricultural tractors.',
@@ -53,8 +53,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Commercial Truck Tires (TBR)',
     images: [
-      'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'SmartWay-verified low rolling resistance all-steel radial tire engineered for long-haul highway steering and trailer axles. Features 4-groove straight tread design for optimal water evacuation and high fuel efficiency.',
     fobPriceUsd: 135.00,
@@ -92,8 +92,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Recycled Materials & Scrap',
     subCategory: 'Scrap Tires & Crumb Rubber',
     images: [
-      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Clean compressed scrap tire bales (approx. 100-110 tires per bale) packed with heavy steel wire binding. Average container payload 24-27 MT per 40ft High Cube container. Ideal for tyre oil pyrolysis, TDF cement kiln fuel, and crumb rubber milling.',
     fobPriceUsd: 45.00,
@@ -130,8 +130,8 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Used Tires & Casings',
     images: [
-      'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Thoroughly pressure tested and visually inspected Korean brand used tires (Hankook, Kumho, Nexen). No sidewall damage, bead defects, or shoulder punctures. Available in singles, doubles, and triples nesting for container optimization.',
     fobPriceUsd: 14.50,
@@ -169,7 +169,7 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Industrial Machinery',
     subCategory: 'Tire Recycling Equipment',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High torque, low speed dual shaft shredder engineered specifically for car, truck, and tractor tires. Handles whole scrap tires up to 1200mm diameter, outputting 50mm x 50mm uniform rubber chips with magnetic steel separator.',
@@ -207,7 +207,7 @@ export const GLOBAL_TIRES_PRODUCTS: Product[] = [
     category: 'Automotive & Tires',
     subCategory: 'Passenger Car Radial (PCR)',
     images: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Asymmetric tread compound formulation engineered for superior wet grip, reduced road noise, and responsive dry cornering stability. Features reinforced belt structure and silica compounding for 60,000-mile treadwear warranty.',

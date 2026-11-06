@@ -14,7 +14,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$41 - $123',
     unit: 'Sacks',
     minOrderQuantity: '5',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$40 - $132',
     unit: 'Sacks',
     minOrderQuantity: '14',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -46,7 +46,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$58 - $139',
     unit: 'Bales',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -62,7 +62,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$63 - $155',
     unit: 'Bales',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -78,7 +78,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$62 - $133',
     unit: 'Bales',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$158 - $345',
     unit: 'Bales',
     minOrderQuantity: '14',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -126,7 +126,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$41 - $100',
     unit: 'Sacks',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -158,7 +158,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$65 - $121',
     unit: 'Bales',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$60 - $136',
     unit: 'Bales',
     minOrderQuantity: '8',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$48 - $114',
     unit: 'Sacks',
     minOrderQuantity: '12',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -206,7 +206,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$40 - $139',
     unit: 'Sacks',
     minOrderQuantity: '2',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -222,7 +222,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$68 - $129',
     unit: 'Bales',
     minOrderQuantity: '18',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -238,7 +238,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$45 - $97',
     unit: 'Sacks',
     minOrderQuantity: '16',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$51 - $139',
     unit: 'Bales',
     minOrderQuantity: '7',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -286,7 +286,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$55 - $139',
     unit: 'Bales',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -318,7 +318,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$152 - $349',
     unit: 'Bales',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$59 - $108',
     unit: 'Bales',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$50 - $94',
     unit: 'Bales',
     minOrderQuantity: '10',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -366,7 +366,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$158 - $322',
     unit: 'Bales',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -382,7 +382,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$68 - $128',
     unit: 'Bales',
     minOrderQuantity: '19',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -398,7 +398,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$65 - $144',
     unit: 'Bales',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$158 - $327',
     unit: 'Bales',
     minOrderQuantity: '15',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -446,7 +446,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$55 - $133',
     unit: 'Bales',
     minOrderQuantity: '7',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -478,7 +478,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$47 - $115',
     unit: 'Sacks',
     minOrderQuantity: '13',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$67 - $148',
     unit: 'Bales',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$56 - $96',
     unit: 'Bales',
     minOrderQuantity: '9',
-    images: ['https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Season', value: 'Winter' }, { name: 'Grade', value: 'A' }, { name: 'Weight', value: '50kg' } ]
   },
   {
@@ -526,7 +526,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$50 - $114',
     unit: 'Sacks',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Mixed Shoes' }, { name: 'Grade', value: 'A/B' }, { name: 'Weight', value: '25kg Sacks' } ]
   },
   {
@@ -542,7 +542,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$63 - $164',
     unit: 'Bales',
     minOrderQuantity: '11',
-    images: ['https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   },
   {
@@ -558,7 +558,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$152 - $350',
     unit: 'Bales',
     minOrderQuantity: '15',
-    images: ['https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$152 - $309',
     unit: 'Bales',
     minOrderQuantity: '7',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -606,7 +606,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$152 - $307',
     unit: 'Bales',
     minOrderQuantity: '6',
-    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Type', value: 'Denim' }, { name: 'Style', value: 'Vintage 80s/90s' }, { name: 'Weight', value: '45kg' } ]
   },
   {
@@ -638,7 +638,7 @@ export const GLOBAL_USED_CLOTHES_PRODUCTS: any[] = [
     priceRangeUsd: '$69 - $148',
     unit: 'Bales',
     minOrderQuantity: '3',
-    images: ['https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80'],
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80'],
     specifications: [ { name: 'Grade', value: 'A' }, { name: 'Weight', value: '45kg / 100lbs' }, { name: 'Season', value: 'Summer/Tropical Mix' } ]
   }
 ];

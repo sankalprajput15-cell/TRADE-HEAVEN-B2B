@@ -889,7 +889,7 @@ export const VendorProfilePage: React.FC<Props> = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
                           <SafeImage
-                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80586528116311-ad8dd3c8310d?w=400'}
+                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-ad8dd3c8310d?w=400'}
                             alt={cert.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />

@@ -38,7 +38,7 @@ const BUYER_TESTIMONIALS = [
     role: "Head of Global Sourcing",
     company: "TechTronics Inc.",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
+    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
   },
   {
     id: 2,
@@ -56,7 +56,7 @@ const BUYER_TESTIMONIALS = [
     role: "Chief Supply Chain Officer",
     company: "Vostok Sourcing",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150"
+    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150"
   }
 ];
 

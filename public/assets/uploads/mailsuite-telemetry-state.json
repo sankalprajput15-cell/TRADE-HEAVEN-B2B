@@ -1,6 +1,34 @@
 {
-  "updatedAt": "2026-11-04T15:11:44.586Z",
+  "updatedAt": "2026-11-05T18:20:06.564Z",
   "emailHistoryLog": [
+    {
+      "id": "eh-1793902806564-9o5v",
+      "trackingId": "ms-trk-mw3veulu-0-yw14n",
+      "recipient": "sankalprajput15@gmail.com",
+      "recipientName": "Trade Heaven SEO Administrator",
+      "companyName": "Corporate Entity",
+      "companyId": "user-admin-root",
+      "subject": "[SEO HEALTH DIAGNOSTIC] LIVE DIAGNOSTIC TEST ALERT — Trade Heaven B2B Portal",
+      "dispatchType": "MANUAL",
+      "category": "CUSTOM_ADMIN",
+      "sender": "\"Trade Heaven Security\" <noreply@tradeheaven.net>",
+      "success": true,
+      "messageId": "<2216a144-f81b-eca6-94aa-d5dbd826a7ea@tradeheaven.net>",
+      "dispatchedAt": "2026-11-05T18:20:06.563Z",
+      "enforcedDelayMs": 0,
+      "summaryText": "This is a verified live SMTP test alert triggered from the Trade Heaven Admin SEO Health Dashboard. Real server HTTP telemetry counters: 200 OK (32), 301 Redirect (0), 404 Not Found (0, Threshold: 10), 500 Server Error (0, Threshold: 5), Average Latency (30ms).",
+      "htmlPreview": "\n      <div style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.08);\">\n        <!-- Top Hero Header -->\n        <div style=\"background: linear-gradient(135deg, #090d16 0%, #1e1b4b 50%, #0b1536 100%); padding: 36px 24px; text-align: center; color: #ffffff;\">\n          <div style=\"display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #34d399; text-transform: uppercase; margin-bottom: 10px; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.3); padding: 4px 12px; border-radius: 9999px;\">\n            TRADE HEAVEN • SEO HEALTH MONITOR (DIAGNOSTIC)\n          </div>\n          <h1 style=\"margin: 0; font-size: 24px; font-weight: 900; color: #ffffff; line-height: 1.25; letter-spacing: -0.5px;\">\n            LIVE DIAGNOSTIC TEST ALERT Notification\n          </h1>\n          <p style=\"margin: 8px 0 0 0; font-size: 14px; color: #cbd5e1;\">\n            Real-time server telemetry captured at Thu, 05 Nov 2026 18:20:04 GMT\n          </p>\n        </div>\n\n        <div style=\"padding: 30px 24px; background: #ffffff; color: #1e293b;\">\n          <p style=\"font-size: 15px; line-height: 1.6; margin: 0 0 14px 0; color: #0f172a;\">\n            Hello <strong>Trade Heaven SEO Administrator</strong>,\n          </p>\n          <div style=\"font-size: 14px; line-height: 1.6; margin: 0 0 20px 0; color: #334155; white-space: pre-line;\">\n            This is a verified live SMTP test alert triggered from the Trade Heaven Admin SEO Health Dashboard. Real server HTTP telemetry counters: 200 OK (32), 301 Redirect (0), 404 Not Found (0, Threshold: 10), 500 Server Error (0, Threshold: 5), Average Latency (30ms).\n          </div>\n\n          \n\n          \n\n          \n\n          \n      <div style=\"margin: 24px 0 16px 0; border-bottom: 2px solid #0f172a; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;\">\n        <span style=\"font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;\">\n          Live Server Telemetry & Threshold Status\n        </span>\n        <span style=\"background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px;\">\n          3 Active Leads\n        </span>\n      </div>\n      \n          <div style=\"background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #3b82f6; border-radius: 10px; padding: 16px 18px; margin: 0 0 16px 0;\">\n            <div style=\"display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;\">\n              <span style=\"font-size: 11px; font-family: monospace; font-weight: bold; color: #3b82f6; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;\">\n                HTTP-404-METRIC\n              </span>\n              \n            </div>\n            <h3 style=\"margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: #0f172a;\">\n              404 Not Found Count: 0 (Configured Threshold: 10)\n            </h3>\n            <table style=\"width: 100%; border-collapse: collapse; font-size: 12px; color: #475569; margin-top: 8px;\">\n              \n              \n              \n              \n            </table>\n          </div>\n        \n          <div style=\"background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #10b981; border-radius: 10px; padding: 16px 18px; margin: 0 0 16px 0;\">\n            <div style=\"display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;\">\n              <span style=\"font-size: 11px; font-family: monospace; font-weight: bold; color: #10b981; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;\">\n                HTTP-500-METRIC\n              </span>\n              \n            </div>\n            <h3 style=\"margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: #0f172a;\">\n              500 Server Error Count: 0 (Configured Threshold: 5)\n            </h3>\n            <table style=\"width: 100%; border-collapse: collapse; font-size: 12px; color: #475569; margin-top: 8px;\">\n              \n              \n              \n              \n            </table>\n          </div>\n        \n          <div style=\"background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #f59e0b; border-radius: 10px; padding: 16px 18px; margin: 0 0 16px 0;\">\n            <div style=\"display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;\">\n              <span style=\"font-size: 11px; font-family: monospace; font-weight: bold; color: #f59e0b; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;\">\n                HTTP-200-LATENCY\n              </span>\n              \n            </div>\n            <h3 style=\"margin: 0 0 6px 0; font-size: 14px; font-weight: 800; color: #0f172a;\">\n              200 OK Responses: 32 • Avg Latency: 30ms • Sitemap URLs: 18\n            </h3>\n            <table style=\"width: 100%; border-collapse: collapse; font-size: 12px; color: #475569; margin-top: 8px;\">\n              \n              \n              \n              \n            </table>\n          </div>\n        \n    \n\n          \n            <div style=\"background: #f8fafc; border-radius: 10px; padding: 14px 16px; font-size: 13px; color: #334155; line-height: 1.6; margin: 20px 0;\">\n              Dispatched via Trade Heaven Server-Side SMTP Engine. Zero fake data — all counters reflect live Express HTTP telemetry.\n            </div>\n          \n\n          \n          <!-- Direct CTA Button -->\n          <div style=\"text-align: center; margin: 26px 0;\">\n            <a href=\"https://www.tradeheaven.net/?view=CLIENT_ADMIN&tab=seo-health\" style=\"display: inline-block; background: #0f172a; color: #ffffff; font-weight: 800; font-size: 14px; text-decoration: none; padding: 14px 34px; border-radius: 10px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);\">\n              Open SEO Health Dashboard →\n            </a>\n          </div>\n\n          \n            <!-- Escrow Guarantee Notice -->\n            <div style=\"background: #f1f5f9; border-radius: 10px; padding: 14px 16px; font-size: 12px; color: #475569; line-height: 1.5; margin-bottom: 20px;\">\n              <strong style=\"color: #0f172a;\">Trade Heaven Escrow Protection:</strong> All high-value institutional contracts finalized on Trade Heaven operate under regulated escrow protocols with independent SGS/Saybolt inspection verification prior to funds release.\n            </div>\n          \n\n          <p style=\"font-size: 12px; color: #64748b; margin: 20px 0 0 0; line-height: 1.5;\">\n            Dispatched via <strong>noreply@tradeheaven.net</strong> • Immediate support? Contact the Trade Concierge on WhatsApp at <strong>+91 8532934479</strong> or email <strong>help@tradeheaven.net</strong>.\n          </p>\n        </div>\n      </div>\n    ",
+      "mailSuiteStatus": "DELIVERED",
+      "opened": false,
+      "openCount": 0,
+      "uniqueOpens": 0,
+      "clicked": false,
+      "clickCount": 0,
+      "uniqueClicks": 0,
+      "openEvents": [],
+      "clickEvents": [],
+      "trackingPixelUrl": "https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/api/v1/track/open/ms-trk-mw3veulu-0-yw14n.gif"
+    },
     {
       "id": "eh-1793805104586-34cn",
       "trackingId": "ms-trk-lars-blackstone-jade-admin-mw298p2t",
@@ -27,7 +55,7 @@
       "uniqueClicks": 0,
       "openEvents": [],
       "clickEvents": [],
-      "trackingPixelUrl": "http://ais-dev-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/api/v1/track/open/ms-trk-lars-blackstone-jade-admin-mw298p2t.gif"
+      "trackingPixelUrl": "https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/api/v1/track/open/ms-trk-lars-blackstone-jade-admin-mw298p2t.gif"
     },
     {
       "id": "eh-1793805099502-lpdl",
@@ -55,7 +83,7 @@
       "uniqueClicks": 0,
       "openEvents": [],
       "clickEvents": [],
-      "trackingPixelUrl": "http://ais-dev-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/api/v1/track/open/ms-trk-lars-blackstone-jade-59-buyers-mw298mli.gif"
+      "trackingPixelUrl": "https://ais-pre-xsbddiisdsuqcgdovwz5oo-413846751848.asia-southeast1.run.app/api/v1/track/open/ms-trk-lars-blackstone-jade-59-buyers-mw298mli.gif"
     },
     {
       "id": "eh-1793802368406-wpom",
@@ -1205,6 +1233,19 @@
     }
   ],
   "smtpWebhookLogs": [
+    {
+      "id": "wh-smtp-1793902806564-k99n",
+      "timestamp": "2026-11-05T18:20:06.563Z",
+      "eventType": "DELIVERED",
+      "source": "SMTP_WEBHOOK",
+      "trackingId": "ms-trk-mw3veulu-0-yw14n",
+      "emailId": "eh-1793902806564-9o5v",
+      "messageId": "<2216a144-f81b-eca6-94aa-d5dbd826a7ea@tradeheaven.net>",
+      "recipient": "sankalprajput15@gmail.com",
+      "companyName": "Corporate Entity",
+      "subject": "[SEO HEALTH DIAGNOSTIC] LIVE DIAGNOSTIC TEST ALERT — Trade Heaven B2B Portal",
+      "smtpResponse": "250 2.0.0 OK BigRock SMTP TLS Port 465 Delivered"
+    },
     {
       "id": "wh-smtp-1793805104586-8trr",
       "timestamp": "2026-11-04T15:11:44.585Z",
