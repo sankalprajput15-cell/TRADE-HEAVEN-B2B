@@ -81,17 +81,13 @@ export const LiveGlobalTradeFeed: React.FC<Props> = ({ onSelectLead, className =
     };
   }, []);
 
-  // Cycle leads with smooth opacity fade
+  // Cycle leads smoothly without abrupt blinking
   useEffect(() => {
     const cycleInterval = setInterval(() => {
-      setOpacity(0);
-      setTimeout(() => {
-        setCurrentLeadIndex(prev => (prev + 1) % DEFAULT_TRADE_LEADS.length);
-        const mins = Math.floor(Math.random() * 4) + 1;
-        setLeadTimeAgo(`${mins}m ago`);
-        setOpacity(1);
-      }, 300);
-    }, 4000);
+      setCurrentLeadIndex(prev => (prev + 1) % DEFAULT_TRADE_LEADS.length);
+      const mins = Math.floor(Math.random() * 4) + 1;
+      setLeadTimeAgo(`${mins}m ago`);
+    }, 6000);
 
     return () => clearInterval(cycleInterval);
   }, []);

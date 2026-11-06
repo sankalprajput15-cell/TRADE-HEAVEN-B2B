@@ -563,7 +563,7 @@ export const TH_RICE_HUSK_PRODUCTS: Product[] = [
     priceRangeUsd: '$110 - $160',
     unit: 'Metric Ton',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
     specifications: [
       { name: 'Purity', value: '99% Clean Husk' },
       { name: 'Packing', value: 'Jumbo Bags 500kg' }

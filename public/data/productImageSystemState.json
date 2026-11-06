@@ -1,0 +1,30 @@
+{
+  "overrides": {
+    "prod-1": {
+      "primary": "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "th-rh-prod-04": {
+      "primary": "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    }
+  },
+  "mediaLibrary": [
+    {
+      "id": "media-rice-husk-1793949703892",
+      "url": "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "name": "Agricultural_Rice_Husk_Powder.jpeg",
+      "format": "JPG",
+      "sizeBytes": 32795,
+      "uploadedAt": "2026-11-06T07:21:43.892Z"
+    }
+  ]
+}

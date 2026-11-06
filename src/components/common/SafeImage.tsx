@@ -353,22 +353,22 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   const [overrideVersion, setOverrideVersion] = useState(0);
 
+  const lastCandidateRef = useRef<string | null>(null);
+
   useEffect(() => {
     let isMounted = true;
-    // When opening in incognito mode, wait for server hydration to complete and re-evaluate
-    productImageManagerService.ensureHydrated().then(() => {
-      if (isMounted) {
-        setOverrideVersion(v => v + 1);
-        setAttemptIndex(0);
-        setHasError(false);
-      }
-    });
+    // When opening in incognito mode, only re-evaluate if not already hydrated
+    if (!productImageManagerService.isHydrated()) {
+      productImageManagerService.ensureHydrated().then(() => {
+        if (isMounted) {
+          setOverrideVersion(v => v + 1);
+        }
+      });
+    }
 
     const handleImageOverrideUpdate = () => {
       if (isMounted) {
         setOverrideVersion(v => v + 1);
-        setAttemptIndex(0);
-        setHasError(false);
       }
     };
     window.addEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
@@ -434,10 +434,18 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   }, [candidates, attemptIndex, isThumbnail]);
 
   useEffect(() => {
-    setAttemptIndex(0);
-    setIsLoaded(false);
-    setHasError(false);
-  }, [src, fallbackSrc, category, productId, overrideVersion]);
+    if (lastCandidateRef.current !== currentCandidate) {
+      lastCandidateRef.current = currentCandidate;
+      setAttemptIndex(0);
+      setHasError(false);
+      // If already complete in browser cache, don't flash loading state
+      if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+        setIsLoaded(true);
+      } else {
+        setIsLoaded(false);
+      }
+    }
+  }, [currentCandidate]);
 
   // Check if cached image loaded synchronously
   useEffect(() => {
@@ -463,13 +471,13 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
-      {/* Subtle loader skeleton */}
+      {/* Smooth non-blinking placeholder layer */}
       {(!isLoaded && !hasError) || !hasIntersected ? (
-        <div className="absolute inset-0 bg-slate-200/60 animate-pulse flex items-center justify-center z-1">
+        <div className="absolute inset-0 bg-slate-100 flex items-center justify-center z-1 pointer-events-none transition-opacity duration-300">
           {isLogoOrAvatar ? (
-            <Building2 className="w-5 h-5 text-slate-400" />
+            <Building2 className="w-5 h-5 text-slate-300" />
           ) : (
-            <Package className="w-5 h-5 text-slate-400" />
+            <Package className="w-5 h-5 text-slate-300" />
           )}
         </div>
       ) : null}

@@ -21,9 +21,7 @@ sessionStorage.removeItem('th_admin_origin_user');
 sessionStorage.removeItem('th_session_user');
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <HelmetProvider>
-      <App />
-    </HelmetProvider>
-  </StrictMode>,
+  <HelmetProvider>
+    <App />
+  </HelmetProvider>,
 );
