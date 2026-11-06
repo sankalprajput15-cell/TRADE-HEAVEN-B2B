@@ -336,6 +336,15 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       }, true);
       setSeoRecords(autoSeoEngine.getAllSeoRecords());
 
+      if (payload.images && payload.images.length > 0 && payload.images[0]) {
+        await productImageManagerService.setProductImage(
+          isAddingNewProduct ? productForm.id : (editingProduct?.id || productForm.id),
+          payload.images[0],
+          payload.images
+        );
+        await productImageManagerService.forceSyncToServer();
+      }
+
       if (isAddingNewProduct) {
         const res = await api.createProduct(payload);
         if (res.success) {
@@ -3816,9 +3825,19 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
   onSaved
 }) => {
   const [outputFormat, setOutputFormat] = useState<OutputImageFormat>('jpg');
-  const [primaryUrl, setPrimaryUrl] = useState<string>(product.images?.[0] || '');
+  const existingOverride = productImageManagerService.getState().overrides[product.id];
+  const [beforePrimaryUrl, setBeforePrimaryUrl] = useState<string>(
+    existingOverride?.previousPrimary || product.images?.[0] || ''
+  );
+  const [primaryUrl, setPrimaryUrl] = useState<string>(
+    existingOverride?.primary || product.images?.[0] || ''
+  );
   const [galleryUrls, setGalleryUrls] = useState<string[]>(
-    product.images && product.images.length > 0 ? [...product.images] : ['']
+    existingOverride?.gallery && existingOverride.gallery.length > 0
+      ? [...existingOverride.gallery]
+      : product.images && product.images.length > 0
+      ? [...product.images]
+      : ['']
   );
   const [newGalleryUrl, setNewGalleryUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -3855,6 +3874,7 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
   const handleFileUpload = async (file: File, applyToAllProducts = false) => {
     setIsUploading(true);
     try {
+      const currentBefore = primaryUrl;
       const res = await productImageManagerService.uploadAndAssignImageFile(file, {
         targetFormat: outputFormat,
         quality: 0.92,
@@ -3862,9 +3882,13 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
         applyToAll: applyToAllProducts,
         productIds: applyToAllProducts ? MOCK_PRODUCTS.map(p => p.id) : undefined
       });
+      if (currentBefore && currentBefore !== res.url) {
+        setBeforePrimaryUrl(currentBefore);
+      }
       setPrimaryUrl(res.url);
       setGalleryUrls(prev => [res.url, ...prev.filter(u => u && u !== res.url)]);
       setMediaLibrary(productImageManagerService.getState().mediaLibrary);
+      await productImageManagerService.forceSyncToServer();
       if (onSaved) {
         onSaved(
           applyToAllProducts
@@ -3888,6 +3912,7 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
     setIsUploading(true);
     try {
       await productImageManagerService.setProductImage(product.id, cleanPrimary, cleanGallery);
+      await productImageManagerService.forceSyncToServer();
       if (onSaved) {
         onSaved(`Saved updated product image(s) for "${product.title.slice(0, 40)}..."`);
       }
@@ -3935,30 +3960,54 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
 
         {/* Modal Body */}
         <form onSubmit={handleSaveChanges} className="p-6 space-y-6 overflow-y-auto flex-1">
-          {/* Top Row: Live Preview + Upload File Box */}
+          {/* Top Row: Side-by-Side BEFORE & AFTER Preview + Upload File Box */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
-            {/* Current Primary Image Preview */}
-            <div className="md:col-span-5 flex flex-col">
-              <label className="text-[11px] font-bold text-slate-600 uppercase mb-1.5">
-                Current Primary Image Preview
+            {/* Before & After Primary Image Comparison */}
+            <div className="md:col-span-6 flex flex-col">
+              <label className="text-[11px] font-bold text-slate-600 uppercase mb-1.5 flex items-center justify-between">
+                <span>Before &amp; After Product Image</span>
+                <span className="text-[10px] font-bold text-emerald-600">Live Server Sync</span>
               </label>
-              <div className="relative flex-1 min-h-[180px] rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
-                <SafeImage
-                  src={primaryUrl}
-                  alt={product.title}
-                  productId={product.id}
-                  productTitle={product.title}
-                  category={product.category}
-                  className="w-full h-full object-cover"
-                />
-                <span className="absolute bottom-2 right-2 bg-slate-900/85 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded">
-                  {productImageManagerService.detectFormatFromUrl(primaryUrl)}
-                </span>
+              <div className="grid grid-cols-2 gap-2.5 flex-1">
+                {/* BEFORE */}
+                <div className="flex flex-col rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                  <div className="bg-slate-800 text-slate-200 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 flex items-center justify-between">
+                    <span>BEFORE</span>
+                    <span className="text-[9px] text-slate-400">Previous</span>
+                  </div>
+                  <div className="relative flex-1 min-h-[150px] bg-slate-100">
+                    <img
+                      src={beforePrimaryUrl || primaryUrl}
+                      alt={`Before ${product.title}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                {/* AFTER */}
+                <div className="flex flex-col rounded-xl overflow-hidden bg-emerald-50/40 border-2 border-emerald-500 shadow-xs">
+                  <div className="bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 flex items-center justify-between">
+                    <span>AFTER</span>
+                    <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded">LIVE</span>
+                  </div>
+                  <div className="relative flex-1 min-h-[150px] bg-slate-100">
+                    <SafeImage
+                      src={primaryUrl}
+                      alt={product.title}
+                      productId={product.id}
+                      productTitle={product.title}
+                      category={product.category}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-2 right-2 bg-slate-900/85 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded">
+                      {productImageManagerService.detectFormatFromUrl(primaryUrl)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* File Upload & Format Converter */}
-            <div className="md:col-span-7 flex flex-col justify-between space-y-3">
+            <div className="md:col-span-6 flex flex-col justify-between space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[11px] font-bold text-slate-600 uppercase">

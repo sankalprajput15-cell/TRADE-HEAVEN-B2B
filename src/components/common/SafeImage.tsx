@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors, Upload, Image as ImageIcon, X, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import { getAutoAltText } from '../../utils/imageSeo';
 import {
   productImageManagerService,
@@ -23,10 +24,11 @@ interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   totalImages?: number;
   isThumbnail?: boolean;
   type?: 'product' | 'logo' | 'avatar' | 'category' | 'rfq';
+  disableLiveUpload?: boolean;
 }
 
 // 100% verified, highly accessible cargo and oil ships port image
-const EVENING_TANKER_PORT_IMAGE = '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
+const EVENING_TANKER_PORT_IMAGE = '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
 
 const FALLBACK_SEEDS: string[] = [
   EVENING_TANKER_PORT_IMAGE,
@@ -35,16 +37,16 @@ const FALLBACK_SEEDS: string[] = [
 
 const CATEGORY_POOLS: Record<string, string[]> = {
   JADE_GEMSTONE: [
-    '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
-    '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+    '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
   ],
   VANILLA: [
-    '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
-    '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
-    '/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
-    '/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
-    '/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
-    '/assets/aistudio/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
+    '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+    '/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+    '/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
+    '/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
+    '/assets/uploads/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
+    '/assets/uploads/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
   ],
   AVOCADO: [
     'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&auto=format&fit=crop&q=80',
@@ -85,8 +87,8 @@ const CATEGORY_POOLS: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
   ],
   FUEL_PETROLEUM: [
-    '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-    '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
@@ -112,10 +114,10 @@ const CATEGORY_POOLS: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80'
   ],
   MACHINERY: [
-    '/assets/aistudio/image002_50ab7837.png',
-    '/assets/aistudio/image003_6c1f0619.jpg',
-    '/assets/aistudio/image004_fa37a57a.png',
-    '/assets/aistudio/image005_20fe3db0.png',
+    '/assets/uploads/image002_50ab7837.png',
+    '/assets/uploads/image003_6c1f0619.jpg',
+    '/assets/uploads/image004_fa37a57a.png',
+    '/assets/uploads/image005_20fe3db0.png',
     'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
@@ -261,6 +263,22 @@ const getDeterministicHash = (str: string): number => {
   return Math.abs(hash);
 };
 
+function checkIsAdminLiveEditActive(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const liveMode = localStorage.getItem('th_live_edit_mode') === 'true';
+    if (!liveMode) return false;
+    const rawUser = localStorage.getItem('th_admin_session_v1') || localStorage.getItem('th_session_user');
+    if (!rawUser) return false;
+    const parsed = JSON.parse(rawUser);
+    const email = String(parsed?.email || '').toLowerCase();
+    if (email === 'zac@otec.ltd' || email === 'zac@fadetech.com') return false;
+    return parsed?.role === 'ADMIN' || parsed?.isVerifiedAdmin === true;
+  } catch {
+    return false;
+  }
+}
+
 export const SafeImage: React.FC<SafeImageProps> = ({
   src,
   alt,
@@ -276,6 +294,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   totalImages,
   isThumbnail,
   type = 'product',
+  disableLiveUpload = false,
   ...props
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -284,6 +303,13 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [attemptIndex, setAttemptIndex] = useState<number>(0);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
+  const [isLiveUploadActive, setIsLiveUploadActive] = useState<boolean>(() => checkIsAdminLiveEditActive());
+  const [showLiveUploadModal, setShowLiveUploadModal] = useState<boolean>(false);
+  const [isUploadingFile, setIsUploadingFile] = useState<boolean>(false);
+  const [beforeImageUrl, setBeforeImageUrl] = useState<string>('');
+  const [afterImageUrl, setAfterImageUrl] = useState<string>('');
+  const [customUrlInput, setCustomUrlInput] = useState<string>('');
+  const [uploadStatusMsg, setUploadStatusMsg] = useState<string>('');
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -362,14 +388,12 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    // When opening in incognito mode, only re-evaluate if not already hydrated
-    if (!productImageManagerService.isHydrated()) {
-      productImageManagerService.ensureHydrated().then(() => {
-        if (isMounted) {
-          setOverrideVersion(v => v + 1);
-        }
-      });
-    }
+    // Always ensure hydrated from server (especially in Incognito)
+    productImageManagerService.ensureHydrated().then(() => {
+      if (isMounted) {
+        setOverrideVersion(v => v + 1);
+      }
+    });
 
     const handleImageOverrideUpdate = () => {
       if (isMounted) {
@@ -378,12 +402,20 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         setOverrideVersion(v => v + 1);
       }
     };
+    const handleLiveModeUpdate = () => {
+      if (isMounted) {
+        setIsLiveUploadActive(checkIsAdminLiveEditActive());
+      }
+    };
+
     window.addEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
     window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageOverrideUpdate);
     window.addEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageOverrideUpdate);
     window.addEventListener('tradeheaven_image_saved_to_storage', handleImageOverrideUpdate);
     window.addEventListener('product_image_saved', handleImageOverrideUpdate);
     window.addEventListener('storage', handleImageOverrideUpdate);
+    window.addEventListener('tradeheaven_live_edit_mode_changed', handleLiveModeUpdate);
+    window.addEventListener('tradeheaven_auth_changed', handleLiveModeUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
@@ -392,6 +424,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       window.removeEventListener('tradeheaven_image_saved_to_storage', handleImageOverrideUpdate);
       window.removeEventListener('product_image_saved', handleImageOverrideUpdate);
       window.removeEventListener('storage', handleImageOverrideUpdate);
+      window.removeEventListener('tradeheaven_live_edit_mode_changed', handleLiveModeUpdate);
+      window.removeEventListener('tradeheaven_auth_changed', handleLiveModeUpdate);
     };
   }, []);
 
@@ -399,15 +433,13 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const candidates = useMemo(() => {
     const list: string[] = [];
 
-    const effectiveSrc = !isLogoOrAvatar
-      ? productImageManagerService.resolveImageSrc({
-          src,
-          productId,
-          productTitle,
-          category,
-          imageIndex
-        })
-      : normalizeProductAssetUrl(src);
+    const effectiveSrc = productImageManagerService.resolveImageSrc({
+      src,
+      productId,
+      productTitle: isLogoOrAvatar ? undefined : productTitle,
+      category: isLogoOrAvatar ? undefined : category,
+      imageIndex
+    });
 
     if (effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()) {
       list.push(effectiveSrc.trim());
@@ -438,7 +470,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     return list.length > 0 ? list : pool;
-  }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion]);
+  }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion, resolvedAlt]);
 
   const primaryCandidate = candidates[0] || FALLBACK_SEEDS[0];
   const effectiveAttemptIndex = lastCandidateRef.current !== primaryCandidate ? 0 : attemptIndex;
@@ -484,6 +516,73 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     setHasError(false);
   };
 
+  const handleOpenLiveUploader = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const overrideEntry = productId ? productImageManagerService.getState().overrides[productId] : undefined;
+    setBeforeImageUrl(overrideEntry?.previousPrimary || currentCandidate || src || '');
+    setAfterImageUrl(currentCandidate || src || '');
+    setCustomUrlInput(currentCandidate || src || '');
+    setUploadStatusMsg('');
+    setShowLiveUploadModal(true);
+  };
+
+  const handleLiveFileSelected = async (file: File) => {
+    setIsUploadingFile(true);
+    setUploadStatusMsg('Uploading & syncing to server (Incognito ready)...');
+    try {
+      const oldImgBefore = currentCandidate || src || '';
+      setBeforeImageUrl(oldImgBefore);
+      const res = await productImageManagerService.uploadAndAssignImageFile(file, {
+        targetFormat: 'jpg',
+        quality: 0.92,
+        productId: productId || undefined,
+        oldUrlToReplace: !productId && (src || currentCandidate) ? (src || currentCandidate) : undefined
+      });
+      if (productId) {
+        await productImageManagerService.setProductImage(productId, res.url);
+      } else if (src || currentCandidate) {
+        await productImageManagerService.replaceImageUrlEverywhere(src || currentCandidate, res.url);
+      }
+      await productImageManagerService.forceSyncToServer();
+      setAfterImageUrl(res.url);
+      setCustomUrlInput(res.url);
+      setOverrideVersion(v => v + 1);
+      setUploadStatusMsg('Uploaded & synced live! Visible immediately in Incognito & all tabs.');
+    } catch (err: any) {
+      setUploadStatusMsg(err?.message || 'Upload failed');
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const handleApplyDirectUrl = async (targetUrl: string) => {
+    const clean = targetUrl.trim();
+    if (!clean) return;
+    setIsUploadingFile(true);
+    setUploadStatusMsg('Applying image & syncing to server...');
+    try {
+      const oldImgBefore = currentCandidate || src || '';
+      if (oldImgBefore && oldImgBefore !== clean) {
+        setBeforeImageUrl(oldImgBefore);
+      }
+      if (productId) {
+        await productImageManagerService.setProductImage(productId, clean);
+      } else if (src || currentCandidate) {
+        await productImageManagerService.replaceImageUrlEverywhere(src || currentCandidate, clean);
+      }
+      await productImageManagerService.forceSyncToServer();
+      setAfterImageUrl(clean);
+      setCustomUrlInput(clean);
+      setOverrideVersion(v => v + 1);
+      setUploadStatusMsg('Image updated & synced live for Incognito!');
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const showLiveButton = isLiveUploadActive && !disableLiveUpload && !isThumbnail;
+
   return (
     <div ref={containerRef} className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
       {/* Smooth non-blinking placeholder layer */}
@@ -526,6 +625,199 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           )}
         </>
       )}
+
+      {/* Real-Time Live Edit & Upload Overlay Button */}
+      {showLiveButton && (
+        <button
+          type="button"
+          onClick={handleOpenLiveUploader}
+          className="absolute bottom-2 left-2 z-30 px-2.5 py-1 rounded-lg bg-emerald-600/95 hover:bg-emerald-500 text-white text-[10px] font-black shadow-lg border border-emerald-300/60 flex items-center gap-1 cursor-pointer transition-all"
+          title="Live Real-Time Upload & Change Image (Updates Everywhere + Incognito)"
+        >
+          <Upload className="w-3 h-3 shrink-0" />
+          <span>Upload / Change</span>
+        </button>
+      )}
+
+      {/* Built-in Real-Time Upload & Before/After Modal */}
+      {showLiveUploadModal &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (e.target === e.currentTarget) setShowLiveUploadModal(false);
+            }}
+          >
+            <div
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl text-slate-900"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800">
+                <div className="min-w-0 pr-3">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Real-Time Image Upload &amp; Before / After Comparison</span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-black truncate mt-0.5">
+                    {productTitle || alt || (productId ? `Product ${productId}` : 'Page Image / Asset')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono truncate">
+                    {productId ? `Product ID: ${productId}` : `Target URL: ${(src || currentCandidate || '').slice(0, 60)}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLiveUploadModal(false)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-5 max-h-[82vh] overflow-y-auto">
+                {/* BEFORE & AFTER SIDE-BY-SIDE PREVIEW */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                        BEFORE (Previous Image)
+                      </span>
+                    </div>
+                    <div className="h-40 rounded-xl overflow-hidden bg-white border border-slate-200 flex items-center justify-center">
+                      {beforeImageUrl ? (
+                        <img
+                          src={beforeImageUrl}
+                          alt="Before upload"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">No previous image</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        AFTER (Live Active Image)
+                      </span>
+                      {afterImageUrl && afterImageUrl !== beforeImageUrl && (
+                        <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Updated Live</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-40 rounded-xl overflow-hidden bg-white border-2 border-emerald-500 flex items-center justify-center">
+                      {afterImageUrl ? (
+                        <img
+                          src={afterImageUrl}
+                          alt="After upload"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">Upload an image below</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Dropzone */}
+                <label className="border-2 border-dashed border-emerald-400 hover:border-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all">
+                  <Upload className="w-7 h-7 text-emerald-600 mb-1.5" />
+                  <span className="text-xs sm:text-sm font-black text-slate-900">
+                    {isUploadingFile ? 'Uploading & Syncing to Server...' : 'Click to Upload New Image from Computer (Real-Time)'}
+                  </span>
+                  <span className="text-[11px] text-slate-600 mt-0.5">
+                    Immediately updates this image on the page, saves Before/After history, and syncs for Incognito mode
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.svg"
+                    className="hidden"
+                    disabled={isUploadingFile}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLiveFileSelected(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+
+                {uploadStatusMsg && (
+                  <div className="px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{uploadStatusMsg}</span>
+                  </div>
+                )}
+
+                {/* Direct URL or Media Library Quick Picker */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block">
+                    Or Paste Image URL / Asset Path &amp; Apply Immediately
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={customUrlInput}
+                      onChange={(e) => setCustomUrlInput(e.target.value)}
+                      placeholder="/assets/uploads/... or https://..."
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:border-blue-600"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingFile}
+                      onClick={() => handleApplyDirectUrl(customUrlInput)}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer shrink-0"
+                    >
+                      Apply URL
+                    </button>
+                  </div>
+                </div>
+
+                {/* Recent Uploaded Media Library */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-slate-600 uppercase block">
+                    Or Click Any Uploaded Image from Server Media Library
+                  </label>
+                  <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
+                    {productImageManagerService.getState().mediaLibrary.slice(0, 18).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleApplyDirectUrl(item.url)}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                          afterImageUrl === item.url ? 'border-emerald-600 ring-2 ring-emerald-400/40' : 'border-slate-200 hover:border-blue-500'
+                        }`}
+                        title={item.name}
+                      >
+                        <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Changes are saved to server disk &amp; visible in Incognito immediately.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowLiveUploadModal(false)}
+                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

@@ -72,13 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       if (typeof window !== 'undefined') {
-        // Always purge any cached or default admin session keys on initial boot
-        localStorage.removeItem('th_session_user');
-        localStorage.removeItem('tradeheaven_user');
-        localStorage.removeItem('tradeheaven_auth_user');
-        localStorage.removeItem('th_session_jwt_token');
-        sessionStorage.removeItem('th_admin_origin_user');
-
         const params = new URLSearchParams(window.location.search);
         const paramEmail = (params.get('email') || '').trim().toLowerCase();
         if (params.get('pay_zac') === '1' || paramEmail === 'zac@otec.ltd' || paramEmail === 'zac@fadetech.com') {
@@ -105,6 +98,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             status: 'ACTIVE'
           };
           return clientRenewalUser;
+        }
+
+        // Restore explicit Admin or User session if saved in localStorage
+        const savedAdminRaw = localStorage.getItem('th_admin_session_v1') || localStorage.getItem('th_session_user');
+        if (savedAdminRaw) {
+          const parsedUser = JSON.parse(savedAdminRaw);
+          if (parsedUser && typeof parsedUser === 'object' && parsedUser.email) {
+            return sanitizeUserRole(parsedUser);
+          }
         }
       }
     } catch {}
@@ -163,9 +165,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: canonicalEmail
         };
         
-        // Keep Admin session in memory only so Admin is never logged in by default on page reload
         setUser(adminUser);
         setIsAuthenticated(true);
+        try {
+          localStorage.setItem('th_admin_session_v1', JSON.stringify(adminUser));
+          localStorage.setItem('th_session_user', JSON.stringify(adminUser));
+        } catch {}
+        window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: adminUser } }));
         return { success: true, user: adminUser };
       }
       
@@ -180,14 +186,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const sanitizedUser = sanitizeUserRole(res.user);
         setUser(sanitizedUser);
         setIsAuthenticated(true);
-        if (sanitizedUser.role !== 'ADMIN' && !sanitizedUser.isVerifiedAdmin) {
-          try {
-            localStorage.setItem('th_session_user', JSON.stringify(sanitizedUser));
-            if (res.token) {
-              localStorage.setItem('th_session_jwt_token', res.token);
-            }
-          } catch {}
-        }
+        try {
+          localStorage.setItem('th_session_user', JSON.stringify(sanitizedUser));
+          if (sanitizedUser.role === 'ADMIN' || sanitizedUser.isVerifiedAdmin) {
+            localStorage.setItem('th_admin_session_v1', JSON.stringify(sanitizedUser));
+          }
+          if (res.token) {
+            localStorage.setItem('th_session_jwt_token', res.token);
+          }
+        } catch {}
+        window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: sanitizedUser } }));
 
         // Log login success
         fetch('/api/v1/admin/audit-logs', {
@@ -251,10 +259,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       localStorage.removeItem('tradeheaven_user');
       localStorage.removeItem('th_session_user');
+      localStorage.removeItem('th_admin_session_v1');
       localStorage.removeItem('th_session_jwt_token');
       localStorage.removeItem('tradeheaven_auth_user');
+      localStorage.removeItem('th_live_edit_mode');
       sessionStorage.clear();
     } catch {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: null } }));
+      window.dispatchEvent(new CustomEvent('tradeheaven_live_edit_mode_changed', { detail: { isLiveEditMode: false } }));
+    }
   };
 
   const handleSetUser = (nextUser: AuthUser | null) => {
@@ -262,14 +276,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sanitized = sanitizeUserRole(nextUser);
       setUser(sanitized);
       setIsAuthenticated(true);
-      if (sanitized.role !== 'ADMIN' && !sanitized.isVerifiedAdmin) {
-        try {
-          localStorage.setItem('th_session_user', JSON.stringify(sanitized));
-        } catch {}
-      } else {
-        try {
-          localStorage.removeItem('th_session_user');
-        } catch {}
+      try {
+        localStorage.setItem('th_session_user', JSON.stringify(sanitized));
+        if (sanitized.role === 'ADMIN' || sanitized.isVerifiedAdmin) {
+          localStorage.setItem('th_admin_session_v1', JSON.stringify(sanitized));
+        } else {
+          localStorage.removeItem('th_admin_session_v1');
+        }
+      } catch {}
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: sanitized } }));
       }
     } else {
       logout();

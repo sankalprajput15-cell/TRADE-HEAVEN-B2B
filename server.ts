@@ -5844,18 +5844,18 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
     mediaLibrary: []
   };
 
-  const mergeOverridesFromParsed = (parsed: any) => {
+  const mergeOverridesFromParsed = (parsed: any, forceOverwrite = false) => {
     if (!parsed || typeof parsed !== 'object') return;
     if (parsed.overrides && typeof parsed.overrides === 'object') {
       for (const [pid, rawEntry] of Object.entries(parsed.overrides)) {
-        const entry = rawEntry as ProductImageOverrideEntry;
+        const entry = rawEntry as ProductImageOverrideEntry & { previousPrimary?: string };
         if (!entry || !entry.primary) continue;
         const cleanPrimary = normalizeServerAssetUrl(entry.primary);
         const cleanGallery = Array.isArray(entry.gallery) && entry.gallery.length > 0
           ? entry.gallery.map(u => normalizeServerAssetUrl(u)).filter(Boolean)
           : [cleanPrimary];
         const existing = defaultState.overrides[pid];
-        if (!existing) {
+        if (!existing || forceOverwrite) {
           defaultState.overrides[pid] = {
             ...entry,
             primary: cleanPrimary,
@@ -5874,8 +5874,10 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
         }
       }
     }
-    if (parsed.globalDefaultImage && !defaultState.globalDefaultImage) {
-      defaultState.globalDefaultImage = normalizeServerAssetUrl(parsed.globalDefaultImage);
+    if (parsed.globalDefaultImage !== undefined && (forceOverwrite || !defaultState.globalDefaultImage)) {
+      defaultState.globalDefaultImage = parsed.globalDefaultImage
+        ? normalizeServerAssetUrl(parsed.globalDefaultImage)
+        : null;
     }
     if (parsed.categoryOverrides && typeof parsed.categoryOverrides === 'object') {
       for (const [cat, url] of Object.entries(parsed.categoryOverrides)) {
@@ -5888,6 +5890,10 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
       for (const [oldUrl, newUrl] of Object.entries(parsed.urlReplacements)) {
         if (typeof newUrl === 'string' && newUrl) {
           defaultState.urlReplacements[oldUrl] = normalizeServerAssetUrl(newUrl);
+          const normOld = normalizeServerAssetUrl(oldUrl);
+          if (normOld) {
+            defaultState.urlReplacements[normOld] = normalizeServerAssetUrl(newUrl);
+          }
         }
       }
     }
@@ -5914,16 +5920,16 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
       if (fs.existsSync(fileToRead)) {
         const raw = fs.readFileSync(fileToRead, 'utf-8');
         const parsed = JSON.parse(raw);
-        mergeOverridesFromParsed(parsed);
+        mergeOverridesFromParsed(parsed, false);
       }
     } catch (err) {
       console.warn('[ProductImageSystem] Error reading overrides file:', fileToRead, err);
     }
   }
 
-  // Merge in-memory state if provided so recent uploads in memory are never lost
+  // Merge in-memory state if provided so recent uploads in memory ALWAYS win
   if (existingMemoryState) {
-    mergeOverridesFromParsed(existingMemoryState);
+    mergeOverridesFromParsed(existingMemoryState, true);
   }
 
   // Scan public/assets/uploads to populate mediaLibrary with real local image files
@@ -6071,12 +6077,24 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
     }
     if (oldUrlToReplace) {
       serverProductImageState.urlReplacements[oldUrlToReplace] = uploadedUrl;
+      const normOld = normalizeServerAssetUrl(oldUrlToReplace);
+      if (normOld) {
+        serverProductImageState.urlReplacements[normOld] = uploadedUrl;
+      }
     }
     if (productId) {
-      const existing = serverProductImageState.overrides[productId];
+      const existing = serverProductImageState.overrides[productId] as (ProductImageOverrideEntry & { previousPrimary?: string }) | undefined;
+      const existingProd = serverProductsStore.find(p => p.id === productId);
+      const prevPrimary =
+        existing?.primary && existing.primary !== uploadedUrl
+          ? existing.primary
+          : existingProd?.images?.[0] && existingProd.images[0] !== uploadedUrl
+            ? normalizeServerAssetUrl(existingProd.images[0])
+            : existing?.previousPrimary;
       const gallery = existing?.gallery ? [uploadedUrl, ...existing.gallery.filter(u => u !== uploadedUrl)] : [uploadedUrl];
-      serverProductImageState.overrides[productId] = {
+      (serverProductImageState.overrides as any)[productId] = {
         primary: uploadedUrl,
+        previousPrimary: prevPrimary,
         gallery,
         format: ext.toUpperCase(),
         updatedAt: nowIso
@@ -6768,20 +6786,55 @@ app.put('/api/v1/admin/product-images', (req, res) => {
       category,
       applyToAll,
       oldUrlToReplace,
-      fullOverridesMap
+      fullOverridesMap,
+      urlReplacements,
+      categoryOverrides,
+      forceFullSync
     } = req.body || {};
 
     const nowIso = new Date().toISOString();
 
     if (fullOverridesMap && typeof fullOverridesMap === 'object') {
-      serverProductImageState.overrides = {
-        ...serverProductImageState.overrides,
-        ...fullOverridesMap
-      };
+      if (forceFullSync) {
+        for (const [pid, entry] of Object.entries(fullOverridesMap)) {
+          if (entry && typeof entry === 'object' && (entry as any).primary) {
+            serverProductImageState.overrides[pid] = {
+              ...(entry as any),
+              primary: normalizeServerAssetUrl((entry as any).primary),
+              updatedAt: nowIso
+            };
+          }
+        }
+      } else {
+        for (const [pid, entry] of Object.entries(fullOverridesMap)) {
+          if (!serverProductImageState.overrides[pid] && entry && typeof entry === 'object' && (entry as any).primary) {
+            serverProductImageState.overrides[pid] = {
+              ...(entry as any),
+              primary: normalizeServerAssetUrl((entry as any).primary)
+            };
+          }
+        }
+      }
+    }
+
+    if (urlReplacements && typeof urlReplacements === 'object') {
+      for (const [oldU, newU] of Object.entries(urlReplacements)) {
+        if (typeof newU === 'string' && newU) {
+          serverProductImageState.urlReplacements[oldU] = normalizeServerAssetUrl(newU);
+        }
+      }
+    }
+
+    if (categoryOverrides && typeof categoryOverrides === 'object') {
+      for (const [cat, newU] of Object.entries(categoryOverrides)) {
+        if (typeof newU === 'string' && newU) {
+          serverProductImageState.categoryOverrides[cat] = normalizeServerAssetUrl(newU);
+        }
+      }
     }
 
     if (applyToAll && primaryUrl !== undefined) {
-      serverProductImageState.globalDefaultImage = primaryUrl || null;
+      serverProductImageState.globalDefaultImage = primaryUrl ? normalizeServerAssetUrl(primaryUrl) : null;
       // Also update serverProductsStore if populated
       serverProductsStore = serverProductsStore.map(p => ({
         ...p,
@@ -6791,26 +6844,41 @@ app.put('/api/v1/admin/product-images', (req, res) => {
     }
 
     if (category && primaryUrl) {
-      serverProductImageState.categoryOverrides[category] = primaryUrl;
+      serverProductImageState.categoryOverrides[category] = normalizeServerAssetUrl(primaryUrl);
     }
 
     if (oldUrlToReplace && primaryUrl) {
-      serverProductImageState.urlReplacements[oldUrlToReplace] = primaryUrl;
+      const cleanNew = normalizeServerAssetUrl(primaryUrl);
+      serverProductImageState.urlReplacements[oldUrlToReplace] = cleanNew;
+      const normOld = normalizeServerAssetUrl(oldUrlToReplace);
+      if (normOld) {
+        serverProductImageState.urlReplacements[normOld] = cleanNew;
+      }
     }
 
     if (productId && primaryUrl) {
+      const cleanPrim = normalizeServerAssetUrl(primaryUrl);
       const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
-        ? galleryUrls
-        : [primaryUrl];
-      serverProductImageState.overrides[productId] = {
-        primary: primaryUrl,
+        ? galleryUrls.map((u: string) => normalizeServerAssetUrl(u)).filter(Boolean)
+        : [cleanPrim];
+      const existing = serverProductImageState.overrides[productId] as (ProductImageOverrideEntry & { previousPrimary?: string }) | undefined;
+      const existingProd = serverProductsStore.find(p => p.id === productId);
+      const prevPrimary =
+        existing?.primary && existing.primary !== cleanPrim
+          ? existing.primary
+          : existingProd?.images?.[0] && existingProd.images[0] !== cleanPrim
+            ? normalizeServerAssetUrl(existingProd.images[0])
+            : existing?.previousPrimary;
+      (serverProductImageState.overrides as any)[productId] = {
+        primary: cleanPrim,
+        previousPrimary: prevPrimary,
         gallery: resolvedGallery,
-        format: format || (primaryUrl.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
+        format: format || (cleanPrim.split('.').pop()?.split('?')[0]?.toUpperCase() || 'JPG'),
         updatedAt: nowIso
       };
       serverProductsStore = serverProductsStore.map(p =>
         p.id === productId
-          ? { ...p, image: primaryUrl, images: resolvedGallery }
+          ? { ...p, image: cleanPrim, images: resolvedGallery }
           : p
       );
     }

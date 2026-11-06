@@ -19,6 +19,7 @@ export interface ProductImageSavedEventDetail {
 
 export interface ProductImageOverrideEntry {
   primary: string;
+  previousPrimary?: string;
   gallery: string[];
   format?: string;
   updatedAt: string;
@@ -95,13 +96,13 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
     primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
     gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
     format: 'JPG',
-    updatedAt: '2026-11-06T07:21:43.891Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'th-rh-prod-01': {
     primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
     gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
     format: 'JPG',
-    updatedAt: '2026-11-06T07:21:43.891Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'th-rh-prod-02': {
     primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
@@ -110,13 +111,13 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
     ],
     format: 'JPG',
-    updatedAt: '2026-11-06T07:21:43.891Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'th-rh-prod-04': {
     primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
     gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
     format: 'JPG',
-    updatedAt: '2026-11-06T07:21:43.891Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'prod-blackstone-black-jade-cabochon': {
     primary: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
@@ -125,7 +126,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
     ],
     format: 'JPG',
-    updatedAt: '2026-11-05T20:48:37.799Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'prod-blackstone-turquoise-rough-matrix': {
     primary: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
@@ -134,7 +135,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
     ],
     format: 'JPG',
-    updatedAt: '2026-11-05T20:48:37.799Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'prod-atlantic-power-1': {
     primary: '/assets/uploads/image002_50ab7837.png',
@@ -145,7 +146,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/image005_20fe3db0.png'
     ],
     format: 'PNG',
-    updatedAt: '2026-11-05T20:48:37.799Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'prod-atlantic-power-2': {
     primary: '/assets/uploads/image005_20fe3db0.png',
@@ -156,7 +157,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/image004_fa37a57a.png'
     ],
     format: 'PNG',
-    updatedAt: '2026-11-05T20:48:37.799Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'prod-middle-fox-en590': {
     primary: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
@@ -165,7 +166,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     format: 'JPG',
-    updatedAt: '2026-11-05T20:48:37.799Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   },
   'prod-middle-fox-jeta1': {
     primary: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
@@ -174,7 +175,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
       '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     format: 'JPG',
-    updatedAt: '2026-11-05T20:48:37.799Z'
+    updatedAt: '2024-01-01T00:00:00.000Z'
   }
 };
 
@@ -271,6 +272,22 @@ class ProductImageManagerService {
     if (typeof window !== 'undefined') {
       this.hydrateFromIndexedDb();
       this.hydrationPromise = this.syncFromServer();
+
+      // Automatically sync when tab becomes visible or window gains focus (critical for Incognito / multi-tab real-time updates)
+      window.addEventListener('focus', () => {
+        this.syncFromServer().catch(() => {});
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.syncFromServer().catch(() => {});
+        }
+      });
+      // Periodic lightweight sync so open Incognito windows update in real time without page refresh
+      setInterval(() => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+          this.syncFromServer().catch(() => {});
+        }
+      }, 10000);
     }
   }
 
@@ -306,14 +323,16 @@ class ProductImageManagerService {
       if (!v || typeof v !== 'object' || !v.primary) continue;
       const primary = normalizeProductAssetUrl(v.primary);
       if (!primary) continue;
+      const previousPrimary = v.previousPrimary ? normalizeProductAssetUrl(v.previousPrimary) : undefined;
       const gallery = Array.isArray(v.gallery) && v.gallery.length > 0
         ? v.gallery.map((u: string) => normalizeProductAssetUrl(u)).filter(Boolean)
         : [primary];
       out[k] = {
         primary,
+        ...(previousPrimary ? { previousPrimary } : {}),
         gallery,
         format: v.format || this.detectFormatFromUrl(primary),
-        updatedAt: v.updatedAt || new Date().toISOString(),
+        updatedAt: v.updatedAt || '2024-01-01T00:00:00.000Z',
         updatedBy: v.updatedBy
       };
     }
@@ -652,6 +671,25 @@ class ProductImageManagerService {
         } catch {}
       }
 
+      // 3. Static JSON fallback for Incognito / CDN / static environments
+      if (!srv) {
+        for (const fallbackUrl of [
+          `/data/productImageSystemState.json?_t=${Date.now()}`,
+          `/assets/uploads/product-image-overrides.json?_t=${Date.now()}`
+        ]) {
+          try {
+            const staticRes = await fetch(fallbackUrl, { cache: 'no-store' });
+            if (staticRes.ok) {
+              const parsed = await staticRes.json();
+              if (parsed && typeof parsed === 'object' && parsed.overrides) {
+                srv = parsed;
+                break;
+              }
+            }
+          } catch {}
+        }
+      }
+
       if (srv) {
         const localOverrides = this.state.overrides || {};
         const srvOverrides = this.normalizeOverrideMap(srv.overrides || {});
@@ -659,36 +697,32 @@ class ProductImageManagerService {
           ...DEFAULT_BUILTIN_OVERRIDES
         };
 
-        // Apply server overrides except any locally deleted in this session
+        // Server overrides ALWAYS take priority over built-in defaults and stale localStorage
         for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
           if (this.locallyDeletedIds.has(pid)) continue;
           mergedOverrides[pid] = srvEntry;
         }
 
-        let localHasNewerOrMissingOnServer = false;
-
+        // Only keep local overrides if they were mutated in THIS tab within the last 60 seconds
         for (const [pid, localEntry] of Object.entries(localOverrides)) {
           if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
-          const srvEntry = srvOverrides[pid];
-          const localMutatedRecently = (this.localMutationTimes.get(pid) || 0) > Date.now() - 120000;
-          if (!srvEntry) {
+          const mutatedAt = this.localMutationTimes.get(pid) || 0;
+          const isRecentTabMutation = mutatedAt > 0 && Date.now() - mutatedAt < 60000;
+          if (isRecentTabMutation) {
             mergedOverrides[pid] = localEntry;
-            localHasNewerOrMissingOnServer = true;
-          } else {
-            const localTime = Date.parse(localEntry.updatedAt || '') || 0;
-            const srvTime = Date.parse(srvEntry.updatedAt || '') || 0;
-            if (localMutatedRecently || localTime >= srvTime) {
-              mergedOverrides[pid] = localEntry;
-              if (localTime > srvTime) {
-                localHasNewerOrMissingOnServer = true;
-              }
-            }
           }
         }
 
+        const prevSerialized = JSON.stringify({
+          o: this.state.overrides,
+          g: this.state.globalDefaultImage,
+          c: this.state.categoryOverrides,
+          u: this.state.urlReplacements
+        });
+
         this.state.overrides = mergedOverrides;
-        this.state.globalDefaultImage = srv.globalDefaultImage
-          ? normalizeProductAssetUrl(srv.globalDefaultImage)
+        this.state.globalDefaultImage = srv.globalDefaultImage !== undefined
+          ? (srv.globalDefaultImage ? normalizeProductAssetUrl(srv.globalDefaultImage) : null)
           : (this.state.globalDefaultImage ?? null);
         this.state.categoryOverrides = {
           ...(this.state.categoryOverrides || {}),
@@ -714,25 +748,70 @@ class ProductImageManagerService {
           this.state.mediaLibrary = mergedMedia;
         }
 
-        this.isHydratedFromServer = true;
-        this.saveToLocalStorage({ action: 'sync_from_server' });
-        this.notifyListeners();
+        const nextSerialized = JSON.stringify({
+          o: this.state.overrides,
+          g: this.state.globalDefaultImage,
+          c: this.state.categoryOverrides,
+          u: this.state.urlReplacements
+        });
 
-        // Push newer local overrides back up to server
-        if (localHasNewerOrMissingOnServer && Object.keys(mergedOverrides).length > 0) {
-          fetch('/api/v1/admin/product-images', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fullOverridesMap: mergedOverrides
-            })
-          }).catch(() => {});
+        const wasAlreadyHydrated = this.isHydratedFromServer;
+        this.isHydratedFromServer = true;
+
+        if (!wasAlreadyHydrated || prevSerialized !== nextSerialized) {
+          this.saveToLocalStorage({ action: 'sync_from_server' });
+          this.notifyListeners();
         }
       }
     } catch {
       // Offline or local fallback
     }
     return this.state;
+  }
+
+  /**
+   * Explicitly pushes all current image overrides, URL replacements, and category overrides
+   * to the server so Incognito and all visitors see the exact current state immediately.
+   */
+  public async forceSyncToServer(): Promise<boolean> {
+    try {
+      const payload = JSON.stringify({
+        fullOverridesMap: this.state.overrides,
+        urlReplacements: this.state.urlReplacements,
+        categoryOverrides: this.state.categoryOverrides,
+        applyToAll: Boolean(this.state.globalDefaultImage),
+        primaryUrl: this.state.globalDefaultImage || undefined,
+        forceFullSync: true
+      });
+      const res = await fetch('/api/v1/admin/product-images', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      });
+      if (res.ok) {
+        await this.syncFromServer();
+        this.emitImageSavedEvent({ action: 'force_sync_to_server' });
+        this.notifyListeners();
+        return true;
+      }
+    } catch {}
+    try {
+      const phpRes = await fetch('/api.php?action=set_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullOverridesMap: this.state.overrides,
+          urlReplacements: this.state.urlReplacements,
+          categoryOverrides: this.state.categoryOverrides,
+          forceFullSync: true
+        })
+      });
+      if (phpRes.ok) {
+        await this.syncFromServer();
+        return true;
+      }
+    } catch {}
+    return false;
   }
 
   /**
@@ -1304,12 +1383,20 @@ class ProductImageManagerService {
     }
     if (options?.oldUrlToReplace) {
       this.state.urlReplacements[options.oldUrlToReplace] = finalUrl;
+      const normOld = normalizeProductAssetUrl(options.oldUrlToReplace);
+      if (normOld) {
+        this.state.urlReplacements[normOld] = finalUrl;
+      }
     }
     if (options?.productId) {
       const cleanPid = options.productId.trim();
       this.locallyDeletedIds.delete(cleanPid);
       this.localMutationTimes.set(cleanPid, Date.now());
       const existing = this.state.overrides[cleanPid];
+      const previousPrimary =
+        existing?.primary && existing.primary !== finalUrl
+          ? existing.primary
+          : existing?.previousPrimary;
       const existingGallery =
         existing?.gallery && existing.gallery.length > 0
           ? existing.gallery
@@ -1324,6 +1411,7 @@ class ProductImageManagerService {
 
       this.state.overrides[cleanPid] = {
         primary,
+        ...(previousPrimary ? { previousPrimary } : {}),
         gallery,
         format: finalFormat,
         updatedAt: nowIso
@@ -1559,6 +1647,10 @@ class ProductImageManagerService {
     this.localMutationTimes.set(cleanId, Date.now());
 
     const existing = this.state.overrides[cleanId];
+    const previousPrimary =
+      existing?.primary && existing.primary !== cleanPrimary
+        ? existing.primary
+        : existing?.previousPrimary;
     const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
       ? galleryUrls.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
       : existing?.gallery
@@ -1568,6 +1660,7 @@ class ProductImageManagerService {
     const format = this.detectFormatFromUrl(cleanPrimary);
     this.state.overrides[cleanId] = {
       primary: cleanPrimary,
+      ...(previousPrimary ? { previousPrimary } : {}),
       gallery: resolvedGallery,
       format,
       updatedAt: new Date().toISOString()

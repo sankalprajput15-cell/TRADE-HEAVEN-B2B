@@ -6,7 +6,7 @@
         "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
       ],
       "format": "JPG",
-      "updatedAt": "2026-11-06T07:21:43.891Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "th-rh-prod-01": {
       "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
@@ -14,7 +14,7 @@
         "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
       ],
       "format": "JPG",
-      "updatedAt": "2026-11-06T07:21:43.891Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "th-rh-prod-02": {
       "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
@@ -23,7 +23,7 @@
         "/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
       ],
       "format": "JPG",
-      "updatedAt": "2026-11-06T07:21:43.891Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "th-rh-prod-04": {
       "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
@@ -31,7 +31,7 @@
         "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
       ],
       "format": "JPG",
-      "updatedAt": "2026-11-06T07:21:43.891Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-blackstone-black-jade-cabochon": {
       "primary": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg",
@@ -40,7 +40,7 @@
         "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg"
       ],
       "format": "JPEG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-blackstone-turquoise-rough-matrix": {
       "primary": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg",
@@ -49,7 +49,7 @@
         "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg"
       ],
       "format": "JPEG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-reverse-energy-sa-coal": {
       "primary": "https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80",
@@ -58,7 +58,7 @@
         "/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
       ],
       "format": "JPEG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-atlantic-power-1": {
       "primary": "/assets/uploads/image002_50ab7837.png",
@@ -69,7 +69,7 @@
         "/assets/uploads/image005_20fe3db0.png"
       ],
       "format": "PNG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-atlantic-power-2": {
       "primary": "/assets/uploads/image005_20fe3db0.png",
@@ -80,7 +80,7 @@
         "/assets/uploads/image004_fa37a57a.png"
       ],
       "format": "PNG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-middle-fox-en590": {
       "primary": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
@@ -89,7 +89,7 @@
         "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
       ],
       "format": "JPG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "prod-middle-fox-jeta1": {
       "primary": "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
@@ -98,7 +98,7 @@
         "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
       ],
       "format": "JPG",
-      "updatedAt": "2026-11-05T20:48:37.799Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     }
   },
   "globalDefaultImage": null,
@@ -106,12 +106,124 @@
   "urlReplacements": {},
   "mediaLibrary": [
     {
-      "id": "media-Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
-      "url": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
-      "name": "Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "id": "media-sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg",
+      "url": "/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg",
+      "name": "sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg",
+      "format": "JPG",
+      "sizeBytes": 2465779,
+      "uploadedAt": "2026-11-06T17:28:43.663Z"
+    },
+    {
+      "id": "media-kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg",
+      "url": "/assets/uploads/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg",
+      "name": "kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg",
+      "format": "JPG",
+      "sizeBytes": 3161581,
+      "uploadedAt": "2026-11-06T17:28:43.654Z"
+    },
+    {
+      "id": "media-jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg",
+      "url": "/assets/uploads/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg",
+      "name": "jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg",
+      "format": "JPG",
+      "sizeBytes": 1231752,
+      "uploadedAt": "2026-11-06T17:28:43.652Z"
+    },
+    {
+      "id": "media-jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg",
+      "url": "/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg",
+      "name": "jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg",
+      "format": "JPG",
+      "sizeBytes": 1469582,
+      "uploadedAt": "2026-11-06T17:28:43.650Z"
+    },
+    {
+      "id": "media-image001_ebfaebe5.png",
+      "url": "/assets/uploads/image001_ebfaebe5.png",
+      "name": "image001_ebfaebe5.png",
+      "format": "PNG",
+      "sizeBytes": 157942,
+      "uploadedAt": "2026-11-06T17:28:43.647Z"
+    },
+    {
+      "id": "media-diwali-offer-banner-mail.jpg",
+      "url": "/assets/uploads/diwali-offer-banner-mail.jpg",
+      "name": "diwali-offer-banner-mail.jpg",
+      "format": "JPG",
+      "sizeBytes": 67429,
+      "uploadedAt": "2026-11-06T17:28:43.646Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-25_at_5.01.58_PM_9582be9f.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-25_at_5.01.58_PM_9582be9f.jpeg",
+      "name": "WhatsApp_Image_2026-10-25_at_5.01.58_PM_9582be9f.jpeg",
       "format": "JPEG",
+      "sizeBytes": 73004,
+      "uploadedAt": "2026-11-06T17:28:43.645Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-24_at_4.21.07_PM_b1900a92.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-24_at_4.21.07_PM_b1900a92.jpeg",
+      "name": "WhatsApp_Image_2026-10-24_at_4.21.07_PM_b1900a92.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 98994,
+      "uploadedAt": "2026-11-06T17:28:43.644Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-24_at_4.02.44_PM_81da6554.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-24_at_4.02.44_PM_81da6554.jpeg",
+      "name": "WhatsApp_Image_2026-10-24_at_4.02.44_PM_81da6554.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 108551,
+      "uploadedAt": "2026-11-06T17:28:43.644Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-24_at_3.41.47_PM_5836b7b3.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-24_at_3.41.47_PM_5836b7b3.jpeg",
+      "name": "WhatsApp_Image_2026-10-24_at_3.41.47_PM_5836b7b3.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 64230,
+      "uploadedAt": "2026-11-06T17:28:43.644Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-24_at_11.13.18_AM_3dfba5cc.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-24_at_11.13.18_AM_3dfba5cc.jpeg",
+      "name": "WhatsApp_Image_2026-10-24_at_11.13.18_AM_3dfba5cc.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 84880,
+      "uploadedAt": "2026-11-06T17:28:43.644Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-24_at_10.52.48_AM_86017d23.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-24_at_10.52.48_AM_86017d23.jpeg",
+      "name": "WhatsApp_Image_2026-10-24_at_10.52.48_AM_86017d23.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 45553,
+      "uploadedAt": "2026-11-06T17:28:43.644Z"
+    },
+    {
+      "id": "media-WhatsApp_Image_2026-10-11_at_3.06.55_AM__1__dd0d83ec.jpeg",
+      "url": "/assets/uploads/WhatsApp_Image_2026-10-11_at_3.06.55_AM__1__dd0d83ec.jpeg",
+      "name": "WhatsApp_Image_2026-10-11_at_3.06.55_AM__1__dd0d83ec.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 143948,
+      "uploadedAt": "2026-11-06T17:28:43.643Z"
+    },
+    {
+      "id": "media-Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png",
+      "url": "/assets/uploads/Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png",
+      "name": "Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png",
+      "format": "PNG",
+      "sizeBytes": 8266184,
+      "uploadedAt": "2026-11-06T17:28:43.642Z"
+    },
+    {
+      "id": "media-rice-husk-1793949703892",
+      "url": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "name": "Agricultural_Rice_Husk_Powder.jpeg",
+      "format": "JPG",
       "sizeBytes": 32795,
-      "uploadedAt": "2026-11-06T16:00:03.585Z"
+      "uploadedAt": "2026-11-06T07:21:43.892Z"
     },
     {
       "id": "media-WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg",

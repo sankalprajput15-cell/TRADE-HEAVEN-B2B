@@ -547,15 +547,40 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return res;
   };
 
-  const [isLiveEditMode, setIsLiveEditMode] = useState<boolean>(false);
+  const [isLiveEditMode, setIsLiveEditModeState] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        return localStorage.getItem('th_live_edit_mode') === 'true';
+      }
+    } catch {}
+    return false;
+  });
   const [activeQuickEditSection, setActiveQuickEditSection] = useState<string | null>(null);
+
+  const setIsLiveEditMode = (val: boolean) => {
+    setIsLiveEditModeState(val);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('th_live_edit_mode', val ? 'true' : 'false');
+        window.dispatchEvent(
+          new CustomEvent('tradeheaven_live_edit_mode_changed', { detail: { isLiveEditMode: val } })
+        );
+      }
+    } catch {}
+  };
 
   // Automatically deactivate live edit mode if current user is not an administrator or creator
   useEffect(() => {
     const auth = isUserAuthorized(currentUser);
     if (!auth.isAuthorized) {
-      setIsLiveEditMode(false);
+      setIsLiveEditModeState(false);
       setActiveQuickEditSection(null);
+    } else {
+      try {
+        if (localStorage.getItem('th_live_edit_mode') === 'true') {
+          setIsLiveEditModeState(true);
+        }
+      } catch {}
     }
   }, [currentUser]);
 
@@ -564,7 +589,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!auth.isAuthorized) {
       return;
     }
-    setIsLiveEditMode(prev => !prev);
+    setIsLiveEditMode(!isLiveEditMode);
   };
 
   const openQuickEdit = (section: string) => {
