@@ -12,7 +12,7 @@
     "isPremium": false,
     "membershipStatus": "paid",
     "tier": "Basic Plan",
-    "avatarUrl": "/assets/aistudio/image001_ebfaebe5.png"
+    "avatarUrl": "/assets/uploads/image001_ebfaebe5.png"
   },
   {
     "id": "user-buyer-themax0098",
@@ -148,5 +148,37 @@
     "membershipStatus": "paid",
     "tier": "Basic Plan",
     "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80"
+  },
+  {
+    "id": "user-supplier-emmanuel-reverse-energy",
+    "email": "reverseenergypty@gmail.com",
+    "passwordHash": "ReverseEnergy@2026",
+    "name": "Emmanuel (Bongani Mbele)",
+    "role": "SUPPLIER",
+    "companyName": "Reverse Energy Pty Ltd (Bongani Mbele)",
+    "country": "South Africa",
+    "phone": "+27 73 402 7794",
+    "status": "ACTIVE",
+    "isVerified": false,
+    "isPremium": false,
+    "membershipStatus": "free",
+    "tier": "Free Member",
+    "avatarUrl": "/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
+  },
+  {
+    "id": "user-supplier-lars-blackstone-jade",
+    "email": "Larsbarnhart25@gmail.com",
+    "passwordHash": "BlackstoneJade@2026",
+    "name": "Lars Barnhart",
+    "role": "SUPPLIER",
+    "companyName": "Blackstone Jade Co",
+    "country": "United States (1521 north 9th street apt 126 coeurdalene Idaho 83814)",
+    "phone": "+1 208-704-0146",
+    "status": "ACTIVE",
+    "isVerified": false,
+    "isPremium": false,
+    "membershipStatus": "free",
+    "tier": "Free Member",
+    "avatarUrl": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg"
   }
 ]

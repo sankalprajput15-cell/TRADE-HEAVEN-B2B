@@ -46,7 +46,7 @@ export const TH_RICE_HUSK_SUPPLIERS: CompanyProfile[] = [
     mainMarkets: ['Asia', 'Europe', 'Middle East'],
     tradeAssuranceLimitUsd: 300000,
     completedOrdersCount: 95,
-    logoUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
+    logoUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     bannerUrl: 'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
     description: 'Manufacturer of rice husk pellet, rice husk, rice ash, briquette, and animal feed. Delivering premium biomass fuel and agricultural residues.',
     contactPerson: 'Linh Nguyen',
@@ -99,7 +99,7 @@ export const TH_RICE_HUSK_SUPPLIERS: CompanyProfile[] = [
     tradeAssuranceLimitUsd: 600000,
     completedOrdersCount: 310,
     logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
+    bannerUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     description: 'Manufacturer of briquette machine, charcoal machine, coconut charcoal machine, Carbonization Furnace, and Charcoal Making Machine transforming rice husks and wood chips into high-value biochar.',
     contactPerson: 'Eason Zhao',
     contactEmail: 'zhao@weiwamachinery.cn',
@@ -151,7 +151,7 @@ export const TH_RICE_HUSK_SUPPLIERS: CompanyProfile[] = [
     tradeAssuranceLimitUsd: 80000,
     completedOrdersCount: 28,
     logoUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    bannerUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
+    bannerUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     description: 'Supplier of wood charcoal, charcoal briquettes, and roasted rice husks with superior quality for domestic and export heating applications.',
     contactPerson: 'Muhammad khoirul hidayat',
     contactEmail: 'sales@charcoalmajujaya.id',
@@ -202,7 +202,7 @@ export const TH_RICE_HUSK_SUPPLIERS: CompanyProfile[] = [
     mainMarkets: ['Asia', 'Europe', 'North America'],
     tradeAssuranceLimitUsd: 500000,
     completedOrdersCount: 260,
-    logoUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
+    logoUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     bannerUrl: 'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
     description: 'Manufacturer of agriculture products and industrial waste processing. Exporting wood pellets, wood chips, R.U.F briquettes, rice husk powder, rice husk grind, rice husk briquettes, rice husk pellets, rice husk ash, and sawdust.',
     contactPerson: 'Sarah Bui',
@@ -505,7 +505,7 @@ export const TH_RICE_HUSK_PRODUCTS: Product[] = [
     priceRangeUsd: '$140 - $190',
     unit: 'Metric Ton',
     minOrderQuantity: '20',
-    images: ['https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
     specifications: [
       { name: 'Moisture Content', value: '< 8%' },
       { name: 'Ash Content', value: '< 5%' },
@@ -525,7 +525,10 @@ export const TH_RICE_HUSK_PRODUCTS: Product[] = [
     priceRangeUsd: '$150 - $210',
     unit: 'Metric Ton',
     minOrderQuantity: '25',
-    images: ['/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'],
+    images: [
+      '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+    ],
     specifications: [
       { name: 'Diameter', value: '8mm - 10mm' },
       { name: 'Form', value: 'Cylindrical Briquette' }
@@ -544,7 +547,7 @@ export const TH_RICE_HUSK_PRODUCTS: Product[] = [
     priceRangeUsd: '$12000 - $45000',
     unit: 'Unit',
     minOrderQuantity: '1',
-    images: ['https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80'],
+    images: ['/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'],
     specifications: [
       { name: 'Capacity', value: '1000kg - 3000kg/h' },
       { name: 'Power', value: '37kW - 90kW' }
@@ -563,7 +566,7 @@ export const TH_RICE_HUSK_PRODUCTS: Product[] = [
     priceRangeUsd: '$110 - $160',
     unit: 'Metric Ton',
     minOrderQuantity: '20',
-    images: ['/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
+    images: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
     specifications: [
       { name: 'Purity', value: '99% Clean Husk' },
       { name: 'Packing', value: 'Jumbo Bags 500kg' }

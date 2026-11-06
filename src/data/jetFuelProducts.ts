@@ -14,7 +14,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$13 - $21',
     unit: 'Gallons',
     minOrderQuantity: '8',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -30,7 +30,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$86 - $165',
     unit: 'Barrels',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -94,7 +94,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $136',
     unit: 'Barrels',
     minOrderQuantity: '19',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -110,7 +110,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $54',
     unit: 'Gallons',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -174,7 +174,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $141',
     unit: 'Barrels',
     minOrderQuantity: '15',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -190,7 +190,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$9 - $18',
     unit: 'Gallons',
     minOrderQuantity: '14',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -254,7 +254,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$11 - $25',
     unit: 'Gallons',
     minOrderQuantity: '5',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -270,7 +270,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$3 - $23',
     unit: 'Gallons',
     minOrderQuantity: '1',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -334,7 +334,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$98 - $130',
     unit: 'Barrels',
     minOrderQuantity: '5',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -350,7 +350,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$6 - $36',
     unit: 'Gallons',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -414,7 +414,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$5 - $56',
     unit: 'Gallons',
     minOrderQuantity: '4',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -430,7 +430,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $151',
     unit: 'Barrels',
     minOrderQuantity: '6',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -494,7 +494,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$87 - $165',
     unit: 'Barrels',
     minOrderQuantity: '3',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Freezing Point', value: 'Max -50°C' }, { name: 'Density', value: '775-800 kg/m³' } ]
   },
   {
@@ -510,7 +510,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$10 - $18',
     unit: 'Gallons',
     minOrderQuantity: '16',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Octane', value: '100' }, { name: 'Lead', value: 'Low Lead (LL)' }, { name: 'Color', value: 'Blue' } ]
   },
   {
@@ -574,7 +574,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$94 - $121',
     unit: 'Barrels',
     minOrderQuantity: '11',
-    images: ['/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
+    images: ['/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {
@@ -590,7 +590,7 @@ export const GLOBAL_JET_FUEL_PRODUCTS: any[] = [
     priceRangeUsd: '$91 - $135',
     unit: 'Barrels',
     minOrderQuantity: '9',
-    images: ['/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
+    images: ['/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'],
     specifications: [ { name: 'Flash Point', value: 'Min 38°C' }, { name: 'Freezing Point', value: 'Max -47°C' }, { name: 'Sulfur', value: '<0.3%' } ]
   },
   {

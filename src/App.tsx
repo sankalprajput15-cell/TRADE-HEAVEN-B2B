@@ -1068,12 +1068,20 @@ const MainApp: React.FC = () => {
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
+    window.addEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
+    window.addEventListener('tradeheaven:image-saved-to-storage', handleProductImagesUpdated);
+    window.addEventListener('tradeheaven_image_saved_to_storage', handleProductImagesUpdated);
+    window.addEventListener('product_image_saved', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
 
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
       window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
+      window.removeEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
+      window.removeEventListener('tradeheaven:image-saved-to-storage', handleProductImagesUpdated);
+      window.removeEventListener('tradeheaven_image_saved_to_storage', handleProductImagesUpdated);
+      window.removeEventListener('product_image_saved', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
     };
   }, []);

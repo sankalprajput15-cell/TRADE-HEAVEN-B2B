@@ -1626,6 +1626,257 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
+    // Product Image Overrides & Upload Persistence (PHP / cPanel)
+    // -------------------------------------------------------------
+    case 'get_product_images':
+    case 'product_images':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
+        }
+        $overrides_file = $uploads_dir . '/product-image-overrides.json';
+        $state = [
+            "overrides" => [],
+            "globalDefaultImage" => null,
+            "categoryOverrides" => [],
+            "urlReplacements" => [],
+            "mediaLibrary" => []
+        ];
+        if (file_exists($overrides_file)) {
+            $parsed = json_decode(file_get_contents($overrides_file), true);
+            if (is_array($parsed)) {
+                $state = array_merge($state, $parsed);
+            }
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => $state
+        ]);
+        break;
+
+    case 'upload_product_image':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
+        }
+        $overrides_file = $uploads_dir . '/product-image-overrides.json';
+        $state = [
+            "overrides" => [],
+            "globalDefaultImage" => null,
+            "categoryOverrides" => [],
+            "urlReplacements" => [],
+            "mediaLibrary" => []
+        ];
+        if (file_exists($overrides_file)) {
+            $parsed = json_decode(file_get_contents($overrides_file), true);
+            if (is_array($parsed)) {
+                $state = array_merge($state, $parsed);
+            }
+        }
+
+        $base64Data = $input['base64Data'] ?? '';
+        $fileName = $input['fileName'] ?? 'product-image.jpg';
+        $targetFormat = $input['targetFormat'] ?? 'jpg';
+        $productId = $input['productId'] ?? null;
+        $productIds = $input['productIds'] ?? null;
+        $category = $input['category'] ?? null;
+        $applyToAll = !empty($input['applyToAll']);
+        $oldUrlToReplace = $input['oldUrlToReplace'] ?? null;
+
+        if (!$base64Data) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Missing base64Data payload."]);
+            break;
+        }
+
+        if (preg_match('/^data:([A-Za-z0-9-\+\/\.]+);base64,(.+)$/', $base64Data, $matches)) {
+            $rawBase64 = $matches[2];
+        } else {
+            $rawBase64 = $base64Data;
+        }
+        $binary = base64_decode($rawBase64);
+        $ext = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $targetFormat ?: pathinfo($fileName, PATHINFO_EXTENSION) ?: 'jpg'));
+        if ($ext === 'jpeg' || $ext === 'original' || !$ext) $ext = 'jpg';
+        $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($fileName, PATHINFO_FILENAME));
+        $baseName = substr(trim($baseName, '-'), 0, 50) ?: 'product-image';
+        $finalFileName = $baseName . '-' . round(microtime(true) * 1000) . '.' . $ext;
+        $filePath = $uploads_dir . '/' . $finalFileName;
+        @file_put_contents($filePath, $binary);
+
+        $uploadedUrl = '/assets/uploads/' . $finalFileName;
+        $nowIso = gmdate('Y-m-d\TH:i:s\Z');
+        $mediaEntry = [
+            "id" => "media-" . round(microtime(true) * 1000),
+            "url" => $uploadedUrl,
+            "name" => $finalFileName,
+            "format" => strtoupper($ext),
+            "sizeBytes" => strlen($binary),
+            "uploadedAt" => $nowIso
+        ];
+        array_unshift($state['mediaLibrary'], $mediaEntry);
+
+        if ($applyToAll) {
+            $state['globalDefaultImage'] = $uploadedUrl;
+        }
+        if ($category) {
+            $state['categoryOverrides'][$category] = $uploadedUrl;
+        }
+        if ($oldUrlToReplace) {
+            $state['urlReplacements'][$oldUrlToReplace] = $uploadedUrl;
+        }
+        if ($productId) {
+            $existingGallery = $state['overrides'][$productId]['gallery'] ?? [];
+            $gallery = array_values(array_unique(array_merge([$uploadedUrl], is_array($existingGallery) ? $existingGallery : [])));
+            $state['overrides'][$productId] = [
+                "primary" => $uploadedUrl,
+                "gallery" => $gallery,
+                "format" => strtoupper($ext),
+                "updatedAt" => $nowIso
+            ];
+        }
+        if (is_array($productIds)) {
+            foreach ($productIds as $pid) {
+                if (!$pid) continue;
+                $existingGallery = $state['overrides'][$pid]['gallery'] ?? [];
+                $gallery = array_values(array_unique(array_merge([$uploadedUrl], is_array($existingGallery) ? $existingGallery : [])));
+                $state['overrides'][$pid] = [
+                    "primary" => $uploadedUrl,
+                    "gallery" => $gallery,
+                    "format" => strtoupper($ext),
+                    "updatedAt" => $nowIso
+                ];
+            }
+        }
+
+        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "url" => $uploadedUrl,
+            "mediaEntry" => $mediaEntry,
+            "state" => $state
+        ]);
+        break;
+
+    case 'set_product_images':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir)) {
+            @mkdir($uploads_dir, 0775, true);
+        }
+        $overrides_file = $uploads_dir . '/product-image-overrides.json';
+        $state = [
+            "overrides" => [],
+            "globalDefaultImage" => null,
+            "categoryOverrides" => [],
+            "urlReplacements" => [],
+            "mediaLibrary" => []
+        ];
+        if (file_exists($overrides_file)) {
+            $parsed = json_decode(file_get_contents($overrides_file), true);
+            if (is_array($parsed)) {
+                $state = array_merge($state, $parsed);
+            }
+        }
+        $nowIso = gmdate('Y-m-d\TH:i:s\Z');
+        if (!empty($input['fullOverridesMap']) && is_array($input['fullOverridesMap'])) {
+            foreach ($input['fullOverridesMap'] as $pid => $entry) {
+                $state['overrides'][$pid] = $entry;
+            }
+        }
+        $primaryUrl = $input['primaryUrl'] ?? null;
+        $productId = $input['productId'] ?? null;
+        $productIds = $input['productIds'] ?? null;
+        $galleryUrls = $input['galleryUrls'] ?? null;
+        $format = $input['format'] ?? 'JPG';
+        if ($productId && $primaryUrl) {
+            $state['overrides'][$productId] = [
+                "primary" => $primaryUrl,
+                "gallery" => is_array($galleryUrls) && count($galleryUrls) > 0 ? $galleryUrls : [$primaryUrl],
+                "format" => $format,
+                "updatedAt" => $nowIso
+            ];
+        }
+        if (is_array($productIds) && $primaryUrl) {
+            foreach ($productIds as $pid) {
+                if (!$pid) continue;
+                $state['overrides'][$pid] = [
+                    "primary" => $primaryUrl,
+                    "gallery" => is_array($galleryUrls) && count($galleryUrls) > 0 ? $galleryUrls : [$primaryUrl],
+                    "format" => $format,
+                    "updatedAt" => $nowIso
+                ];
+            }
+        }
+        if (!empty($input['category']) && $primaryUrl) {
+            $state['categoryOverrides'][$input['category']] = $primaryUrl;
+        }
+        if (!empty($input['oldUrlToReplace']) && $primaryUrl) {
+            $state['urlReplacements'][$input['oldUrlToReplace']] = $primaryUrl;
+        }
+        if (!empty($input['applyToAll'])) {
+            $state['globalDefaultImage'] = $primaryUrl;
+        }
+        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => $state
+        ]);
+        break;
+
+    case 'delete_product_images':
+        $uploads_dir = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir = __DIR__ . '/public/assets/uploads';
+        }
+        $overrides_file = $uploads_dir . '/product-image-overrides.json';
+        $state = [
+            "overrides" => [],
+            "globalDefaultImage" => null,
+            "categoryOverrides" => [],
+            "urlReplacements" => [],
+            "mediaLibrary" => []
+        ];
+        if (file_exists($overrides_file)) {
+            $parsed = json_decode(file_get_contents($overrides_file), true);
+            if (is_array($parsed)) {
+                $state = array_merge($state, $parsed);
+            }
+        }
+        if (!empty($input['resetAll'])) {
+            $state['overrides'] = [];
+            $state['globalDefaultImage'] = null;
+            $state['categoryOverrides'] = [];
+            $state['urlReplacements'] = [];
+        } else {
+            if (!empty($input['productId'])) {
+                unset($state['overrides'][$input['productId']]);
+            }
+            if (!empty($input['productIds']) && is_array($input['productIds'])) {
+                foreach ($input['productIds'] as $pid) {
+                    unset($state['overrides'][$pid]);
+                }
+            }
+        }
+        @file_put_contents($overrides_file, json_encode($state, JSON_PRETTY_PRINT));
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => $state
+        ]);
+        break;
+
+    // -------------------------------------------------------------
     // Default fallback
     // -------------------------------------------------------------
     default:

@@ -121,7 +121,7 @@ interface SiteContentContextType {
 
 const LOCAL_STORAGE_KEY = 'trade_heaven_site_content_v2';
 const RBAC_STORAGE_KEY = 'trade_heaven_rbac_matrix_v1';
-const HERO_TANKER_IMAGE = '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
+const HERO_TANKER_IMAGE = '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
 
 function normalizeHeroImage(content: SiteContent): SiteContent {
   if (!content?.homepage) return content;

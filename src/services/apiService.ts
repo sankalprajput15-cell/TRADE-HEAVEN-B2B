@@ -209,7 +209,7 @@ const MARK_JOHNSON_SUPPLIER_USER: AuthUser = {
   tier: 'Basic Plan' as any,
   plan: 'Basic Plan (CAT Earth Moving Machines & Generators Supplier)',
   joinedDate: '2026-10-25',
-  avatarUrl: '/assets/aistudio/image001_ebfaebe5.png'
+  avatarUrl: '/assets/uploads/image001_ebfaebe5.png'
 };
 
 const THEMAX_BUYER_USER: AuthUser = {
@@ -242,7 +242,7 @@ const EMMANUEL_REVERSE_ENERGY_USER: AuthUser = {
   membershipStatus: 'free',
   tier: 'Free Member' as any,
   joinedDate: '2026-11-04',
-  avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+  avatarUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
 };
 
 const LARS_BARNHART_BLACKSTONE_JADE_USER: AuthUser = {
@@ -259,7 +259,7 @@ const LARS_BARNHART_BLACKSTONE_JADE_USER: AuthUser = {
   membershipStatus: 'free',
   tier: 'Free Member' as any,
   joinedDate: '2026-11-04',
-  avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+  avatarUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
 };
 
 // In-memory custom users cache that survives localStorage QuotaExceededError
@@ -1544,7 +1544,10 @@ export const api = {
         }));
 
         const mockProdIds = new Set(MOCK_PRODUCTS.map(p => p.id));
-        const newDb = convertedListings.filter(p => !mockProdIds.has(p.id));
+        const mockProdTitles = new Set(MOCK_PRODUCTS.map(p => (p.title || '').trim().toLowerCase()));
+        const newDb = convertedListings.filter(
+          p => !mockProdIds.has(p.id) && !mockProdTitles.has((p.title || '').trim().toLowerCase())
+        );
         baseProducts = [...MOCK_PRODUCTS, ...newDb];
       }
     } catch (e) {
@@ -1632,7 +1635,7 @@ export const api = {
         category: product.category || 'General Agriculture & Commodities',
         subCategory: product.subCategory || 'Raw Materials',
         images: product.images && product.images.length > 0 ? product.images : [
-          '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'
+          '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'
         ],
         moq: product.moq || 1,
         moqUnit: product.moqUnit || 'Kgs',

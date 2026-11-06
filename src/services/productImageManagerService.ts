@@ -2,6 +2,21 @@ import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
 
 
+export const PRODUCT_IMAGE_SAVED_EVENT = 'tradeheaven_product_image_saved';
+export const PRODUCT_IMAGE_STORAGE_SAVED_EVENT = 'tradeheaven:image-saved-to-storage';
+
+export interface ProductImageSavedEventDetail {
+  timestamp: number;
+  state: ProductImageSystemState;
+  overrides: Record<string, ProductImageOverrideEntry>;
+  mediaLibrary: MediaLibraryItem[];
+  productId?: string;
+  url?: string;
+  gallery?: string[];
+  action?: string;
+  details?: any;
+}
+
 export interface ProductImageOverrideEntry {
   primary: string;
   gallery: string[];
@@ -66,74 +81,178 @@ export function buildCssFilterString(filters?: Partial<ImageEditFilters>): strin
 const STORAGE_KEY = 'trade_heaven_product_image_system_v1';
 const LEGACY_OVERRIDES_KEY = 'trade_heaven_image_overrides';
 const PRODUCTS_CACHE_KEY = 'trade_heaven_v1_products_v2';
+const IDB_NAME = 'trade_heaven_product_images_idb';
+const IDB_STORE = 'image_system_state';
+const IDB_KEY = 'active_state_v1';
+
+export function normalizeProductAssetUrl(url: string | undefined | null): string {
+  if (!url || typeof url !== 'string') return '';
+  return url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+}
+
+const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
+  'prod-1': {
+    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+    gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
+    format: 'JPG',
+    updatedAt: '2026-11-06T07:21:43.891Z'
+  },
+  'th-rh-prod-01': {
+    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+    gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
+    format: 'JPG',
+    updatedAt: '2026-11-06T07:21:43.891Z'
+  },
+  'th-rh-prod-02': {
+    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+    gallery: [
+      '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+    ],
+    format: 'JPG',
+    updatedAt: '2026-11-06T07:21:43.891Z'
+  },
+  'th-rh-prod-04': {
+    primary: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+    gallery: ['/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'],
+    format: 'JPG',
+    updatedAt: '2026-11-06T07:21:43.891Z'
+  },
+  'prod-blackstone-black-jade-cabochon': {
+    primary: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    gallery: [
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+    ],
+    format: 'JPG',
+    updatedAt: '2026-11-05T20:48:37.799Z'
+  },
+  'prod-blackstone-turquoise-rough-matrix': {
+    primary: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+    gallery: [
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+    ],
+    format: 'JPG',
+    updatedAt: '2026-11-05T20:48:37.799Z'
+  },
+  'prod-atlantic-power-1': {
+    primary: '/assets/uploads/image002_50ab7837.png',
+    gallery: [
+      '/assets/uploads/image002_50ab7837.png',
+      '/assets/uploads/image003_6c1f0619.jpg',
+      '/assets/uploads/image004_fa37a57a.png',
+      '/assets/uploads/image005_20fe3db0.png'
+    ],
+    format: 'PNG',
+    updatedAt: '2026-11-05T20:48:37.799Z'
+  },
+  'prod-atlantic-power-2': {
+    primary: '/assets/uploads/image005_20fe3db0.png',
+    gallery: [
+      '/assets/uploads/image005_20fe3db0.png',
+      '/assets/uploads/image002_50ab7837.png',
+      '/assets/uploads/image003_6c1f0619.jpg',
+      '/assets/uploads/image004_fa37a57a.png'
+    ],
+    format: 'PNG',
+    updatedAt: '2026-11-05T20:48:37.799Z'
+  },
+  'prod-middle-fox-en590': {
+    primary: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    gallery: [
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+    ],
+    format: 'JPG',
+    updatedAt: '2026-11-05T20:48:37.799Z'
+  },
+  'prod-middle-fox-jeta1': {
+    primary: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    gallery: [
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+    ],
+    format: 'JPG',
+    updatedAt: '2026-11-05T20:48:37.799Z'
+  }
+};
 
 const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
   {
+    id: 'builtin-rice-husk-powder',
+    url: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
+    name: 'Agricultural Rice Husk Powder, Grind & Ash.jpeg',
+    format: 'JPG',
+    sizeBytes: 32795,
+    uploadedAt: '2026-11-06T07:21:43Z'
+  },
+  {
     id: 'builtin-black-jade-cabochon',
-    url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
     name: 'Blackstone Jade Co - Natural Black Jade Cabochon.jpeg',
     format: 'JPG',
     uploadedAt: '2026-11-04T19:44:21Z'
   },
   {
     id: 'builtin-turquoise-rough-matrix',
-    url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+    url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
     name: 'Blackstone Jade Co - Natural Turquoise Rough Matrix.jpeg',
     format: 'JPG',
     uploadedAt: '2026-11-04T19:44:20Z'
   },
   {
     id: 'builtin-atlantic-cat-power',
-    url: '/assets/aistudio/image002_50ab7837.png',
+    url: '/assets/uploads/image002_50ab7837.png',
     name: 'Atlantic Power - CAT Power Diesel Generator.png',
     format: 'PNG',
     uploadedAt: '2026-10-25T10:00:00Z'
   },
   {
     id: 'builtin-atlantic-cummins',
-    url: '/assets/aistudio/image003_6c1f0619.jpg',
+    url: '/assets/uploads/image003_6c1f0619.jpg',
     name: 'Atlantic Power - Cummins Power Generation.jpg',
     format: 'JPG',
     uploadedAt: '2026-10-25T10:01:00Z'
   },
   {
     id: 'builtin-atlantic-large-tanks',
-    url: '/assets/aistudio/image004_fa37a57a.png',
+    url: '/assets/uploads/image004_fa37a57a.png',
     name: 'Atlantic Power - Large Fuel Storage Tanks (3,000-18,000 Gal).png',
     format: 'PNG',
     uploadedAt: '2026-10-25T10:02:00Z'
   },
   {
     id: 'builtin-atlantic-heavy-fleet',
-    url: '/assets/aistudio/image005_20fe3db0.png',
+    url: '/assets/uploads/image005_20fe3db0.png',
     name: 'Atlantic Power - Multi-Brand Heavy Construction Equipment.png',
     format: 'PNG',
     uploadedAt: '2026-10-25T10:03:00Z'
   },
   {
     id: 'builtin-vanilla-bundle-01',
-    url: '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+    url: '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
     name: 'Madagascar Bourbon Vanilla Beans Bundle.jpg',
     format: 'JPG',
     uploadedAt: '2026-10-22T09:00:00Z'
   },
   {
     id: 'builtin-vanilla-extract-02',
-    url: '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+    url: '/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
     name: 'Gourmet Vanilla Beans & Pure Extract.jpg',
     format: 'JPG',
     uploadedAt: '2026-10-22T09:05:00Z'
   },
   {
     id: 'builtin-evening-cargo-port',
-    url: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    url: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     name: 'Evening Cargo & Oil Ships Dock at Port.jpg',
     format: 'JPG',
     uploadedAt: '2026-10-20T08:23:00Z'
   },
   {
     id: 'builtin-cargo-tanker-berth',
-    url: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    url: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     name: 'Cargo Tanker Ship Marine Vessel Docking.jpg',
     format: 'JPG',
     uploadedAt: '2026-10-20T08:08:00Z'
@@ -144,10 +263,13 @@ class ProductImageManagerService {
   private state: ProductImageSystemState;
   private isHydratedFromServer = false;
   private hydrationPromise: Promise<ProductImageSystemState> | null = null;
+  private locallyDeletedIds = new Set<string>();
+  private localMutationTimes = new Map<string, number>();
 
   constructor() {
     this.state = this.loadFromLocalStorage();
     if (typeof window !== 'undefined') {
+      this.hydrateFromIndexedDb();
       this.hydrationPromise = this.syncFromServer();
     }
   }
@@ -169,12 +291,33 @@ class ProductImageManagerService {
 
   private getInitialEmptyState(): ProductImageSystemState {
     return {
-      overrides: {},
+      overrides: { ...DEFAULT_BUILTIN_OVERRIDES },
       globalDefaultImage: null,
       categoryOverrides: {},
       urlReplacements: {},
       mediaLibrary: [...DEFAULT_BUILTIN_MEDIA]
     };
+  }
+
+  private normalizeOverrideMap(rawMap: Record<string, any>): Record<string, ProductImageOverrideEntry> {
+    const out: Record<string, ProductImageOverrideEntry> = {};
+    if (!rawMap || typeof rawMap !== 'object') return out;
+    for (const [k, v] of Object.entries(rawMap)) {
+      if (!v || typeof v !== 'object' || !v.primary) continue;
+      const primary = normalizeProductAssetUrl(v.primary);
+      if (!primary) continue;
+      const gallery = Array.isArray(v.gallery) && v.gallery.length > 0
+        ? v.gallery.map((u: string) => normalizeProductAssetUrl(u)).filter(Boolean)
+        : [primary];
+      out[k] = {
+        primary,
+        gallery,
+        format: v.format || this.detectFormatFromUrl(primary),
+        updatedAt: v.updatedAt || new Date().toISOString(),
+        updatedBy: v.updatedBy
+      };
+    }
+    return out;
   }
 
   private loadFromLocalStorage(): ProductImageSystemState {
@@ -186,14 +329,30 @@ class ProductImageManagerService {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
-          base.overrides = parsed.overrides && typeof parsed.overrides === 'object' ? { ...parsed.overrides } : {};
-          base.globalDefaultImage = typeof parsed.globalDefaultImage === 'string' ? parsed.globalDefaultImage : null;
-          base.categoryOverrides = parsed.categoryOverrides && typeof parsed.categoryOverrides === 'object' ? { ...parsed.categoryOverrides } : {};
-          base.urlReplacements = parsed.urlReplacements && typeof parsed.urlReplacements === 'object' ? { ...parsed.urlReplacements } : {};
+          const loadedOverrides = this.normalizeOverrideMap(parsed.overrides);
+          base.overrides = {
+            ...DEFAULT_BUILTIN_OVERRIDES,
+            ...loadedOverrides
+          };
+          base.globalDefaultImage = typeof parsed.globalDefaultImage === 'string'
+            ? normalizeProductAssetUrl(parsed.globalDefaultImage)
+            : null;
+          base.categoryOverrides = parsed.categoryOverrides && typeof parsed.categoryOverrides === 'object'
+            ? { ...parsed.categoryOverrides }
+            : {};
+          base.urlReplacements = parsed.urlReplacements && typeof parsed.urlReplacements === 'object'
+            ? { ...parsed.urlReplacements }
+            : {};
           if (Array.isArray(parsed.mediaLibrary)) {
-            const urls = new Set(parsed.mediaLibrary.map((m: MediaLibraryItem) => m.url));
+            const normalizedMedia = parsed.mediaLibrary
+              .filter((m: any) => m && m.url && !String(m.url).includes('WhatsApp_Image_2026-11-02_at_5.43.28_PM_f16b3ccd'))
+              .map((m: MediaLibraryItem) => ({
+                ...m,
+                url: normalizeProductAssetUrl(m.url)
+              }));
+            const urls = new Set(normalizedMedia.map((m: MediaLibraryItem) => m.url));
             base.mediaLibrary = [
-              ...parsed.mediaLibrary,
+              ...normalizedMedia,
               ...DEFAULT_BUILTIN_MEDIA.filter(d => !urls.has(d.url))
             ];
           }
@@ -205,16 +364,16 @@ class ProductImageManagerService {
       if (legacyRaw) {
         const legacyParsed = JSON.parse(legacyRaw);
         if (legacyParsed && typeof legacyParsed === 'object') {
-          for (const [key, val] of Object.entries(legacyParsed)) {
-            if (val && typeof val === 'object') {
-              const entry = val as any;
-              if (entry.primary && !base.overrides[key]) {
-                base.overrides[key] = {
-                  primary: entry.primary,
-                  gallery: Array.isArray(entry.gallery) && entry.gallery.length > 0 ? entry.gallery : [entry.primary],
-                  format: this.detectFormatFromUrl(entry.primary),
-                  updatedAt: entry.updatedAt || new Date().toISOString()
-                };
+          const normalizedLegacy = this.normalizeOverrideMap(legacyParsed);
+          for (const [key, entry] of Object.entries(normalizedLegacy)) {
+            const existing = base.overrides[key];
+            if (!existing) {
+              base.overrides[key] = entry;
+            } else {
+              const legacyTime = Date.parse(entry.updatedAt || '') || 0;
+              const baseTime = Date.parse(existing.updatedAt || '') || 0;
+              if (legacyTime > baseTime) {
+                base.overrides[key] = entry;
               }
             }
           }
@@ -227,21 +386,197 @@ class ProductImageManagerService {
     return base;
   }
 
-  private saveToLocalStorage() {
-    if (typeof window === 'undefined') return;
+  private openIndexedDb(): Promise<IDBDatabase | null> {
+    if (typeof window === 'undefined' || !window.indexedDB) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      try {
+        const req = window.indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  private async saveToIndexedDb(stateToSave: ProductImageSystemState): Promise<void> {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-      // Also sync legacy key for backward compatibility
-      localStorage.setItem(LEGACY_OVERRIDES_KEY, JSON.stringify(this.state.overrides));
+      const db = await this.openIndexedDb();
+      if (!db) return;
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(JSON.parse(JSON.stringify(stateToSave)), IDB_KEY);
+    } catch {}
+  }
+
+  private async hydrateFromIndexedDb(): Promise<void> {
+    try {
+      const db = await this.openIndexedDb();
+      if (!db) return;
+      const idbState: ProductImageSystemState | null = await new Promise((resolve) => {
+        try {
+          const tx = db.transaction(IDB_STORE, 'readonly');
+          const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        } catch {
+          resolve(null);
+        }
+      });
+      if (idbState && idbState.overrides && typeof idbState.overrides === 'object') {
+        let changed = false;
+        const normalizedIdb = this.normalizeOverrideMap(idbState.overrides);
+        for (const [pid, idbEntry] of Object.entries(normalizedIdb)) {
+          if (this.locallyDeletedIds.has(pid)) continue;
+          const current = this.state.overrides[pid];
+          const idbTime = Date.parse(idbEntry.updatedAt || '') || 0;
+          const curTime = current ? (Date.parse(current.updatedAt || '') || 0) : 0;
+          if (!current || idbTime > curTime) {
+            this.state.overrides[pid] = idbEntry;
+            changed = true;
+          }
+        }
+        if (changed) {
+          this.emitImageSavedEvent({ action: 'idb_hydrated' });
+          this.notifyListeners();
+        }
+      }
+    } catch {}
+  }
+
+  private saveToLocalStorage(context?: { productId?: string; url?: string; gallery?: string[]; action?: string; details?: any }) {
+    if (typeof window === 'undefined') return;
+
+    // 1. Always persist full state to IndexedDB (unlimited quota for base64 & high-res assets)
+    this.saveToIndexedDb(this.state);
+
+    // 2. Persist to localStorage with automatic quota protection
+    try {
+      let serialized = JSON.stringify(this.state);
+      if (serialized.length > 1800000) {
+        // Strip heavy data:image URLs from mediaLibrary for localStorage while keeping all overrides intact
+        const compactState: ProductImageSystemState = {
+          ...this.state,
+          mediaLibrary: this.state.mediaLibrary.filter(m => !m.url.startsWith('data:image/') || m.url.length < 150000).slice(0, 40)
+        };
+        serialized = JSON.stringify(compactState);
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, serialized);
+      } catch {
+        // Evict secondary caches to free up localStorage space and retry
+        try {
+          localStorage.removeItem('cached_products');
+          localStorage.removeItem(PRODUCTS_CACHE_KEY);
+          localStorage.removeItem(LEGACY_OVERRIDES_KEY);
+        } catch {}
+        const minimalState: ProductImageSystemState = {
+          ...this.state,
+          mediaLibrary: DEFAULT_BUILTIN_MEDIA
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(minimalState));
+      }
+
+      try {
+        localStorage.setItem(LEGACY_OVERRIDES_KEY, JSON.stringify(this.state.overrides));
+      } catch {}
+
       this.syncCachedProductsInLocalStorage();
     } catch (err) {
       console.warn('[ProductImageManagerService] Error saving to localStorage:', err);
+    } finally {
+      // 3. ALWAYS emit custom events so EditableImage & SafeImage re-render immediately
+      this.emitImageSavedEvent(context);
     }
+  }
+
+  private emitImageSavedEvent(context?: { productId?: string; url?: string; gallery?: string[]; action?: string; details?: any }) {
+    if (typeof window === 'undefined') return;
+    try {
+      const detail: ProductImageSavedEventDetail = {
+        timestamp: Date.now(),
+        state: this.state,
+        overrides: this.state.overrides,
+        mediaLibrary: this.state.mediaLibrary,
+        productId: context?.productId,
+        url: context?.url,
+        gallery: context?.gallery,
+        action: context?.action || 'save_to_storage',
+        details: context?.details
+      };
+
+      // Dispatches primary event as requested
+      window.dispatchEvent(new CustomEvent(PRODUCT_IMAGE_SAVED_EVENT, { detail }));
+      // Dispatches secondary aliases for wide interoperability across components
+      window.dispatchEvent(new CustomEvent(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, { detail }));
+      window.dispatchEvent(new CustomEvent('tradeheaven_image_saved_to_storage', { detail }));
+      window.dispatchEvent(new CustomEvent('product_image_saved', { detail }));
+    } catch (err) {
+      console.warn('[ProductImageManagerService] Error emitting image saved event:', err);
+    }
+  }
+
+  /**
+   * Helper to subscribe to custom events emitted when an image is saved to storage.
+   * Returns an unsubscribe cleanup function.
+   */
+  public onImageSaved(
+    callback: (event: CustomEvent<ProductImageSavedEventDetail>) => void
+  ): () => void {
+    if (typeof window === 'undefined') return () => {};
+    const handler = (e: Event) => callback(e as CustomEvent<ProductImageSavedEventDetail>);
+    window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, handler);
+    window.addEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handler);
+    window.addEventListener('tradeheaven_image_saved_to_storage', handler);
+    window.addEventListener('product_image_saved', handler);
+    window.addEventListener('tradeheaven_product_images_updated', handler);
+    return () => {
+      window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, handler);
+      window.removeEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handler);
+      window.removeEventListener('tradeheaven_image_saved_to_storage', handler);
+      window.removeEventListener('product_image_saved', handler);
+      window.removeEventListener('tradeheaven_product_images_updated', handler);
+    };
+  }
+
+  /**
+   * Get the primary image directly for a given product ID or content key.
+   */
+  public getProductImage(productIdOrKey: string): string | undefined {
+    if (!productIdOrKey) return undefined;
+    const override = this.state.overrides[productIdOrKey];
+    if (override?.primary) return normalizeProductAssetUrl(override.primary);
+    return undefined;
   }
 
   private syncCachedProductsInLocalStorage() {
     if (typeof window === 'undefined') return;
     try {
+      // Update custom products if any custom product matches an override
+      const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+      if (rawCustom) {
+        const parsedCustom = JSON.parse(rawCustom);
+        if (Array.isArray(parsedCustom)) {
+          const updatedCustom = this.applyOverridesToProductList(parsedCustom);
+          localStorage.setItem('trade_heaven_custom_products', JSON.stringify(updatedCustom));
+        }
+      }
+
+      // Check if any override uses a large data URL; if so, remove cached_products so it re-computes in memory without overflowing localStorage
+      const hasLargeDataUrl = Object.values(this.state.overrides).some(
+        o => o?.primary?.startsWith('data:') && o.primary.length > 80000
+      );
+      if (hasLargeDataUrl) {
+        localStorage.removeItem('cached_products');
+        localStorage.removeItem(PRODUCTS_CACHE_KEY);
+        return;
+      }
+
       const rawProducts = localStorage.getItem(PRODUCTS_CACHE_KEY);
       if (rawProducts) {
         const parsed = JSON.parse(rawProducts);
@@ -250,7 +585,6 @@ class ProductImageManagerService {
           localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(updated));
         }
       }
-      // Also sync cached_products used by ProductCatalog
       const rawCatProducts = localStorage.getItem('cached_products');
       if (rawCatProducts) {
         const parsedCat = JSON.parse(rawCatProducts);
@@ -288,71 +622,111 @@ class ProductImageManagerService {
 
   public async syncFromServer(): Promise<ProductImageSystemState> {
     try {
-      const res = await fetch(`/api/v1/admin/product-images?_t=${Date.now()}`, {
-        cache: 'no-store'
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.success && json?.data) {
-          const srv: ProductImageSystemState = json.data;
-          const localOverrides = this.state.overrides || {};
-          const srvOverrides = srv.overrides || {};
-          const mergedOverrides: Record<string, ProductImageOverrideEntry> = { ...srvOverrides };
-          let localHasNewerOrMissingOnServer = false;
+      let srv: ProductImageSystemState | null = null;
 
-          for (const [pid, localEntry] of Object.entries(localOverrides)) {
-            if (!localEntry?.primary) continue;
-            const srvEntry = srvOverrides[pid];
-            if (!srvEntry) {
+      // 1. Try Node/Express endpoint
+      try {
+        const res = await fetch(`/api/v1/admin/product-images?_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success && json?.data) {
+            srv = json.data;
+          }
+        }
+      } catch {}
+
+      // 2. Fallback to PHP endpoint (for cPanel / BigRock deployment)
+      if (!srv) {
+        try {
+          const phpRes = await fetch(`/api.php?action=get_product_images&_t=${Date.now()}`, {
+            cache: 'no-store'
+          });
+          if (phpRes.ok) {
+            const phpJson = await phpRes.json();
+            if (phpJson?.success && phpJson?.data) {
+              srv = phpJson.data;
+            }
+          }
+        } catch {}
+      }
+
+      if (srv) {
+        const localOverrides = this.state.overrides || {};
+        const srvOverrides = this.normalizeOverrideMap(srv.overrides || {});
+        const mergedOverrides: Record<string, ProductImageOverrideEntry> = {
+          ...DEFAULT_BUILTIN_OVERRIDES
+        };
+
+        // Apply server overrides except any locally deleted in this session
+        for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
+          if (this.locallyDeletedIds.has(pid)) continue;
+          mergedOverrides[pid] = srvEntry;
+        }
+
+        let localHasNewerOrMissingOnServer = false;
+
+        for (const [pid, localEntry] of Object.entries(localOverrides)) {
+          if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
+          const srvEntry = srvOverrides[pid];
+          const localMutatedRecently = (this.localMutationTimes.get(pid) || 0) > Date.now() - 120000;
+          if (!srvEntry) {
+            mergedOverrides[pid] = localEntry;
+            localHasNewerOrMissingOnServer = true;
+          } else {
+            const localTime = Date.parse(localEntry.updatedAt || '') || 0;
+            const srvTime = Date.parse(srvEntry.updatedAt || '') || 0;
+            if (localMutatedRecently || localTime >= srvTime) {
               mergedOverrides[pid] = localEntry;
-              localHasNewerOrMissingOnServer = true;
-            } else {
-              const localTime = Date.parse(localEntry.updatedAt || '') || 0;
-              const srvTime = Date.parse(srvEntry.updatedAt || '') || 0;
               if (localTime > srvTime) {
-                mergedOverrides[pid] = localEntry;
                 localHasNewerOrMissingOnServer = true;
               }
             }
           }
+        }
 
-          this.state.overrides = mergedOverrides;
-          this.state.globalDefaultImage = srv.globalDefaultImage ?? this.state.globalDefaultImage ?? null;
-          this.state.categoryOverrides = {
-            ...(this.state.categoryOverrides || {}),
-            ...(srv.categoryOverrides || {})
-          };
-          this.state.urlReplacements = {
-            ...(this.state.urlReplacements || {}),
-            ...(srv.urlReplacements || {})
-          };
+        this.state.overrides = mergedOverrides;
+        this.state.globalDefaultImage = srv.globalDefaultImage
+          ? normalizeProductAssetUrl(srv.globalDefaultImage)
+          : (this.state.globalDefaultImage ?? null);
+        this.state.categoryOverrides = {
+          ...(this.state.categoryOverrides || {}),
+          ...(srv.categoryOverrides || {})
+        };
+        this.state.urlReplacements = {
+          ...(this.state.urlReplacements || {}),
+          ...(srv.urlReplacements || {})
+        };
 
-          if (Array.isArray(srv.mediaLibrary)) {
-            const seen = new Set<string>();
-            const mergedMedia: MediaLibraryItem[] = [];
-            for (const item of [...srv.mediaLibrary, ...this.state.mediaLibrary, ...DEFAULT_BUILTIN_MEDIA]) {
-              if (item && item.url && !seen.has(item.url)) {
-                seen.add(item.url);
-                mergedMedia.push(item);
-              }
+        if (Array.isArray(srv.mediaLibrary)) {
+          const seen = new Set<string>();
+          const mergedMedia: MediaLibraryItem[] = [];
+          for (const item of [...this.state.mediaLibrary, ...srv.mediaLibrary, ...DEFAULT_BUILTIN_MEDIA]) {
+            if (!item || !item.url) continue;
+            if (String(item.url).includes('WhatsApp_Image_2026-11-02_at_5.43.28_PM_f16b3ccd')) continue;
+            const cleanUrl = normalizeProductAssetUrl(item.url);
+            if (cleanUrl && !seen.has(cleanUrl)) {
+              seen.add(cleanUrl);
+              mergedMedia.push({ ...item, url: cleanUrl });
             }
-            this.state.mediaLibrary = mergedMedia;
           }
+          this.state.mediaLibrary = mergedMedia;
+        }
 
-          this.isHydratedFromServer = true;
-          this.saveToLocalStorage();
-          this.notifyListeners();
+        this.isHydratedFromServer = true;
+        this.saveToLocalStorage({ action: 'sync_from_server' });
+        this.notifyListeners();
 
-          // If local browser state had overrides that the server didn't have (e.g. after server restart), push them back up to server
-          if (localHasNewerOrMissingOnServer && Object.keys(mergedOverrides).length > 0) {
-            fetch('/api/v1/admin/product-images', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                fullOverridesMap: mergedOverrides
-              })
-            }).catch(() => {});
-          }
+        // Push newer local overrides back up to server
+        if (localHasNewerOrMissingOnServer && Object.keys(mergedOverrides).length > 0) {
+          fetch('/api/v1/admin/product-images', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fullOverridesMap: mergedOverrides
+            })
+          }).catch(() => {});
         }
       }
     } catch {
@@ -376,45 +750,53 @@ class ProductImageManagerService {
     imageIndex?: number;
   }): string | undefined {
     const { src, productId, productTitle, category, imageIndex = 0 } = params;
+    const normalizedSrc = src ? normalizeProductAssetUrl(src) : undefined;
 
     // 1. Check direct productId override
-    if (productId && this.state.overrides[productId]) {
-      const entry = this.state.overrides[productId];
-      if (imageIndex > 0 && entry.gallery && entry.gallery[imageIndex]) {
-        return entry.gallery[imageIndex];
+    if (productId) {
+      const cleanId = productId.trim();
+      const entry = this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()];
+      if (entry) {
+        if (imageIndex > 0 && entry.gallery && entry.gallery[imageIndex]) {
+          return normalizeProductAssetUrl(entry.gallery[imageIndex]);
+        }
+        if (entry.primary) return normalizeProductAssetUrl(entry.primary);
       }
-      if (entry.primary) return entry.primary;
     }
 
     // 2. Check productTitle override if matched by title
-    if (productTitle && this.state.overrides[productTitle]) {
-      const entry = this.state.overrides[productTitle];
-      if (entry.primary) return entry.primary;
+    if (productTitle) {
+      const cleanTitle = productTitle.trim();
+      const entry = this.state.overrides[cleanTitle];
+      if (entry?.primary) return normalizeProductAssetUrl(entry.primary);
     }
 
     // 3. Check URL replacement rules
-    if (src) {
-      if (this.state.urlReplacements[src]) {
-        return this.state.urlReplacements[src];
+    if (normalizedSrc) {
+      if (this.state.urlReplacements[normalizedSrc]) {
+        return normalizeProductAssetUrl(this.state.urlReplacements[normalizedSrc]);
+      }
+      if (src && this.state.urlReplacements[src]) {
+        return normalizeProductAssetUrl(this.state.urlReplacements[src]);
       }
       for (const [oldSubstr, newUrl] of Object.entries(this.state.urlReplacements)) {
-        if (oldSubstr && src.includes(oldSubstr)) {
-          return newUrl;
+        if (oldSubstr && (normalizedSrc.includes(oldSubstr) || (src && src.includes(oldSubstr)))) {
+          return normalizeProductAssetUrl(newUrl);
         }
       }
     }
 
     // 4. Check category-wide override
     if (category && this.state.categoryOverrides[category]) {
-      return this.state.categoryOverrides[category];
+      return normalizeProductAssetUrl(this.state.categoryOverrides[category]);
     }
 
     // 5. Check global all-products image override (only when rendering a product card / product with productId or category)
     if ((productId || category || productTitle) && this.state.globalDefaultImage) {
-      return this.state.globalDefaultImage;
+      return normalizeProductAssetUrl(this.state.globalDefaultImage);
     }
 
-    return src;
+    return normalizedSrc;
   }
 
   /**
@@ -422,22 +804,28 @@ class ProductImageManagerService {
    */
   public resolveProductImages(product: Partial<Product> & { image?: string }): string[] {
     const rawImages = Array.isArray(product.images) && product.images.length > 0
-      ? [...product.images]
+      ? product.images.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
       : product.image
-        ? [product.image]
+        ? [normalizeProductAssetUrl(product.image)]
         : ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'];
 
-    if (product.id && this.state.overrides[product.id]) {
-      const entry = this.state.overrides[product.id];
-      if (Array.isArray(entry.gallery) && entry.gallery.length > 0) {
-        return [entry.primary, ...entry.gallery.filter(u => u !== entry.primary)];
+    if (product.id) {
+      const cleanId = product.id.trim();
+      const entry = this.state.overrides[cleanId] || this.state.overrides[cleanId.toLowerCase()];
+      if (entry && entry.primary) {
+        const cleanPrimary = normalizeProductAssetUrl(entry.primary);
+        if (Array.isArray(entry.gallery) && entry.gallery.length > 0) {
+          const cleanGallery = entry.gallery.map(u => normalizeProductAssetUrl(u)).filter(Boolean);
+          return [cleanPrimary, ...cleanGallery.filter(u => u !== cleanPrimary)];
+        }
+        return [cleanPrimary, ...rawImages.slice(1)];
       }
-      return [entry.primary, ...rawImages.slice(1)];
     }
 
-    if (product.title && this.state.overrides[product.title]) {
-      const entry = this.state.overrides[product.title];
-      return [entry.primary, ...rawImages.slice(1)];
+    if (product.title && this.state.overrides[product.title.trim()]) {
+      const entry = this.state.overrides[product.title.trim()];
+      const cleanPrimary = normalizeProductAssetUrl(entry.primary);
+      return [cleanPrimary, ...rawImages.slice(1)];
     }
 
     // Apply URL replacements, category override, or global override
@@ -803,31 +1191,35 @@ class ProductImageManagerService {
     let finalFormat = converted.extension.toUpperCase();
     let finalName = converted.fileName;
     let finalSizeBytes = converted.sizeBytes;
+    let uploadedToServer = false;
+
+    const uploadPayload = {
+      fileName: converted.fileName,
+      mimeType: converted.mimeType,
+      base64Data: converted.dataUrl,
+      targetFormat: converted.extension,
+      autoWebpLossless: useWebpLossless,
+      losslessCompression: converted.losslessCompression,
+      originalSizeBytes: converted.originalSizeBytes,
+      productId: options?.appendToGallery ? undefined : options?.productId,
+      productIds: options?.productIds,
+      category: options?.category,
+      applyToAll: options?.applyToAll,
+      oldUrlToReplace: options?.oldUrlToReplace
+    };
 
     try {
       const response = await fetch('/api/v1/admin/upload-product-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName: converted.fileName,
-          mimeType: converted.mimeType,
-          base64Data: converted.dataUrl,
-          targetFormat: converted.extension,
-          autoWebpLossless: useWebpLossless,
-          losslessCompression: converted.losslessCompression,
-          originalSizeBytes: converted.originalSizeBytes,
-          productId: options?.appendToGallery ? undefined : options?.productId,
-          productIds: options?.productIds,
-          category: options?.category,
-          applyToAll: options?.applyToAll,
-          oldUrlToReplace: options?.oldUrlToReplace
-        })
+        body: JSON.stringify(uploadPayload)
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data?.success && data?.url) {
-          finalUrl = data.url;
+          finalUrl = normalizeProductAssetUrl(data.url);
+          uploadedToServer = true;
           if (data.mediaEntry) {
             finalName = data.mediaEntry.name || finalName;
             finalFormat = data.mediaEntry.format || finalFormat;
@@ -838,7 +1230,51 @@ class ProductImageManagerService {
         }
       }
     } catch (err) {
-      console.warn('[ProductImageManagerService] Server upload fallback to local DataURL:', err);
+      console.warn('[ProductImageManagerService] Primary upload endpoint fallback:', err);
+    }
+
+    // Fallback to PHP endpoint for cPanel / BigRock deployment
+    if (!uploadedToServer) {
+      try {
+        const phpRes = await fetch('/api.php?action=upload_product_image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(uploadPayload)
+        });
+        if (phpRes.ok) {
+          const phpData = await phpRes.json();
+          if (phpData?.success && phpData?.url) {
+            finalUrl = normalizeProductAssetUrl(phpData.url);
+            uploadedToServer = true;
+            if (phpData.mediaEntry) {
+              finalName = phpData.mediaEntry.name || finalName;
+              finalFormat = phpData.mediaEntry.format || finalFormat;
+              if (typeof phpData.mediaEntry.sizeBytes === 'number') {
+                finalSizeBytes = phpData.mediaEntry.sizeBytes;
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // If still using local DataURL (offline/static fallback) and it is > 300KB, create a compact DataURL so localStorage never overflows
+    if (!uploadedToServer && finalUrl.startsWith('data:image/') && finalUrl.length > 300000) {
+      try {
+        const compact = await this.convertImageFile(
+          file,
+          'jpg',
+          0.82,
+          900,
+          false,
+          rotationDegrees,
+          options?.filters
+        );
+        if (compact.dataUrl && compact.dataUrl.length < finalUrl.length) {
+          finalUrl = compact.dataUrl;
+          finalSizeBytes = compact.sizeBytes;
+        }
+      } catch {}
     }
 
     // Record in local media library
@@ -870,7 +1306,10 @@ class ProductImageManagerService {
       this.state.urlReplacements[options.oldUrlToReplace] = finalUrl;
     }
     if (options?.productId) {
-      const existing = this.state.overrides[options.productId];
+      const cleanPid = options.productId.trim();
+      this.locallyDeletedIds.delete(cleanPid);
+      this.localMutationTimes.set(cleanPid, Date.now());
+      const existing = this.state.overrides[cleanPid];
       const existingGallery =
         existing?.gallery && existing.gallery.length > 0
           ? existing.gallery
@@ -883,7 +1322,7 @@ class ProductImageManagerService {
         ? [...existingGallery.filter(u => u !== finalUrl), finalUrl]
         : [finalUrl, ...existingGallery.filter(u => u !== finalUrl)];
 
-      this.state.overrides[options.productId] = {
+      this.state.overrides[cleanPid] = {
         primary,
         gallery,
         format: finalFormat,
@@ -891,23 +1330,30 @@ class ProductImageManagerService {
       };
 
       if (isAppend) {
-        try {
-          await fetch('/api/v1/admin/product-images', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              productId: options.productId,
-              primaryUrl: primary,
-              galleryUrls: gallery,
-              format: finalFormat
-            })
-          });
-        } catch {}
+        const appendBody = JSON.stringify({
+          productId: cleanPid,
+          primaryUrl: primary,
+          galleryUrls: gallery,
+          format: finalFormat
+        });
+        fetch('/api/v1/admin/product-images', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: appendBody
+        }).catch(() => {});
+        fetch('/api.php?action=set_product_images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: appendBody
+        }).catch(() => {});
       }
     }
     if (Array.isArray(options?.productIds)) {
-      for (const pid of options!.productIds) {
+      for (const rawPid of options!.productIds) {
+        const pid = rawPid?.trim();
         if (!pid) continue;
+        this.locallyDeletedIds.delete(pid);
+        this.localMutationTimes.set(pid, Date.now());
         const existing = this.state.overrides[pid];
         const gallery = existing?.gallery ? [finalUrl, ...existing.gallery.filter(u => u !== finalUrl)] : [finalUrl];
         this.state.overrides[pid] = {
@@ -943,7 +1389,7 @@ class ProductImageManagerService {
       }
     } catch {}
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ productId: options?.productId, url: finalUrl, action: 'upload_and_assign' });
     this.notifyListeners();
 
     return {
@@ -1044,28 +1490,46 @@ class ProductImageManagerService {
     }
   ): Promise<string> {
     let finalUrl = dataUrl;
+    const payload = JSON.stringify({
+      fileName,
+      mimeType: 'image/jpeg',
+      base64Data: dataUrl,
+      targetFormat: 'jpg',
+      productId: options?.productId,
+      productIds: options?.productIds,
+      category: options?.category,
+      applyToAll: options?.applyToAll
+    });
+
     try {
       const response = await fetch('/api/v1/admin/upload-product-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileName,
-          mimeType: 'image/jpeg',
-          base64Data: dataUrl,
-          targetFormat: 'jpg',
-          productId: options?.productId,
-          productIds: options?.productIds,
-          category: options?.category,
-          applyToAll: options?.applyToAll
-        })
+        body: payload
       });
       if (response.ok) {
         const resJson = await response.json();
         if (resJson?.success && resJson?.url) {
-          finalUrl = resJson.url;
+          finalUrl = normalizeProductAssetUrl(resJson.url);
         }
       }
     } catch {}
+
+    if (finalUrl === dataUrl) {
+      try {
+        const phpRes = await fetch('/api.php?action=upload_product_image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload
+        });
+        if (phpRes.ok) {
+          const phpJson = await phpRes.json();
+          if (phpJson?.success && phpJson?.url) {
+            finalUrl = normalizeProductAssetUrl(phpJson.url);
+          }
+        }
+      } catch {}
+    }
 
     if (options?.productId) {
       await this.setProductImage(options.productId, finalUrl);
@@ -1089,16 +1553,20 @@ class ProductImageManagerService {
     galleryUrls?: string[]
   ): Promise<void> {
     if (!productId || !primaryUrl) return;
-    const cleanPrimary = primaryUrl.trim();
-    const existing = this.state.overrides[productId];
+    const cleanId = productId.trim();
+    const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
+    this.locallyDeletedIds.delete(cleanId);
+    this.localMutationTimes.set(cleanId, Date.now());
+
+    const existing = this.state.overrides[cleanId];
     const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
-      ? galleryUrls.filter(Boolean)
+      ? galleryUrls.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
       : existing?.gallery
-        ? [cleanPrimary, ...existing.gallery.filter(u => u !== cleanPrimary)]
+        ? [cleanPrimary, ...existing.gallery.map(u => normalizeProductAssetUrl(u)).filter(u => u && u !== cleanPrimary)]
         : [cleanPrimary];
 
     const format = this.detectFormatFromUrl(cleanPrimary);
-    this.state.overrides[productId] = {
+    this.state.overrides[cleanId] = {
       primary: cleanPrimary,
       gallery: resolvedGallery,
       format,
@@ -1108,26 +1576,35 @@ class ProductImageManagerService {
     try {
       autoSeoEngine.autoOptimizeImageUpload({
         imageUrl: cleanPrimary,
-        productId,
-        fileName: `product-${productId}.${format.toLowerCase()}`
+        productId: cleanId,
+        fileName: `product-${cleanId}.${format.toLowerCase()}`
       });
     } catch {}
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ productId: cleanId, url: cleanPrimary, gallery: resolvedGallery, action: 'set_product_image' });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({
+      productId: cleanId,
+      primaryUrl: cleanPrimary,
+      galleryUrls: resolvedGallery,
+      format
+    });
+
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productId,
-          primaryUrl: cleanPrimary,
-          galleryUrls: resolvedGallery,
-          format
-        })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=set_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
@@ -1139,17 +1616,20 @@ class ProductImageManagerService {
     galleryUrls?: string[]
   ): Promise<void> {
     if (!Array.isArray(productIds) || productIds.length === 0 || !primaryUrl) return;
-    const cleanPrimary = primaryUrl.trim();
+    const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
     const format = this.detectFormatFromUrl(cleanPrimary);
     const nowIso = new Date().toISOString();
 
-    for (const pid of productIds) {
+    for (const rawPid of productIds) {
+      const pid = rawPid?.trim();
       if (!pid) continue;
+      this.locallyDeletedIds.delete(pid);
+      this.localMutationTimes.set(pid, Date.now());
       const existing = this.state.overrides[pid];
       const resolvedGallery = Array.isArray(galleryUrls) && galleryUrls.length > 0
-        ? galleryUrls
+        ? galleryUrls.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
         : existing?.gallery
-          ? [cleanPrimary, ...existing.gallery.filter(u => u !== cleanPrimary)]
+          ? [cleanPrimary, ...existing.gallery.map(u => normalizeProductAssetUrl(u)).filter(u => u && u !== cleanPrimary)]
           : [cleanPrimary];
 
       this.state.overrides[pid] = {
@@ -1172,21 +1652,30 @@ class ProductImageManagerService {
       }
     } catch {}
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ url: cleanPrimary, action: 'set_bulk_product_images', details: { productIds } });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({
+      productIds,
+      primaryUrl: cleanPrimary,
+      galleryUrls,
+      format
+    });
+
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productIds,
-          primaryUrl: cleanPrimary,
-          galleryUrls,
-          format
-        })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=set_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
@@ -1194,13 +1683,15 @@ class ProductImageManagerService {
    */
   public async setCategoryImage(category: string, primaryUrl: string, matchingProductIds: string[] = []): Promise<void> {
     if (!category || !primaryUrl) return;
-    const cleanPrimary = primaryUrl.trim();
+    const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
     this.state.categoryOverrides[category] = cleanPrimary;
 
     if (matchingProductIds.length > 0) {
       const format = this.detectFormatFromUrl(cleanPrimary);
       const nowIso = new Date().toISOString();
       for (const pid of matchingProductIds) {
+        this.locallyDeletedIds.delete(pid);
+        this.localMutationTimes.set(pid, Date.now());
         this.state.overrides[pid] = {
           primary: cleanPrimary,
           gallery: [cleanPrimary],
@@ -1210,20 +1701,29 @@ class ProductImageManagerService {
       }
     }
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ url: cleanPrimary, action: 'set_category_image', details: { category } });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({
+      category,
+      productIds: matchingProductIds,
+      primaryUrl: cleanPrimary
+    });
+
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category,
-          productIds: matchingProductIds,
-          primaryUrl: cleanPrimary
-        })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=set_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
@@ -1231,13 +1731,15 @@ class ProductImageManagerService {
    */
   public async setAllProductsImage(primaryUrl: string, allProductIds: string[] = []): Promise<void> {
     if (!primaryUrl) return;
-    const cleanPrimary = primaryUrl.trim();
+    const cleanPrimary = normalizeProductAssetUrl(primaryUrl);
     this.state.globalDefaultImage = cleanPrimary;
 
     if (allProductIds.length > 0) {
       const format = this.detectFormatFromUrl(cleanPrimary);
       const nowIso = new Date().toISOString();
       for (const pid of allProductIds) {
+        this.locallyDeletedIds.delete(pid);
+        this.localMutationTimes.set(pid, Date.now());
         this.state.overrides[pid] = {
           primary: cleanPrimary,
           gallery: [cleanPrimary],
@@ -1247,20 +1749,29 @@ class ProductImageManagerService {
       }
     }
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ url: cleanPrimary, action: 'set_all_products_image' });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({
+      applyToAll: true,
+      productIds: allProductIds,
+      primaryUrl: cleanPrimary
+    });
+
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          applyToAll: true,
-          productIds: allProductIds,
-          primaryUrl: cleanPrimary
-        })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=set_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
@@ -1272,13 +1783,15 @@ class ProductImageManagerService {
     matchingProductIds: string[] = []
   ): Promise<void> {
     if (!oldUrlToReplace || !newUrl) return;
-    const cleanNew = newUrl.trim();
+    const cleanNew = normalizeProductAssetUrl(newUrl);
     this.state.urlReplacements[oldUrlToReplace] = cleanNew;
 
     if (matchingProductIds.length > 0) {
       const format = this.detectFormatFromUrl(cleanNew);
       const nowIso = new Date().toISOString();
       for (const pid of matchingProductIds) {
+        this.locallyDeletedIds.delete(pid);
+        this.localMutationTimes.set(pid, Date.now());
         this.state.overrides[pid] = {
           primary: cleanNew,
           gallery: [cleanNew],
@@ -1288,20 +1801,29 @@ class ProductImageManagerService {
       }
     }
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ url: cleanNew, action: 'replace_image_url', details: { oldUrl: oldUrlToReplace } });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({
+      oldUrlToReplace,
+      productIds: matchingProductIds,
+      primaryUrl: cleanNew
+    });
+
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          oldUrlToReplace,
-          productIds: matchingProductIds,
-          primaryUrl: cleanNew
-        })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=set_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
@@ -1309,17 +1831,27 @@ class ProductImageManagerService {
    */
   public async resetProductImage(productId: string): Promise<void> {
     if (!productId) return;
-    delete this.state.overrides[productId];
-    this.saveToLocalStorage();
+    const cleanId = productId.trim();
+    this.locallyDeletedIds.add(cleanId);
+    delete this.state.overrides[cleanId];
+    this.saveToLocalStorage({ productId: cleanId, action: 'reset_product_image' });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({ productId: cleanId });
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=delete_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
@@ -1333,31 +1865,44 @@ class ProductImageManagerService {
 
     for (const pid of productIds) {
       if (pid) {
-        delete this.state.overrides[pid];
+        this.locallyDeletedIds.add(pid.trim());
+        delete this.state.overrides[pid.trim()];
       }
     }
     for (const title of productTitles) {
       if (title) {
-        delete this.state.overrides[title];
+        this.locallyDeletedIds.add(title.trim());
+        delete this.state.overrides[title.trim()];
       }
     }
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ action: 'delete_bulk_associations', details: { productIds } });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({ productIds });
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productIds })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=delete_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 
   /**
    * Reset all custom product image overrides back to default catalog images
    */
   public async resetAllProductImages(): Promise<void> {
+    for (const k of Object.keys(this.state.overrides)) {
+      this.locallyDeletedIds.add(k);
+    }
     this.state.overrides = {};
     this.state.globalDefaultImage = null;
     this.state.categoryOverrides = {};
@@ -1372,16 +1917,24 @@ class ProductImageManagerService {
       } catch {}
     }
 
-    this.saveToLocalStorage();
+    this.saveToLocalStorage({ action: 'reset_all_product_images' });
     this.notifyListeners();
 
+    const bodyStr = JSON.stringify({ resetAll: true });
     try {
-      await fetch('/api/v1/admin/product-images', {
+      const res = await fetch('/api/v1/admin/product-images', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resetAll: true })
+        body: bodyStr
       });
-    } catch {}
+      if (!res.ok) throw new Error('Primary endpoint non-200');
+    } catch {
+      fetch('/api.php?action=delete_product_images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr
+      }).catch(() => {});
+    }
   }
 }
 

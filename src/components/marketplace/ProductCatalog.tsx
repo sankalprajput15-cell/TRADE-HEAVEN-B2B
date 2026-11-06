@@ -130,18 +130,29 @@ export const ProductCatalog: React.FC<Props> = ({
     });
 
     window.addEventListener('tradeheaven_product_images_updated', handleUpdate);
+    window.addEventListener('tradeheaven_product_image_saved', handleUpdate);
+    window.addEventListener('tradeheaven:image-saved-to-storage', handleUpdate);
+    window.addEventListener('tradeheaven_image_saved_to_storage', handleUpdate);
+    window.addEventListener('product_image_saved', handleUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
+      window.removeEventListener('tradeheaven_product_image_saved', handleUpdate);
+      window.removeEventListener('tradeheaven:image-saved-to-storage', handleUpdate);
+      window.removeEventListener('tradeheaven_image_saved_to_storage', handleUpdate);
+      window.removeEventListener('product_image_saved', handleUpdate);
     };
   }, []);
 
-  // Cache products to localStorage when they update
+  // Cache products to localStorage when they update (avoid storing huge base64 data URLs in cached_products)
   useEffect(() => {
     if (products.length > 0) {
       const overridden = productImageManagerService.applyOverridesToProductList(products);
       try {
-        localStorage.setItem('cached_products', JSON.stringify(overridden));
+        const serialized = JSON.stringify(overridden);
+        if (serialized.length < 1500000) {
+          localStorage.setItem('cached_products', serialized);
+        }
       } catch {}
       setCachedProducts(overridden);
       setIsUsingCache(false);

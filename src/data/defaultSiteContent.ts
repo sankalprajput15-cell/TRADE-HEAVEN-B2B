@@ -237,7 +237,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     heroHeadlineGradient: "Verified Global Buyers & Bulk RFQs",
     heroSubheadline: "Connect your factory directly with 125,000+ verified international importers, secure instant escrow protection, and scale your export revenue with zero friction.",
     heroTrustEyebrow: "Audited Global Manufacturers • Real-Time FOB & CIF Sourcing • Trade Assurance",
-    heroBgImage: "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    heroBgImage: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     searchPlaceholder: "Search 500,000+ products, factory OEM services, CAS numbers, or HS codes...",
     tradeSpecialist: {
       name: "Elena Rostova",
@@ -246,10 +246,10 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80",
       badge: "Verified Trade Specialist"
     },
-    bannerImageCol1: "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    bannerImageCol1: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     bannerTitleCol1: "Verified Container Sourcing",
     bannerDescCol1: "Direct FOB / CIF container shipments with factory audit guarantee.",
-    bannerImageCol2: "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    bannerImageCol2: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     bannerTitleCol2: "2026 Global Sourcing & Manufacturing Expo",
     bannerSubtitleCol2: "Connect directly with 10,000+ verified Asian & European production plants.",
     bannerBadgeCol2: "FEATURED GLOBAL TRADE EVENT",

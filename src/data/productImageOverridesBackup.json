@@ -1,19 +1,52 @@
 {
   "overrides": {
-    "prod-blackstone-black-jade-cabochon": {
-      "primary": "/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg",
+    "prod-1": {
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
       "gallery": [
-        "/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg",
-        "/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg"
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "th-rh-prod-01": {
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "th-rh-prod-02": {
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "th-rh-prod-04": {
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "prod-blackstone-black-jade-cabochon": {
+      "primary": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg",
+      "gallery": [
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg",
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg"
       ],
       "format": "JPEG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
     },
     "prod-blackstone-turquoise-rough-matrix": {
-      "primary": "/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg",
+      "primary": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg",
       "gallery": [
-        "/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg",
-        "/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg"
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg",
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg"
       ],
       "format": "JPEG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
@@ -22,47 +55,47 @@
       "primary": "https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80",
       "gallery": [
         "https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80",
-        "/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
       ],
       "format": "JPEG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
     },
     "prod-atlantic-power-1": {
-      "primary": "/assets/aistudio/image002_50ab7837.png",
+      "primary": "/assets/uploads/image002_50ab7837.png",
       "gallery": [
-        "/assets/aistudio/image002_50ab7837.png",
-        "/assets/aistudio/image003_6c1f0619.jpg",
-        "/assets/aistudio/image004_fa37a57a.png",
-        "/assets/aistudio/image005_20fe3db0.png"
+        "/assets/uploads/image002_50ab7837.png",
+        "/assets/uploads/image003_6c1f0619.jpg",
+        "/assets/uploads/image004_fa37a57a.png",
+        "/assets/uploads/image005_20fe3db0.png"
       ],
       "format": "PNG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
     },
     "prod-atlantic-power-2": {
-      "primary": "/assets/aistudio/image005_20fe3db0.png",
+      "primary": "/assets/uploads/image005_20fe3db0.png",
       "gallery": [
-        "/assets/aistudio/image005_20fe3db0.png",
-        "/assets/aistudio/image002_50ab7837.png",
-        "/assets/aistudio/image003_6c1f0619.jpg",
-        "/assets/aistudio/image004_fa37a57a.png"
+        "/assets/uploads/image005_20fe3db0.png",
+        "/assets/uploads/image002_50ab7837.png",
+        "/assets/uploads/image003_6c1f0619.jpg",
+        "/assets/uploads/image004_fa37a57a.png"
       ],
       "format": "PNG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
     },
     "prod-middle-fox-en590": {
-      "primary": "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+      "primary": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
       "gallery": [
-        "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
-        "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+        "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+        "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
       ],
       "format": "JPG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
     },
     "prod-middle-fox-jeta1": {
-      "primary": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+      "primary": "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
       "gallery": [
-        "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
-        "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+        "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+        "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
       ],
       "format": "JPG",
       "updatedAt": "2026-11-05T20:48:37.799Z"
@@ -71,5 +104,14 @@
   "globalDefaultImage": null,
   "categoryOverrides": {},
   "urlReplacements": {},
-  "mediaLibrary": []
+  "mediaLibrary": [
+    {
+      "id": "media-Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "url": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "name": "Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "format": "JPEG",
+      "sizeBytes": 32795,
+      "uploadedAt": "2026-11-06T16:00:03.585Z"
+    }
+  ]
 }

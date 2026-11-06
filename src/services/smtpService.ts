@@ -3242,9 +3242,9 @@ export class ServerDeliveryQueueManager {
     let sanitizedHtmlPreview = entry.htmlPreview;
     if (typeof sanitizedHtmlPreview === 'string') {
       sanitizedHtmlPreview = sanitizedHtmlPreview
-        .replace(/cid:blackjadecabochon(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg')
-        .replace(/cid:turquoisematrix(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg')
-        .replace(/https:\/\/ais-(?:dev|pre)-[^"'\s\)]+\/assets\/aistudio\//gi, '/assets/aistudio/');
+        .replace(/cid:blackjadecabochon(@tradeheaven\.net)?/gi, '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg')
+        .replace(/cid:turquoisematrix(@tradeheaven\.net)?/gi, '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg')
+        .replace(/https:\/\/ais-(?:dev|pre)-[^"'\s\)]+\/assets\/aistudio\//gi, '/assets/uploads/');
     }
 
     return {
@@ -6381,21 +6381,21 @@ export class AutomatedSmtpService {
 
     const blackJadeFilePath = path.resolve(
       process.cwd(),
-      'public/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+      'public/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
     );
     const turquoiseFilePath = path.resolve(
       process.cwd(),
-      'public/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+      'public/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
     );
     const hasBlackJade = fs.existsSync(blackJadeFilePath);
     const hasTurquoise = fs.existsSync(turquoiseFilePath);
 
     const blackJadeBase64 = hasBlackJade
       ? `data:image/jpeg;base64,${fs.readFileSync(blackJadeFilePath).toString('base64')}`
-      : '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg';
+      : '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg';
     const turquoiseBase64 = hasTurquoise
       ? `data:image/jpeg;base64,${fs.readFileSync(turquoiseFilePath).toString('base64')}`
-      : '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg';
+      : '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg';
 
     const mailAttachments: nodemailer.SendMailOptions['attachments'] = [
       ...(hasBlackJade

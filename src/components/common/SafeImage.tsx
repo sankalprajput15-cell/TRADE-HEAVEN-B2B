@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors } from 'lucide-react';
 import { getAutoAltText } from '../../utils/imageSeo';
-import { productImageManagerService } from '../../services/productImageManagerService';
+import {
+  productImageManagerService,
+  PRODUCT_IMAGE_SAVED_EVENT,
+  PRODUCT_IMAGE_STORAGE_SAVED_EVENT,
+  normalizeProductAssetUrl
+} from '../../services/productImageManagerService';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string | undefined;
@@ -368,13 +373,25 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
     const handleImageOverrideUpdate = () => {
       if (isMounted) {
+        setAttemptIndex(0);
+        setHasError(false);
         setOverrideVersion(v => v + 1);
       }
     };
     window.addEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
+    window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageOverrideUpdate);
+    window.addEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageOverrideUpdate);
+    window.addEventListener('tradeheaven_image_saved_to_storage', handleImageOverrideUpdate);
+    window.addEventListener('product_image_saved', handleImageOverrideUpdate);
+    window.addEventListener('storage', handleImageOverrideUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
+      window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageOverrideUpdate);
+      window.removeEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageOverrideUpdate);
+      window.removeEventListener('tradeheaven_image_saved_to_storage', handleImageOverrideUpdate);
+      window.removeEventListener('product_image_saved', handleImageOverrideUpdate);
+      window.removeEventListener('storage', handleImageOverrideUpdate);
     };
   }, []);
 
@@ -390,14 +407,14 @@ export const SafeImage: React.FC<SafeImageProps> = ({
           category,
           imageIndex
         })
-      : src;
+      : normalizeProductAssetUrl(src);
 
     if (effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()) {
       list.push(effectiveSrc.trim());
     }
 
     if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim() && !list.includes(fallbackSrc.trim())) {
-      list.push(fallbackSrc.trim());
+      list.push(normalizeProductAssetUrl(fallbackSrc.trim()));
     }
 
     // Retrieve high-quality category pool
@@ -423,29 +440,27 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     return list.length > 0 ? list : pool;
   }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion]);
 
+  const primaryCandidate = candidates[0] || FALLBACK_SEEDS[0];
+  const effectiveAttemptIndex = lastCandidateRef.current !== primaryCandidate ? 0 : attemptIndex;
+
   const currentCandidate = useMemo(() => {
-    const raw = candidates[attemptIndex] || FALLBACK_SEEDS[0];
+    const raw = candidates[effectiveAttemptIndex] || FALLBACK_SEEDS[0];
     if (!raw || raw.startsWith('/assets/') || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
     return optimizeUnsplashUrl(raw, {
       width: isThumbnail ? 320 : 800,
       quality: 70,
       isThumbnail
     });
-  }, [candidates, attemptIndex, isThumbnail]);
+  }, [candidates, effectiveAttemptIndex, isThumbnail]);
 
   useEffect(() => {
-    if (lastCandidateRef.current !== currentCandidate) {
-      lastCandidateRef.current = currentCandidate;
+    if (lastCandidateRef.current !== primaryCandidate) {
+      lastCandidateRef.current = primaryCandidate;
       setAttemptIndex(0);
       setHasError(false);
-      // If already complete in browser cache, don't flash loading state
-      if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-        setIsLoaded(true);
-      } else {
-        setIsLoaded(false);
-      }
+      setIsLoaded(false);
     }
-  }, [currentCandidate]);
+  }, [primaryCandidate]);
 
   // Check if cached image loaded synchronously
   useEffect(() => {
@@ -456,8 +471,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   }, [currentCandidate, hasIntersected]);
 
   const handleError = () => {
-    if (attemptIndex < candidates.length - 1) {
-      setAttemptIndex(prev => prev + 1);
+    if (effectiveAttemptIndex < candidates.length - 1) {
+      setAttemptIndex(effectiveAttemptIndex + 1);
     } else {
       setHasError(true);
       setIsLoaded(true);
@@ -496,6 +511,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
             </div>
           ) : (
             <img
+              key={currentCandidate}
               ref={imgRef}
               src={currentCandidate}
               alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}

@@ -1017,9 +1017,9 @@ export const GLOBAL_HOTEL_SUPPLIES_PRODUCTS: Product[] = [
     "category": "Hotel Supplies",
     "subCategory": "Spices, Seasonings & Coffee",
     "images": [
-      "/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg",
-      "/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg",
-      "/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg"
+      "/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg",
+      "/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg",
+      "/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg"
     ],
     "description": "Premium Gourmet Grade A Indonesian Bourbon Vanilla Beans & Organic Whole Nutmeg manufactured and supplied by Arjuna Company (Semarang, Indonesia). Designed specifically to meet the rigorous international hygiene, durability, and luxury standards of 4-star and 5-star hospitality properties worldwide.",
     "priceTiers": [

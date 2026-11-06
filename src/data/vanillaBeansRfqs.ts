@@ -1001,12 +1001,12 @@ const RAW_VANILLA_RFQS: any[] = [
 ];
 
 const VANILLA_BEAN_IMAGES = [
-  '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
-  '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
-  '/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
-  '/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
-  '/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
-  '/assets/aistudio/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
+  '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+  '/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+  '/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
+  '/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
+  '/assets/uploads/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
+  '/assets/uploads/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
 ];
 
 export const GLOBAL_VANILLA_RFQS: any[] = RAW_VANILLA_RFQS.map((rfq, idx) => {

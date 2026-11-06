@@ -126,7 +126,7 @@ interface ViewHeroConfig {
 
 const VIEW_HERO_CATALOG: Record<string, ViewHeroConfig> = {
   HOMEPAGE: {
-    baseImage: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    baseImage: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     alt: 'Global B2B Logistics and Maritime Container Port Hub',
     themeColor: '#0f172a'
   },
@@ -151,7 +151,7 @@ const VIEW_HERO_CATALOG: Record<string, ViewHeroConfig> = {
     themeColor: '#111827'
   },
   BUYERS_DIRECTORY: {
-    baseImage: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    baseImage: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     alt: 'Verified International Importers and Procurement Directors',
     themeColor: '#0f172a'
   },
@@ -201,7 +201,7 @@ const VIEW_HERO_CATALOG: Record<string, ViewHeroConfig> = {
     themeColor: '#0f172a'
   },
   VENDOR_PROFILE: {
-    baseImage: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    baseImage: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     alt: 'Verified Manufacturer Corporate Headquarters and Storefront',
     themeColor: '#0f172a'
   },
@@ -232,7 +232,7 @@ export const getDynamicHeroImageForView = (
   if ((view === 'HOMEPAGE' || view === 'LANDING_PAGE') && siteContent?.homepage?.heroBgImage?.trim()) {
     rawBaseUrl = siteContent.homepage.heroBgImage.trim();
     if (rawBaseUrl === 'vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034.jpg') {
-      rawBaseUrl = '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
+      rawBaseUrl = '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg';
     }
   }
 

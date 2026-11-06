@@ -5817,6 +5817,6 @@ export const GLOBAL_US_ENTERPRISES_BUYER_PROFILES: BuyerProfile[] = [
   "whatsapp": "+18057148918",
   "isContactMasked": false,
   "description": "Girlsenberries is an elite US-based merchant exporter and international trade corporation specializing in cross-border commodity supply, agricultural produce, and wholesale distribution under Swiss Escrow Trade Protection.",
-  "logoUrl": "/assets/aistudio/WhatsApp_Image_2026-10-11_at_3.06.55_AM__1__dd0d83ec.jpeg"
+  "logoUrl": "/assets/uploads/WhatsApp_Image_2026-10-11_at_3.06.55_AM__1__dd0d83ec.jpeg"
 }
 ];

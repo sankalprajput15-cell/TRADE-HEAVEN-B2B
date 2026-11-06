@@ -163,7 +163,22 @@ app.use((req, _res, next) => {
 
 // Explicitly serve /assets/uploads directory for uploaded product images with CORS
 const uploadsStaticDir = path.join(process.cwd(), 'public', 'assets', 'uploads');
+const legacyAssetsStaticDir = path.join(process.cwd(), 'public', 'assets', 'aistudio');
 app.use('/assets/uploads', express.static(uploadsStaticDir, {
+  maxAge: '1h',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
+app.use('/assets/uploads', express.static(legacyAssetsStaticDir, {
+  maxAge: '1h',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
+app.use('/assets/tradeheaven', express.static(uploadsStaticDir, {
   maxAge: '1h',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -4408,7 +4423,7 @@ let serverListingsStore: any[] = [
     moq_unit: 'Units',
     supplier_name: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
     supplier_country: 'United States',
-    image_url: '/assets/aistudio/image002_50ab7837.png',
+    image_url: '/assets/uploads/image002_50ab7837.png',
     created_at: new Date().toISOString()
   },
   {
@@ -4422,7 +4437,7 @@ let serverListingsStore: any[] = [
     moq_unit: 'Units',
     supplier_name: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
     supplier_country: 'United States',
-    image_url: '/assets/aistudio/image005_20fe3db0.png',
+    image_url: '/assets/uploads/image005_20fe3db0.png',
     created_at: new Date().toISOString()
   },
   {
@@ -4438,7 +4453,7 @@ let serverListingsStore: any[] = [
     supplier_country: 'United States',
     owner_email: 'lars.barnhart@gmail.com',
     owner_id: 'usr-lars-barnhart-blackstone-jade',
-    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    image_url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -4454,7 +4469,7 @@ let serverListingsStore: any[] = [
     supplier_country: 'United States',
     owner_email: 'lars.barnhart@gmail.com',
     owner_id: 'usr-lars-barnhart-blackstone-jade',
-    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+    image_url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -4470,7 +4485,7 @@ let serverListingsStore: any[] = [
     supplier_country: 'South Africa',
     owner_email: 'emmanuel@reverseenergy.co.za',
     owner_id: 'usr-emmanuel-reverse-energy-sa',
-    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
+    image_url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -4484,7 +4499,7 @@ let serverListingsStore: any[] = [
     moq_unit: 'Sets',
     supplier_name: 'Apex Precision Engineering Ltd.',
     supplier_country: 'China',
-    image_url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+    image_url: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -5792,18 +5807,34 @@ const UPLOADS_DIR = path.join(process.cwd(), 'public', 'assets', 'uploads');
 const AISTUDIO_ASSETS_DIR = path.join(process.cwd(), 'public', 'assets', 'aistudio');
 const IMAGE_OVERRIDES_FILE = path.join(UPLOADS_DIR, 'product-image-overrides.json');
 const IMAGE_OVERRIDES_BACKUP_FILE = path.join(process.cwd(), 'src', 'data', 'productImageOverridesBackup.json');
+const PUBLIC_DATA_OVERRIDES_FILE = path.join(process.cwd(), 'public', 'data', 'productImageSystemState.json');
+
+const EXCLUDED_SCREENSHOT_FILES = new Set([
+  'WhatsApp_Image_2026-11-02_at_5.43.28_PM_f16b3ccd.jpeg',
+  'WhatsApp_Image_2026-11-04_at_10.03.00_AM_27ef29f7.jpeg',
+  'WhatsApp_Image_2026-11-04_at_7.52.01_AM_ab94e787.jpeg'
+]);
+
+function normalizeServerAssetUrl(url: string | undefined | null): string {
+  if (!url || typeof url !== 'string') return '';
+  return url.replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+}
 
 function ensureUploadsDir() {
   try {
     if (!fs.existsSync(UPLOADS_DIR)) {
       fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     }
+    const publicDataDir = path.dirname(PUBLIC_DATA_OVERRIDES_FILE);
+    if (!fs.existsSync(publicDataDir)) {
+      fs.mkdirSync(publicDataDir, { recursive: true });
+    }
   } catch (err) {
     console.warn('[ProductImageSystem] Could not create uploads dir:', err);
   }
 }
 
-function loadServerProductImageState(): ProductImageSystemState {
+function loadServerProductImageState(existingMemoryState?: ProductImageSystemState): ProductImageSystemState {
   ensureUploadsDir();
   const defaultState: ProductImageSystemState = {
     overrides: {},
@@ -5813,28 +5844,96 @@ function loadServerProductImageState(): ProductImageSystemState {
     mediaLibrary: []
   };
 
-  try {
-    if (fs.existsSync(IMAGE_OVERRIDES_FILE)) {
-      const raw = fs.readFileSync(IMAGE_OVERRIDES_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      Object.assign(defaultState, parsed);
-    } else if (fs.existsSync(IMAGE_OVERRIDES_BACKUP_FILE)) {
-      const raw = fs.readFileSync(IMAGE_OVERRIDES_BACKUP_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      Object.assign(defaultState, parsed);
-      fs.writeFileSync(IMAGE_OVERRIDES_FILE, JSON.stringify(defaultState, null, 2), 'utf-8');
+  const mergeOverridesFromParsed = (parsed: any) => {
+    if (!parsed || typeof parsed !== 'object') return;
+    if (parsed.overrides && typeof parsed.overrides === 'object') {
+      for (const [pid, rawEntry] of Object.entries(parsed.overrides)) {
+        const entry = rawEntry as ProductImageOverrideEntry;
+        if (!entry || !entry.primary) continue;
+        const cleanPrimary = normalizeServerAssetUrl(entry.primary);
+        const cleanGallery = Array.isArray(entry.gallery) && entry.gallery.length > 0
+          ? entry.gallery.map(u => normalizeServerAssetUrl(u)).filter(Boolean)
+          : [cleanPrimary];
+        const existing = defaultState.overrides[pid];
+        if (!existing) {
+          defaultState.overrides[pid] = {
+            ...entry,
+            primary: cleanPrimary,
+            gallery: cleanGallery
+          };
+        } else {
+          const existingTime = Date.parse(existing.updatedAt || '') || 0;
+          const incomingTime = Date.parse(entry.updatedAt || '') || 0;
+          if (incomingTime >= existingTime) {
+            defaultState.overrides[pid] = {
+              ...entry,
+              primary: cleanPrimary,
+              gallery: cleanGallery
+            };
+          }
+        }
+      }
     }
-  } catch (err) {
-    console.warn('[ProductImageSystem] Error reading overrides file:', err);
+    if (parsed.globalDefaultImage && !defaultState.globalDefaultImage) {
+      defaultState.globalDefaultImage = normalizeServerAssetUrl(parsed.globalDefaultImage);
+    }
+    if (parsed.categoryOverrides && typeof parsed.categoryOverrides === 'object') {
+      for (const [cat, url] of Object.entries(parsed.categoryOverrides)) {
+        if (typeof url === 'string' && url) {
+          defaultState.categoryOverrides[cat] = normalizeServerAssetUrl(url);
+        }
+      }
+    }
+    if (parsed.urlReplacements && typeof parsed.urlReplacements === 'object') {
+      for (const [oldUrl, newUrl] of Object.entries(parsed.urlReplacements)) {
+        if (typeof newUrl === 'string' && newUrl) {
+          defaultState.urlReplacements[oldUrl] = normalizeServerAssetUrl(newUrl);
+        }
+      }
+    }
+    if (Array.isArray(parsed.mediaLibrary)) {
+      const seenUrls = new Set(defaultState.mediaLibrary.map(m => m.url));
+      for (const item of parsed.mediaLibrary) {
+        if (!item || !item.url) continue;
+        const fileName = path.basename(item.url);
+        if (EXCLUDED_SCREENSHOT_FILES.has(fileName)) continue;
+        const normalizedUrl = normalizeServerAssetUrl(item.url);
+        if (!seenUrls.has(normalizedUrl)) {
+          seenUrls.add(normalizedUrl);
+          defaultState.mediaLibrary.push({
+            ...item,
+            url: normalizedUrl
+          });
+        }
+      }
+    }
+  };
+
+  for (const fileToRead of [PUBLIC_DATA_OVERRIDES_FILE, IMAGE_OVERRIDES_BACKUP_FILE, IMAGE_OVERRIDES_FILE]) {
+    try {
+      if (fs.existsSync(fileToRead)) {
+        const raw = fs.readFileSync(fileToRead, 'utf-8');
+        const parsed = JSON.parse(raw);
+        mergeOverridesFromParsed(parsed);
+      }
+    } catch (err) {
+      console.warn('[ProductImageSystem] Error reading overrides file:', fileToRead, err);
+    }
   }
 
-  // Also scan public/assets/aistudio and public/assets/uploads to populate mediaLibrary with real local image files
+  // Merge in-memory state if provided so recent uploads in memory are never lost
+  if (existingMemoryState) {
+    mergeOverridesFromParsed(existingMemoryState);
+  }
+
+  // Scan public/assets/uploads to populate mediaLibrary with real local image files
   const existingUrls = new Set(defaultState.mediaLibrary.map(m => m.url));
   const scanDirForImages = (dirPath: string, urlPrefix: string) => {
     try {
       if (!fs.existsSync(dirPath)) return;
       const files = fs.readdirSync(dirPath);
       for (const file of files) {
+        if (EXCLUDED_SCREENSHOT_FILES.has(file)) continue;
         const ext = path.extname(file).toLowerCase().replace('.', '');
         if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'bmp'].includes(ext)) {
           const url = `${urlPrefix}/${file}`;
@@ -5856,7 +5955,6 @@ function loadServerProductImageState(): ProductImageSystemState {
   };
 
   scanDirForImages(UPLOADS_DIR, '/assets/uploads');
-  scanDirForImages(AISTUDIO_ASSETS_DIR, '/assets/aistudio');
 
   return defaultState;
 }
@@ -5869,6 +5967,7 @@ function saveServerProductImageState() {
     const serialized = JSON.stringify(serverProductImageState, null, 2);
     fs.writeFileSync(IMAGE_OVERRIDES_FILE, serialized, 'utf-8');
     fs.writeFileSync(IMAGE_OVERRIDES_BACKUP_FILE, serialized, 'utf-8');
+    fs.writeFileSync(PUBLIC_DATA_OVERRIDES_FILE, serialized, 'utf-8');
   } catch (err) {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
   }
@@ -5877,7 +5976,7 @@ saveServerProductImageState();
 
 // GET /api/v1/admin/product-images - Fetch all product image overrides & server media library
 app.get('/api/v1/admin/product-images', (req, res) => {
-  serverProductImageState = loadServerProductImageState();
+  serverProductImageState = loadServerProductImageState(serverProductImageState);
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -6004,6 +6103,7 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
       );
     }
 
+    saveServerProductsToDisk();
     saveServerProductImageState();
 
     return res.json({
@@ -6736,6 +6836,7 @@ app.put('/api/v1/admin/product-images', (req, res) => {
       );
     }
 
+    saveServerProductsToDisk();
     saveServerProductImageState();
 
     return res.json({

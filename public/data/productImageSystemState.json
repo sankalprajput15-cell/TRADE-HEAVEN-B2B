@@ -1,17 +1,34 @@
 {
   "overrides": {
     "prod-1": {
-      "primary": "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
       "gallery": [
-        "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "th-rh-prod-01": {
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+      ],
+      "format": "JPG",
+      "updatedAt": "2026-11-06T07:21:43.891Z"
+    },
+    "th-rh-prod-02": {
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "gallery": [
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+        "/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg"
       ],
       "format": "JPG",
       "updatedAt": "2026-11-06T07:21:43.891Z"
     },
     "th-rh-prod-04": {
-      "primary": "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "primary": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
       "gallery": [
-        "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
+        "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg"
       ],
       "format": "JPG",
       "updatedAt": "2026-11-06T07:21:43.891Z"
@@ -20,7 +37,7 @@
   "mediaLibrary": [
     {
       "id": "media-rice-husk-1793949703892",
-      "url": "/assets/aistudio/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
+      "url": "/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg",
       "name": "Agricultural_Rice_Husk_Powder.jpeg",
       "format": "JPG",
       "sizeBytes": 32795,

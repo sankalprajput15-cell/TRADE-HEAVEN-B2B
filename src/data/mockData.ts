@@ -499,7 +499,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-metal-products',
     name: 'Metal & Metal Products',
     icon: 'Shield',
-    image: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
+    image: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg',
     subcategories: ['Aluminium Alloy', 'Aluminium Ash', 'Aluminium Balls', 'Aluminium Billets', 'Aluminium Boring Scrap', 'Aluminium Bronze Scrap', 'Aluminium Cable Scrap', 'Aluminium Can Scrap', 'Aluminium Casting Scrap', 'Aluminium Coil Scrap'],
     count: '9,120+ Verified Suppliers | 4,960+ RFQs'
   },
@@ -531,7 +531,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-paper-products',
     name: 'Paper & Paper Products',
     icon: 'FileText',
-    image: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    image: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     subcategories: ['ATM Paper Rolls', 'Absorbent Paper', 'Adhesive Paper', 'Air Filter Paper', 'Anti Rust Paper', 'Art Paper', 'Backing Paper', 'Billing Paper Rolls', 'Bituminised Waterproof Paper', 'Bleached Paper'],
     count: '4,110+ Verified Suppliers | 2,160+ RFQs'
   },
@@ -767,8 +767,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     completedOrdersCount: 114,
     factorySizeSqM: 38000,
     productionLines: 6,
-    logoUrl: '/assets/aistudio/image001_ebfaebe5.png',
-    bannerUrl: '/assets/aistudio/image005_20fe3db0.png',
+    logoUrl: '/assets/uploads/image001_ebfaebe5.png',
+    bannerUrl: '/assets/uploads/image005_20fe3db0.png',
     description: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.) — Paid Basic Plan Member. Premier US supplier of CAT Earth Moving Machines, CAT Power Heavy-Duty Diesel Generators, Cummins Power Generation Sets, Multi-Brand Heavy Construction Equipment (Caterpillar, Cummins, Perkins, Komatsu, Liebherr, JCB, Volvo), and Large Double-Wall Fuel Storage Tanks (3,000–18,000 US Gallons). Direct corporate contact details and address are protected for Paid Members.',
     contactPerson: 'Mark Johnson (President)',
     contactEmail: 'mjohnson@atlanticpowerequip.com',
@@ -1260,7 +1260,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
   ],
   "tradeAssuranceLimitUsd": 300000,
   "completedOrdersCount": 45,
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+  "logoUrl": "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
   "bannerUrl": "",
   "description": "Supplier of Halal Beef, Halal Chicken, Sugar, Soybeans, Rice, Halal Lamb, Crude Oil, Wheat.",
   "contactPerson": "Shahied Hanifa",
@@ -2183,7 +2183,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['ISO 9001:2015', 'TÜV Rheinland Certified'],
     factorySizeSqM: 22000,
     productionLines: 5,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'Supplier of copper cathodes and high quality scrap metals and industrial metals through a global sourcing network built around quality transparency.',
     contactPerson: 'Noel Brennan',
@@ -3751,7 +3751,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     certifications: ['IATF 16949:2016', 'ISO 9001:2015', 'TÜV Wheel Safety Certified', 'JWL / VIA Approved'],
     factorySizeSqM: 38000,
     productionLines: 8,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     description: 'Specialist OEM manufacturer of forged 6061-T6 aerospace-grade racing alloy wheels, high-flow billet turbochargers, monobloc brake kits, and high-performance automotive motorsport components.',
     contactPerson: 'Brett Vance (Director of Global Racing Sales)',
@@ -4063,7 +4063,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 4 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$5M - $15M',
-    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    logoUrl: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Berkat Kiat Internasional Pt confirms availability of global allocations for EN590 diesel, LPG, MAZUT M100/75/99, D2 gasoil, D6 virgin fuel, and AGO JET FUEL.',
     contactPerson: 'Jeffry Sebayang',
@@ -4143,7 +4143,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '1 - 5',
     annualRevenueUsd: '$30M - $50M',
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'T-oil Group is an established exporter of crude oil, EN590, JET A1, D6, and LNG. Our refineries and trading operations execute on SPOT, TTO, and Tanker Takeover terms.',
     contactPerson: 'ANDREY OLEG',
@@ -4278,7 +4278,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 3 hours',
     totalEmployees: '6 - 10',
     annualRevenueUsd: '$10M - $25M',
-    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    logoUrl: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Gsp Energy is an international energy procurement and bulk fuel supply company specializing in the sourcing and structured delivery of large-volume petroleum products.',
     contactPerson: 'GSP ENERGY',
@@ -4305,7 +4305,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     avgResponseTime: '< 2 hours',
     totalEmployees: '51 - 100',
     annualRevenueUsd: '$80M - $150M',
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'Wenzhou Foreign Trade Industrial Product Co. is a long-established industrial exporter of EN590 10PPM, M100, LIGHT CRUDE, LNG, LPG, catalyst materials, and aviation fuel blends.',
     contactPerson: 'MARK WANG',
@@ -4523,7 +4523,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "We use a reliable shipping company and achieve 100% success in all countries. Agro chemicals, urea fertilizer, ammonium, soybeans, yellow corn, copper wire scrap, wheat flour.",
-  "logoUrl": "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+  "logoUrl": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
 },
   {
   "id": "buyer-ext2026-2",
@@ -4558,7 +4558,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of Soybeans, Sun Flower Seeds, Castor Seeds, Maize, Kidney Beans.",
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+  "logoUrl": "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
 },
   {
   "id": "buyer-ext2026-3",
@@ -5094,7 +5094,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of corn, yellow corn, maize, yellow maize, grain, animal feed, Soybeans, Hard Red Winter Wheat.",
-  "logoUrl": "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
+  "logoUrl": "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg"
 },
   {
   "id": "buyer-ext2026-18",
@@ -5130,7 +5130,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
   "activeRfqsCount": 1,
   "completedImportsCount": 32,
   "description": "Supplier of HIBISCUS FLOWERS, HIBISCUS PETALS, SESAME SEEDS, MORINGA POWDER, soybeans, cassava flakes (gari).",
-  "logoUrl": "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+  "logoUrl": "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
 },
   {
   "id": "buyer-ext2026-19",
@@ -5628,7 +5628,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['Dubai Chamber Verified', 'SGS Inspectorate Clearance'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    logoUrl: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Middle East general trading conglomerate brokering bulk fuel, refined diesel EN590, and industrial lubricants.',
     contactPerson: 'Ahmed Al Mansoori',
@@ -5752,7 +5752,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['GOST-R Certified', 'ISO 9001'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+    logoUrl: '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
     bannerUrl: '',
     description: 'Moscow-based petroleum trader and fuel allocation broker supplying EN590 diesel and fuel oils to international buyers.',
     contactPerson: 'Ivan Krivoluksky',
@@ -6000,7 +6000,7 @@ export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
     certifications: ['ASTM D975', 'ISO 9001', 'EPA Verified Fuel Quality'],
     factorySizeSqM: 0,
     productionLines: 0,
-    logoUrl: '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+    logoUrl: '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     bannerUrl: '',
     description: 'Bulk petroleum marketer exporting EN590 diesel, automotive gas oil, and Jet fuel to global destinations.',
     contactPerson: 'Mark Best',
@@ -6053,7 +6053,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
       'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Direct supplier offering premium EN590 Automotive Gas Oil 10ppm, JP54 Aviation Kerosene, Jet Fuel, and Heavy Fuel Oil D6 under secure FOB/CIF terms.',
@@ -6163,8 +6163,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Allocations available for EN590 Diesel 10ppm, LPG, MAZUT M100, D2 Gasoil, D6 Virgin Fuel, and AGO Jet Fuel.',
   fobPriceUsd: 512,
@@ -6208,7 +6208,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     subCategory: 'Diesel',
     images: [
       'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'International fuel supply representative providing qualified European standard EN590 10PPM, general diesel fuel, and petroleum products.',
   fobPriceUsd: 540,
@@ -6229,7 +6229,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
       'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Established exporter providing refined EN590 Diesel, JET A1 aviation kerosene, heavy D6 fuel, and LNG on SPOT, Tanker Takeover (TTO), and FOB terms.',
@@ -6273,8 +6273,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Reliable, West-African licensed trading house for bulk crude oil, refined EN590 10ppm diesel, and high-performance aviation fuels.',
   fobPriceUsd: 512,
@@ -6339,8 +6339,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'International procurement supplier for high-volume EN590 diesel fuel, standard diesel, and various industrial heating fuels.',
   fobPriceUsd: 515,
@@ -6384,7 +6384,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     subCategory: 'Diesel',
     images: [
       'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'Authorized direct refinery mandates supplying bulk EN590 Diesel, Jet A1, JP54, and high cycle oils with fully validated certificates.',
   fobPriceUsd: 528,
@@ -6405,7 +6405,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
       'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'UK-based brokerage and trading specialists offering qualified supply of EN590 10ppm diesel, Jet A-1 aviation kerosene, and bitumen under secure escrow.',
@@ -6449,8 +6449,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Chemicals & Raw Polymers',
     subCategory: 'Diesel',
     images: [
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Over 15 years of global supply chain expertise delivering high-quality EN590 10ppm diesel, Jet A1 Fuel, and Virgin D6 Oil to international ports.',
   fobPriceUsd: 524,
@@ -6912,8 +6912,8 @@ const BASE_MOCK_PRODUCTS: Product[] = [
     category: 'Agriculture & Agro Commodities',
     subCategory: 'Gourmet Spices & Extracts',
     images: [
-      '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
-      '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'
+      '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+      '/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'
     ],
     description: 'Black whole gourmet Bourbon vanilla beans with high moisture content (30-35%) and rich oily luster. Organically hand-pollinated and traditionally sun-cured for artisan bakeries, chocolatiers, and flavor houses.',
     priceTiers: [
@@ -7261,10 +7261,10 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'DDP', 'EXW'],
     unit: 'Units',
     images: [
-      '/assets/aistudio/image002_50ab7837.png',
-      '/assets/aistudio/image001_ebfaebe5.png',
-      '/assets/aistudio/image005_20fe3db0.png',
-      '/assets/aistudio/image004_fa37a57a.png'
+      '/assets/uploads/image002_50ab7837.png',
+      '/assets/uploads/image001_ebfaebe5.png',
+      '/assets/uploads/image005_20fe3db0.png',
+      '/assets/uploads/image004_fa37a57a.png'
     ],
     description: 'Genuine CAT Power Heavy-Duty Industrial Diesel Generator Sets supplied by Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.), P.O. Box 1176, Marmora, New Jersey 08223, USA (www.atlanticpowerequip.com). President: Mark Johnson (mjohnson@atlanticpowerequip.com | C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131). Matched with Golden Lead Inquiry for 10 Generators to Canada (100% Advance Payment — Only Accessed by VIP Member with Special Diwali Offer).',
     specifications: {
@@ -7307,9 +7307,9 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'DDP', 'EXW'],
     unit: 'Units',
     images: [
-      '/assets/aistudio/image005_20fe3db0.png',
-      '/assets/aistudio/image002_50ab7837.png',
-      '/assets/aistudio/image001_ebfaebe5.png'
+      '/assets/uploads/image005_20fe3db0.png',
+      '/assets/uploads/image002_50ab7837.png',
+      '/assets/uploads/image001_ebfaebe5.png'
     ],
     description: 'Heavy-duty CAT Earth Moving Machines (Tracked Excavators, D6/D8 Bulldozers, Articulated Wheel Loaders, Motor Graders) and multi-brand OEM powertrains (Caterpillar, Cummins, Perkins, Komatsu, Liebherr, JCB, Volvo, MTU, Detroit Diesel) supplied by Mark Johnson, President of Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.), Marmora, NJ 08223 USA.',
     specifications: {
@@ -7350,9 +7350,9 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'DDP'],
     unit: 'Units',
     images: [
-      '/assets/aistudio/image003_6c1f0619.jpg',
-      '/assets/aistudio/image001_ebfaebe5.png',
-      '/assets/aistudio/image005_20fe3db0.png'
+      '/assets/uploads/image003_6c1f0619.jpg',
+      '/assets/uploads/image001_ebfaebe5.png',
+      '/assets/uploads/image005_20fe3db0.png'
     ],
     description: 'Cummins Power Generation commercial and industrial generator sets distributed by Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.), P.O. Box 1176, Marmora, NJ 08223 USA. Ideal for Canadian cold-weather infrastructure, mining camps, data centers, and prime utility backup.',
     specifications: {
@@ -7392,8 +7392,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'DDP'],
     unit: 'Units',
     images: [
-      '/assets/aistudio/image004_fa37a57a.png',
-      '/assets/aistudio/image001_ebfaebe5.png'
+      '/assets/uploads/image004_fa37a57a.png',
+      '/assets/uploads/image001_ebfaebe5.png'
     ],
     description: 'Large double-wall bulk diesel and auxiliary fuel storage tanks (3,000 – 18,000 US Gallons) engineered for continuous generator prime power and heavy earth-moving fleet refueling. Supplied by Mark Johnson, Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.), Marmora, NJ 08223 USA.',
     specifications: {
@@ -7432,8 +7432,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
     unit: 'Kgs',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
     ],
     description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). Direct quarry & lapidary export of 100% natural, untreated Black Jade cabochons, precision-domed gemstones, and raw nephrite jade blocks for fine jewelry manufacturers, lapidary studios, and collectors.',
     specifications: {
@@ -7474,8 +7474,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
     unit: 'Kgs',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
     ],
     description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). High-grade natural blue-green turquoise rough in natural host mineral matrix stone, direct from American mines for wholesale lapidary cutting, cabochons, inlay work, and artisan jewelry.',
     specifications: {
@@ -7517,7 +7517,7 @@ export const MOCK_PRODUCTS: Product[] = [
     unit: 'Metric Tons',
     images: [
       'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
-      '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+      '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
     ],
     description: 'Supplied by Emmanuel, Reverse Energy Pty Ltd (Johannesburg, South Africa). High calorific value 6000 kcal/kg NAR South African RB1/RB2/RB3 thermal steam coal and washed industrial anthracite peas ready for bulk vessel charter.',
     specifications: {
@@ -7558,8 +7558,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'CFR', 'TTO', 'TTT'],
     unit: 'Metric Tons',
     images: [
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
     ],
     description: 'Bulk Ultra-Low Sulfur Diesel Fuel EN 590 10PPM Euro 5/6 compliant supplied by Middle Fox LLC under direct US refinery allocations. Density at 15°C: 0.820 - 0.845 kg/m³, Flash point: min 55°C, Cetane index: min 51, Sulfur content: max 10 ppm. Full commercial documentation (Commercial Invoice, SGS Q&Q Report, Certificate of Origin, Tank Storage Receipt). Contact Mr. Randy (randy@midforkcap.com | +1 406 309 5590).',
     specifications: {
@@ -7602,8 +7602,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'TTO', 'Dip and Pay'],
     unit: 'Barrels',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'Commercial Aviation Turbine Fuel Jet A-1 conforming to ASTM D1655 and UK DEF STAN 91-091 latest issue. Freezing Point: max -47°C, Flash Point: min +38°C, Density at 15°C: 0.775 - 0.840 kg/L. Full refinery batch test report, injection report, and unencumbered title transfer. Direct contracts through Middle Fox LLC. Contact Mr. Randy (randy@midforkcap.com | +1 406 309 5590).',
     specifications: {
@@ -7647,7 +7647,7 @@ export const MOCK_PRODUCTS: Product[] = [
     unit: 'Metric Tons',
     images: [
       'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-      '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+      '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
     description: 'Bulk EN590 10PPM Ultra-Low Sulfur Diesel, Jet Fuel A-1, and D6 Virgin Fuel Oil brokered by MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia). Paid Basic Plan verified supplier with all platform services enabled. Payment terms: Bank transfer.',
     specifications: {
@@ -7686,7 +7686,7 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'TTO'],
     unit: 'Barrels',
     images: [
-      '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
+      '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
       'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'High-grade D6 Virgin Fuel Oil and Marine Gasoil (MGO) supplied by MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia). Accepted payment: Bank transfer.',
@@ -7743,7 +7743,7 @@ export const MOCK_PRODUCTS: Product[] = [
   "priceRangeUsd": "$380 - $650 / MT",
   "unit": "MT",
   "images": [
-    "/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg"
+    "/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg"
   ],
   "description": "Premium quality sunflower oil offered directly by UKKL Company Limited. Engaged in the business of selling consumer products such as, edible oils, health supplements and cosmetics.",
   "specifications": {

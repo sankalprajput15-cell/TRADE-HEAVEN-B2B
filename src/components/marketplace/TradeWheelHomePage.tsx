@@ -540,13 +540,24 @@ export const TradeWheelHomePage: React.FC<Props> = ({
       {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-200 shadow-sm text-slate-900 relative overflow-hidden">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2.5 max-w-2xl text-center lg:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>100% Free Registration • Verified Partner Vetting</span>
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 max-w-2xl text-center sm:text-left">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-slate-200/80 bg-white">
+              <EditableImage
+                contentKey="homepage.onboardingBannerImage"
+                defaultSrc="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+                alt="Trade Heaven Verified Global Partner Network"
+                className="w-full h-full"
+                imgClassName="w-full h-full object-cover"
+              />
             </div>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight"><EditableText contentKey="homepage.onboardingBannerTitle" defaultText="Ready to Board with Us? Connect with" /> <span className="text-blue-600"><EditableText contentKey="homepage.onboardingBannerHighlight" defaultText="Audited Factories & Verified Buyers" /></span></h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"><EditableText contentKey="homepage.onboardingBannerDesc" defaultText="Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss trade protection protection, and direct wholesale pricing." /></p>
+            <div className="space-y-2.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>100% Free Registration • Verified Partner Vetting</span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight"><EditableText contentKey="homepage.onboardingBannerTitle" defaultText="Ready to Board with Us? Connect with" /> <span className="text-blue-600"><EditableText contentKey="homepage.onboardingBannerHighlight" defaultText="Audited Factories & Verified Buyers" /></span></h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal"><EditableText contentKey="homepage.onboardingBannerDesc" defaultText="Zero fake inquiries, zero spam brokers. Register for free as an importer or audited factory to access $480M+ active RFQs, Swiss trade protection protection, and direct wholesale pricing." /></p>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full lg:w-auto">

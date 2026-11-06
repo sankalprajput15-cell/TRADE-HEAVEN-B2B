@@ -88,7 +88,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Minimum 5 years maturation in ex-bourbon white oak casks, Certificate of Origin required",
       status: "Active / Verified"
     },
-    product_image: "/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg",
+    product_image: "/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg",
     supplier_sample: {
       company_name: "Highland Spirits Distillers Ltd.",
       country: "United Kingdom",
@@ -616,7 +616,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "Sulfur max 10 ppm, Cetane index min 46, Flash point min 55°C, SGS/Saybolt dip test prior to injection",
       status: "Active / Verified"
     },
-    product_image: "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    product_image: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     supplier_sample: {
       company_name: "Gulf Energy Refinery Traders FZE",
       country: "United Arab Emirates",
@@ -640,7 +640,7 @@ export const MAPPED_CATALOG_DATABASE: CatalogMappedEntry[] = [
       specs_summary: "DEF STAN 91-091 & ASTM D1655 compliant, flash point min 38°C, freeze point max -47°C",
       status: "Active / Verified"
     },
-    product_image: "/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
+    product_image: "/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg",
     supplier_sample: {
       company_name: "Houston Energy & Marine Terminals",
       country: "United States",

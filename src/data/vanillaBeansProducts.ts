@@ -78,7 +78,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$305 - $620',
     unit: 'KG',
     minOrderQuantity: '19',
-    images: ['/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'],
+    images: ['/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -94,7 +94,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$188 - $353',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'],
+    images: ['/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -126,7 +126,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$124 - $241',
     unit: 'KG',
     minOrderQuantity: '11',
-    images: ['/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg'],
+    images: ['/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -238,7 +238,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$303 - $636',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg'],
+    images: ['/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg'],
     specifications: [ { name: 'Form', value: 'Seeds/Caviar' }, { name: 'Purity', value: '100% pure' }, { name: 'Application', value: 'Baking/Ice Cream' } ]
   },
   {
@@ -254,7 +254,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$189 - $352',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg'],
+    images: ['/assets/uploads/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -286,7 +286,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$121 - $246',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'],
+    images: ['/assets/uploads/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -398,7 +398,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$127 - $226',
     unit: 'KG',
     minOrderQuantity: '4',
-    images: ['/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'],
+    images: ['/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -446,7 +446,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$122 - $232',
     unit: 'KG',
     minOrderQuantity: '6',
-    images: ['/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'],
+    images: ['/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -558,7 +558,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$121 - $249',
     unit: 'KG',
     minOrderQuantity: '16',
-    images: ['/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg'],
+    images: ['/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -574,7 +574,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$185 - $394',
     unit: 'KG',
     minOrderQuantity: '10',
-    images: ['/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg'],
+    images: ['/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg'],
     specifications: [ { name: 'Grade', value: 'A (Gourmet)' }, { name: 'Length', value: '15cm+' }, { name: 'Moisture', value: '25-30%' }, { name: 'Vanillin', value: '1.5-2.0%' } ]
   },
   {
@@ -606,7 +606,7 @@ const RAW_VANILLA_PRODUCTS: any[] = [
     priceRangeUsd: '$123 - $233',
     unit: 'KG',
     minOrderQuantity: '18',
-    images: ['/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg'],
+    images: ['/assets/uploads/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg'],
     specifications: [ { name: 'Grade', value: 'B (Extract)' }, { name: 'Moisture', value: '15-20%' }, { name: 'Length', value: '10-14cm' } ]
   },
   {
@@ -644,12 +644,12 @@ const RAW_VANILLA_PRODUCTS: any[] = [
 ];
 
 export const VANILLA_BEAN_IMAGES = [
-  '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
-  '/assets/aistudio/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
-  '/assets/aistudio/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
-  '/assets/aistudio/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
-  '/assets/aistudio/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
-  '/assets/aistudio/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
+  '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg',
+  '/assets/uploads/sidath-vimukthi-jLQ6_9mMbjQ-unsplash_52b37684.jpg',
+  '/assets/uploads/sidath-vimukthi-l5G_wxctMjA-unsplash_8846f366.jpg',
+  '/assets/uploads/jocelyn-morales-GA6WtJ7DtSo-unsplash_0c56800e.jpg',
+  '/assets/uploads/jocelyn-morales-TYA9f8hYEX4-unsplash_b1f3fbec.jpg',
+  '/assets/uploads/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
 ];
 
 export const GLOBAL_VANILLA_PRODUCTS: Product[] = RAW_VANILLA_PRODUCTS.map((p, idx) => {
