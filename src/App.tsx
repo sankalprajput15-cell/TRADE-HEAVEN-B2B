@@ -1585,12 +1585,13 @@ const MainApp: React.FC = () => {
     setActiveView('RFQ_HUB');
   };
 
-  const handleProductCreated = (newProd: Partial<Product>) => {
+  const handleProductCreated = async (newProd: Partial<Product>) => {
     const fullProd = {
       ...newProd,
-      id: `prod-${Date.now()}`
+      id: newProd.id || `prod-${Date.now()}`
     } as Product;
-    setProducts(prev => [fullProd, ...prev]);
+    await api.createProduct(fullProd);
+    setProducts(prev => [fullProd, ...prev.filter(p => p.id !== fullProd.id)]);
     setActiveView('PRODUCT_DIRECTORY');
   };
 

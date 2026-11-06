@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Product, Currency, Incoterm, ActiveView } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
 import { bigrockApi } from '../../services/bigrockApi';
+import { productImageManagerService } from '../../services/productImageManagerService';
 import { ImageUploadService, ImagePreviewResult } from '../../services/imageUploadService';
 import { ImagePreview, ImagePreviewItem } from '../common/ImagePreview';
 import { 
@@ -112,44 +113,26 @@ export const PostSellOfferView: React.FC<Props> = ({
 
   const handleImageUpload = async (file: File) => {
     setIsUploadingImage(true);
-    setUploadMessage('Reading instant local preview...');
+    setUploadMessage('Uploading image to server storage...');
     try {
-      // 1. Frontend-only FileReader API preview
-      const preview = await ImageUploadService.readAsPreview(file, {
-        maxSizeBytes: 8 * 1024 * 1024,
-        autoDimensions: true
+      const uploaded = await productImageManagerService.uploadAndAssignImageFile(file, {
+        category
       });
 
       const newItem: ImagePreviewItem = {
         id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        url: preview.previewUrl,
-        name: preview.name,
-        sizeBytes: preview.sizeBytes,
-        formattedSize: preview.formattedSize,
-        width: preview.width,
-        height: preview.height,
-        file: preview.file
+        url: uploaded.url,
+        name: uploaded.name,
+        sizeBytes: uploaded.sizeBytes,
+        formattedSize: `${Math.round((uploaded.sizeBytes || file.size) / 1024)} KB`,
+        file
       };
 
       setProductImages(prev => [newItem, ...prev]);
-      setImageUrl(preview.previewUrl);
-      setUploadMessage(`✓ Preview loaded (${preview.formattedSize}${preview.width ? `, ${preview.width}x${preview.height}px` : ''}).`);
-
-      // 2. Mock / backend upload attempt
-      try {
-        const res = await bigrockApi.uploadFile(file, 'products');
-        if (res.success && res.publicUrl) {
-          setProductImages(prev =>
-            prev.map(img => img.id === newItem.id ? { ...img, url: res.publicUrl! } : img)
-          );
-          setImageUrl(res.publicUrl);
-          setUploadMessage('✓ Saved to storage bucket successfully!');
-        }
-      } catch {
-        // Safe offline / mock fallback
-      }
+      setImageUrl(uploaded.url);
+      setUploadMessage('✓ Saved to server storage successfully!');
     } catch (err: any) {
-      setUploadMessage(err?.message || 'Failed to read image file for preview.');
+      setUploadMessage(err?.message || 'Failed to upload image file.');
     } finally {
       setIsUploadingImage(false);
       setTimeout(() => setUploadMessage(null), 4000);

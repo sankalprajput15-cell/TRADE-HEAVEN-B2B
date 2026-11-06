@@ -55,19 +55,45 @@ export function validateMediaFile(
   };
 }
 
-export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Failed to read file as data URL.'));
+export async function fileToDataUrl(file: File): Promise<string> {
+  try {
+    const rawDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Failed to read file as data URL.'));
+      };
+      reader.onerror = () => reject(reader.error || new Error('FileReader error.'));
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetch('/api/v1/admin/upload-product-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type || 'image/jpeg',
+        base64Data: rawDataUrl
+      })
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.success && json?.url) {
+        return json.url;
       }
-    };
-    reader.onerror = () => reject(reader.error || new Error('FileReader error.'));
-    reader.readAsDataURL(file);
-  });
+    }
+    return rawDataUrl;
+  } catch {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Failed to read file as data URL.'));
+      };
+      reader.onerror = () => reject(reader.error || new Error('FileReader error.'));
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 export function reorderArray<T>(list: T[], startIndex: number, endIndex: number): T[] {

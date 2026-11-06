@@ -37,10 +37,29 @@ export const ImageUploadBase64: React.FC<ImageUploadBase64Props> = ({
     setFileSize(`${(file.size / 1024).toFixed(1)} KB`);
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const base64String = e.target?.result as string;
       if (base64String) {
         setPreviewBase64(base64String);
+        try {
+          const res = await fetch('/api/v1/admin/upload-product-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName: file.name,
+              mimeType: file.type || 'image/jpeg',
+              base64Data: base64String
+            })
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.success && json?.url) {
+              setPreviewBase64(json.url);
+              onImageSelected(json.url);
+              return;
+            }
+          }
+        } catch {}
         onImageSelected(base64String);
       }
     };
