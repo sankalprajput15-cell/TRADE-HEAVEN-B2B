@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Check, Trash2, ChevronRight, MessageSquare, FileText, Settings, Upload, Edit3 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import { ActiveView } from '../../types';
 
 interface NotificationBellProps {
@@ -8,9 +9,14 @@ interface NotificationBellProps {
 }
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }) => {
+  const { currentUser } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  if (!currentUser) {
+    return null;
+  }
 
   // Close when clicking outside
   useEffect(() => {

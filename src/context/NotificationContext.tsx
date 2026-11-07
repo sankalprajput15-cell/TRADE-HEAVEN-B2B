@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { AppNotification, DeliveryQueueHealthStatus } from '../types';
 import { Upload, Edit, Trash2, CheckCircle2, X, ArrowRight } from 'lucide-react';
+import { useAuth } from './AuthContext';
 
 const DEFAULT_QUEUE_STATUS: DeliveryQueueHealthStatus = {
   minDelayMs: 2000,
@@ -34,42 +35,30 @@ interface NotificationContextProps {
 const NotificationContext = createContext<NotificationContextProps | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { currentUser, isAuthenticated } = useAuth();
+  const isUserAuthenticated = Boolean(currentUser && isAuthenticated);
+
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    const defaultMarkJohnsonNotif: AppNotification = {
-      id: 'notif-mark-johnson-15-buyers-generators-cranes-2026',
-      type: 'RFQ',
-      title: '⚡🏗️ Message to Mark Johnson (Atlantic Power & Equipment Co.): 10 Buyers Inquired for Generators & 5 for Cranes',
-      message:
-        'Dispatched to mjohnson@atlanticpowerequip.com: 10 verified buyers visited your profile and inquired to buy Industrial Generators (CAT, Cummins, MTU, Perkins) and 5 buyers inquired to buy Heavy Cranes (Liebherr, Manitowoc, Grove, Tadano, Demag).',
-      timestamp: Date.now(),
-      isRead: false,
-      linkView: 'DASHBOARD'
-    };
-    const defaultRandyNotif: AppNotification = {
-      id: 'notif-randy-10-buyers-petroleum-2026',
-      type: 'RFQ',
-      title: '⛽ Message to Mr. Randy (Middle Fox LLC): 10 Buyers Visited Profile & Inquired for Petroleum',
-      message:
-        'Dispatched to randy@midforkcap.com: 10 verified buyers visited your Middle Fox LLC profile and inquired to buy petroleum products (EN 590 10PPM, Jet Fuel A-1, D6, ESPO Crude, MGO, Mazut M100, LNG, AGO, Petcoke & Base Oil SN500).',
-      timestamp: Date.now() - 60000,
-      isRead: false,
-      linkView: 'DASHBOARD'
-    };
     try {
       const saved = localStorage.getItem('tradeheaven_notifications');
       if (saved) {
         const parsed: AppNotification[] = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const filtered = parsed.filter(
-            (n) => n.id !== defaultMarkJohnsonNotif.id && n.id !== defaultRandyNotif.id
+          return parsed.filter(
+            (n) =>
+              n &&
+              n.id &&
+              !n.id.includes('notif-mark-johnson') &&
+              !n.id.includes('notif-randy') &&
+              !n.title?.toLowerCase().includes('message to mark johnson') &&
+              !n.title?.toLowerCase().includes('message to mr. randy')
           );
-          return [defaultMarkJohnsonNotif, defaultRandyNotif, ...filtered];
         }
       }
-      return [defaultMarkJohnsonNotif, defaultRandyNotif];
-    } catch (e) {
-      return [defaultMarkJohnsonNotif, defaultRandyNotif];
+    } catch {
+      // ignore
     }
+    return [];
   });
 
   const [deliveryQueueStatus, setDeliveryQueueStatus] = useState<DeliveryQueueHealthStatus>(DEFAULT_QUEUE_STATUS);
@@ -85,7 +74,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   useEffect(() => {
     try {
-      localStorage.setItem('tradeheaven_notifications', JSON.stringify(notifications));
+      const cleaned = notifications.filter(
+        (n) =>
+          n &&
+          n.id &&
+          !n.id.includes('notif-mark-johnson') &&
+          !n.id.includes('notif-randy') &&
+          !n.title?.toLowerCase().includes('message to mark johnson') &&
+          !n.title?.toLowerCase().includes('message to mr. randy')
+      );
+      localStorage.setItem('tradeheaven_notifications', JSON.stringify(cleaned));
     } catch {
       // ignore storage errors
     }
@@ -94,7 +92,24 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Instantly clear and suppress any active toast if user is unauthenticated or in guest mode
+  useEffect(() => {
+    if (!isUserAuthenticated) {
+      setActiveToast(null);
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = null;
+      }
+    }
+  }, [isUserAuthenticated]);
+
   const addNotification = useCallback((notif: Omit<AppNotification, 'id' | 'timestamp' | 'isRead'>) => {
+    // Strictly verify user authentication status before emitting any toast notifications or pop-up alerts
+    // to ensure guest users are never interrupted by account-related messages.
+    if (!currentUser || !isAuthenticated) {
+      return;
+    }
+
     const newNotif: AppNotification = {
       ...notif,
       id: Math.random().toString(36).substr(2, 9),
@@ -103,17 +118,21 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
-    // Show instant floating on-screen toast
+    // Show instant floating on-screen toast strictly for verified authenticated users
     setActiveToast(newNotif);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => {
       setActiveToast(null);
     }, 4500);
-  }, []);
+  }, [currentUser, isAuthenticated]);
 
   // Global listener for cross-app notifications (delete, edit, upload, system)
   useEffect(() => {
     const handleCustomNotify = (e: Event) => {
+      // Guard at event entry point: guest users never process or emit notifications
+      if (!currentUser || !isAuthenticated) {
+        return;
+      }
       const customEvent = e as CustomEvent<Omit<AppNotification, 'id' | 'timestamp' | 'isRead'>>;
       if (customEvent.detail && customEvent.detail.title) {
         addNotification(customEvent.detail);
@@ -121,10 +140,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     };
     window.addEventListener('tradeheaven_notify', handleCustomNotify);
     return () => window.removeEventListener('tradeheaven_notify', handleCustomNotify);
-  }, [addNotification]);
+  }, [addNotification, currentUser, isAuthenticated]);
 
   const evaluateQueueHealthAndNotify = useCallback(
     (queue: DeliveryQueueHealthStatus) => {
+      // System queue alerts are strictly for authenticated administrators
+      if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') {
+        return;
+      }
+
       setDeliveryQueueStatus((prev) => {
         if (
           prev.consecutiveFailures === queue.consecutiveFailures &&
@@ -172,10 +196,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         }
       }
     },
-    [addNotification]
+    [addNotification, currentUser, isAuthenticated]
   );
 
   const refreshDeliveryQueueStatus = useCallback(async (): Promise<DeliveryQueueHealthStatus | null> => {
+    // Guest users should never poll or receive admin delivery queue health data
+    if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') {
+      return null;
+    }
+
     try {
       const response = await fetch('/api/v1/auth/email-queue-status', {
         headers: { Accept: 'application/json' }
@@ -190,9 +219,10 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       // ignore transient network errors during background polling
     }
     return null;
-  }, [evaluateQueueHealthAndNotify]);
+  }, [evaluateQueueHealthAndNotify, currentUser, isAuthenticated]);
 
   const resetDeliveryQueueAlert = useCallback(async () => {
+    if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') return;
     try {
       const response = await fetch('/api/v1/auth/email-queue-reset-alert', {
         method: 'POST',
@@ -207,10 +237,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     } catch {
       // ignore
     }
-  }, [evaluateQueueHealthAndNotify]);
+  }, [evaluateQueueHealthAndNotify, currentUser, isAuthenticated]);
 
   const simulateDeliveryQueueFailures = useCallback(
     async (count = 5) => {
+      if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') return;
       try {
         const response = await fetch('/api/v1/auth/email-queue-simulate-failures', {
           method: 'POST',
@@ -230,17 +261,20 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         // ignore
       }
     },
-    [evaluateQueueHealthAndNotify]
+    [evaluateQueueHealthAndNotify, currentUser, isAuthenticated]
   );
 
-  // Poll server-side delivery queue health every 30 seconds without causing unnecessary re-renders
+  // Poll server-side delivery queue health every 30 seconds only when authenticated as Admin
   useEffect(() => {
+    if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') {
+      return;
+    }
     void refreshDeliveryQueueStatus();
     const intervalId = setInterval(() => {
       void refreshDeliveryQueueStatus();
     }, 30000);
     return () => clearInterval(intervalId);
-  }, [refreshDeliveryQueueStatus]);
+  }, [refreshDeliveryQueueStatus, currentUser, isAuthenticated]);
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>
@@ -256,42 +290,17 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setNotifications([]);
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const visibleNotifications = isUserAuthenticated ? notifications : [];
+  const unreadCount = isUserAuthenticated ? notifications.filter((n) => !n.isRead).length : 0;
   const isDeliveryQueueFlagged =
-    deliveryQueueStatus.isFlagged ||
-    deliveryQueueStatus.consecutiveFailures >= (deliveryQueueStatus.failureThreshold || 5);
-
-  // Mock real-time incoming notifications
-  useEffect(() => {
-    let timeoutId: any;
-    
-    // Simulate first real-time notification after 15 seconds
-    timeoutId = setTimeout(() => {
-      addNotification({
-        type: 'RFQ',
-        title: 'New Match: Steel Pipes RFQ',
-        message: 'A buyer in UAE just posted an RFQ matching your product catalog.',
-        linkView: 'RFQ_HUB'
-      });
-      
-      // Then simulate another one randomly 30 seconds later
-      setTimeout(() => {
-        addNotification({
-          type: 'MESSAGE',
-          title: 'New Message Received',
-          message: 'TechGlobal Inc. has replied to your quote in the Negotiation Room.',
-          linkView: 'NEGOTIATION_ROOM'
-        });
-      }, 30000);
-    }, 15000);
-
-    return () => clearTimeout(timeoutId);
-  }, [addNotification]);
+    Boolean(isUserAuthenticated && currentUser?.role === 'ADMIN') &&
+    (deliveryQueueStatus.isFlagged ||
+      deliveryQueueStatus.consecutiveFailures >= (deliveryQueueStatus.failureThreshold || 5));
 
   return (
     <NotificationContext.Provider
       value={{
-        notifications,
+        notifications: visibleNotifications,
         unreadCount,
         deliveryQueueStatus,
         isDeliveryQueueFlagged,
@@ -306,8 +315,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     >
       {children}
 
-      {/* Floating On-Screen Toast Notification for Every Site Change */}
-      {activeToast && (
+      {/* Floating On-Screen Toast Notification - Strictly verified for authenticated users only */}
+      {isUserAuthenticated && activeToast && (
         <div
           role="status"
           aria-live="polite"

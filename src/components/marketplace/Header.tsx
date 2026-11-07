@@ -783,7 +783,9 @@ export const Header: React.FC<Props> = ({
             <span className="sm:hidden">RFQ</span>
           </button>
 
-          <NotificationBell onNavigate={handleNavClick} />
+          {currentUser && (
+            <NotificationBell onNavigate={handleNavClick} />
+          )}
 
           {/* Account Toggle Dropdown */}
           <div className="relative shrink-0" ref={userMenuRef}>
