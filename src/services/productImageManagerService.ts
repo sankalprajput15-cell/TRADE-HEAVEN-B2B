@@ -5,6 +5,21 @@ import { autoSeoEngine } from './autoSeoEngine';
 export const PRODUCT_IMAGE_SAVED_EVENT = 'tradeheaven_product_image_saved';
 export const PRODUCT_IMAGE_STORAGE_SAVED_EVENT = 'tradeheaven:image-saved-to-storage';
 
+function dispatchNotification(type: 'UPLOAD' | 'EDIT' | 'DELETE', title: string, message: string, linkView = 'admin') {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('tradeheaven_notify', {
+        detail: {
+          type,
+          title,
+          message,
+          linkView
+        }
+      })
+    );
+  }
+}
+
 export interface ProductImageSavedEventDetail {
   timestamp: number;
   state: ProductImageSystemState;
@@ -1509,6 +1524,13 @@ class ProductImageManagerService {
     this.saveToLocalStorage({ productId: options?.productId, url: finalUrl, action: 'upload_and_assign' });
     this.notifyListeners();
 
+    dispatchNotification(
+      'UPLOAD',
+      'Product Image Uploaded',
+      `Uploaded "${finalName}" (${finalFormat}, ${(finalSizeBytes / 1024).toFixed(1)} KB) and assigned to catalog.`,
+      'admin'
+    );
+
     return {
       url: finalUrl,
       format: finalFormat,
@@ -1658,6 +1680,13 @@ class ProductImageManagerService {
       await this.setAllProductsImage(finalUrl);
     }
 
+    dispatchNotification(
+      'EDIT',
+      'Image Edited & Synced',
+      `Saved modified image "${fileName}" to catalog.`,
+      'admin'
+    );
+
     return finalUrl;
   }
 
@@ -1705,6 +1734,13 @@ class ProductImageManagerService {
 
     this.saveToLocalStorage({ productId: cleanId, url: cleanPrimary, gallery: resolvedGallery, action: 'set_product_image' });
     this.notifyListeners();
+
+    dispatchNotification(
+      'EDIT',
+      'Product Image Set',
+      `Assigned display image for product #${cleanId}.`,
+      'admin'
+    );
 
     const bodyStr = JSON.stringify({
       productId: cleanId,
@@ -1777,6 +1813,13 @@ class ProductImageManagerService {
     this.saveToLocalStorage({ url: cleanPrimary, action: 'set_bulk_product_images', details: { productIds } });
     this.notifyListeners();
 
+    dispatchNotification(
+      'EDIT',
+      'Bulk Images Assigned',
+      `Updated image across ${productIds.length} catalog items.`,
+      'admin'
+    );
+
     const bodyStr = JSON.stringify({
       productIds,
       primaryUrl: cleanPrimary,
@@ -1826,6 +1869,13 @@ class ProductImageManagerService {
     this.saveToLocalStorage({ url: cleanPrimary, action: 'set_category_image', details: { category } });
     this.notifyListeners();
 
+    dispatchNotification(
+      'EDIT',
+      'Category Image Set',
+      `Assigned primary image for category "${category}".`,
+      'admin'
+    );
+
     const bodyStr = JSON.stringify({
       category,
       productIds: matchingProductIds,
@@ -1873,6 +1923,13 @@ class ProductImageManagerService {
 
     this.saveToLocalStorage({ url: cleanPrimary, action: 'set_all_products_image' });
     this.notifyListeners();
+
+    dispatchNotification(
+      'EDIT',
+      'Global Product Image Set',
+      'Set global fallback image across all catalog products.',
+      'admin'
+    );
 
     const bodyStr = JSON.stringify({
       applyToAll: true,
@@ -1926,6 +1983,13 @@ class ProductImageManagerService {
     this.saveToLocalStorage({ url: cleanNew, action: 'replace_image_url', details: { oldUrl: oldUrlToReplace } });
     this.notifyListeners();
 
+    dispatchNotification(
+      'EDIT',
+      'Image Replaced Everywhere',
+      'Replaced asset URL across all product occurrences.',
+      'admin'
+    );
+
     const bodyStr = JSON.stringify({
       oldUrlToReplace,
       productIds: matchingProductIds,
@@ -1958,6 +2022,13 @@ class ProductImageManagerService {
     delete this.state.overrides[cleanId];
     this.saveToLocalStorage({ productId: cleanId, action: 'reset_product_image' });
     this.notifyListeners();
+
+    dispatchNotification(
+      'DELETE',
+      'Product Image Override Reset',
+      `Reset custom image override for product #${cleanId}.`,
+      'admin'
+    );
 
     const bodyStr = JSON.stringify({ productId: cleanId });
     try {
@@ -2001,6 +2072,13 @@ class ProductImageManagerService {
     this.saveToLocalStorage({ action: 'delete_bulk_associations', details: { productIds } });
     this.notifyListeners();
 
+    dispatchNotification(
+      'DELETE',
+      'Bulk Image Overrides Removed',
+      `Removed custom image overrides for ${productIds.length} items.`,
+      'admin'
+    );
+
     const bodyStr = JSON.stringify({ productIds });
     try {
       const res = await fetch('/api/v1/admin/product-images', {
@@ -2041,6 +2119,13 @@ class ProductImageManagerService {
 
     this.saveToLocalStorage({ action: 'reset_all_product_images' });
     this.notifyListeners();
+
+    dispatchNotification(
+      'DELETE',
+      'All Image Overrides Reset',
+      'Reset all custom product image overrides across the platform.',
+      'admin'
+    );
 
     const bodyStr = JSON.stringify({ resetAll: true });
     try {

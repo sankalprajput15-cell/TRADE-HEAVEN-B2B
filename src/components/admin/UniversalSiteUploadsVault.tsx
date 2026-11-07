@@ -166,6 +166,16 @@ export const UniversalSiteUploadsVault: React.FC<Props> = ({
           setSelectedItemForPreview(prev => prev ? { ...prev, status: newStatus } : null);
         }
         showToast('success', `File marked as ${newStatus}`);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+            detail: {
+              type: 'EDIT',
+              title: 'Vault File Status Changed',
+              message: `Asset status updated to ${newStatus}.`,
+              linkView: 'admin'
+            }
+          }));
+        }
       }
     } catch {
       showToast('error', 'Failed to update file status');
@@ -183,6 +193,16 @@ export const UniversalSiteUploadsVault: React.FC<Props> = ({
         setItems(prev => prev.filter(i => i.id !== id));
         if (selectedItemForPreview?.id === id) setSelectedItemForPreview(null);
         showToast('success', `Deleted "${name}" successfully.`);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+            detail: {
+              type: 'DELETE',
+              title: 'Asset Deleted from Vault',
+              message: `Permanently removed "${name}" from the asset vault.`,
+              linkView: 'admin'
+            }
+          }));
+        }
       }
     } catch {
       showToast('error', 'Failed to delete asset');
@@ -242,6 +262,16 @@ export const UniversalSiteUploadsVault: React.FC<Props> = ({
           setItems(prev => [data.item, ...prev]);
         }
         showToast('success', `File "${newFile.name}" uploaded & saved to asset vault!`);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+            detail: {
+              type: 'UPLOAD',
+              title: 'File Uploaded to Vault',
+              message: `Uploaded "${newFile.name}" (${newFile.size}) to the Universal Asset Vault.`,
+              linkView: 'admin'
+            }
+          }));
+        }
         setIsUploadModalOpen(false);
         setNewFile(null);
         setNewRefCode('');

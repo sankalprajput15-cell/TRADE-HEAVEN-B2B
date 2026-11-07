@@ -5734,11 +5734,21 @@ app.get('/api/debug-login-alert', async (req, res) => {
 
 // Server-side products cache & CRUD with persistent disk backup
 const CUSTOM_PRODUCTS_DB_FILE = path.join(process.cwd(), 'src', 'data', 'customProductsBackup.json');
+const DELETED_PRODUCTS_DB_FILE = path.join(process.cwd(), 'src', 'data', 'deletedProductsBackup.json');
 let serverProductsStore: any[] = [];
+let serverDeletedProductIds = new Set<string>();
+
 try {
   if (fs.existsSync(CUSTOM_PRODUCTS_DB_FILE)) {
     const parsed = JSON.parse(fs.readFileSync(CUSTOM_PRODUCTS_DB_FILE, 'utf8'));
     if (Array.isArray(parsed)) serverProductsStore = parsed;
+  }
+} catch {}
+
+try {
+  if (fs.existsSync(DELETED_PRODUCTS_DB_FILE)) {
+    const parsed = JSON.parse(fs.readFileSync(DELETED_PRODUCTS_DB_FILE, 'utf8'));
+    if (Array.isArray(parsed)) serverDeletedProductIds = new Set(parsed);
   }
 } catch {}
 
@@ -5750,9 +5760,17 @@ function saveServerProductsToDisk() {
   } catch {}
 }
 
+function saveServerDeletedProductsToDisk() {
+  try {
+    const dir = path.dirname(DELETED_PRODUCTS_DB_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(DELETED_PRODUCTS_DB_FILE, JSON.stringify(Array.from(serverDeletedProductIds), null, 2), 'utf8');
+  } catch {}
+}
+
 app.get('/api/v1/products', (req, res) => {
   const { category, country, keyword, tier } = req.query;
-  let list = [...serverProductsStore];
+  let list = serverProductsStore.filter(p => !serverDeletedProductIds.has(p.id));
 
   if (category && category !== 'ALL') {
     list = list.filter(p => p.category === category);
@@ -5846,14 +5864,21 @@ app.delete('/api/v1/products/:id', (req, res) => {
   const { id } = req.params;
   const targetProduct = serverProductsStore.find(p => p.id === id);
   serverProductsStore = serverProductsStore.filter(p => p.id !== id);
+  serverDeletedProductIds.add(id);
   saveServerProductsToDisk();
+  saveServerDeletedProductsToDisk();
 
-  sendActivityAlert('CATALOG_PRODUCT_DELETED', targetProduct?.supplierEmail || 'Merchant Profile', `A catalog product was deleted: "${targetProduct?.title || id}"`, {
+  if (serverProductImageState.overrides && serverProductImageState.overrides[id]) {
+    delete serverProductImageState.overrides[id];
+    saveServerProductImageState();
+  }
+
+  sendActivityAlert('CATALOG_PRODUCT_DELETED', targetProduct?.supplierEmail || 'Merchant Profile', `A catalog product was deleted from site: "${targetProduct?.title || id}"`, {
     productId: id,
     title: targetProduct?.title || 'Unknown'
   });
 
-  res.json({ success: true, message: 'Product deleted successfully' });
+  res.json({ success: true, message: 'Product completely deleted from site' });
 });
 
 // -------------------------------------------------------------

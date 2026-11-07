@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { AppNotification, DeliveryQueueHealthStatus } from '../types';
+import { Upload, Edit, Trash2, CheckCircle2, X, ArrowRight } from 'lucide-react';
 
 const DEFAULT_QUEUE_STATUS: DeliveryQueueHealthStatus = {
   minDelayMs: 2000,
@@ -90,6 +91,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   }, [notifications]);
 
+  const [activeToast, setActiveToast] = useState<AppNotification | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const addNotification = useCallback((notif: Omit<AppNotification, 'id' | 'timestamp' | 'isRead'>) => {
     const newNotif: AppNotification = {
       ...notif,
@@ -98,7 +102,26 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       isRead: false,
     };
     setNotifications((prev) => [newNotif, ...prev]);
+
+    // Show instant floating on-screen toast
+    setActiveToast(newNotif);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setActiveToast(null);
+    }, 4500);
   }, []);
+
+  // Global listener for cross-app notifications (delete, edit, upload, system)
+  useEffect(() => {
+    const handleCustomNotify = (e: Event) => {
+      const customEvent = e as CustomEvent<Omit<AppNotification, 'id' | 'timestamp' | 'isRead'>>;
+      if (customEvent.detail && customEvent.detail.title) {
+        addNotification(customEvent.detail);
+      }
+    };
+    window.addEventListener('tradeheaven_notify', handleCustomNotify);
+    return () => window.removeEventListener('tradeheaven_notify', handleCustomNotify);
+  }, [addNotification]);
 
   const evaluateQueueHealthAndNotify = useCallback(
     (queue: DeliveryQueueHealthStatus) => {
@@ -282,6 +305,83 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       }}
     >
       {children}
+
+      {/* Floating On-Screen Toast Notification for Every Site Change */}
+      {activeToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] max-w-sm sm:max-w-md w-[calc(100vw-2rem)] bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-slate-700/80 flex items-start gap-3.5 animate-in fade-in slide-in-from-bottom-5 duration-200"
+        >
+          <div
+            className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+              activeToast.type === 'DELETE'
+                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                : activeToast.type === 'UPLOAD'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : activeToast.type === 'EDIT'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+            }`}
+          >
+            {activeToast.type === 'DELETE' ? (
+              <Trash2 className="w-4 h-4" />
+            ) : activeToast.type === 'UPLOAD' ? (
+              <Upload className="w-4 h-4" />
+            ) : activeToast.type === 'EDIT' ? (
+              <Edit className="w-4 h-4" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0 pr-1">
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                  activeToast.type === 'DELETE'
+                    ? 'bg-rose-500 text-white'
+                    : activeToast.type === 'UPLOAD'
+                      ? 'bg-emerald-500 text-slate-950 font-black'
+                      : activeToast.type === 'EDIT'
+                        ? 'bg-amber-400 text-slate-950 font-black'
+                        : 'bg-blue-500 text-white'
+                }`}
+              >
+                {activeToast.type}
+              </span>
+              <span className="text-xs font-black truncate">{activeToast.title}</span>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-1 line-clamp-2 leading-relaxed">
+              {activeToast.message}
+            </p>
+            {activeToast.linkView && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_navigate', { detail: activeToast.linkView })
+                  );
+                  setActiveToast(null);
+                }}
+                className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-bold text-blue-300 hover:text-blue-200 underline cursor-pointer"
+              >
+                <span>View in App</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveToast(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            title="Dismiss notification"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </NotificationContext.Provider>
   );
 };

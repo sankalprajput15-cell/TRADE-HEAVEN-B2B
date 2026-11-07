@@ -510,29 +510,24 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const handleDeleteSelectedAssociations = async (targetIds?: string[]) => {
     const idsToDelete = targetIds || Array.from(selectedProductIds);
     if (idsToDelete.length === 0) {
-      showToast('error', 'Please select at least one product in the preview grid to delete its image association.');
+      showToast('error', 'Please select at least one product in the grid to delete from site.');
       return;
     }
 
-    // Snapshot existing images & overrides for 5-second Undo restoration
+    // Snapshot existing products & images for 5-second Undo restoration
     const idSet = new Set(idsToDelete);
     const previousSnapshots = allProducts
       .filter(p => idSet.has(p.id))
       .map(p => ({
-        id: p.id,
-        title: p.title,
-        images: Array.isArray(p.images) ? [...p.images] : [],
-        hadOverride: Boolean(systemState.overrides[p.id])
+        product: { ...p },
+        images: Array.isArray(p.images) ? [...p.images] : []
       }));
 
     setIsUploading(true);
     try {
-      const titlesToDelete = previousSnapshots.map(p => p.title).filter(Boolean);
-
-      await productImageManagerService.deleteBulkProductImageAssociations(
-        idsToDelete,
-        titlesToDelete
-      );
+      for (const id of idsToDelete) {
+        await api.deleteProduct(id);
+      }
       setSelectedProductIds(prev => {
         const next = new Set(prev);
         idsToDelete.forEach(id => next.delete(id));
@@ -541,27 +536,29 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       await refreshState();
       showToast(
         'success',
-        `Deleted product image association(s) for ${idsToDelete.length} selected Product ID(s).`,
+        `Completely deleted ${idsToDelete.length} selected item(s) from site.`,
         {
           durationMs: 5000,
           onUndo: async () => {
             for (const snap of previousSnapshots) {
+              await api.restoreProduct(snap.product.id, snap.product);
               if (snap.images.length > 0) {
-                await productImageManagerService.setProductImage(snap.id, snap.images[0], snap.images);
+                await productImageManagerService.setProductImage(snap.product.id, snap.images[0], snap.images);
               }
             }
             await refreshState();
+            showToast('success', `Restored ${previousSnapshots.length} deleted product(s) to site!`);
           }
         }
       );
     } catch (err: any) {
-      showToast('error', err?.message || 'Failed to delete selected product image associations');
+      showToast('error', err?.message || 'Failed to delete selected products from site');
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Execute confirmed image deletion from the confirmation modal
+  // Execute confirmed item/image deletion from the confirmation modal
   const handleExecuteConfirmedDelete = async () => {
     if (!deleteConfirmTarget) return;
     const target = deleteConfirmTarget;
@@ -574,6 +571,16 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         ...prev,
         images: prev.images.filter((_, i) => i !== removedIdx)
       }));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'DELETE',
+            title: 'Gallery Image Removed',
+            message: `Removed gallery image #${removedIdx + 1} from product form.`,
+            linkView: 'admin'
+          }
+        }));
+      }
       showToast('success', `Removed gallery image #${removedIdx + 1} from product.`, {
         durationMs: 5000,
         onUndo: () => {
@@ -581,6 +588,16 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
             ...prev,
             images: previousGalleryImages
           }));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+              detail: {
+                type: 'EDIT',
+                title: 'Gallery Image Restored',
+                message: `Restored gallery image #${removedIdx + 1} to product form.`,
+                linkView: 'admin'
+              }
+            }));
+          }
         }
       });
       return;
@@ -598,39 +615,30 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         : target.imageUrl
           ? [target.imageUrl]
           : [];
-      const hadCustomOverride = Boolean(systemState.overrides[prod.id]);
+      const productSnapshot: Product = { ...prod };
 
       setIsUploading(true);
       try {
-        await productImageManagerService.resetProductImage(prod.id);
-        const remainingImages = (prod.images || []).filter(img => img && img !== target.imageUrl);
-        if (remainingImages.length > 0) {
-          await productImageManagerService.setProductImage(prod.id, remainingImages[0], remainingImages);
-          await api.updateProduct(prod.id, { images: remainingImages });
-        } else {
-          await api.updateProduct(prod.id, { images: [] });
-        }
+        // Completely delete the selected product item from the site
+        await api.deleteProduct(prod.id);
         await refreshState();
         showToast(
           'success',
-          `Removed image from "${prod.title.slice(0, 34)}..."`,
+          `Completely deleted "${prod.title.slice(0, 34)}..." from site.`,
           {
             durationMs: 5000,
             onUndo: async () => {
+              await api.restoreProduct(prod.id, productSnapshot);
               if (previousImages.length > 0) {
-                await api.updateProduct(prod.id, { images: previousImages });
-                if (hadCustomOverride) {
-                  await productImageManagerService.setProductImage(prod.id, previousImages[0], previousImages);
-                } else {
-                  await productImageManagerService.setProductImage(prod.id, previousImages[0], previousImages);
-                }
+                await productImageManagerService.setProductImage(prod.id, previousImages[0], previousImages);
               }
               await refreshState();
+              showToast('success', `Restored "${prod.title.slice(0, 30)}..." to site!`);
             }
           }
         );
       } catch (err: any) {
-        showToast('error', err?.message || 'Failed to remove product image');
+        showToast('error', err?.message || 'Failed to delete product from site');
       } finally {
         setIsUploading(false);
       }
@@ -1247,10 +1255,10 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                     })
                   }
                   className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                  title="Bulk-remove custom/incorrect product image associations for all selected Product IDs"
+                  title="Completely delete all selected product items from site"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Selected ({selectedProductIds.size})</span>
+                  <span>Delete Selected Items ({selectedProductIds.size})</span>
                 </button>
 
                 {selectedProductIds.size > 0 && (
@@ -1839,7 +1847,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                               })
                             }
                             className="p-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-md cursor-pointer"
-                            title="Delete Image from Product"
+                            title="Completely delete this product item from site"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1917,10 +1925,10 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                             })
                           }
                           className="py-2 px-2 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                          title="Delete image from this product (opens confirmation modal)"
+                          title="Completely delete this product item from site (opens confirmation modal)"
                         >
                           <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">Delete</span>
+                          <span className="truncate">Delete Item</span>
                         </button>
                       </div>
 
@@ -2058,10 +2066,10 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                                   })
                                 }
                                 className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                title="Delete image from this product (opens confirmation modal)"
+                                title="Completely delete this product item from site (opens confirmation modal)"
                               >
                                 <Trash2 className="w-3 h-3" />
-                                <span>Delete</span>
+                                <span>Delete Item</span>
                               </button>
                             </div>
                           </td>
@@ -3721,10 +3729,14 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 block">
-                    Deletion Safety Check
+                    Permanent Site Deletion
                   </span>
                   <h3 className="text-base font-black text-slate-900">
-                    Confirm Image Removal
+                    {deleteConfirmTarget.mode === 'BULK_SELECTED'
+                      ? 'Delete Selected Products from Site'
+                      : deleteConfirmTarget.mode === 'FORM_GALLERY_IMAGE'
+                        ? 'Remove Gallery Image'
+                        : 'Delete Selected Item from Site'}
                   </h3>
                 </div>
               </div>
@@ -3738,12 +3750,12 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
             </div>
 
             <div className="space-y-3">
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
                 {deleteConfirmTarget.mode === 'BULK_SELECTED'
-                  ? `Are you sure you want to permanently remove the custom image associations for ${deleteConfirmTarget.targetIds?.length || 0} selected product(s)?`
+                  ? `Are you sure you want to completely delete ${deleteConfirmTarget.targetIds?.length || 0} selected product item(s) from the site? They will be permanently removed from the marketplace catalog, search, and directory listings, not just their images.`
                   : deleteConfirmTarget.mode === 'FORM_GALLERY_IMAGE'
                     ? `Are you sure you want to permanently remove this gallery image (#${(deleteConfirmTarget.imageIndex ?? 0) + 1}) from "${deleteConfirmTarget.product?.title || productForm.title || 'this product'}"?`
-                    : `Are you sure you want to permanently remove this image from "${deleteConfirmTarget.product?.title || 'this product'}" (ID: ${deleteConfirmTarget.product?.id || 'N/A'})?`}
+                    : `Are you sure you want to completely delete "${deleteConfirmTarget.product?.title || 'this product'}" (ID: ${deleteConfirmTarget.product?.id || 'N/A'}) from the site? This will remove the selected product item completely from the site, catalog, and directories, not just its image.`}
               </p>
 
               {deleteConfirmTarget.imageUrl && (
@@ -3767,8 +3779,8 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                     <div className="text-[10px] font-mono text-slate-500 truncate">
                       {deleteConfirmTarget.imageUrl}
                     </div>
-                    <div className="text-[10px] font-semibold text-rose-600">
-                      This action prevents accidental deletions and will take effect immediately upon confirmation.
+                    <div className="text-[10px] font-bold text-rose-600">
+                      ⚠️ Complete Item Removal: This item will be completely removed from the site, marketplace catalog, and search.
                     </div>
                   </div>
                 </div>
@@ -3790,7 +3802,13 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                 className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Confirm &amp; Permanently Remove</span>
+                <span>
+                  {deleteConfirmTarget.mode === 'BULK_SELECTED'
+                    ? `Confirm & Delete ${deleteConfirmTarget.targetIds?.length || 0} Items from Site`
+                    : deleteConfirmTarget.mode === 'FORM_GALLERY_IMAGE'
+                      ? 'Confirm & Remove Image'
+                      : 'Confirm & Delete Item from Site'}
+                </span>
               </button>
             </div>
           </div>

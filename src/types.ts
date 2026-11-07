@@ -747,7 +747,7 @@ export interface B2BTradeMetric {
 }
 
 
-export type NotificationType = 'RFQ' | 'MESSAGE' | 'SYSTEM' | 'ORDER';
+export type NotificationType = 'RFQ' | 'MESSAGE' | 'SYSTEM' | 'ORDER' | 'UPLOAD' | 'EDIT' | 'DELETE';
 
 export interface AppNotification {
   id: string;

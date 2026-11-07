@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Check, Trash2, ChevronRight, MessageSquare, FileText, Settings, X, Loader2 } from 'lucide-react';
+import { Bell, Check, Trash2, ChevronRight, MessageSquare, FileText, Settings, Upload, Edit3 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
 import { ActiveView } from '../../types';
 
@@ -33,10 +33,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onNavigate }
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'UPLOAD': return <Upload className="w-4 h-4 text-emerald-500" />;
+      case 'EDIT': return <Edit3 className="w-4 h-4 text-amber-500" />;
+      case 'DELETE': return <Trash2 className="w-4 h-4 text-rose-500" />;
       case 'RFQ': return <FileText className="w-4 h-4 text-blue-500" />;
       case 'MESSAGE': return <MessageSquare className="w-4 h-4 text-amber-500" />;
       case 'ORDER': return <Check className="w-4 h-4 text-emerald-500" />;
-      default: return <Settings className="w-4 h-4 text-slate-500" />;
+      default: return <Bell className="w-4 h-4 text-blue-500" />;
     }
   };
 

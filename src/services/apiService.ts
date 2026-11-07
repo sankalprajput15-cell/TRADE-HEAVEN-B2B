@@ -1203,6 +1203,14 @@ export const api = {
     try {
       window.dispatchEvent(new Event('tradeheaven_users_updated'));
       window.dispatchEvent(new Event('tradeheaven_user_deletion_logs_updated'));
+      window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+        detail: {
+          type: 'DELETE',
+          title: 'User Account Permanently Deleted',
+          message: `User ${cleanEmail || cleanId} was permanently removed from all systems.`,
+          linkView: 'admin'
+        }
+      }));
     } catch {}
 
     return {
@@ -1361,6 +1369,17 @@ export const api = {
       persistStoredSuppliers(activeSuppliersStore);
     }
 
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+        detail: {
+          type: 'EDIT',
+          title: 'User Privileges Updated',
+          message: `Updated account privileges for ${targetRecord.name || targetUserId}.`,
+          linkView: 'admin'
+        }
+      }));
+    }
+
     return {
       success: true,
       data: targetRecord,
@@ -1389,7 +1408,18 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(account)
       });
-      return await res.json();
+      const data = await res.json();
+      if (typeof window !== 'undefined' && data?.success) {
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'UPLOAD',
+            title: 'Treasury Bank Account Added',
+            message: `Configured bank account for ${account.bankName || 'Treasury'}.`,
+            linkView: 'admin'
+          }
+        }));
+      }
+      return data;
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to save bank account' };
     }
@@ -1402,7 +1432,18 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
-      return await res.json();
+      const data = await res.json();
+      if (typeof window !== 'undefined' && data?.success) {
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'EDIT',
+            title: 'Treasury Bank Account Updated',
+            message: `Updated bank details for ${updates.bankName || 'Treasury'}.`,
+            linkView: 'admin'
+          }
+        }));
+      }
+      return data;
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to update bank account' };
     }
@@ -1411,7 +1452,18 @@ export const api = {
   async deleteBankAccount(id: string): Promise<{ success: boolean; message?: string }> {
     try {
       const res = await fetch(`/api/v1/treasury/bank-accounts/${id}`, { method: 'DELETE' });
-      return await res.json();
+      const data = await res.json();
+      if (typeof window !== 'undefined' && data?.success) {
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'DELETE',
+            title: 'Treasury Bank Account Removed',
+            message: 'Removed bank account from active routing.',
+            linkView: 'admin'
+          }
+        }));
+      }
+      return data;
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to delete bank account' };
     }
@@ -1624,6 +1676,19 @@ export const api = {
       baseProducts = baseProducts.filter(p => p.supplierTier === params.tier);
     }
 
+    // Exclude permanently deleted products across the entire site
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const rawDeleted = localStorage.getItem('trade_heaven_deleted_product_ids');
+        if (rawDeleted) {
+          const deletedIds = new Set<string>(JSON.parse(rawDeleted));
+          if (deletedIds.size > 0) {
+            baseProducts = baseProducts.filter(p => !deletedIds.has(p.id));
+          }
+        }
+      }
+    } catch {}
+
     return productImageManagerService.applyOverridesToProductList(baseProducts);
   },
 
@@ -1721,6 +1786,17 @@ export const api = {
         body: JSON.stringify(createdProd)
       }).catch(() => {});
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'UPLOAD',
+            title: 'New Product Uploaded',
+            message: `Successfully listed "${createdProd.title}" in ${createdProd.category}.`,
+            linkView: 'PRODUCT_DIRECTORY'
+          }
+        }));
+      }
+
       return { success: true, data: createdProd, message: 'New product added successfully!' };
     } catch (e: any) {
       return { success: false, message: e.message || 'Product creation failed!' };
@@ -1736,6 +1812,7 @@ export const api = {
         } catch {}
       }
 
+      let savedTitle = id;
       // Save updates to localStorage
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
@@ -1749,6 +1826,7 @@ export const api = {
           } else {
             current.unshift(mergedProd);
           }
+          savedTitle = mergedProd.title || id;
           try {
             autoSeoEngine.autoOptimizeProduct({
               ...mergedProd,
@@ -1767,6 +1845,17 @@ export const api = {
         body: JSON.stringify(updates)
       }).catch(() => {});
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'EDIT',
+            title: 'Product Details Edited',
+            message: `Successfully updated "${savedTitle}".`,
+            linkView: 'PRODUCT_DIRECTORY'
+          }
+        }));
+      }
+
       return { success: true, message: 'Product details updated successfully!' };
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to update product details' };
@@ -1775,10 +1864,92 @@ export const api = {
 
   async deleteProduct(id: string): Promise<{ success: boolean; message?: string }> {
     try {
-      const res = await fetch(`/api/v1/products/${id}`, { method: 'DELETE' });
-      return await res.json();
+      let deletedTitle = id;
+      // 1. Mark as deleted in localStorage and remove from custom products
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const rawDeleted = localStorage.getItem('trade_heaven_deleted_product_ids');
+        const deletedIds: string[] = rawDeleted ? JSON.parse(rawDeleted) : [];
+        if (!deletedIds.includes(id)) {
+          deletedIds.push(id);
+          localStorage.setItem('trade_heaven_deleted_product_ids', JSON.stringify(deletedIds));
+        }
+
+        const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+        if (rawCustom) {
+          const customList: Product[] = JSON.parse(rawCustom);
+          const found = customList.find(p => p.id === id);
+          if (found) deletedTitle = found.title || id;
+          const filtered = customList.filter(p => p.id !== id);
+          localStorage.setItem('trade_heaven_custom_products', JSON.stringify(filtered));
+        }
+      }
+
+      // 2. Clear image overrides
+      try {
+        await productImageManagerService.resetProductImage(id);
+      } catch {}
+
+      // 3. Delete from backend server
+      fetch(`/api/v1/products/${id}`, { method: 'DELETE' }).catch(() => {});
+
+      // 4. Dispatch event so every page/catalog updates immediately
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'DELETE',
+            title: 'Product Completely Deleted',
+            message: `Product "${deletedTitle}" was deleted from the site and catalog.`,
+            linkView: 'PRODUCT_DIRECTORY'
+          }
+        }));
+      }
+
+      return { success: true, message: 'Product completely deleted from site!' };
     } catch (e: any) {
-      return { success: false, message: e.message || 'Failed to delete' };
+      return { success: false, message: e.message || 'Failed to delete product from site' };
+    }
+  },
+
+  async restoreProduct(id: string, productSnapshot?: Product): Promise<{ success: boolean }> {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const rawDeleted = localStorage.getItem('trade_heaven_deleted_product_ids');
+        if (rawDeleted) {
+          const deletedIds: string[] = JSON.parse(rawDeleted);
+          const updated = deletedIds.filter(delId => delId !== id);
+          localStorage.setItem('trade_heaven_deleted_product_ids', JSON.stringify(updated));
+        }
+        if (productSnapshot) {
+          const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+          const customList: Product[] = rawCustom ? JSON.parse(rawCustom) : [];
+          if (!customList.some(p => p.id === id)) {
+            customList.unshift(productSnapshot);
+            localStorage.setItem('trade_heaven_custom_products', JSON.stringify(customList));
+          }
+        }
+      }
+      if (productSnapshot) {
+        fetch('/api/v1/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productSnapshot)
+        }).catch(() => {});
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+        window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+          detail: {
+            type: 'SYSTEM',
+            title: 'Product Restored',
+            message: `Restored "${productSnapshot?.title || id}" back to catalog.`,
+            linkView: 'PRODUCT_DIRECTORY'
+          }
+        }));
+      }
+      return { success: true };
+    } catch {
+      return { success: false };
     }
   },
 

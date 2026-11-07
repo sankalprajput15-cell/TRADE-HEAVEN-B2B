@@ -131,6 +131,18 @@ export const ClientUploadsAdminModule: React.FC<Props> = ({
               ? `Wire slip for "${data.record.companyName}" verified & marked APPROVED!`
               : `Wire slip for "${data.record.companyName}" marked as REJECTED.`
           );
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+              detail: {
+                type: 'EDIT',
+                title: 'Wire Status Updated',
+                message: status === 'VERIFIED_APPROVED'
+                  ? `Wire slip for "${data.record.companyName}" verified & APPROVED.`
+                  : `Wire slip for "${data.record.companyName}" rejected.`,
+                linkView: 'admin'
+              }
+            }));
+          }
         }
       } else {
         showToast('error', 'Failed to update upload status on server.');
@@ -189,6 +201,16 @@ export const ClientUploadsAdminModule: React.FC<Props> = ({
 
       if (res.ok) {
         showToast('success', 'Client wire confirmation recorded successfully.');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
+            detail: {
+              type: 'UPLOAD',
+              title: 'Wire Transfer Slip Uploaded',
+              message: `Recorded wire confirmation for ${manualCompany || manualClientName || 'Client'}.`,
+              linkView: 'admin'
+            }
+          }));
+        }
         setIsManualUploadOpen(false);
         setManualFile(null);
         setManualClientName('');
