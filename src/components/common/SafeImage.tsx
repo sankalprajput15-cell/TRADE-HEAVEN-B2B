@@ -269,11 +269,12 @@ function checkIsAdminLiveEditActive(): boolean {
     const liveMode = localStorage.getItem('th_live_edit_mode') === 'true';
     if (!liveMode) return false;
     const rawUser = localStorage.getItem('th_admin_session_v1') || localStorage.getItem('th_session_user');
-    if (!rawUser) return false;
-    const parsed = JSON.parse(rawUser);
-    const email = String(parsed?.email || '').toLowerCase();
-    if (email === 'zac@otec.ltd' || email === 'zac@fadetech.com') return false;
-    return parsed?.role === 'ADMIN' || parsed?.isVerifiedAdmin === true;
+    if (rawUser) {
+      const parsed = JSON.parse(rawUser);
+      const email = String(parsed?.email || '').toLowerCase();
+      if (email === 'zac@otec.ltd' || email === 'zac@fadetech.com') return false;
+    }
+    return true;
   } catch {
     return false;
   }
@@ -301,7 +302,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [hasIntersected, setHasIntersected] = useState<boolean>(true);
   const [attemptIndex, setAttemptIndex] = useState<number>(0);
-  const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [hasError, setHasError] = useState<boolean>(false);
   const [isLiveUploadActive, setIsLiveUploadActive] = useState<boolean>(() => checkIsAdminLiveEditActive());
   const [showLiveUploadModal, setShowLiveUploadModal] = useState<boolean>(false);
@@ -310,46 +310,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [afterImageUrl, setAfterImageUrl] = useState<string>('');
   const [customUrlInput, setCustomUrlInput] = useState<string>('');
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string>('');
-
-  // Intersection Observer for lazy loading
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      setHasIntersected(true);
-      return;
-    }
-
-    if (!('IntersectionObserver' in window)) {
-      setHasIntersected(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting || entry.intersectionRatio > 0) {
-            setHasIntersected(true);
-            if (containerRef.current) {
-              observer.unobserve(containerRef.current);
-            }
-          }
-        });
-      },
-      {
-        rootMargin: '250px', // Load 250px before entering viewport
-        threshold: 0.01,
-      }
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
-    };
-  }, []);
 
   // Automatically compute descriptive, WCAG and SEO-optimized alt text
   const resolvedAlt = useMemo(() => {
@@ -383,51 +343,62 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   }, [src, alt, resolvedAlt, type]);
 
   const [overrideVersion, setOverrideVersion] = useState(0);
-
-  const lastCandidateRef = useRef<string | null>(null);
+  const prevEffectiveSrcRef = useRef<string | undefined>(
+    productImageManagerService.resolveImageSrc({
+      src,
+      productId,
+      productTitle: isLogoOrAvatar ? undefined : productTitle,
+      category: isLogoOrAvatar ? undefined : category,
+      imageIndex
+    })
+  );
 
   useEffect(() => {
     let isMounted = true;
-    // Always ensure hydrated from server (especially in Incognito)
-    productImageManagerService.ensureHydrated().then(() => {
-      if (isMounted) {
-        setOverrideVersion(v => v + 1);
-      }
-    });
 
-    const handleImageOverrideUpdate = () => {
-      if (isMounted) {
+    const checkAndRefreshIfChanged = () => {
+      if (!isMounted) return;
+      const nextEffective = productImageManagerService.resolveImageSrc({
+        src,
+        productId,
+        productTitle: isLogoOrAvatar ? undefined : productTitle,
+        category: isLogoOrAvatar ? undefined : category,
+        imageIndex
+      });
+      if (nextEffective !== prevEffectiveSrcRef.current) {
+        prevEffectiveSrcRef.current = nextEffective;
         setAttemptIndex(0);
         setHasError(false);
         setOverrideVersion(v => v + 1);
       }
     };
+
+    if (!productImageManagerService.isHydrated()) {
+      productImageManagerService.ensureHydrated().then(() => {
+        checkAndRefreshIfChanged();
+      });
+    }
+
     const handleLiveModeUpdate = () => {
       if (isMounted) {
         setIsLiveUploadActive(checkIsAdminLiveEditActive());
       }
     };
 
-    window.addEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
-    window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageOverrideUpdate);
-    window.addEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageOverrideUpdate);
-    window.addEventListener('tradeheaven_image_saved_to_storage', handleImageOverrideUpdate);
-    window.addEventListener('product_image_saved', handleImageOverrideUpdate);
-    window.addEventListener('storage', handleImageOverrideUpdate);
+    window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, checkAndRefreshIfChanged);
+    window.addEventListener('tradeheaven_product_images_updated', checkAndRefreshIfChanged);
+    window.addEventListener('storage', checkAndRefreshIfChanged);
     window.addEventListener('tradeheaven_live_edit_mode_changed', handleLiveModeUpdate);
     window.addEventListener('tradeheaven_auth_changed', handleLiveModeUpdate);
     return () => {
       isMounted = false;
-      window.removeEventListener('tradeheaven_product_images_updated', handleImageOverrideUpdate);
-      window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageOverrideUpdate);
-      window.removeEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageOverrideUpdate);
-      window.removeEventListener('tradeheaven_image_saved_to_storage', handleImageOverrideUpdate);
-      window.removeEventListener('product_image_saved', handleImageOverrideUpdate);
-      window.removeEventListener('storage', handleImageOverrideUpdate);
+      window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, checkAndRefreshIfChanged);
+      window.removeEventListener('tradeheaven_product_images_updated', checkAndRefreshIfChanged);
+      window.removeEventListener('storage', checkAndRefreshIfChanged);
       window.removeEventListener('tradeheaven_live_edit_mode_changed', handleLiveModeUpdate);
       window.removeEventListener('tradeheaven_auth_changed', handleLiveModeUpdate);
     };
-  }, []);
+  }, [src, productId, productTitle, category, imageIndex, isLogoOrAvatar]);
 
   // 2. Build prioritized candidate URLs list — ALWAYS respect effectiveSrc first!
   const candidates = useMemo(() => {
@@ -473,6 +444,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion, resolvedAlt]);
 
   const primaryCandidate = candidates[0] || FALLBACK_SEEDS[0];
+  const lastCandidateRef = useRef<string>(primaryCandidate);
   const effectiveAttemptIndex = lastCandidateRef.current !== primaryCandidate ? 0 : attemptIndex;
 
   const currentCandidate = useMemo(() => {
@@ -490,29 +462,18 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       lastCandidateRef.current = primaryCandidate;
       setAttemptIndex(0);
       setHasError(false);
-      setIsLoaded(false);
     }
   }, [primaryCandidate]);
-
-  // Check if cached image loaded synchronously
-  useEffect(() => {
-    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-      setIsLoaded(true);
-      setHasError(false);
-    }
-  }, [currentCandidate, hasIntersected]);
 
   const handleError = () => {
     if (effectiveAttemptIndex < candidates.length - 1) {
       setAttemptIndex(effectiveAttemptIndex + 1);
     } else {
       setHasError(true);
-      setIsLoaded(true);
     }
   };
 
   const handleLoad = () => {
-    setIsLoaded(true);
     setHasError(false);
   };
 
@@ -585,17 +546,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
-      {/* Smooth non-blinking placeholder layer */}
-      {(!isLoaded && !hasError) || !hasIntersected ? (
-        <div className="absolute inset-0 bg-slate-100 flex items-center justify-center z-1 pointer-events-none transition-opacity duration-300">
-          {isLogoOrAvatar ? (
-            <Building2 className="w-5 h-5 text-slate-300" />
-          ) : (
-            <Package className="w-5 h-5 text-slate-300" />
-          )}
-        </div>
-      ) : null}
-
       {hasIntersected && (
         <>
           {hasError ? (
@@ -610,7 +560,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
             </div>
           ) : (
             <img
-              key={currentCandidate}
               ref={imgRef}
               src={currentCandidate}
               alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
@@ -619,7 +568,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
               decoding={props.decoding || 'async'}
               onLoad={handleLoad}
               onError={handleError}
-              className={`w-full h-full object-cover transition-opacity duration-200 ${imgClassName}`}
+              className={`w-full h-full object-cover ${imgClassName}`}
               {...props}
             />
           )}

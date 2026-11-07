@@ -1034,13 +1034,36 @@ const MainApp: React.FC = () => {
     preFetchStaticData();
 
     let isMounted = true;
+    const applyOverridesIfChanged = (prevList: Product[]): Product[] => {
+      const nextList = productImageManagerService.applyOverridesToProductList(prevList);
+      let changed = nextList.length !== prevList.length;
+      if (!changed) {
+        for (let i = 0; i < prevList.length; i++) {
+          const p = prevList[i];
+          const n = nextList[i];
+          if (
+            p.id !== n.id ||
+            p.images?.[0] !== n.images?.[0] ||
+            (p.images?.length || 0) !== (n.images?.length || 0)
+          ) {
+            changed = true;
+            break;
+          }
+        }
+      }
+      return changed ? nextList : prevList;
+    };
+
     const hydrationPromise = productImageManagerService.ensureHydrated().then(() => {
       if (isMounted) {
-        setProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+        setProducts(prev => applyOverridesIfChanged(prev));
         setSelectedProduct(prev => {
           if (!prev) return null;
           const [updated] = productImageManagerService.applyOverridesToProductList([prev]);
-          return updated || prev;
+          if (updated && updated.images?.[0] !== prev.images?.[0]) {
+            return updated;
+          }
+          return prev;
         });
       }
     });
@@ -1056,7 +1079,7 @@ const MainApp: React.FC = () => {
       fetchRFQs();
     };
     const handleProductImagesUpdated = () => {
-      setProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+      setProducts(prev => applyOverridesIfChanged(prev));
       setSelectedProduct(prev => {
         if (!prev) return null;
         const [updated] = productImageManagerService.applyOverridesToProductList([prev]);
@@ -1068,20 +1091,12 @@ const MainApp: React.FC = () => {
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);
     window.addEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
-    window.addEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
-    window.addEventListener('tradeheaven:image-saved-to-storage', handleProductImagesUpdated);
-    window.addEventListener('tradeheaven_image_saved_to_storage', handleProductImagesUpdated);
-    window.addEventListener('product_image_saved', handleProductImagesUpdated);
     window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
 
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_rfq_created', handleRfqRefresh);
       window.removeEventListener('tradeheaven_product_images_updated', handleProductImagesUpdated);
-      window.removeEventListener('tradeheaven_product_image_saved', handleProductImagesUpdated);
-      window.removeEventListener('tradeheaven:image-saved-to-storage', handleProductImagesUpdated);
-      window.removeEventListener('tradeheaven_image_saved_to_storage', handleProductImagesUpdated);
-      window.removeEventListener('product_image_saved', handleProductImagesUpdated);
       window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
     };
   }, []);

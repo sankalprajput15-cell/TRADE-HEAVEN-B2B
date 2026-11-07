@@ -102,7 +102,18 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const evaluateQueueHealthAndNotify = useCallback(
     (queue: DeliveryQueueHealthStatus) => {
-      setDeliveryQueueStatus(queue);
+      setDeliveryQueueStatus((prev) => {
+        if (
+          prev.consecutiveFailures === queue.consecutiveFailures &&
+          prev.isFlagged === queue.isFlagged &&
+          prev.queueDepth === queue.queueDepth &&
+          prev.totalProcessed === queue.totalProcessed &&
+          prev.lastFailureAlertId === queue.lastFailureAlertId
+        ) {
+          return prev;
+        }
+        return queue;
+      });
 
       const threshold = queue.failureThreshold || 5;
       const isFlagged = queue.isFlagged || queue.consecutiveFailures >= threshold;
@@ -199,12 +210,12 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     [evaluateQueueHealthAndNotify]
   );
 
-  // Poll server-side delivery queue health every 5 seconds
+  // Poll server-side delivery queue health every 30 seconds without causing unnecessary re-renders
   useEffect(() => {
     void refreshDeliveryQueueStatus();
     const intervalId = setInterval(() => {
       void refreshDeliveryQueueStatus();
-    }, 5000);
+    }, 30000);
     return () => clearInterval(intervalId);
   }, [refreshDeliveryQueueStatus]);
 

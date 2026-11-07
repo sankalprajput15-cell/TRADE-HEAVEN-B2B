@@ -378,23 +378,26 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   };
 
   useEffect(() => {
-    productImageManagerService.syncFromServer().then(() => {
+    productImageManagerService.syncFromServer(true).then(() => {
       refreshState();
     });
-    const handleUpdate = () => {
+    const handleImagesUpdated = () => {
       const st = productImageManagerService.getState();
       setSystemState({ ...st });
+      setAllProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+    };
+    const handleProductsUpdated = () => {
       refreshState();
     };
     const handleSeoUpdated = () => {
       setSeoRecords(autoSeoEngine.getAllSeoRecords());
     };
-    window.addEventListener('tradeheaven_product_images_updated', handleUpdate);
-    window.addEventListener('tradeheaven_products_updated', handleUpdate);
+    window.addEventListener('tradeheaven_product_images_updated', handleImagesUpdated);
+    window.addEventListener('tradeheaven_products_updated', handleProductsUpdated);
     window.addEventListener('tradeheaven_auto_seo_updated', handleSeoUpdated);
     return () => {
-      window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
-      window.removeEventListener('tradeheaven_products_updated', handleUpdate);
+      window.removeEventListener('tradeheaven_product_images_updated', handleImagesUpdated);
+      window.removeEventListener('tradeheaven_products_updated', handleProductsUpdated);
       window.removeEventListener('tradeheaven_auto_seo_updated', handleSeoUpdated);
     };
   }, []);

@@ -123,58 +123,39 @@ export const ProductCatalog: React.FC<Props> = ({
       }
     };
 
-    productImageManagerService.ensureHydrated().then(() => {
-      if (isMounted) {
-        setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
-      }
-    });
+    if (!productImageManagerService.isHydrated()) {
+      productImageManagerService.ensureHydrated().then(() => {
+        if (isMounted) {
+          setCachedProducts(prev => productImageManagerService.applyOverridesToProductList(prev));
+        }
+      });
+    }
 
     window.addEventListener('tradeheaven_product_images_updated', handleUpdate);
-    window.addEventListener('tradeheaven_product_image_saved', handleUpdate);
-    window.addEventListener('tradeheaven:image-saved-to-storage', handleUpdate);
-    window.addEventListener('tradeheaven_image_saved_to_storage', handleUpdate);
-    window.addEventListener('product_image_saved', handleUpdate);
     return () => {
       isMounted = false;
       window.removeEventListener('tradeheaven_product_images_updated', handleUpdate);
-      window.removeEventListener('tradeheaven_product_image_saved', handleUpdate);
-      window.removeEventListener('tradeheaven:image-saved-to-storage', handleUpdate);
-      window.removeEventListener('tradeheaven_image_saved_to_storage', handleUpdate);
-      window.removeEventListener('product_image_saved', handleUpdate);
     };
   }, []);
 
-  // Cache products to localStorage when they update (avoid storing huge base64 data URLs in cached_products)
+  // Load or update products when products prop or offline state changes
   useEffect(() => {
-    if (products.length > 0) {
+    if (products.length > 0 && !isOffline) {
       const overridden = productImageManagerService.applyOverridesToProductList(products);
-      try {
-        const serialized = JSON.stringify(overridden);
-        if (serialized.length < 1500000) {
-          localStorage.setItem('cached_products', serialized);
-        }
-      } catch {}
       setCachedProducts(overridden);
       setIsUsingCache(false);
-    }
-  }, [products]);
-
-  // Load from cache on mount or if offline/missing products prop
-  useEffect(() => {
-    if (products.length === 0 || isOffline) {
-      const cached = localStorage.getItem('cached_products');
-      if (cached) {
+    } else if (products.length === 0 || isOffline) {
+      try {
+        const cached = localStorage.getItem('cached_products');
+        if (cached) {
           const parsed = JSON.parse(cached) as Product[];
           if (Array.isArray(parsed)) {
             const overridden = productImageManagerService.applyOverridesToProductList<Product>(parsed);
             setCachedProducts(overridden);
             setIsUsingCache(true);
           }
-      }
-    } else if (products.length > 0) {
-      const overridden = productImageManagerService.applyOverridesToProductList(products);
-      setCachedProducts(overridden);
-      setIsUsingCache(false);
+        }
+      } catch {}
     }
   }, [products, isOffline]);
 

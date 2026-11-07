@@ -85,6 +85,8 @@ export const EditableImage: React.FC<EditableImageProps> = ({
     return 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80';
   }, [localEditedSrc, productId, contentKey, siteContent, defaultSrc, tick, imgLoadError]);
 
+  const lastHandledEventTsRef = useRef<number>(0);
+
   // Hook into productImageManagerService custom events emitted on storage save
   useEffect(() => {
     let isMounted = true;
@@ -100,6 +102,14 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       if (!isMounted) return;
       const customEv = event as CustomEvent<ProductImageSavedEventDetail>;
       const detail = customEv?.detail;
+      const evTs = detail?.timestamp || 0;
+      if (evTs > 0 && evTs === lastHandledEventTsRef.current) {
+        return;
+      }
+      if (evTs > 0) {
+        lastHandledEventTsRef.current = evTs;
+      }
+
       const key = (productId || contentKey || '').trim();
 
       // Clear any temporary local override so fresh storage source takes over
@@ -119,11 +129,9 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       }
     };
 
-    // Listen to custom events dispatched when an image is saved to storage
+    // Listen to primary custom event dispatched when an image is saved to storage
     window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageSavedToStorage);
     window.addEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageSavedToStorage);
-    window.addEventListener('tradeheaven_image_saved_to_storage', handleImageSavedToStorage);
-    window.addEventListener('product_image_saved', handleImageSavedToStorage);
     window.addEventListener('tradeheaven_product_images_updated', handleImageSavedToStorage);
 
     // Cross-tab/window storage synchronization
@@ -148,8 +156,6 @@ export const EditableImage: React.FC<EditableImageProps> = ({
       isMounted = false;
       window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, handleImageSavedToStorage);
       window.removeEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handleImageSavedToStorage);
-      window.removeEventListener('tradeheaven_image_saved_to_storage', handleImageSavedToStorage);
-      window.removeEventListener('product_image_saved', handleImageSavedToStorage);
       window.removeEventListener('tradeheaven_product_images_updated', handleImageSavedToStorage);
       window.removeEventListener('storage', handleStorageEvent);
     };
@@ -257,13 +263,12 @@ export const EditableImage: React.FC<EditableImageProps> = ({
         title={canEdit ? 'Click to replace or update image' : alt}
       >
         <img
-          key={currentSrc}
           src={currentSrc}
           alt={alt}
           loading="lazy"
           decoding="async"
           onError={handleImageError}
-          className={`w-full h-full object-cover rounded-inherit transition-opacity duration-300 ${imgClassName}`}
+          className={`w-full h-full object-cover rounded-inherit ${imgClassName}`}
         />
 
         {canEdit && (

@@ -33,22 +33,13 @@ export class GlobalErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.warn('[GlobalErrorBoundary] Intercepted runtime exception - diverting to Home:', {
+    console.warn('[GlobalErrorBoundary] Intercepted runtime exception:', {
       message: error.message,
       stack: error.stack,
       componentStack: errorInfo?.componentStack
     });
 
-    // Notify parent to reset view to HOMEPAGE
-    if (this.props.onReset) {
-      try {
-        this.props.onReset();
-      } catch (e) {
-        console.error('[GlobalErrorBoundary] onReset handler error:', e);
-      }
-    }
-
-    // Clean URL query parameters and redirect to home if needed
+    // Clean URL query parameters if needed without synchronously remounting the throwing tree
     if (typeof window !== 'undefined') {
       try {
         const url = new URL(window.location.href);
@@ -60,9 +51,8 @@ export class GlobalErrorBoundary extends React.Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    // Reset error boundary if children or fallbackTitle props changed (e.g. user navigated to a different view)
-    if (this.state.hasError && prevProps.children !== this.props.children) {
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.hasError && prevProps.fallbackTitle !== this.props.fallbackTitle) {
       this.setState({ hasError: false, error: null });
     }
   }

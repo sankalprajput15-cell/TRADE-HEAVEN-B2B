@@ -477,8 +477,8 @@ export const HeroSection: React.FC<Props> = ({
           imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1920, 85)}
           src={
             hp.heroBgImage && hp.heroBgImage.trim() && !hp.heroBgImage.includes('unsplash.com')
-              ? hp.heroBgImage.trim()
-              : '/assets/aistudio/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+              ? hp.heroBgImage.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/')
+              : '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
           }
           alt="Cargo Tanker Ship Marine Vessel Docking at Oversea Berth"
           aspectRatio="16/9"

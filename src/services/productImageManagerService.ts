@@ -266,29 +266,57 @@ class ProductImageManagerService {
   private hydrationPromise: Promise<ProductImageSystemState> | null = null;
   private locallyDeletedIds = new Set<string>();
   private localMutationTimes = new Map<string, number>();
+  private lastServerSyncAt = 0;
+  private lastEmitTimestamp = 0;
 
   constructor() {
     this.state = this.loadFromLocalStorage();
     if (typeof window !== 'undefined') {
       this.hydrateFromIndexedDb();
-      this.hydrationPromise = this.syncFromServer();
+      this.hydrationPromise = this.syncFromServer(true);
 
-      // Automatically sync when tab becomes visible or window gains focus (critical for Incognito / multi-tab real-time updates)
+      // Automatically sync when tab becomes visible or window gains focus (with cooldown so clicks/focus never cause flicker)
       window.addEventListener('focus', () => {
-        this.syncFromServer().catch(() => {});
+        if (Date.now() - this.lastServerSyncAt > 8000) {
+          this.syncFromServer(false).catch(() => {});
+        }
       });
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          this.syncFromServer().catch(() => {});
+        if (document.visibilityState === 'visible' && Date.now() - this.lastServerSyncAt > 8000) {
+          this.syncFromServer(false).catch(() => {});
         }
       });
-      // Periodic lightweight sync so open Incognito windows update in real time without page refresh
+      // Periodic lightweight sync (every 30s) that only notifies UI if actual image URLs changed on server
       setInterval(() => {
         if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-          this.syncFromServer().catch(() => {});
+          this.syncFromServer(false).catch(() => {});
         }
-      }, 10000);
+      }, 30000);
     }
+  }
+
+  private getCanonicalVisualHash(st: ProductImageSystemState): string {
+    const sortedOverrides = Object.keys(st.overrides || {})
+      .sort()
+      .map(k => {
+        const entry = st.overrides[k];
+        if (!entry?.primary) return '';
+        const p = normalizeProductAssetUrl(entry.primary);
+        const g = Array.isArray(entry.gallery) ? entry.gallery.map(u => normalizeProductAssetUrl(u)).join(',') : p;
+        return `${k}:${p}|${g}`;
+      })
+      .filter(Boolean)
+      .join(';');
+    const sortedCats = Object.keys(st.categoryOverrides || {})
+      .sort()
+      .map(k => `${k}:${normalizeProductAssetUrl(st.categoryOverrides[k])}`)
+      .join(';');
+    const sortedUrls = Object.keys(st.urlReplacements || {})
+      .sort()
+      .map(k => `${k}->${normalizeProductAssetUrl(st.urlReplacements[k])}`)
+      .join(';');
+    const globalDef = st.globalDefaultImage ? normalizeProductAssetUrl(st.globalDefaultImage) : '';
+    return `O=[${sortedOverrides}]|G=[${globalDef}]|C=[${sortedCats}]|U=[${sortedUrls}]`;
   }
 
   public isHydrated(): boolean {
@@ -517,8 +545,9 @@ class ProductImageManagerService {
   private emitImageSavedEvent(context?: { productId?: string; url?: string; gallery?: string[]; action?: string; details?: any }) {
     if (typeof window === 'undefined') return;
     try {
+      this.lastEmitTimestamp = Date.now();
       const detail: ProductImageSavedEventDetail = {
-        timestamp: Date.now(),
+        timestamp: this.lastEmitTimestamp,
         state: this.state,
         overrides: this.state.overrides,
         mediaLibrary: this.state.mediaLibrary,
@@ -535,6 +564,7 @@ class ProductImageManagerService {
       window.dispatchEvent(new CustomEvent(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, { detail }));
       window.dispatchEvent(new CustomEvent('tradeheaven_image_saved_to_storage', { detail }));
       window.dispatchEvent(new CustomEvent('product_image_saved', { detail }));
+      window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated', { detail: this.state }));
     } catch (err) {
       console.warn('[ProductImageManagerService] Error emitting image saved event:', err);
     }
@@ -548,18 +578,19 @@ class ProductImageManagerService {
     callback: (event: CustomEvent<ProductImageSavedEventDetail>) => void
   ): () => void {
     if (typeof window === 'undefined') return () => {};
-    const handler = (e: Event) => callback(e as CustomEvent<ProductImageSavedEventDetail>);
+    let lastHandledTs = 0;
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<ProductImageSavedEventDetail>;
+      const ts = ce?.detail?.timestamp || Date.now();
+      if (ts === lastHandledTs) return;
+      lastHandledTs = ts;
+      callback(ce);
+    };
     window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, handler);
     window.addEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handler);
-    window.addEventListener('tradeheaven_image_saved_to_storage', handler);
-    window.addEventListener('product_image_saved', handler);
-    window.addEventListener('tradeheaven_product_images_updated', handler);
     return () => {
       window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, handler);
       window.removeEventListener(PRODUCT_IMAGE_STORAGE_SAVED_EVENT, handler);
-      window.removeEventListener('tradeheaven_image_saved_to_storage', handler);
-      window.removeEventListener('product_image_saved', handler);
-      window.removeEventListener('tradeheaven_product_images_updated', handler);
     };
   }
 
@@ -617,6 +648,9 @@ class ProductImageManagerService {
 
   private notifyListeners() {
     if (typeof window !== 'undefined') {
+      // Avoid duplicate dispatch if emitImageSavedEvent already fired in the same synchronous turn
+      if (Date.now() - this.lastEmitTimestamp < 25) return;
+      this.lastEmitTimestamp = Date.now();
       window.dispatchEvent(new CustomEvent('tradeheaven_product_images_updated', { detail: this.state }));
     }
   }
@@ -639,7 +673,12 @@ class ProductImageManagerService {
     return this.state;
   }
 
-  public async syncFromServer(): Promise<ProductImageSystemState> {
+  public async syncFromServer(force = true): Promise<ProductImageSystemState> {
+    if (!force && Date.now() - this.lastServerSyncAt < 5000) {
+      return this.state;
+    }
+    this.lastServerSyncAt = Date.now();
+
     try {
       let srv: ProductImageSystemState | null = null;
 
@@ -691,6 +730,8 @@ class ProductImageManagerService {
       }
 
       if (srv) {
+        const prevVisualHash = this.getCanonicalVisualHash(this.state);
+
         const localOverrides = this.state.overrides || {};
         const srvOverrides = this.normalizeOverrideMap(srv.overrides || {});
         const mergedOverrides: Record<string, ProductImageOverrideEntry> = {
@@ -712,13 +753,6 @@ class ProductImageManagerService {
             mergedOverrides[pid] = localEntry;
           }
         }
-
-        const prevSerialized = JSON.stringify({
-          o: this.state.overrides,
-          g: this.state.globalDefaultImage,
-          c: this.state.categoryOverrides,
-          u: this.state.urlReplacements
-        });
 
         this.state.overrides = mergedOverrides;
         this.state.globalDefaultImage = srv.globalDefaultImage !== undefined
@@ -748,23 +782,18 @@ class ProductImageManagerService {
           this.state.mediaLibrary = mergedMedia;
         }
 
-        const nextSerialized = JSON.stringify({
-          o: this.state.overrides,
-          g: this.state.globalDefaultImage,
-          c: this.state.categoryOverrides,
-          u: this.state.urlReplacements
-        });
-
-        const wasAlreadyHydrated = this.isHydratedFromServer;
+        const nextVisualHash = this.getCanonicalVisualHash(this.state);
         this.isHydratedFromServer = true;
 
-        if (!wasAlreadyHydrated || prevSerialized !== nextSerialized) {
+        // ONLY save and notify UI components if actual image URLs changed!
+        if (prevVisualHash !== nextVisualHash) {
           this.saveToLocalStorage({ action: 'sync_from_server' });
-          this.notifyListeners();
         }
+      } else {
+        this.isHydratedFromServer = true;
       }
     } catch {
-      // Offline or local fallback
+      this.isHydratedFromServer = true;
     }
     return this.state;
   }
