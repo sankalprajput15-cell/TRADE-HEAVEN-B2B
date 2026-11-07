@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App.tsx';
 import './index.css';
+import './services/autoCacheOptimizer';
 
 // Clear mock data and any cached/default auth sessions from local/session storage on boot
 localStorage.removeItem('th_suppliers_store');

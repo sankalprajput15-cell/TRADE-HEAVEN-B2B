@@ -5,6 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import sharp from 'sharp';
 import {
   TradeHeavenMediatorEngine,
   TradeHeavenSqlPoolAdapter,
@@ -164,25 +165,103 @@ app.use((req, _res, next) => {
 // Explicitly serve /assets/uploads directory for uploaded product images with CORS
 const uploadsStaticDir = path.join(process.cwd(), 'public', 'assets', 'uploads');
 const legacyAssetsStaticDir = path.join(process.cwd(), 'public', 'assets', 'aistudio');
+
+// Cache for dynamically optimized WebP image variants in-memory
+const optimizedImageBufferCache = new Map<string, { buffer: Buffer; contentType: string; mtime: number }>();
+
+// Automated Image Optimization & High-Speed Cache Middleware
+app.get(['/assets/uploads/:filename', '/assets/tradeheaven/:filename'], async (req, res, next) => {
+  const filename = req.params.filename;
+  if (!filename || !/\.(jpg|jpeg|png|webp|avif)$/i.test(filename)) {
+    return next();
+  }
+
+  const primaryPath = path.join(uploadsStaticDir, filename);
+  const fallbackPath = path.join(legacyAssetsStaticDir, filename);
+  const targetPath = fs.existsSync(primaryPath) ? primaryPath : fs.existsSync(fallbackPath) ? fallbackPath : null;
+
+  if (!targetPath) {
+    return next();
+  }
+
+  try {
+    const stat = fs.statSync(targetPath);
+    const mtime = stat.mtimeMs;
+    const reqWidth = req.query.w ? parseInt(String(req.query.w), 10) : undefined;
+    const isThumb = req.query.thumb === '1' || req.query.thumbnail === 'true';
+    const width = isThumb ? (reqWidth || 360) : reqWidth;
+    const quality = width && width <= 400 ? 75 : 82;
+
+    const acceptsWebp = (req.headers.accept || '').includes('image/webp');
+    const isAlreadyWebp = filename.toLowerCase().endsWith('.webp');
+    const cacheKey = `${filename}_w${width || 'orig'}_${isAlreadyWebp ? 'webp' : acceptsWebp ? 'webp' : 'orig'}`;
+
+    // Return from in-memory cache if file has not changed
+    const cached = optimizedImageBufferCache.get(cacheKey);
+    if (cached && cached.mtime === mtime) {
+      res.setHeader('Content-Type', cached.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('X-Image-Cache', 'HIT');
+      return res.send(cached.buffer);
+    }
+
+    // Process & compress on-the-fly with sharp
+    let pipeline = sharp(targetPath);
+    if (width && width > 0 && width < 3000) {
+      pipeline = pipeline.resize({ width, withoutEnlargement: true });
+    }
+
+    let outBuffer: Buffer;
+    let outType: string;
+
+    if (acceptsWebp || isAlreadyWebp) {
+      outBuffer = await pipeline.webp({ quality, effort: 4 }).toBuffer();
+      outType = 'image/webp';
+    } else {
+      outBuffer = await pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toBuffer();
+      outType = 'image/jpeg';
+    }
+
+    // Keep cache size bounded (max 150 items)
+    if (optimizedImageBufferCache.size > 150) {
+      const oldestKey = optimizedImageBufferCache.keys().next().value;
+      if (oldestKey) optimizedImageBufferCache.delete(oldestKey);
+    }
+
+    optimizedImageBufferCache.set(cacheKey, { buffer: outBuffer, contentType: outType, mtime });
+
+    res.setHeader('Content-Type', outType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Image-Cache', 'OPTIMIZED');
+    return res.send(outBuffer);
+  } catch (err) {
+    // Fall back to standard static file serving if sharp encounters an issue
+    return next();
+  }
+});
+
+// Explicitly serve /assets/uploads directory for uploaded product images with CORS
 app.use('/assets/uploads', express.static(uploadsStaticDir, {
-  maxAge: '1h',
+  maxAge: '7d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
   }
 }));
 app.use('/assets/uploads', express.static(legacyAssetsStaticDir, {
-  maxAge: '1h',
+  maxAge: '7d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
   }
 }));
 app.use('/assets/tradeheaven', express.static(uploadsStaticDir, {
-  maxAge: '1h',
+  maxAge: '7d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
   }
 }));
 
@@ -6048,6 +6127,19 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
     const finalFileName = `${baseName}-${Date.now()}.${ext}`;
     const filePath = path.join(UPLOADS_DIR, finalFileName);
     fs.writeFileSync(filePath, buffer);
+
+    // Automatically optimize images in background (generate lightweight webp version)
+    if (ext === 'jpg' || ext === 'png') {
+      sharp(buffer)
+        .resize({ width: 1400, withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer()
+        .then((optWebp) => {
+          const webpName = `${baseName}-${Date.now()}.webp`;
+          fs.writeFileSync(path.join(UPLOADS_DIR, webpName), optWebp);
+        })
+        .catch(() => {});
+    }
 
     const uploadedUrl = `/assets/uploads/${finalFileName}`;
     const nowIso = new Date().toISOString();

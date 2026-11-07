@@ -449,12 +449,22 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
   const currentCandidate = useMemo(() => {
     const raw = candidates[effectiveAttemptIndex] || FALLBACK_SEEDS[0];
-    if (!raw || raw.startsWith('/assets/') || raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
-    return optimizeUnsplashUrl(raw, {
-      width: isThumbnail ? 320 : 800,
-      quality: 70,
-      isThumbnail
-    });
+    if (!raw) return FALLBACK_SEEDS[0];
+    if (raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
+    if (raw.includes('images.unsplash.com')) {
+      return optimizeUnsplashUrl(raw, {
+        width: isThumbnail ? 320 : 800,
+        quality: 70,
+        isThumbnail
+      });
+    }
+    // For local assets, append automated width hints so server sharp optimizer serves compressed WebP instantly
+    if (raw.startsWith('/assets/uploads/') || raw.startsWith('/assets/tradeheaven/')) {
+      const sep = raw.includes('?') ? '&' : '?';
+      const w = isThumbnail ? 360 : 1200;
+      return `${raw}${sep}w=${w}`;
+    }
+    return raw;
   }, [candidates, effectiveAttemptIndex, isThumbnail]);
 
   useEffect(() => {

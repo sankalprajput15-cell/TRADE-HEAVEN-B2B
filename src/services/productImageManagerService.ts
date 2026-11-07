@@ -1101,9 +1101,9 @@ class ProductImageManagerService {
    */
   public async convertImageFile(
     file: File,
-    targetFormat: OutputImageFormat = 'jpg',
-    quality = 0.92,
-    maxDimension = 1600,
+    targetFormat: OutputImageFormat = 'webp',
+    quality = 0.85,
+    maxDimension = 1400,
     autoWebpLossless = false,
     rotationDegrees = 0,
     filters?: Partial<ImageEditFilters>
@@ -1281,15 +1281,15 @@ class ProductImageManagerService {
     losslessCompression: boolean;
   }> {
     const useWebpLossless = Boolean(options?.autoWebpLossless);
-    const targetFormat: OutputImageFormat = useWebpLossless ? 'webp' : (options?.targetFormat || 'jpg');
-    const quality = useWebpLossless ? 1.0 : (options?.quality ?? 0.92);
+    const targetFormat: OutputImageFormat = useWebpLossless ? 'webp' : (options?.targetFormat || 'webp');
+    const quality = useWebpLossless ? 1.0 : (options?.quality ?? 0.85);
     const rotationDegrees = options?.rotationDegrees ?? 0;
 
     const converted = await this.convertImageFile(
       file,
       targetFormat,
       quality,
-      1600,
+      1400,
       useWebpLossless,
       rotationDegrees,
       options?.filters
