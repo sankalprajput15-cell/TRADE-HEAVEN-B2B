@@ -263,12 +263,6 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const handleEnableAdminLiveEditSession = async () => {
-    await login('yr943334@gmail.com', 'Admin@2026!');
-    setIsLiveEditMode(true);
-    setUserMenuOpen(false);
-  };
-
   const userMenuRef = useRef<HTMLDivElement>(null);
   const searchWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -912,19 +906,6 @@ export const Header: React.FC<Props> = ({
                           </button>
                         )}
                       </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold text-slate-500">
-                        Site Administrator?
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleEnableAdminLiveEditSession}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Upload className="w-3 h-3" />
-                        <span>Enable Top Admin Live Upload Bar</span>
-                      </button>
                     </div>
                   </div>
                 )}
