@@ -476,7 +476,7 @@ export const Header: React.FC<Props> = ({
 
   const isAdmin =
     !isRestrictedClient &&
-    (currentUser?.role === 'ADMIN' || !currentUser);
+    currentUser?.role === 'ADMIN';
 
   const handleToggleTopBarRealtimeEdit = async () => {
     if (!currentUser || currentUser.role !== 'ADMIN') {
@@ -534,8 +534,8 @@ export const Header: React.FC<Props> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
-      {/* Persistent Top Admin Real-Time Change & Upload Bar on Every Page */}
-      {!isRestrictedClient && (
+      {/* Persistent Top Admin Real-Time Change & Upload Bar on Every Page (Admin Only) */}
+      {isAdmin && (
         <div
           id="top-admin-realtime-edit-bar"
           className="w-full bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950 text-white border-b border-blue-800/60 px-2.5 sm:px-4 lg:px-6 py-1.5"
