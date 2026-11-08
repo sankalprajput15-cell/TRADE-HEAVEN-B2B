@@ -27,6 +27,7 @@ const DEFAULT_MASTER_ADMIN_USER: AuthUser = {
   role: 'ADMIN',
   isVerifiedAdmin: true,
   isVerified: true,
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
   companyName: 'Trade Heaven Global Operations & Treasury',
   country: 'United Kingdom',
   isPremium: true,
@@ -43,6 +44,7 @@ const DEFAULT_ZAC_CLIENT_USER: AuthUser = {
   role: 'SUPPLIER',
   isVerifiedAdmin: false,
   isVerified: true,
+  avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
   companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
   country: 'United States',
   isPremium: false,
@@ -54,6 +56,7 @@ const DEFAULT_ZAC_CLIENT_USER: AuthUser = {
 function sanitizeUserRole(u: AuthUser): AuthUser {
   if (!u || typeof u !== 'object') return u;
   const emailLower = (u.email || '').trim().toLowerCase();
+  const baseAvatar = u.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80';
   if (
     emailLower === 'zac@otec.ltd' ||
     emailLower === 'zac@fadetech.com' ||
@@ -62,10 +65,14 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
     return {
       ...u,
       role: 'SUPPLIER',
-      isVerifiedAdmin: false
+      isVerifiedAdmin: false,
+      avatarUrl: baseAvatar
     };
   }
-  return u;
+  return {
+    ...u,
+    avatarUrl: baseAvatar
+  };
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

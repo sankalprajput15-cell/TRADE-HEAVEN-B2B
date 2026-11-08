@@ -420,6 +420,20 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       list.push(normalizeProductAssetUrl(fallbackSrc.trim()));
     }
 
+    if (isLogoOrAvatar) {
+      const avatarFallbacks = [
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+      ];
+      for (const fb of avatarFallbacks) {
+        if (!list.includes(fb)) {
+          list.push(fb);
+        }
+      }
+      return list;
+    }
+
     // Retrieve high-quality category pool
     const pool = getCategoryPool(category, productTitle || alt || resolvedAlt);
     const seedString = `${productId || ''}-${category || ''}-${productTitle || alt || 'industrial-product'}`;
@@ -552,27 +566,33 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
   };
 
-  const showLiveButton = isLiveUploadActive && !disableLiveUpload && !isThumbnail;
+  const showLiveButton = isLiveUploadActive && !disableLiveUpload && !isThumbnail && !isLogoOrAvatar;
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
       {hasIntersected && (
         <>
           {hasError ? (
-            <div className="w-full h-full min-h-[44px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950 p-2 text-white text-center select-none">
-              <Factory className="w-4 h-4 text-amber-400 shrink-0 mb-0.5" />
-              <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
-                {resolvedAlt || alt || 'Verified Industrial Export'}
-              </span>
-              <span className="text-[8px] text-amber-400/90 font-mono uppercase tracking-wider">
-                Audited Exporter
-              </span>
-            </div>
+            isLogoOrAvatar ? (
+              <div className="w-full h-full min-w-full min-h-full flex items-center justify-center bg-blue-600 text-white rounded-full select-none">
+                <User className="w-3/5 h-3/5 text-white" />
+              </div>
+            ) : (
+              <div className="w-full h-full min-h-[44px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950 p-2 text-white text-center select-none">
+                <Factory className="w-4 h-4 text-amber-400 shrink-0 mb-0.5" />
+                <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
+                  {resolvedAlt || alt || 'Verified Industrial Export'}
+                </span>
+                <span className="text-[8px] text-amber-400/90 font-mono uppercase tracking-wider">
+                  Audited Exporter
+                </span>
+              </div>
+            )
           ) : (
             <img
               ref={imgRef}
               src={currentCandidate}
-              alt={resolvedAlt || alt || 'Verified B2B Wholesale Product'}
+              alt={resolvedAlt || alt || (isLogoOrAvatar ? 'User Avatar' : 'Verified B2B Wholesale Product')}
               referrerPolicy="no-referrer"
               loading={props.loading || (isThumbnail ? 'eager' : 'lazy')}
               decoding={props.decoding || 'async'}

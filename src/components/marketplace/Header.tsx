@@ -534,7 +534,7 @@ export const Header: React.FC<Props> = ({
           id="top-admin-realtime-edit-bar"
           className="w-full bg-gradient-to-r from-slate-950 via-blue-950 to-slate-950 text-white border-b border-blue-800/60 px-2.5 sm:px-4 lg:px-6 py-1.5"
         >
-          <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="w-full px-2.5 sm:px-4 lg:px-6 xl:px-8 flex flex-wrap items-center justify-between gap-2">
             {/* Left: Admin Bar Identity & Real-Time Live Edit Toggle */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-600/30 border border-blue-400/40 text-[10px] font-black uppercase tracking-wider text-blue-200">
@@ -626,9 +626,9 @@ export const Header: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="max-w-[1440px] mx-auto w-full px-2 sm:px-4 lg:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-2.5 lg:gap-4 min-w-0">
+      <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2.5 min-w-0">
         {/* Zone 1: Brand Identity & Primary Navigation */}
-        <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 shrink-0 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 shrink-0 min-w-0">
           <button
             type="button"
             onClick={() => handleNavClick('HOMEPAGE')}
@@ -638,7 +638,7 @@ export const Header: React.FC<Props> = ({
           </button>
 
           {/* Primary Inline Navigation Links */}
-          <nav aria-label="Main Navigation" className="hidden xl:flex items-center gap-1 h-16 shrink-0">
+          <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-0.5 xl:gap-1.5 h-14 sm:h-16 shrink-0">
             {primaryNavItems.map(item => {
               const isActive = item.activeMatch.includes(activeView);
               return (
@@ -646,7 +646,7 @@ export const Header: React.FC<Props> = ({
                   key={item.view}
                   type="button"
                   onClick={() => handleNavClick(item.view)}
-                  className={`relative h-full px-2 2xl:px-2.5 text-xs font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap shrink-0 ${
+                  className={`relative h-full px-1.5 xl:px-2.5 text-xs font-semibold tracking-tight transition-colors flex items-center cursor-pointer whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'text-blue-600'
                       : 'text-slate-600 hover:text-slate-950'
@@ -654,7 +654,7 @@ export const Header: React.FC<Props> = ({
                 >
                   <span>{item.label}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 inset-x-2 h-0.5 bg-blue-600 rounded-full" />
+                    <span className="absolute bottom-0 inset-x-1.5 xl:inset-x-2 h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
               );
@@ -663,8 +663,11 @@ export const Header: React.FC<Props> = ({
         </div>
 
         {/* Zone 2: Global Search Bar with Real-Time Category & Supplier Auto-Suggest Dropdown */}
-        <div ref={searchWrapperRef} className="relative flex-1 min-w-0 max-w-xs sm:max-w-sm lg:max-w-md mx-0.5 sm:mx-2">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center min-w-0">
+        <div
+          ref={searchWrapperRef}
+          className="relative flex-1 min-w-[120px] sm:min-w-[160px] md:min-w-[190px] max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-1 sm:mx-2 lg:mx-2.5"
+        >
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full min-w-0">
             <Search className="absolute left-2.5 sm:left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             <input
               id="header-global-search-input"
@@ -677,8 +680,8 @@ export const Header: React.FC<Props> = ({
                 setActiveSuggestIndex(-1);
               }}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search products, suppliers..."
-              className="w-full min-w-0 h-8 sm:h-9 pl-7 sm:pl-8 pr-6 sm:pr-7 rounded-xl bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 text-[11px] sm:text-xs text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              placeholder="Search products, suppliers, commodities..."
+              className="w-full min-w-0 h-8 sm:h-9 pl-7 sm:pl-8 pr-7 sm:pr-8 rounded-xl bg-slate-100/90 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-blue-500 text-[11px] sm:text-xs text-slate-900 placeholder-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-2xs"
               autoComplete="off"
               aria-autocomplete="list"
               aria-expanded={searchFocused && searchTerm.trim().length > 0}
@@ -707,13 +710,13 @@ export const Header: React.FC<Props> = ({
               onSelectSupplier={handleSelectSuggestedSupplier}
               onSelectProduct={handleSelectSuggestedProduct}
               onViewAllResults={() => handleSearchSubmit()}
-              className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:right-0 sm:mt-1.5 sm:min-w-[380px] z-50"
+              className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:right-0 sm:mt-1.5 w-full sm:min-w-[380px] lg:min-w-full z-50 shadow-2xl"
             />
           )}
         </div>
 
         {/* Zone 3: Wallet Balance, Primary CTA & Account Menu */}
-        <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 shrink-0 ml-auto">
           {/* Authenticated & Paid Registered Buyers/Suppliers Wallet Balance */}
           {isPaidAndRegisteredMember && currentUser && (
             <HeaderWalletBalance
@@ -727,11 +730,11 @@ export const Header: React.FC<Props> = ({
 
           {/* Quick Access: SEO Health, Mail Open Rate & Renewal Insights (Admin Only) */}
           {isAdmin && (
-            <div className="hidden lg:flex items-center gap-1.5 shrink-0">
+            <div className="hidden lg:flex items-center gap-1 sm:gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => handleNavClick('CLIENT_ADMIN', { tab: 'seo-health' })}
-                className={`flex h-8 sm:h-9 px-2.5 rounded-lg font-bold text-xs items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
+                className={`flex h-8 sm:h-9 px-2 sm:px-2.5 rounded-lg font-bold text-xs items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
                   activeView === 'CLIENT_ADMIN' && new URLSearchParams(window.location.search).get('tab') === 'seo-health'
                     ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
                     : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-300'
@@ -739,13 +742,14 @@ export const Header: React.FC<Props> = ({
                 title="Monitor Global Organic Traffic & Keyword Visibility Map"
               >
                 <Activity className="w-3.5 h-3.5 shrink-0" />
-                <span>SEO Health</span>
+                <span className="hidden xl:inline">SEO Health</span>
+                <span className="xl:hidden">SEO</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleNavClick('RENEWAL_INSIGHTS')}
-                className={`h-8 sm:h-9 px-2.5 rounded-lg font-bold text-xs items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
+                className={`flex h-8 sm:h-9 px-2 sm:px-2.5 rounded-lg font-bold text-xs items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
                   activeView === 'RENEWAL_INSIGHTS' || activeView === 'RENEWAL_EMAIL_EDITOR'
                     ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
                     : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
@@ -753,13 +757,14 @@ export const Header: React.FC<Props> = ({
                 title="Check Mail Open Rates, Click-Through Rates & Renewal Conversions"
               >
                 <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                <span>Mail Open Rate</span>
+                <span className="hidden xl:inline">Mail Open Rate</span>
+                <span className="xl:hidden">Mail Rate</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleNavClick('MAIL_DELIVERY_HISTORY')}
-                className={`h-8 sm:h-9 px-2.5 rounded-lg font-bold text-xs items-center gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
+                className={`flex h-8 sm:h-9 px-2 sm:px-2.5 rounded-lg font-bold text-xs items-center gap-1 sm:gap-1.5 transition-colors shrink-0 cursor-pointer whitespace-nowrap border ${
                   activeView === 'MAIL_DELIVERY_HISTORY'
                     ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
                     : 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-300'
@@ -767,7 +772,8 @@ export const Header: React.FC<Props> = ({
                 title="View full Mail Delivery History & Telemetry logs"
               >
                 <Mail className="w-3.5 h-3.5 shrink-0" />
-                <span>Mail History</span>
+                <span className="hidden xl:inline">Mail History</span>
+                <span className="xl:hidden">Mail Logs</span>
               </button>
             </div>
           )}
@@ -788,23 +794,26 @@ export const Header: React.FC<Props> = ({
           )}
 
           {/* Account Toggle Dropdown */}
-          <div className="relative shrink-0" ref={userMenuRef}>
+          <div className="relative shrink-0 z-20" ref={userMenuRef}>
             {currentUser ? (
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen(prev => !prev)}
-                  className="h-8 sm:h-9 pl-1.5 sm:pl-2 pr-1.5 sm:pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-1 sm:gap-1.5 transition-colors text-left cursor-pointer shrink-0"
+                  className="h-8 sm:h-9 pl-1.5 sm:pl-2 pr-1.5 sm:pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-1.5 transition-colors text-left cursor-pointer shrink-0 shadow-2xs"
                   title="Open Account & Navigation Menu"
+                  data-testid="header-account-button"
                 >
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0 flex items-center justify-center">
                     <SafeImage
-                      src={currentUser.avatarUrl}
+                      src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
                       alt={currentUser.name}
-                      className="w-full h-full object-cover"
+                      type="avatar"
+                      disableLiveUpload={true}
+                      className="w-full h-full object-cover rounded-full"
                     />
                   </div>
-                  <div className="hidden lg:block leading-none max-w-[84px]">
+                  <div className="hidden lg:block leading-none max-w-[84px] shrink-0">
                     <div className="text-xs font-semibold text-slate-900 truncate">
                       {currentUser.name.split(' ')[0]}
                     </div>
@@ -813,7 +822,7 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-500 shrink-0 transition-transform duration-150 ${
+                    className={`w-3.5 h-3.5 text-slate-500 shrink-0 transition-transform duration-150 ${
                       userMenuOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -823,12 +832,12 @@ export const Header: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="hidden lg:flex h-8 sm:h-9 px-2 xl:px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
+                  className="hidden xl:flex h-8 sm:h-9 px-2 xl:px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap shadow-2xs"
                   title="Sign Out / Logout"
                   data-testid="header-logout-button"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                  <span className="hidden xl:inline">Logout</span>
+                  <span className="hidden 2xl:inline">Logout</span>
                 </button>
               </div>
             ) : (
