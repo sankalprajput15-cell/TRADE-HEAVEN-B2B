@@ -4278,19 +4278,6 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
             </button>
             <div className="flex items-center gap-2">
               <button
-                type="button"
-                onClick={async () => {
-                  const clean = primaryUrl.trim();
-                  if (!clean) return;
-                  await productImageManagerService.setAllProductsImage(clean, MOCK_PRODUCTS.map(p => p.id));
-                  if (onSaved) onSaved('Applied this image to ALL listed products across the app!');
-                  onClose();
-                }}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold cursor-pointer"
-              >
-                Save &amp; Apply to All Products
-              </button>
-              <button
                 type="submit"
                 disabled={isUploading}
                 className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer"

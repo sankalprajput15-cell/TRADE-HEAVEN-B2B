@@ -17,7 +17,6 @@ import {
   Ship,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   FileText,
   X
 } from 'lucide-react';
@@ -146,7 +145,6 @@ export const Go4WorldBuyOrdersShowcase: React.FC<Go4WorldBuyOrdersShowcaseProps>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Filter Buyers by Country Flag ({filteredCountries.length} Countries):</span>
             </span>
 

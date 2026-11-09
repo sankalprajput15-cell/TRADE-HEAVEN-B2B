@@ -345,11 +345,25 @@ export const ClientAdminView: React.FC<Props> = ({
     const handleDeletionLogsUpdated = () => {
       setDeletionLogsCount(getUserDeletionLogs().length);
     };
+    const handleOpenUserRegistration = () => {
+      setActiveTab('RBAC_USERS');
+      setShowAddUserModal(true);
+      try {
+        sessionStorage.removeItem('th_open_add_user_modal');
+      } catch {}
+    };
+    try {
+      if (sessionStorage.getItem('th_open_add_user_modal') === 'true') {
+        handleOpenUserRegistration();
+      }
+    } catch {}
     window.addEventListener('tradeheaven_users_updated', handleUsersUpdated);
     window.addEventListener('tradeheaven_user_deletion_logs_updated', handleDeletionLogsUpdated);
+    window.addEventListener('tradeheaven_open_user_registration', handleOpenUserRegistration);
     return () => {
       window.removeEventListener('tradeheaven_users_updated', handleUsersUpdated);
       window.removeEventListener('tradeheaven_user_deletion_logs_updated', handleDeletionLogsUpdated);
+      window.removeEventListener('tradeheaven_open_user_registration', handleOpenUserRegistration);
     };
   }, [currentUser]);
 

@@ -871,14 +871,34 @@ export const Header: React.FC<Props> = ({
                           {currentUser.email}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleNavClick('DASHBOARD')}
-                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
-                      >
-                        <LayoutDashboard className="w-3.5 h-3.5" />
-                        <span>Dashboard</span>
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
+                              sessionStorage.setItem('th_open_add_user_modal', 'true');
+                            } catch {}
+                            handleNavClick('CLIENT_ADMIN', { tab: 'users' });
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('tradeheaven_open_user_registration'));
+                            }, 50);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap shadow-2xs"
+                          title="Register & Add New Users"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>User Registration</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleNavClick('DASHBOARD')}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap"
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" />
+                          <span>Dashboard</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -889,7 +909,7 @@ export const Header: React.FC<Props> = ({
                           Trade Heaven Account
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
-                          Sign in to view RFQs
+                          Sign in or register new user
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -911,9 +931,10 @@ export const Header: React.FC<Props> = ({
                               setUserMenuOpen(false);
                               onOpenRegisterFree();
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer whitespace-nowrap"
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                           >
-                            Join Free
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>User Registration</span>
                           </button>
                         )}
                       </div>
@@ -1028,6 +1049,24 @@ export const Header: React.FC<Props> = ({
                       Email Analytics &amp; Admin Controls
                     </div>
                     <div className="grid grid-cols-2 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          try {
+                            sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
+                            sessionStorage.setItem('th_open_add_user_modal', 'true');
+                          } catch {}
+                          handleNavClick('CLIENT_ADMIN', { tab: 'users' });
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('tradeheaven_open_user_registration'));
+                          }, 50);
+                        }}
+                        className="col-span-2 px-2.5 py-2 text-left text-xs font-bold bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center justify-center gap-2 text-white border border-emerald-700 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <UserPlus className="w-3.5 h-3.5 text-white shrink-0" />
+                        <span className="truncate">User Registration (+ Add New User)</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleNavClick('CLIENT_ADMIN', { tab: 'seo-health' })}

@@ -13,7 +13,6 @@ import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { SuppliersByRegionBar } from './SuppliersByRegionBar';
 import { CountryFlag } from '../common/CountryFlag';
-import { Go4WorldBuyOrdersShowcase } from './Go4WorldBuyOrdersShowcase';
 import { 
   ShieldCheck, 
   Award, 
@@ -544,17 +543,6 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         )}
       </div>
-
-      {/* 5.2. GO4WORLD-STYLE ALL COUNTRIES FLAGS & LIVE GLOBAL BUY ORDERS DIRECTORY */}
-      <Go4WorldBuyOrdersShowcase
-        onSelectRfq={onSelectRfq}
-        onNavigate={onNavigate}
-        onSelectCountryPortal={() => {
-          onNavigate('COUNTRY_HUB');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        compact={true}
-      />
 
       {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-200 shadow-sm text-slate-900 relative overflow-hidden">
