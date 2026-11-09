@@ -1776,7 +1776,10 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       {activeTab === 'RECEIVE_FUNDS' && (
         <div className="space-y-6 animate-fadeIn">
           {currentUser?.tier !== 'VIP' ||
+          tradeHeavenMediationService.isBasicPlanStatus(currentUser?.tier || currentUser?.plan, currentUser?.id) ||
           String(currentUser?.tier || currentUser?.plan || '').toLowerCase().includes('basic') ||
+          String(currentUser?.id || '').toLowerCase().includes('melissa') ||
+          String(currentUser?.email || '').toLowerCase().includes('mpcommodity') ||
           String(currentUser?.id || '').toLowerCase().includes('zac') ? (
             <div className="bg-white border border-amber-300 rounded-3xl p-8 shadow-sm space-y-5">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-100 pb-5">

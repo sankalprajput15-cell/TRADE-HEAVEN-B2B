@@ -178,7 +178,9 @@ export const VendorProfilePage: React.FC<Props> = ({
   });
 
   const isBasicPlanNoDirectTransfer =
+    profile.id === 'comp-melissa-mpcommodity' ||
     profile.id === 'comp-zac-importation-fadetech' ||
+    tradeHeavenMediationService.isBasicPlanStatus(profile.tier, profile.id) ||
     Boolean(profile.memberTierLabel?.toLowerCase().includes('basic plan'));
 
   const handleDirectSupplierTransfer = async (e: React.FormEvent) => {

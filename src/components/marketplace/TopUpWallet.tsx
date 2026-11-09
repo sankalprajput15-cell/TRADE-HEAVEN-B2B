@@ -230,7 +230,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
     [state]
   );
 
-  const [targetSupplierId, setTargetSupplierId] = useState<string>('comp-melissa-mpcommodity');
+  const [targetSupplierId, setTargetSupplierId] = useState<string>('comp-shenzhen-solar');
   const [supplierTransferMode, setSupplierTransferMode] = useState<'DIRECT_VIP' | 'ESCROW_HOLD'>('DIRECT_VIP');
   const [supplierTransferAmountInr, setSupplierTransferAmountInr] = useState<string>('2500');
   const [supplierOrderRef, setSupplierOrderRef] = useState<string>(() => `PO-VIP-${Math.floor(10000 + Math.random() * 90000)}`);
@@ -1773,7 +1773,7 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
                     <span>Direct On-Site Transfer Not Active</span>
                   </div>
                   <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
-                    Direct on-site fund transfer is not active for <strong>{selectedRecipientWallet?.company_name || 'IMPORTATION FADE-TECH (OTEC LTD)'}</strong>. Please contact the supplier directly for it.
+                    Direct on-site fund transfer is not active for <strong>{selectedRecipientWallet?.company_name || 'this Basic Plan supplier'}</strong> (Basic Plan Member). Please contact the supplier directly for payment arrangements.
                   </p>
                 </div>
               )}

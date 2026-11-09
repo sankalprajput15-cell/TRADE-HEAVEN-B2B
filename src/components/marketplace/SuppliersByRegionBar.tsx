@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TRENDING_KEYWORDS, ALL_COUNTRY_ITEMS } from '../../data/countriesData';
-import { Globe, ArrowRight, MessageCircle, ShieldCheck } from 'lucide-react';
+import { WORLD_COUNTRIES_LIST } from '../../data/worldCountriesAndBuyOrders';
+import { CountryFlag } from '../common/CountryFlag';
+import { Globe, MessageCircle, ShieldCheck, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 
 interface SuppliersByRegionBarProps {
@@ -16,6 +18,18 @@ export const SuppliersByRegionBar: React.FC<SuppliersByRegionBarProps> = ({
   onKeywordClick,
   className = ''
 }) => {
+  const [showAllWorldCountries, setShowAllWorldCountries] = useState(false);
+  const [countryFilter, setCountryFilter] = useState('');
+
+  const baseList = showAllWorldCountries ? WORLD_COUNTRIES_LIST : ALL_COUNTRY_ITEMS;
+  const displayedCountries = countryFilter.trim()
+    ? WORLD_COUNTRIES_LIST.filter(
+        c =>
+          c.name.toLowerCase().includes(countryFilter.toLowerCase()) ||
+          c.code.toLowerCase().includes(countryFilter.toLowerCase())
+      )
+    : baseList;
+
   return (
     <div className={`bg-white text-slate-900 border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm space-y-8 ${className}`}>
       
@@ -47,37 +61,61 @@ export const SuppliersByRegionBar: React.FC<SuppliersByRegionBarProps> = ({
 
       <div className="h-px w-full bg-slate-200 my-4" />
 
-      {/* 2. SUPPLIERS BY REGION MULTI-COLUMN GRID */}
+      {/* 2. SUPPLIERS & BUYERS BY REGION MULTI-COLUMN GRID (ALL 196 WORLD COUNTRIES) */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Globe className="w-5 h-5 text-blue-600" />
-              <span>Suppliers By Region &amp; Global Trade Ecosystem</span>
+              <span>Global Buyers &amp; Suppliers By Country Flag ({WORLD_COUNTRIES_LIST.length} Countries)</span>
             </h3>
             <p className="text-xs text-slate-600 mt-0.5">
-              Select a country to explore verified manufacturers, top buyers, latest export products &amp; active RFQs.
+              Select any country flag to explore verified buyers, active buy orders, manufacturers &amp; export products.
             </p>
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-mono font-bold shrink-0 self-start sm:self-auto">
-            34 Active Regional Trade Portals
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={countryFilter}
+                onChange={e => setCountryFilter(e.target.value)}
+                placeholder="Search 196 countries..."
+                className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 w-44"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAllWorldCountries(prev => !prev)}
+              className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>
+                {showAllWorldCountries
+                  ? 'Show Top 34 Hubs'
+                  : `Show All ${WORLD_COUNTRIES_LIST.length} World Flags`}
+              </span>
+              {showAllWorldCountries ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
 
-        {/* 6-COLUMN GRID FOR 34 COUNTRIES */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2.5 pt-2">
-          {ALL_COUNTRY_ITEMS.map((c) => (
+        {/* 6-COLUMN GRID FOR COUNTRIES WITH REAL FLAGS */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-2.5 pt-2 max-h-[420px] overflow-y-auto pr-1">
+          {displayedCountries.map((c) => (
             <button
               key={c.id}
               type="button"
               onClick={() => onSelectCountry(c.id)}
-              className="group flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-left border border-slate-200 hover:border-blue-500/40 transition-all duration-200 cursor-pointer shadow-2xs"
+              className="group flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/60 text-left border border-slate-200 hover:border-blue-500/40 transition-all duration-200 cursor-pointer shadow-2xs"
             >
-              <span className="text-lg leading-none shrink-0 group-hover:scale-125 transition-transform duration-200">
-                {c.flag}
+              <span className="flex items-center gap-2 min-w-0">
+                <CountryFlag country={c.code} size="sm" flagClassName="group-hover:scale-110 transition-transform duration-200" />
+                <span className="text-xs font-semibold text-slate-700 group-hover:text-blue-700 transition-colors truncate">
+                  {c.name}
+                </span>
               </span>
-              <span className="text-xs font-semibold text-slate-700 group-hover:text-amber-700 transition-colors truncate">
-                {c.name}
+              <span className="text-[9px] font-mono font-bold text-slate-400 group-hover:text-blue-600 shrink-0">
+                {c.code}
               </span>
             </button>
           ))}

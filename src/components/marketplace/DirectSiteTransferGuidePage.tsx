@@ -75,12 +75,6 @@ const TRADITIONAL_VS_TRADEHEAVEN: TraditionalComparisonItem[] = [
 
 const GUIDE_PARTNERS = [
   {
-    id: 'comp-melissa-mpcommodity',
-    name: 'MP Commodity Brokers Australia Pty Ltd (Melissa Prezios)',
-    country: 'Australia',
-    category: 'Agricultural & Bulk Commodities'
-  },
-  {
     id: 'comp-shenzhen-solar',
     name: 'Shenzhen Lumina New Energy Tech Co., Ltd. (Chen Wei)',
     country: 'China',
@@ -91,6 +85,12 @@ const GUIDE_PARTNERS = [
     name: 'Bharat Precision Forgings & Alloys Ltd. (Vikramaditya Singh)',
     country: 'India',
     category: 'Engineered Metals & Forgings'
+  },
+  {
+    id: 'comp-middle-fox-llc',
+    name: 'Middle Fox LLC (Mr. Randy)',
+    country: 'United States',
+    category: 'Agricultural & Bulk Commodities'
   }
 ];
 
@@ -99,7 +99,7 @@ export const DirectSiteTransferGuidePage: React.FC<Props> = ({
   onOpenStorefront
 }) => {
   const [selectedRoleGuide, setSelectedRoleGuide] = useState<'BUYER' | 'SUPPLIER'>('BUYER');
-  const [simSupplierId, setSimSupplierId] = useState<string>('comp-melissa-mpcommodity');
+  const [simSupplierId, setSimSupplierId] = useState<string>('comp-shenzhen-solar');
   const [simMode, setSimMode] = useState<'DIRECT_SETTLEMENT' | 'ESCROW_HOLD'>('ESCROW_HOLD');
   const [simAmountInr, setSimAmountInr] = useState<string>('500000');
 

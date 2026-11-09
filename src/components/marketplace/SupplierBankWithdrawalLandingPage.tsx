@@ -99,13 +99,14 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
 
     return {
       id: `wal-personal-${currentUser?.id || 'supplier'}`,
-      entity_id: currentUser?.id || 'comp-melissa-mpcommodity',
+      entity_id: currentUser?.id || 'comp-bharat-steel',
       entity_name: currentUser?.name || 'Verified Supplier Account',
       company_name: currentUser?.companyName || currentUser?.name || 'Verified Supplier',
       wallet_type: 'SUPPLIER',
-      available_balance: '185000000',
+      plan_status: currentUser?.tier === 'VIP' ? 'VIP' : 'BASIC',
+      available_balance: '0',
       locked_balance: '0',
-      currency: 'INR',
+      currency: 'USD',
       updated_at: new Date().toISOString()
     };
   }, [state, currentUser]);

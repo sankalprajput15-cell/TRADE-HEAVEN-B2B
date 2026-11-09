@@ -93,28 +93,74 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
 
     // Client-side seeded delivery logs for key accounts
     if (cleanEmail.includes('mpcommodity') || cleanCompany.includes('mp commodity') || cleanEmail.includes('yr943334')) {
-      serviceEntries.push({
-        id: 'eh-melissa-assurance-cert-pdf-yr943334-001',
-        trackingId: 'ms-trk-melissa-cert-pdf-yr943334-2026',
-        recipient: contactEmail || 'yr943334@gmail.com',
-        recipientName: contactName || 'Melissa Prezios',
-        companyName: companyName || 'MP Commodity Brokers Australia Pty Ltd',
-        companyId: companyId || 'comp-melissa-mpcommodity',
-        subject: '📜 [Classic Sovereign PDF Attached] Certificate of Trade Assurance & Loss-Only Insurance Indenture — Melissa Prezios (THC-2026-MPC-61648)',
-        dispatchType: 'MANUAL',
-        category: 'CUSTOM_ADMIN',
-        sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
-        success: true,
-        messageId: '<melissa-cert-thc-2026-mpc-61648@tradeheaven.net>',
-        dispatchedAt: new Date(Date.now() - 3600000).toISOString(),
-        enforcedDelayMs: 2000,
-        summaryText: 'Official 2-Page Sovereign Trade Assurance Certificate Draft Indenture (Serial THC-2026-MPC-61648 • $1.1M USD Escrow Vault TH-VAULT-AU-61648) with strict Clause 3.1 & 3.2 actual-loss-only underwriting.',
-        opened: true,
-        openCount: 2,
-        clicked: true,
-        clickCount: 1,
-        mailSuiteStatus: 'CLICKED'
-      });
+      serviceEntries.push(
+        {
+          id: 'eh-melissa-congrats-cert-pdf-supplier-2026',
+          trackingId: 'ms-trk-melissa-congrats-cert-supplier-2026',
+          recipient: 'melissa@mpcommoditybrokers.com',
+          recipientName: 'Melissa Prezios',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: companyId || 'comp-melissa-mpcommodity',
+          subject: '🎉 Congratulations on Receiving Your Official Trade Assurance Certificate (THC-2026-MPC-61648) — PDF Attached',
+          dispatchType: 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          sender: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
+          success: true,
+          messageId: '<congrats-cert-thc-2026-mpc-61648-melissa@tradeheaven.net>',
+          dispatchedAt: new Date(Date.now() - 120000).toISOString(),
+          enforcedDelayMs: 0,
+          summaryText: 'CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO melissa@mpcommoditybrokers.com & yr943334@gmail.com: Congratulations Melissa Prezios (MP Commodity Brokers Australia Pty Ltd) on receiving Official Trade Assurance Certificate No. THC-2026-MPC-61648 (Issued Today). Verified by Trade Heaven and its bank. Attachment: TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf',
+          opened: true,
+          openCount: 1,
+          clicked: true,
+          clickCount: 1,
+          mailSuiteStatus: 'CLICKED'
+        },
+        {
+          id: 'eh-melissa-congrats-cert-pdf-yr943334-2026',
+          trackingId: 'ms-trk-melissa-congrats-cert-yr943334-2026',
+          recipient: 'yr943334@gmail.com',
+          recipientName: 'Sarah Jenkins (Master Admin) • Copy of Melissa Prezios Certificate PDF',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: companyId || 'comp-melissa-mpcommodity',
+          subject: '🎉 Congratulations on Receiving Your Official Trade Assurance Certificate (THC-2026-MPC-61648) — PDF Attached',
+          dispatchType: 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          sender: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
+          success: true,
+          messageId: '<congrats-cert-thc-2026-mpc-61648-yr943334@tradeheaven.net>',
+          dispatchedAt: new Date(Date.now() - 115000).toISOString(),
+          enforcedDelayMs: 0,
+          summaryText: 'CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO yr943334@gmail.com: Congratulations Melissa Prezios (MP Commodity Brokers Australia Pty Ltd) on receiving Official Trade Assurance Certificate No. THC-2026-MPC-61648 (Issued Today). Verified by Trade Heaven and its bank. Attachment: TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf',
+          opened: true,
+          openCount: 1,
+          clicked: true,
+          clickCount: 1,
+          mailSuiteStatus: 'CLICKED'
+        },
+        {
+          id: 'eh-melissa-assurance-cert-pdf-yr943334-001',
+          trackingId: 'ms-trk-melissa-cert-pdf-yr943334-2026',
+          recipient: contactEmail || 'yr943334@gmail.com',
+          recipientName: contactName || 'Melissa Prezios',
+          companyName: companyName || 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: companyId || 'comp-melissa-mpcommodity',
+          subject: '📜 [Classic Sovereign PDF Attached] Certificate of Trade Assurance & Loss-Only Insurance Indenture — Melissa Prezios (THC-2026-MPC-61648)',
+          dispatchType: 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+          success: true,
+          messageId: '<melissa-cert-thc-2026-mpc-61648@tradeheaven.net>',
+          dispatchedAt: new Date(Date.now() - 3600000).toISOString(),
+          enforcedDelayMs: 2000,
+          summaryText: 'Official 2-Page Sovereign Trade Assurance Certificate Draft Indenture (Serial THC-2026-MPC-61648 • $1.1M USD Escrow Vault TH-VAULT-AU-61648) with strict Clause 3.1 & 3.2 actual-loss-only underwriting.',
+          opened: true,
+          openCount: 2,
+          clicked: true,
+          clickCount: 1,
+          mailSuiteStatus: 'CLICKED'
+        }
+      );
     }
 
     if (cleanEmail.includes('ezekiahali') || cleanCompany.includes('ace')) {

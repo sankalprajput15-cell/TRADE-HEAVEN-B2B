@@ -9,6 +9,8 @@ import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PaginationControls } from '../common/PaginationControls';
 import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
 import { isPaidEntity } from '../../services/freeLeadService';
+import { CountryFlag } from '../common/CountryFlag';
+import { WORLD_COUNTRIES_LIST, generateRandomGo4WorldBuyers } from '../../data/worldCountriesAndBuyOrders';
 import { 
   Building2, 
   Search, 
@@ -33,7 +35,8 @@ import {
   DollarSign,
   Globe2,
   Boxes,
-  Share2
+  Share2,
+  RefreshCw
 } from 'lucide-react';
 
 interface Props {
@@ -53,6 +56,7 @@ export const BuyersDirectoryView: React.FC<Props> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTier, setSelectedTier] = useState('ALL');
+  const [selectedCountry, setSelectedCountry] = useState('ALL');
   const [buyers, setBuyers] = useState<DetailedBuyerProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,6 +72,13 @@ export const BuyersDirectoryView: React.FC<Props> = ({
     });
   }, [currentUser]);
 
+  const handleLoadRandomBuyers = () => {
+    const seed = Math.floor(Math.random() * 500) + 1;
+    const randomBatch = generateRandomGo4WorldBuyers(24, seed);
+    setBuyers(prev => [...randomBatch, ...prev]);
+    setCurrentPage(1);
+  };
+
   const filtered = buyers.filter(b => {
     if (!b) return false;
     const searchLower = searchTerm.toLowerCase();
@@ -78,13 +89,16 @@ export const BuyersDirectoryView: React.FC<Props> = ({
       (b.businessType || '').toLowerCase().includes(searchLower) ||
       (b.targetCategories || []).some(cat => (cat || '').toLowerCase().includes(searchLower));
     const matchesTier = selectedTier === 'ALL' || b.tier === selectedTier;
-    return matchesSearch && matchesTier;
+    const matchesCountry =
+      selectedCountry === 'ALL' ||
+      (b.country || '').toLowerCase().includes(selectedCountry.toLowerCase());
+    return matchesSearch && matchesTier && matchesCountry;
   });
 
   // Reset page when filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedTier]);
+  }, [searchTerm, selectedTier, selectedCountry]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginatedBuyers = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -108,15 +122,26 @@ export const BuyersDirectoryView: React.FC<Props> = ({
           </p>
         </div>
 
-        {onOpenCreateRfq && (
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
-            onClick={onOpenCreateRfq}
-            className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all shrink-0 cursor-pointer"
+            type="button"
+            onClick={handleLoadRandomBuyers}
+            className="px-4 py-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs flex items-center justify-center gap-2 border border-emerald-300 shadow-2xs transition-all cursor-pointer"
           >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Post Buy Requirement</span>
+            <RefreshCw className="w-4 h-4 text-emerald-600" />
+            <span>Load Random Global Buyers</span>
           </button>
-        )}
+
+          {onOpenCreateRfq && (
+            <button
+              onClick={onOpenCreateRfq}
+              className="px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all shrink-0 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Post Buy Requirement</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Access Clearance Banner */}
@@ -183,6 +208,43 @@ export const BuyersDirectoryView: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* World Country Flags Filter Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs flex items-center gap-2 overflow-x-auto scrollbar-thin">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+          <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+          <span>Buyer Flags ({WORLD_COUNTRIES_LIST.length}):</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setSelectedCountry('ALL')}
+          className={`px-2.5 py-1 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer border transition-all shrink-0 ${
+            selectedCountry === 'ALL'
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+          }`}
+        >
+          🌍 All Countries
+        </button>
+        {WORLD_COUNTRIES_LIST.slice(0, 45).map(c => {
+          const isSelected = selectedCountry.toLowerCase() === c.name.toLowerCase();
+          return (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => setSelectedCountry(isSelected ? 'ALL' : c.name)}
+              className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 cursor-pointer border transition-all shrink-0 ${
+                isSelected
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+              }`}
+            >
+              <CountryFlag country={c.code} size="xs" />
+              <span>{c.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Buyers Grid */}
       {isLoading ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
@@ -233,6 +295,12 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                       </span>
                     )}
                   </div>
+                  <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200 shadow-sm flex items-center gap-1.5">
+                    <CountryFlag country={buyer.country} size="sm" />
+                    <span className="text-[10px] font-extrabold text-slate-900 truncate max-w-[110px]">
+                      {buyer.country}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Body */}
@@ -252,8 +320,8 @@ export const BuyersDirectoryView: React.FC<Props> = ({
                         {buyer.companyName}
                       </h3>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-rose-500" />
+                        <span className="flex items-center gap-1.5 font-semibold text-slate-700">
+                          <CountryFlag country={buyer.country} size="xs" />
                           <span>{buyer.country}</span>
                         </span>
                         <span className="text-slate-300">•</span>

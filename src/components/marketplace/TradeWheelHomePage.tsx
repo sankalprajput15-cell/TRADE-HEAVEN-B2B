@@ -12,6 +12,8 @@ import { ProductCatalog } from './ProductCatalog';
 import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { SuppliersByRegionBar } from './SuppliersByRegionBar';
+import { CountryFlag } from '../common/CountryFlag';
+import { Go4WorldBuyOrdersShowcase } from './Go4WorldBuyOrdersShowcase';
 import { 
   ShieldCheck, 
   Award, 
@@ -316,7 +318,10 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                       <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                         {company.tier}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono">{tText(company.country)}</span>
+                      <span className="text-[10px] text-slate-600 font-mono inline-flex items-center gap-1">
+                        <CountryFlag country={company.country} size="xs" />
+                        <span>{tText(company.country)}</span>
+                      </span>
                     </div>
                     <div className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate mt-0.5">
                       {company.companyName}
@@ -480,8 +485,11 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                   </div>
 
                   <div className="pt-1.5 border-t border-slate-200 space-y-1.5">
-                    <div className="text-[10px] text-slate-600 flex items-center justify-between">
-                      <span className="truncate max-w-[100px] font-medium">{rfq.buyerCountry}</span>
+                    <div className="text-[10px] text-slate-700 flex items-center justify-between gap-1">
+                      <span className="truncate max-w-[130px] font-semibold inline-flex items-center gap-1.5">
+                        <CountryFlag country={rfq.buyerCountry} size="xs" />
+                        <span className="truncate">{rfq.buyerCountry}</span>
+                      </span>
                       <span className="text-blue-600 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
                         <span>Quote</span>
                         <ArrowRight className="w-2.5 h-2.5" />
@@ -536,6 +544,17 @@ export const TradeWheelHomePage: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* 5.2. GO4WORLD-STYLE ALL COUNTRIES FLAGS & LIVE GLOBAL BUY ORDERS DIRECTORY */}
+      <Go4WorldBuyOrdersShowcase
+        onSelectRfq={onSelectRfq}
+        onNavigate={onNavigate}
+        onSelectCountryPortal={() => {
+          onNavigate('COUNTRY_HUB');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        compact={true}
+      />
 
       {/* 5.5. WORK WITH US & VERIFIED PARTNER ONBOARDING BANNER */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-200 shadow-sm text-slate-900 relative overflow-hidden">

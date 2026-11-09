@@ -6,6 +6,8 @@ import { SaaSPlan } from '../../types/planPricingTypes';
 import { INITIAL_SAAS_PLANS } from '../../data/planPricingMockData';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { DIWALI_PROMO_CODE } from '../marketplace/DiwaliOfferBanner';
+import { useAuth } from '../../context/AuthContext';
+import { downloadPlanPdfBrochure } from '../../utils/planPdfGenerator';
 import { 
   Crown, 
   ShieldCheck, 
@@ -26,7 +28,8 @@ import {
   Star,
   Quote,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 
 const BUYER_TESTIMONIALS = [
@@ -120,6 +123,17 @@ export const PremiumServicesView: React.FC<Props> = ({
   };
 
   const [promoCodeApplied, setPromoCodeApplied] = useState<boolean>(true);
+
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.isVerifiedAdmin === true;
+
+  const handleDownloadPdf = (plan: SaaSPlan) => {
+    if (!isAdmin) {
+      alert('Access Denied: Only Trade Heaven Administrators can download plan brochure PDFs.');
+      return;
+    }
+    downloadPlanPdfBrochure(plan, formatPrice(plan.annualPriceUsd));
+  };
 
   const handleSelectPackage = (plan: SaaSPlan) => {
     const finalUsd = promoCodeApplied ? Math.round(plan.annualPriceUsd * 0.9) : plan.annualPriceUsd;
@@ -367,17 +381,34 @@ export const PremiumServicesView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectPackage(plan);
-                    }}
-                    className="relative z-20 w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <span>Get Started with Trade Heaven</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectPackage(plan);
+                      }}
+                      className="relative z-20 w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <span>Get Started with Trade Heaven</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadPdf(plan);
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700"
+                        title="Admin Only: Download Dedicated Plan Brochure PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Download PDF Brochure (Admin Only)</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             }
@@ -473,21 +504,38 @@ export const PremiumServicesView: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectPackage(plan);
-                    }}
-                    className={`relative z-20 w-full py-3.5 rounded-xl ${
-                      activeTab === 'SUPPLIER'
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950'
-                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'
-                    } font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5`}
-                  >
-                    <span>Get Started with Trade Heaven</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectPackage(plan);
+                      }}
+                      className={`relative z-20 w-full py-3.5 rounded-xl ${
+                        activeTab === 'SUPPLIER'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950'
+                          : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'
+                      } font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5`}
+                    >
+                      <span>Get Started with Trade Heaven</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadPdf(plan);
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700"
+                        title="Admin Only: Download Dedicated Plan Brochure PDF"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Download PDF Brochure (Admin Only)</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             }
@@ -550,21 +598,38 @@ export const PremiumServicesView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectPackage(plan);
-                  }}
-                  className={`relative z-20 w-full py-3.5 rounded-xl ${
-                    activeTab === 'SUPPLIER'
-                      ? 'bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-50 hover:to-slate-100 text-slate-900 border border-slate-300'
-                      : 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-slate-900 border border-blue-100'
-                  } font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5`}
-                >
-                  <span>Get Started with Trade Heaven</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectPackage(plan);
+                    }}
+                    className={`relative z-20 w-full py-3.5 rounded-xl ${
+                      activeTab === 'SUPPLIER'
+                        ? 'bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-50 hover:to-slate-100 text-slate-900 border border-slate-300'
+                        : 'bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-slate-900 border border-blue-100'
+                    } font-black text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5`}
+                  >
+                    <span>Get Started with Trade Heaven</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadPdf(plan);
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700"
+                      title="Admin Only: Download Dedicated Plan Brochure PDF"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Download PDF Brochure (Admin Only)</span>
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

@@ -68,13 +68,13 @@ export interface SupplierWithdrawalRequestItem {
 
 const DEFAULT_SAVED_BANKS: SavedSupplierBankAccount[] = [
   {
-    id: 'bank-melissa-01',
-    entityId: 'comp-melissa-mpcommodity',
-    accountHolderName: 'MP Commodity Brokers Australia Pty Ltd',
-    bankName: 'Commonwealth Bank Corporate Treasury',
-    accountNumber: '50200048192041',
-    ifscOrSwift: 'CTBAAU2S',
-    branchCountry: 'Sydney, Australia',
+    id: 'bank-shenzhen-01',
+    entityId: 'comp-shenzhen-solar',
+    accountHolderName: 'Shenzhen Lumina New Energy Tech Co., Ltd.',
+    bankName: 'Bank of China Corporate Trade Treasury',
+    accountNumber: '6225880194827104',
+    ifscOrSwift: 'BKCHCNBJ45A',
+    branchCountry: 'Shenzhen, China',
     rail: 'SWIFT',
     isPrimary: true,
     verifiedByTradeHeaven: true,
@@ -136,7 +136,7 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
   onSuccess,
   compact = false
 }) => {
-  const entityId = activeWallet?.entity_id || currentUser?.id || 'comp-melissa-mpcommodity';
+  const entityId = activeWallet?.entity_id || currentUser?.id || 'comp-bharat-steel';
   const companyName = activeWallet?.company_name || currentUser?.companyName || currentUser?.name || 'Verified Supplier';
   const currencyMeta = useMemo(
     () => getEntityCurrency(activeWallet || currentUser || { id: entityId, name: companyName }),
@@ -193,18 +193,18 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
     return [
       {
         id: 'wreq-initial-01',
-        payoutId: 'PAYOUT-SWIFT-849201-742',
-        entityId: 'comp-melissa-mpcommodity',
-        companyName: 'MP Commodity Brokers Australia Pty Ltd',
-        amountLocal: 12500,
-        currencySymbol: 'A$',
-        currencyCode: 'AUD',
-        amountFormatted: 'A$12,500.00',
-        bankName: 'Commonwealth Bank Corporate Treasury',
-        accountHolderName: 'MP Commodity Brokers Australia Pty Ltd',
-        accountNumberMasked: '••••92041',
-        ifscOrSwift: 'CTBAAU2S',
-        rail: 'SWIFT',
+        payoutId: 'PAYOUT-RTGS-849201-742',
+        entityId: 'comp-bharat-steel',
+        companyName: 'Bharat Precision Forgings & Alloys Ltd.',
+        amountLocal: 125000,
+        currencySymbol: '₹',
+        currencyCode: 'INR',
+        amountFormatted: '₹1,25,000.00',
+        bankName: 'HDFC Bank Corporate Treasury',
+        accountHolderName: 'Bharat Precision Forgings & Alloys Ltd.',
+        accountNumberMasked: '••••12910',
+        ifscOrSwift: 'HDFC0000241',
+        rail: 'RTGS',
         orderReference: 'ORD-ESC-2026-7710',
         requestNote: 'Escrow settlement withdrawal request approved by Trade Heaven Treasury',
         status: 'SETTLED',

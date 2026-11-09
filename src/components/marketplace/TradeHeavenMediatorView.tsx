@@ -84,20 +84,20 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
   // Stage 3 Form: releaseEscrowToSupplier (in buyer's native country currency)
   const [releaseOrderId, setReleaseOrderId] = useState<string>('ORD-ESC-2026-8841');
   const [releaseBuyerId, setReleaseBuyerId] = useState<string>('buyer-titan-01');
-  const [releaseSupplierId, setReleaseSupplierId] = useState<string>('comp-melissa-mpcommodity');
+  const [releaseSupplierId, setReleaseSupplierId] = useState<string>('comp-bharat-steel');
   const [releaseTotalAmountInr, setReleaseTotalAmountInr] = useState<string>('11000');
   const [releaseFeePercent, setReleaseFeePercent] = useState<string>('2.5');
 
   // Stage 4 Form: requestBankPayout (in entity's native country currency)
-  const [payoutEntityId, setPayoutEntityId] = useState<string>('comp-melissa-mpcommodity');
+  const [payoutEntityId, setPayoutEntityId] = useState<string>('comp-bharat-steel');
   const [payoutAmountInr, setPayoutAmountInr] = useState<string>('5000');
   const [beneficiaryName, setBeneficiaryName] = useState<string>(
-    'MP Commodity Brokers Australia Pty Ltd'
+    'Bharat Precision Forgings & Alloys Ltd.'
   );
-  const [beneficiaryAccount, setBeneficiaryAccount] = useState<string>('50200048192041');
-  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState<string>('CTBAAU2S');
-  const [beneficiaryBank, setBeneficiaryBank] = useState<string>('Commonwealth Bank Corporate Treasury');
-  const [beneficiaryRail, setBeneficiaryRail] = useState<'IMPS' | 'NEFT' | 'RTGS' | 'ACH' | 'SWIFT'>('SWIFT');
+  const [beneficiaryAccount, setBeneficiaryAccount] = useState<string>('50200088412910');
+  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState<string>('HDFC0000241');
+  const [beneficiaryBank, setBeneficiaryBank] = useState<string>('HDFC Bank Corporate Treasury');
+  const [beneficiaryRail, setBeneficiaryRail] = useState<'IMPS' | 'NEFT' | 'RTGS' | 'ACH' | 'SWIFT'>('RTGS');
   const [lastPayoutResult, setLastPayoutResult] = useState<BankTransferResult | null>(null);
 
   const loadMediationState = async () => {
@@ -1097,11 +1097,11 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                   >
                     {supplierWallets.map(w => {
                       const info = getEntityCurrency(w.entity_id);
-                      const isZacBasic = w.entity_id === 'comp-zac-importation-fadetech';
+                      const isBasicSupp = tradeHeavenMediationService.isBasicPlanStatus(w.plan_status, w.entity_id);
                       return (
                         <option key={w.id} value={w.entity_id}>
                           {info.flag} {w.company_name} ({info.country} - {info.currency}){' '}
-                          {isZacBasic ? '— [Not Active • Contact Supplier]' : '— [Direct Transfer Active]'}
+                          {isBasicSupp ? '— [Not Active • Basic Plan]' : '— [Direct Transfer Active]'}
                         </option>
                       );
                     })}
@@ -1207,11 +1207,11 @@ export const TradeHeavenMediatorView: React.FC<Props> = ({ embedded = false }) =
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-600"
                   >
                     {supplierWallets.map(w => {
-                      const isZacBasic = w.entity_id === 'comp-zac-importation-fadetech';
+                      const isBasicSupp = tradeHeavenMediationService.isBasicPlanStatus(w.plan_status, w.entity_id);
                       return (
                         <option key={w.id} value={w.entity_id}>
                           {w.company_name} ({w.entity_id}){' '}
-                          {isZacBasic ? '— [Not Active • Contact Supplier]' : '— [Direct Transfer Active]'}
+                          {isBasicSupp ? '— [Not Active • Basic Plan]' : '— [Direct Transfer Active]'}
                         </option>
                       );
                     })}

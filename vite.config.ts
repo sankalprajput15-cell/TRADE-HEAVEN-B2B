@@ -51,6 +51,7 @@ export default defineConfig(() => {
           '**/public/assets/**',
           '**/public/assets/uploads/**',
           '**/public/assets/client-uploads/**',
+          '**/public/data/**',
           '**/src/data/*.json',
           '**/public/sitemap.xml',
           '**/*.log',

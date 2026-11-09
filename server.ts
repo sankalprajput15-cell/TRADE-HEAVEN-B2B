@@ -792,8 +792,10 @@ function saveServerUsersToDisk() {
   }
 }
 
-// Persist initial seed on startup so registered-users.json is always warm
-saveServerUsersToDisk();
+// Persist initial seed on startup only if registered-users.json does not exist yet
+if (!fs.existsSync(REGISTERED_USERS_FILE)) {
+  saveServerUsersToDisk();
+}
 
 interface DeletionAuditMeta {
   deletedUserName?: string;
@@ -6082,7 +6084,9 @@ function saveServerProductImageState() {
     console.warn('[ProductImageSystem] Error saving overrides file:', err);
   }
 }
-saveServerProductImageState();
+if (!fs.existsSync(IMAGE_OVERRIDES_FILE)) {
+  saveServerProductImageState();
+}
 
 // GET /api/v1/admin/product-images - Fetch all product image overrides & server media library
 app.get('/api/v1/admin/product-images', (req, res) => {
@@ -8144,10 +8148,10 @@ app.get('/api/v1/trade-assurance/certificate-pdf/:serial', (req, res) => {
   }
 });
 
-// POST /api/v1/trade-assurance/email-certificate-pdf - Generate and email the 2-Page Certificate of Trade Assurance & Loss-Only Insurance PDF draft
+// POST /api/v1/trade-assurance/email-certificate-pdf - Generate and email the Official Trade Assurance Certificate PDF
 app.post('/api/v1/trade-assurance/email-certificate-pdf', async (req, res) => {
   try {
-    const rawRecipient = String(req.body?.recipientEmail || req.body?.to || 'yr943334@gmail.com').trim();
+    const rawRecipient = String(req.body?.recipientEmail || req.body?.to || 'melissa@mpcommoditybrokers.com').trim();
     const recipients = rawRecipient
       .split(/[,;\s]+/)
       .map((item) => normalizeRecipientEmail(item))
@@ -8176,7 +8180,7 @@ app.post('/api/v1/trade-assurance/email-certificate-pdf', async (req, res) => {
         email,
         'ADMIN',
         '/api/v1/trade-assurance/email-certificate-pdf',
-        `Emailed 2-page Certificate of Trade Assurance & Loss-Only Insurance PDF (${dispatchRes.filename}, ${dispatchRes.pdfSizeBytes} bytes) to ${email}.`,
+        `Emailed Congratulations & Official Trade Assurance Certificate PDF (${dispatchRes.filename}, ${dispatchRes.pdfSizeBytes} bytes) to ${email}.`,
         dispatchRes.success ? 'SUCCESS' : 'FAILED'
       );
     }
@@ -8184,7 +8188,7 @@ app.post('/api/v1/trade-assurance/email-certificate-pdf', async (req, res) => {
     const first = results[0];
     return res.json({
       success: results.every((r) => r.success),
-      message: `📄 Official 2-Page PDF Draft (${first.filename}) emailed to ${recipients.join(', ')}!`,
+      message: `🎉 Congratulations email & Official Trade Assurance Certificate PDF (${first.filename}) sent to ${recipients.join(', ')}!`,
       filename: first.filename,
       publicUrl: first.publicUrl,
       pdfSizeBytes: first.pdfSizeBytes,
@@ -8626,7 +8630,9 @@ function executeAutonomousServerSeoCycle(triggeredBy = 'AUTONOMOUS_30M_CRON_DAEM
         sitemapUrlsCount = locMatches ? locMatches.length : 0;
         const todayDate = nowIso.split('T')[0];
         const updatedSitemap = rawSitemap.replace(/<lastmod>[^<]+<\/lastmod>/g, `<lastmod>${todayDate}</lastmod>`);
-        fs.writeFileSync(sitemapPath, updatedSitemap, 'utf8');
+        if (updatedSitemap !== rawSitemap) {
+          fs.writeFileSync(sitemapPath, updatedSitemap, 'utf8');
+        }
         sitemapUpdated = true;
       }
     } catch {}
@@ -8668,8 +8674,7 @@ function executeAutonomousServerSeoCycle(triggeredBy = 'AUTONOMOUS_30M_CRON_DAEM
   }
 }
 
-// Run immediately on boot and unconditionally every 30 minutes (24/7/365)
-executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
+// Run unconditionally every 30 minutes (24/7/365); initial boot cycle runs right after HTTP server binds
 setInterval(() => {
   executeAutonomousServerSeoCycle('SCHEDULED_30_MIN_AUTONOMOUS_DAEMON');
 }, AUTONOMOUS_SEO_INTERVAL_MS);
@@ -8796,23 +8801,30 @@ app.post('/api/v1/seo/send-alert', async (req, res) => {
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     let viteMiddleware: any = null;
-    const vitePromise = createViteServer({
-      server: { middlewareMode: true, hmr: false },
-      appType: 'spa',
-    })
-      .then((vite) => {
-        viteMiddleware = vite.middlewares;
-        return vite;
-      })
-      .catch((err) => {
-        console.error('[Vite Middleware Error]', err);
-        return null;
-      });
+    let vitePromise: Promise<any> | null = null;
+
+    const getOrCreateVite = () => {
+      if (!vitePromise) {
+        vitePromise = createViteServer({
+          server: { middlewareMode: true, hmr: false },
+          appType: 'spa',
+        })
+          .then((vite) => {
+            viteMiddleware = vite.middlewares;
+            return vite;
+          })
+          .catch((err) => {
+            console.error('[Vite Middleware Error]', err);
+            return null;
+          });
+      }
+      return vitePromise;
+    };
 
     app.use(async (req, res, next) => {
       try {
         if (!viteMiddleware) {
-          await vitePromise;
+          await getOrCreateVite();
         }
         if (viteMiddleware) {
           return viteMiddleware(req, res, next);
@@ -8821,6 +8833,11 @@ async function startServer() {
       } catch (err) {
         next(err);
       }
+    });
+
+    // Begin warming Vite asynchronously after port 3000 binds
+    setImmediate(() => {
+      void getOrCreateVite();
     });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
@@ -8832,6 +8849,9 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
+    setTimeout(() => {
+      executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
+    }, 1500);
   });
 
   httpServer.on('error', (err: any) => {

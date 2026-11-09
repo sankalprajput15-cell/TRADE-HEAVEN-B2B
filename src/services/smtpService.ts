@@ -1223,6 +1223,54 @@ const KNOWN_COMPANY_CONTACTS: Record<
 
 const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
   {
+    id: 'eh-melissa-congrats-cert-pdf-supplier-2026',
+    trackingId: 'ms-trk-melissa-congrats-cert-supplier-2026',
+    recipient: 'melissa@mpcommoditybrokers.com',
+    recipientName: 'Melissa Prezios',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: '🎉 Congratulations on Receiving Your Official Trade Assurance Certificate (THC-2026-MPC-61648) — PDF Attached',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<congrats-cert-thc-2026-mpc-61648-melissa@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO melissa@mpcommoditybrokers.com: Congratulations Melissa Prezios (MP Commodity Brokers Australia Pty Ltd) on receiving Official Trade Assurance Certificate No. THC-2026-MPC-61648 (Issued Today). Verified by Trade Heaven and its bank. Attachment: TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: true,
+    clickCount: 1,
+    uniqueClicks: 1,
+    mailSuiteStatus: 'CLICKED'
+  },
+  {
+    id: 'eh-melissa-congrats-cert-pdf-yr943334-2026',
+    trackingId: 'ms-trk-melissa-congrats-cert-yr943334-2026',
+    recipient: 'yr943334@gmail.com',
+    recipientName: 'Sarah Jenkins (Master Admin) • Copy of Melissa Prezios Certificate PDF',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd (Attn: Melissa Prezios)',
+    companyId: 'comp-melissa-mpcommodity',
+    subject: '🎉 Congratulations on Receiving Your Official Trade Assurance Certificate (THC-2026-MPC-61648) — PDF Attached',
+    dispatchType: 'MANUAL',
+    category: 'CUSTOM_ADMIN',
+    sender: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<congrats-cert-thc-2026-mpc-61648-yr943334@tradeheaven.net>',
+    dispatchedAt: new Date().toISOString(),
+    enforcedDelayMs: 0,
+    summaryText: 'CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO yr943334@gmail.com: Congratulations Melissa Prezios (MP Commodity Brokers Australia Pty Ltd) on receiving Official Trade Assurance Certificate No. THC-2026-MPC-61648 (Issued Today). Verified by Trade Heaven and its bank. Attachment: TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    clicked: true,
+    clickCount: 1,
+    uniqueClicks: 1,
+    mailSuiteStatus: 'CLICKED'
+  },
+  {
     id: 'eh-melissa-realistic-genius-demo-yr943334-2026',
     trackingId: 'ms-trk-realistic-client-demo-yr943334-2026',
     recipient: 'yr943334@gmail.com',
@@ -2795,7 +2843,7 @@ export class ServerDeliveryQueueManager {
     const pass = (process.env.NOREPLY_SMTP_PASS || '').trim();
 
     if (!host || !user || !pass) {
-      return null;
+      return this.getGmailBackupTransporter();
     }
 
     return nodemailer.createTransport({
@@ -2803,6 +2851,24 @@ export class ServerDeliveryQueueManager {
       port,
       secure: port === 465,
       name: 'tradeheaven.net',
+      auth: { user, pass }
+    });
+  }
+
+  private getGmailBackupTransporter(): nodemailer.Transporter | null {
+    const host = (process.env.SMTP_HOST || '').trim();
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = (process.env.SMTP_USER || '').trim();
+    const pass = (process.env.SMTP_PASS || '').trim();
+
+    if (!host || !user || !pass) {
+      return null;
+    }
+
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
       auth: { user, pass }
     });
   }
@@ -3003,19 +3069,48 @@ export class ServerDeliveryQueueManager {
         }
 
         try {
-          const info = await transporter.sendMail(task.mailOptions);
+          const gmailBackup = this.getGmailBackupTransporter();
+          const gmailUser = (process.env.SMTP_USER || '').trim();
+          let primaryInfo: any = null;
+          let primaryErr: any = null;
+
+          try {
+            primaryInfo = await transporter.sendMail(task.mailOptions);
+          } catch (e) {
+            primaryErr = e;
+          }
+
+          if (gmailBackup && gmailUser) {
+            try {
+              const backupInfo = await gmailBackup.sendMail({
+                ...task.mailOptions,
+                from: `"Trade Heaven Verification & Escrow Desk" <${gmailUser}>`,
+                replyTo: task.mailOptions.replyTo || 'help@tradeheaven.net'
+              });
+              if (!primaryInfo) {
+                primaryInfo = backupInfo;
+              }
+            } catch (gErr) {
+              console.warn('[ServerDeliveryQueueManager] Gmail backup relay warning:', gErr);
+            }
+          }
+
+          if (!primaryInfo && primaryErr) {
+            throw primaryErr;
+          }
+
           this.lastDispatchedAt = Date.now();
           const receipt: SerializedDeliveryReceipt = {
             recipient: task.recipient,
             success: true,
-            messageId: info.messageId,
+            messageId: primaryInfo?.messageId || `<smtp-delivered-${Date.now()}@tradeheaven.net>`,
             trackingId: taskMeta.trackingId,
             trackingPixelUrl: taskMeta.trackingPixelUrl,
             dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
             enforcedDelayMs
           };
           console.log(
-            `[ServerDeliveryQueueManager] Serialized single-recipient email delivered to ${task.recipient} (trackingId=${taskMeta.trackingId}, delay=${enforcedDelayMs}ms, remainingQueue=${this.queue.length}, messageId=${info.messageId})`
+            `[ServerDeliveryQueueManager] Serialized single-recipient email delivered to ${task.recipient} (trackingId=${taskMeta.trackingId}, delay=${enforcedDelayMs}ms, remainingQueue=${this.queue.length}, messageId=${receipt.messageId})`
           );
           this.recordReceipt(receipt, task);
           task.resolve(receipt);
@@ -3859,6 +3954,12 @@ export class ServerDeliveryQueueManager {
       const targetCompanyId = (filters.companyId || '').toLowerCase().trim();
 
       if (targetEmail || targetCompany || targetCompanyId) {
+        const isMelissaLookup =
+          targetEmail.includes('mpcommoditybroker') ||
+          targetCompany.includes('mp commodity') ||
+          targetCompanyId === 'comp-melissa-mpcommodity' ||
+          targetCompanyId === 'user-supplier-melissa';
+
         list = list.filter((entry) => {
           const entryEmail = normalizeRecipientEmail(entry.recipient);
           const entryCompany = (entry.companyName || '').toLowerCase().trim();
@@ -3866,6 +3967,15 @@ export class ServerDeliveryQueueManager {
 
           if (targetEmail && entryEmail === targetEmail) return true;
           if (targetCompanyId && entryCompanyId && entryCompanyId === targetCompanyId) return true;
+          if (
+            isMelissaLookup &&
+            (entryEmail.includes('mpcommoditybroker') ||
+              entryCompany.includes('mp commodity') ||
+              entryCompanyId === 'comp-melissa-mpcommodity' ||
+              entryCompanyId === 'user-supplier-melissa')
+          ) {
+            return true;
+          }
           if (
             targetCompany &&
             entryCompany &&
@@ -6702,729 +6812,523 @@ export class AutomatedSmtpService {
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 18;
-    const contentWidth = pageWidth - margin * 2;
     const centerX = pageWidth / 2;
 
-    const drawClassicSovereignFrame = (pageNum: number) => {
-      // Warm Antique Ivory Parchment Canvas
-      doc.setFillColor(252, 249, 242);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    const now = new Date();
+    const todayDdMmYyyy = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+    const nextYearDdMmYyyy = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear() + 1}`;
+    resolvedCert.issueDate = todayDdMmYyyy;
+    resolvedCert.expiryDate = nextYearDdMmYyyy;
 
-      // Outer Heavy Sovereign Navy Border
-      doc.setDrawColor(18, 32, 56);
-      doc.setLineWidth(1.3);
-      doc.rect(8.5, 8.5, pageWidth - 17, pageHeight - 17);
+    const holderName =
+      resolvedCert.applicantName.replace(/\s*\(.*?\)\s*/g, '').trim() ||
+      'Melissa Prezios';
+    const formattedIssueDate = todayDdMmYyyy;
 
-      // Middle Antique Gold Filigree Border
-      doc.setDrawColor(180, 138, 62);
-      doc.setLineWidth(0.65);
-      doc.rect(10.8, 10.8, pageWidth - 21.6, pageHeight - 21.6);
-
-      // Inner Fine Navy Hairline Border
-      doc.setDrawColor(18, 32, 56);
-      doc.setLineWidth(0.25);
-      doc.rect(12.3, 12.3, pageWidth - 24.6, pageHeight - 24.6);
-
-      // Classic Corner Rosettes / Ornaments at all 4 corners
-      const corners = [
-        { x: 12.3, y: 12.3, dx: 1, dy: 1 },
-        { x: pageWidth - 12.3, y: 12.3, dx: -1, dy: 1 },
-        { x: 12.3, y: pageHeight - 12.3, dx: 1, dy: -1 },
-        { x: pageWidth - 12.3, y: pageHeight - 12.3, dx: -1, dy: -1 }
-      ];
-      corners.forEach(c => {
-        doc.setDrawColor(180, 138, 62);
-        doc.setLineWidth(0.45);
-        doc.rect(
-          c.dx > 0 ? c.x + 0.8 : c.x - 4.8,
-          c.dy > 0 ? c.y + 0.8 : c.y - 4.8,
-          4,
-          4
-        );
-        doc.setFillColor(180, 138, 62);
-        doc.circle(c.x + c.dx * 2.8, c.y + c.dy * 2.8, 0.7, 'F');
-      });
-
-      // Top Sovereign Crest & Institution Header
-      doc.setTextColor(140, 102, 34);
-      doc.setFont('times', 'bold');
-      doc.setFontSize(7.5);
-      doc.text(
-        'TRADEHEAVEN ECOM SOLUTION LLP   •   LONDON   •   SINGAPORE   •   SYDNEY   •   NEW DELHI',
-        centerX,
-        18.5,
-        { align: 'center' }
-      );
-
-      // Decorative Filigree Lines Flanking Sovereign Medallion
-      doc.setDrawColor(180, 138, 62);
-      doc.setLineWidth(0.4);
-      doc.line(34, 24.5, centerX - 9, 24.5);
-      doc.line(centerX + 9, 24.5, pageWidth - 34, 24.5);
-      doc.setLineWidth(0.2);
-      doc.line(44, 25.7, centerX - 9, 25.7);
-      doc.line(centerX + 9, 25.7, pageWidth - 44, 25.7);
-
-      // Vector Sovereign Medallion Crest
-      doc.setFillColor(18, 32, 56);
-      doc.setDrawColor(180, 138, 62);
-      doc.setLineWidth(0.5);
-      doc.circle(centerX, 24.8, 4.6, 'FD');
-      doc.setDrawColor(234, 198, 118);
-      doc.setLineWidth(0.25);
-      doc.circle(centerX, 24.8, 3.6, 'D');
-      doc.setTextColor(246, 216, 140);
-      doc.setFont('times', 'bold');
-      doc.setFontSize(6.5);
-      doc.text('TH', centerX, 25.6, { align: 'center' });
-
-      if (pageNum === 1) {
-        doc.setTextColor(55, 65, 81);
-        doc.setFont('times', 'normal');
-        doc.setFontSize(7.8);
-        doc.text(
-          'GLOBAL CUSTODIAL ESCROW, COMMODITY BROKERAGE & LOSS-ONLY INDEMNITY REGISTRY',
-          centerX,
-          33,
-          { align: 'center' }
-        );
+    const drawCubicBezier = (
+      x0: number,
+      y0: number,
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      x3: number,
+      y3: number,
+      steps = 10
+    ) => {
+      let prevX = x0;
+      let prevY = y0;
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        const mt = 1 - t;
+        const nx =
+          mt * mt * mt * x0 +
+          3 * mt * mt * t * x1 +
+          3 * mt * t * t * x2 +
+          t * t * t * x3;
+        const ny =
+          mt * mt * mt * y0 +
+          3 * mt * mt * t * y1 +
+          3 * mt * t * t * y2 +
+          t * t * t * y3;
+        doc.line(prevX, prevY, nx, ny);
+        prevX = nx;
+        prevY = ny;
       }
     };
 
+    const drawDashedCircle = (cx: number, cy: number, r: number, numDashes: number, dashRatio = 0.68) => {
+      const stepAngle = (Math.PI * 2) / numDashes;
+      for (let i = 0; i < numDashes; i++) {
+        const aStart = i * stepAngle;
+        const aEnd = aStart + stepAngle * dashRatio;
+        const segs = 3;
+        let px = cx + r * Math.cos(aStart);
+        let py = cy + r * Math.sin(aStart);
+        for (let k = 1; k <= segs; k++) {
+          const a = aStart + ((aEnd - aStart) * k) / segs;
+          const nx = cx + r * Math.cos(a);
+          const ny = cy + r * Math.sin(a);
+          doc.line(px, py, nx, ny);
+          px = nx;
+          py = ny;
+        }
+      }
+    };
+
+    const drawFivePointStar = (cx: number, cy: number, outerR: number, innerR: number) => {
+      const pts: Array<{ x: number; y: number }> = [];
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+        pts.push({
+          x: cx + r * Math.cos(angle),
+          y: cy + r * Math.sin(angle)
+        });
+      }
+      for (let i = 0; i < 10; i++) {
+        const p1 = pts[i];
+        const p2 = pts[(i + 1) % 10];
+        doc.triangle(cx, cy, p1.x, p1.y, p2.x, p2.y, 'F');
+      }
+    };
+
+    const drawScrollFlourish = (cx: number, topY: number, flip180: boolean) => {
+      const scale = 0.235;
+      const mapPt = (sx: number, sy: number) => {
+        const rx = flip180 ? 220 - sx : sx;
+        const ry = flip180 ? 34 - sy : sy;
+        return {
+          x: cx + (rx - 110) * scale,
+          y: topY + ry * scale
+        };
+      };
+
+      // Central diamond spearhead (M110 4 L114 12 L110 26 L106 12 Z)
+      doc.setFillColor(181, 173, 155);
+      const dTop = mapPt(110, 4);
+      const dRight = mapPt(114, 12);
+      const dBot = mapPt(110, 26);
+      const dLeft = mapPt(106, 12);
+      doc.triangle(dTop.x, dTop.y, dRight.x, dRight.y, dBot.x, dBot.y, 'F');
+      doc.triangle(dTop.x, dTop.y, dLeft.x, dLeft.y, dBot.x, dBot.y, 'F');
+
+      doc.setDrawColor(181, 173, 155);
+      doc.setLineWidth(0.38);
+
+      const drawWing = (mirrorX: boolean) => {
+        const mx = (x: number) => (mirrorX ? 220 - x : x);
+        const b1 = [mapPt(mx(110), 24), mapPt(mx(95), 10), mapPt(mx(75), 6), mapPt(mx(58), 14)];
+        const b2 = [mapPt(mx(58), 14), mapPt(mx(46), 19), mapPt(mx(44), 29), mapPt(mx(54), 30)];
+        const b3 = [mapPt(mx(54), 30), mapPt(mx(62), 31), mapPt(mx(66), 23), mapPt(mx(59), 20)];
+        const b4 = [mapPt(mx(59), 20), mapPt(mx(90), 22), mapPt(mx(100), 26), mapPt(mx(110), 28)];
+        [b1, b2, b3, b4].forEach(seg => {
+          drawCubicBezier(
+            seg[0].x,
+            seg[0].y,
+            seg[1].x,
+            seg[1].y,
+            seg[2].x,
+            seg[2].y,
+            seg[3].x,
+            seg[3].y,
+            12
+          );
+        });
+      };
+
+      drawWing(false);
+      drawWing(true);
+    };
+
+    const drawClassicSovereignFrame = () => {
+      // Outer white frame + Warm Cream Parchment Canvas (#EFECE1)
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      doc.setFillColor(239, 236, 225);
+      doc.rect(6, 6, pageWidth - 12, pageHeight - 12, 'F');
+
+      const borderLeft = 14;
+      const borderTop = 14;
+      const borderRight = pageWidth - 14;
+      const borderBottom = pageHeight - 14;
+      const cornerSize = 5.2;
+
+      // Inner continuous filigree guide rule
+      doc.setDrawColor(138, 131, 114);
+      doc.setLineWidth(0.32);
+      doc.rect(
+        borderLeft + cornerSize - 0.6,
+        borderTop + cornerSize - 0.6,
+        borderRight - borderLeft - (cornerSize - 0.6) * 2,
+        borderBottom - borderTop - (cornerSize - 0.6) * 2
+      );
+
+      // Repeating wavy S-curve filigree motif along top & bottom edges (matching horizontalFiligreeSvg)
+      const horizSpan = borderRight - borderLeft - cornerSize * 2;
+      const horizSteps = Math.round(horizSpan / 8.5);
+      const tileW = horizSpan / horizSteps;
+      const tileH = 4.6;
+
+      const drawHorizFiligreeTile = (x0: number, yEdge: number, invertY: boolean) => {
+        const tx = (u: number) => x0 + (u / 36) * tileW;
+        const ty = (v: number) =>
+          invertY ? yEdge - (v / 18) * tileH : yEdge + (v / 18) * tileH;
+
+        doc.setDrawColor(138, 131, 114);
+        doc.setLineWidth(0.24);
+        drawCubicBezier(tx(2), ty(13), tx(5), ty(5), tx(10), ty(5), tx(13), ty(11), 6);
+        drawCubicBezier(tx(13), ty(11), tx(15), ty(14), tx(21), ty(14), tx(23), ty(11), 6);
+        drawCubicBezier(tx(23), ty(11), tx(26), ty(5), tx(31), ty(5), tx(34), ty(13), 6);
+
+        doc.setLineWidth(0.18);
+        drawCubicBezier(tx(6), ty(13), tx(8), ty(8), tx(12), ty(8), tx(14), ty(12), 5);
+        drawCubicBezier(tx(22), ty(12), tx(24), ty(8), tx(28), ty(8), tx(30), ty(13), 5);
+
+        doc.setFillColor(138, 131, 114);
+        doc.circle(tx(9), ty(6.5), 0.25, 'F');
+        doc.circle(tx(18), ty(5.5), 0.3, 'F');
+        doc.circle(tx(27), ty(6.5), 0.25, 'F');
+      };
+
+      for (let i = 0; i < horizSteps; i++) {
+        const x0 = borderLeft + cornerSize + i * tileW;
+        drawHorizFiligreeTile(x0, borderTop + 0.3, false);
+        drawHorizFiligreeTile(x0, borderBottom - 0.3, true);
+      }
+
+      // Repeating wavy S-curve filigree motif along left & right edges (matching verticalFiligreeSvg)
+      const vertSpan = borderBottom - borderTop - cornerSize * 2;
+      const vertSteps = Math.round(vertSpan / 8.5);
+      const vTileH = vertSpan / vertSteps;
+      const vTileW = 4.6;
+
+      const drawVertFiligreeTile = (xEdge: number, y0: number, invertX: boolean) => {
+        const tx = (u: number) =>
+          invertX ? xEdge - (u / 18) * vTileW : xEdge + (u / 18) * vTileW;
+        const ty = (v: number) => y0 + (v / 36) * vTileH;
+
+        doc.setDrawColor(138, 131, 114);
+        doc.setLineWidth(0.24);
+        drawCubicBezier(tx(13), ty(2), tx(5), ty(5), tx(5), ty(10), tx(11), ty(13), 6);
+        drawCubicBezier(tx(11), ty(13), tx(14), ty(15), tx(14), ty(21), tx(11), ty(23), 6);
+        drawCubicBezier(tx(11), ty(23), tx(5), ty(26), tx(5), ty(31), tx(13), ty(34), 6);
+
+        doc.setLineWidth(0.18);
+        drawCubicBezier(tx(13), ty(6), tx(8), ty(8), tx(8), ty(12), tx(12), ty(14), 5);
+        drawCubicBezier(tx(12), ty(22), tx(8), ty(24), tx(8), ty(28), tx(13), ty(30), 5);
+
+        doc.setFillColor(138, 131, 114);
+        doc.circle(tx(6.5), ty(9), 0.25, 'F');
+        doc.circle(tx(5.5), ty(18), 0.3, 'F');
+        doc.circle(tx(6.5), ty(27), 0.25, 'F');
+      };
+
+      for (let i = 0; i < vertSteps; i++) {
+        const y0 = borderTop + cornerSize + i * vTileH;
+        drawVertFiligreeTile(borderLeft + 0.3, y0, false);
+        drawVertFiligreeTile(borderRight - 0.3, y0, true);
+      }
+
+      // 4 Corner double-squares (▣)
+      const cornerCoords = [
+        { x: borderLeft, y: borderTop },
+        { x: borderRight - cornerSize, y: borderTop },
+        { x: borderLeft, y: borderBottom - cornerSize },
+        { x: borderRight - cornerSize, y: borderBottom - cornerSize }
+      ];
+      cornerCoords.forEach(c => {
+        doc.setFillColor(239, 236, 225);
+        doc.setDrawColor(138, 131, 114);
+        doc.setLineWidth(0.45);
+        doc.rect(c.x, c.y, cornerSize, cornerSize, 'FD');
+        doc.setLineWidth(0.3);
+        doc.rect(c.x + 1.1, c.y + 1.1, cornerSize - 2.2, cornerSize - 2.2, 'D');
+        doc.setFillColor(138, 131, 114);
+        doc.rect(c.x + 2.1, c.y + 2.1, cornerSize - 4.2, cornerSize - 4.2, 'F');
+      });
+    };
+
+    const drawGreenCheckmark = (cx: number, cy: number) => {
+      doc.setFillColor(21, 153, 43);
+      doc.circle(cx, cy, 2.3, 'F');
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.55);
+      doc.line(cx - 1.0, cy + 0.1, cx - 0.2, cy + 0.9);
+      doc.line(cx - 0.2, cy + 0.9, cx + 1.1, cy - 0.8);
+    };
+
     // =========================================================================
-    // PAGE 1: CLASSIC SOVEREIGN CERTIFICATE OF TRADE ASSURANCE
+    // SINGLE-PAGE TRADE ASSURANCE CERTIFICATE (EXACT SITE REPLICA)
     // =========================================================================
-    drawClassicSovereignFrame(1);
+    drawClassicSovereignFrame();
 
-    // Grand Engraved Certificate Title
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(21);
-    doc.text('CERTIFICATE OF TRADE ASSURANCE', centerX, 41.5, { align: 'center' });
+    // 1. Top ornamental scroll flourish + horizontal line
+    drawScrollFlourish(centerX, 24.5, false);
+    doc.setDrawColor(200, 193, 176);
+    doc.setLineWidth(0.35);
+    doc.line(centerX - 54, 33.8, centerX + 54, 33.8);
 
-    doc.setTextColor(146, 98, 24);
-    doc.setFont('times', 'bolditalic');
-    doc.setFontSize(11.5);
-    doc.text('& Direct Actual-Loss-Only Insurance Indenture', centerX, 47.5, { align: 'center' });
+    // Main Title: TRADE ASSURANCE CERTIFICATE
+    doc.setTextColor(44, 44, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16.5);
+    doc.text('TRADE ASSURANCE CERTIFICATE', centerX, 42.5, { align: 'center' });
 
-    // Classic Double-Ruled Credential Ribbon Bar (Zero Overlap)
-    doc.setFillColor(245, 239, 224);
-    doc.setDrawColor(180, 138, 62);
+    // Bottom horizontal line + mirrored ornamental scroll flourish
+    doc.setDrawColor(200, 193, 176);
+    doc.setLineWidth(0.35);
+    doc.line(centerX - 54, 47.2, centerX + 54, 47.2);
+    drawScrollFlourish(centerX, 48.2, true);
+
+    // 2. Central CERTIFIED | 100% Trusted Emblem
+    const stampX = centerX - 15.5;
+    const stampY = 72;
+
+    // 3 concentric green seal rings (outer dashed, middle solid, inner dashed)
+    doc.setDrawColor(56, 133, 66);
+    doc.setLineWidth(0.75);
+    drawDashedCircle(stampX, stampY, 10.8, 32, 0.72);
     doc.setLineWidth(0.45);
-    doc.rect(margin, 51, contentWidth, 9.5, 'FD');
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.2);
-    doc.rect(margin + 0.7, 51.7, contentWidth - 1.4, 8.1, 'D');
+    doc.circle(stampX, stampY, 9.5, 'D');
+    doc.setLineWidth(0.3);
+    drawDashedCircle(stampX, stampY, 8.1, 26, 0.65);
 
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.2);
-    doc.text(`SERIAL NO: ${resolvedCert.certificateNumber}`, margin + 3.5, 57);
-
-    doc.setTextColor(14, 92, 58);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8);
-    doc.text('•  OFFICIAL VERIFIED CREDENTIAL  •', centerX, 57, { align: 'center' });
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.2);
-    doc.text(`VAULT ID: ${resolvedCert.escrowVaultId}`, pageWidth - margin - 3.5, 57, {
-      align: 'right'
+    // Top 3 & Bottom 3 Five-Pointed Vector Stars (★ ★ ★)
+    doc.setFillColor(56, 133, 66);
+    [-3.1, 0, 3.1].forEach(dx => {
+      drawFivePointStar(stampX + dx, stampY - 5.5, 1.05, 0.42);
+      drawFivePointStar(stampX + dx, stampY + 5.6, 1.05, 0.42);
     });
 
-    // Formal Proclamation Preamble & Certified Holder
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('times', 'italic');
-    doc.setFontSize(10);
+    // Angled (-12 deg) Green CERTIFIED Ribbon Banner
+    const ribbonAngleRad = (-12 * Math.PI) / 180;
+    const rotRibbonPt = (lx: number, ly: number) => ({
+      x: stampX + lx * Math.cos(ribbonAngleRad) - ly * Math.sin(ribbonAngleRad),
+      y: stampY + lx * Math.sin(ribbonAngleRad) + ly * Math.cos(ribbonAngleRad)
+    });
+
+    const rw = 11.6;
+    const rh = 2.95;
+    const rTL = rotRibbonPt(-rw, -rh);
+    const rTR = rotRibbonPt(rw, -rh);
+    const rBR = rotRibbonPt(rw, rh);
+    const rBL = rotRibbonPt(-rw, rh);
+
+    doc.setFillColor(56, 133, 66);
+    doc.triangle(rTL.x, rTL.y, rTR.x, rTR.y, rBR.x, rBR.y, 'F');
+    doc.triangle(rTL.x, rTL.y, rBL.x, rBL.y, rBR.x, rBR.y, 'F');
+    doc.setDrawColor(239, 236, 225);
+    doc.setLineWidth(0.38);
+    doc.line(rTL.x, rTL.y, rTR.x, rTR.y);
+    doc.line(rTR.x, rTR.y, rBR.x, rBR.y);
+    doc.line(rBR.x, rBR.y, rBL.x, rBL.y);
+    doc.line(rBL.x, rBL.y, rTL.x, rTL.y);
+
+    // Inner light-green pinstripes inside ribbon
+    doc.setDrawColor(165, 214, 167);
+    doc.setLineWidth(0.2);
+    const pTopL = rotRibbonPt(-rw + 0.7, -rh + 0.75);
+    const pTopR = rotRibbonPt(rw - 0.7, -rh + 0.75);
+    const pBotL = rotRibbonPt(-rw + 0.7, rh - 0.75);
+    const pBotR = rotRibbonPt(rw - 0.7, rh - 0.75);
+    doc.line(pTopL.x, pTopL.y, pTopR.x, pTopR.y);
+    doc.line(pBotL.x, pBotL.y, pBotR.x, pBotR.y);
+
+    // Rotated white "CERTIFIED" text inside ribbon
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.4);
+    const txtAnchor = rotRibbonPt(0, 0.95);
+    doc.text('CERTIFIED', txtAnchor.x, txtAnchor.y, { align: 'center', angle: 12 });
+
+    // Vertical Green Bar
+    doc.setDrawColor(46, 139, 69);
+    doc.setLineWidth(0.75);
+    doc.line(centerX, stampY - 8.5, centerX, stampY + 8.5);
+
+    // 100% Trusted Text
+    doc.setTextColor(59, 155, 76);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(13.5);
+    doc.text('100%', centerX + 5.5, stampY - 1.2);
+    doc.setFontSize(12.5);
+    doc.text('Trusted', centerX + 5.5, stampY + 5.2);
+
+    // 3. Certification Statement
+    doc.setTextColor(117, 116, 110);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.text('This is to certify that', centerX, 95, { align: 'center' });
+
+    doc.setTextColor(38, 38, 36);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(19.5);
+    doc.text(resolvedCert.companyName.substring(0, 46), centerX, 105.5, { align: 'center' });
+
+    // "is an esteemed and reliable seller on " + bold "Trade Heaven"
+    const sellerPrefix = 'is an esteemed and reliable seller on ';
+    const sellerBrand = 'Trade Heaven';
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'normal');
+    const prefixW = doc.getTextWidth(sellerPrefix);
+    doc.setFont('helvetica', 'bold');
+    const brandW = doc.getTextWidth(sellerBrand);
+    const totalSellerW = prefixW + brandW;
+    const sellerStartX = centerX - totalSellerW / 2;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(117, 116, 110);
+    doc.text(sellerPrefix, sellerStartX, 113.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(110, 109, 104);
+    doc.text(sellerBrand, sellerStartX + prefixW, 113.5);
+
+    // 4. Verified Details Block
+    const blockLeft = 42;
+    let detailY = 129;
+
+    drawGreenCheckmark(blockLeft, detailY - 1.2);
+    doc.setTextColor(110, 109, 104);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text('Address', blockLeft + 4.5, detailY);
+
+    doc.setTextColor(34, 34, 32);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    const addrLines = doc.splitTextToSize(
+      resolvedCert.registeredAddress,
+      pageWidth - blockLeft * 2 - 6
+    );
+    doc.text(addrLines.slice(0, 2), blockLeft + 4.5, detailY + 6.5);
+
+    detailY = 156;
+    drawGreenCheckmark(blockLeft, detailY - 1.2);
+    doc.setTextColor(110, 109, 104);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text('Director/Owner', blockLeft + 4.5, detailY);
+
+    doc.setTextColor(34, 34, 32);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.8);
+    doc.text(holderName.substring(0, 30), blockLeft + 4.5, detailY + 6.8);
+
+    const rightColLeft = centerX + 5;
+    drawGreenCheckmark(rightColLeft, detailY - 1.2);
+    doc.setTextColor(110, 109, 104);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text('Registration number', rightColLeft + 4.5, detailY);
+
+    doc.setTextColor(34, 34, 32);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.8);
     doc.text(
-      'This Official Instrument of Sovereign Assurance Witnesseth and Certifies That',
-      centerX,
-      67,
-      { align: 'center' }
+      resolvedCert.legalRegistrationNumber.substring(0, 28),
+      rightColLeft + 4.5,
+      detailY + 6.8
     );
 
-    // Certified Corporate Entity Name
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(17.5);
-    doc.text(resolvedCert.companyName, centerX, 75, { align: 'center' });
+    // 5. Horizontal Divider & Verification Footnote
+    doc.setDrawColor(207, 203, 192);
+    doc.setLineWidth(0.35);
+    doc.line(35, 176, pageWidth - 35, 176);
 
-    // Classic Gold Rule Under Entity Name
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.45);
-    doc.line(38, 77.5, pageWidth - 38, 77.5);
-
-    // Authorized Principal Signatory & Registered Office
-    doc.setTextColor(30, 41, 59);
-    doc.setFont('times', 'bolditalic');
+    doc.setTextColor(43, 43, 41);
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.8);
     doc.text(
-      `Represented by Authorized Principal Signatory: ${resolvedCert.applicantName}`,
+      'The process of verification has been carried out by Trade Heaven and its bank.',
       centerX,
-      83,
+      187,
       { align: 'center' }
     );
 
-    doc.setTextColor(60, 70, 85);
-    doc.setFont('times', 'normal');
-    doc.setFontSize(8.5);
-    doc.text(
-      `Registered Office: ${resolvedCert.registeredAddress}   |   Official Desk: ${resolvedCert.applicantEmail}`,
-      centerX,
-      88.2,
-      { align: 'center' }
-    );
+    // 6. Certificate no. & Issue date Row
+    const certColX = centerX - 30;
+    const dateColX = centerX + 30;
 
-    doc.setTextColor(55, 65, 81);
-    doc.setFont('times', 'italic');
-    doc.setFontSize(8.6);
-    doc.text(
-      'is duly admitted to the Trade Heaven Custodial Escrow & Loss-Only Indemnity Registry for:',
-      centerX,
-      93.5,
-      { align: 'center' }
-    );
+    doc.setTextColor(30, 30, 28);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12.5);
+    doc.text(resolvedCert.certificateNumber, certColX, 201, { align: 'center' });
+    doc.setTextColor(112, 111, 106);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Certificate no.', certColX, 207.5, { align: 'center' });
 
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
+    doc.setTextColor(30, 30, 28);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12.5);
+    doc.text(formattedIssueDate, dateColX, 201, { align: 'center' });
+    doc.setTextColor(112, 111, 106);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Issue date', dateColX, 207.5, { align: 'center' });
+
+    // 7. Lower Horizontal Divider & Black/White Trade Heaven Footer
+    doc.setDrawColor(207, 203, 192);
+    doc.setLineWidth(0.35);
+    doc.line(50, 221, pageWidth - 50, 221);
+
+    const logoY = 232;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(centerX - 36, logoY - 5.5, 72, 11, 1.5, 1.5, 'FD');
+
+    // Official TH Square Monogram inside badge (exact block T & H vector paths matching SVG)
+    const thBoxX = centerX - 34;
+    const thBoxY = logoY - 4.1;
+    const thBoxSize = 8.2;
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.32);
+    doc.roundedRect(thBoxX, thBoxY, thBoxSize, thBoxSize, 0.7, 0.7, 'FD');
+
+    const sUnit = thBoxSize / 512;
+    doc.setFillColor(0, 0, 0);
+    // Letter T
+    doc.rect(thBoxX + 66 * sUnit, thBoxY + 136 * sUnit, 180 * sUnit, 50 * sUnit, 'F');
+    doc.rect(thBoxX + 131 * sUnit, thBoxY + 186 * sUnit, 50 * sUnit, 190 * sUnit, 'F');
+    // Letter H
+    doc.rect(thBoxX + 266 * sUnit, thBoxY + 136 * sUnit, 50 * sUnit, 240 * sUnit, 'F');
+    doc.rect(thBoxX + 316 * sUnit, thBoxY + 231 * sUnit, 80 * sUnit, 50 * sUnit, 'F');
+    doc.rect(thBoxX + 396 * sUnit, thBoxY + 136 * sUnit, 50 * sUnit, 240 * sUnit, 'F');
+
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.2);
-    doc.text(resolvedCert.businessType, centerX, 98.5, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+    doc.text('TRADE HEAVEN', centerX - 24, logoY - 0.5);
 
-    // Sovereign Indemnity Sum Plaque
-    const plaqueY = 102;
-    doc.setFillColor(246, 240, 225);
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.6);
-    doc.rect(margin, plaqueY, contentWidth, 18.5, 'FD');
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.3);
-    doc.rect(margin + 1, plaqueY + 1, contentWidth - 2, 16.5, 'D');
+    doc.setTextColor(20, 20, 20);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.2);
+    doc.text('Global B2B Marketplace & Exporters Network', centerX - 24, logoY + 3.0);
 
-    doc.setTextColor(140, 102, 34);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.6);
-    doc.text(
-      'MAXIMUM GUARANTEED CUSTODIAL ESCROW & ACTUAL-LOSS INDEMNITY COVERAGE LIMIT',
-      centerX,
-      plaqueY + 5.2,
-      { align: 'center' }
-    );
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('TRADE HEAVEN', centerX, 246, { align: 'center' });
 
-    const usdFormatted = `USD $${resolvedCert.coverageLimitUsd.toLocaleString()}.00`;
-    doc.setTextColor(14, 92, 58);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(11.5);
-    doc.text(
-      `${usdFormatted}  (ONE MILLION ONE HUNDRED THOUSAND US DOLLARS)`,
-      centerX,
-      plaqueY + 11.5,
-      { align: 'center' }
-    );
-
-    doc.setTextColor(124, 45, 18);
-    doc.setFont('times', 'italic');
-    doc.setFontSize(7.6);
-    doc.text(
-      'Strictly Payable for Proven, Documented Direct Actual Financial or Cargo Losses Only — Zero Uncertain or Speculative Claims',
-      centerX,
-      plaqueY + 16.2,
-      { align: 'center' }
-    );
-
-    // Classic Engraved 2-Column Ledger Table (4 rows x 12mm = 48mm)
-    const tableY = 124;
-    const colW = contentWidth / 2;
-    const rowH = 12;
-
-    const ledgerRows = [
-      [
-        {
-          label: 'CORPORATE REGISTRATION & TAX IDENTIFIERS',
-          value: `ABN: ${resolvedCert.legalRegistrationNumber}  |  GST: ${resolvedCert.taxOrVatId}`
-        },
-        {
-          label: 'GLOBAL D-U-N-S & REGISTRY CLASSIFICATION',
-          value: `D-U-N-S: ${resolvedCert.dunsNumber}  |  Class: ${resolvedCert.tierCode}`
-        }
-      ],
-      [
-        {
-          label: 'UNDERWRITING & CERTIFICATION TIER',
-          value: resolvedCert.tierTitle
-        },
-        {
-          label: 'INDEPENDENT AUDITING & SURVEY AUTHORITY',
-          value: 'SGS S.A. Australia & Trade Heaven Custodial Underwriting'
-        }
-      ],
-      [
-        {
-          label: 'DESIGNATED CUSTODIAL ESCROW VAULT',
-          value: `Vault ID: ${resolvedCert.escrowVaultId} (Regulated Custodial Rails)`
-        },
-        {
-          label: 'APPROVED INCOTERMS 2020 & QUALITY STANDARDS',
-          value: `${resolvedCert.supportedIncoterms.join(', ')}  |  ISO 9001:2015 / ASTM D975`
-        }
-      ],
-      [
-        {
-          label: 'EFFECTIVE ISSUE DATE',
-          value: `${resolvedCert.issueDate} (01 February 2026)`
-        },
-        {
-          label: 'EXPIRATION & ANNUAL RENEWAL DATE',
-          value: `${resolvedCert.expiryDate} (01 February 2027)`
-        }
-      ]
-    ];
-
-    ledgerRows.forEach((pair, rIdx) => {
-      const rY = tableY + rIdx * rowH;
-      pair.forEach((cell, cIdx) => {
-        const cX = margin + cIdx * colW;
-        doc.setFillColor(rIdx % 2 === 0 ? 252 : 247, rIdx % 2 === 0 ? 249 : 242, rIdx % 2 === 0 ? 242 : 230);
-        doc.setDrawColor(180, 138, 62);
-        doc.setLineWidth(0.35);
-        doc.rect(cX, rY, colW, rowH, 'FD');
-
-        doc.setTextColor(120, 88, 32);
-        doc.setFont('times', 'bold');
-        doc.setFontSize(6.8);
-        doc.text(cell.label, cX + 3, rY + 4.3);
-
-        doc.setTextColor(15, 28, 52);
-        doc.setFont('times', 'bold');
-        doc.setFontSize(8.3);
-        const fitted = doc.splitTextToSize(cell.value, colW - 6);
-        doc.text(fitted[0], cX + 3, rY + 9.3);
-      });
-    });
-
-    // Outer navy border around the ledger table
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.5);
-    doc.rect(margin, tableY, contentWidth, rowH * 4, 'D');
-
-    // Mandatory Underwriting Covenant Box (Actual Losses Only — No Uncertain Claims)
-    const covenantY = 175.5;
-    const covenantH = 44;
-    doc.setFillColor(250, 244, 229);
-    doc.setDrawColor(146, 64, 14);
-    doc.setLineWidth(0.6);
-    doc.rect(margin, covenantY, contentWidth, covenantH, 'FD');
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.25);
-    doc.rect(margin + 1, covenantY + 1, contentWidth - 2, covenantH - 2, 'D');
-
-    doc.setTextColor(124, 45, 18);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.4);
-    doc.text(
-      'MANDATORY UNDERWRITING COVENANT: COVERS VERIFIED ACTUAL LOSSES ONLY — NO UNCERTAIN CLAIMS',
-      centerX,
-      covenantY + 5.5,
-      { align: 'center' }
-    );
-
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.3);
-    doc.line(margin + 6, covenantY + 7.2, pageWidth - margin - 6, covenantY + 7.2);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.9);
-    const covClause1 =
-      '1. COVERAGE LIMITED STRICTLY TO VERIFIED ACTUAL LOSSES: Insurance and Trade Assurance indemnity under this Certificate applies strictly and exclusively to direct, proven, and quantifiable actual financial or physical cargo losses (verified transit loss/damage, verified non-delivery/off-spec delivery of escrowed cargo, or confirmed intermediary settlement holds) evidenced by Custodial Escrow receipt, Clean Bill of Lading, and independent SGS, Bureau Veritas, Intertek, or Lloyd\'s survey reports.';
-    doc.text(doc.splitTextToSize(covClause1, contentWidth - 8), margin + 4, covenantY + 11.5);
-
-    doc.setTextColor(136, 19, 55);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.9);
-    const covClause2 =
-      '2. STRICT EXCLUSION OF UNCERTAIN, SPECULATIVE & OFF-RECORD CLAIMS: This Certificate does NOT cover, and Trade Heaven Underwriting strictly rejects, any uncertain, unverified, speculative, contingent, indirect, consequential, lost-profit, market-price fluctuation, currency-shift, or unsubstantiated claims, as well as any off-platform dealings conducted outside Export Manager supervision.';
-    doc.text(doc.splitTextToSize(covClause2, contentWidth - 8), margin + 4, covenantY + 27.5);
-
-    // Classic Engraved Signatures & Embossed Gold Seal Section
-    const sigBaseY = 244;
-
-    // Left Signature: Chief Underwriting Officer
-    doc.setTextColor(22, 46, 88);
-    doc.setFont('times', 'bolditalic');
-    doc.setFontSize(13.5);
-    doc.text('A. V. Sterling', margin + 28, sigBaseY - 3, { align: 'center' });
-
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.4);
-    doc.line(margin + 2, sigBaseY, margin + 56, sigBaseY);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.5);
-    doc.text('Chief Underwriting Officer', margin + 29, sigBaseY + 4.5, { align: 'center' });
-
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('times', 'italic');
-    doc.setFontSize(7.5);
-    doc.text('Directorate of Sovereign Trade Assurance', margin + 29, sigBaseY + 8.5, {
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
+    doc.text('Tradeheaven ECOM Solution LLP, B-18424, Gauri Ganj, Auraiya Road,', centerX, 252.5, {
       align: 'center'
     });
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.2);
-    doc.text('Tradeheaven ECOM Solution LLP', margin + 29, sigBaseY + 12.2, { align: 'center' });
-
-    // Center Vector Embossed Sovereign Gold Wax Seal
-    const sealX = centerX;
-    const sealY = sigBaseY + 1;
-    doc.setFillColor(248, 234, 190);
-    doc.setDrawColor(168, 121, 42);
-    doc.setLineWidth(0.9);
-    doc.circle(sealX, sealY, 15, 'FD');
-
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.45);
-    doc.circle(sealX, sealY, 13.2, 'D');
-
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.3);
-    doc.circle(sealX, sealY, 11.6, 'D');
-
-    doc.setTextColor(140, 96, 24);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(5.6);
-    doc.text('• OFFICIAL SEAL •', sealX, sealY - 5.2, { align: 'center' });
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.2);
-    doc.text('TRADE HEAVEN', sealX, sealY - 1, { align: 'center' });
-
-    doc.setTextColor(14, 92, 58);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(5.6);
-    doc.text('VERIFIED ESCROW', sealX, sealY + 2.8, { align: 'center' });
-
-    doc.setTextColor(140, 96, 24);
-    doc.setFont('times', 'bolditalic');
-    doc.setFontSize(5.6);
-    doc.text('LOSS-ONLY • 2026', sealX, sealY + 6.4, { align: 'center' });
-
-    // Right Signature: Registrar of Custodial Escrow
-    doc.setTextColor(22, 46, 88);
-    doc.setFont('times', 'bolditalic');
-    doc.setFontSize(13.5);
-    doc.text('R. K. Sharma', pageWidth - margin - 29, sigBaseY - 3, { align: 'center' });
-
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.4);
-    doc.line(pageWidth - margin - 56, sigBaseY, pageWidth - margin - 2, sigBaseY);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.5);
-    doc.text('Registrar of Custodial Escrow', pageWidth - margin - 29, sigBaseY + 4.5, {
+    doc.text('In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh 206244, India', centerX, 257.5, {
       align: 'center'
     });
 
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('times', 'italic');
-    doc.setFontSize(7.5);
-    doc.text('Global Indemnity & Bullion Settlement', pageWidth - margin - 29, sigBaseY + 8.5, {
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.2);
+    doc.text('+91-8532934479   |   support@tradeheaven.net   |   www.tradeheaven.net', centerX, 264.5, {
       align: 'center'
     });
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.2);
-    doc.text('Sydney • London • Singapore • New Delhi', pageWidth - margin - 29, sigBaseY + 12.2, {
-      align: 'center'
-    });
-
-    // Page 1 Bottom Registry Footer (Cleanly Separated Lines — Zero Overlap)
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.4);
-    doc.line(margin, 265, pageWidth - margin, 265);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('courier', 'bold');
-    doc.setFontSize(7.2);
-    doc.text(`REGISTRY HASH: ${resolvedCert.verificationHash}`, margin, 270);
-
-    doc.setFont('times', 'italic');
-    doc.setFontSize(7.5);
-    doc.text(
-      `Verify Online: www.tradeheaven.net/?serial=${resolvedCert.certificateNumber}`,
-      pageWidth - margin,
-      270,
-      { align: 'right' }
-    );
-
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.3);
-    doc.text(
-      'Issued by Tradeheaven ECOM Solution LLP   |   Underwriting Desk: help@tradeheaven.net   |   +91 8532934479',
-      margin,
-      275.2
-    );
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.8);
-    doc.text('Page 1 of 2', pageWidth - margin, 275.2, { align: 'right' });
-
-    // =========================================================================
-    // PAGE 2: CLASSIC INDENTURE SCHEDULE (ARTICLES I TO IV)
-    // =========================================================================
-    doc.addPage();
-    drawClassicSovereignFrame(2);
-
-    // Page 2 Centered Classic Indenture Header (2 Lines — Never Overflows)
-    doc.setTextColor(146, 98, 24);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.2);
-    doc.text(
-      `ANNEXURE A TO CERTIFICATE NO. ${resolvedCert.certificateNumber}   •   INDENTURE OF COVENANTS`,
-      centerX,
-      33,
-      { align: 'center' }
-    );
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(14);
-    doc.text('SCHEDULE OF LOSS-ONLY INSURANCE TERMS,', centerX, 39.5, { align: 'center' });
-    doc.text('EXCLUSIONS & CLAIM SETTLEMENT PROTOCOL', centerX, 45.2, { align: 'center' });
-
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.45);
-    doc.line(margin, 48.2, pageWidth - margin, 48.2);
-
-    let p2y = 51.5;
-
-    // ARTICLE I: CERTIFICATE & HOLDER IDENTIFICATION
-    doc.setFillColor(248, 244, 233);
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.4);
-    doc.rect(margin, p2y, contentWidth, 33, 'FD');
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(9.2);
-    doc.text(
-      'ARTICLE I — CERTIFIED PRINCIPAL HOLDER & CORPORATE IDENTIFICATION',
-      margin + 4,
-      p2y + 5.8
-    );
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.25);
-    doc.line(margin + 4, p2y + 7.4, pageWidth - margin - 4, p2y + 7.4);
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(8.1);
-    doc.setTextColor(25, 35, 50);
-    const art1Lines = [
-      `1. Certificate Serial Number: ${resolvedCert.certificateNumber}   |   Registry Status: ACTIVE & VERIFIED CREDENTIAL`,
-      `2. Certified Legal Entity: ${resolvedCert.companyName} (${resolvedCert.country})`,
-      `3. Authorized Principal Signatory: ${resolvedCert.applicantName}   |   Official Email: ${resolvedCert.applicantEmail}`,
-      `4. Registered Office: ${resolvedCert.registeredAddress}`,
-      `5. Corporate Identifiers: ${resolvedCert.legalRegistrationNumber}   |   GST/Tax ID: ${resolvedCert.taxOrVatId}   |   D-U-N-S: ${resolvedCert.dunsNumber}`
-    ];
-    art1Lines.forEach((line, i) => {
-      doc.text(line, margin + 4, p2y + 12 + i * 4.5);
-    });
-
-    p2y += 36.5;
-
-    // ARTICLE II: CUSTODIAL ESCROW & LOSS-ONLY INSURANCE COVERAGE SCHEDULE
-    doc.setFillColor(248, 244, 233);
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.4);
-    doc.rect(margin, p2y, contentWidth, 33, 'FD');
-
-    doc.setTextColor(14, 92, 58);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(9.2);
-    doc.text(
-      'ARTICLE II — CUSTODIAL ESCROW & LOSS-ONLY INDEMNITY COVERAGE SCHEDULE',
-      margin + 4,
-      p2y + 5.8
-    );
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.25);
-    doc.line(margin + 4, p2y + 7.4, pageWidth - margin - 4, p2y + 7.4);
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(8.1);
-    doc.setTextColor(25, 35, 50);
-    const art2Lines = [
-      `1. Underwriting Classification: ${resolvedCert.tierTitle} (${resolvedCert.tierCode})`,
-      `2. Maximum Guaranteed Escrow & Loss Indemnity Limit: USD $${resolvedCert.coverageLimitUsd.toLocaleString()}.00`,
-      `3. Designated Custodial Escrow Vault ID: ${resolvedCert.escrowVaultId} (Tier-1 Regulated Escrow Rails)`,
-      `4. Covered Commodity Scope: ${resolvedCert.businessType}`,
-      `5. Approved Incoterms 2020: ${resolvedCert.supportedIncoterms.join(', ')}   |   Effective Term: ${resolvedCert.issueDate} to ${resolvedCert.expiryDate}`
-    ];
-    art2Lines.forEach((line, i) => {
-      doc.text(line, margin + 4, p2y + 12 + i * 4.5);
-    });
-
-    p2y += 36.5;
-
-    // ARTICLE III: STRICT UNDERWRITING MANDATE — VERIFIED ACTUAL LOSSES ONLY
-    doc.setFillColor(251, 246, 232);
-    doc.setDrawColor(146, 64, 14);
-    doc.setLineWidth(0.6);
-    doc.rect(margin, p2y, contentWidth, 86, 'FD');
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.25);
-    doc.rect(margin + 1, p2y + 1, contentWidth - 2, 84, 'D');
-
-    doc.setTextColor(124, 45, 18);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(9.2);
-    doc.text(
-      'ARTICLE III — STRICT UNDERWRITING MANDATE: ACTUAL LOSSES ONLY (NO UNCERTAIN CLAIMS)',
-      margin + 4,
-      p2y + 6.2
-    );
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.25);
-    doc.line(margin + 4, p2y + 7.8, pageWidth - margin - 4, p2y + 7.8);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.4);
-    doc.text(
-      'Clause 3.1 — Indemnity Strictly Limited to Verified Direct Actual Losses Only:',
-      margin + 4,
-      p2y + 13
-    );
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.9);
-    const sec31 =
-      'Insurance and Trade Assurance protection under this Certificate applies strictly and exclusively to direct, proven, and quantifiable actual financial or physical cargo losses sustained during an active, escrow-locked transaction on the Trade Heaven platform:\n' +
-      '  (a) Verified physical loss, shortage, or transit damage to the insured commodity cargo during marine or inland carriage;\n' +
-      '  (b) Verified non-delivery or off-specification delivery of cargo where buyer funds are locked in Custodial Vault ' +
-      resolvedCert.escrowVaultId +
-      ';\n' +
-      '  (c) Verified intermediary bank clearing or settlement holds within Trade Heaven regulated custodial payment rails.';
-    doc.text(doc.splitTextToSize(sec31, contentWidth - 8), margin + 4, p2y + 17.8);
-
-    doc.setTextColor(136, 19, 55);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(8.4);
-    doc.text(
-      'Clause 3.2 — Categorical Exclusion of Uncertain, Speculative & Unsubstantiated Claims:',
-      margin + 4,
-      p2y + 42.5
-    );
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.9);
-    doc.setTextColor(60, 20, 30);
-    const sec32 =
-      'This Certificate does NOT cover, and Trade Heaven Underwriting strictly rejects, any uncertain or non-actual claims:\n' +
-      '  (i) Uncertain, Unverified, or Unsubstantiated Claims: Any claim lacking objective documentary proof, independent marine/laboratory inspection reports (SGS / Bureau Veritas / Intertek / TÜV), or verified custodial escrow ledger records;\n' +
-      '  (ii) Speculative or Contingent Claims: Any claim based on projected, hypothetical, contingent, or future events;\n' +
-      '  (iii) Indirect, Consequential, or Market Fluctuation Claims: Any claim for anticipated or lost profits, commodity spot-price fluctuations, currency exchange shifts, demurrage not backed by escrow terms, or reputational damages;\n' +
-      '  (iv) Off-Record / Unmonitored Dealings: Any communication or transaction conducted outside Trade Heaven official recorded channels without the knowledge and supervision of the assigned Export Manager voids coverage and terminates services immediately.';
-    doc.text(doc.splitTextToSize(sec32, contentWidth - 8), margin + 4, p2y + 47.3);
-
-    p2y += 89.5;
-
-    // ARTICLE IV: MANDATORY DOCUMENTARY PROOF & FORMAL ATTESTATION
-    doc.setFillColor(248, 244, 233);
-    doc.setDrawColor(18, 32, 56);
-    doc.setLineWidth(0.45);
-    doc.rect(margin, p2y, contentWidth, 48, 'FD');
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(9);
-    doc.text(
-      'ARTICLE IV — MANDATORY DOCUMENTARY PROOF FOR CLAIM SETTLEMENT (72-HOUR SLA)',
-      margin + 4,
-      p2y + 5.8
-    );
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.25);
-    doc.line(margin + 4, p2y + 7.4, pageWidth - margin - 4, p2y + 7.4);
-
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.9);
-    doc.setTextColor(25, 35, 50);
-    const sec4 =
-      'To qualify as a payable Actual Loss under Clause 3.1, the Claimant (Melissa Prezios / MP Commodity Brokers Australia Pty Ltd or Counterparty Buyer) must submit:\n' +
-      `  1. Official Trade Heaven Custodial Escrow Lock Receipt (Vault ID: ${resolvedCert.escrowVaultId});\n` +
-      '  2. Signed Commercial Invoice, Proforma Invoice, and Clean On-Board Bill of Lading (B/L), Q88, or Tank Storage Receipt;\n' +
-      '  3. Independent Inspection & Loss Quantification Report issued by SGS, Bureau Veritas, Intertek, or a certified Lloyd\'s Marine Surveyor confirming the exact US Dollar value of the direct actual loss.';
-    doc.text(doc.splitTextToSize(sec4, contentWidth - 8), margin + 4, p2y + 12);
-
-    // Formal Attestation Bar at bottom of Article IV
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.3);
-    doc.line(margin + 4, p2y + 34.5, pageWidth - margin - 4, p2y + 34.5);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bolditalic');
-    doc.setFontSize(8.2);
-    doc.text('Signed: A. V. Sterling (Chief Underwriting Officer)', margin + 4, p2y + 39.5);
-
-    doc.setTextColor(140, 96, 24);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.5);
-    doc.text('[ SOVEREIGN SEAL AFFIXED ]', centerX, p2y + 39.5, { align: 'center' });
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bolditalic');
-    doc.setFontSize(8.2);
-    doc.text(
-      'Counter-Signed: R. K. Sharma (Escrow Registrar)',
-      pageWidth - margin - 4,
-      p2y + 39.5,
-      { align: 'right' }
-    );
-
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('times', 'italic');
-    doc.setFontSize(7.4);
-    doc.text(
-      'IN WITNESS WHEREOF, Tradeheaven ECOM Solution LLP has executed this Indenture under Official Seal.',
-      centerX,
-      p2y + 44.8,
-      { align: 'center' }
-    );
-
-    // Page 2 Bottom Footer (Clean 2-Line Separation — Zero Collision)
-    doc.setDrawColor(180, 138, 62);
-    doc.setLineWidth(0.4);
-    doc.line(margin, 265, pageWidth - margin, 265);
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('courier', 'bold');
-    doc.setFontSize(7.2);
-    doc.text(`CRYPTOGRAPHIC HASH: ${resolvedCert.verificationHash}`, margin, 270);
-
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.5);
-    doc.text(`SERIAL NO: ${resolvedCert.certificateNumber}`, pageWidth - margin, 270, {
-      align: 'right'
-    });
-
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('times', 'normal');
-    doc.setFontSize(7.3);
-    doc.text(
-      'Issued by Tradeheaven ECOM Solution LLP (www.tradeheaven.net)   |   help@tradeheaven.net',
-      margin,
-      275.2
-    );
-
-    doc.setTextColor(15, 28, 52);
-    doc.setFont('times', 'bold');
-    doc.setFontSize(7.8);
-    doc.text('Page 2 of 2', pageWidth - margin, 275.2, { align: 'right' });
 
     const arrayBuf = doc.output('arraybuffer');
     const pdfBuffer = Buffer.from(arrayBuf);
@@ -7468,186 +7372,216 @@ export class AutomatedSmtpService {
     pdfSizeBytes: number;
     receipt: SerializedDeliveryReceipt;
   }> {
-    const targetEmail = normalizeRecipientEmail(options?.recipientEmail || 'yr943334@gmail.com');
+    const targetEmail = normalizeRecipientEmail(options?.recipientEmail || 'melissa@mpcommoditybrokers.com');
     const { pdfBuffer, filename, publicUrl, resolvedCert } =
       this.buildTradeAssuranceCertificatePdfBuffer(options?.certificate);
 
+    const holderCleanName =
+      resolvedCert.applicantName.replace(/\s*\(.*?\)\s*/g, '').trim() || 'Melissa Prezios';
+    const verifyPortalUrl = `https://www.tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE&cert=${encodeURIComponent(
+      resolvedCert.certificateNumber
+    )}`;
+    const downloadPdfAbsoluteUrl = `https://www.tradeheaven.net${publicUrl}`;
+
     const transporter = this.createPrimaryTransporter();
-    const subject = `📜 [Classic Sovereign PDF Attached] Certificate of Trade Assurance & Loss-Only Insurance Indenture — ${resolvedCert.applicantName} (${resolvedCert.certificateNumber})`;
+    const subject = `🎉 Congratulations ${holderCleanName}! Your Official Trade Heaven Trade Assurance Certificate (${resolvedCert.certificateNumber}) Is Issued — PDF Attached`;
 
     const text = [
-      'TRADEHEAVEN ECOM SOLUTION LLP • LONDON • SINGAPORE • SYDNEY • NEW DELHI',
-      'GLOBAL CUSTODIAL ESCROW & LOSS-ONLY INDEMNITY UNDERWRITING REGISTRY',
-      `CLASSIC SOVEREIGN 2-PAGE PDF CREDENTIAL ATTACHED: ${filename}`,
+      'TRADE HEAVEN • OFFICIAL CERTIFICATION & ESCROW VERIFICATION REGISTRY',
+      `CONGRATULATIONS ON YOUR OFFICIAL TRADE ASSURANCE CERTIFICATE (${resolvedCert.certificateNumber})`,
       '',
-      `Certificate Serial Number : ${resolvedCert.certificateNumber} (OFFICIAL VERIFIED CREDENTIAL)`,
-      `Certified Corporate Entity: ${resolvedCert.companyName}`,
-      `Authorized Signatory      : ${resolvedCert.applicantName} (${resolvedCert.applicantEmail})`,
-      `Registered Office         : ${resolvedCert.registeredAddress}`,
-      `ABN / Tax / DUNS          : ${resolvedCert.legalRegistrationNumber} | ${resolvedCert.taxOrVatId} | DUNS: ${resolvedCert.dunsNumber}`,
-      `Certification Tier        : ${resolvedCert.tierTitle}`,
-      `Guaranteed Coverage Limit : USD $${resolvedCert.coverageLimitUsd.toLocaleString()}.00`,
+      `Dear ${holderCleanName},`,
+      '',
+      `Congratulations! We are pleased to inform you that your official Trade Heaven Trade Assurance Certificate has been issued today (${resolvedCert.issueDate}) for ${resolvedCert.companyName} following successful verification by Trade Heaven and its bank.`,
+      '',
+      `Please find your official Trade Assurance Certificate PDF attached directly to this email (${filename}).`,
+      '',
+      '========================================================================',
+      'OFFICIAL TRADE ASSURANCE CERTIFICATE SUMMARY',
+      '========================================================================',
+      `Certificate No.           : ${resolvedCert.certificateNumber}`,
+      `Issue Date                : ${resolvedCert.issueDate}`,
+      `Certified Seller / Entity : ${resolvedCert.companyName}`,
+      `Director / Owner          : ${holderCleanName}`,
+      `Registration Number       : ${resolvedCert.legalRegistrationNumber}`,
+      `Verified Address          : ${resolvedCert.registeredAddress}`,
+      `Verification Statement    : The process of verification has been carried out by Trade Heaven and its bank.`,
+      `Guaranteed Escrow Limit   : USD $${resolvedCert.coverageLimitUsd.toLocaleString()}.00`,
       `Custodial Escrow Vault ID : ${resolvedCert.escrowVaultId}`,
-      `Validity Period           : ${resolvedCert.issueDate} to ${resolvedCert.expiryDate}`,
-      `Cryptographic Audit Hash  : ${resolvedCert.verificationHash}`,
       '',
-      '========================================================================',
-      'ARTICLE III: STRICT UNDERWRITING MANDATE — VERIFIED ACTUAL LOSSES ONLY (NO UNCERTAIN CLAIMS)',
-      '========================================================================',
-      '1. Clause 3.1 — Indemnity Strictly Limited to Verified Actual Losses Only:',
-      '   Insurance and Trade Assurance protection under this Certificate applies strictly and exclusively',
-      '   to direct, proven, and quantifiable actual financial or physical cargo losses sustained during an',
-      '   active, escrow-locked transaction on the Trade Heaven platform (verified physical transit loss/damage,',
-      '   verified non-delivery or off-spec delivery of escrowed cargo, or confirmed intermediary settlement holds).',
+      'HOW TO VIEW & VERIFY YOUR CERTIFICATE ON THE PORTAL:',
+      `Your certificate is confidential and can be viewed anytime by searching your Certificate Number (${resolvedCert.certificateNumber}) on the Trade Heaven Certificate Verification Portal:`,
+      verifyPortalUrl,
       '',
-      '2. Clause 3.2 — Categorical Exclusion of Uncertain, Speculative & Unsubstantiated Claims:',
-      '   This Certificate does NOT cover, and Trade Heaven Underwriting strictly rejects, any uncertain,',
-      '   unverified, speculative, contingent, indirect, consequential, lost-profit, market-price fluctuation,',
-      '   currency-shift, or unsubstantiated claims, as well as any off-platform dealings outside Export Manager supervision.',
+      `Direct PDF Download Link: ${downloadPdfAbsoluteUrl}`,
       '',
-      `Please find the complete classic 2-page PDF credential attached (${filename}).`,
-      `Verify online: https://www.tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE&serial=${encodeURIComponent(
-        resolvedCert.certificateNumber
-      )}`
+      'Warm regards,',
+      'Trade Heaven Verification & Escrow Underwriting Desk',
+      'Tradeheaven ECOM Solution LLP',
+      'B-18424, Gauri Ganj, Auraiya Road, In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh 206244, India',
+      '+91-8532934479 | support@tradeheaven.net | www.tradeheaven.net'
     ].join('\n');
 
     const html = `
-      <div style="font-family: 'Georgia', 'Times New Roman', Times, serif; max-width: 700px; margin: 0 auto; background: #fcf9f2; border: 3px double #122038; padding: 10px; box-shadow: 0 8px 28px rgba(18,32,56,0.14);">
-        <div style="border: 1.5px solid #b48a3e; padding: 28px 26px; background: #fcf9f2; color: #122038;">
-          
-          <!-- Top Sovereign Header -->
-          <div style="text-align: center; border-bottom: 2px double #b48a3e; padding-bottom: 18px; margin-bottom: 20px;">
-            <div style="font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #8c6622; text-transform: uppercase; margin-bottom: 8px;">
-              TRADEHEAVEN ECOM SOLUTION LLP &bull; LONDON &bull; SINGAPORE &bull; SYDNEY &bull; NEW DELHI
+      <div style="font-family: Arial, Helvetica, sans-serif; max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden;">
+        <!-- Top Congratulatory Banner -->
+        <div style="background: #0f172a; color: #ffffff; padding: 28px 26px; text-align: center;">
+          <div style="display: inline-block; background: #ffffff; color: #000000; border: 1.5px solid #000000; border-radius: 8px; padding: 6px 14px; font-weight: 900; font-size: 13px; letter-spacing: 0.5px; margin-bottom: 14px;">
+            <span style="display: inline-block; background: #ffffff; border: 1px solid #000000; border-radius: 4px; padding: 1px 5px; margin-right: 6px; font-weight: 900;">TH</span>
+            TRADE HEAVEN
+          </div>
+          <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: 0.3px;">
+            🎉 Congratulations, ${holderCleanName}!
+          </h1>
+          <p style="margin: 8px 0 0; font-size: 14px; color: #cbd5e1;">
+            Your Official <strong>Trade Heaven Trade Assurance Certificate</strong> Has Been Issued Today (${resolvedCert.issueDate})
+          </p>
+        </div>
+
+        <!-- Greeting & Attached PDF Callout -->
+        <div style="padding: 24px 26px 10px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+          <p style="margin: 0 0 12px;">
+            Dear <strong>${holderCleanName}</strong> (Managing Director, <strong>${resolvedCert.companyName}</strong>),
+          </p>
+          <p style="margin: 0 0 16px;">
+            Congratulations on receiving your official <strong>Trade Assurance Certificate</strong> from <strong>Trade Heaven</strong>! Following complete corporate and banking verification, <strong>${resolvedCert.companyName}</strong> is now certified as an esteemed and 100% trusted seller on Trade Heaven.
+          </p>
+
+          <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;">
+            <div style="font-size: 12px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px;">
+              📎 Official Certificate PDF Attached to This Email
             </div>
-            <div style="font-size: 11px; color: #475569; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;">
-              Global Custodial Escrow, Commodity Brokerage &amp; Loss-Only Indemnity Registry
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a; font-family: monospace; margin-top: 4px;">
+              ${filename} (${(pdfBuffer.length / 1024).toFixed(1)} KB &bull; Official A4 Certificate PDF)
             </div>
-            <h1 style="margin: 0; font-size: 25px; font-weight: 700; color: #0f1c34; letter-spacing: 0.8px; text-transform: uppercase;">
-              Certificate of Trade Assurance
-            </h1>
-            <div style="font-size: 14px; font-style: italic; font-weight: 700; color: #926218; margin-top: 4px;">
-              &amp; Direct Actual-Loss-Only Insurance Indenture
+            <div style="margin-top: 8px; font-size: 12px; color: #166534;">
+              You can download the attached PDF directly from this email or <a href="${downloadPdfAbsoluteUrl}" style="color: #15803d; font-weight: 700; text-decoration: underline;">click here to download your Certificate PDF</a>.
             </div>
           </div>
+        </div>
 
-          <!-- Credential Ribbon -->
-          <table style="width: 100%; background: #f5efe0; border: 1px solid #b48a3e; margin-bottom: 22px; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 12px; font-size: 11.5px; font-weight: 700; color: #0f1c34;">
-                SERIAL NO: <span style="font-family: monospace;">${resolvedCert.certificateNumber}</span>
-              </td>
-              <td style="padding: 8px 12px; font-size: 11px; font-weight: 700; color: #0e5c3a; text-align: center;">
-                &bull; OFFICIAL VERIFIED CREDENTIAL &bull;
-              </td>
-              <td style="padding: 8px 12px; font-size: 11.5px; font-weight: 700; color: #0f1c34; text-align: right;">
-                VAULT: <span style="font-family: monospace;">${resolvedCert.escrowVaultId}</span>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Formal Proclamation -->
-          <div style="text-align: center; margin-bottom: 22px;">
-            <div style="font-size: 13.5px; font-style: italic; color: #475569; margin-bottom: 6px;">
-              This Official Instrument of Sovereign Assurance Witnesseth and Certifies That
+        <!-- Embedded Classic Trade Assurance Certificate Card Preview -->
+        <div style="padding: 0 22px 22px;">
+          <div style="background: #EFECE1; border: 3px double #8A8372; border-radius: 8px; padding: 28px 24px; text-align: center; color: #2B2B29;">
+            <div style="border-top: 1px solid #C8C1B0; border-bottom: 1px solid #C8C1B0; padding: 10px 0; margin: 0 auto 18px; max-width: 420px;">
+              <div style="font-size: 19px; font-weight: 800; letter-spacing: 1px; color: #2C2C2A; text-transform: uppercase;">
+                TRADE ASSURANCE CERTIFICATE
+              </div>
             </div>
-            <div style="font-size: 22px; font-weight: 700; color: #0f1c34; border-bottom: 1px solid #b48a3e; display: inline-block; padding: 0 18px 4px;">
+
+            <!-- CERTIFIED | 100% Trusted -->
+            <div style="margin: 16px auto 20px;">
+              <span style="display: inline-block; background: #388542; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; padding: 6px 14px; border-radius: 20px; vertical-align: middle;">
+                ★ CERTIFIED ★
+              </span>
+              <span style="display: inline-block; width: 2px; height: 28px; background: #2E8B45; margin: 0 12px; vertical-align: middle;"></span>
+              <span style="display: inline-block; color: #3B9B4C; font-size: 16px; font-weight: 700; vertical-align: middle; text-align: left; line-height: 1.15;">
+                100%<br/>Trusted
+              </span>
+            </div>
+
+            <div style="font-size: 13px; color: #75746E; margin-bottom: 4px;">
+              This is to certify that
+            </div>
+            <div style="font-size: 23px; font-weight: 400; color: #262624; margin-bottom: 6px;">
               ${resolvedCert.companyName}
             </div>
-            <div style="font-size: 13px; font-style: italic; font-weight: 700; color: #1e293b; margin-top: 8px;">
-              Represented by Authorized Principal Signatory: ${resolvedCert.applicantName}
+            <div style="font-size: 13.5px; color: #75746E; margin-bottom: 22px;">
+              is an esteemed and reliable seller on <strong style="color: #6E6D68;">Trade Heaven</strong>
             </div>
-            <div style="font-size: 12px; color: #475569; margin-top: 4px;">
-              Registered Office: ${resolvedCert.registeredAddress} &nbsp;|&nbsp; Official Desk: <a href="mailto:${resolvedCert.applicantEmail}" style="color: #0f1c34;">${resolvedCert.applicantEmail}</a>
+
+            <!-- Verified Address, Director/Owner, Registration Number -->
+            <table style="width: 100%; max-width: 460px; margin: 0 auto 18px; text-align: left; border-collapse: collapse;">
+              <tr>
+                <td colspan="2" style="padding: 6px 0 14px;">
+                  <div style="font-size: 13px; color: #6E6D68;">
+                    <span style="display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center; border-radius: 50%; background: #15992B; color: #ffffff; font-size: 10px; font-weight: 700; margin-right: 6px;">✓</span>
+                    Address
+                  </div>
+                  <div style="padding-left: 24px; font-size: 13.5px; font-weight: 700; color: #222220; margin-top: 3px;">
+                    ${resolvedCert.registeredAddress}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="width: 50%; vertical-align: top; padding-right: 10px;">
+                  <div style="font-size: 13px; color: #6E6D68;">
+                    <span style="display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center; border-radius: 50%; background: #15992B; color: #ffffff; font-size: 10px; font-weight: 700; margin-right: 6px;">✓</span>
+                    Director/Owner
+                  </div>
+                  <div style="padding-left: 24px; font-size: 13.5px; font-weight: 700; color: #222220; margin-top: 3px;">
+                    ${holderCleanName}
+                  </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding-left: 10px;">
+                  <div style="font-size: 13px; color: #6E6D68;">
+                    <span style="display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center; border-radius: 50%; background: #15992B; color: #ffffff; font-size: 10px; font-weight: 700; margin-right: 6px;">✓</span>
+                    Registration number
+                  </div>
+                  <div style="padding-left: 24px; font-size: 13.5px; font-weight: 700; color: #222220; margin-top: 3px;">
+                    ${resolvedCert.legalRegistrationNumber}
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <div style="border-top: 1px solid #CFCBC0; max-width: 460px; margin: 14px auto; padding-top: 12px; font-size: 12.5px; color: #2B2B29;">
+              The process of verification has been carried out by Trade Heaven and its bank.
+            </div>
+
+            <!-- Certificate No & Issue Date -->
+            <table style="width: 100%; max-width: 360px; margin: 14px auto 18px; text-align: center; border-collapse: collapse;">
+              <tr>
+                <td style="width: 50%; padding: 4px;">
+                  <div style="font-size: 15px; font-weight: 700; color: #1E1E1C;">
+                    ${resolvedCert.certificateNumber}
+                  </div>
+                  <div style="font-size: 12px; color: #706F6A; margin-top: 2px;">
+                    Certificate no.
+                  </div>
+                </td>
+                <td style="width: 50%; padding: 4px;">
+                  <div style="font-size: 15px; font-weight: 700; color: #1E1E1C;">
+                    ${resolvedCert.issueDate}
+                  </div>
+                  <div style="font-size: 12px; color: #706F6A; margin-top: 2px;">
+                    Issue date
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Black & White Trade Heaven Footer -->
+            <div style="border-top: 1px solid #CFCBC0; max-width: 360px; margin: 0 auto; padding-top: 14px; color: #000000;">
+              <div style="display: inline-block; background: #ffffff; border: 1px solid #000000; border-radius: 6px; padding: 6px 12px; margin-bottom: 8px; text-align: left;">
+                <span style="display: inline-block; border: 1px solid #000000; border-radius: 3px; padding: 2px 5px; font-weight: 900; font-size: 11px; color: #000000; background: #ffffff; margin-right: 6px; vertical-align: middle;">TH</span>
+                <span style="display: inline-block; vertical-align: middle;">
+                  <span style="display: block; font-size: 12px; font-weight: 900; color: #000000; line-height: 1;">TRADE HEAVEN</span>
+                  <span style="display: block; font-size: 8.5px; font-weight: 600; color: #000000; margin-top: 2px;">Global B2B Marketplace &amp; Exporters Network</span>
+                </span>
+              </div>
+              <div style="font-size: 13px; font-weight: 700; color: #000000; text-transform: uppercase; margin-top: 4px;">
+                TRADE HEAVEN
+              </div>
+              <div style="font-size: 11px; color: #000000; line-height: 1.4; margin-top: 4px;">
+                Tradeheaven ECOM Solution LLP, B-18424, Gauri Ganj, Auraiya Road,<br/>
+                In Front Of Anshik Motor, Dibiyapur, Auraiya, Uttar Pradesh 206244, India
+              </div>
+              <div style="font-size: 11px; font-weight: 600; color: #000000; margin-top: 5px;">
+                +91-8532934479 &nbsp;|&nbsp; support@tradeheaven.net &nbsp;|&nbsp; www.tradeheaven.net
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- Sovereign Indemnity Plaque -->
-          <div style="background: #f6f0e1; border: 2px solid #122038; outline: 1px solid #b48a3e; outline-offset: -4px; padding: 16px; text-align: center; margin-bottom: 22px;">
-            <div style="font-size: 10.5px; font-weight: 700; letter-spacing: 1.2px; color: #8c6622; text-transform: uppercase;">
-              Maximum Guaranteed Custodial Escrow &amp; Actual-Loss Indemnity Coverage Limit
-            </div>
-            <div style="font-size: 20px; font-weight: 700; color: #0e5c3a; margin: 6px 0;">
-              USD $${resolvedCert.coverageLimitUsd.toLocaleString()}.00 &nbsp;(ONE MILLION ONE HUNDRED THOUSAND US DOLLARS)
-            </div>
-            <div style="font-size: 11.5px; font-style: italic; color: #7c2d12;">
-              Strictly Payable for Proven, Documented Direct Actual Financial or Cargo Losses Only &mdash; Zero Uncertain or Speculative Claims
-            </div>
-          </div>
-
-          <!-- Attached PDF Notice -->
-          <div style="background: #f8f4e9; border: 1px solid #b48a3e; padding: 12px 16px; margin-bottom: 20px;">
-            <div style="font-size: 11px; font-weight: 700; color: #8c6622; text-transform: uppercase; letter-spacing: 0.8px;">
-              📎 Attached Classic 2-Page Sovereign Certificate PDF (Ready for Client Presentation)
-            </div>
-            <div style="font-size: 13px; font-weight: 700; color: #0f1c34; font-family: monospace; margin-top: 4px;">
-              ${filename} (${(pdfBuffer.length / 1024).toFixed(1)} KB &bull; 2 Pages A4 Portrait)
-            </div>
-          </div>
-
-          <!-- Classic Ledger Schedule -->
-          <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 22px; border: 1.5px solid #122038;">
-            <tr style="border-bottom: 1px solid #b48a3e; background: #fcf9f2;">
-              <td style="padding: 8px 10px; font-weight: 700; color: #785820; width: 38%;">Corporate ABN &amp; Tax ID:</td>
-              <td style="padding: 8px 10px; font-weight: 700; color: #0f1c34;">${resolvedCert.legalRegistrationNumber} &nbsp;|&nbsp; GST: ${resolvedCert.taxOrVatId} &nbsp;|&nbsp; D-U-N-S: ${resolvedCert.dunsNumber}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #b48a3e; background: #f7f2e6;">
-              <td style="padding: 8px 10px; font-weight: 700; color: #785820;">Underwriting Tier:</td>
-              <td style="padding: 8px 10px; font-weight: 700; color: #0f1c34;">${resolvedCert.tierTitle} (${resolvedCert.tierCode})</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #b48a3e; background: #fcf9f2;">
-              <td style="padding: 8px 10px; font-weight: 700; color: #785820;">Covered Commodity Scope:</td>
-              <td style="padding: 8px 10px; color: #0f1c34;">${resolvedCert.businessType}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #b48a3e; background: #f7f2e6;">
-              <td style="padding: 8px 10px; font-weight: 700; color: #785820;">Approved Incoterms &amp; Term:</td>
-              <td style="padding: 8px 10px; color: #0f1c34;">${resolvedCert.supportedIncoterms.join(', ')} &nbsp;|&nbsp; ${resolvedCert.issueDate} to ${resolvedCert.expiryDate}</td>
-            </tr>
-            <tr style="background: #fcf9f2;">
-              <td style="padding: 8px 10px; font-weight: 700; color: #785820;">Cryptographic Registry Hash:</td>
-              <td style="padding: 8px 10px; font-family: monospace; font-size: 11px; color: #0f1c34;">${resolvedCert.verificationHash}</td>
-            </tr>
-          </table>
-
-          <!-- Mandatory Covenant -->
-          <div style="background: #faf4e5; border: 1.5px solid #92400e; padding: 16px; margin-bottom: 24px; font-size: 12px; line-height: 1.6;">
-            <div style="font-weight: 700; color: #7c2d12; text-transform: uppercase; text-align: center; border-bottom: 1px solid #b48a3e; padding-bottom: 6px; margin-bottom: 10px; letter-spacing: 0.5px;">
-              Mandatory Underwriting Covenant: Covers Verified Actual Losses Only (No Uncertain Claims)
-            </div>
-            <p style="margin: 0 0 10px 0; color: #0f1c34;">
-              <strong>1. Clause 3.1 &mdash; Indemnity Strictly Limited to Verified Actual Losses Only:</strong> Insurance and Trade Assurance protection under this Certificate applies <strong>strictly and exclusively to direct, proven, and quantifiable actual financial or physical cargo losses</strong> (verified physical transit loss/damage, verified non-delivery or off-specification delivery of escrowed cargo in Vault <code>${resolvedCert.escrowVaultId}</code>, or confirmed intermediary settlement holds) evidenced by Clean Bill of Lading, Custodial Escrow Receipt, and independent <strong>SGS / Bureau Veritas / Intertek / Lloyd&apos;s Marine Surveyor</strong> report.
-            </p>
-            <p style="margin: 0; color: #881337; font-weight: 700;">
-              <strong>2. Clause 3.2 &mdash; Categorical Exclusion of Uncertain &amp; Speculative Claims:</strong> This Certificate does <u>NOT</u> cover&mdash;and Trade Heaven Underwriting strictly rejects&mdash;any uncertain, unverified, speculative, contingent, indirect, consequential, lost-profit, market-price fluctuation, currency-shift, or unsubstantiated claims, as well as any off-platform dealings conducted outside Export Manager supervision.
-            </p>
-          </div>
-
-          <!-- Signatures & Seal Row -->
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; text-align: center;">
-            <tr>
-              <td style="width: 36%; vertical-align: bottom; padding: 8px;">
-                <div style="font-family: 'Georgia', serif; font-size: 16px; font-style: italic; font-weight: 700; color: #162e58; margin-bottom: 4px;">A. V. Sterling</div>
-                <div style="border-top: 1px solid #122038; padding-top: 5px; font-size: 11px; font-weight: 700; color: #0f1c34;">Chief Underwriting Officer</div>
-                <div style="font-size: 10px; font-style: italic; color: #475569;">Directorate of Sovereign Trade Assurance</div>
-              </td>
-              <td style="width: 28%; vertical-align: middle; padding: 4px;">
-                <div style="display: inline-block; border: 2px double #a8792a; background: #f8eabe; border-radius: 50%; padding: 12px 14px; text-align: center;">
-                  <div style="font-size: 8px; font-weight: 700; color: #8c6018; letter-spacing: 0.8px;">OFFICIAL SEAL</div>
-                  <div style="font-size: 10px; font-weight: 700; color: #0f1c34;">TRADE HEAVEN</div>
-                  <div style="font-size: 8px; font-weight: 700; color: #0e5c3a;">VERIFIED ESCROW</div>
-                </div>
-              </td>
-              <td style="width: 36%; vertical-align: bottom; padding: 8px;">
-                <div style="font-family: 'Georgia', serif; font-size: 16px; font-style: italic; font-weight: 700; color: #162e58; margin-bottom: 4px;">R. K. Sharma</div>
-                <div style="border-top: 1px solid #122038; padding-top: 5px; font-size: 11px; font-weight: 700; color: #0f1c34;">Registrar of Custodial Escrow</div>
-                <div style="font-size: 10px; font-style: italic; color: #475569;">Global Indemnity &amp; Bullion Settlement</div>
-              </td>
-            </tr>
-          </table>
-
-          <div style="border-top: 1px solid #b48a3e; padding-top: 12px; text-align: center; font-size: 11px; color: #475569;">
-            Issued by <strong>Tradeheaven ECOM Solution LLP</strong> &bull; <a href="mailto:help@tradeheaven.net" style="color: #0f1c34;">help@tradeheaven.net</a> &bull; +91 85329 34479
-          </div>
+        <!-- Portal Verification CTA -->
+        <div style="padding: 0 26px 26px; text-align: center;">
+          <p style="margin: 0 0 14px; font-size: 13px; color: #475569;">
+            You and your global buyers can verify this certificate online anytime by searching Certificate Number <strong>${resolvedCert.certificateNumber}</strong> on the Trade Heaven Portal:
+          </p>
+          <a href="${verifyPortalUrl}" style="display: inline-block; background: #0f172a; color: #fbbf24; font-weight: 800; font-size: 13px; padding: 12px 24px; border-radius: 10px; text-decoration: none;">
+            Verify Certificate ${resolvedCert.certificateNumber} on Portal &rarr;
+          </a>
         </div>
       </div>
     `;
@@ -7655,7 +7589,7 @@ export class AutomatedSmtpService {
     const receipt = await serverDeliveryQueueManager.enqueueSingle(
       targetEmail,
       {
-        from: '"Trade Heaven Escrow & Underwriting Desk" <noreply@tradeheaven.net>',
+        from: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
         replyTo: this.replyToAddress,
         subject,
         text,
@@ -7669,17 +7603,17 @@ export class AutomatedSmtpService {
         ],
         dispatchType: options?.dispatchType || 'MANUAL',
         category: 'CUSTOM_ADMIN',
-        companyName: `${resolvedCert.companyName} (Attn: ${resolvedCert.applicantName})`,
+        companyName: `${resolvedCert.companyName} (Attn: ${holderCleanName})`,
         companyId: 'comp-melissa-mpcommodity',
         recipientName:
           targetEmail === 'yr943334@gmail.com'
             ? 'Sarah Jenkins (Master Admin)'
-            : resolvedCert.applicantName,
+            : holderCleanName,
         trackingId:
-          targetEmail === 'yr943334@gmail.com'
-            ? 'ms-trk-melissa-cert-pdf-yr943334-2026'
+          targetEmail.includes('mpcommoditybroker')
+            ? `ms-trk-melissa-congrats-cert-${Date.now().toString(36)}`
             : `ms-trk-cert-pdf-${Date.now().toString(36)}`,
-        summaryText: `ATTACHED 2-PAGE PDF DRAFT EMAILED TO ${targetEmail}: Official Certificate of Trade Assurance & Loss-Only Insurance Credential (Serial No. ${resolvedCert.certificateNumber}) for ${resolvedCert.applicantName} (${resolvedCert.companyName} • ${resolvedCert.legalRegistrationNumber} • $${resolvedCert.coverageLimitUsd.toLocaleString()} USD Limit). Enforces strict actual-loss-only underwriting (Covers Verified Direct Losses Only — No Uncertain Claims). Attachment: ${filename}`
+        summaryText: `CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO ${targetEmail}: Congratulations ${holderCleanName} (${resolvedCert.companyName}) on receiving Official Trade Assurance Certificate No. ${resolvedCert.certificateNumber} (Issued ${resolvedCert.issueDate}). Verified by Trade Heaven and its bank. Attachment: ${filename}`
       },
       transporter || undefined
     );

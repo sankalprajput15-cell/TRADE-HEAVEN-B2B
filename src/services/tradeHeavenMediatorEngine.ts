@@ -38,6 +38,10 @@ export interface WalletRecord {
 export function isBasicPlanStatus(planOrTier?: string | null, entityId?: string | null): boolean {
   const normalizedEntity = String(entityId || '').trim().toLowerCase();
   if (
+    normalizedEntity === 'comp-melissa-mpcommodity' ||
+    normalizedEntity === 'user-supplier-melissa' ||
+    normalizedEntity.includes('mpcommodity') ||
+    normalizedEntity.includes('melissa') ||
     normalizedEntity === 'comp-atlantic-power-equip' ||
     normalizedEntity === 'user-supplier-mark-johnson' ||
     normalizedEntity.includes('atlanticpowerequip') ||
@@ -528,14 +532,14 @@ export class TradeHeavenSqlPoolAdapter {
         entity_name: 'Melissa Prezios',
         company_name: 'MP Commodity Brokers Australia Pty Ltd',
         wallet_type: 'SUPPLIER',
-        plan_status: 'VIP',
-        available_balance: '248500000', // ₹24,85,000.00 available for bank payout
+        plan_status: 'BASIC',
+        available_balance: '0',
         locked_balance: '0',
-        currency: 'INR',
+        currency: 'USD',
         country: 'Australia',
         native_currency: 'AUD',
         native_symbol: 'A$',
-        updated_at: new Date(Date.now() - 3600 * 1000 * 3).toISOString()
+        updated_at: new Date().toISOString()
       },
       {
         id: 'wal-supp-shenzhen',
@@ -654,7 +658,7 @@ export class TradeHeavenSqlPoolAdapter {
         id: 'led-1003',
         reference_id: 'ORD-ESC-2026-7710',
         source_wallet_id: 'wal-buyer-euro',
-        destination_wallet_id: 'wal-supp-melissa',
+        destination_wallet_id: 'wal-supp-bharat',
         amount: '117000000',
         transaction_type: 'ESCROW_RELEASE',
         notes: 'Mediated payout to supplier',
@@ -689,8 +693,8 @@ export class TradeHeavenSqlPoolAdapter {
         product_title: 'ICUMSA 45 Refined White Cane Sugar (Bulk 50kg PP Bags)',
         buyer_id: 'buyer-titan-01',
         buyer_name: 'Titan Global Construction & Infrastructure LLC',
-        supplier_id: 'comp-melissa-mpcommodity',
-        supplier_name: 'MP Commodity Brokers Australia Pty Ltd',
+        supplier_id: 'comp-bharat-steel',
+        supplier_name: 'Bharat Precision Forgings & Alloys Ltd.',
         total_amount_paise: 92000000, // ₹9,20,000.00
         platform_fee_paise: 2300000,  // 2.5% = ₹23,000.00
         status: 'LOCKED_IN_ESCROW',
@@ -728,11 +732,11 @@ export class TradeHeavenSqlPoolAdapter {
       {
         order_id: 'ORD-ESC-2026-7710',
         rfq_id: 'RFQ-2025-092',
-        product_title: 'Australian Premium Milling Wheat Bulk Cargo (SGS Certified)',
+        product_title: 'Alloy Forged Heavy Industrial Flanges Bulk Cargo (SGS Certified)',
         buyer_id: 'buyer-euro-02',
         buyer_name: 'EuroMed Hospital Procurement GmbH',
-        supplier_id: 'comp-melissa-mpcommodity',
-        supplier_name: 'MP Commodity Brokers Australia Pty Ltd',
+        supplier_id: 'comp-bharat-steel',
+        supplier_name: 'Bharat Precision Forgings & Alloys Ltd.',
         total_amount_paise: 120000000, // ₹12,00,000.00
         platform_fee_paise: 3000000,   // ₹30,000.00
         status: 'SETTLED_TO_SUPPLIER',
@@ -766,14 +770,14 @@ export class TradeHeavenSqlPoolAdapter {
       existing.total_amount_paise = totalAmountPaise;
     } else {
       const buyerW = this.wallets.find(w => w.entity_id === buyerId);
-      const suppW = this.wallets.find(w => w.entity_id === (supplierId || 'comp-melissa-mpcommodity'));
+      const suppW = this.wallets.find(w => w.entity_id === (supplierId || 'comp-bharat-steel'));
       this.orders.unshift({
         order_id: orderId,
         product_title: productTitle || `B2B Commercial Contract (${orderId})`,
         buyer_id: buyerId,
         buyer_name: buyerW?.company_name || buyerId,
-        supplier_id: suppW?.entity_id || 'comp-melissa-mpcommodity',
-        supplier_name: suppW?.company_name || 'MP Commodity Brokers Australia Pty Ltd',
+        supplier_id: suppW?.entity_id || 'comp-bharat-steel',
+        supplier_name: suppW?.company_name || 'Bharat Precision Forgings & Alloys Ltd.',
         total_amount_paise: totalAmountPaise,
         platform_fee_paise: Math.round(totalAmountPaise * 0.025),
         status: 'LOCKED_IN_ESCROW',

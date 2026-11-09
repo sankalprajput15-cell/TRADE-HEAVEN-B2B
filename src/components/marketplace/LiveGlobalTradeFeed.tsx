@@ -1,25 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { RfqRequirement } from '../../types';
+import { CountryFlag } from '../common/CountryFlag';
 
 interface TradeLeadItem {
   product: string;
   qty: string;
   location: string;
+  country: string;
   leadId?: string;
   timeAgo?: string;
 }
 
 const DEFAULT_TRADE_LEADS: TradeLeadItem[] = [
-  { product: 'Automotive Diesel EN590 10PPM', qty: '50,000 MT', location: 'Rotterdam, Netherlands', leadId: 'RFQ-GL-89201' },
-  { product: '1121 Basmati Rice (Steam/Sella)', qty: '500 MT', location: 'Dubai, UAE', leadId: 'RFQ-GL-89203' },
-  { product: 'Aviation Kerosene Jet Fuel A1', qty: '2,000,000 BBL', location: 'Jurong, Singapore', leadId: 'RFQ-GL-89202' },
-  { product: 'Urea 46% Fertilizer Prilled', qty: '25,000 MT', location: 'Mundra, India', leadId: 'RFQ-GL-89204' },
-  { product: 'Virgin Fuel Oil D6', qty: '100,000,000 Gallons', location: 'Houston, USA', leadId: 'RFQ-GL-89209' },
-  { product: 'Copper Ore / Cathodes 99.99%', qty: '3,000 MT', location: 'Shanghai, China', leadId: 'RFQ-GL-89206' },
-  { product: 'Light Cycle Oil (LCO)', qty: '40,000 MT', location: 'Busan, South Korea', leadId: 'RFQ-GL-89216' },
-  { product: 'Aluminium Wire Scrap 99.7%', qty: '250 MT', location: 'Qingdao, China', leadId: 'RFQ-GL-89205' },
-  { product: 'Raw Natural Tossa Jute Fiber', qty: '10 x 40ft Containers', location: 'Mersin, Turkey', leadId: 'RFQ-GL-89207' },
-  { product: 'Multi-Crop Combine Harvesters', qty: '25 Units', location: 'Alexandria, Egypt', leadId: 'RFQ-GL-89208' }
+  { product: 'WANTED : Automotive Diesel EN590 10PPM', qty: '50,000 MT', location: 'Rotterdam, Netherlands', country: 'Netherlands', leadId: 'RFQ-GL-89201' },
+  { product: 'WANTED : 1121 Basmati Rice (Steam/Sella)', qty: '500 MT', location: 'Dubai, UAE', country: 'United Arab Emirates', leadId: 'RFQ-GL-89203' },
+  { product: 'WANTED : Aviation Kerosene Jet Fuel A1', qty: '2,000,000 BBL', location: 'Jurong, Singapore', country: 'Singapore', leadId: 'RFQ-GL-89202' },
+  { product: 'WANTED : Urea 46% Fertilizer Prilled', qty: '25,000 MT', location: 'Mundra, India', country: 'India', leadId: 'RFQ-GL-89204' },
+  { product: 'WANTED : Virgin Fuel Oil D6', qty: '100,000,000 Gallons', location: 'Houston, USA', country: 'United States', leadId: 'RFQ-GL-89209' },
+  { product: 'WANTED : Copper Ore / Cathodes 99.99%', qty: '3,000 MT', location: 'Shanghai, China', country: 'China', leadId: 'RFQ-GL-89206' },
+  { product: 'WANTED : ICUMSA 45 Refined White Sugar', qty: '12,500 MT', location: 'Mombasa, Kenya', country: 'Kenya', leadId: 'RFQ-GL-89211' },
+  { product: 'WANTED : Refined Sunflower Cooking Oil', qty: '450 MT', location: 'Lagos, Nigeria', country: 'Nigeria', leadId: 'RFQ-GL-89212' },
+  { product: 'WANTED : Light Cycle Oil (LCO)', qty: '40,000 MT', location: 'Busan, South Korea', country: 'South Korea', leadId: 'RFQ-GL-89216' },
+  { product: 'WANTED : Aluminium Wire Scrap 99.7%', qty: '250 MT', location: 'Hamburg, Germany', country: 'Germany', leadId: 'RFQ-GL-89205' },
+  { product: 'WANTED : Raw Natural Tossa Jute Fiber', qty: '10 x 40ft Containers', location: 'Mersin, Türkiye', country: 'Republic of Türkiye', leadId: 'RFQ-GL-89207' },
+  { product: 'WANTED : Multi-Crop Combine Harvesters', qty: '25 Units', location: 'Alexandria, Egypt', country: 'Egypt', leadId: 'RFQ-GL-89208' },
+  { product: 'WANTED : Portland Cement OPC 42.5N', qty: '15,000 MT', location: 'Durban, South Africa', country: 'South Africa', leadId: 'RFQ-GL-89219' },
+  { product: 'WANTED : 550W Monocrystalline Solar Panels', qty: '5,000 Units', location: 'Santos, Brazil', country: 'Brazil', leadId: 'RFQ-GL-89220' }
 ];
 
 interface Props {
@@ -203,10 +209,11 @@ export const LiveGlobalTradeFeed: React.FC<Props> = ({ onSelectLead, className =
           </div>
           <div
             id="lead-country"
-            className="text-[11px] font-medium mt-0.5 truncate"
+            className="text-[11px] font-medium mt-1 truncate flex items-center gap-1.5"
             style={{ color: '#38bdf8' }}
           >
-            📍 Buyer from {activeLead.location}
+            <CountryFlag country={activeLead.country || activeLead.location} size="sm" />
+            <span>Buyer from {activeLead.location}</span>
           </div>
         </div>
 

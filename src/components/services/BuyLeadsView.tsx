@@ -48,6 +48,8 @@ import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
 import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState, isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
 import { LeadAccessValueModal } from '../marketplace/LeadAccessValueModal';
 import { getSavedLeadIds, toggleSaveLead, subscribeToSavedLeads } from '../../services/savedLeadsService';
+import { CountryFlag } from '../common/CountryFlag';
+import { WORLD_COUNTRIES_LIST, generateRandomGo4WorldBuyOrders } from '../../data/worldCountriesAndBuyOrders';
 
 interface Props {
   selectedCurrency: Currency;
@@ -180,6 +182,13 @@ export const BuyLeadsView: React.FC<Props> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLoadRandomWorldBuyOrders = () => {
+    const seed = Math.floor(Math.random() * 500) + 1;
+    const freshOrders = generateRandomGo4WorldBuyOrders(36, seed);
+    setRfqs(prev => [...freshOrders, ...prev]);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -428,6 +437,16 @@ export const BuyLeadsView: React.FC<Props> = ({
           >
             <Share2 className="w-4 h-4 text-blue-600" />
             <span>Share Hub</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLoadRandomWorldBuyOrders}
+            className="px-4 py-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs flex items-center gap-2 border border-emerald-300 transition-all cursor-pointer shadow-2xs"
+            title="Generate random global buy orders with world country flags"
+          >
+            <RefreshCw className="w-4 h-4 text-emerald-600" />
+            <span>Load Random Buy Orders</span>
           </button>
 
           <button
@@ -844,6 +863,43 @@ export const BuyLeadsView: React.FC<Props> = ({
           })}
         </div>
 
+        {/* Tier 2.5: All World Countries Flags Quick Filter Strip */}
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            <Globe2 className="w-3 h-3 text-blue-500" />
+            <span>Buyer Flags ({WORLD_COUNTRIES_LIST.length}):</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedCountry('ALL')}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer shrink-0 border ${
+              selectedCountry === 'ALL'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>🌍 All Countries</span>
+          </button>
+          {WORLD_COUNTRIES_LIST.slice(0, 40).map(c => {
+            const isSelected = selectedCountry.toLowerCase() === c.name.toLowerCase();
+            return (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => setSelectedCountry(isSelected ? 'ALL' : c.name)}
+                className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer shrink-0 border ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                }`}
+              >
+                <CountryFlag country={c.code} size="xs" />
+                <span>{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Tier 3: Quick Product Keyword Chips & Status Indicator */}
         <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -925,9 +981,14 @@ export const BuyLeadsView: React.FC<Props> = ({
                   className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-5 transition-all flex flex-col justify-between h-full shadow-2xs hover:shadow-md group"
                 >
                   <div className="space-y-4 flex-1 flex flex-col">
-                    {/* Top Metadata Kicker — Clean Typography, No Lock Badges */}
+                    {/* Top Metadata Kicker — Country Flag + Category + Date */}
                     <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
                       <div className="flex items-center gap-1.5 min-w-0 truncate">
+                        <CountryFlag country={rfq.buyerCountry} size="sm" />
+                        <span className="font-bold text-slate-800 truncate">
+                          {rfq.buyerCountry}
+                        </span>
+                        <span aria-hidden="true" className="text-slate-300">·</span>
                         <span className="font-semibold text-blue-600 truncate">
                           {rfq.category}
                         </span>
@@ -1014,7 +1075,8 @@ export const BuyLeadsView: React.FC<Props> = ({
                             {rfq.buyerCompany}
                           </div>
                           <div className="text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
-                            <span>{rfq.buyerCountry}</span>
+                            <CountryFlag country={rfq.buyerCountry} size="xs" />
+                            <span className="font-semibold text-slate-700">{rfq.buyerCountry}</span>
                             <span aria-hidden="true">·</span>
                             {canViewDirectContact ? (
                               <span className="text-emerald-700 font-medium truncate">
