@@ -65,6 +65,8 @@ export const AuthModal: React.FC<Props> = ({
 
   // 2-Step Login OTP Verification States (Sent to Registered User's Email)
   const [loginOtpCode, setLoginOtpCode] = useState('');
+  const [loginOtpSent, setLoginOtpSent] = useState(false);
+  const [isSendingLoginOtp, setIsSendingLoginOtp] = useState(false);
   const [pendingOtpEmail, setPendingOtpEmail] = useState('');
   const [pendingMaskedEmail, setPendingMaskedEmail] = useState('');
 
@@ -83,6 +85,9 @@ export const AuthModal: React.FC<Props> = ({
   const [regCompany, setRegCompany] = useState('');
   const [regCountry, setRegCountry] = useState('United States');
   const [regAccountType, setRegAccountType] = useState<'BUYER' | 'SUPPLIER'>('BUYER');
+  const [regOtpCode, setRegOtpCode] = useState('');
+  const [regOtpSent, setRegOtpSent] = useState(false);
+  const [isSendingRegOtp, setIsSendingRegOtp] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,7 +169,78 @@ export const AuthModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  // Production Sign-In Form Handler (Step 1: Verify Registered Email + Password -> Dispatches 6-Digit Email OTP)
+  // Handler for 'Send OTP' button inside the Sign-In Form
+  const handleSendLoginOtpClick = async () => {
+    setError(null);
+    setSuccess(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setError('Please enter both your registered email and password before clicking Send OTP.');
+      return;
+    }
+
+    setIsSendingLoginOtp(true);
+    try {
+      const res = await apiClient.sendAuthOtp({
+        email: cleanEmail,
+        password,
+        mode: 'LOGIN'
+      });
+      if (res.success) {
+        setLoginOtpSent(true);
+        setPendingOtpEmail(res.email || cleanEmail);
+        setPendingMaskedEmail(res.maskedEmail || cleanEmail);
+        setSuccess(
+          res.message ||
+            `6-digit verification code sent to your registered email (${res.maskedEmail || cleanEmail}) via noreply@tradeheaven.net.`
+        );
+      } else {
+        setError(res.message || 'Unable to send OTP. Only registered accounts with valid credentials can receive a login OTP.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Network error while dispatching login OTP.');
+    } finally {
+      setIsSendingLoginOtp(false);
+    }
+  };
+
+  // Handler for 'Send OTP' button inside the Registration Form
+  const handleSendRegisterOtpClick = async () => {
+    setError(null);
+    setSuccess(null);
+
+    const cleanEmail = regEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter a valid corporate email address before clicking Send OTP.');
+      return;
+    }
+
+    setIsSendingRegOtp(true);
+    try {
+      const res = await apiClient.sendAuthOtp({
+        email: cleanEmail,
+        name: regName.trim() || undefined,
+        mode: 'REGISTER',
+        accountType: regAccountType
+      });
+      if (res.success) {
+        setRegOtpSent(true);
+        setSuccess(
+          res.message ||
+            `6-digit verification code sent to ${res.maskedEmail || cleanEmail} via noreply@tradeheaven.net. Enter it below to complete registration.`
+        );
+      } else {
+        setError(res.message || 'Unable to send registration OTP. Please check your email address.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Network error while dispatching registration OTP.');
+    } finally {
+      setIsSendingRegOtp(false);
+    }
+  };
+
+  // Production Sign-In Form Handler (Requires 6-Digit Email OTP Verification)
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -176,10 +252,21 @@ export const AuthModal: React.FC<Props> = ({
       return;
     }
 
+    const cleanOtp = loginOtpCode.trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      if (!loginOtpSent) {
+        await handleSendLoginOtpClick();
+        return;
+      }
+      setError('Please enter the 6-digit OTP verification code sent to your registered email before signing in.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const res = await login(cleanEmail, password);
+      const res = await login(cleanEmail, password, cleanOtp);
       if (res.success && res.requiresOtp) {
+        setLoginOtpSent(true);
         setPendingOtpEmail(res.email || cleanEmail);
         setPendingMaskedEmail(res.maskedEmail || cleanEmail);
         setLoginOtpCode('');
@@ -187,7 +274,6 @@ export const AuthModal: React.FC<Props> = ({
           res.message ||
             `6-digit security OTP has been sent to your registered email (${res.maskedEmail || cleanEmail}). Enter it below to complete sign-in.`
         );
-        setAuthMode('LOGIN_OTP');
       } else if (res.success && res.user) {
         onLogin(res.user);
         const isAdminUser = res.user.role === 'ADMIN' && res.user.isVerifiedAdmin === true;
@@ -198,13 +284,15 @@ export const AuthModal: React.FC<Props> = ({
         );
         setTimeout(() => {
           setSuccess(null);
+          setLoginOtpCode('');
+          setLoginOtpSent(false);
           onClose();
           if (isAdminUser && onNavigate) {
             onNavigate('CLIENT_ADMIN');
           }
         }, 750);
       } else {
-        setError(res.error || 'Access denied. Only registered users with valid credentials can sign in.');
+        setError(res.error || 'Access denied. Invalid credentials or 6-digit OTP code.');
       }
     } catch (err: any) {
       setError(err?.message || 'An error occurred during authentication. Please try again.');
@@ -240,6 +328,7 @@ export const AuthModal: React.FC<Props> = ({
         setTimeout(() => {
           setSuccess(null);
           setLoginOtpCode('');
+          setLoginOtpSent(false);
           onClose();
           if (isAdminUser && onNavigate) {
             onNavigate('CLIENT_ADMIN');
@@ -275,7 +364,7 @@ export const AuthModal: React.FC<Props> = ({
     }
   };
 
-  // Production Business Registration Form Handler
+  // Production Business Registration Form Handler (Requires 6-Digit Email OTP Verification)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -287,11 +376,18 @@ export const AuthModal: React.FC<Props> = ({
       return;
     }
 
+    const cleanOtp = regOtpCode.trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setError('Please click "Send OTP" and enter the 6-digit verification code sent to your email before completing registration.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await apiClient.register({
         email: cleanEmail,
         password: regPassword,
+        otp: cleanOtp,
         name: regName.trim(),
         company_name: regCompany.trim(),
         country: regCountry.trim(),
@@ -301,13 +397,15 @@ export const AuthModal: React.FC<Props> = ({
 
       if (res.success && res.user) {
         onLogin(res.user);
-        setSuccess('Business account registered and stored in database successfully.');
+        setSuccess('6-digit Email OTP verified! Business account registered successfully.');
         setTimeout(() => {
           setSuccess(null);
+          setRegOtpCode('');
+          setRegOtpSent(false);
           onClose();
         }, 850);
       } else {
-        setError(res.error || res.message || 'Registration failed. Please check your information.');
+        setError(res.error || res.message || 'Registration failed. Please check your information and 6-digit OTP code.');
       }
     } catch (err: any) {
       setError(err?.message || 'Registration service unavailable. Please retry.');
@@ -805,7 +903,51 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
+                {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button */}
+                <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="font-bold text-indigo-950 text-[11px] flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span>6-Digit Email Verification Code (OTP) *</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSendLoginOtpClick}
+                      disabled={isSendingLoginOtp || isLoading}
+                      data-testid="auth-login-send-otp-btn"
+                      className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs disabled:opacity-50 shrink-0"
+                    >
+                      <Mail className="w-3 h-3" />
+                      <span>
+                        {isSendingLoginOtp
+                          ? 'Sending OTP...'
+                          : loginOtpSent
+                          ? 'Resend OTP'
+                          : 'Send OTP'}
+                      </span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP sent to your email"
+                    value={loginOtpCode}
+                    onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    data-testid="auth-login-otp-input"
+                    className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm font-black tracking-[0.35em] focus:outline-none focus:border-indigo-600"
+                  />
+
+                  <p className="text-[10px] text-indigo-900/80 leading-snug">
+                    {loginOtpSent
+                      ? `OTP dispatched from noreply@tradeheaven.net to ${pendingMaskedEmail || email}. Enter the 6-digit code above to sign in.`
+                      : 'Click "Send OTP" to receive a 6-digit verification code on your registered email address.'}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-0.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -823,11 +965,11 @@ export const AuthModal: React.FC<Props> = ({
 
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || loginOtpCode.trim().length !== 6}
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>{isLoading ? 'Verifying Credentials & Sending OTP...' : 'Continue with Registered Email OTP'}</span>
+                  <span>{isLoading ? 'Verifying OTP & Signing In...' : 'Verify OTP & Sign In'}</span>
                 </button>
 
                 {/* Login UI WhatsApp Support Link for Any Sign-In / OTP Issues */}
@@ -1250,13 +1392,58 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 </div>
 
+                {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button for Registration */}
+                <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="font-bold text-indigo-950 text-[11px] flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span>6-Digit Email Verification Code (OTP) *</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSendRegisterOtpClick}
+                      disabled={isSendingRegOtp || isLoading}
+                      data-testid="auth-register-send-otp-btn"
+                      className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs disabled:opacity-50 shrink-0"
+                    >
+                      <Mail className="w-3 h-3" />
+                      <span>
+                        {isSendingRegOtp
+                          ? 'Sending OTP...'
+                          : regOtpSent
+                          ? 'Resend OTP'
+                          : 'Send OTP'}
+                      </span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    required
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP sent to your email"
+                    value={regOtpCode}
+                    onChange={e => setRegOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    data-testid="auth-register-otp-input"
+                    className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm font-black tracking-[0.35em] focus:outline-none focus:border-indigo-600"
+                  />
+
+                  <p className="text-[10px] text-indigo-900/80 leading-snug">
+                    {regOtpSent
+                      ? `OTP sent from noreply@tradeheaven.net to ${regEmail.trim()}. Enter the 6-digit code above to complete registration.`
+                      : 'Click "Send OTP" to verify your corporate email address before completing registration.'}
+                  </p>
+                </div>
+
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || regOtpCode.trim().length !== 6}
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50 mt-2"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span>{isLoading ? 'Registering...' : 'Complete Business Registration'}</span>
+                  <span>{isLoading ? 'Verifying OTP & Registering...' : 'Verify OTP & Complete Business Registration'}</span>
                 </button>
               </form>
             )}

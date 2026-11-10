@@ -102,6 +102,7 @@ export interface AuthUser {
   avatarUrl?: string;
   isVerified: boolean;
   isVerifiedAdmin?: boolean;
+  otpVerified?: boolean;
   isPremium?: boolean;
   membershipStatus?: MembershipStatus;
   plan?: string;

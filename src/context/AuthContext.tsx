@@ -23,7 +23,7 @@ export interface AuthContextType {
   isImpersonating: boolean;
   setUser: (user: AuthUser | null) => void;
   setCurrentUser: (user: AuthUser | null) => void;
-  login: (email?: string, password?: string) => Promise<LoginResult>;
+  login: (email?: string, password?: string, otp?: string) => Promise<LoginResult>;
   verifyLoginOtp: (email: string, otp: string) => Promise<LoginResult>;
   resendLoginOtp: (email: string) => Promise<{ success: boolean; maskedEmail?: string; message: string }>;
   logout: () => void;
@@ -187,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email?: string, password?: string): Promise<LoginResult> => {
+  const login = async (email?: string, password?: string, otp?: string): Promise<LoginResult> => {
     setIsLoading(true);
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
@@ -195,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Both registered email and password are required.' };
       }
 
-      const res = await apiClient.login(cleanEmail, password);
+      const res = await apiClient.login(cleanEmail, password, otp);
 
       if (res.success && res.requiresOtp) {
         return {
@@ -209,7 +209,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (res.success && res.user) {
-        const sanitizedUser = sanitizeUserRole(res.user);
+        const sanitizedUser = sanitizeUserRole({
+          ...res.user,
+          otpVerified: true
+        } as AuthUser);
         setUser(sanitizedUser);
         setIsAuthenticated(true);
         try {

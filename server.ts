@@ -1137,9 +1137,140 @@ async function issueAndDispatchLoginOtp(user: ServerUserRecord): Promise<{ email
   };
 }
 
-// POST /api/v1/auth/login - Step 1: Verify Registered User Credentials & Dispatch 6-Digit Email OTP
+// In-memory store for 6-digit registration verification OTPs (keyed by normalized email)
+const pendingRegistrationOtps = new Map<string, { code: string; expiry: number; attempts: number }>();
+
+async function issueAndDispatchRegistrationOtp(
+  email: string,
+  name?: string,
+  role: string = 'BUYER'
+): Promise<{ emailSent: boolean; deliveryMode: string }> {
+  const cleanEmail = normalizeRecipientEmail(email);
+  const otpCode = crypto.randomInt(100000, 999999).toString();
+  pendingRegistrationOtps.set(cleanEmail, {
+    code: otpCode,
+    expiry: Date.now() + 10 * 60 * 1000, // 10 minutes
+    attempts: 0
+  });
+
+  const dispatchResult = await automatedSmtpService.sendLoginVerificationOtp({
+    recipientEmail: cleanEmail,
+    recipientName: (name || '').trim() || cleanEmail.split('@')[0],
+    otpCode,
+    expiryMinutes: 10,
+    role
+  });
+
+  return {
+    emailSent: dispatchResult.success,
+    deliveryMode: dispatchResult.mode
+  };
+}
+
+// POST /api/v1/auth/send-otp - Generate & Send 6-Digit Verification OTP via SMTP for Login or Registration
+app.post('/api/v1/auth/send-otp', async (req, res) => {
+  const { email, password, name, mode = 'LOGIN', accountType } = req.body || {};
+  const cleanEmail = normalizeRecipientEmail(String(email || ''));
+
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter a valid corporate email address before clicking Send OTP.'
+    });
+  }
+
+  const normalizedMode = String(mode || 'LOGIN').toUpperCase();
+
+  if (normalizedMode === 'REGISTER') {
+    if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This email is reserved for system administration. Please sign in using the Login tab.'
+      });
+    }
+
+    const existingUser = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'An account with this email address is already registered. Please switch to Sign In.'
+      });
+    }
+
+    const dispatchInfo = await issueAndDispatchRegistrationOtp(
+      cleanEmail,
+      name,
+      accountType === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER'
+    );
+    const maskedEmail = maskRegisteredEmail(cleanEmail);
+
+    logServerActivity(
+      req,
+      'REGISTRATION_OTP_DISPATCHED',
+      cleanEmail,
+      'GUEST',
+      '/api/v1/auth/send-otp',
+      `6-digit registration verification OTP dispatched to ${cleanEmail} via ${dispatchInfo.deliveryMode}.`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      mode: 'REGISTER',
+      email: cleanEmail,
+      maskedEmail,
+      emailSent: dispatchInfo.emailSent,
+      message: `A 6-digit verification code has been sent to ${maskedEmail} via noreply@tradeheaven.net. Enter it below to complete registration.`
+    });
+  }
+
+  // LOGIN mode: verify registered user & password before dispatching 6-digit login OTP
+  const matchedUser = findRegisteredUserForAuth(cleanEmail);
+  if (!matchedUser) {
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', cleanEmail, 'GUEST', '/api/v1/auth/send-otp', `Rejected Send OTP for unregistered email: ${cleanEmail}`, 'UNAUTHORIZED_401');
+    return res.status(401).json({
+      success: false,
+      message: 'No registered account found for this email address. Only registered users can receive a login OTP.'
+    });
+  }
+
+  if (!password || !verifyRegisteredUserPassword(matchedUser, String(password))) {
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', cleanEmail, matchedUser.role, '/api/v1/auth/send-otp', `Rejected Send OTP due to invalid password for: ${cleanEmail}`, 'UNAUTHORIZED_401');
+    return res.status(401).json({
+      success: false,
+      message: 'Please enter your valid registered account password before clicking Send OTP.'
+    });
+  }
+
+  const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
+  const maskedEmail = maskRegisteredEmail(matchedUser.email);
+
+  logServerActivity(
+    req,
+    'LOGIN_OTP_DISPATCHED',
+    matchedUser.email,
+    matchedUser.role,
+    '/api/v1/auth/send-otp',
+    `6-digit login verification OTP dispatched to registered user ${matchedUser.email} (${matchedUser.role}) via ${dispatchInfo.deliveryMode}.`,
+    'SUCCESS',
+    matchedUser.id
+  );
+
+  return res.json({
+    success: true,
+    mode: 'LOGIN',
+    requiresOtp: true,
+    email: matchedUser.email,
+    maskedEmail,
+    role: matchedUser.role,
+    emailSent: dispatchInfo.emailSent,
+    message: `A 6-digit verification code has been sent to your registered email (${maskedEmail}) via noreply@tradeheaven.net.`
+  });
+});
+
+// POST /api/v1/auth/login - Verify Registered User Credentials + 6-Digit Email OTP
 app.post('/api/v1/auth/login', async (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, otp, code } = req.body || {};
 
   if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
     logServerActivity(req, 'SECURITY_LOGIN_EVENT', email || 'anonymous', 'GUEST', '/api/v1/auth/login', 'Login failed: missing email or password.', 'UNAUTHORIZED_401');
@@ -1168,7 +1299,96 @@ app.post('/api/v1/auth/login', async (req, res) => {
     });
   }
 
-  // Credentials verified — now dispatch 6-digit OTP to the user's registered email address
+  const submittedOtp = String(otp || code || '').trim();
+
+  // If the user already clicked "Send OTP" and submitted the 6-digit OTP code in the login form, validate it now
+  if (submittedOtp) {
+    if (!matchedUser.login_otp_code || !matchedUser.login_otp_expiry) {
+      return res.status(401).json({
+        success: false,
+        message: 'No active OTP found. Please click "Send OTP" first to receive a 6-digit code on your registered email.'
+      });
+    }
+
+    matchedUser.login_otp_attempts = (matchedUser.login_otp_attempts || 0) + 1;
+    if (matchedUser.login_otp_attempts > 5) {
+      matchedUser.login_otp_code = null;
+      matchedUser.login_otp_expiry = null;
+      saveServerUsersToDisk();
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed OTP attempts. Please click "Send OTP" to request a new 6-digit code.'
+      });
+    }
+
+    if (Date.now() > matchedUser.login_otp_expiry) {
+      matchedUser.login_otp_code = null;
+      matchedUser.login_otp_expiry = null;
+      saveServerUsersToDisk();
+      return res.status(401).json({
+        success: false,
+        message: 'Your 6-digit OTP has expired. Please click "Send OTP" to receive a fresh code.'
+      });
+    }
+
+    if (matchedUser.login_otp_code !== submittedOtp) {
+      saveServerUsersToDisk();
+      return res.status(401).json({
+        success: false,
+        message: `Invalid 6-digit OTP verification code (${5 - matchedUser.login_otp_attempts} attempts remaining).`
+      });
+    }
+
+    matchedUser.login_otp_code = null;
+    matchedUser.login_otp_expiry = null;
+    matchedUser.login_otp_attempts = 0;
+    saveServerUsersToDisk();
+
+    const isAdmin =
+      AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) &&
+      matchedUser.role === 'ADMIN';
+    const resolvedRole = isAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
+    const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
+
+    sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+    logServerActivity(
+      req,
+      'SECURITY_LOGIN_EVENT',
+      matchedUser.email,
+      resolvedRole,
+      '/api/v1/auth/login',
+      `User ${matchedUser.name} (${resolvedRole}) verified 6-digit Email OTP and signed in.`,
+      'SUCCESS',
+      matchedUser.id
+    );
+
+    return res.json({
+      success: true,
+      token,
+      user: {
+        id: matchedUser.id,
+        email: matchedUser.email,
+        name: matchedUser.name,
+        role: resolvedRole,
+        isPremium: isAdmin ? true : matchedUser.isPremium,
+        membershipStatus: isAdmin ? 'paid' : matchedUser.membershipStatus,
+        status: matchedUser.status,
+        isVerified: true,
+        isVerifiedAdmin: isAdmin,
+        otpVerified: true,
+        tier: isAdmin ? 'VIP' : matchedUser.tier,
+        companyName: matchedUser.companyName,
+        country: matchedUser.country,
+        avatarUrl: matchedUser.avatarUrl,
+        token
+      },
+      message: isAdmin
+        ? 'Administrator 2FA OTP verified. Welcome to the Control Center.'
+        : `2FA OTP verified. Welcome back, ${matchedUser.name}!`
+    });
+  }
+
+  // Otherwise, dispatch 6-digit OTP to the user's registered email address and require OTP input
   const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
   const maskedEmail = maskRegisteredEmail(matchedUser.email);
 
@@ -4501,9 +4721,9 @@ app.post('/api/v1/auth/test-email', async (req, res) => {
   }
 });
 
-// POST /api/v1/auth/register - Self-service business registration (defaults strictly to BUYER or SUPPLIER with pending verification)
+// POST /api/v1/auth/register - Self-service business registration (requires 6-digit Email OTP verification)
 app.post('/api/v1/auth/register', (req, res) => {
-  const { email, password, name, companyName, country, accountType } = req.body;
+  const { email, password, name, companyName, country, accountType, otp, code } = req.body || {};
 
   if (!email || !password || !name) {
     logServerActivity(req, 'UNAUTHORIZED_ACCESS_BLOCKED', email || 'anonymous', 'GUEST', '/api/v1/auth/register', 'Registration failed: missing required user credentials.', 'DENIED');
@@ -4513,16 +4733,54 @@ app.post('/api/v1/auth/register', (req, res) => {
     });
   }
 
-  const cleanEmail = email.toLowerCase().trim();
+  const cleanEmail = normalizeRecipientEmail(String(email));
+  if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) {
+    return res.status(403).json({
+      success: false,
+      message: 'This email is reserved for system administration.'
+    });
+  }
 
   // Prevent duplicate registration
-  if (serverUsersStore.some(u => u.email.toLowerCase().trim() === cleanEmail)) {
+  if (serverUsersStore.some(u => normalizeRecipientEmail(u.email) === cleanEmail)) {
     logServerActivity(req, 'USER_REGISTRATION', cleanEmail, 'GUEST', '/api/v1/auth/register', `Registration rejected: duplicate work email ${cleanEmail} already registered in database.`, 'DENIED');
     return res.status(409).json({
       success: false,
       message: 'An account with this corporate email already exists. Please sign in.'
     });
   }
+
+  // Verify 6-digit Email OTP before completing registration
+  const submittedOtp = String(otp || code || '').trim();
+  const pendingOtp = pendingRegistrationOtps.get(cleanEmail);
+  if (!submittedOtp || submittedOtp.length !== 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please click "Send OTP" and enter the 6-digit verification code sent to your email before completing registration.'
+    });
+  }
+  if (!pendingOtp || Date.now() > pendingOtp.expiry) {
+    pendingRegistrationOtps.delete(cleanEmail);
+    return res.status(401).json({
+      success: false,
+      message: 'No active or valid OTP found for this email. Please click "Send OTP" to receive a fresh 6-digit verification code.'
+    });
+  }
+  pendingOtp.attempts += 1;
+  if (pendingOtp.attempts > 5) {
+    pendingRegistrationOtps.delete(cleanEmail);
+    return res.status(429).json({
+      success: false,
+      message: 'Too many invalid OTP attempts. Please click "Send OTP" to generate a new 6-digit code.'
+    });
+  }
+  if (pendingOtp.code !== submittedOtp) {
+    return res.status(401).json({
+      success: false,
+      message: `Invalid 6-digit verification code (${5 - pendingOtp.attempts} attempts remaining).`
+    });
+  }
+  pendingRegistrationOtps.delete(cleanEmail);
 
   // SERVER-ENFORCED ROLE: Users can only register as BUYER or SUPPLIER (never ADMIN)
   const resolvedRole: 'BUYER' | 'SUPPLIER' = accountType === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER';
@@ -4535,8 +4793,8 @@ app.post('/api/v1/auth/register', (req, res) => {
     role: resolvedRole,
     companyName: companyName?.trim() || 'Enterprise Trading Firm',
     country: country?.trim() || 'Global',
-    status: 'PENDING',
-    isVerified: false,
+    status: 'ACTIVE',
+    isVerified: true,
     isPremium: false,
     membershipStatus: 'free',
     tier: 'FREE',
@@ -4547,7 +4805,7 @@ app.post('/api/v1/auth/register', (req, res) => {
   saveServerUsersToDisk();
   const token = generateServerJwt(newRecord);
 
-  logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api/v1/auth/register', `User ${name} registered successfully as ${resolvedRole} for company ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
+  logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api/v1/auth/register', `User ${name} verified 6-digit email OTP and registered successfully as ${resolvedRole} for company ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
 
   return res.status(201).json({
     success: true,
@@ -4559,15 +4817,17 @@ app.post('/api/v1/auth/register', (req, res) => {
       role: newRecord.role,
       isPremium: false,
       membershipStatus: 'free',
-      status: 'PENDING',
-      isVerified: false,
+      status: 'ACTIVE',
+      isVerified: true,
+      isVerifiedAdmin: false,
+      otpVerified: true,
       tier: 'FREE',
       companyName: newRecord.companyName,
       country: newRecord.country,
       avatarUrl: newRecord.avatarUrl,
       token
     },
-    message: 'Account registered successfully with pending verification status.'
+    message: 'Email OTP verified and account registered successfully!'
   });
 });
 
@@ -5138,20 +5398,58 @@ app.post('/api.php', async (req, res) => {
   const action = String(req.query.action || req.body?.action || '');
   const input = req.body || {};
 
-  // User Registration
+  // User Registration (Requires 6-Digit Email OTP Verification)
   if (action === 'register') {
-    const { email, password, name, companyName, company, country, accountType, role } = input;
+    const { email, password, name, companyName, company, country, accountType, role, otp, code } = input;
     if (!email) {
       logServerActivity(req, 'UNAUTHORIZED_ACCESS_BLOCKED', 'anonymous', 'GUEST', '/api.php?action=register', 'Registration failed: missing email.', 'DENIED');
       return res.status(400).json({ success: false, message: 'Email address is required.' });
     }
-    const cleanEmail = email.toLowerCase().trim();
-    if (serverUsersStore.some(u => u.email.toLowerCase().trim() === cleanEmail)) {
+    const cleanEmail = normalizeRecipientEmail(String(email));
+    if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) {
+      return res.status(403).json({ success: false, message: 'This email is reserved for system administration.' });
+    }
+    if (serverUsersStore.some(u => normalizeRecipientEmail(u.email) === cleanEmail)) {
       logServerActivity(req, 'USER_REGISTRATION', cleanEmail, 'GUEST', '/api.php?action=register', `Registration rejected: duplicate work email ${cleanEmail} already exists.`, 'DENIED');
       return res.status(409).json({ success: false, message: 'An account with this email address already exists. Please log in.' });
     }
 
-    const resolvedRole: 'BUYER' | 'SUPPLIER' = (accountType === 'SUPPLIER' || role === 'SUPPLIER') ? 'SUPPLIER' : 'BUYER';
+    const submittedOtp = String(otp || code || '').trim();
+    const pendingOtp = pendingRegistrationOtps.get(cleanEmail);
+    if (!submittedOtp || submittedOtp.length !== 6) {
+      return res.status(400).json({
+        status: 'error',
+        success: false,
+        message: 'Please click "Send OTP" and enter the 6-digit verification code sent to your email before completing registration.'
+      });
+    }
+    if (!pendingOtp || Date.now() > pendingOtp.expiry) {
+      pendingRegistrationOtps.delete(cleanEmail);
+      return res.status(401).json({
+        status: 'error',
+        success: false,
+        message: 'No active or valid OTP found for this email. Please click "Send OTP" to receive a fresh 6-digit verification code.'
+      });
+    }
+    pendingOtp.attempts += 1;
+    if (pendingOtp.attempts > 5) {
+      pendingRegistrationOtps.delete(cleanEmail);
+      return res.status(429).json({
+        status: 'error',
+        success: false,
+        message: 'Too many invalid OTP attempts. Please click "Send OTP" to request a new 6-digit code.'
+      });
+    }
+    if (pendingOtp.code !== submittedOtp) {
+      return res.status(401).json({
+        status: 'error',
+        success: false,
+        message: `Invalid 6-digit verification code (${5 - pendingOtp.attempts} attempts remaining).`
+      });
+    }
+    pendingRegistrationOtps.delete(cleanEmail);
+
+    const resolvedRole: 'BUYER' | 'SUPPLIER' = (accountType === 'SUPPLIER' || role === 'SUPPLIER' || role === 'supplier') ? 'SUPPLIER' : 'BUYER';
     const newRecord: ServerUserRecord = {
       id: `user-${Date.now()}`,
       email: cleanEmail,
@@ -5172,9 +5470,9 @@ app.post('/api.php', async (req, res) => {
     saveServerUsersToDisk();
     const token = generateServerJwt(newRecord);
 
-    logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api.php?action=register', `User ${newRecord.name} successfully registered a corporate account for ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
+    logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api.php?action=register', `User ${newRecord.name} verified 6-digit email OTP and registered a corporate account for ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
 
-    sendActivityAlert('USER_REGISTERED', cleanEmail, `A new user registered a corporate account on Trade Heaven. Name: ${newRecord.name}. Company: ${newRecord.companyName}`, {
+    sendActivityAlert('USER_REGISTERED', cleanEmail, `A new user verified their email via 6-digit OTP and registered a corporate account on Trade Heaven. Name: ${newRecord.name}. Company: ${newRecord.companyName}`, {
       userId: newRecord.id,
       name: newRecord.name,
       email: newRecord.email,
@@ -5205,6 +5503,8 @@ app.post('/api.php', async (req, res) => {
         membershipStatus: 'free',
         status: 'ACTIVE',
         isVerified: true,
+        isVerifiedAdmin: false,
+        otpVerified: true,
         tier: newRecord.tier,
         companyName: newRecord.companyName,
         company_name: newRecord.companyName,
@@ -5212,7 +5512,7 @@ app.post('/api.php', async (req, res) => {
         avatarUrl: newRecord.avatarUrl,
         token
       },
-      message: 'Account successfully registered and stored in MySQL database!'
+      message: '6-digit Email OTP verified and account successfully registered!'
     });
   }
 

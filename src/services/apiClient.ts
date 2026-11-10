@@ -314,11 +314,78 @@ export const apiClient = {
   },
 
   /**
-   * Step 1: Authenticate registered user with email and password & trigger 6-digit Email OTP
+   * Generate and send a 6-digit OTP verification code to the user's email via SMTP for Login or Registration
+   */
+  async sendAuthOtp(payload: {
+    email: string;
+    password?: string;
+    name?: string;
+    mode: 'LOGIN' | 'REGISTER';
+    accountType?: 'BUYER' | 'SUPPLIER';
+  }): Promise<{
+    success: boolean;
+    email?: string;
+    maskedEmail?: string;
+    role?: string;
+    emailSent?: boolean;
+    message: string;
+  }> {
+    try {
+      const rawClean = (payload.email || '').trim().toLowerCase();
+      const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        return {
+          success: false,
+          message: 'Please enter a valid corporate email address before clicking Send OTP.'
+        };
+      }
+
+      const res = await fetch('/api/v1/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password: payload.password,
+          name: payload.name,
+          mode: payload.mode,
+          accountType: payload.accountType
+        })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success) {
+        return {
+          success: true,
+          email: json.email || cleanEmail,
+          maskedEmail: json.maskedEmail || cleanEmail,
+          role: json.role,
+          emailSent: json.emailSent,
+          message:
+            json.message ||
+            `A 6-digit verification code has been sent to ${json.maskedEmail || cleanEmail} via noreply@tradeheaven.net.`
+        };
+      }
+      return {
+        success: false,
+        message: json?.message || 'Unable to send OTP. Please check your credentials and try again.'
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        message: e?.message || 'Network error while dispatching OTP.'
+      };
+    }
+  },
+
+  /**
+   * Step 1 / Inline: Authenticate registered user with email, password, and optional 6-digit Email OTP
    */
   async login(
     email: string,
-    password?: string
+    password?: string,
+    otp?: string
   ): Promise<{
     success: boolean;
     requiresOtp?: boolean;
@@ -348,7 +415,11 @@ export const apiClient = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ email: cleanEmail, password })
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          otp: otp ? otp.trim() : undefined
+        })
       });
       const authJson = await authRes.json().catch(() => ({}));
 
@@ -494,12 +565,13 @@ export const apiClient = {
   },
 
   /**
-   * Register new B2B user account (Strictly Buyer or Supplier — never Admin)
+   * Register new B2B user account (Strictly Buyer or Supplier — requires 6-digit Email OTP)
    */
   async register(payload: {
     name: string;
     email: string;
     password?: string;
+    otp?: string;
     company_name?: string;
     companyName?: string;
     company?: string;
@@ -527,6 +599,15 @@ export const apiClient = {
         };
       }
 
+      const cleanOtp = (payload.otp || '').trim();
+      if (!cleanOtp || cleanOtp.length !== 6) {
+        return {
+          success: false,
+          error: 'Please click "Send OTP" and enter the 6-digit verification code sent to your email before completing registration.',
+          message: 'Please click "Send OTP" and enter the 6-digit verification code sent to your email before completing registration.'
+        };
+      }
+
       const company = (payload.company_name || payload.companyName || payload.company || 'Enterprise Trading Firm').trim();
       const phone = (payload.phone || payload.phoneOrWhatsapp || '').trim();
       const resolvedRole = (payload.accountType === 'SUPPLIER' || payload.role === 'supplier' || payload.role === 'SUPPLIER') ? 'supplier' : 'buyer';
@@ -536,6 +617,7 @@ export const apiClient = {
         name: (payload.name || 'Trade Partner').trim(),
         email: cleanEmail,
         password: payload.password || '',
+        otp: cleanOtp,
         company_name: company,
         companyName: company,
         company: company,
@@ -571,6 +653,7 @@ export const apiClient = {
           status: 'ACTIVE',
           isVerified: true,
           isVerifiedAdmin: false,
+          otpVerified: true,
           tier: isSupplier ? 'SILVER' : 'FREE',
           companyName: company,
           country: requestPayload.country,
@@ -584,14 +667,14 @@ export const apiClient = {
           token: json.token || normalizedUser.token, 
           data: json.data || normalizedUser, 
           user: normalizedUser, 
-          message: json.message || 'Account successfully registered!' 
+          message: json.message || '6-digit Email OTP verified and account successfully registered!' 
         };
       }
 
       return {
         success: false,
-        error: json?.message || 'Registration failed. Please check your information.',
-        message: json?.message || 'Registration failed. Please check your information.'
+        error: json?.message || 'Registration failed. Please check your information and 6-digit OTP code.',
+        message: json?.message || 'Registration failed. Please check your information and 6-digit OTP code.'
       };
     } catch (e: any) {
       return {
