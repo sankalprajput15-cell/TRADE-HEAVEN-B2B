@@ -908,49 +908,51 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button */}
-                <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="font-bold text-indigo-950 text-[11px] flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <span>6-Digit Email Verification Code (OTP) *</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleSendLoginOtpClick}
-                      disabled={isSendingLoginOtp || isLoading}
-                      data-testid="auth-login-send-otp-btn"
-                      className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs disabled:opacity-50 shrink-0"
-                    >
-                      <Mail className="w-3 h-3" />
-                      <span>
-                        {isSendingLoginOtp
-                          ? 'Sending OTP...'
-                          : loginOtpSent
-                          ? 'Resend OTP'
-                          : 'Send OTP'}
-                      </span>
-                    </button>
+                {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button (Shown after entering password) */}
+                {(password.trim().length > 0 || isAdminEmailInput || loginOtpSent) && (
+                  <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="font-bold text-indigo-950 text-[11px] flex items-center gap-1.5">
+                        <Key className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span>6-Digit Email Verification Code (OTP) *</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSendLoginOtpClick}
+                        disabled={isSendingLoginOtp || isLoading}
+                        data-testid="auth-login-send-otp-btn"
+                        className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs disabled:opacity-50 shrink-0"
+                      >
+                        <Mail className="w-3 h-3" />
+                        <span>
+                          {isSendingLoginOtp
+                            ? 'Sending OTP...'
+                            : loginOtpSent
+                            ? 'Resend OTP'
+                            : 'Send OTP'}
+                        </span>
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      maxLength={6}
+                      placeholder="Enter 6-digit OTP sent to your email"
+                      value={loginOtpCode}
+                      onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      data-testid="auth-login-otp-input"
+                      className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm font-black tracking-[0.35em] focus:outline-none focus:border-indigo-600"
+                    />
+
+                    <p className="text-[10px] text-indigo-900/80 leading-snug">
+                      {loginOtpSent
+                        ? `OTP dispatched from noreply@tradeheaven.net to ${pendingMaskedEmail || email}. Enter the 6-digit code above to sign in.`
+                        : 'Click "Send OTP" to receive a 6-digit verification code on your registered email address.'}
+                    </p>
                   </div>
-
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{6}"
-                    maxLength={6}
-                    placeholder="Enter 6-digit OTP sent to your email"
-                    value={loginOtpCode}
-                    onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    data-testid="auth-login-otp-input"
-                    className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm font-black tracking-[0.35em] focus:outline-none focus:border-indigo-600"
-                  />
-
-                  <p className="text-[10px] text-indigo-900/80 leading-snug">
-                    {loginOtpSent
-                      ? `OTP dispatched from noreply@tradeheaven.net to ${pendingMaskedEmail || email}. Enter the 6-digit code above to sign in.`
-                      : 'Click "Send OTP" to receive a 6-digit verification code on your registered email address.'}
-                  </p>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between pt-0.5">
                   <button

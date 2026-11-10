@@ -29,10 +29,14 @@ jobs:
           cp api.php dist/ 2>/dev/null || true
           cp .htaccess dist/ 2>/dev/null || true
 
-      - name: Sanitize FTP Server Host
+      - name: Sanitize & Resolve FTP Server Host
         run: |
           RAW_SERVER="${{ secrets.FTP_SERVER }}"
-          CLEAN_SERVER=$(echo "$RAW_SERVER" | sed -e 's|^[^/]*://||' -e 's|/.*$||' | tr -d '[:space:]')
+          CLEAN_SERVER=$(echo "$RAW_SERVER" | sed -e 's|^[^/]*://||' -e 's|/.*$||' -e 's|:.*$||' | tr -d '[:space:]')
+          if [ -z "$CLEAN_SERVER" ] || [ "$CLEAN_SERVER" = "localhost" ] || [ "$CLEAN_SERVER" = "127.0.0.1" ] || [ "$CLEAN_SERVER" = "0.0.0.0" ] || [ "$CLEAN_SERVER" = "ftp.tradeheaven.net" ]; then
+            CLEAN_SERVER="tradeheaven.net"
+          fi
+          echo "Using FTP Server Host: $CLEAN_SERVER"
           echo "CLEAN_FTP_SERVER=$CLEAN_SERVER" >> $GITHUB_ENV
 
       - name: Sync Files via FTP
