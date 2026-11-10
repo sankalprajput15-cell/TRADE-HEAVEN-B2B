@@ -5,7 +5,10 @@ import {
   MediationSystemState,
   WalletRecord
 } from '../../services/tradeHeavenMediatorEngine';
-import { TopUpWallet } from './TopUpWallet';
+
+const TopUpWallet = React.lazy(() =>
+  import('./TopUpWallet').then(m => ({ default: m.TopUpWallet }))
+);
 import {
   Wallet,
   Lock,
@@ -406,15 +409,17 @@ export const HeaderWalletBalance: React.FC<HeaderWalletBalanceProps> = ({
 
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto">
-              <TopUpWallet
-                onSuccess={updatedState => {
-                  setState(updatedState);
-                }}
-                onNavigateToFullEngine={() => {
-                  setTopUpModalOpen(false);
-                  onOpenTopUp();
-                }}
-              />
+              <React.Suspense fallback={<div className="p-6 text-center text-xs text-slate-500">Loading wallet...</div>}>
+                <TopUpWallet
+                  onSuccess={updatedState => {
+                    setState(updatedState);
+                  }}
+                  onNavigateToFullEngine={() => {
+                    setTopUpModalOpen(false);
+                    onOpenTopUp();
+                  }}
+                />
+              </React.Suspense>
             </div>
           </div>
         </div>

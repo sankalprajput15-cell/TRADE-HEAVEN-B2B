@@ -8,6 +8,7 @@ import { TransactionLedgerView } from './TransactionLedgerView';
 import { SupplierBankAccountManagement } from './SupplierBankAccountManagement';
 import { tradeHeavenMediationService, MediationSystemState } from '../../services/tradeHeavenMediatorEngine';
 import { formatBalanceInNativeCurrency } from '../../utils/entityCurrency';
+import { generateCommercialInvoicePDF } from '../common/ExportToPDF';
 import { 
   LayoutDashboard, 
   Landmark,
@@ -141,16 +142,59 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       window.removeEventListener('tradeheaven_open_mediation_stage', handleMediationStage);
     };
   }, []);
-  const handleDownloadTemplate = (title: string) => {
-    const link = document.createElement('a');
-    link.href = 'data:application/pdf;base64,JVBERi0xLjAKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqIDIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iaiAzIDAgb2JqPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMTAgMDAwMDAgbgowMDAwMDAwMDUzIDAwMDAwIG4KMDAwMDAwMDEwMiAwMDAwMCBuCnRyYWlsZXI8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxNDkKJUVPRgo=';
-    link.download = title.replace(/\s+/g, '_') + '_Template.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
+
+  const handleDownloadTemplate = (title: string) => {
+    const refId = `TH-DOC-${Date.now().toString().slice(-6)}`;
+    generateCommercialInvoicePDF({
+      receiptId: refId,
+      orderId: refId,
+      issuedAt: new Date().toISOString().slice(0, 10),
+      title: `Trade Heaven Official ${title}`,
+      description: `Standardized International B2B ${title} with Segregated Technical Specifications (Part A) & Commercial Valuation Schedule (Part B).`,
+      type: title.toUpperCase().replace(/\s+/g, '_'),
+      amountUsd: 24500,
+      convertedAmountFormatted: `${curr.symbol}${(24500 * curr.rateToUSD).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${curr.code})`,
+      currency: curr.code,
+      billingName: currentUser?.name || 'Authorized Procurement Officer',
+      companyName: currentUser?.companyName || 'Global Trade Partner Corp.',
+      supplierCompany: 'TRADEHEAVEN ECOM SOLUTION LLP',
+      clientEmail: currentUser?.email || 'procurement@tradeheaven.net',
+      incoterm: 'CIF / FOB (Incoterms 2020)',
+      paymentMethod: '30% Custodial Escrow Advance + 70% Verified B/L',
+      status: 'OFFICIAL TEMPLATE',
+      items: [
+        {
+          itemNo: '01',
+          skuOrHsCode: 'HS-8504.40 / TH-IND-01',
+          productName: 'Industrial Grade Export Commodity Lot A',
+          technicalSpecs: 'ISO 9001 & SGS AQL 1.5 Batch Verified; Export Customs & Certificate of Origin Compliant',
+          packagingSpecs: 'ISPM-15 Heat-Treated Sea-Worthy Pallets (20ft FCL)',
+          incoterm: 'CIF (2020)',
+          leadTime: '14 – 21 Days',
+          quantity: 100,
+          unit: 'Units',
+          unitPriceUsd: 185,
+          taxOrFeeUsd: 0,
+          lineTotalUsd: 18500
+        },
+        {
+          itemNo: '02',
+          skuOrHsCode: 'HS-8479.89 / TH-IND-02',
+          productName: 'Precision Spare & Auxiliary Assembly Kit',
+          technicalSpecs: 'CE / RoHS / TÜV Rheinland Certified; Moisture-Barrier Vacuum Sealed',
+          packagingSpecs: 'Reinforced Export Cartons on Euro Pallets',
+          incoterm: 'CIF (2020)',
+          leadTime: '14 – 21 Days',
+          quantity: 50,
+          unit: 'Sets',
+          unitPriceUsd: 120,
+          taxOrFeeUsd: 0,
+          lineTotalUsd: 6000
+        }
+      ]
+    });
+  };
 
   const isAdmin = currentUser?.role === 'ADMIN';
 
@@ -1124,8 +1168,46 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span>Supplier: <strong>{tp.supplierCompany}</strong></span>
-                  <button className="text-blue-600 hover:underline font-bold flex items-center gap-1 cursor-pointer">
-                    <span>View Proforma P/I</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      generateCommercialInvoicePDF({
+                        receiptId: tp.id,
+                        orderId: tp.id,
+                        issuedAt: tp.createdAt,
+                        title: tp.productTitle,
+                        description: `Custodial Escrow Contract between ${tp.buyerCompany} and ${tp.supplierCompany}`,
+                        type: 'PROFORMA_INVOICE',
+                        amountUsd: tp.totalAmountUsd,
+                        convertedAmountFormatted: `${formatPrice(tp.totalAmountUsd)} (${curr.code})`,
+                        currency: curr.code,
+                        billingName: currentUser?.name || 'Procurement Director',
+                        companyName: tp.buyerCompany,
+                        supplierCompany: tp.supplierCompany,
+                        incoterm: `${tp.incoterm} (Incoterms 2020)`,
+                        paymentMethod: 'Custodial Escrow Vault',
+                        status: tp.status,
+                        items: [
+                          {
+                            itemNo: '01',
+                            skuOrHsCode: `HS-8479 / ${tp.id}`,
+                            productName: tp.productTitle,
+                            technicalSpecs: 'ISO 9001 Quality Management & SGS Pre-Shipment Inspection Verified',
+                            packagingSpecs: 'Standard Export Containerized Packaging',
+                            incoterm: tp.incoterm,
+                            leadTime: '14 – 25 Days',
+                            quantity: 1,
+                            unit: 'Contract Lot',
+                            unitPriceUsd: tp.totalAmountUsd,
+                            taxOrFeeUsd: 0,
+                            lineTotalUsd: tp.totalAmountUsd
+                          }
+                        ]
+                      })
+                    }
+                    className="text-blue-600 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Download Proforma P/I PDF</span>
                     <ArrowUpRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -1882,7 +1964,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                       <Download className="w-4 h-4" />
                       Download QR Code
                     </button>
-                    <button className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/20 hover:bg-white/5 font-bold text-sm transition-all cursor-pointer">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadTemplate('Commercial Invoice')}
+                      className="flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/20 hover:bg-white/5 font-bold text-sm transition-all cursor-pointer"
+                    >
                       <PlusCircle className="w-4 h-4" />
                       Generate New Invoice
                     </button>

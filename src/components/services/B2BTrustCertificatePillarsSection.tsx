@@ -428,7 +428,7 @@ export const B2BTrustCertificatePillarsSection: React.FC<B2BTrustCertificatePill
           <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
             <li>• Live searchable serial number verifying ISO 9001, SOC 2 / ISO 27001, and country-specific government tax &amp; legal standing (GST/IEC in India; EIN, VAT/EORI, ABN, TRN, or USCC globally)</li>
             <li>• On-site factory and pre-shipment assay conducted by SGS, Bureau Veritas, or TÜV Rheinland</li>
-            <li>• Binding USD Escrow Protection Limit ($150,000 to $2,000,000 USD) backed by ACID Escrow Vaults</li>
+            <li>• Binding Escrow Protection backed by ACID Escrow Vaults</li>
             <li>• Instant comfort letter &amp; cryptographic hash for fast-track vendor procurement approval</li>
           </ul>
         </div>

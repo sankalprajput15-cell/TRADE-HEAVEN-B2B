@@ -53,7 +53,8 @@ import {
   Sparkles,
   CheckCircle2,
   RefreshCw,
-  Eye
+  Eye,
+  Menu
 } from 'lucide-react';
 
 interface Props {
@@ -502,7 +503,7 @@ export const Header: React.FC<Props> = ({
     authOnly?: boolean;
   }[] = [
     { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
-    { label: 'B2B Trust Certificate ($1,950 · 7d)', view: 'B2B_TRUST_CERTIFICATE', icon: ShieldCheck, activeMatch: ['B2B_TRUST_CERTIFICATE'] },
+    { label: 'Trust Certificate', view: 'B2B_TRUST_CERTIFICATE', icon: ShieldCheck, activeMatch: ['B2B_TRUST_CERTIFICATE'] },
     { label: 'Trade Assurance Certificate', view: 'TRADE_ASSURANCE_CERTIFICATE', icon: ShieldCheck, activeMatch: ['TRADE_ASSURANCE_CERTIFICATE'] },
     { label: 'Dashboard & Ledger', view: 'DASHBOARD', icon: LayoutDashboard, activeMatch: ['DASHBOARD'], authOnly: true },
     { label: 'Wallet Funds Top-Up', view: 'WALLET_TOPUP', icon: Wallet, activeMatch: ['WALLET_TOPUP', 'MEDIATOR_ENGINE'], authOnly: true },
@@ -525,7 +526,11 @@ export const Header: React.FC<Props> = ({
     { label: 'Work With Us', view: 'ONBOARD_WITH_US', icon: UserPlus, activeMatch: ['ONBOARD_WITH_US'] }
   ];
 
-  const visibleMenuOptions = accountMenuOptions;
+  const visibleMenuOptions = accountMenuOptions.filter(item => {
+    if (item.view === 'PRODUCT_IMAGE_ADMIN' && !isAdmin) return false;
+    if (item.authOnly && !currentUser) return false;
+    return true;
+  });
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs">
@@ -794,17 +799,18 @@ export const Header: React.FC<Props> = ({
             <NotificationBell onNavigate={handleNavClick} />
           )}
 
-          {/* Account Toggle Dropdown */}
-          <div className="relative shrink-0 z-20" ref={userMenuRef}>
+          {/* Account & Navigation Toggle Bar Dropdown */}
+          <div className="relative shrink-0 z-50" ref={userMenuRef}>
             {currentUser ? (
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen(prev => !prev)}
                   className="h-8 sm:h-9 pl-1.5 sm:pl-2 pr-1.5 sm:pr-2.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 flex items-center gap-1.5 transition-colors text-left cursor-pointer shrink-0 shadow-2xs"
-                  title="Open Account & Navigation Menu"
+                  title="Open Toggle Bar & Account Menu"
                   data-testid="header-account-button"
                 >
+                  <Menu className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                   <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0 flex items-center justify-center">
                     <SafeImage
                       src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'}
@@ -846,9 +852,12 @@ export const Header: React.FC<Props> = ({
                 type="button"
                 onClick={() => setUserMenuOpen(prev => !prev)}
                 className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                title="Open Toggle Bar & Account Menu"
+                data-testid="header-account-button"
               >
-                <User className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                <span className="hidden sm:inline">Account</span>
+                <Menu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Menu &amp; Account</span>
+                <span className="sm:hidden">Menu</span>
                 <ChevronDown
                   className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
                     userMenuOpen ? 'rotate-180' : ''
@@ -857,9 +866,9 @@ export const Header: React.FC<Props> = ({
               </button>
             )}
 
-            {/* Account Toggle Menu Dropdown */}
+            {/* Account & Navigation Toggle Menu Dropdown */}
             {userMenuOpen && (
-              <div className="fixed inset-x-2.5 top-15 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-96 max-h-[80vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-3 z-50 text-slate-800">
+              <div className="absolute right-0 top-full mt-2 w-[min(92vw,24rem)] max-h-[82vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-[100] text-slate-800">
                 {/* User Identity or Sign In Header */}
                 {currentUser ? (
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 mb-2.5 space-y-2">
@@ -951,87 +960,64 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* Dedicated B2B Trust Certificate Option in Toggle Bar (Always visible) */}
-                <div className="mb-2">
-                  <button
-                    type="button"
-                    onClick={() => handleNavClick('B2B_TRUST_CERTIFICATE')}
-                    className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer border ${
-                      activeView === 'B2B_TRUST_CERTIFICATE'
-                        ? 'bg-slate-900 text-amber-300 border-slate-900'
-                        : 'bg-amber-50/90 hover:bg-amber-100/80 text-slate-900 border-amber-200'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <ShieldCheck className={`w-4 h-4 shrink-0 ${activeView === 'B2B_TRUST_CERTIFICATE' ? 'text-amber-400' : 'text-amber-600'}`} />
-                      <span className="truncate">B2B Trust Certificate ($1,950 USD · 7 Days)</span>
-                    </span>
-                    <span className="text-[10px] font-mono font-semibold text-amber-700 shrink-0">
-                      Apply / PDF
-                    </span>
-                  </button>
-                </div>
-
-                {/* All Marketplace & Directory Options (Shown after login only) */}
-                {currentUser && (
-                  <div className="pt-1 pb-1">
-                    <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
-                      Marketplace &amp; Directories
-                    </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {visibleMenuOptions.map(item => {
-                        const Icon = item.icon;
-                        const isActive = item.activeMatch.includes(activeView);
-                        return (
-                          <button
-                            key={item.view}
-                            type="button"
-                            onClick={() => {
-                              if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                                handleOpenFundsTopUp();
-                              } else if (item.label.includes('Dashboard')) {
-                                handleNavClick('DASHBOARD');
-                              } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
-                                setUserMenuOpen(false);
-                                onOpenOnboardModal();
-                              } else {
-                                handleNavClick(item.view);
-                              }
-                            }}
-                            className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                              isActive
-                                ? 'bg-blue-50 text-blue-600 font-semibold'
-                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                            }`}
-                          >
-                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          if (onOpenContactModal) {
-                            onOpenContactModal();
-                          } else {
-                            handleNavClick('CONTACT_US');
-                          }
-                        }}
-                        className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                          activeView === 'CONTACT_US'
-                            ? 'bg-blue-50 text-blue-600 font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                        }`}
-                      >
-                        <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span className="truncate">Contact Desk</span>
-                      </button>
-                    </div>
+                {/* All Marketplace & Directory Options (Always visible in Toggle Bar) */}
+                <div className="pt-1 pb-1">
+                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                    Toggle Menu · Marketplace &amp; Directories
                   </div>
-                )}
+                  <div className="grid grid-cols-2 gap-1">
+                    {visibleMenuOptions.map(item => {
+                      const Icon = item.icon;
+                      const isActive = item.activeMatch.includes(activeView);
+                      return (
+                        <button
+                          key={item.view}
+                          type="button"
+                          onClick={() => {
+                            if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
+                              handleOpenFundsTopUp();
+                            } else if (item.label.includes('Dashboard')) {
+                              handleNavClick('DASHBOARD');
+                            } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                              setUserMenuOpen(false);
+                              onOpenOnboardModal();
+                            } else {
+                              handleNavClick(item.view);
+                            }
+                          }}
+                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-600 font-semibold'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                          }`}
+                        >
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        if (onOpenContactModal) {
+                          onOpenContactModal();
+                        } else {
+                          handleNavClick('CONTACT_US');
+                        }
+                      }}
+                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                        activeView === 'CONTACT_US'
+                          ? 'bg-blue-50 text-blue-600 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
+                    >
+                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">Contact Desk</span>
+                    </button>
+                  </div>
+                </div>
 
                 {/* Quick Utilities: Language, Currency & Share Page */}
                 <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">

@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import zlib from 'zlib';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -8797,9 +8798,109 @@ app.post('/api/v1/seo/send-alert', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// VITE MIDDLEWARE SETUP
+// FAST STATIC DIST + GZIP SERVING WITH VITE FALLBACK
 // -------------------------------------------------------------
 async function startServer() {
+  const distPath = path.join(process.cwd(), 'dist');
+  const gzipCache = new Map<string, { mtimeMs: number; gzipped: Buffer; raw: Buffer; contentType: string }>();
+
+  const getContentType = (filePath: string): string => {
+    const ext = path.extname(filePath).toLowerCase();
+    switch (ext) {
+      case '.html': return 'text/html; charset=utf-8';
+      case '.js':
+      case '.mjs': return 'application/javascript; charset=utf-8';
+      case '.css': return 'text/css; charset=utf-8';
+      case '.json':
+      case '.webmanifest': return 'application/json; charset=utf-8';
+      case '.svg': return 'image/svg+xml';
+      case '.png': return 'image/png';
+      case '.jpg':
+      case '.jpeg': return 'image/jpeg';
+      case '.webp': return 'image/webp';
+      case '.ico': return 'image/x-icon';
+      case '.xml': return 'application/xml; charset=utf-8';
+      case '.txt': return 'text/plain; charset=utf-8';
+      default: return 'application/octet-stream';
+    }
+  };
+
+  const serveCachedDistFile = (req: express.Request, res: express.Response, filePath: string, isImmutableAsset: boolean): boolean => {
+    try {
+      if (!fs.existsSync(filePath)) return false;
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile()) return false;
+
+      const contentType = getContentType(filePath);
+      const isCompressible =
+        contentType.startsWith('text/') ||
+        contentType.startsWith('application/javascript') ||
+        contentType.startsWith('application/json') ||
+        contentType.startsWith('image/svg+xml') ||
+        contentType.startsWith('application/xml');
+
+      let entry = gzipCache.get(filePath);
+      if (!entry || entry.mtimeMs !== stat.mtimeMs) {
+        const raw = fs.readFileSync(filePath);
+        const gzipped = isCompressible ? zlib.gzipSync(raw, { level: 6 }) : raw;
+        entry = { mtimeMs: stat.mtimeMs, gzipped, raw, contentType };
+        gzipCache.set(filePath, entry);
+      }
+
+      res.setHeader('Content-Type', entry.contentType);
+      if (isImmutableAsset) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+
+      const acceptEncoding = String(req.headers['accept-encoding'] || '');
+      if (isCompressible && acceptEncoding.includes('gzip')) {
+        res.setHeader('Content-Encoding', 'gzip');
+        res.setHeader('Vary', 'Accept-Encoding');
+        res.setHeader('Content-Length', String(entry.gzipped.length));
+        res.status(200).end(entry.gzipped);
+      } else {
+        res.setHeader('Content-Length', String(entry.raw.length));
+        res.status(200).end(entry.raw);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Serve pre-built code-split dist assets first whenever dist/index.html exists
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path.startsWith('/api')) return next();
+
+    const distIndexHtml = path.join(distPath, 'index.html');
+    if (!fs.existsSync(distIndexHtml)) return next();
+
+    // If requesting a built asset or static public file inside dist
+    if (req.path !== '/' && req.path !== '/index.html') {
+      const candidate = path.join(distPath, decodeURIComponent(req.path));
+      if (candidate.startsWith(distPath) && serveCachedDistFile(req, res, candidate, req.path.startsWith('/assets/'))) {
+        return;
+      }
+      // Also check public/ directory for uploaded media
+      const publicCandidate = path.join(process.cwd(), 'public', decodeURIComponent(req.path));
+      if (publicCandidate.startsWith(path.join(process.cwd(), 'public')) && serveCachedDistFile(req, res, publicCandidate, false)) {
+        return;
+      }
+    }
+
+    // For SPA root or route requests (no file extension or .html), serve gzipped dist/index.html
+    if (req.path === '/' || req.path === '/index.html' || !path.extname(req.path)) {
+      if (serveCachedDistFile(req, res, distIndexHtml, false)) {
+        return;
+      }
+    }
+
+    next();
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     let viteMiddleware: any = null;
     let vitePromise: Promise<any> | null = null;
@@ -8835,13 +8936,7 @@ async function startServer() {
         next(err);
       }
     });
-
-    // Begin warming Vite asynchronously after port 3000 binds
-    setImmediate(() => {
-      void getOrCreateVite();
-    });
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

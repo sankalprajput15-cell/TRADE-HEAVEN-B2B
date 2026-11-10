@@ -110,8 +110,8 @@ const CountryTradeHubView = lazyWithRetry(() => import('./components/marketplace
 const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/marketplace/DedicatedTopUpWalletPage'), 'DedicatedTopUpWalletPage');
 const SupplierBankWithdrawalLandingPage = lazyWithRetry(() => import('./components/marketplace/SupplierBankWithdrawalLandingPage'), 'SupplierBankWithdrawalLandingPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
-const TradeAssuranceCertificateView = lazyWithRetry(() => import('./components/services/TradeAssuranceCertificateView'), 'TradeAssuranceCertificateView');
-const B2BTrustCertificatePage = lazyWithRetry(() => import('./components/services/B2BTrustCertificatePage'), 'B2BTrustCertificatePage');
+import { TradeAssuranceCertificateView } from './components/services/TradeAssuranceCertificateView';
+import { B2BTrustCertificatePage } from './components/services/B2BTrustCertificatePage';
 const VerifiedSupplierDedicatedDashboard = lazyWithRetry(() => import('./components/vendor/VerifiedSupplierDedicatedDashboard'), 'VerifiedSupplierDedicatedDashboard');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
@@ -1347,6 +1347,12 @@ const MainApp: React.FC = () => {
           description = 'Apply for an official Trade Heaven Trade Assurance Certificate ($150k–$2M USD escrow protection) by paying verification fees, or search and verify any certificate serial number online.';
           keywords = 'Trade Heaven Trade Assurance Certificate, verify trade assurance certificate number, THC-2026 certificate lookup, apply for trade assurance certificate, B2B escrow protection certificate, SGS factory audit certificate, TradeHeaven certificate verification';
           canonical = 'https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE';
+          break;
+        case 'B2B_TRUST_CERTIFICATE':
+          title = 'B2B Trust Certificate (7-Day Audit) | Trade Heaven';
+          description = 'Apply for the official Trade Heaven Independent B2B Trust Certificate (7-day complete audit). Verifies ISO 9001, SOC 2, and country-specific government documents.';
+          keywords = 'Trade Heaven B2B Trust Certificate, B2B trust seal verification, ISO 9001 SOC 2 B2B certificate, country specific government registration check, GST IEC EIN VAT EORI verification, corporate verification';
+          canonical = 'https://tradeheaven.net/?view=B2B_TRUST_CERTIFICATE';
           break;
       }
     }

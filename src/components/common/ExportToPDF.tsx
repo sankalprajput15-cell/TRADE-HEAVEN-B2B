@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { FileDown, Check, Loader2 } from 'lucide-react';
 import { PaymentCheckoutData, Currency } from '../../types';
 import type { TradeAssuranceCertificateRecord } from '../services/TradeAssuranceCertificateView';
@@ -20,10 +21,26 @@ function triggerSafePdfDownload(doc: jsPDF, filename: string) {
   }
 }
 
+export interface InvoiceProductLineItem {
+  itemNo?: string;
+  skuOrHsCode?: string;
+  productName: string;
+  technicalSpecs?: string;
+  packagingSpecs?: string;
+  incoterm?: string;
+  leadTime?: string;
+  quantity: number;
+  unit?: string;
+  unitPriceUsd: number;
+  taxOrFeeUsd?: number;
+  lineTotalUsd?: number;
+}
+
 export interface PaymentReceiptPdfData {
   receiptId?: string;
   orderId?: string;
   issuedAt?: string;
+  validUntil?: string;
   title: string;
   description?: string;
   type?: string;
@@ -32,16 +49,22 @@ export interface PaymentReceiptPdfData {
   currency?: Currency | string;
   billingName?: string;
   companyName?: string;
+  supplierCompany?: string;
+  supplierContact?: string;
   clientEmail?: string;
   clientPhone?: string;
+  destinationPort?: string;
+  originPort?: string;
+  incoterm?: string;
   paymentMethod?: string;
   wireTxRef?: string;
   status?: 'PAID' | 'PENDING' | 'ESCROW_LOCKED' | string;
   notes?: string;
+  items?: InvoiceProductLineItem[];
 }
 
 export interface ExportToPDFProps {
-  mode: 'CERTIFICATE' | 'PAYMENT_RECEIPT' | 'BROCHURE';
+  mode: 'CERTIFICATE' | 'PAYMENT_RECEIPT' | 'BROCHURE' | 'INVOICE';
   certificateData?: TradeAssuranceCertificateRecord | null;
   receiptData?: PaymentReceiptPdfData | null;
   checkoutData?: PaymentCheckoutData | null;
@@ -53,6 +76,88 @@ export interface ExportToPDFProps {
   openPrintDialog?: boolean;
   recipientRole?: 'SUPPLIER' | 'BUYER' | 'BOTH';
   recipientCompany?: string;
+}
+
+/**
+ * Draws the official Trade Heaven vector brand logo (block TH monogram + wordmark + subtitle)
+ */
+export function drawTradeHeavenBrandLogo(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  options?: {
+    boxSize?: number;
+    theme?: 'dark' | 'light';
+    subtitle?: string;
+    showWordmark?: boolean;
+  }
+) {
+  const boxSize = options?.boxSize ?? 11.5;
+  const isDark = (options?.theme ?? 'dark') === 'dark';
+  const showWordmark = options?.showWordmark ?? true;
+
+  // Outer crest container
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(isDark ? 245 : 15, isDark ? 158 : 23, isDark ? 11 : 42);
+  doc.setLineWidth(0.45);
+  doc.roundedRect(x, y, boxSize, boxSize, 1.6, 1.6, 'FD');
+
+  // Inner subtle border frame
+  doc.setDrawColor(15, 23, 42);
+  doc.setLineWidth(0.22);
+  doc.roundedRect(x + 0.75, y + 0.75, boxSize - 1.5, boxSize - 1.5, 1.0, 1.0, 'D');
+
+  // Vector Block T & H paths (512-unit coordinate grid)
+  const sUnit = (boxSize - 1.2) / 512;
+  const ox = x + 0.6;
+  const oy = y + 0.6;
+
+  doc.setFillColor(15, 23, 42);
+  // Letter T
+  doc.rect(ox + 60 * sUnit, oy + 122 * sUnit, 186 * sUnit, 52 * sUnit, 'F');
+  doc.rect(ox + 127 * sUnit, oy + 174 * sUnit, 52 * sUnit, 196 * sUnit, 'F');
+  // Letter H
+  doc.rect(ox + 266 * sUnit, oy + 122 * sUnit, 52 * sUnit, 248 * sUnit, 'F');
+  doc.rect(ox + 318 * sUnit, oy + 220 * sUnit, 76 * sUnit, 52 * sUnit, 'F');
+  doc.rect(ox + 394 * sUnit, oy + 122 * sUnit, 52 * sUnit, 248 * sUnit, 'F');
+
+  // Gold verification accent bar at base of crest
+  doc.setFillColor(245, 158, 11);
+  doc.rect(ox + 60 * sUnit, oy + 402 * sUnit, 386 * sUnit, 32 * sUnit, 'F');
+
+  if (showWordmark) {
+    const textX = x + boxSize + 3.2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(boxSize >= 10 ? 11.5 : 9);
+    if (isDark) {
+      doc.setTextColor(255, 255, 255);
+    } else {
+      doc.setTextColor(15, 23, 42);
+    }
+    doc.text('TRADE HEAVEN', textX, y + boxSize * 0.44);
+
+    // Verified pill next to wordmark
+    const brandW = doc.getTextWidth('TRADE HEAVEN');
+    doc.setFillColor(16, 185, 129);
+    doc.roundedRect(textX + brandW + 2, y + boxSize * 0.14, 15.5, 3.8, 0.9, 0.9, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(5.5);
+    doc.text('VERIFIED', textX + brandW + 9.75, y + boxSize * 0.39, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(boxSize >= 10 ? 6.8 : 5.8);
+    if (isDark) {
+      doc.setTextColor(251, 191, 36);
+    } else {
+      doc.setTextColor(71, 85, 105);
+    }
+    doc.text(
+      options?.subtitle || 'GLOBAL B2B MARKETPLACE & CUSTODIAL ESCROW REGISTRY',
+      textX,
+      y + boxSize * 0.78
+    );
+  }
 }
 
 export const generateCertificatePDF = (
@@ -609,7 +714,7 @@ export const generateCertificatePDF = (
 
 export const generatePaymentReceiptPDF = (
   receipt: PaymentReceiptPdfData,
-  options?: { openPrintDialog?: boolean }
+  options?: { openPrintDialog?: boolean; filenamePrefix?: string }
 ) => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -619,242 +724,615 @@ export const generatePaymentReceiptPDF = (
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 14;
+  const margin = 12;
   const contentWidth = pageWidth - margin * 2;
 
-  // Outer Frame
+  // Outer Precision Double Frame
   doc.setDrawColor(15, 23, 42);
-  doc.setLineWidth(0.8);
-  doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
+  doc.setLineWidth(0.7);
+  doc.rect(6, 6, pageWidth - 12, pageHeight - 12);
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.25);
+  doc.rect(7.6, 7.6, pageWidth - 15.2, pageHeight - 15.2);
 
-  // Header Banner
-  doc.setFillColor(15, 23, 42);
-  doc.roundedRect(margin, 14, contentWidth, 32, 3, 3, 'F');
+  // =========================================================================
+  // 1. TOP BRAND IDENTITY HEADER BANNER (WITH LOGOS & METADATA CARD)
+  // =========================================================================
+  doc.setFillColor(15, 23, 42); // Slate-900
+  doc.roundedRect(margin, 11, contentWidth, 29, 2, 2, 'F');
+  // Dual Gold + Emerald bottom accent strip inside header
+  doc.setFillColor(245, 158, 11);
+  doc.rect(margin, 38.2, contentWidth * 0.62, 1.8, 'F');
+  doc.setFillColor(16, 185, 129);
+  doc.rect(margin + contentWidth * 0.62, 38.2, contentWidth * 0.38, 1.8, 'F');
 
-  doc.setTextColor(52, 211, 153); // emerald-400
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text('OFFICIAL TREASURY & ESCROW SETTLEMENT DOCUMENT', margin + 6, 22);
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(17);
-  doc.text('PAYMENT & ESCROW SETTLEMENT RECEIPT', margin + 6, 30.5);
+  // Official Vector TH Brand Logo & Wordmark
+  drawTradeHeavenBrandLogo(doc, margin + 4.5, 14, {
+    boxSize: 12,
+    theme: 'dark',
+    subtitle: 'GLOBAL B2B MARKETPLACE, ESCROW & TREASURY CLEARING DESK'
+  });
 
   doc.setTextColor(203, 213, 225);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.text('Tradeheaven ECOM Solution LLP  •  www.tradeheaven.net', margin + 6, 37.5);
+  doc.setFontSize(7.2);
+  doc.text(
+    'Issuing Entity: Tradeheaven ECOM Solution LLP  |   portal: www.tradeheaven.net  |  help@tradeheaven.net',
+    margin + 4.5,
+    31.2
+  );
+  doc.setTextColor(52, 211, 153);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.text(
+    'DOCUMENT ARCHITECTURE: SEGREGATED TECHNICAL SPECS (PART A) & CONFIDENTIAL PRICING (PART B)',
+    margin + 4.5,
+    35.8
+  );
 
+  // Right Metadata Pill Box
   const receiptNo =
     receipt.receiptId ||
     receipt.orderId ||
-    `TH-RCPT-${Date.now().toString().slice(-6)}`;
-  const issuedDate =
-    receipt.issuedAt || new Date().toISOString().slice(0, 10);
+    `TH-INV-${Date.now().toString().slice(-6)}`;
+  const issuedDate = receipt.issuedAt || new Date().toISOString().slice(0, 10);
+  const validUntil =
+    receipt.validUntil ||
+    new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
 
+  const metaBoxW = 58;
+  const metaBoxX = pageWidth - margin - metaBoxW - 3.5;
   doc.setFillColor(30, 41, 59);
-  doc.setDrawColor(71, 85, 105);
-  doc.roundedRect(pageWidth - margin - 58, 18, 52, 22, 2, 2, 'FD');
+  doc.setDrawColor(245, 158, 11);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(metaBoxX, 13.5, metaBoxW, 22.5, 1.5, 1.5, 'FD');
 
-  doc.setTextColor(148, 163, 184);
+  doc.setTextColor(251, 191, 36);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.text('RECEIPT / ORDER REF', pageWidth - margin - 32, 24, { align: 'center' });
+  doc.setFontSize(6.8);
+  doc.text('COMMERCIAL INVOICE & RECEIPT', metaBoxX + metaBoxW / 2, 17.8, {
+    align: 'center'
+  });
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('courier', 'bold');
-  doc.setFontSize(9);
-  doc.text(receiptNo, pageWidth - margin - 32, 30.5, { align: 'center' });
+  doc.setFontSize(8.8);
+  doc.text(receiptNo, metaBoxX + metaBoxW / 2, 22.8, { align: 'center' });
 
   doc.setTextColor(203, 213, 225);
-  doc.setFont('courier', 'normal');
-  doc.setFontSize(7.5);
-  doc.text(`Date: ${issuedDate}`, pageWidth - margin - 32, 36.5, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.6);
+  doc.text(`Issued: ${issuedDate}  |  Valid: ${validUntil}`, metaBoxX + metaBoxW / 2, 27.3, {
+    align: 'center'
+  });
 
-  let y = 53;
+  // Status badge inside metadata card
+  const statusLabel = (receipt.status || 'VERIFIED INVOICE').toUpperCase();
+  doc.setFillColor(16, 185, 129);
+  doc.roundedRect(metaBoxX + 7, 29.3, metaBoxW - 14, 4.8, 1, 1, 'F');
+  doc.setTextColor(6, 78, 59);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.3);
+  doc.text(`STATUS: ${statusLabel}`, metaBoxX + metaBoxW / 2, 32.6, { align: 'center' });
 
-  // Billed To & Beneficiary Two-Column Box
-  const colW = (contentWidth - 6) / 2;
+  let y = 43.5;
+
+  // =========================================================================
+  // 2. TWO-COLUMN COUNTERPARTY & BENEFICIARY CARDS
+  // =========================================================================
+  const colW = (contentWidth - 4) / 2;
+  const partyCardH = 27;
+
+  // Left Card: Buyer / Billed Entity
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(margin, y, colW, 38, 2, 2, 'FD');
-  doc.roundedRect(margin + colW + 6, y, colW, 38, 2, 2, 'FD');
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y, colW, partyCardH, 1.5, 1.5, 'FD');
+  doc.setFillColor(37, 99, 235);
+  doc.rect(margin, y, 2.2, partyCardH, 'F');
 
-  // Left: Client Details
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(30, 64, 175);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.text('CLIENT / BILLED ENTITY', margin + 5, y + 7);
+  doc.setFontSize(6.8);
+  doc.text('BUYER / CONSIGNEE & BILLED ENTITY', margin + 5, y + 5);
 
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(8.8);
   doc.text(
-    (receipt.companyName || receipt.billingName || 'Verified Trade Client').substring(0, 38),
+    (receipt.companyName || receipt.billingName || 'Verified Corporate Trade Account').substring(0, 44),
     margin + 5,
-    y + 14
+    y + 10.2
   );
 
   doc.setTextColor(71, 85, 105);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  if (receipt.billingName) {
-    doc.text(`Attn: ${receipt.billingName}`, margin + 5, y + 20.5);
-  }
-  if (receipt.clientEmail) {
-    doc.text(`Email: ${receipt.clientEmail}`, margin + 5, y + 26.5);
-  }
-  if (receipt.clientPhone) {
-    doc.text(`Phone: ${receipt.clientPhone}`, margin + 5, y + 32.5);
-  }
-
-  // Right: Beneficiary Treasury Details
-  const rightX = margin + colW + 11;
-  doc.setTextColor(100, 116, 139);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7.5);
-  doc.text('BENEFICIARY / TREASURY SETTLEMENT VAULT', rightX, y + 7);
-
-  doc.setTextColor(15, 23, 42);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.text('TRADEHEAVEN ECOM SOLUTION LLP', rightX, y + 14);
-
-  doc.setTextColor(71, 85, 105);
-  doc.setFont('courier', 'normal');
-  doc.setFontSize(8);
-  doc.text('Bank: The Currency Cloud Limited', rightX, y + 20.5);
-  doc.text('IBAN: GB81TCCL04140453340868', rightX, y + 26.5);
-  doc.text('SWIFT / BIC: TCCLGB3L (DO NOT CONVERT TO GBP)', rightX, y + 32.5);
-
-  y += 45;
-
-  // Line Item Table Header
-  doc.setFillColor(15, 23, 42);
-  doc.roundedRect(margin, y, contentWidth, 10, 1.5, 1.5, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text('DESCRIPTION / SERVICE PLAN', margin + 5, y + 6.5);
-  doc.text('PAYMENT RAIL', margin + 105, y + 6.5);
-  doc.text('STATUS', margin + 138, y + 6.5);
-  doc.text('AMOUNT', pageWidth - margin - 5, y + 6.5, { align: 'right' });
-
-  y += 10;
-
-  // Line Item Row
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, 26, 'FD');
-
-  doc.setTextColor(15, 23, 42);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
-  doc.text((receipt.title || 'Trade Heaven Service Settlement').substring(0, 48), margin + 5, y + 8);
-
-  doc.setTextColor(100, 116, 139);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  const descLines = doc.splitTextToSize(
-    receipt.description || 'Official Trade Heaven B2B Marketplace & Escrow Settlement',
-    92
-  );
-  doc.text(descLines.slice(0, 2), margin + 5, y + 14.5);
-
-  doc.setTextColor(15, 23, 42);
-  doc.setFont('courier', 'bold');
-  doc.setFontSize(8.5);
-  doc.text(receipt.paymentMethod || 'SWIFT WIRE', margin + 105, y + 10);
-
-  doc.setTextColor(4, 120, 87);
-  doc.text(receipt.status || 'RECORDED', margin + 138, y + 10);
-
-  const amountUsdStr = `$${(Number(receipt.amountUsd) || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })} USD`;
-  const primaryAmt = receipt.convertedAmountFormatted || amountUsdStr;
-
-  doc.setTextColor(15, 23, 42);
-  doc.setFont('courier', 'bold');
-  doc.setFontSize(10);
-  doc.text(primaryAmt, pageWidth - margin - 5, y + 10, { align: 'right' });
-
-  doc.setTextColor(100, 116, 139);
-  doc.setFont('courier', 'normal');
-  doc.setFontSize(7.5);
-  doc.text(`(${amountUsdStr})`, pageWidth - margin - 5, y + 16, { align: 'right' });
-
-  y += 32;
-
-  // Wire Reference & Notes Box
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(margin, y, contentWidth, 20, 2, 2, 'FD');
-
-  doc.setTextColor(71, 85, 105);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
+  doc.setFontSize(7.2);
   doc.text(
-    `Wire / Transaction Reference: ${receipt.wireTxRef || 'Pending Bank Settlement Confirmation'}`,
-    margin + 5,
-    y + 8
-  );
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text(
-    `Notes: ${(receipt.notes || '30-Day Strict Refund Eligibility Window from initial plan start date applies.').substring(0, 95)}`,
+    `Attn / Signatory: ${receipt.billingName || 'Authorized Procurement Officer'}`,
     margin + 5,
     y + 15
   );
+  doc.text(
+    `Email: ${receipt.clientEmail || 'procurement@verified-partner.com'}${receipt.clientPhone ? `  |  Tel: ${receipt.clientPhone}` : ''}`,
+    margin + 5,
+    y + 19.5
+  );
+  doc.text(
+    `Destination / Terms: ${receipt.destinationPort || 'Global Customs Port'}  |  Incoterm: ${receipt.incoterm || 'CIF / FOB (Incoterms 2020)'}`,
+    margin + 5,
+    y + 24
+  );
 
-  y += 27;
-
-  // Trade Assurance Mishap & Stuck Payment Protection Guarantee
-  doc.setFillColor(236, 253, 245);
-  doc.setDrawColor(16, 185, 129);
-  doc.roundedRect(margin, y, contentWidth, 28, 2, 2, 'FD');
+  // Right Card: Supplier / Beneficiary & Treasury
+  const rightCardX = margin + colW + 4;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(rightCardX, y, colW, partyCardH, 1.5, 1.5, 'FD');
+  doc.setFillColor(16, 185, 129);
+  doc.rect(rightCardX, y, 2.2, partyCardH, 'F');
 
   doc.setTextColor(6, 95, 70);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(6.8);
+  doc.text('ISSUING SUPPLIER / ESCROW BENEFICIARY', rightCardX + 5, y + 5);
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.8);
+  doc.text(
+    (receipt.supplierCompany || 'TRADEHEAVEN ECOM SOLUTION LLP').substring(0, 44),
+    rightCardX + 5,
+    y + 10.2
+  );
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.2);
+  doc.text(
+    `Beneficiary Treasury: TRADEHEAVEN ECOM SOLUTION LLP (Verified Vault)`,
+    rightCardX + 5,
+    y + 15
+  );
+  doc.text(
+    `Quality & Audit Partner: SGS / TUV Rheinland / ISO 9001 Desk`,
+    rightCardX + 5,
+    y + 19.5
+  );
+  doc.text(
+    `Settlement Rail: ${receipt.paymentMethod || 'SWIFT MT103 Corporate Wire / Custodial Escrow'}`,
+    rightCardX + 5,
+    y + 24
+  );
+
+  y += partyCardH + 4.5;
+
+  // =========================================================================
+  // 3. PART A — NON-SENSITIVE PRODUCT & TECHNICAL SPECIFICATIONS TABLE
+  //    (Strictly segregated from price-sensitive valuation data)
+  // =========================================================================
+  doc.setFillColor(30, 41, 59);
+  doc.roundedRect(margin, y, contentWidth, 7.5, 1.2, 1.2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.6);
+  doc.text(
+    'PART A  ·  NON-SENSITIVE PRODUCT, TECHNICAL & LOGISTICS SPECIFICATIONS',
+    margin + 3.5,
+    y + 5.1
+  );
+
+  // Right badge indicating Non-Sensitive Public/Logistics Scope
+  doc.setFillColor(14, 116, 144); // Cyan-700
+  doc.roundedRect(pageWidth - margin - 67, y + 1.2, 64.5, 5.1, 1, 1, 'F');
+  doc.setTextColor(224, 242, 254);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6);
+  doc.text(
+    'NON-SENSITIVE SPECS ONLY (NO PRICING)',
+    pageWidth - margin - 34.75,
+    y + 4.6,
+    { align: 'center' }
+  );
+
+  y += 8.8;
+
+  // Build normalized line items
+  const resolvedItems: InvoiceProductLineItem[] =
+    receipt.items && receipt.items.length > 0
+      ? receipt.items
+      : [
+          {
+            itemNo: '01',
+            skuOrHsCode: receipt.type ? `TH-${receipt.type.slice(0, 8).toUpperCase()}-01` : 'HS-8479.89 / TH-01',
+            productName: receipt.title || 'Trade Heaven B2B Export Contract & Escrow Settlement',
+            technicalSpecs:
+              receipt.description ||
+              'ISO 9001 Quality Management verified; SGS / TUV pre-shipment batch inspection; sovereign legal KYC & Certificate of Origin compliance.',
+            packagingSpecs: 'Export-Grade Containerized / Verified Digital Dossier',
+            incoterm: receipt.incoterm || 'CIF / FOB (Incoterms 2020)',
+            leadTime: '7 – 21 Calendar Days',
+            quantity: 1,
+            unit: 'Lot / Contract',
+            unitPriceUsd: Number(receipt.amountUsd) || 0,
+            taxOrFeeUsd: 0,
+            lineTotalUsd: Number(receipt.amountUsd) || 0
+          }
+        ];
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [
+      [
+        'ITEM',
+        'SKU / HS CODE',
+        'PRODUCT / SERVICE NAME',
+        'TECHNICAL, QUALITY & PACKAGING SPECIFICATIONS (NON-SENSITIVE)',
+        'INCOTERM & LEAD TIME',
+        'QTY / UNIT'
+      ]
+    ],
+    body: resolvedItems.map((item, idx) => [
+      item.itemNo || String(idx + 1).padStart(2, '0'),
+      item.skuOrHsCode || `TH-SKU-0${idx + 1}`,
+      item.productName,
+      `${item.technicalSpecs || 'ISO 9001 & SGS pre-shipment quality verified.'}${
+        item.packagingSpecs ? `\nPackaging: ${item.packagingSpecs}` : ''
+      }`,
+      `${item.incoterm || receipt.incoterm || 'CIF / FOB'}\nLead: ${item.leadTime || '7-14 Days'}`,
+      `${item.quantity.toLocaleString()} ${item.unit || 'Units'}`
+    ]),
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 7.2,
+      cellPadding: 2.4,
+      textColor: [30, 41, 59],
+      lineColor: [203, 213, 225],
+      lineWidth: 0.25,
+      valign: 'middle'
+    },
+    headStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [15, 23, 42],
+      fontStyle: 'bold',
+      fontSize: 6.8
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    },
+    columnStyles: {
+      0: { cellWidth: 11, halign: 'center', font: 'courier', fontStyle: 'bold' },
+      1: { cellWidth: 26, font: 'courier', fontSize: 6.8 },
+      2: { cellWidth: 38, fontStyle: 'bold' },
+      3: { cellWidth: 63 },
+      4: { cellWidth: 26 },
+      5: { cellWidth: 22, halign: 'right', font: 'courier', fontStyle: 'bold' }
+    }
+  });
+
+  const afterSpecTableY = (doc as any).lastAutoTable?.finalY
+    ? (doc as any).lastAutoTable.finalY + 4.5
+    : y + 28;
+  y = afterSpecTableY;
+
+  // =========================================================================
+  // 4. SEGREGATION DIVIDER: NON-SENSITIVE SPECS vs. PRICE-SENSITIVE SCHEDULE
+  // =========================================================================
+  doc.setDrawColor(217, 119, 6);
+  doc.setLineWidth(0.35);
+  doc.line(margin, y + 3, pageWidth - margin, y + 3);
+
+  const dividerPillW = 138;
+  const dividerPillX = (pageWidth - dividerPillW) / 2;
+  doc.setFillColor(254, 243, 199); // Amber-100
+  doc.setDrawColor(217, 119, 6);
+  doc.roundedRect(dividerPillX, y, dividerPillW, 6, 1.5, 1.5, 'FD');
+  doc.setTextColor(146, 64, 14);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.3);
+  doc.text(
+    'CONFIDENTIAL FINANCIAL BOUNDARY  ·  PRICE-SENSITIVE VALUATION & TREASURY DATA BELOW',
+    pageWidth / 2,
+    y + 4,
+    { align: 'center' }
+  );
+
+  y += 9;
+
+  // =========================================================================
+  // 5. PART B — PRICE-SENSITIVE COMMERCIAL PRICING & ESCROW SETTLEMENT TABLE
+  // =========================================================================
+  doc.setFillColor(15, 23, 42);
+  doc.roundedRect(margin, y, contentWidth, 7.5, 1.2, 1.2, 'F');
+  doc.setTextColor(251, 191, 36);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.6);
+  doc.text(
+    'PART B  ·  PRICE-SENSITIVE COMMERCIAL VALUATION & SETTLEMENT SCHEDULE',
+    margin + 3.5,
+    y + 5.1
+  );
+
+  doc.setFillColor(180, 83, 9); // Amber-700
+  doc.roundedRect(pageWidth - margin - 65, y + 1.2, 62.5, 5.1, 1, 1, 'F');
+  doc.setTextColor(255, 251, 235);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6);
+  doc.text(
+    'CONFIDENTIAL  ·  FINANCE & TREASURY',
+    pageWidth - margin - 33.75,
+    y + 4.6,
+    { align: 'center' }
+  );
+
+  y += 8.8;
+
+  const formatUsd = (val: number) =>
+    `$${(Number(val) || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} USD`;
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [
+      [
+        'ITEM',
+        'BILLABLE PRODUCT / SERVICE LINE ITEM',
+        'BILLABLE QTY',
+        'CURRENCY',
+        'UNIT PRICE (USD)',
+        'ESCROW / TAX',
+        'LINE TOTAL (USD)'
+      ]
+    ],
+    body: resolvedItems.map((item, idx) => {
+      const lineTotal =
+        item.lineTotalUsd ?? item.quantity * item.unitPriceUsd + (item.taxOrFeeUsd || 0);
+      return [
+        item.itemNo || String(idx + 1).padStart(2, '0'),
+        item.productName,
+        `${item.quantity.toLocaleString()} ${item.unit || 'Units'}`,
+        String(receipt.currency || 'USD'),
+        formatUsd(item.unitPriceUsd),
+        item.taxOrFeeUsd ? formatUsd(item.taxOrFeeUsd) : '$0.00 (Included)',
+        formatUsd(lineTotal)
+      ];
+    }),
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 7.4,
+      cellPadding: 2.5,
+      textColor: [15, 23, 42],
+      lineColor: [203, 213, 225],
+      lineWidth: 0.25,
+      valign: 'middle'
+    },
+    headStyles: {
+      fillColor: [30, 41, 59],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 6.8
+    },
+    columnStyles: {
+      0: { cellWidth: 11, halign: 'center', font: 'courier', fontStyle: 'bold' },
+      1: { cellWidth: 59, fontStyle: 'bold' },
+      2: { cellWidth: 23, halign: 'right', font: 'courier' },
+      3: { cellWidth: 18, halign: 'center', font: 'courier', fontStyle: 'bold' },
+      4: { cellWidth: 26, halign: 'right', font: 'courier' },
+      5: { cellWidth: 23, halign: 'right', font: 'courier', textColor: [4, 120, 87] },
+      6: {
+        cellWidth: 26,
+        halign: 'right',
+        font: 'courier',
+        fontStyle: 'bold',
+        fillColor: [254, 252, 232]
+      }
+    }
+  });
+
+  y = (doc as any).lastAutoTable?.finalY
+    ? (doc as any).lastAutoTable.finalY + 4.5
+    : y + 24;
+
+  // =========================================================================
+  // 6. TWO-COLUMN BANK WIRE COORDINATES & COMMERCIAL TOTALS SUMMARY
+  // =========================================================================
+  const totalUsdVal = Number(receipt.amountUsd) || 0;
+  const amountUsdStr = formatUsd(totalUsdVal);
+  const primaryAmt = receipt.convertedAmountFormatted || amountUsdStr;
+  const deposit30Usd = formatUsd(totalUsdVal * 0.3);
+  const balance70Usd = formatUsd(totalUsdVal * 0.7);
+
+  const summaryBoxH = 44;
+  const leftBoxW = contentWidth * 0.56;
+  const rightBoxW = contentWidth * 0.44 - 4;
+
+  // Left Box: Official Bank Settlement Coordinates (SWIFT MT103)
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y, leftBoxW, summaryBoxH, 1.5, 1.5, 'FD');
+
+  doc.setFillColor(15, 23, 42);
+  doc.roundedRect(margin, y, leftBoxW, 6.5, 1.5, 1.5, 'F');
+  doc.rect(margin, y + 3.5, leftBoxW, 3, 'F');
+  doc.setTextColor(251, 191, 36);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.8);
+  doc.text(
+    'OFFICIAL CORPORATE BANK WIRE COORDINATES (SWIFT MT103)',
+    margin + 3.5,
+    y + 4.5
+  );
+
+  const bankRows = [
+    ['Beneficiary Name:', 'TRADEHEAVEN ECOM SOLUTION LLP'],
+    ['Receiving Bank:', 'The Currency Cloud Limited (London, UK)'],
+    ['IBAN (Multi-CCY):', 'GB81TCCL04140453340868'],
+    ['BIC / SWIFT Code:', 'TCCLGB3L  (DO NOT CONVERT TO GBP)'],
+    ['Wire Reference:', receipt.wireTxRef || receiptNo]
+  ];
+
+  let by = y + 10.8;
+  bankRows.forEach(([k, v]) => {
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.8);
+    doc.text(k, margin + 3.5, by);
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(7.1);
+    doc.text(v.substring(0, 42), margin + 30, by);
+    by += 5.4;
+  });
+
+  doc.setTextColor(71, 85, 105);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.text(
+    `Notes: ${(receipt.notes || '30-Day Refund Eligibility Window & Full Assurance of Trade Heaven applies.').substring(0, 68)}`,
+    margin + 3.5,
+    y + summaryBoxH - 2.8
+  );
+
+  // Right Box: Price-Sensitive Financial Totals & Escrow Split
+  const finBoxX = margin + leftBoxW + 4;
+  doc.setFillColor(15, 23, 42);
+  doc.setDrawColor(15, 23, 42);
+  doc.roundedRect(finBoxX, y, rightBoxW, summaryBoxH, 1.5, 1.5, 'FD');
+
+  doc.setTextColor(251, 191, 36);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.8);
+  doc.text('FINANCIAL SETTLEMENT SUMMARY', finBoxX + 4, y + 5.5);
+
+  const finLines = [
+    ['Subtotal (Net USD):', amountUsdStr],
+    ['Escrow & SGS Audit Fee:', '$0.00 (Included)'],
+    ['30% Deposit Milestone:', deposit30Usd],
+    ['70% B/L Balance Milestone:', balance70Usd]
+  ];
+
+  let fy = y + 11.2;
+  finLines.forEach(([label, val]) => {
+    doc.setTextColor(203, 213, 225);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.text(label, finBoxX + 4, fy);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(7.1);
+    doc.text(val, finBoxX + rightBoxW - 4, fy, { align: 'right' });
+    fy += 5.1;
+  });
+
+  // Total Amount Highlight Box inside Financial Card
+  doc.setFillColor(6, 78, 59);
+  doc.setDrawColor(16, 185, 129);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(finBoxX + 3, y + 31.2, rightBoxW - 6, 10.5, 1.2, 1.2, 'FD');
+
+  doc.setTextColor(167, 243, 208);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.5);
+  doc.text('TOTAL SETTLEMENT', finBoxX + 6, y + 35.5);
+  doc.setTextColor(203, 213, 225);
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(6.2);
+  doc.text(`(${amountUsdStr})`, finBoxX + 6, y + 39.6);
+
+  doc.setTextColor(52, 211, 153);
+  doc.setFont('courier', 'bold');
+  doc.setFontSize(9.2);
+  doc.text(primaryAmt, finBoxX + rightBoxW - 6, y + 37.8, { align: 'right' });
+
+  y += summaryBoxH + 4.5;
+
+  // =========================================================================
+  // 7. TRADE ASSURANCE MISHAP & STUCK PAYMENT LOSS COVERAGE BANNER
+  // =========================================================================
+  doc.setFillColor(236, 253, 245);
+  doc.setDrawColor(16, 185, 129);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(margin, y, contentWidth, 16.5, 1.5, 1.5, 'FD');
+
+  doc.setTextColor(6, 95, 70);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.4);
   doc.text(
     'TRADE ASSURANCE MISHAP & STUCK PAYMENT LOSS COVERAGE (FULL ASSURANCE OF TRADE HEAVEN)',
-    margin + 5,
-    y + 7
+    margin + 4,
+    y + 5.2
   );
 
   doc.setTextColor(6, 78, 59);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(6.8);
   const assuranceText =
     'In case of any mishap such as a stuck payment or intermediary bank clearing delay where the Supplier or Buyer holds active Trade Assurance, losses are actively tried to be covered with the direct help of Trade Heaven, and Full Assurance is of Trade Heaven.';
-  doc.text(doc.splitTextToSize(assuranceText, contentWidth - 10), margin + 5, y + 13.5);
+  doc.text(doc.splitTextToSize(assuranceText, contentWidth - 8), margin + 4, y + 9.8);
 
-  y += 38;
-
-  // Footer
+  // =========================================================================
+  // 8. OFFICIAL BRANDED FOOTER WITH MINI VECTOR LOGO
+  // =========================================================================
+  const footerY = pageHeight - 17;
   doc.setDrawColor(203, 213, 225);
-  doc.line(margin, y, pageWidth - margin, y);
+  doc.setLineWidth(0.3);
+  doc.line(margin, footerY - 2, pageWidth - margin, footerY - 2);
+
+  drawTradeHeavenBrandLogo(doc, margin, footerY, {
+    boxSize: 7.5,
+    theme: 'light',
+    showWordmark: false
+  });
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.2);
+  doc.text(
+    'TRADEHEAVEN ECOM SOLUTION LLP  ·  OFFICIAL COMMERCIAL INVOICE & ESCROW REGISTRY',
+    margin + 9.5,
+    footerY + 3
+  );
 
   doc.setTextColor(100, 116, 139);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(6.6);
   doc.text(
-    'Official computer-generated receipt issued by Tradeheaven ECOM Solution LLP  •  help@tradeheaven.net  •  +91 8532934479',
-    pageWidth / 2,
-    y + 7,
-    { align: 'center' }
+    'B-18424, Gauri Ganj, Auraiya Road, Dibiyapur, UP 206244, India  |  +91-8532934479  |  help@tradeheaven.net  |  www.tradeheaven.net',
+    margin + 9.5,
+    footerY + 6.6
   );
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('courier', 'bold');
+  doc.setFontSize(6.8);
+  doc.text('Page 1 of 1', pageWidth - margin, footerY + 4.8, { align: 'right' });
 
   if (options?.openPrintDialog) {
     doc.autoPrint();
   }
 
   const safeRef = receiptNo.replace(/[^a-zA-Z0-9-_]/g, '_');
-  triggerSafePdfDownload(doc, `TradeHeaven-Receipt-${safeRef}.pdf`);
+  const prefix = options?.filenamePrefix || 'TradeHeaven-Invoice';
+  triggerSafePdfDownload(doc, `${prefix}-${safeRef}.pdf`);
+};
+
+export const generateCommercialInvoicePDF = (
+  invoiceData: PaymentReceiptPdfData,
+  options?: { openPrintDialog?: boolean }
+) => {
+  generatePaymentReceiptPDF(invoiceData, {
+    ...options,
+    filenamePrefix: 'TradeHeaven-Commercial-Invoice'
+  });
 };
 
 export const generateTradeAssuranceBrochurePDF = (
@@ -1359,7 +1837,7 @@ export const ExportToPDF: React.FC<ExportToPDFProps> = ({
           recipientRole,
           recipientCompany
         });
-      } else if (mode === 'PAYMENT_RECEIPT') {
+      } else if (mode === 'PAYMENT_RECEIPT' || mode === 'INVOICE') {
         const resolvedReceipt: PaymentReceiptPdfData = receiptData || {
           orderId: `TH-ORD-${Date.now().toString().slice(-6)}`,
           issuedAt: new Date().toISOString().slice(0, 10),
@@ -1388,7 +1866,13 @@ export const ExportToPDF: React.FC<ExportToPDFProps> = ({
           paymentMethod: checkoutData?.preferredPaymentMethod || 'SWIFT WIRE',
           status: 'VERIFIED'
         };
-        generatePaymentReceiptPDF(resolvedReceipt, { openPrintDialog });
+        generatePaymentReceiptPDF(resolvedReceipt, {
+          openPrintDialog,
+          filenamePrefix:
+            mode === 'INVOICE'
+              ? 'TradeHeaven-Commercial-Invoice'
+              : 'TradeHeaven-Invoice-Receipt'
+        });
       }
       setJustExported(true);
       setTimeout(() => setJustExported(false), 2500);
@@ -1415,7 +1899,9 @@ export const ExportToPDF: React.FC<ExportToPDFProps> = ({
       ? 'Export Certificate PDF'
       : mode === 'BROCHURE'
         ? 'Download Working Brochure PDF'
-        : 'Export Receipt PDF';
+        : mode === 'INVOICE'
+          ? 'Download Invoice PDF'
+          : 'Export Receipt PDF';
 
   return (
     <button

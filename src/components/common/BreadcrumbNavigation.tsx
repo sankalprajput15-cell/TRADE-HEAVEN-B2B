@@ -302,6 +302,32 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
         });
         break;
 
+      case 'B2B_TRUST_CERTIFICATE':
+        list.push({
+          name: 'Trust & Governance',
+          url: 'https://tradeheaven.net/?view=TRUST_SAFETY',
+          view: 'TRUST_SAFETY',
+          onClick: () => onNavigate('TRUST_SAFETY')
+        });
+        list.push({
+          name: 'Trust Certificate',
+          url: 'https://tradeheaven.net/?view=B2B_TRUST_CERTIFICATE'
+        });
+        break;
+
+      case 'TRADE_ASSURANCE_CERTIFICATE':
+        list.push({
+          name: 'Trust & Governance',
+          url: 'https://tradeheaven.net/?view=TRUST_SAFETY',
+          view: 'TRUST_SAFETY',
+          onClick: () => onNavigate('TRUST_SAFETY')
+        });
+        list.push({
+          name: 'Trade Assurance Certificate Registry',
+          url: 'https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE'
+        });
+        break;
+
       case 'REFUND_POLICY':
         list.push({
           name: 'Legal & Policies',

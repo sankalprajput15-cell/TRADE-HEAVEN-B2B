@@ -237,6 +237,13 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
         keywords="Trade Heaven Trade Assurance Certificate, verify trade assurance certificate number, THC-2026 certificate lookup, apply for trade assurance certificate, B2B escrow protection certificate, SGS factory audit certificate, TradeHeaven certificate verification, supplier compliance credential"
         canonicalUrl="https://tradeheaven.net/?view=TRADE_ASSURANCE_CERTIFICATE"
       />;
+    case 'B2B_TRUST_CERTIFICATE':
+      return <SEO 
+        title="B2B Trust Certificate (7-Day Audit) | Trade Heaven"
+        description="Apply for the official Trade Heaven Independent B2B Trust Certificate (7-day complete audit). Verifies ISO 9001, SOC 2, and country-specific government documents."
+        keywords="Trade Heaven B2B Trust Certificate, B2B trust seal verification, ISO 9001 SOC 2 B2B certificate, country specific government registration check, GST IEC EIN VAT EORI verification, corporate verification, TradeHeaven trust badge"
+        canonicalUrl="https://tradeheaven.net/?view=B2B_TRUST_CERTIFICATE"
+      />;
     default:
       return <SEO />;
   }

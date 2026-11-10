@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { useAuth } from '../../context/AuthContext';
-import { QuickProductImageModal } from '../admin/DedicatedProductImageSystem';
 import { MessageCircle, Building, Lock, ShieldCheck, Award, Image as ImageIcon, Share2 } from 'lucide-react';
+
+const QuickProductImageModal = React.lazy(() =>
+  import('../admin/DedicatedProductImageSystem').then(m => ({ default: m.QuickProductImageModal }))
+);
 
 export const ProductCardSkeleton: React.FC = () => {
   return (
@@ -340,10 +343,12 @@ export const ProductCatalogGrid: React.FC<Props> = ({
       </div>
 
       {editingImageProduct && (
-        <QuickProductImageModal
-          product={editingImageProduct}
-          onClose={() => setEditingImageProduct(null)}
-        />
+        <React.Suspense fallback={null}>
+          <QuickProductImageModal
+            product={editingImageProduct}
+            onClose={() => setEditingImageProduct(null)}
+          />
+        </React.Suspense>
       )}
     </>
   );

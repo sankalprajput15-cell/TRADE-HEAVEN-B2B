@@ -142,7 +142,11 @@ export const VIEW_ALIASES: Record<string, ActiveView> = {
   'trade-protection': 'TRADE_ASSURANCE_CERTIFICATE',
   certificate: 'TRADE_ASSURANCE_CERTIFICATE',
   'verify-certificate': 'TRADE_ASSURANCE_CERTIFICATE',
-  'certificate-verification': 'TRADE_ASSURANCE_CERTIFICATE'
+  'certificate-verification': 'TRADE_ASSURANCE_CERTIFICATE',
+  'b2b-trust-certificate': 'B2B_TRUST_CERTIFICATE',
+  'b2b_trust_certificate': 'B2B_TRUST_CERTIFICATE',
+  'trust-certificate': 'B2B_TRUST_CERTIFICATE',
+  'trust_certificate': 'B2B_TRUST_CERTIFICATE'
 };
 
 /**
