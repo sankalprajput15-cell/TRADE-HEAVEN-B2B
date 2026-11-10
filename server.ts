@@ -333,10 +333,11 @@ app.get('/sitemap.xml', (req, res) => {
   res.status(404).type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
 });
 
-// Server environment credentials
+// Server environment credentials (Static admin password & legacy JWT secret revoked due to key exposure)
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yr943334@gmail.com').toLowerCase().trim();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Yash@8532';
-const JWT_SECRET_SALT = process.env.JWT_SECRET || 'trade_heaven_b2b_sec_2025_swiss_escrow';
+const ADMIN_PASSWORD = crypto.randomBytes(32).toString('hex'); // Static password disabled; Admin login is strictly Email OTP-only
+let JWT_SECRET_SALT = crypto.randomBytes(48).toString('hex');
+let GLOBAL_ADMIN_REVOCATION_EPOCH = Date.now();
 
 // In-memory server-managed user registry
 interface ServerUserRecord {
@@ -410,8 +411,7 @@ function getCorrectRoleForEmail(
   }
   if (
     clean === 'yr943334@gmail.com' ||
-    clean === 'sankalprajput15@gmail.com' ||
-    clean === 'admin@tradeheaven.net'
+    clean === 'sankalprajput15@gmail.com'
   ) {
     return 'ADMIN';
   }
@@ -561,7 +561,7 @@ const DEFAULT_SERVER_USERS: ServerUserRecord[] = [
   {
     id: 'user-admin-root',
     email: 'yr943334@gmail.com',
-    passwordHash: 'Yash@8532',
+    passwordHash: 'OTP_ONLY_ADMIN_AUTH_REQUIRED',
     name: 'Yash Rajput (Master Admin)',
     role: 'ADMIN',
     companyName: 'Trade Heaven Global Operations & Treasury',
@@ -576,23 +576,8 @@ const DEFAULT_SERVER_USERS: ServerUserRecord[] = [
   {
     id: 'user-admin-sankalp',
     email: 'sankalprajput15@gmail.com',
-    passwordHash: 'Yash@8532',
+    passwordHash: 'OTP_ONLY_ADMIN_AUTH_REQUIRED',
     name: 'Sankalp Rajput (Master Admin)',
-    role: 'ADMIN',
-    companyName: 'Trade Heaven Global Operations & Treasury',
-    country: 'United Kingdom',
-    status: 'ACTIVE',
-    isVerified: true,
-    isPremium: true,
-    membershipStatus: 'paid',
-    tier: 'VIP',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
-  },
-  {
-    id: 'user-admin-legacy',
-    email: 'admin@tradeheaven.net',
-    passwordHash: 'Yash@8532',
-    name: 'Sarah Jenkins',
     role: 'ADMIN',
     companyName: 'Trade Heaven Global Operations & Treasury',
     country: 'United Kingdom',
@@ -1003,7 +988,7 @@ function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
 
 function generateServerJwt(user: ServerUserRecord): string {
   const nowSec = Math.floor(Date.now() / 1000);
-  const expSec = nowSec + 7 * 24 * 60 * 60; // 7 days
+  const expSec = nowSec + 12 * 60 * 60; // 12 hours max lifetime
 
   const payload = {
     uid: user.id,
@@ -1014,6 +999,9 @@ function generateServerJwt(user: ServerUserRecord): string {
     membershipStatus: user.membershipStatus,
     status: user.status,
     isVerified: user.isVerified,
+    otpVerified: true,
+    authMethod: 'EMAIL_OTP_ONLY',
+    adminEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
     tier: user.tier || (user.role === 'ADMIN' ? 'VIP' : 'FREE'),
     companyName: user.companyName,
     iat: nowSec,
@@ -1024,22 +1012,36 @@ function generateServerJwt(user: ServerUserRecord): string {
   const header = { alg: 'HS256', typ: 'JWT' };
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = Buffer.from(`${encodedHeader}.${encodedPayload}.${JWT_SECRET_SALT}`).toString('base64url');
+  const signature = crypto
+    .createHmac('sha256', JWT_SECRET_SALT)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest('base64url');
 
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
 
 function verifyServerJwt(token: string): any | null {
   try {
+    if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const [encodedHeader, encodedPayload, signature] = parts;
-    const expectedSig = Buffer.from(`${encodedHeader}.${encodedPayload}.${JWT_SECRET_SALT}`).toString('base64url');
+    const expectedSig = crypto
+      .createHmac('sha256', JWT_SECRET_SALT)
+      .update(`${encodedHeader}.${encodedPayload}`)
+      .digest('base64url');
     if (signature !== expectedSig) return null;
 
     const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf-8'));
     const nowSec = Math.floor(Date.now() / 1000);
     if (payload.exp && payload.exp < nowSec) return null;
+    if (payload.adminEpoch !== GLOBAL_ADMIN_REVOCATION_EPOCH) return null;
+    if (payload.role === 'ADMIN') {
+      const cleanEmail = normalizeRecipientEmail(String(payload.email || ''));
+      if (!AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) || payload.otpVerified !== true) {
+        return null;
+      }
+    }
     return payload;
   } catch {
     return null;
@@ -1047,15 +1049,71 @@ function verifyServerJwt(token: string): any | null {
 }
 
 // -------------------------------------------------------------
-// SECURE AUTHENTICATION ENDPOINTS (WITH MANDATORY EMAIL 2FA OTP)
+// SECURE AUTHENTICATION ENDPOINTS (ADMIN OTP-ONLY + GLOBAL REVOCATION)
 // -------------------------------------------------------------
 
 const AUTHORIZED_ROOT_ADMIN_EMAILS = new Set([
-  ADMIN_EMAIL,
   'yr943334@gmail.com',
-  'sankalprajput15@gmail.com',
-  'admin@tradeheaven.net'
+  'sankalprajput15@gmail.com'
 ]);
+
+// Immediately scrub any legacy admin@tradeheaven.net or non-authorized ADMIN records from disk store
+serverUsersStore = serverUsersStore.filter(u => normalizeRecipientEmail(u.email) !== 'admin@tradeheaven.net');
+for (const u of serverUsersStore) {
+  const clean = normalizeRecipientEmail(u.email);
+  if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(clean)) {
+    u.role = 'ADMIN';
+    u.passwordHash = 'OTP_ONLY_ADMIN_AUTH_REQUIRED';
+    u.login_otp_code = null;
+    u.login_otp_expiry = null;
+  } else if (u.role === 'ADMIN') {
+    u.role = 'BUYER';
+  }
+}
+saveServerUsersToDisk();
+
+function revokeAllAdminSessionsWorldwide(reason: string = 'Compromised secret key rotated — global admin sign-out enforced') {
+  JWT_SECRET_SALT = crypto.randomBytes(48).toString('hex');
+  GLOBAL_ADMIN_REVOCATION_EPOCH = Date.now();
+  for (const u of serverUsersStore) {
+    if (u.role === 'ADMIN' || AUTHORIZED_ROOT_ADMIN_EMAILS.has(normalizeRecipientEmail(u.email))) {
+      u.login_otp_code = null;
+      u.login_otp_expiry = null;
+      u.login_otp_attempts = 0;
+    }
+  }
+  saveServerUsersToDisk();
+  logServerActivity(
+    null,
+    'GLOBAL_ADMIN_SESSIONS_REVOKED',
+    'security-daemon@tradeheaven.net',
+    'SYSTEM',
+    '/api/v1/auth/revoke-all-admin-sessions',
+    `${reason} (New Epoch: ${GLOBAL_ADMIN_REVOCATION_EPOCH})`,
+    'SUCCESS'
+  );
+}
+
+// GET /api/v1/auth/session-epoch - Check active global revocation epoch
+app.get('/api/v1/auth/session-epoch', (_req, res) => {
+  return res.json({
+    success: true,
+    adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
+    adminAuthMode: 'EMAIL_OTP_ONLY'
+  });
+});
+
+// POST /api/v1/auth/revoke-all-admin-sessions - Force global sign-out of all administrator sessions worldwide
+app.post('/api/v1/auth/revoke-all-admin-sessions', (req, res) => {
+  revokeAllAdminSessionsWorldwide(
+    String(req.body?.reason || 'Global administrator sign-out triggered due to secret key exposure.')
+  );
+  return res.json({
+    success: true,
+    adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
+    message: 'All administrator sessions worldwide have been immediately signed out and secret signing keys rotated.'
+  });
+});
 
 function maskRegisteredEmail(email: string): string {
   const clean = (email || '').trim();
@@ -1076,7 +1134,7 @@ function findRegisteredUserForAuth(rawEmail: string): ServerUserRecord | null {
     matchedUser = {
       id: cleanEmail === 'sankalprajput15@gmail.com' ? 'user-admin-sankalp' : 'user-admin-root',
       email: cleanEmail,
-      passwordHash: ADMIN_PASSWORD,
+      passwordHash: 'OTP_ONLY_ADMIN_AUTH_REQUIRED',
       name: cleanEmail === 'sankalprajput15@gmail.com' ? 'Sankalp Rajput (Master Admin)' : 'Yash Rajput (Master Admin)',
       role: 'ADMIN',
       companyName: 'Trade Heaven Global Operations & Treasury',
@@ -1095,19 +1153,15 @@ function findRegisteredUserForAuth(rawEmail: string): ServerUserRecord | null {
   return matchedUser;
 }
 
-function verifyRegisteredUserPassword(user: ServerUserRecord, password: string): boolean {
-  if (!password || typeof password !== 'string') return false;
+function verifyRegisteredUserPassword(user: ServerUserRecord, password?: string): boolean {
   const cleanEmail = normalizeRecipientEmail(user.email);
 
-  if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) || user.role === 'ADMIN') {
-    // Strictly require exact admin password — no weak or default backdoors
-    return (
-      password === ADMIN_PASSWORD ||
-      password === 'Yash@8532' ||
-      password === 'Yash@0011' ||
-      (Boolean(user.passwordHash) && password === user.passwordHash)
-    );
+  // Admin accounts authenticate strictly via 6-digit OTP sent to the registered Admin email (passwords/secret keys are disabled)
+  if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && user.role === 'ADMIN') {
+    return true;
   }
+
+  if (!password || typeof password !== 'string') return false;
 
   const isRandyValidPass =
     cleanEmail === 'randy@midforkcap.com' &&
@@ -1185,7 +1239,7 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
     if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) {
       return res.status(403).json({
         success: false,
-        message: 'This email is reserved for system administration. Please sign in using the Login tab.'
+        message: 'This email is reserved for system administration. Please sign in using the Login tab via Email OTP.'
       });
     }
 
@@ -1224,7 +1278,7 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
     });
   }
 
-  // LOGIN mode: verify registered user & password before dispatching 6-digit login OTP
+  // LOGIN mode: For Admin emails, dispatch 6-digit OTP directly to the Admin email (OTP-only, no static password used)
   const matchedUser = findRegisteredUserForAuth(cleanEmail);
   if (!matchedUser) {
     logServerActivity(req, 'SECURITY_LOGIN_EVENT', cleanEmail, 'GUEST', '/api/v1/auth/send-otp', `Rejected Send OTP for unregistered email: ${cleanEmail}`, 'UNAUTHORIZED_401');
@@ -1234,7 +1288,9 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
     });
   }
 
-  if (!password || !verifyRegisteredUserPassword(matchedUser, String(password))) {
+  const isRootAdmin = AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN';
+
+  if (!isRootAdmin && (!password || !verifyRegisteredUserPassword(matchedUser, String(password)))) {
     logServerActivity(req, 'SECURITY_LOGIN_EVENT', cleanEmail, matchedUser.role, '/api/v1/auth/send-otp', `Rejected Send OTP due to invalid password for: ${cleanEmail}`, 'UNAUTHORIZED_401');
     return res.status(401).json({
       success: false,
@@ -1264,19 +1320,21 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
     maskedEmail,
     role: matchedUser.role,
     emailSent: dispatchInfo.emailSent,
-    message: `A 6-digit verification code has been sent to your registered email (${maskedEmail}) via noreply@tradeheaven.net.`
+    message: isRootAdmin
+      ? `Admin OTP-Only Security: A 6-digit verification code has been sent to your registered admin email (${maskedEmail}).`
+      : `A 6-digit verification code has been sent to your registered email (${maskedEmail}) via noreply@tradeheaven.net.`
   });
 });
 
-// POST /api/v1/auth/login - Verify Registered User Credentials + 6-Digit Email OTP
+// POST /api/v1/auth/login - Verify Registered User (Admin = OTP-Only on Admin Email; Buyers/Suppliers = Password + Email OTP)
 app.post('/api/v1/auth/login', async (req, res) => {
   const { email, password, otp, code } = req.body || {};
 
-  if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-    logServerActivity(req, 'SECURITY_LOGIN_EVENT', email || 'anonymous', 'GUEST', '/api/v1/auth/login', 'Login failed: missing email or password.', 'UNAUTHORIZED_401');
+  if (!email || typeof email !== 'string') {
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', email || 'anonymous', 'GUEST', '/api/v1/auth/login', 'Login failed: missing email.', 'UNAUTHORIZED_401');
     return res.status(400).json({
       success: false,
-      message: 'Please provide both registered email and password.'
+      message: 'Please provide your registered email address.'
     });
   }
 
@@ -1291,7 +1349,9 @@ app.post('/api/v1/auth/login', async (req, res) => {
     });
   }
 
-  if (!verifyRegisteredUserPassword(matchedUser, password)) {
+  const isRootAdmin = AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN';
+
+  if (!isRootAdmin && (!password || !verifyRegisteredUserPassword(matchedUser, String(password)))) {
     logServerActivity(req, 'SECURITY_LOGIN_EVENT', cleanEmail, matchedUser.role, '/api/v1/auth/login', `Invalid password attempt for registered account: ${cleanEmail}`, 'UNAUTHORIZED_401');
     return res.status(401).json({
       success: false,
@@ -4831,22 +4891,28 @@ app.post('/api/v1/auth/register', (req, res) => {
   });
 });
 
-// GET /api/v1/auth/me - Verify current session token
+// GET /api/v1/auth/me - Verify current session token against rotated secret & global revocation epoch
 app.get('/api/v1/auth/me', (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Unauthenticated' });
+    return res.status(401).json({ success: false, revoked: true, message: 'Unauthenticated' });
   }
 
   const token = authHeader.split(' ')[1];
   const payload = verifyServerJwt(token);
 
   if (!payload) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired session token' });
+    return res.status(401).json({
+      success: false,
+      revoked: true,
+      adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
+      message: 'Session expired or revoked globally due to secret key rotation. Please sign in again via Email OTP.'
+    });
   }
 
   return res.json({
     success: true,
+    adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
     user: {
       id: payload.uid,
       email: payload.email,
@@ -4856,6 +4922,8 @@ app.get('/api/v1/auth/me', (req, res) => {
       membershipStatus: payload.membershipStatus,
       status: payload.status,
       isVerified: payload.isVerified,
+      isVerifiedAdmin: payload.role === 'ADMIN',
+      otpVerified: true,
       tier: payload.tier,
       companyName: payload.companyName,
       token
@@ -5613,16 +5681,17 @@ app.post('/api.php', async (req, res) => {
     });
   }
 
-  // User Login (Step 1: Verify password & send 6-digit OTP to registered email)
+  // User Login (Admin = OTP-Only on Admin Email; Buyers/Suppliers = Password + Email OTP)
   if (action === 'login') {
     const { email, password } = input;
-    if (!email || !password) {
-      return res.status(400).json({ status: 'error', success: false, message: 'Both registered email and password are required.' });
+    if (!email) {
+      return res.status(400).json({ status: 'error', success: false, message: 'Registered email address is required.' });
     }
     const cleanEmail = normalizeRecipientEmail(email);
     const matchedUser = findRegisteredUserForAuth(cleanEmail);
+    const isRootAdmin = Boolean(matchedUser && AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN');
 
-    if (!matchedUser || !verifyRegisteredUserPassword(matchedUser, String(password))) {
+    if (!matchedUser || (!isRootAdmin && (!password || !verifyRegisteredUserPassword(matchedUser, String(password))))) {
       logServerActivity(req, 'AUTH_LOGIN', cleanEmail, 'GUEST', '/api.php?action=login', `Failed login attempt for corporate email: ${cleanEmail} via PHP gateway`, 'UNAUTHORIZED_401');
       return res.status(401).json({ status: 'error', success: false, message: 'Invalid registered email or password. Access denied.' });
     }
@@ -5630,7 +5699,7 @@ app.post('/api.php', async (req, res) => {
     const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
     const maskedEmail = maskRegisteredEmail(matchedUser.email);
 
-    logServerActivity(req, 'LOGIN_OTP_DISPATCHED', matchedUser.email, matchedUser.role, '/api.php?action=login', `Password verified for ${matchedUser.email}; 6-digit login OTP dispatched to registered email.`, 'SUCCESS', matchedUser.id);
+    logServerActivity(req, 'LOGIN_OTP_DISPATCHED', matchedUser.email, matchedUser.role, '/api.php?action=login', `6-digit login OTP dispatched to registered email ${matchedUser.email}.`, 'SUCCESS', matchedUser.id);
     return res.json({
       status: 'success',
       success: true,

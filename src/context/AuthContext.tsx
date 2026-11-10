@@ -26,6 +26,7 @@ export interface AuthContextType {
   login: (email?: string, password?: string, otp?: string) => Promise<LoginResult>;
   verifyLoginOtp: (email: string, otp: string) => Promise<LoginResult>;
   resendLoginOtp: (email: string) => Promise<{ success: boolean; maskedEmail?: string; message: string }>;
+  revokeAllAdminSessions: (reason?: string) => Promise<void>;
   logout: () => void;
   impersonateUser: (targetUser: AuthUser) => void;
   stopImpersonation: () => void;
@@ -33,12 +34,11 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const VERIFIED_OTP_SESSION_KEY = 'th_verified_otp_session_v2';
+const VERIFIED_OTP_SESSION_KEY = 'th_verified_otp_session_v4_otp_only';
 
 const AUTHORIZED_ADMIN_EMAILS = new Set([
   'yr943334@gmail.com',
-  'sankalprajput15@gmail.com',
-  'admin@tradeheaven.net'
+  'sankalprajput15@gmail.com'
 ]);
 
 const DEFAULT_ZAC_CLIENT_USER: AuthUser = {
@@ -103,9 +103,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       if (typeof window !== 'undefined') {
-        // Purge legacy unverified session keys so no stale auto-login admin session persists
+        // Purge all legacy / exposed-key session tokens so any administrator logged in anywhere is signed out immediately
         localStorage.removeItem('th_admin_session_v1');
         localStorage.removeItem('th_session_user');
+        localStorage.removeItem('th_verified_otp_session_v2');
+        localStorage.removeItem('th_verified_otp_session_v3');
+        localStorage.removeItem('tradeheaven_user');
+        localStorage.removeItem('tradeheaven_auth_user');
 
         const params = new URLSearchParams(window.location.search);
         const paramEmail = (params.get('email') || '').trim().toLowerCase();
@@ -134,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return clientRenewalUser;
         }
 
-        // Restore session ONLY if it was verified via 2FA Email OTP (th_verified_otp_session_v2)
+        // Restore session ONLY if it was verified via the rotated OTP-only session key
         const savedVerifiedRaw = localStorage.getItem(VERIFIED_OTP_SESSION_KEY);
         if (savedVerifiedRaw) {
           const parsedUser = JSON.parse(savedVerifiedRaw);
@@ -170,6 +174,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   }, []);
 
+  // Verify active JWT against the server's rotated cryptographic secret & global admin revocation epoch
+  // Any administrator session signed with the old exposed secret or before a global revocation is immediately signed out
+  useEffect(() => {
+    if (!user?.token) return;
+    let isMounted = true;
+
+    const verifyActiveSessionWithServer = async () => {
+      try {
+        const res = await fetch('/api/v1/auth/me', {
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        });
+        if (!res.ok && isMounted) {
+          setUser(null);
+          setIsAuthenticated(false);
+          setOriginalAdminUser(null);
+          try {
+            localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
+            localStorage.removeItem('th_session_jwt_token');
+            localStorage.removeItem('th_verified_otp_session_v2');
+            localStorage.removeItem('th_verified_otp_session_v3');
+          } catch {}
+          window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: null } }));
+        }
+      } catch {
+        // Ignore transient network offline states
+      }
+    };
+
+    verifyActiveSessionWithServer();
+    const intervalId = window.setInterval(verifyActiveSessionWithServer, 25000);
+    const handleFocus = () => verifyActiveSessionWithServer();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.token]);
+
   const impersonateUser = (targetUser: AuthUser) => {
     const currentAdmin = originalAdminUser || user;
     if (currentAdmin && currentAdmin.role === 'ADMIN' && (currentAdmin as any).otpVerified === true) {
@@ -191,11 +237,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
-      if (!cleanEmail || !password) {
+      const isRootAdminEmail = AUTHORIZED_ADMIN_EMAILS.has(cleanEmail);
+
+      if (!cleanEmail) {
+        return { success: false, error: 'Registered email address is required.' };
+      }
+      if (!isRootAdminEmail && !password) {
         return { success: false, error: 'Both registered email and password are required.' };
       }
 
-      const res = await apiClient.login(cleanEmail, password, otp);
+      const res = await apiClient.login(cleanEmail, isRootAdminEmail ? undefined : password, otp);
 
       if (res.success && res.requiresOtp) {
         return {
@@ -301,6 +352,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('tradeheaven_user');
       localStorage.removeItem('th_session_user');
       localStorage.removeItem('th_admin_session_v1');
+      localStorage.removeItem('th_verified_otp_session_v2');
+      localStorage.removeItem('th_verified_otp_session_v3');
       localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
       localStorage.removeItem('th_session_jwt_token');
       localStorage.removeItem('tradeheaven_auth_user');
@@ -311,6 +364,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: null } }));
       window.dispatchEvent(new CustomEvent('tradeheaven_live_edit_mode_changed', { detail: { isLiveEditMode: false } }));
     }
+  };
+
+  const revokeAllAdminSessions = async (reason?: string) => {
+    try {
+      await apiClient.revokeAllAdminSessionsGlobally(
+        reason || 'Emergency global administrator sign-out due to secret key rotation'
+      );
+    } catch {}
+    logout();
   };
 
   const handleSetUser = (nextUser: AuthUser | null) => {
@@ -361,6 +423,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         verifyLoginOtp,
         resendLoginOtp,
+        revokeAllAdminSessions,
         logout,
         impersonateUser,
         stopImpersonation

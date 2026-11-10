@@ -92,10 +92,11 @@ export const AuthModal: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [copiedToken, setCopiedToken] = useState(false);
-  const [showToken, setShowToken] = useState(false);
+  const { login, verifyLoginOtp, resendLoginOtp, revokeAllAdminSessions } = useAuth();
 
-  const { login, verifyLoginOtp, resendLoginOtp } = useAuth();
+  const isAdminEmailInput = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(
+    email.trim().toLowerCase()
+  );
 
   const whatsappResetUrl = `https://wa.me/918532934479?text=${encodeURIComponent(
     `Hello Trade Heaven Support, I need assistance with password reset / OTP verification for my corporate account${(forgotEmail || pendingOtpEmail || email) ? ` (${(forgotEmail || pendingOtpEmail || email).trim()})` : ''}.`
@@ -175,7 +176,13 @@ export const AuthModal: React.FC<Props> = ({
     setSuccess(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !password) {
+    const isRootAdmin = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(cleanEmail);
+
+    if (!cleanEmail) {
+      setError('Please enter your registered email address before clicking Send OTP.');
+      return;
+    }
+    if (!isRootAdmin && !password) {
       setError('Please enter both your registered email and password before clicking Send OTP.');
       return;
     }
@@ -184,7 +191,7 @@ export const AuthModal: React.FC<Props> = ({
     try {
       const res = await apiClient.sendAuthOtp({
         email: cleanEmail,
-        password,
+        password: isRootAdmin ? undefined : password,
         mode: 'LOGIN'
       });
       if (res.success) {
@@ -196,7 +203,7 @@ export const AuthModal: React.FC<Props> = ({
             `6-digit verification code sent to your registered email (${res.maskedEmail || cleanEmail}) via noreply@tradeheaven.net.`
         );
       } else {
-        setError(res.message || 'Unable to send OTP. Only registered accounts with valid credentials can receive a login OTP.');
+        setError(res.message || 'Unable to send OTP. Only registered accounts can receive a login OTP.');
       }
     } catch (err: any) {
       setError(err?.message || 'Network error while dispatching login OTP.');
@@ -240,14 +247,20 @@ export const AuthModal: React.FC<Props> = ({
     }
   };
 
-  // Production Sign-In Form Handler (Requires 6-Digit Email OTP Verification)
+  // Production Sign-In Form Handler (Requires 6-Digit Email OTP Verification; Admin uses OTP-only)
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !password) {
+    const isRootAdmin = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(cleanEmail);
+
+    if (!cleanEmail) {
+      setError('Please enter your registered email address.');
+      return;
+    }
+    if (!isRootAdmin && !password) {
       setError('Please enter both your registered corporate email and password.');
       return;
     }
@@ -264,7 +277,7 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsLoading(true);
     try {
-      const res = await login(cleanEmail, password, cleanOtp);
+      const res = await login(cleanEmail, isRootAdmin ? undefined : password, cleanOtp);
       if (res.success && res.requiresOtp) {
         setLoginOtpSent(true);
         setPendingOtpEmail(res.email || cleanEmail);
@@ -414,14 +427,6 @@ export const AuthModal: React.FC<Props> = ({
     }
   };
 
-  const copyTokenToClipboard = () => {
-    if (currentUser?.token) {
-      navigator.clipboard.writeText(currentUser.token);
-      setCopiedToken(true);
-      setTimeout(() => setCopiedToken(false), 2000);
-    }
-  };
-
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-xs overflow-hidden font-sans"
@@ -523,38 +528,26 @@ export const AuthModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* JWT Session Token Inspector (Admin Only) */}
+              {/* Worldwide Admin Security & Global Session Revocation (Admin Only) */}
               {currentUser.role === 'ADMIN' && (
-                <div className="pt-2 border-t border-indigo-100/80">
-                  <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="font-bold text-slate-700 flex items-center gap-1">
-                      <Key className="w-3.5 h-3.5 text-indigo-600" />
-                      Verifiable Server JWT
+                <div className="pt-2.5 border-t border-indigo-100/80 space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-emerald-800 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      OTP-Only Admin Session (Secret Key Rotated)
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowToken(!showToken)}
-                      className="text-[10px] text-blue-600 font-bold hover:underline cursor-pointer"
-                    >
-                      {showToken ? 'Hide Signature' : 'Inspect Token'}
-                    </button>
                   </div>
-
-                  {showToken && (
-                    <div className="relative mt-1.5">
-                      <pre className="p-2.5 bg-slate-900 text-emerald-400 rounded-xl text-[10px] font-mono break-all max-h-24 overflow-y-auto whitespace-pre-wrap">
-                        {currentUser.token || securityService.generateSessionToken(currentUser)}
-                      </pre>
-                      <button
-                        type="button"
-                        onClick={copyTokenToClipboard}
-                        className="absolute top-2 right-2 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-[9px] font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Copy className="w-3 h-3" />
-                        <span>{copiedToken ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await revokeAllAdminSessions('Manual global administrator sign-out from all devices worldwide');
+                      onClose();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Sign Out Administrator From All Devices Worldwide</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -861,47 +854,59 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block font-bold text-slate-700">Account Password</label>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-[11px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      {showPassword ? (
-                        <>
-                          <EyeOff className="w-3 h-3" />
-                          <span>Hide</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3 h-3" />
-                          <span>Show</span>
-                        </>
-                      )}
-                    </button>
+                {isAdminEmailInput ? (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-950 space-y-1">
+                    <div className="font-black flex items-center gap-1.5 text-amber-900">
+                      <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Administrator OTP-Only Login (Secret Key Revoked Worldwide)</span>
+                    </div>
+                    <p className="text-[10px] text-amber-800 leading-relaxed">
+                      Static password and secret-key login are permanently disabled for Administrator accounts. Click <strong>"Send OTP"</strong> below to receive a 6-digit verification code on your registered admin email (<strong>{email.trim().toLowerCase()}</strong>).
+                    </p>
                   </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      autoComplete="current-password"
-                      placeholder="••••••••••••"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-slate-700">Account Password</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-[11px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        {showPassword ? (
+                          <>
+                            <EyeOff className="w-3 h-3" />
+                            <span>Hide</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            <span>Show</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required={!isAdminEmailInput}
+                        autoComplete="current-password"
+                        placeholder="••••••••••••"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button */}
                 <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2">

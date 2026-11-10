@@ -17,7 +17,7 @@ export const PROTECTED_SYSTEM_FIELDS = [
 
 export type ProtectedField = typeof PROTECTED_SYSTEM_FIELDS[number];
 
-const JWT_SECRET_SALT = 'trade_heaven_b2b_sec_2025_swiss_escrow';
+const JWT_SECRET_SALT = `client_ephemeral_audit_only_${Date.now()}`;
 const AUDIT_LOG_STORAGE_KEY = 'th_security_audit_logs';
 
 class SecurityService {

@@ -380,7 +380,40 @@ export const apiClient = {
   },
 
   /**
-   * Step 1 / Inline: Authenticate registered user with email, password, and optional 6-digit Email OTP
+   * Force global sign-out of all administrator sessions worldwide & rotate server JWT signing secret
+   */
+  async revokeAllAdminSessionsGlobally(reason?: string): Promise<{
+    success: boolean;
+    adminRevocationEpoch?: number;
+    message: string;
+  }> {
+    try {
+      const res = await fetch('/api/v1/auth/revoke-all-admin-sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: reason || 'Global administrator sign-out due to secret key exposure'
+        })
+      });
+      const json = await res.json().catch(() => ({}));
+      return {
+        success: Boolean(res.ok && json.success),
+        adminRevocationEpoch: json.adminRevocationEpoch,
+        message: json.message || 'All administrator sessions worldwide have been revoked.'
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Could not reach server to revoke sessions.'
+      };
+    }
+  },
+
+  /**
+   * Step 1 / Inline: Authenticate registered user (Admin = Email OTP-Only; Buyers/Suppliers = Password + Email OTP)
    */
   async login(
     email: string,
@@ -401,11 +434,19 @@ export const apiClient = {
     try {
       const rawClean = (email || '').trim().toLowerCase();
       const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
-      if (!cleanEmail || !password) {
+      const isRootAdminEmail =
+        cleanEmail === 'yr943334@gmail.com' ||
+        cleanEmail === 'sankalprajput15@gmail.com';
+
+      if (!cleanEmail || (!isRootAdminEmail && !password)) {
         return {
           success: false,
-          error: 'Both registered email and password are required.',
-          message: 'Both registered email and password are required.'
+          error: isRootAdminEmail
+            ? 'Please enter your registered administrator email address.'
+            : 'Both registered email and password are required.',
+          message: isRootAdminEmail
+            ? 'Please enter your registered administrator email address.'
+            : 'Both registered email and password are required.'
         };
       }
 
@@ -417,7 +458,7 @@ export const apiClient = {
         },
         body: JSON.stringify({
           email: cleanEmail,
-          password,
+          password: isRootAdminEmail ? undefined : password,
           otp: otp ? otp.trim() : undefined
         })
       });
@@ -594,7 +635,7 @@ export const apiClient = {
       ) {
         return {
           success: false,
-          error: 'This email is reserved for system administration. Please sign in with your registered credentials and email OTP.',
+          error: 'This email is reserved for system administration. Please sign in via Email OTP.',
           message: 'This email is reserved for system administration.'
         };
       }
