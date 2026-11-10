@@ -75,24 +75,24 @@ const TRUST_PILLARS: CredentialCriterion[] = [
     id: 'GST_LEGAL',
     number: '03.',
     pillarTitle: 'Legal & Regulatory Compliance',
-    standardsSubtitle: 'GST Certificate (India) · DGFT IEC · Corporate Incorporation · DUNS',
+    standardsSubtitle: 'Country-Specific Sovereign Govt. Docs · GST/IEC (India) · EIN/VAT/EORI/ABN (Global)',
     summary:
-      'Confirms through official government registries that the business is a legally incorporated, tax-compliant entity authorized for domestic and cross-border trade.',
+      'Verifies official government-issued tax, customs, and corporate registration documents specific to the company’s country of incorporation (GST applies only in India; equivalent sovereign documents are verified globally).',
     whatItProves:
-      'Verifies legal standing, active tax filing status, customs export authorization, and registered physical operating premises.',
-    auditingAuthority: 'GSTN / MCA (India) · DGFT · Dun & Bradstreet (D-U-N-S) · State Corporate Registries',
+      'Confirms through the sovereign government registry of that specific country that the entity is legally incorporated, tax-compliant, and authorized for cross-border trade—whether via GSTIN & DGFT IEC in India, IRS EIN in the USA, VAT & EORI in the EU/UK, ABN in Australia, TRN in the UAE, or USCC in China.',
+    auditingAuthority: 'National Sovereign Tax & Corporate Registries · MCA/GSTN (India) · IRS/SEC (USA) · EU VIES/Companies House · Dun & Bradstreet (D-U-N-S)',
     requiredDocuments: [
-      'Goods and Services Tax (GST) Registration Certificate (Form GST REG-06) & active filing verification',
-      'Directorate General of Foreign Trade (DGFT) Importer-Exporter Code (IEC) / EORI / US EIN',
-      'Certificate of Incorporation (LLP / Pvt. Ltd. / Inc.), Memorandum & Articles of Association',
-      'Authorized Corporate Signatory KYC & Physical Registered Office Utility/Lease Proof'
+      'India Entities Only: Goods and Services Tax (GST REG-06) Certificate, MCA CIN/LLPIN & DGFT Importer-Exporter Code (IEC)',
+      'USA / Canada / Americas: IRS Employer Identification Number (EIN), State Articles of Incorporation, or BN/CNPJ',
+      'UK / European Union: National VAT Registration, Customs EORI Number & Companies House / Commercial Register Extract',
+      'Middle East / APAC / Global: UAE FTA Tax Registration (TRN) & Trade License, Australia ABN/ACN, China USCC, or equivalent sovereign government license'
     ],
     verificationCriteria: [
-      'Live lookup of GSTIN / VAT / Corporate Registration Number against official sovereign tax portals',
-      'Cross-matching of legal entity name across GST certificate, IEC export license, and receiving bank account',
-      'Physical street address and geo-coordinate validation to eliminate shell or virtual-only intermediaries'
+      'Direct lookup against the official government registry of the company’s specific country (GST is checked strictly for Indian companies; national equivalents are checked outside India)',
+      'Cross-matching of the exact legal entity name across the country-specific government tax certificate, customs export license, and receiving corporate bank account',
+      'Physical registered street address and signatory KYC verification to eliminate unregistered shell intermediaries'
     ],
-    procurementImpact: 'Ensures full tax invoice compliance, customs clearance eligibility, and legally enforceable B2B contracts.'
+    procurementImpact: 'Ensures full sovereign tax compliance, customs clearance eligibility, and legally enforceable cross-border contracts in over 190 jurisdictions.'
   },
   {
     id: 'INDEPENDENT_AUDIT',
@@ -349,6 +349,56 @@ export const B2BTrustCertificatePillarsSection: React.FC<B2BTrustCertificatePill
             </ul>
           </div>
         </div>
+
+        {/* Country-Specific Government Document Verification Matrix (Always visible on Legal & Regulatory Compliance tab, or summarized) */}
+        <div className="pt-4 border-t border-slate-200 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Jurisdiction-Specific Sovereign Government Document Verification (How We Verify Outside &amp; Inside India)
+            </div>
+            <span className="text-xs text-slate-500">
+              GST is applicable strictly in India · International suppliers are audited against their home government&apos;s statutory registries
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+              <div className="font-bold text-slate-900">India</div>
+              <div className="text-slate-600 leading-snug">
+                GST Certificate (GSTIN), MCA CIN / LLPIN &amp; DGFT Importer-Exporter Code (IEC)
+              </div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+              <div className="font-bold text-slate-900">United States &amp; Canada</div>
+              <div className="text-slate-600 leading-snug">
+                IRS Federal EIN (W-9 / CP 575), State Articles of Incorporation / Good Standing &amp; CRA BN
+              </div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+              <div className="font-bold text-slate-900">UK &amp; European Union</div>
+              <div className="text-slate-600 leading-snug">
+                VIES VAT Registration, Customs EORI Number &amp; Companies House / Handelsregister Extract
+              </div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+              <div className="font-bold text-slate-900">UAE &amp; GCC</div>
+              <div className="text-slate-600 leading-snug">
+                DED / Free Zone Commercial Trade License, FTA Tax Registration Number (TRN) &amp; Chamber Certificate
+              </div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+              <div className="font-bold text-slate-900">Australia &amp; APAC</div>
+              <div className="text-slate-600 leading-snug">
+                ASIC Australian Business Number (ABN / ACN), Singapore ACRA UEN, or Japan Corporate Number
+              </div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1">
+              <div className="font-bold text-slate-900">China &amp; LatAm</div>
+              <div className="text-slate-600 leading-snug">
+                SAMR 18-Digit Unified Social Credit Code (USCC), Customs Record, Brazil CNPJ, or Mexico RFC
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Side-by-Side Comparison: Self-Reported Claims vs. Trade Heaven Third-Party Trust Certificate */}
@@ -376,7 +426,7 @@ export const B2BTrustCertificatePillarsSection: React.FC<B2BTrustCertificatePill
             Independent Third-Party Audited Credential
           </h4>
           <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
-            <li>• Live searchable serial number verifying ISO 9001, SOC 2 / ISO 27001, and GST / IEC standing</li>
+            <li>• Live searchable serial number verifying ISO 9001, SOC 2 / ISO 27001, and country-specific government tax &amp; legal standing (GST/IEC in India; EIN, VAT/EORI, ABN, TRN, or USCC globally)</li>
             <li>• On-site factory and pre-shipment assay conducted by SGS, Bureau Veritas, or TÜV Rheinland</li>
             <li>• Binding USD Escrow Protection Limit ($150,000 to $2,000,000 USD) backed by ACID Escrow Vaults</li>
             <li>• Instant comfort letter &amp; cryptographic hash for fast-track vendor procurement approval</li>

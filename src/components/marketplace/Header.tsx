@@ -490,6 +490,7 @@ export const Header: React.FC<Props> = ({
     { label: 'Products', view: 'PRODUCT_DIRECTORY', activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', activeMatch: ['BUY_LEADS', 'RFQ_HUB'] },
+    { label: 'Trust Certificate', view: 'B2B_TRUST_CERTIFICATE', activeMatch: ['B2B_TRUST_CERTIFICATE'] },
     { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] }
   ];
 
@@ -502,6 +503,7 @@ export const Header: React.FC<Props> = ({
     authOnly?: boolean;
   }[] = [
     { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
+    { label: 'B2B Trust Certificate ($1,950 · 7d)', view: 'B2B_TRUST_CERTIFICATE', icon: ShieldCheck, activeMatch: ['B2B_TRUST_CERTIFICATE'] },
     { label: 'Trade Assurance Certificate', view: 'TRADE_ASSURANCE_CERTIFICATE', icon: ShieldCheck, activeMatch: ['TRADE_ASSURANCE_CERTIFICATE'] },
     { label: 'Dashboard & Ledger', view: 'DASHBOARD', icon: LayoutDashboard, activeMatch: ['DASHBOARD'], authOnly: true },
     { label: 'Wallet Funds Top-Up', view: 'WALLET_TOPUP', icon: Wallet, activeMatch: ['WALLET_TOPUP', 'MEDIATOR_ENGINE'], authOnly: true },

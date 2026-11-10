@@ -111,6 +111,7 @@ const DedicatedTopUpWalletPage = lazyWithRetry(() => import('./components/market
 const SupplierBankWithdrawalLandingPage = lazyWithRetry(() => import('./components/marketplace/SupplierBankWithdrawalLandingPage'), 'SupplierBankWithdrawalLandingPage');
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
 const TradeAssuranceCertificateView = lazyWithRetry(() => import('./components/services/TradeAssuranceCertificateView'), 'TradeAssuranceCertificateView');
+const B2BTrustCertificatePage = lazyWithRetry(() => import('./components/services/B2BTrustCertificatePage'), 'B2BTrustCertificatePage');
 const VerifiedSupplierDedicatedDashboard = lazyWithRetry(() => import('./components/vendor/VerifiedSupplierDedicatedDashboard'), 'VerifiedSupplierDedicatedDashboard');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
@@ -1901,6 +1902,10 @@ const MainApp: React.FC = () => {
       setActiveView('PLAN_PRICING_ADMIN');
       return;
     }
+    if (target === 'B2B_TRUST_CERTIFICATE' || target === 'TRUST_CERTIFICATE') {
+      setActiveView('B2B_TRUST_CERTIFICATE');
+      return;
+    }
     if (target === 'TRADE_ASSURANCE_CERTIFICATE' || target === 'TRADE_ASSURANCE' || target === 'TRADE_PROTECTION' || target === 'VERIFY_CERTIFICATE' || target === 'CERTIFICATE') {
       setActiveView('TRADE_ASSURANCE_CERTIFICATE');
       return;
@@ -2674,6 +2679,16 @@ const MainApp: React.FC = () => {
                     currentUser={currentUser}
                     onOpenPaymentCheckout={handleOpenPaymentCheckout}
                     onOpenStorefront={handleOpenStorefront}
+                    onNavigate={handleNavigate}
+                  />
+                );
+
+              case 'B2B_TRUST_CERTIFICATE':
+                return (
+                  <B2BTrustCertificatePage
+                    selectedCurrency={selectedCurrency}
+                    currentUser={currentUser}
+                    onOpenPaymentCheckout={handleOpenPaymentCheckout}
                     onNavigate={handleNavigate}
                   />
                 );

@@ -96,7 +96,7 @@ const CERTIFICATE_PLANS: CertificatePlan[] = [
     deliverables: [
       'Official searchable Certificate Serial Number (THC-2026-XXXX)',
       'Up to $150,000 USD Escrow Order Protection Coverage Limit',
-      'Corporate Registration, Tax/GST/VAT & Signatory KYC Verification',
+      'Country-Specific Sovereign Govt. Document Verification (GST/IEC in India; EIN, VAT/EORI, ABN, TRN, or USCC globally)',
       'Verified Trade Assurance Badge on Storefront & Product Listings',
       'Downloadable & Printable Official Compliance Credential'
     ]
@@ -1112,9 +1112,13 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
           inputEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }}
         onApplyClick={() => {
-          setActiveSectionTab('APPLY');
-          const el = document.getElementById('request-certificate-section');
-          el?.scrollIntoView({ behavior: 'smooth' });
+          if (onNavigate) {
+            onNavigate('B2B_TRUST_CERTIFICATE');
+          } else {
+            setActiveSectionTab('APPLY');
+            const el = document.getElementById('request-certificate-section');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }
         }}
       />
 
@@ -1766,14 +1770,14 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
 
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700">
-                Tax / VAT / GST / EIN Number *
+                Country-Specific Govt. Tax / Statutory ID (GST in India; EIN / VAT / EORI / ABN / TRN outside India) *
               </label>
               <input
                 type="text"
                 required
                 value={taxVatId}
                 onChange={e => setTaxVatId(e.target.value)}
-                placeholder="e.g. GSTIN / ABN / EIN / EU-VAT"
+                placeholder="e.g. GSTIN (India) or US EIN / EU VAT-EORI / AU ABN / UAE TRN"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
               />
             </div>

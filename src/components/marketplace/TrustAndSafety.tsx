@@ -28,10 +28,10 @@ export const TrustAndSafety: React.FC = () => {
         {/* 5-Pillar B2B Trust Certificate & Independent Third-Party Verification Framework */}
         <B2BTrustCertificatePillarsSection
           onVerifyClick={() => {
-            window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'TRADE_ASSURANCE_CERTIFICATES' }));
+            window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'TRADE_ASSURANCE_CERTIFICATE' }));
           }}
           onApplyClick={() => {
-            window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'TRADE_ASSURANCE_CERTIFICATES' }));
+            window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'B2B_TRUST_CERTIFICATE' }));
           }}
         />
 

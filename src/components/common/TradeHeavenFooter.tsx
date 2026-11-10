@@ -260,6 +260,11 @@ export const TradeHeavenFooter: React.FC<Props> = ({
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate('B2B_TRUST_CERTIFICATE')} className="hover:text-blue-600 transition-colors text-left cursor-pointer font-bold text-blue-700">
+                  B2B Trust Certificate ($1,950 USD · 7 Days)
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('TRADE_ASSURANCE_CERTIFICATE')} className="hover:text-blue-600 transition-colors text-left cursor-pointer font-semibold text-emerald-700">
                   Trade Assurance Certificate &amp; Lookup
                 </button>
