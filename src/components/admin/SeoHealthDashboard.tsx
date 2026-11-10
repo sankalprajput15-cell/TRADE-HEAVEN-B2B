@@ -29,7 +29,12 @@ import {
   Send,
   Play,
   ExternalLink,
-  FileCode
+  FileCode,
+  MapPin,
+  Star,
+  Navigation,
+  Copy,
+  Building2
 } from 'lucide-react';
 import {
   autoSeoEngine,
@@ -37,7 +42,8 @@ import {
   SeoHealthMetrics,
   SeoAlertSettings,
   GeoDistributionReport,
-  AutonomousSeoSchedulerStatus
+  AutonomousSeoSchedulerStatus,
+  GoogleKnowledgePanelConfig
 } from '../../services/autoSeoEngine';
 import { useNotifications } from '../../context/NotificationContext';
 import { KeywordGeoMap } from './charts/KeywordGeoMap';
@@ -72,6 +78,12 @@ export const SeoHealthDashboard: React.FC = () => {
   } | null>(null);
 
   const [tempSettings, setTempSettings] = useState<SeoAlertSettings>(alertSettings);
+  const [knowledgePanel, setKnowledgePanel] = useState<GoogleKnowledgePanelConfig>(() =>
+    autoSeoEngine.getKnowledgePanelConfig()
+  );
+  const [isKnowledgeEditorOpen, setIsKnowledgeEditorOpen] = useState(false);
+  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<'OVERVIEW' | 'REVIEWS'>('OVERVIEW');
+  const [copiedSchema, setCopiedSchema] = useState(false);
 
   const { addNotification } = useNotifications();
 
@@ -116,6 +128,7 @@ export const SeoHealthDashboard: React.FC = () => {
       setHealthMetrics({ ...autoSeoEngine.getSeoHealthMetrics() });
       setAlertSettings({ ...autoSeoEngine.getSeoAlertSettings() });
       setGeoDistribution({ ...autoSeoEngine.getSeoGeoDistribution() });
+      setKnowledgePanel(autoSeoEngine.getKnowledgePanelConfig());
     };
     window.addEventListener('tradeheaven_auto_seo_updated', handleUpdate);
     return () => window.removeEventListener('tradeheaven_auto_seo_updated', handleUpdate);
@@ -186,6 +199,32 @@ export const SeoHealthDashboard: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveKnowledgePanel = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updated = autoSeoEngine.updateKnowledgePanelConfig(knowledgePanel);
+    setKnowledgePanel(updated);
+    setIsKnowledgeEditorOpen(false);
+    addNotification({
+      type: 'SYSTEM',
+      title: 'Google Knowledge Panel Schema Updated',
+      message: `Injected live LocalBusiness & Knowledge Graph JSON-LD for ${updated.businessName} (${updated.ratingValue}★ • ${updated.reviewCount} reviews).`
+    });
+  };
+
+  const handleCopyKnowledgeSchema = () => {
+    try {
+      const json = JSON.stringify(autoSeoEngine.buildKnowledgePanelJsonLd(), null, 2);
+      navigator.clipboard.writeText(json);
+      setCopiedSchema(true);
+      setTimeout(() => setCopiedSchema(false), 2500);
+      addNotification({
+        type: 'SYSTEM',
+        title: 'Schema.org JSON-LD Copied',
+        message: 'Copied Google Knowledge Panel & LocalBusiness structured data to clipboard.'
+      });
+    } catch {}
   };
 
   // 1. Real Computed KPIs from live indexed records & Express HTTP telemetry
@@ -599,6 +638,447 @@ export const SeoHealthDashboard: React.FC = () => {
             </div>
             <div className="text-[11px] text-purple-600 font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Live Express Telemetry
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Google Search Knowledge Panel & Business Profile Studio */}
+      <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden text-white">
+        <div className="p-6 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[10px] font-black uppercase tracking-widest">
+              <Building2 className="w-3.5 h-3.5" /> Google Knowledge Graph &amp; LocalBusiness Schema Active
+            </div>
+            <h3 className="text-xl font-black text-white">
+              Google Search Knowledge Panel &amp; Business Profile Result
+            </h3>
+            <p className="text-xs text-slate-400">
+              Live preview &amp; Schema.org <code className="text-emerald-400 font-mono">LocalBusiness</code> + <code className="text-emerald-400 font-mono">AggregateRating</code> structured data injected into <code className="text-sky-400 font-mono">&lt;head&gt;</code> for Google Search &amp; Google Maps.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleCopyKnowledgeSchema}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5 text-sky-400" />
+              <span>{copiedSchema ? 'Copied JSON-LD!' : 'Copy Schema JSON-LD'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsKnowledgeEditorOpen(prev => !prev)}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>{isKnowledgeEditorOpen ? 'Close Profile Editor' : 'Customize Google Business Card'}</span>
+            </button>
+          </div>
+        </div>
+
+        {isKnowledgeEditorOpen && (
+          <form onSubmit={handleSaveKnowledgePanel} className="p-6 bg-slate-950/90 border-b border-slate-800 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                  Business Display Name
+                </label>
+                <input
+                  type="text"
+                  value={knowledgePanel.businessName}
+                  onChange={e => setKnowledgePanel({ ...knowledgePanel, businessName: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                  Google Business Category &amp; City Label
+                </label>
+                <input
+                  type="text"
+                  value={knowledgePanel.categoryLabel}
+                  onChange={e => setKnowledgePanel({ ...knowledgePanel, categoryLabel: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Star Rating (1–5)
+                  </label>
+                  <input
+                    type="text"
+                    value={knowledgePanel.ratingValue}
+                    onChange={e => setKnowledgePanel({ ...knowledgePanel, ratingValue: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-amber-400 text-xs font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Google Reviews
+                  </label>
+                  <input
+                    type="text"
+                    value={knowledgePanel.reviewCount}
+                    onChange={e => setKnowledgePanel({ ...knowledgePanel, reviewCount: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono font-bold"
+                  />
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                  Physical Office / Factory Street Address
+                </label>
+                <input
+                  type="text"
+                  value={knowledgePanel.streetAddress}
+                  onChange={e => setKnowledgePanel({ ...knowledgePanel, streetAddress: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                    City / Locality
+                  </label>
+                  <input
+                    type="text"
+                    value={knowledgePanel.locality}
+                    onChange={e => setKnowledgePanel({ ...knowledgePanel, locality: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Postal Code
+                  </label>
+                  <input
+                    type="text"
+                    value={knowledgePanel.postalCode}
+                    onChange={e => setKnowledgePanel({ ...knowledgePanel, postalCode: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono font-bold"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                  Official Website URL
+                </label>
+                <input
+                  type="text"
+                  value={knowledgePanel.websiteUrl}
+                  onChange={e => setKnowledgePanel({ ...knowledgePanel, websiteUrl: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                  Business Phone Number
+                </label>
+                <input
+                  type="text"
+                  value={knowledgePanel.telephone}
+                  onChange={e => setKnowledgePanel({ ...knowledgePanel, telephone: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Opens At
+                  </label>
+                  <input
+                    type="text"
+                    value={knowledgePanel.opensAt}
+                    onChange={e => setKnowledgePanel({ ...knowledgePanel, opensAt: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-emerald-400 text-xs font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">
+                    Closes At
+                  </label>
+                  <input
+                    type="text"
+                    value={knowledgePanel.closesAt}
+                    onChange={e => setKnowledgePanel({ ...knowledgePanel, closesAt: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs font-mono font-bold"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsKnowledgeEditorOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Save &amp; Inject Live Google Schema</span>
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Authentic Google Search Dark SERP & Knowledge Panel Replica */}
+        <div className="p-6 bg-[#202124] text-[#e8eaed] space-y-5">
+          {/* Simulated Google Search Bar Header */}
+          <div className="flex flex-wrap items-center gap-4 pb-4 border-b border-[#3c4043]">
+            <span className="text-xl font-bold tracking-tight text-white select-none">Google</span>
+            <div className="flex-1 max-w-xl bg-[#303134] rounded-full px-4 py-2 flex items-center justify-between border border-[#5f6368]/40">
+              <span className="text-xs font-medium text-[#e8eaed]">
+                {knowledgePanel.businessName.toLowerCase()} b2b marketplace
+              </span>
+              <Search className="w-4 h-4 text-[#8ab4f8]" />
+            </div>
+            <div className="hidden sm:flex items-center gap-4 text-xs text-[#9aa0a6]">
+              <span className="text-[#8ab4f8] border-b-2 border-[#8ab4f8] pb-1 font-medium">All</span>
+              <span>Images</span>
+              <span>Videos</span>
+              <span>News</span>
+              <span>Maps</span>
+            </div>
+          </div>
+
+          {/* Entity Title Row + Overview/Reviews Pills */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-normal text-white tracking-tight">
+                {knowledgePanel.businessName}
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-[#9aa0a6] mt-1">
+                <span className="text-[#e8eaed] font-medium">{knowledgePanel.ratingValue}</span>
+                <span className="flex items-center text-[#fbbc04]">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                </span>
+                <span className="text-[#8ab4f8] hover:underline cursor-pointer">
+                  {knowledgePanel.reviewCount} Google reviews
+                </span>
+                <span>•</span>
+                <span>{knowledgePanel.categoryLabel}</span>
+                <span>•</span>
+                <span className="text-[#81c995] font-medium">{knowledgePanel.openStatusLabel}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveKnowledgeTab('OVERVIEW')}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                  activeKnowledgeTab === 'OVERVIEW'
+                    ? 'bg-[#394457] text-[#8ab4f8] border-[#8ab4f8]'
+                    : 'bg-[#303134] text-[#e8eaed] border-[#5f6368]'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveKnowledgeTab('REVIEWS')}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
+                  activeKnowledgeTab === 'REVIEWS'
+                    ? 'bg-[#394457] text-[#8ab4f8] border-[#8ab4f8]'
+                    : 'bg-[#303134] text-[#e8eaed] border-[#5f6368]'
+                }`}
+              >
+                Reviews
+              </button>
+            </div>
+          </div>
+
+          {/* 3-Column Google Knowledge Bento Grid (Photos | Map + Address | Hours + Popular Times + Reviews) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+            {/* Left: Photo & Video Gallery Mosaic (5 cols) */}
+            <div className="lg:col-span-5 grid grid-cols-12 gap-1.5 rounded-2xl overflow-hidden h-64 bg-[#303134]">
+              <div className="col-span-7 relative h-full overflow-hidden">
+                <img
+                  src={knowledgePanel.galleryPhotos[0]}
+                  alt={`${knowledgePanel.businessName} Corporate Headquarters`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="col-span-5 grid grid-rows-2 gap-1.5 h-full">
+                <div className="relative overflow-hidden">
+                  <img
+                    src={knowledgePanel.galleryPhotos[1]}
+                    alt={`${knowledgePanel.businessName} Verified Trade Desk`}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/75 text-white text-[10px] font-bold flex items-center gap-1">
+                    <Play className="w-2.5 h-2.5 fill-current" />
+                    <span>{knowledgePanel.featuredVideoDuration}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 overflow-hidden">
+                  <img
+                    src={knowledgePanel.galleryPhotos[2]}
+                    alt={`${knowledgePanel.businessName} Facility`}
+                    className="w-full h-full object-cover"
+                  />
+                  <img
+                    src={knowledgePanel.galleryPhotos[3]}
+                    alt={`${knowledgePanel.businessName} Logistics`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Center: Map & Street Address Card (3 cols) */}
+            <div className="lg:col-span-3 rounded-2xl bg-[#28292a] border border-[#3c4043] overflow-hidden flex flex-col justify-between h-64">
+              <div className="relative flex-1 bg-[#1b263b] overflow-hidden flex items-center justify-center">
+                <div
+                  className="absolute inset-0 opacity-35"
+                  style={{
+                    backgroundImage:
+                      'radial-gradient(#8ab4f8 1px, transparent 1px), linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px)',
+                    backgroundSize: '24px 24px'
+                  }}
+                />
+                <div className="relative z-10 flex flex-col items-center text-center px-3">
+                  <div className="flex items-center gap-1.5 bg-[#202124]/90 border border-[#5f6368] px-2.5 py-1 rounded-full shadow-lg">
+                    <MapPin className="w-4 h-4 text-[#ea4335] shrink-0" />
+                    <span className="text-xs font-bold text-white truncate max-w-[140px]">
+                      {knowledgePanel.businessName}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#9aa0a6] mt-1 font-mono">
+                    {knowledgePanel.locality}, {knowledgePanel.countryCode}
+                  </span>
+                </div>
+              </div>
+              <div className="p-3.5 bg-[#28292a] border-t border-[#3c4043]">
+                <div className="text-xs font-medium text-[#e8eaed] line-clamp-1">
+                  {knowledgePanel.streetAddress}
+                </div>
+                <div className="text-[11px] text-[#9aa0a6] mt-0.5">
+                  {knowledgePanel.locality} — {knowledgePanel.postalCode}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Hours, Popular Times & Reviews Cards (4 cols) */}
+            <div className="lg:col-span-4 flex flex-col justify-between gap-3 h-64">
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                {/* Hours Card */}
+                <div className="rounded-2xl bg-[#28292a] border border-[#3c4043] p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#9aa0a6]">
+                    <span>Hours</span>
+                    <span>›</span>
+                  </div>
+                  <div>
+                    <div className="text-lg font-medium text-[#81c995]">
+                      {knowledgePanel.openStatusLabel}
+                    </div>
+                    <div className="text-[11px] text-[#9aa0a6] mt-0.5">
+                      {knowledgePanel.opensAt} – {knowledgePanel.closesAt}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Popular Times Histogram Card */}
+                <div className="rounded-2xl bg-[#28292a] border border-[#3c4043] p-3.5 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#9aa0a6]">
+                    <span>Popular times</span>
+                    <span>⌄</span>
+                  </div>
+                  <div>
+                    <div className="flex items-end gap-1 h-12 pt-2">
+                      {[25, 45, 70, 95, 85, 100, 90, 75, 55, 35].map((h, i) => (
+                        <div
+                          key={i}
+                          className={`flex-1 rounded-t ${i === 5 ? 'bg-[#8ab4f8]' : 'bg-[#5f6368]'}`}
+                          style={{ height: `${h}%` }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex justify-between text-[9px] text-[#9aa0a6] mt-1">
+                      <span>9 am</span>
+                      <span>3 pm</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reviews Summary Card */}
+              <div className="rounded-2xl bg-[#28292a] border border-[#3c4043] p-3.5 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-[#9aa0a6]">Reviews</div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-xl font-medium text-white">{knowledgePanel.ratingValue}</span>
+                    <span className="flex items-center text-[#fbbc04]">
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#9aa0a6] mt-0.5">
+                    {knowledgePanel.reviewCount} reviews
+                  </div>
+                </div>
+                <span className="text-[#9aa0a6] text-sm">›</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Organic Result + Website / Directions Action Buttons */}
+          <div className="pt-3 border-t border-[#3c4043] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-[#dadce0]">
+                <div className="w-6 h-6 rounded-full bg-white text-slate-900 font-black flex items-center justify-center text-[10px]">
+                  TH
+                </div>
+                <div>
+                  <div className="font-medium text-[#e8eaed]">{knowledgePanel.businessName}</div>
+                  <div className="text-[11px] text-[#9aa0a6]">{knowledgePanel.websiteUrl}</div>
+                </div>
+              </div>
+              <div className="text-sm text-[#8ab4f8] hover:underline mt-1 font-medium">
+                {knowledgePanel.businessName} | Global B2B Marketplace for Buyers &amp; Verified Suppliers
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={knowledgePanel.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] border border-[#5f6368] text-xs font-medium text-[#8ab4f8] flex items-center gap-1.5"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Website</span>
+              </a>
+              <a
+                href={`https://www.google.com/maps?q=${knowledgePanel.latitude},${knowledgePanel.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] border border-[#5f6368] text-xs font-medium text-[#8ab4f8] flex items-center gap-1.5"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Directions</span>
+              </a>
+              <a
+                href={knowledgePanel.googleBusinessReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-1.5 rounded-full bg-[#303134] hover:bg-[#3c4043] border border-[#5f6368] text-xs font-medium text-[#8ab4f8] flex items-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Google Business Profile</span>
+              </a>
             </div>
           </div>
         </div>

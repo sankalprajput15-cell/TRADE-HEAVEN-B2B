@@ -88,15 +88,14 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
   const isUserPaidMember = isPaidMemberUser(currentUser);
   const activeRfqsPool = React.useMemo(
-    () => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r => securityService.gateRfqRequirement(r, currentUser)),
+    () => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).slice(0, 40).map(r => securityService.gateRfqRequirement(r, currentUser)),
     [rfqs, currentUser]
   );
-  const displayedRfqs = activeRfqsPool.slice(0, 12);
-  const gatedCompanies = React.useMemo(
-    () => MOCK_COMPANIES.map(c => securityService.gateCompanyProfile(c, currentUser)),
-    [currentUser]
+  const displayedRfqs = React.useMemo(() => activeRfqsPool.slice(0, 12), [activeRfqsPool]);
+  const displayedCompanies = React.useMemo(
+    () => (showAllSuppliers ? MOCK_COMPANIES : MOCK_COMPANIES.slice(0, 6)).map(c => securityService.gateCompanyProfile(c, currentUser)),
+    [currentUser, showAllSuppliers]
   );
-  const displayedCompanies = showAllSuppliers ? gatedCompanies : gatedCompanies.slice(0, 6);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 

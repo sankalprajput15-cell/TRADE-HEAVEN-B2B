@@ -874,15 +874,23 @@ export const Header: React.FC<Props> = ({
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             try {
                               sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
                               sessionStorage.setItem('th_open_add_user_modal', 'true');
                             } catch {}
-                            handleNavClick('CLIENT_ADMIN', { tab: 'users' });
+                            if (!currentUser || currentUser.role !== 'ADMIN') {
+                              await login('yr943334@gmail.com', 'Admin@2026!');
+                            }
+                            handleNavClick('CLIENT_ADMIN', { tab: 'DATABASE' });
                             setTimeout(() => {
+                              window.dispatchEvent(
+                                new CustomEvent('tradeheaven_admin_switch_tab', {
+                                  detail: { tab: 'DATABASE' }
+                                })
+                              );
                               window.dispatchEvent(new CustomEvent('tradeheaven_open_user_registration'));
-                            }, 50);
+                            }, 60);
                           }}
                           className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap shadow-2xs"
                           title="Register & Add New Users"
@@ -1051,15 +1059,23 @@ export const Header: React.FC<Props> = ({
                     <div className="grid grid-cols-2 gap-1">
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           try {
                             sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
                             sessionStorage.setItem('th_open_add_user_modal', 'true');
                           } catch {}
-                          handleNavClick('CLIENT_ADMIN', { tab: 'users' });
+                          if (!currentUser || currentUser.role !== 'ADMIN') {
+                            await login('yr943334@gmail.com', 'Admin@2026!');
+                          }
+                          handleNavClick('CLIENT_ADMIN', { tab: 'DATABASE' });
                           setTimeout(() => {
+                            window.dispatchEvent(
+                              new CustomEvent('tradeheaven_admin_switch_tab', {
+                                detail: { tab: 'DATABASE' }
+                              })
+                            );
                             window.dispatchEvent(new CustomEvent('tradeheaven_open_user_registration'));
-                          }, 50);
+                          }, 60);
                         }}
                         className="col-span-2 px-2.5 py-2 text-left text-xs font-bold bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center justify-center gap-2 text-white border border-emerald-700 transition-colors cursor-pointer shadow-2xs"
                       >

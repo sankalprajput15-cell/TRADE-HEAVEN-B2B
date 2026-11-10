@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { ActiveView, Product } from '../../types';
 import { SEO } from './SEO';
 import { autoSeoEngine } from '../../services/autoSeoEngine';
@@ -14,7 +14,6 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
   selectedProduct,
   products 
 }) => {
-  const [, setSeoTick] = useState(0);
 
   // Automatically register catalog with the 24/7/365 30-minute Unconditional Auto-SEO Engine (no permission required)
   useEffect(() => {
@@ -41,13 +40,13 @@ export const SEOManager: React.FC<SEOManagerProps> = ({
       } catch {}
     };
 
-    syncJsonLdToHead();
+    const timer = setTimeout(syncJsonLdToHead, 800);
     const handleSeoUpdate = () => {
-      setSeoTick(t => t + 1);
       syncJsonLdToHead();
     };
     window.addEventListener('tradeheaven_auto_seo_updated', handleSeoUpdate);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('tradeheaven_auto_seo_updated', handleSeoUpdate);
     };
   }, []);

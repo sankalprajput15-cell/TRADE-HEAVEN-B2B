@@ -258,7 +258,10 @@ export const ProductCatalog: React.FC<Props> = ({
   };
 
   // Available unique categories extracted from products
-  const availableCategories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+  const availableCategories = React.useMemo(
+    () => Array.from(new Set(products.map(p => p.category).filter(Boolean))),
+    [products]
+  );
 
   // Match Suppliers by Company Name (and Contact Person/Email only for Paid Members)
   const isUserPaidMember = isPaidMemberUser(user);
@@ -286,58 +289,95 @@ export const ProductCatalog: React.FC<Props> = ({
   );
 
   // Filter & Auto-SEO Rank logic (Uploaded & SEO-optimized products/images always rank on TOP for B2B portal & export)
-  const rawFiltered = cachedProducts.filter(p => {
+  const rawFiltered = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const belongsToMatchedSupplier =
-      term !== '' &&
-      ((p.supplierId && matchedSupplierIds.has(p.supplierId)) ||
-        (p.supplierName && matchedSupplierCompanyNames.has(p.supplierName.toLowerCase())));
-
-    const specString = p.specifications
-      ? typeof p.specifications === 'object'
-        ? Object.entries(p.specifications).map(([k, v]) => `${k} ${v}`).join(' ').toLowerCase()
-        : String(p.specifications).toLowerCase()
-      : '';
-
-    const seoRec = autoSeoEngine.getProductSeoRecord(p.id);
-    const seoSearchable = seoRec
-      ? `${seoRec.seoTitle} ${seoRec.metaDescription} ${seoRec.keywords.join(' ')} ${seoRec.b2bExportTags.join(' ')}`.toLowerCase()
-      : '';
-
     const isGenericPortalTerm =
       term === 'b2b' ||
       term === 'export' ||
       term === 'trade heaven' ||
       term === 'b2b portal' ||
       term === 'wholesale';
+    const lowerActiveCategory = activeCategory.toLowerCase();
+    const checkAllTiers = activeSupplierTiers.length === 0 || activeSupplierTiers.includes('ALL');
+    const checkAllCountries = activeCountries.length === 0 || activeCountries.includes('ALL');
+    const lowerCountries = checkAllCountries ? [] : activeCountries.map(c => c.toLowerCase());
 
-    const matchesSearch = term === '' || 
-      belongsToMatchedSupplier ||
-      isGenericPortalTerm ||
-      (p.title || '').toLowerCase().includes(term) ||
-      (p.supplierName || '').toLowerCase().includes(term) ||
-      (p.category || '').toLowerCase().includes(term) ||
-      (p.subCategory && p.subCategory.toLowerCase().includes(term)) ||
-      (p.description && p.description.toLowerCase().includes(term)) ||
-      (specString && specString.includes(term)) ||
-      (seoSearchable && seoSearchable.includes(term));
-      
-    const matchesCat = activeCategory === 'ALL' || 
-      p.category === activeCategory ||
-      (p.category || '').toLowerCase().includes(activeCategory.toLowerCase()) ||
-      activeCategory.toLowerCase().includes((p.category || '').toLowerCase());
-      
-    const matchesTier = activeSupplierTiers.length === 0 || activeSupplierTiers.includes('ALL') || activeSupplierTiers.includes(p.supplierTier);
-    const matchesCountry = activeCountries.length === 0 || activeCountries.includes('ALL') || activeCountries.some(c => (p.supplierCountry || '').toLowerCase().includes(c.toLowerCase()));
-    const matchesIncoterm = selectedIncoterm === 'ALL' || (p.supportedIncoterms || []).includes(selectedIncoterm as Incoterm);
-    const matchesMoq = maxMoq >= 50000 || (p.moq || 0) <= maxMoq;
+    return cachedProducts.filter(p => {
+      let matchesSearch = true;
+      if (term !== '' && !isGenericPortalTerm) {
+        const belongsToMatchedSupplier =
+          (p.supplierId && matchedSupplierIds.has(p.supplierId)) ||
+          (p.supplierName && matchedSupplierCompanyNames.has(p.supplierName.toLowerCase()));
 
-    const matchesOwnership = ownershipFilter === 'ALL' ||
-      (ownershipFilter === 'MINE' && user && (p.ownerEmail === user.email || p.ownerId === user.id)) ||
-      (ownershipFilter === 'OTHERS' && (!user || (p.ownerEmail !== user.email && p.ownerId !== user.id)));
+        if (
+          belongsToMatchedSupplier ||
+          (p.title || '').toLowerCase().includes(term) ||
+          (p.supplierName || '').toLowerCase().includes(term) ||
+          (p.category || '').toLowerCase().includes(term) ||
+          (p.subCategory && p.subCategory.toLowerCase().includes(term)) ||
+          (p.description && p.description.toLowerCase().includes(term))
+        ) {
+          matchesSearch = true;
+        } else {
+          const specString = p.specifications
+            ? typeof p.specifications === 'object'
+              ? Object.entries(p.specifications).map(([k, v]) => `${k} ${v}`).join(' ').toLowerCase()
+              : String(p.specifications).toLowerCase()
+            : '';
+          if (specString && specString.includes(term)) {
+            matchesSearch = true;
+          } else {
+            const seoRec = autoSeoEngine.getProductSeoRecord(p.id);
+            const seoSearchable = seoRec
+              ? `${seoRec.seoTitle} ${seoRec.metaDescription} ${seoRec.keywords.join(' ')} ${seoRec.b2bExportTags.join(' ')}`.toLowerCase()
+              : '';
+            matchesSearch = Boolean(seoSearchable && seoSearchable.includes(term));
+          }
+        }
+      }
+      if (!matchesSearch) return false;
 
-    return matchesSearch && matchesCat && matchesTier && matchesCountry && matchesIncoterm && matchesMoq && matchesOwnership;
-  });
+      const pCatLower = (p.category || '').toLowerCase();
+      const matchesCat =
+        activeCategory === 'ALL' ||
+        p.category === activeCategory ||
+        pCatLower.includes(lowerActiveCategory) ||
+        lowerActiveCategory.includes(pCatLower);
+      if (!matchesCat) return false;
+
+      const matchesTier = checkAllTiers || activeSupplierTiers.includes(p.supplierTier);
+      if (!matchesTier) return false;
+
+      const pCountryLower = (p.supplierCountry || '').toLowerCase();
+      const matchesCountry = checkAllCountries || lowerCountries.some(c => pCountryLower.includes(c));
+      if (!matchesCountry) return false;
+
+      const matchesIncoterm = selectedIncoterm === 'ALL' || (p.supportedIncoterms || []).includes(selectedIncoterm as Incoterm);
+      if (!matchesIncoterm) return false;
+
+      const matchesMoq = maxMoq >= 50000 || (p.moq || 0) <= maxMoq;
+      if (!matchesMoq) return false;
+
+      const matchesOwnership =
+        ownershipFilter === 'ALL' ||
+        (ownershipFilter === 'MINE' && user && (p.ownerEmail === user.email || p.ownerId === user.id)) ||
+        (ownershipFilter === 'OTHERS' && (!user || (p.ownerEmail !== user.email && p.ownerId !== user.id)));
+
+      return Boolean(matchesOwnership);
+    });
+  }, [
+    cachedProducts,
+    searchTerm,
+    matchedSupplierIds,
+    matchedSupplierCompanyNames,
+    activeCategory,
+    activeSupplierTiers,
+    activeCountries,
+    selectedIncoterm,
+    maxMoq,
+    ownershipFilter,
+    user
+  ]);
 
   const filtered = React.useMemo(() => {
     const term = searchTerm.trim();
@@ -356,10 +396,6 @@ export const ProductCatalog: React.FC<Props> = ({
       return bBoost - aBoost;
     });
   }, [rawFiltered, searchTerm]);
-
-  React.useEffect(() => {
-    console.log('[ProductCatalog Investigation] Search term:', searchTerm, '| Total products:', cachedProducts.length, '| Filtered results:', filtered.length);
-  }, [searchTerm, cachedProducts.length, filtered.length]);
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(12); // 3x4 / 4x3 product grid (12 items per page default)

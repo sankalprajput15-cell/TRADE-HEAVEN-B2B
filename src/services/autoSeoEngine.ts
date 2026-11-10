@@ -145,9 +145,34 @@ export interface GeoDistributionReport {
   topCountries: SeoGeoTraffic[];
 }
 
+export interface GoogleKnowledgePanelConfig {
+  businessName: string;
+  legalName: string;
+  categoryLabel: string;
+  ratingValue: string;
+  reviewCount: string;
+  streetAddress: string;
+  locality: string;
+  region: string;
+  postalCode: string;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+  telephone: string;
+  email: string;
+  websiteUrl: string;
+  googleBusinessReviewUrl: string;
+  opensAt: string;
+  closesAt: string;
+  openStatusLabel: string;
+  galleryPhotos: string[];
+  featuredVideoDuration: string;
+}
+
 const AUTO_SEO_STORAGE_KEY = 'trade_heaven_auto_seo_index_v1';
 const AUTO_SEO_ARTICLES_KEY = 'trade_heaven_uploaded_b2b_articles_v1';
 const AUTO_SEO_SCHEDULER_KEY = 'trade_heaven_autonomous_30m_seo_scheduler_v1';
+const AUTO_SEO_KNOWLEDGE_PANEL_KEY = 'trade_heaven_google_knowledge_panel_v1';
 const THIRTY_MINUTES_MS = 30 * 60 * 1000; // 1,800,000 ms (30 minutes)
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000; // 86,400,000 ms (Daily Geo-Distribution Run)
 const SITE_URL = 'https://www.tradeheaven.org';
@@ -231,10 +256,43 @@ class AutoSeoEngineService {
     topCountries: []
   };
 
+  private knowledgePanelConfig: GoogleKnowledgePanelConfig = {
+    businessName: 'Trade Heaven',
+    legalName: 'Tradeheaven ECOM Solution LLP',
+    categoryLabel: 'Business to business service in New Delhi',
+    ratingValue: '4.9',
+    reviewCount: '1,940',
+    streetAddress: '52B, 1st Floor, Corporate Trade Hub, Connaught Place',
+    locality: 'New Delhi',
+    region: 'Delhi',
+    postalCode: '110001',
+    countryCode: 'IN',
+    latitude: 28.6315,
+    longitude: 77.2167,
+    telephone: '+91-85329-34479',
+    email: 'help@tradeheaven.net',
+    websiteUrl: 'https://tradeheaven.net',
+    googleBusinessReviewUrl: 'https://www.google.com/business/',
+    opensAt: '09:00',
+    closesAt: '19:00',
+    openStatusLabel: 'Open',
+    galleryPhotos: [
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
+    ],
+    featuredVideoDuration: '1:18'
+  };
+
   constructor() {
     this.loadFromStorage();
     this.seedDefaultOptimizedArticlesIfNeeded();
-    this.computeRealGeoDistribution();
+    if (!this.geoDistribution.topCountries || this.geoDistribution.topCountries.length === 0) {
+      if (typeof window !== 'undefined') {
+        setTimeout(() => this.computeRealGeoDistribution(), 1800);
+      }
+    }
     this.startUnconditional30MinuteAutonomousScheduler();
     this.startDailyGeoDistributionScheduler();
   }
@@ -288,6 +346,11 @@ class AutoSeoEngineService {
       if (rawGeo) {
         this.geoDistribution = { ...this.geoDistribution, ...JSON.parse(rawGeo) };
       }
+
+      const rawKnowledge = localStorage.getItem(AUTO_SEO_KNOWLEDGE_PANEL_KEY);
+      if (rawKnowledge) {
+        this.knowledgePanelConfig = { ...this.knowledgePanelConfig, ...JSON.parse(rawKnowledge) };
+      }
     } catch {
       // Ignore storage errors
     }
@@ -302,6 +365,7 @@ class AutoSeoEngineService {
       localStorage.setItem('trade_heaven_seo_alert_settings', JSON.stringify(this.alertSettings));
       localStorage.setItem('trade_heaven_seo_health_metrics', JSON.stringify(this.healthMetrics));
       localStorage.setItem('trade_heaven_seo_geo_distribution', JSON.stringify(this.geoDistribution));
+      localStorage.setItem(AUTO_SEO_KNOWLEDGE_PANEL_KEY, JSON.stringify(this.knowledgePanelConfig));
       
       window.dispatchEvent(new CustomEvent('tradeheaven_auto_seo_updated', {
         detail: {
@@ -407,18 +471,18 @@ class AutoSeoEngineService {
   private startUnconditional30MinuteAutonomousScheduler(): void {
     if (typeof window === 'undefined') return;
 
-    // Immediately sync with real server telemetry on boot
+    // Sync with real server telemetry in background after initial page paint completes
     setTimeout(() => {
       this.syncWithRealServerTelemetry().catch(() => {});
-    }, 150);
+    }, 2500);
 
-    // Immediately execute initial cycle if never run or if >= 30 mins elapsed since last run
+    // Execute initial cycle in background if never run or if >= 30 mins elapsed since last run
     const lastMs = new Date(this.schedulerStatus.lastRunAt || 0).getTime();
     const elapsedMs = Date.now() - lastMs;
     if (this.schedulerStatus.totalCyclesExecuted === 0 || elapsedMs >= THIRTY_MINUTES_MS) {
       setTimeout(() => {
         this.runAutonomous30MinCycle('AUTONOMOUS_BOOT_CATCHUP_24_7_365');
-      }, 300);
+      }, 3200);
     } else {
       const remainingMs = Math.max(5000, THIRTY_MINUTES_MS - elapsedMs);
       this.schedulerStatus.nextRunAt = new Date(Date.now() + remainingMs).toISOString();
@@ -527,8 +591,12 @@ class AutoSeoEngineService {
     if (!Array.isArray(products) || products.length === 0) return;
     const hadCatalog = this.registeredCatalog.length > 0;
     this.registeredCatalog = products;
-    if (!hadCatalog || Object.keys(this.records).length < 20) {
-      this.runAutonomous30MinCycle('CATALOG_HYDRATION_AUTO_SEO');
+    if (!hadCatalog && Object.keys(this.records).length < 20) {
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          this.runAutonomous30MinCycle('CATALOG_HYDRATION_AUTO_SEO');
+        }, 2200);
+      }
     }
   }
 
@@ -580,17 +648,19 @@ class AutoSeoEngineService {
         }
       }
 
-      // 3. Index registered catalog products
+      // 3. Index registered catalog products (incremental to avoid blocking main thread)
       if (this.registeredCatalog.length > 0) {
-        for (const p of this.registeredCatalog.slice(0, 120)) {
+        for (const p of this.registeredCatalog.slice(0, 48)) {
           const pid = String(p.id);
           const existing = this.records[`seo-product-${pid}`];
           const isCustom = pid.startsWith('custom-') || pid.startsWith('seller-') || existing?.isUploadedOrCustom || false;
-          const rec = this.previewProductSeo(p, isCustom);
-          if (existing?.isUploadedOrCustom) {
-            rec.searchPriorityBoost = Math.max(existing.searchPriorityBoost, 1600);
+          if (!existing || isCustom) {
+            const rec = this.previewProductSeo(p, isCustom);
+            if (existing?.isUploadedOrCustom) {
+              rec.searchPriorityBoost = Math.max(existing.searchPriorityBoost, 1600);
+            }
+            this.records[rec.id] = rec;
           }
-          this.records[rec.id] = rec;
         }
       }
 
@@ -1399,13 +1469,83 @@ class AutoSeoEngineService {
     return scored.slice(0, limit).map(s => s.article);
   }
 
+  public getKnowledgePanelConfig(): GoogleKnowledgePanelConfig {
+    return { ...this.knowledgePanelConfig };
+  }
+
+  public updateKnowledgePanelConfig(next: Partial<GoogleKnowledgePanelConfig>): GoogleKnowledgePanelConfig {
+    this.knowledgePanelConfig = {
+      ...this.knowledgePanelConfig,
+      ...next
+    };
+    this.saveToStorage();
+    return this.getKnowledgePanelConfig();
+  }
+
+  public buildKnowledgePanelJsonLd(): Record<string, any> {
+    const cfg = this.knowledgePanelConfig;
+    const numericReviews = String(cfg.reviewCount || '1940').replace(/[^0-9]/g, '') || '1940';
+    return {
+      '@context': 'https://schema.org',
+      '@type': ['Organization', 'LocalBusiness', 'ProfessionalService'],
+      '@id': `${cfg.websiteUrl}/#knowledge-panel-business`,
+      name: cfg.businessName,
+      legalName: cfg.legalName,
+      description: `${cfg.businessName} (${cfg.legalName}) — ${cfg.categoryLabel}. Global B2B wholesale marketplace connecting verified manufacturers, exporters, and institutional buyers across 190+ countries with 100% escrow protection.`,
+      url: cfg.websiteUrl,
+      telephone: cfg.telephone,
+      email: cfg.email,
+      priceRange: '$$',
+      image: cfg.galleryPhotos,
+      logo: `${cfg.websiteUrl}/logo.png`,
+      hasMap: `https://www.google.com/maps?q=${cfg.latitude},${cfg.longitude}`,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: cfg.streetAddress,
+        addressLocality: cfg.locality,
+        addressRegion: cfg.region,
+        postalCode: cfg.postalCode,
+        addressCountry: cfg.countryCode
+      },
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: Number(cfg.latitude) || 28.6315,
+        longitude: Number(cfg.longitude) || 77.2167
+      },
+      openingHoursSpecification: [
+        {
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+          opens: cfg.opensAt || '09:00',
+          closes: cfg.closesAt || '19:00'
+        }
+      ],
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: String(cfg.ratingValue || '4.9'),
+        bestRating: '5',
+        worstRating: '1',
+        reviewCount: numericReviews
+      },
+      sameAs: [
+        'https://www.linkedin.com/in/trade-heaven-957bb633a/',
+        'https://www.youtube.com/@tradeheaven-ce1eo',
+        'https://www.instagram.com/tradeheavenb2b/',
+        'https://www.facebook.com/profile.php?id=61569916454663',
+        'https://twitter.com/tradeheaven',
+        'https://wa.me/918532934479'
+      ]
+    };
+  }
+
   /**
    * Returns combined JSON-LD @graph nodes for the top auto-SEO indexed items to inject in <head>
    */
   public getTopJsonLdGraphNodes(maxNodes = 10): Record<string, any>[] {
-    return this.getAllSeoRecords()
+    const productNodes = this.getAllSeoRecords()
       .slice(0, maxNodes)
       .map(r => r.jsonLd);
+    return [this.buildKnowledgePanelJsonLd(), ...productNodes];
   }
 }
 

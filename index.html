@@ -204,9 +204,10 @@
         "@context": "https://schema.org",
         "@graph": [
           {
-            "@type": "Organization",
+            "@type": ["Organization", "LocalBusiness", "ProfessionalService"],
             "@id": "https://tradeheaven.net/#organization",
             "name": "Trade Heaven",
+            "legalName": "Tradeheaven ECOM Solution LLP",
             "alternateName": [
               "TradeHeaven",
               "Trade Heaven B2B",
@@ -222,8 +223,45 @@
               "height": "512",
               "caption": "Trade Heaven Global B2B Marketplace Logo"
             },
-            "image": "https://tradeheaven.net/og-image.png",
+            "image": [
+              "https://tradeheaven.net/og-image.png",
+              "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+              "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80",
+              "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
+            ],
             "description": "Global B2B wholesale marketplace connecting verified manufacturers, exporters, and wholesale buyers across 190+ countries with 100% escrow protection and live RFQs.",
+            "telephone": "+91-85329-34479",
+            "email": "help@tradeheaven.net",
+            "priceRange": "$$",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Corporate Trade Tower, Connaught Place",
+              "addressLocality": "New Delhi",
+              "addressRegion": "Delhi",
+              "postalCode": "110001",
+              "addressCountry": "IN"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 28.6315,
+              "longitude": 77.2167
+            },
+            "hasMap": "https://www.google.com/maps?q=28.6315,77.2167",
+            "openingHoursSpecification": [
+              {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday"
+                ],
+                "opens": "09:00",
+                "closes": "19:00"
+              }
+            ],
             "sameAs": [
               "https://www.linkedin.com/in/trade-heaven-957bb633a/",
               "https://www.youtube.com/@tradeheaven-ce1eo",

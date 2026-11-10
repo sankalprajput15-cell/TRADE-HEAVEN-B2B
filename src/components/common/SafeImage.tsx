@@ -8,6 +8,7 @@ import {
   PRODUCT_IMAGE_STORAGE_SAVED_EVENT,
   normalizeProductAssetUrl
 } from '../../services/productImageManagerService';
+import regeneratedSupplierCoalImg from '../../assets/images/regenerated_image_1794231796775.jpg';
 
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string | undefined;
@@ -82,6 +83,7 @@ const CATEGORY_POOLS: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1624365169364-0640dd10e180?w=800&auto=format&fit=crop&q=80'
   ],
   COAL: [
+    regeneratedSupplierCoalImg,
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'

@@ -9,6 +9,7 @@ import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PaginationControls } from '../common/PaginationControls';
 import { SearchRegistrationGate } from '../common/SearchAutoSuggestDropdown';
+import regeneratedSupplierCoalImg from '../../assets/images/regenerated_image_1794231796775.jpg';
 import { 
   Search, 
   ShieldCheck, 
@@ -242,8 +243,13 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
-            {paginatedCompanies.map(company => {
+            {paginatedCompanies.map((company, index) => {
               const isMelissaCompany = company.id === 'comp-melissa-mpcommodity' || (company.companyName || '').toLowerCase().includes('mp commodity');
+              const isReverseEnergyOrFirstCard =
+                (currentPage === 1 && index === 0) ||
+                company.id === 'user-supplier-emmanuel-reverse-energy' ||
+                company.id === 'comp-reverse-energy-sa' ||
+                (company.companyName || '').toLowerCase().includes('reverse energy');
               const countryDisplay = isMelissaCompany ? 'Australia' : (company.country || 'Global');
               const cityDisplay = isMelissaCompany ? 'Sydney' : (company.city || countryDisplay);
               const flagEmoji = getCountryFlag(countryDisplay);
@@ -289,7 +295,7 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
                       className="flex items-start gap-3.5 cursor-pointer"
                     >
                       <SafeImage
-                        src={company.logoUrl || company.bannerUrl}
+                        src={isReverseEnergyOrFirstCard ? regeneratedSupplierCoalImg : (company.logoUrl || company.bannerUrl)}
                         alt={company.companyName}
                         productId={company.id}
                         productTitle={`${company.companyName} ${company.description || ''}`}

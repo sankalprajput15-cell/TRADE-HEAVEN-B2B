@@ -31,23 +31,13 @@ import { BreadcrumbNavigation } from './components/common/BreadcrumbNavigation';
 import { NotFoundView } from './components/common/NotFoundView';
 import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
 import { DiwaliOfferBanner } from './components/marketplace/DiwaliOfferBanner';
-import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { MailDeliveryHistoryPage } from './components/admin/MailDeliveryHistoryPage';
 import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
-import { ClientAdminView } from './components/services/ClientAdminView';
-import { PlanPricingAdminModule } from './components/admin/PlanPricingAdminModule';
-import { BulkEntityCrmModule } from './components/admin/BulkEntityCrmModule';
-import { AboutUs } from './components/marketplace/AboutUs';
-import { TrustAndSafety } from './components/marketplace/TrustAndSafety';
-import { InsightsBlog } from './components/marketplace/InsightsBlog';
 import { ProductCatalog } from './components/marketplace/ProductCatalog';
-import { TradeHeavenMediatorView } from './components/marketplace/TradeHeavenMediatorView';
 
 // Helper for retryable lazy loaded views
 function lazyWithRetry<T extends React.ComponentType<any>>(
-  componentImport: () => Promise<{ default: T } | { [key: string]: T }>,
+  componentImport: () => Promise<{ default?: T; [key: string]: any }>,
   namedExport?: string
 ) {
   return React.lazy(async () => {
@@ -99,6 +89,17 @@ const RefundPolicyView = lazyWithRetry(() => import('./components/services/Refun
 const ProductListingPolicyView = lazyWithRetry(() => import('./components/services/ProductListingPolicyView'), 'ProductListingPolicyView');
 const PrivacyPolicyView = lazyWithRetry(() => import('./components/services/PrivacyPolicyView'), 'PrivacyPolicyView');
 const TermsOfUseView = lazyWithRetry(() => import('./components/services/TermsOfUseView'), 'TermsOfUseView');
+
+const BuyersDirectoryView = lazyWithRetry(() => import('./components/services/BuyersDirectoryView'), 'BuyersDirectoryView');
+const AdminDashboard = lazyWithRetry(() => import('./components/admin/AdminDashboard'), 'AdminDashboard');
+const MailDeliveryHistoryPage = lazyWithRetry(() => import('./components/admin/MailDeliveryHistoryPage'), 'MailDeliveryHistoryPage');
+const ClientAdminView = lazyWithRetry(() => import('./components/services/ClientAdminView'), 'ClientAdminView');
+const PlanPricingAdminModule = lazyWithRetry(() => import('./components/admin/PlanPricingAdminModule'), 'PlanPricingAdminModule');
+const BulkEntityCrmModule = lazyWithRetry(() => import('./components/admin/BulkEntityCrmModule'), 'BulkEntityCrmModule');
+const AboutUs = lazyWithRetry(() => import('./components/marketplace/AboutUs'), 'AboutUs');
+const TrustAndSafety = lazyWithRetry(() => import('./components/marketplace/TrustAndSafety'), 'TrustAndSafety');
+const InsightsBlog = lazyWithRetry(() => import('./components/marketplace/InsightsBlog'), 'InsightsBlog');
+const TradeHeavenMediatorView = lazyWithRetry(() => import('./components/marketplace/TradeHeavenMediatorView'), 'TradeHeavenMediatorView');
 
 const OnboardWithUsPage = lazyWithRetry(() => import('./components/marketplace/OnboardWithUsPage'), 'OnboardWithUsPage');
 const AboutTradeHeavenView = lazyWithRetry(() => import('./components/services/AboutTradeHeavenView'), 'AboutTradeHeavenView');
@@ -424,23 +425,9 @@ const MainApp: React.FC = () => {
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
 
-  // Pre-fetch core static data like categories and country lists on the very first render,
-  // before the initializeData deferred hydration block runs, to reduce time-to-interactive for dynamic menus.
-  const [prefetchedCategories, setPrefetchedCategories] = useState<any[]>(() => {
-    try {
-      const cached = typeof window !== 'undefined' ? sessionStorage.getItem('th_prefetched_categories') : null;
-      if (cached) return JSON.parse(cached);
-    } catch {}
-    return CATEGORIES_TREE || [];
-  });
-
-  const [prefetchedCountryLists, setPrefetchedCountryLists] = useState<any[]>(() => {
-    try {
-      const cached = typeof window !== 'undefined' ? sessionStorage.getItem('th_prefetched_countries') : null;
-      if (cached) return JSON.parse(cached);
-    } catch {}
-    return ALL_COUNTRY_ITEMS || [];
-  });
+  // Static category and country lists available immediately in memory without JSON serialization overhead
+  const [prefetchedCategories] = useState<any[]>(CATEGORIES_TREE || []);
+  const [prefetchedCountryLists] = useState<any[]>(ALL_COUNTRY_ITEMS || []);
 
   // Modals & Deep-Linked Entities state initialized directly from URL
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
@@ -989,12 +976,12 @@ const MainApp: React.FC = () => {
       const loadedRfqs = await apiClient.getRfqs();
       const mockIds = new Set(MOCK_RFQS.map(r => r.id));
       const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs.filter(r => !mockIds.has(r.id)) : [];
-      const mergedRfqs = [...MOCK_RFQS, ...extraLoaded];
-      setRfqs(mergedRfqs as any);
-      setSelectedRfqId(prev => (prev && mergedRfqs.some(r => r.id === prev)) ? prev : mergedRfqs[0].id);
-    } catch (err) {
-      setRfqs(MOCK_RFQS as any);
-    }
+      if (extraLoaded.length > 0) {
+        const mergedRfqs = [...MOCK_RFQS, ...extraLoaded];
+        setRfqs(mergedRfqs as any);
+        setSelectedRfqId(prev => (prev && mergedRfqs.some(r => r.id === prev)) ? prev : mergedRfqs[0].id);
+      }
+    } catch (err) {}
   };
 
   // Fetch live Products/Listings non-blocking in background
@@ -1002,7 +989,7 @@ const MainApp: React.FC = () => {
     try {
       const prods = await api.getProducts();
       if (Array.isArray(prods) && prods.length > 0) {
-        setProducts(prods);
+        setProducts(prev => (prev.length === prods.length ? prev : prods));
       }
     } catch (err) {}
   };
@@ -1017,21 +1004,10 @@ const MainApp: React.FC = () => {
 
   // Async Initialization on Mount with instant non-blocking background hydration
   useEffect(() => {
-    const preFetchStaticData = () => {
-      try {
-        const categoriesData = CATEGORIES_TREE;
-        const countryData = ALL_COUNTRY_ITEMS;
-        setPrefetchedCategories(categoriesData);
-        setPrefetchedCountryLists(countryData);
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('th_prefetched_categories', JSON.stringify(categoriesData));
-          sessionStorage.setItem('th_prefetched_countries', JSON.stringify(countryData));
-          (window as any).__TRADEHEAVEN_PREFETCHED_CATEGORIES = categoriesData;
-          (window as any).__TRADEHEAVEN_PREFETCHED_COUNTRIES = countryData;
-        }
-      } catch (err) {}
-    };
-    preFetchStaticData();
+    if (typeof window !== 'undefined') {
+      (window as any).__TRADEHEAVEN_PREFETCHED_CATEGORIES = CATEGORIES_TREE;
+      (window as any).__TRADEHEAVEN_PREFETCHED_COUNTRIES = ALL_COUNTRY_ITEMS;
+    }
 
     let isMounted = true;
     const applyOverridesIfChanged = (prevList: Product[]): Product[] => {
@@ -1843,11 +1819,6 @@ const MainApp: React.FC = () => {
       const url = new URL(window.location.href);
       if (options.tab) {
         url.searchParams.set('tab', options.tab);
-        window.dispatchEvent(
-          new CustomEvent('tradeheaven_admin_switch_tab', {
-            detail: { tab: options.tab }
-          })
-        );
       }
       // Handle other generic options
       Object.entries(options).forEach(([key, val]) => {
@@ -1856,6 +1827,13 @@ const MainApp: React.FC = () => {
         }
       });
       window.history.pushState({}, '', url.toString());
+      if (options.tab) {
+        window.dispatchEvent(
+          new CustomEvent('tradeheaven_admin_switch_tab', {
+            detail: { tab: options.tab }
+          })
+        );
+      }
     }
 
     // Specific modal actions

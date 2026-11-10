@@ -81,6 +81,9 @@ export const ClientAdminView: React.FC<Props> = ({
   };
   const [activeTab, setActiveTabState] = useState<'INQUIRIES' | 'RBAC_USERS' | 'LISTINGS' | 'FAQS' | 'SETTINGS' | 'TREASURY' | 'AUDIT_LOGS' | 'ACTION_LOGGER' | 'ACTIVITY_STREAM' | 'USER_DELETION_LOG'>(() => {
     try {
+      if (sessionStorage.getItem('th_open_add_user_modal') === 'true') {
+        return 'RBAC_USERS';
+      }
       const savedTab = sessionStorage.getItem('th_client_admin_active_tab');
       if (savedTab === 'INQUIRIES' || savedTab === 'RBAC_USERS' || savedTab === 'LISTINGS' || savedTab === 'FAQS' || savedTab === 'SETTINGS' || savedTab === 'TREASURY' || savedTab === 'AUDIT_LOGS' || savedTab === 'ACTION_LOGGER' || savedTab === 'USER_DELETION_LOG') {
         return savedTab;
@@ -150,7 +153,13 @@ export const ClientAdminView: React.FC<Props> = ({
   });
   const [dbUsers, setDbUsers] = useState<DbUser[]>([]);
   const [expandedEmailHistoryUid, setExpandedEmailHistoryUid] = useState<string | null>('user-supplier-mark-johnson');
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showAddUserModal, setShowAddUserModal] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('th_open_add_user_modal') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('BUYER');

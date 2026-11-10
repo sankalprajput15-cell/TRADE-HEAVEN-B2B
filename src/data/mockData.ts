@@ -1,5 +1,6 @@
 import { METRICS_DERIVED_RFQS } from './b2bTradeMetrics';
 import { MAPPED_CATALOG_DERIVED_RFQS, MAPPED_CATALOG_DERIVED_PRODUCTS, MAPPED_CATALOG_DATABASE } from './mappedCatalogDatabase';
+const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 import { 
   GLOBAL_COPPER_POWDER_COMPANIES, 
   GLOBAL_COPPER_POWDER_BUYER_PROFILES, 
@@ -7518,8 +7519,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['FOB', 'CIF', 'CFR'],
     unit: 'Metric Tons',
     images: [
-      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
-      '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+      regeneratedSupplierCoalImg,
+      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80'
     ],
     description: 'Supplied by Emmanuel, Reverse Energy Pty Ltd (Johannesburg, South Africa). High calorific value 6000 kcal/kg NAR South African RB1/RB2/RB3 thermal steam coal and washed industrial anthracite peas ready for bulk vessel charter.',
     specifications: {

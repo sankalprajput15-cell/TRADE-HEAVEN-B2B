@@ -104,6 +104,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const getInitialTab = (): AdminDashboardTabId => {
     if (typeof window !== 'undefined') {
+      try {
+        if (sessionStorage.getItem('th_open_add_user_modal') === 'true') {
+          return 'DATABASE';
+        }
+      } catch {}
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab');
       if (tabParam) {
@@ -125,6 +130,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
 
         // Legacy & common aliases
+        if (normalized === 'USERS' || normalized === 'RBAC_USERS' || normalized === 'USER_REGISTRATION') {
+          return 'DATABASE';
+        }
         if (normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
           return 'MASTER_UPLOADS_VAULT';
         }
@@ -181,6 +189,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
 
         // Aliases
+        if (normalized === 'USERS' || normalized === 'RBAC_USERS' || normalized === 'USER_REGISTRATION') {
+          setActiveTab('DATABASE');
+          return;
+        }
         if (normalized === 'MASTER_UPLOADS' || normalized === 'UPLOADS_VAULT' || normalized === 'SITE_UPLOADS' || normalized === 'ALL_UPLOADS') {
           setActiveTab('MASTER_UPLOADS_VAULT');
           return;
@@ -194,6 +206,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           return;
         }
       }
+      try {
+        if (sessionStorage.getItem('th_open_add_user_modal') === 'true') {
+          setActiveTab('DATABASE');
+          return;
+        }
+      } catch {}
     }
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -375,14 +393,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           setActiveTab('SEO_HEALTH');
           return;
         }
-        const resolved = getInitialTab();
-        setActiveTab(resolved);
+        if (normalized === 'DATABASE' || normalized === 'USERS' || normalized === 'RBAC_USERS' || normalized === 'USER_REGISTRATION') {
+          setActiveTab('DATABASE');
+          return;
+        }
       }
+      const resolved = getInitialTab();
+      setActiveTab(resolved);
+    };
+    const handleOpenUserRegistration = () => {
+      setActiveTab('DATABASE');
     };
     window.addEventListener('tradeheaven_admin_switch_tab', handleAdminSwitchTab);
+    window.addEventListener('tradeheaven_open_user_registration', handleOpenUserRegistration);
     window.addEventListener('popstate', handleAdminSwitchTab);
     return () => {
       window.removeEventListener('tradeheaven_admin_switch_tab', handleAdminSwitchTab);
+      window.removeEventListener('tradeheaven_open_user_registration', handleOpenUserRegistration);
       window.removeEventListener('popstate', handleAdminSwitchTab);
     };
   }, []);

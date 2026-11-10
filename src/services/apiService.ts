@@ -23,6 +23,7 @@ import { securityService } from './securityService';
 import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
 import { productImageManagerService } from './productImageManagerService';
 import { autoSeoEngine } from './autoSeoEngine';
+const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
 // Safe fetch wrapper to avoid hanging requests if backend database/API fails to respond
 const originalFetch = window.fetch;
@@ -242,7 +243,7 @@ const EMMANUEL_REVERSE_ENERGY_USER: AuthUser = {
   membershipStatus: 'free',
   tier: 'Free Member' as any,
   joinedDate: '2026-11-04',
-  avatarUrl: '/assets/uploads/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+  avatarUrl: regeneratedSupplierCoalImg
 };
 
 const LARS_BARNHART_BLACKSTONE_JADE_USER: AuthUser = {
@@ -327,6 +328,12 @@ function loadStoredUsers(): Record<string, AuthUser> {
         ...THEMAX_BUYER_USER,
         ...(parsed['user-buyer-themax0098'] || {}),
         ...(inMemoryCustomUsersMap['user-buyer-themax0098'] || {})
+      };
+      base['user-supplier-emmanuel-reverse-energy'] = {
+        ...EMMANUEL_REVERSE_ENERGY_USER,
+        ...(parsed['user-supplier-emmanuel-reverse-energy'] || {}),
+        ...(inMemoryCustomUsersMap['user-supplier-emmanuel-reverse-energy'] || {}),
+        avatarUrl: regeneratedSupplierCoalImg
       };
     }
   } catch {}

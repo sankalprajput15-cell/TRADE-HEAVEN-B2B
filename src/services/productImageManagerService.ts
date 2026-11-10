@@ -1,5 +1,6 @@
 import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
+const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
 
 export const PRODUCT_IMAGE_SAVED_EVENT = 'tradeheaven_product_image_saved';
@@ -191,6 +192,27 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
     ],
     format: 'JPG',
     updatedAt: '2024-01-01T00:00:00.000Z'
+  },
+  'user-supplier-emmanuel-reverse-energy': {
+    primary: regeneratedSupplierCoalImg,
+    gallery: [regeneratedSupplierCoalImg],
+    format: 'JPG',
+    updatedAt: '2026-11-09T00:00:00.000Z'
+  },
+  'comp-reverse-energy-sa': {
+    primary: regeneratedSupplierCoalImg,
+    gallery: [regeneratedSupplierCoalImg],
+    format: 'JPG',
+    updatedAt: '2026-11-09T00:00:00.000Z'
+  },
+  'prod-reverse-energy-sa-coal': {
+    primary: regeneratedSupplierCoalImg,
+    gallery: [
+      regeneratedSupplierCoalImg,
+      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80'
+    ],
+    format: 'JPG',
+    updatedAt: '2026-11-09T00:00:00.000Z'
   }
 };
 
