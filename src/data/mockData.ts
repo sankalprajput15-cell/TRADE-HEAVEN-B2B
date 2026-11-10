@@ -74,6 +74,7 @@ import { FROZEN_BROCCOLI_COMPANIES, FROZEN_BROCCOLI_BUYERS, FROZEN_BROCCOLI_PROD
 import { GLOBAL_RICE_COMPANIES, GLOBAL_RICE_BUYERS, GLOBAL_RICE_PRODUCTS, GLOBAL_RICE_RFQS } from "./riceData";
 import { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from "./procurementRfqsData";
 import { GLOBAL_BAMBOO_STICKS_COMPANIES, GLOBAL_BAMBOO_STICKS_BUYER_PROFILES, GLOBAL_BAMBOO_STICKS_PRODUCTS, GLOBAL_BAMBOO_STICKS_RFQS } from "./bambooSticksData";
+import { GLOBAL_LEATHER_BELT_COMPANIES, GLOBAL_LEATHER_BELT_BUYER_PROFILES, GLOBAL_LEATHER_BELT_PRODUCTS, GLOBAL_LEATHER_BELT_RFQS, LEATHER_BELT_PAID_CLIENTS } from "./leatherBeltData";
 import { AVOCADO_LEADS_COMPANIES, AVOCADO_LEADS_BUYER_PROFILES, AVOCADO_LEADS_PRODUCTS, AVOCADO_LEADS_RFQS } from "./avocadoLeadsModule";
 import { GO4WORLD_STYLE_BUY_ORDERS, GO4WORLD_STYLE_BUYERS } from "./worldCountriesAndBuyOrders";
 
@@ -168,6 +169,23 @@ export const CURRENCY_RATES: CurrencyRate[] = [
 ];
 
 export const CATEGORIES_TREE = [
+  {
+    id: 'cat-leather-belts-goods',
+    name: 'Leather Belts & Genuine Leather Goods',
+    icon: 'Briefcase',
+    image: '/assets/aistudio/leather_belt_trade_heaven_2_1f3c8230.jpeg',
+    subcategories: [
+      'Leather Belt',
+      'Genuine Leather Belt',
+      'Full Grain Leather Belt',
+      'Buffalo & Cow Crust Leather Belt',
+      'Fashion & Dress Belts',
+      'Industrial Tool & Scaffolding Belts',
+      'Crocodile & Exotic Leather Belts',
+      'Leather Wallets & Bags'
+    ],
+    count: '2,420+ Verified Suppliers | 1,180+ RFQs'
+  },
   {
     id: 'cat-bamboo-wood-products',
     name: 'Bamboo & Wood Products',
@@ -738,13 +756,14 @@ export const CATEGORIES_TREE = [
     id: 'cat-textiles-apparel-footwear',
     name: 'Textiles, Garment, Fashion Accessories & Footwear',
     icon: 'Shirt',
-    image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80',
-    subcategories: ['Abaya', 'Acrylic Fiber', 'Acrylic Yarn', 'Activewear', 'Air Bags', 'Apparel, Clothing & Garments', 'Aprons', 'Artificial Jewelry', 'Asbestos Fiber', 'Baby Accessories'],
+    image: '/assets/aistudio/leather_belt_3_trade_heaven_6962019f.jpeg',
+    subcategories: ['Leather Belt', 'Genuine Leather Belt', 'Abaya', 'Acrylic Fiber', 'Acrylic Yarn', 'Activewear', 'Air Bags', 'Apparel, Clothing & Garments', 'Aprons', 'Artificial Jewelry', 'Asbestos Fiber', 'Baby Accessories'],
     count: '5,680+ Verified Suppliers | 3,425+ RFQs'
   }
 ];
 
 export const MOCK_COMPANIES: CompanyProfile[] = [
+  ...GLOBAL_LEATHER_BELT_COMPANIES,
   {
     id: 'comp-atlantic-power-equip',
     ownerUid: 'user-supplier-mark-johnson',
@@ -4428,6 +4447,7 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
 ];
 
 export const MOCK_BUYER_PROFILES: DetailedBuyerProfile[] = [
+  ...GLOBAL_LEATHER_BELT_BUYER_PROFILES,
   ...GO4WORLD_STYLE_BUYERS,
   ...AVOCADO_LEADS_BUYER_PROFILES,
   ...GLOBAL_RICE_BUYERS,
@@ -7239,6 +7259,7 @@ const BASE_MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
+  ...GLOBAL_LEATHER_BELT_PRODUCTS,
   {
     id: 'prod-atlantic-cat-generators',
     title: 'CAT Power Heavy-Duty Industrial Diesel Generator Sets (500kW – 2,500kW) — Export Ready for Canada & Global Projects',
@@ -12928,6 +12949,7 @@ const GLOBAL_FERTILIZER_RFQS: RfqRequirement[] = [
 ];
 
 const RAW_UNORDERED_RFQS: RfqRequirement[] = [
+  ...GLOBAL_LEATHER_BELT_RFQS,
   ...GO4WORLD_STYLE_BUY_ORDERS,
   ...AVOCADO_LEADS_RFQS,
   ...GLOBAL_FERTILIZER_RFQS,
@@ -13422,6 +13444,7 @@ export const MOCK_PLAN_CONFIGS: SubscriptionPlanConfig[] = [
 ];
 
 export const MOCK_PAID_CLIENTS: PaidClientRecord[] = [
+  ...LEATHER_BELT_PAID_CLIENTS,
   {
     id: 'client-atlantic-power-equip',
     companyId: 'comp-atlantic-power-equip',
@@ -13631,6 +13654,8 @@ export { GLOBAL_HOTEL_SUPPLIES_COMPANIES, GLOBAL_HOTEL_SUPPLIES_PRODUCTS, GLOBAL
 export { GLOBAL_SPECIALTY_PROCUREMENT_RFQS } from './procurementRfqsData';
 export { FROZEN_BROCCOLI_COMPANIES, FROZEN_BROCCOLI_BUYERS, FROZEN_BROCCOLI_PRODUCTS, FROZEN_BROCCOLI_RFQS } from './frozenBroccoliData';
 export { GLOBAL_BAMBOO_STICKS_COMPANIES, GLOBAL_BAMBOO_STICKS_BUYER_PROFILES, GLOBAL_BAMBOO_STICKS_PRODUCTS, GLOBAL_BAMBOO_STICKS_RFQS } from './bambooSticksData';
+export { GLOBAL_LEATHER_BELT_COMPANIES, GLOBAL_LEATHER_BELT_BUYER_PROFILES, GLOBAL_LEATHER_BELT_PRODUCTS, GLOBAL_LEATHER_BELT_RFQS, LEATHER_BELT_PAID_CLIENTS } from './leatherBeltData';
+
 
 
 

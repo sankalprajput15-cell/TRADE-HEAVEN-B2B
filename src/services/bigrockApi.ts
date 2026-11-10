@@ -336,7 +336,7 @@ export const bigrockApi = {
     }
   },
 
-  async login(email: string, password?: string): Promise<{ success: boolean; token?: string; user?: AuthUser; message?: string }> {
+  async login(email: string, password?: string): Promise<{ success: boolean; requiresOtp?: boolean; email?: string; maskedEmail?: string; role?: string; token?: string; user?: AuthUser; message?: string }> {
     try {
       const response = await fetch(`${BIGROCK_API_URL}?action=login`, {
         method: 'POST',
@@ -347,98 +347,16 @@ export const bigrockApi = {
       if (response.ok && (data.success || data.status === 'success')) {
         return data;
       }
-      
-      const cleanEmail = (email || '').trim().toLowerCase();
-      const isAdmin = cleanEmail === 'yr943334@gmail.com' || cleanEmail.includes('admin');
-      const isMelissa = cleanEmail.includes('mpcommoditybroker');
-      const isZac = cleanEmail === 'zac@otec.ltd';
-      const isSvetlana = cleanEmail === 'info@joybambooforestfarm.com';
-      const isDonald = cleanEmail === 'sorkindon@gmail.com' || cleanEmail === 'mail-sorkindon@gmail.com' || cleanEmail === 'donald@tradeheaven.net';
-      
-      // Enforce specific password for Zac, Svetlana, and Donald in fallback mode
-      if (isZac && password !== 'Zac@0011') {
-        return { success: false, message: 'Invalid password for Zachary Aldin' };
-      }
-      if (isSvetlana && password !== 'JoyBamboo@2026') {
-        return { success: false, message: 'Invalid password for Joy Bamboo Forest Farm LLC' };
-      }
-      if (isDonald && password !== 'Donald@1234' && password !== 'Donald@2026') {
-        return { success: false, message: 'Invalid password for Donald Sorkin' };
-      }
-
-      const isSupplier = isMelissa || isZac || isSvetlana || cleanEmail.includes('supplier');
-      const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
-      const companyName = isAdmin
-        ? 'Trade Heaven Global Operations & Treasury'
-        : (isZac ? 'IMPORTATION FADE-TECH' : (isSvetlana ? 'Joy Bamboo Forest Farm LLC' : (isDonald ? 'Girlsenberries' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'))));
-      const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
-      const tier: SupplierTier = (isAdmin || isDonald) ? 'VIP' : (isSupplier ? ('Basic Plan' as any) : 'FREE');
-      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac || isSvetlana || isDonald) ? 'paid' : 'free';
-
-      const fallbackUser: AuthUser = {
-        id: isZac ? 'user-supplier-zac' : (isSvetlana ? 'user-supplier-svetlana' : (isDonald ? 'user-buyer-donald' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`))),
-        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isSvetlana ? 'Svetlana Brodskaya' : (isDonald ? 'Donald Sorkin' : (isMelissa ? 'Melissa Prezios' : cleanEmail.split('@')[0].replace(/[._]/g, ' '))))),
-        email: isZac ? 'Zac@otec.ltd' : (isSvetlana ? 'info@joybambooforestfarm.com' : (isDonald ? 'sorkindon@gmail.com' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail))),
-        role: role,
-        isPremium: isAdmin || isDonald,
-        membershipStatus: membershipStatus,
-        status: 'ACTIVE',
-        isVerified: true,
-        isVerifiedAdmin: isAdmin,
-        tier: tier,
-        companyName: companyName,
-        country: country,
-        phone: isMelissa ? '+61411510887' : '',
-        avatarUrl: isAdmin ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        token: `jwt_session_${Date.now()}`
+      return {
+        success: false,
+        message: data.message || 'Invalid credentials or unregistered email address. Access denied.'
       };
-      return { success: true, user: fallbackUser, token: fallbackUser.token, message: 'Authenticated successfully' };
     } catch (err: any) {
-      console.warn('[BigRock Login Connection Exception - Fallback Engaged]:', err);
-      const cleanEmail = (email || '').trim().toLowerCase();
-      const isAdmin = cleanEmail === 'yr943334@gmail.com';
-      const isMelissa = cleanEmail.includes('mpcommoditybroker');
-      const isZac = cleanEmail === 'zac@otec.ltd';
-      const isSvetlana = cleanEmail === 'info@joybambooforestfarm.com';
-      const isDonald = cleanEmail === 'sorkindon@gmail.com' || cleanEmail === 'mail-sorkindon@gmail.com' || cleanEmail === 'donald@tradeheaven.net';
-
-      // Enforce specific password for Zac, Svetlana, and Donald in fallback mode
-      if (isZac && password !== 'Zac@0011') {
-        return { success: false, message: 'Invalid password for Zachary Aldin' };
-      }
-      if (isSvetlana && password !== 'JoyBamboo@2026') {
-        return { success: false, message: 'Invalid password for Joy Bamboo Forest Farm LLC' };
-      }
-      if (isDonald && password !== 'Donald@1234' && password !== 'Donald@2026') {
-        return { success: false, message: 'Invalid password for Donald Sorkin' };
-      }
-
-      const isSupplier = isMelissa || isZac || isSvetlana || cleanEmail.includes('supplier');
-      const role = isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER');
-      const companyName = isAdmin
-        ? 'Trade Heaven Global Operations & Treasury'
-        : (isZac ? 'IMPORTATION FADE-TECH' : (isSvetlana ? 'Joy Bamboo Forest Farm LLC' : (isDonald ? 'Girlsenberries' : (isMelissa ? 'MP Commodity Brokers Australia Pty Ltd' : 'Enterprise Trading Firm'))));
-      const country = isAdmin ? 'United Kingdom' : (isZac || isMelissa ? 'Australia' : 'United States');
-      const tier: SupplierTier = (isAdmin || isDonald) ? 'VIP' : (isSupplier ? ('Basic Plan' as any) : 'FREE');
-      const membershipStatus: MembershipStatus = (isAdmin || isMelissa || isZac || isSvetlana || isDonald) ? 'paid' : 'free';
-
-      const fallbackUser: AuthUser = {
-        id: isZac ? 'user-supplier-zac' : (isSvetlana ? 'user-supplier-svetlana' : (isDonald ? 'user-buyer-donald' : (isMelissa ? 'user-supplier-melissa' : `usr_${Date.now()}`))),
-        name: isAdmin ? 'Administrator' : (isZac ? 'Zachary Aldin' : (isSvetlana ? 'Svetlana Brodskaya' : (isDonald ? 'Donald Sorkin' : (isMelissa ? 'Melissa Prezios' : (cleanEmail.split('@')[0] || 'Trade Partner'))))),
-        email: isZac ? 'Zac@otec.ltd' : (isSvetlana ? 'info@joybambooforestfarm.com' : (isDonald ? 'sorkindon@gmail.com' : (isMelissa ? 'melissa@mpcommoditybrokers.com' : cleanEmail))),
-        role: role,
-        isPremium: isAdmin || isDonald,
-        membershipStatus: membershipStatus,
-        status: 'ACTIVE',
-        isVerified: true,
-        tier: tier,
-        companyName: companyName,
-        country: country,
-        phone: isMelissa ? '+61411510887' : '',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        token: `jwt_session_${Date.now()}`
+      console.warn('[BigRock Login Connection Exception]:', err);
+      return {
+        success: false,
+        message: 'Authentication service unreachable. Please verify your network connection.'
       };
-      return { success: true, user: fallbackUser, token: fallbackUser.token, message: 'Signed in successfully' };
     }
   },
 

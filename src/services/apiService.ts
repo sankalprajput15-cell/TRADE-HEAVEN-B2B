@@ -630,56 +630,6 @@ export const api = {
       }
       return data;
     } catch {
-      // Local fallback with strict credential verification
-      const clean = email.toLowerCase().trim();
-      const adminEmailPrimary = 'yr943334@gmail.com';
-      const adminEmailLegacy = 'admin@tradeheaven.net';
-      const adminPass = 'Yash@8532';
-
-      if ((clean === adminEmailPrimary || clean === adminEmailLegacy) && (password === adminPass || password === 'Admin@2026!')) {
-        const adminUser: AuthUser = {
-          id: 'user-admin-root',
-          email: clean,
-          name: clean === adminEmailPrimary ? 'Administrator' : 'Sarah Jenkins',
-          role: 'ADMIN',
-          companyName: 'Trade Heaven Global Operations & Treasury',
-          country: 'United Kingdom',
-          status: 'ACTIVE',
-          isVerified: true,
-          isVerifiedAdmin: true,
-          isPremium: true,
-          membershipStatus: 'paid',
-          tier: 'VIP',
-          avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
-        };
-        const token = securityService.generateSessionToken(adminUser);
-        const userWithToken = { ...adminUser, token };
-        try {
-        } catch {}
-        return {
-          success: true,
-          user: userWithToken,
-          token,
-          message: 'Admin authenticated successfully.'
-        };
-      }
-
-      // Check registered users in local storage
-      const stored = loadStoredUsers() || {};
-      const matched = Object.values(stored || {}).find(u => u && u.email && u.email.toLowerCase().trim() === clean);
-      if (matched && password) {
-        const token = securityService.generateSessionToken(matched);
-        const userWithToken = { ...matched, token };
-        try {
-        } catch {}
-        return {
-          success: true,
-          user: userWithToken,
-          token,
-          message: `Authenticated as ${matched.name}`
-        };
-      }
-
       return {
         success: false,
         message: 'Invalid corporate email or password. Access denied.'

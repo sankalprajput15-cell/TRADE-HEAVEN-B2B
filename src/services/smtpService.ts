@@ -4193,6 +4193,100 @@ export class AutomatedSmtpService {
   }
 
   /**
+   * Dispatches a 6-digit 2FA Login Verification OTP email to the registered user's email address
+   * to enforce strict account & admin sign-in security.
+   */
+  public async sendLoginVerificationOtp(payload: OtpEmailPayload & { role?: string }): Promise<SmtpDispatchResult> {
+    const cleanEmail = normalizeRecipientEmail(payload.recipientEmail);
+    const displayName = payload.recipientName || 'Registered Trade Heaven User';
+    const expiryMinutes = payload.expiryMinutes ?? 10;
+    const finalOtpCode = payload.otpCode;
+    const roleLabel = payload.role === 'ADMIN' ? 'Administrator Security Gate' : 'Registered Account 2-Factor Verification';
+
+    const subject = `[Trade Heaven Security] Your 6-Digit Login OTP: ${finalOtpCode}`;
+
+    const textBody = [
+      `TRADE HEAVEN ZERO-TRUST LOGIN SECURITY`,
+      `${roleLabel}`,
+      ``,
+      `Hello ${displayName},`,
+      ``,
+      `A sign-in attempt was initiated for your registered Trade Heaven account (${cleanEmail}).`,
+      `Your 6-Digit Login Verification OTP is: ${finalOtpCode}`,
+      ``,
+      `This code is valid for ${expiryMinutes} minutes. Do not share this code with anyone.`,
+      `If you did not attempt to sign in, please secure your password immediately.`
+    ].join('\n');
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: #0f172a; padding: 28px 24px; text-align: center; color: #ffffff;">
+          <div style="font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #34d399; text-transform: uppercase; margin-bottom: 8px;">
+            TRADE HEAVEN ZERO-TRUST 2FA SECURITY
+          </div>
+          <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+            ${roleLabel} (OTP)
+          </h2>
+        </div>
+        <div style="padding: 28px 24px; color: #1e293b;">
+          <p style="font-size: 15px; line-height: 1.6; color: #0f172a; margin: 0 0 14px 0;">Hello <strong>${displayName}</strong>,</p>
+          <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
+            Enter the 6-digit One-Time Password (OTP) below to complete sign-in for your registered account (<strong>${cleanEmail}</strong>):
+          </p>
+          <div style="background: #eff6ff; color: #1e40af; padding: 18px; border-radius: 12px; font-size: 32px; font-weight: 900; font-family: monospace; text-align: center; letter-spacing: 8px; margin: 20px 0; border: 2px solid #3b82f6;">
+            ${finalOtpCode}
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin: 20px 0 0 0; line-height: 1.5;">
+            Valid for ${expiryMinutes} minutes • Sent exclusively to your registered email via <strong>${this.senderAddress}</strong>. Never share this OTP with anyone.
+          </p>
+        </div>
+      </div>
+    `;
+
+    const transporter = this.createPrimaryTransporter();
+    if (transporter) {
+      const receipt = await serverDeliveryQueueManager.enqueueSingle(
+        cleanEmail,
+        {
+          from: this.senderFormatted,
+          replyTo: this.replyToAddress,
+          subject,
+          text: textBody,
+          html: htmlBody
+        },
+        transporter
+      );
+
+      if (receipt.success) {
+        console.log(
+          `[AutomatedSmtpService] Login 2FA OTP email delivered to registered user ${cleanEmail} (messageId=${receipt.messageId})`
+        );
+        return {
+          success: true,
+          sender: this.senderAddress,
+          recipient: cleanEmail,
+          mode: 'SMTP_TLS',
+          dispatchedCode: finalOtpCode,
+          messageId: receipt.messageId
+        };
+      }
+    }
+
+    const relayResult = await this.relayViaBigRockMta(cleanEmail, displayName, finalOtpCode);
+    if (relayResult && relayResult.success) {
+      return relayResult;
+    }
+
+    return {
+      success: false,
+      sender: this.senderAddress,
+      recipient: cleanEmail,
+      mode: 'FALLBACK_QUEUE',
+      dispatchedCode: finalOtpCode
+    };
+  }
+
+  /**
    * Dispatches strictly ONE single 6-digit password reset OTP email to the client,
    * serialized via ServerDeliveryQueueManager with a 2-second minimum inter-email delay.
    */

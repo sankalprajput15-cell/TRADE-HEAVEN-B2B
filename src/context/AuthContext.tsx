@@ -2,6 +2,17 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthUser, UserRole } from '../types';
 import { apiClient } from '../services/apiClient';
 
+export interface LoginResult {
+  success: boolean;
+  requiresOtp?: boolean;
+  email?: string;
+  maskedEmail?: string;
+  role?: string;
+  error?: string;
+  message?: string;
+  user?: AuthUser;
+}
+
 export interface AuthContextType {
   user: AuthUser | null;
   currentUser: AuthUser | null;
@@ -12,7 +23,9 @@ export interface AuthContextType {
   isImpersonating: boolean;
   setUser: (user: AuthUser | null) => void;
   setCurrentUser: (user: AuthUser | null) => void;
-  login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
+  login: (email?: string, password?: string) => Promise<LoginResult>;
+  verifyLoginOtp: (email: string, otp: string) => Promise<LoginResult>;
+  resendLoginOtp: (email: string) => Promise<{ success: boolean; maskedEmail?: string; message: string }>;
   logout: () => void;
   impersonateUser: (targetUser: AuthUser) => void;
   stopImpersonation: () => void;
@@ -20,22 +33,13 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_MASTER_ADMIN_USER: AuthUser = {
-  id: 'admin-001',
-  name: 'Yash Rajput',
-  email: 'yr943334@gmail.com',
-  role: 'ADMIN',
-  isVerifiedAdmin: true,
-  isVerified: true,
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-  companyName: 'Trade Heaven Global Operations & Treasury',
-  country: 'United Kingdom',
-  isPremium: true,
-  membershipStatus: 'paid',
-  tier: 'VIP',
-  status: 'ACTIVE',
-  token: 'th-admin-ephemeral-session-token'
-};
+const VERIFIED_OTP_SESSION_KEY = 'th_verified_otp_session_v2';
+
+const AUTHORIZED_ADMIN_EMAILS = new Set([
+  'yr943334@gmail.com',
+  'sankalprajput15@gmail.com',
+  'admin@tradeheaven.net'
+]);
 
 const DEFAULT_ZAC_CLIENT_USER: AuthUser = {
   id: 'user-supplier-zac',
@@ -69,6 +73,26 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
       avatarUrl: baseAvatar
     };
   }
+
+  // Strictly block any account from holding ADMIN role unless it is an authorized root admin
+  // AND has completed server-side 2FA Email OTP verification with a valid JWT token
+  const isVerifiedRootAdmin =
+    AUTHORIZED_ADMIN_EMAILS.has(emailLower) &&
+    Boolean(u.token) &&
+    (u as any).otpVerified === true &&
+    u.role === 'ADMIN';
+
+  if (u.role === 'ADMIN' || u.isVerifiedAdmin) {
+    if (!isVerifiedRootAdmin) {
+      return {
+        ...u,
+        role: 'BUYER',
+        isVerifiedAdmin: false,
+        avatarUrl: baseAvatar
+      };
+    }
+  }
+
   return {
     ...u,
     avatarUrl: baseAvatar
@@ -79,6 +103,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       if (typeof window !== 'undefined') {
+        // Purge legacy unverified session keys so no stale auto-login admin session persists
+        localStorage.removeItem('th_admin_session_v1');
+        localStorage.removeItem('th_session_user');
+
         const params = new URLSearchParams(window.location.search);
         const paramEmail = (params.get('email') || '').trim().toLowerCase();
         if (params.get('pay_zac') === '1' || paramEmail === 'zac@otec.ltd' || paramEmail === 'zac@fadetech.com') {
@@ -87,8 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (
           params.get('action') === 'renew-membership' &&
           paramEmail &&
-          paramEmail !== 'yr943334@gmail.com' &&
-          paramEmail !== 'admin@tradeheaven.net'
+          !AUTHORIZED_ADMIN_EMAILS.has(paramEmail)
         ) {
           const clientRenewalUser: AuthUser = {
             id: `client-${paramEmail.replace(/[^a-z0-9]/g, '')}`,
@@ -107,12 +134,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return clientRenewalUser;
         }
 
-        // Restore explicit Admin or User session if saved in localStorage
-        const savedAdminRaw = localStorage.getItem('th_admin_session_v1') || localStorage.getItem('th_session_user');
-        if (savedAdminRaw) {
-          const parsedUser = JSON.parse(savedAdminRaw);
-          if (parsedUser && typeof parsedUser === 'object' && parsedUser.email) {
+        // Restore session ONLY if it was verified via 2FA Email OTP (th_verified_otp_session_v2)
+        const savedVerifiedRaw = localStorage.getItem(VERIFIED_OTP_SESSION_KEY);
+        if (savedVerifiedRaw) {
+          const parsedUser = JSON.parse(savedVerifiedRaw);
+          if (
+            parsedUser &&
+            typeof parsedUser === 'object' &&
+            parsedUser.email &&
+            parsedUser.token &&
+            parsedUser.otpVerified === true
+          ) {
             return sanitizeUserRole(parsedUser);
+          } else {
+            localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
           }
         }
       }
@@ -137,11 +172,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const impersonateUser = (targetUser: AuthUser) => {
     const currentAdmin = originalAdminUser || user;
-    if (currentAdmin && currentAdmin.role === 'ADMIN') {
+    if (currentAdmin && currentAdmin.role === 'ADMIN' && (currentAdmin as any).otpVerified === true) {
       setOriginalAdminUser(currentAdmin);
+      setUser(targetUser);
+      setIsAuthenticated(true);
     }
-    setUser(targetUser);
-    setIsAuthenticated(true);
   };
 
   const stopImpersonation = () => {
@@ -152,89 +187,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email?: string, password?: string): Promise<{ success: boolean; error?: string; user?: AuthUser }> => {
+  const login = async (email?: string, password?: string): Promise<LoginResult> => {
     setIsLoading(true);
-    
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
-      
-      // 1. Check Master Admin statically (requires explicit email & non-empty password)
-      const isAdminEmail =
-        cleanEmail === 'yr943334@gmail.com' ||
-        cleanEmail === 'yr943334@gmial.com' ||
-        cleanEmail === 'admin@tradeheaven.net' ||
-        cleanEmail === 'sankalprajput15@gmail.com';
-      const isAdminPass = Boolean(password && password.trim().length > 0);
-      if (isAdminEmail && isAdminPass) {
-        const canonicalEmail = cleanEmail.replace('@gmial.com', '@gmail.com');
-        const adminUser: AuthUser = {
-          ...DEFAULT_MASTER_ADMIN_USER,
-          email: canonicalEmail
-        };
-        
-        setUser(adminUser);
-        setIsAuthenticated(true);
-        try {
-          localStorage.setItem('th_admin_session_v1', JSON.stringify(adminUser));
-          localStorage.setItem('th_session_user', JSON.stringify(adminUser));
-        } catch {}
-        window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: adminUser } }));
-        return { success: true, user: adminUser };
-      }
-      
-      // 2. Call backend for everyone else
       if (!cleanEmail || !password) {
-        return { success: false, error: 'Both email and password are required.' };
+        return { success: false, error: 'Both registered email and password are required.' };
       }
-      
+
       const res = await apiClient.login(cleanEmail, password);
-      
+
+      if (res.success && res.requiresOtp) {
+        return {
+          success: true,
+          requiresOtp: true,
+          email: res.email || cleanEmail,
+          maskedEmail: res.maskedEmail || cleanEmail,
+          role: res.role,
+          message: res.message
+        };
+      }
+
       if (res.success && res.user) {
         const sanitizedUser = sanitizeUserRole(res.user);
         setUser(sanitizedUser);
         setIsAuthenticated(true);
         try {
-          localStorage.setItem('th_session_user', JSON.stringify(sanitizedUser));
-          if (sanitizedUser.role === 'ADMIN' || sanitizedUser.isVerifiedAdmin) {
-            localStorage.setItem('th_admin_session_v1', JSON.stringify(sanitizedUser));
-          }
+          localStorage.setItem(VERIFIED_OTP_SESSION_KEY, JSON.stringify(sanitizedUser));
           if (res.token) {
             localStorage.setItem('th_session_jwt_token', res.token);
           }
         } catch {}
         window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: sanitizedUser } }));
-
-        // Log login success
-        fetch('/api/v1/admin/audit-logs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'SECURITY_LOGIN_EVENT',
-            actorEmail: sanitizedUser.email,
-            actorRole: sanitizedUser.role,
-            targetResource: '/login',
-            details: `User ${sanitizedUser.name} successfully authenticated.`,
-            status: 'SUCCESS',
-            actorUid: sanitizedUser.id
-          })
-        }).catch(console.warn);
-
-        return { success: true, user: sanitizedUser };
+        return { success: true, user: sanitizedUser, message: res.message };
       }
-      
-      // Log login failure
-      fetch('/api/v1/admin/audit-logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'SECURITY_LOGIN_EVENT',
-          actorEmail: cleanEmail,
-          actorRole: 'GUEST',
-          targetResource: '/login',
-          details: `Login failed: ${res.error || res.message || 'Invalid credentials'}`,
-          status: 'UNAUTHORIZED_401'
-        })
-      }).catch(console.warn);
 
       return { success: false, error: res.error || res.message || 'Invalid credentials' };
     } catch (e: any) {
@@ -244,8 +230,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const verifyLoginOtp = async (email: string, otp: string): Promise<LoginResult> => {
+    setIsLoading(true);
+    try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const res = await apiClient.verifyLoginOtp(cleanEmail, otp);
+
+      if (res.success && res.user) {
+        const verifiedUser = sanitizeUserRole({
+          ...res.user,
+          otpVerified: true
+        } as AuthUser);
+
+        setUser(verifiedUser);
+        setIsAuthenticated(true);
+        try {
+          localStorage.setItem(VERIFIED_OTP_SESSION_KEY, JSON.stringify(verifiedUser));
+          if (res.token) {
+            localStorage.setItem('th_session_jwt_token', res.token);
+          }
+        } catch {}
+        window.dispatchEvent(new CustomEvent('tradeheaven_auth_changed', { detail: { user: verifiedUser } }));
+        return {
+          success: true,
+          user: verifiedUser,
+          message: res.message
+        };
+      }
+
+      return {
+        success: false,
+        error: res.error || res.message || 'Invalid or expired 6-digit OTP code.'
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: e?.message || 'OTP verification failed. Please try again.'
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendLoginOtp = async (email: string) => {
+    return await apiClient.resendLoginOtp(email);
+  };
+
   const logout = () => {
-    // Log logout activity
     fetch('/api/v1/admin/audit-logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -267,6 +298,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('tradeheaven_user');
       localStorage.removeItem('th_session_user');
       localStorage.removeItem('th_admin_session_v1');
+      localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
       localStorage.removeItem('th_session_jwt_token');
       localStorage.removeItem('tradeheaven_auth_user');
       localStorage.removeItem('th_live_edit_mode');
@@ -284,11 +316,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(sanitized);
       setIsAuthenticated(true);
       try {
-        localStorage.setItem('th_session_user', JSON.stringify(sanitized));
-        if (sanitized.role === 'ADMIN' || sanitized.isVerifiedAdmin) {
-          localStorage.setItem('th_admin_session_v1', JSON.stringify(sanitized));
-        } else {
-          localStorage.removeItem('th_admin_session_v1');
+        if ((sanitized as any).otpVerified === true && sanitized.token) {
+          localStorage.setItem(VERIFIED_OTP_SESSION_KEY, JSON.stringify(sanitized));
         }
       } catch {}
       if (typeof window !== 'undefined') {
@@ -307,6 +336,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = Boolean(
     isAuthenticated &&
       !isZacClient &&
+      AUTHORIZED_ADMIN_EMAILS.has(lowerUserEmail) &&
+      (user as any)?.otpVerified === true &&
+      Boolean(user?.token) &&
       (user?.role === 'ADMIN' || user?.isVerifiedAdmin === true)
   );
   const isImpersonating = Boolean(originalAdminUser);
@@ -324,6 +356,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser: handleSetUser,
         setCurrentUser: handleSetUser,
         login,
+        verifyLoginOtp,
+        resendLoginOtp,
         logout,
         impersonateUser,
         stopImpersonation

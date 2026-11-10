@@ -50,7 +50,7 @@ export const AuthModal: React.FC<Props> = ({
   initialMode = 'LOGIN',
   onNavigate
 }) => {
-  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER' | 'WORK_WITH_US' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD'>(initialMode);
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'LOGIN_OTP' | 'REGISTER' | 'WORK_WITH_US' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD'>(initialMode);
 
   useEffect(() => {
     if (isOpen && initialMode) {
@@ -63,10 +63,14 @@ export const AuthModal: React.FC<Props> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // 2-Step Login OTP Verification States (Sent to Registered User's Email)
+  const [loginOtpCode, setLoginOtpCode] = useState('');
+  const [pendingOtpEmail, setPendingOtpEmail] = useState('');
+  const [pendingMaskedEmail, setPendingMaskedEmail] = useState('');
+
   // Forgot / Reset Password States
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
-  const [autoOtpCode, setAutoOtpCode] = useState<string | null>(null);
   const [resetTokenInput, setResetTokenInput] = useState('');
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
@@ -86,29 +90,24 @@ export const AuthModal: React.FC<Props> = ({
   const [copiedToken, setCopiedToken] = useState(false);
   const [showToken, setShowToken] = useState(false);
 
-  const { login } = useAuth();
+  const { login, verifyLoginOtp, resendLoginOtp } = useAuth();
 
   const whatsappResetUrl = `https://wa.me/918532934479?text=${encodeURIComponent(
-    `Hello Trade Heaven Support, I need assistance with password reset / OTP verification for my corporate account${(forgotEmail || email) ? ` (${(forgotEmail || email).trim()})` : ''}.`
+    `Hello Trade Heaven Support, I need assistance with password reset / OTP verification for my corporate account${(forgotEmail || pendingOtpEmail || email) ? ` (${(forgotEmail || pendingOtpEmail || email).trim()})` : ''}.`
   )}`;
 
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setForgotSuccess(null);
-    setAutoOtpCode(null);
     setIsLoading(true);
     try {
       const res = await apiClient.sendResetCode(forgotEmail);
       if (res.success) {
         setForgotSuccess(
           res.message ||
-            `Automated 6-digit OTP sent from noreply@tradeheaven.net to ${forgotEmail.trim()}.`
+            `Automated 6-digit OTP sent from noreply@tradeheaven.net to your registered email ${forgotEmail.trim()}.`
         );
-        if (res.code) {
-          setAutoOtpCode(res.code);
-          setResetTokenInput(res.code);
-        }
         setAuthMode('RESET_PASSWORD');
       } else {
         setError(res.message);
@@ -128,10 +127,6 @@ export const AuthModal: React.FC<Props> = ({
       const res = await apiClient.sendResetCode(forgotEmail);
       if (res.success) {
         setForgotSuccess(`New 6-digit OTP dispatched automatically from noreply@tradeheaven.net to ${forgotEmail.trim()}.`);
-        if (res.code) {
-          setAutoOtpCode(res.code);
-          setResetTokenInput(res.code);
-        }
       } else {
         setError(res.message);
       }
@@ -156,7 +151,6 @@ export const AuthModal: React.FC<Props> = ({
           setEmail(forgotEmail);
           setPassword(resetNewPassword);
           setResetSuccess(null);
-          setAutoOtpCode(null);
         }, 1800);
       } else {
         setError(res.message);
@@ -170,7 +164,7 @@ export const AuthModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  // Production Sign-In Form Handler
+  // Production Sign-In Form Handler (Step 1: Verify Registered Email + Password -> Dispatches 6-Digit Email OTP)
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -178,19 +172,28 @@ export const AuthModal: React.FC<Props> = ({
 
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password) {
-      setError('Please enter both corporate email and password.');
+      setError('Please enter both your registered corporate email and password.');
       return;
     }
 
     setIsLoading(true);
     try {
       const res = await login(cleanEmail, password);
-      if (res.success && res.user) {
+      if (res.success && res.requiresOtp) {
+        setPendingOtpEmail(res.email || cleanEmail);
+        setPendingMaskedEmail(res.maskedEmail || cleanEmail);
+        setLoginOtpCode('');
+        setSuccess(
+          res.message ||
+            `6-digit security OTP has been sent to your registered email (${res.maskedEmail || cleanEmail}). Enter it below to complete sign-in.`
+        );
+        setAuthMode('LOGIN_OTP');
+      } else if (res.success && res.user) {
         onLogin(res.user);
-        const isAdminUser = res.user.role === 'ADMIN' || res.user.isVerifiedAdmin === true;
+        const isAdminUser = res.user.role === 'ADMIN' && res.user.isVerifiedAdmin === true;
         setSuccess(
           isAdminUser 
-            ? `Admin session verified. Entering Administrator Control Center...`
+            ? `Admin OTP session verified. Entering Administrator Control Center...`
             : `Authenticated successfully as ${res.user.name} (${res.user.role}).`
         );
         setTimeout(() => {
@@ -201,10 +204,72 @@ export const AuthModal: React.FC<Props> = ({
           }
         }, 750);
       } else {
-        setError(res.error || 'Invalid email or password. Access denied.');
+        setError(res.error || 'Access denied. Only registered users with valid credentials can sign in.');
       }
     } catch (err: any) {
       setError(err?.message || 'An error occurred during authentication. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 2: Verify 6-Digit OTP Sent to Registered User's Email
+  const handleVerifyLoginOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    const targetEmail = (pendingOtpEmail || email).trim().toLowerCase();
+    const cleanOtp = loginOtpCode.trim();
+    if (!targetEmail || cleanOtp.length !== 6) {
+      setError('Please enter the 6-digit OTP sent to your registered email address.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await verifyLoginOtp(targetEmail, cleanOtp);
+      if (res.success && res.user) {
+        onLogin(res.user);
+        const isAdminUser = res.user.role === 'ADMIN' && res.user.isVerifiedAdmin === true;
+        setSuccess(
+          isAdminUser
+            ? 'Registered Admin 2FA OTP verified. Opening Administrator Control Center...'
+            : `2FA OTP verified! Signed in as ${res.user.name} (${res.user.role}).`
+        );
+        setTimeout(() => {
+          setSuccess(null);
+          setLoginOtpCode('');
+          onClose();
+          if (isAdminUser && onNavigate) {
+            onNavigate('CLIENT_ADMIN');
+          }
+        }, 750);
+      } else {
+        setError(res.error || 'Invalid or expired 6-digit OTP code.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'OTP verification failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendLoginOtp = async () => {
+    const targetEmail = (pendingOtpEmail || email).trim().toLowerCase();
+    if (!targetEmail) return;
+    setError(null);
+    setSuccess(null);
+    setIsLoading(true);
+    try {
+      const res = await resendLoginOtp(targetEmail);
+      if (res.success) {
+        setSuccess(res.message || `A fresh 6-digit OTP has been sent to ${pendingMaskedEmail || targetEmail}.`);
+      } else {
+        setError(res.message || 'Could not resend OTP. Please sign in again.');
+      }
+    } catch {
+      setError('Network error while resending OTP.');
     } finally {
       setIsLoading(false);
     }
@@ -287,18 +352,22 @@ export const AuthModal: React.FC<Props> = ({
           <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
             {currentUser 
               ? 'Verified Account Credentials' 
-              : (authMode === 'LOGIN' 
-                  ? 'Corporate Sign In' 
-                  : (authMode === 'REGISTER' ? 'Register Free Account' : 'Work With Us (Partner Vetting)'))}
+              : (authMode === 'LOGIN_OTP'
+                  ? '2-Step Registered Email OTP Verification'
+                  : (authMode === 'LOGIN' 
+                      ? 'Corporate Sign In (2FA Protected)' 
+                      : (authMode === 'REGISTER' ? 'Register Free Account' : 'Work With Us (Partner Vetting)')))}
           </h2>
           <p className="text-xs text-slate-300 mt-1 font-normal leading-relaxed">
             {currentUser 
               ? 'Zero-trust authorization active. Session claims validated by server.' 
-              : (authMode === 'REGISTER'
-                  ? '100% Free Forever • Zero Subscription Fee • Connect with Real Buyers & Suppliers.'
-                  : (authMode === 'WORK_WITH_US' 
-                      ? 'Enterprise KYC & Verification Onboarding to trade with real, genuine global partners.'
-                      : 'Sign in to access corporate RFQs, wholesale supplier catalogs, and trade protection services.'))}
+              : (authMode === 'LOGIN_OTP'
+                  ? `Enter the 6-digit OTP dispatched to your registered email (${pendingMaskedEmail || pendingOtpEmail}) to verify your identity.`
+                  : (authMode === 'REGISTER'
+                      ? '100% Free Forever • Zero Subscription Fee • Connect with Real Buyers & Suppliers.'
+                      : (authMode === 'WORK_WITH_US' 
+                          ? 'Enterprise KYC & Verification Onboarding to trade with real, genuine global partners.'
+                          : 'Strict 2-Factor Email OTP verification is enforced for all registered users and administrators.')))}
           </p>
         </div>
 
@@ -758,7 +827,7 @@ export const AuthModal: React.FC<Props> = ({
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>{isLoading ? 'Verifying Credentials...' : 'Sign In'}</span>
+                  <span>{isLoading ? 'Verifying Credentials & Sending OTP...' : 'Continue with Registered Email OTP'}</span>
                 </button>
 
                 {/* Login UI WhatsApp Support Link for Any Sign-In / OTP Issues */}
@@ -780,6 +849,79 @@ export const AuthModal: React.FC<Props> = ({
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>Contact Trade Heaven on WhatsApp</span>
                   </a>
+                </div>
+              </form>
+            )}
+
+            {/* 2-STEP REGISTERED EMAIL OTP VERIFICATION VIEW */}
+            {authMode === 'LOGIN_OTP' && (
+              <form onSubmit={handleVerifyLoginOtpSubmit} className="space-y-4 text-xs">
+                <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-950 space-y-1.5">
+                  <div className="font-black text-xs flex items-center gap-1.5 text-indigo-900">
+                    <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>Registered Email 2FA Security Check</span>
+                  </div>
+                  <p className="text-[11px] text-indigo-900/90 leading-relaxed">
+                    To protect your account against unauthorized access, a 6-digit One-Time Password (OTP) has been sent from{' '}
+                    <span className="font-mono font-bold">noreply@tradeheaven.net</span> to your registered email{' '}
+                    <span className="font-mono font-bold text-indigo-950">{pendingMaskedEmail || pendingOtpEmail}</span>.
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-slate-700">
+                      Enter 6-Digit Email OTP Code *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleResendLoginOtp}
+                      disabled={isLoading}
+                      className="text-[11px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Resend OTP to Email</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    required
+                    maxLength={6}
+                    autoFocus
+                    placeholder="••••••"
+                    value={loginOtpCode}
+                    onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 font-mono text-center text-base font-black tracking-[0.4em] focus:outline-none focus:border-blue-600 focus:bg-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1 text-center">
+                    Valid for 10 minutes • Sent strictly to your registered email address
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || loginOtpCode.trim().length !== 6}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>{isLoading ? 'Verifying 6-Digit OTP...' : 'Verify OTP & Complete Sign In'}</span>
+                </button>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('LOGIN');
+                      setLoginOtpCode('');
+                      setError(null);
+                      setSuccess(null);
+                    }}
+                    className="text-slate-600 hover:text-slate-900 font-bold text-xs cursor-pointer"
+                  >
+                    ← Back to Email &amp; Password
+                  </button>
                 </div>
               </form>
             )}
@@ -883,23 +1025,6 @@ export const AuthModal: React.FC<Props> = ({
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>{forgotSuccess}</span>
                     </div>
-                    {autoOtpCode && (
-                      <div className="pt-1.5 border-t border-emerald-200/80 flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-emerald-900">
-                          Instant Automated OTP Code:{' '}
-                          <strong className="font-mono text-xs bg-white px-2 py-0.5 rounded border border-emerald-300 tracking-widest">
-                            {autoOtpCode}
-                          </strong>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setResetTokenInput(autoOtpCode)}
-                          className="px-2 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10px] cursor-pointer shrink-0"
-                        >
-                          Auto-Filled
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
 

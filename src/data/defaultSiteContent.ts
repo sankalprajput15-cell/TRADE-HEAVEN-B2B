@@ -298,6 +298,15 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     featuredCategoriesSubheading: "Browse over 450+ sub-sectors with direct manufacturer contact and compliance documentation.",
     categoriesList: [
       {
+        id: "cat-leather-belts",
+        name: "Leather Belts & Genuine Leather Goods",
+        description: "Full-grain cowhide belts, buffalo grain dress belts, scaffolding tool belts, exotic crocodile belts.",
+        iconName: "Briefcase",
+        image: "/assets/aistudio/leather_belt_trade_heaven_2_1f3c8230.jpeg",
+        badge: "Verified Tannery",
+        productCount: "2,420+ Products"
+      },
+      {
         id: "cat-1",
         name: "Machinery & Industrial Equipment",
         description: "CNC milling machines, packaging lines, hydraulic presses, automation.",
@@ -335,11 +344,11 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
       },
       {
         id: "cat-5",
-        name: "Textiles, Garments & Fabrics",
-        description: "Organic cotton yarns, waterproof technical outerwear, silk jacquard.",
+        name: "Textiles, Garments & Leather Accessories",
+        description: "Genuine leather belts, organic cotton yarns, technical outerwear, wallets & bags.",
         iconName: "Scissors",
-        image: "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80",
-        badge: "OEKO-TEX",
+        image: "/assets/aistudio/leather_belt_3_trade_heaven_6962019f.jpeg",
+        badge: "LWG / OEKO-TEX",
         productCount: "52,400+ Products"
       },
       {

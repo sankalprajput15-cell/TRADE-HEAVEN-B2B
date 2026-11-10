@@ -314,36 +314,61 @@ export const apiClient = {
   },
 
   /**
-   * Authenticate user with corporate email and password
+   * Step 1: Authenticate registered user with email and password & trigger 6-digit Email OTP
    */
   async login(
     email: string,
     password?: string
-  ): Promise<{ success: boolean; data?: any; token?: string; user?: AuthUser; error?: string; message?: string }> {
+  ): Promise<{
+    success: boolean;
+    requiresOtp?: boolean;
+    email?: string;
+    maskedEmail?: string;
+    role?: string;
+    data?: any;
+    token?: string;
+    user?: AuthUser;
+    error?: string;
+    message?: string;
+  }> {
     try {
       const rawClean = (email || '').trim().toLowerCase();
       const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
       if (!cleanEmail || !password) {
-        return { success: false, error: 'Both corporate email and password are required.', message: 'Both corporate email and password are required.' };
+        return {
+          success: false,
+          error: 'Both registered email and password are required.',
+          message: 'Both registered email and password are required.'
+        };
       }
 
-      // 1. Authenticate via Express API Auth Endpoint
-      try {
-        const authRes = await fetch('/api/v1/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ email: cleanEmail, password })
-        });
-        const authJson = await authRes.json();
-        if (authRes.ok && authJson.success && authJson.user) {
+      const authRes = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email: cleanEmail, password })
+      });
+      const authJson = await authRes.json().catch(() => ({}));
+
+      if (authRes.ok && authJson.success) {
+        if (authJson.requiresOtp) {
+          return {
+            success: true,
+            requiresOtp: true,
+            email: authJson.email || cleanEmail,
+            maskedEmail: authJson.maskedEmail || cleanEmail,
+            role: authJson.role,
+            message:
+              authJson.message ||
+              `A 6-digit verification OTP has been sent to your registered email (${cleanEmail}).`
+          };
+        }
+
+        if (authJson.user) {
           const user = authJson.user;
           const token = authJson.token || user.token;
-          try {
-          } catch {}
-
           return {
             success: true,
             token,
@@ -352,114 +377,124 @@ export const apiClient = {
             message: authJson.message || 'Authenticated successfully.'
           };
         }
-      } catch {
-        // Fallback to local service verification if server endpoint unreachable
       }
 
-      const res = await fetch(`${API_BASE}?action=login`, {
+      const errMsg =
+        authJson?.message ||
+        authJson?.error ||
+        'Invalid registered email or password. Access denied.';
+      return {
+        success: false,
+        error: errMsg,
+        message: errMsg
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: e?.message || 'Authentication server unreachable. Please try again.',
+        message: e?.message || 'Authentication server unreachable. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Step 2: Verify the 6-digit OTP sent to the user's registered email address
+   */
+  async verifyLoginOtp(
+    email: string,
+    otp: string
+  ): Promise<{
+    success: boolean;
+    token?: string;
+    user?: AuthUser;
+    error?: string;
+    message?: string;
+  }> {
+    try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanOtp = (otp || '').trim();
+      if (!cleanEmail || !cleanOtp) {
+        return {
+          success: false,
+          error: 'Please enter the 6-digit OTP sent to your registered email.',
+          message: 'Please enter the 6-digit OTP sent to your registered email.'
+        };
+      }
+
+      const res = await fetch('/api/v1/auth/verify-login-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ email: cleanEmail, password })
+        body: JSON.stringify({ email: cleanEmail, otp: cleanOtp })
       });
-
       const json = await res.json().catch(() => ({}));
-      const isSuccess = res.ok && (json.status === 'success' || json.success === true);
 
-      if (isSuccess && (json.user || json.data)) {
-        const rawUser = json.user || json.data;
-        const isAdmin = rawUser.role === 'ADMIN' || rawUser.isVerifiedAdmin === true || cleanEmail === 'yr943334@gmail.com';
-        const isSupplier = String(rawUser.role).toUpperCase() === 'SUPPLIER';
-        const normalizedUser: AuthUser = {
-          id: String(rawUser.id || `user-${Date.now()}`),
-          name: rawUser.name || (isAdmin ? 'Administrator' : 'Trade Partner'),
-          email: rawUser.email || cleanEmail,
-          role: (isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER')),
-          isPremium: Boolean(rawUser.isPremium ?? isAdmin),
-          membershipStatus: rawUser.membershipStatus || (isAdmin ? 'paid' : 'free'),
-          status: rawUser.status || 'ACTIVE',
-          isVerified: Boolean(rawUser.isVerified ?? true),
-          isVerifiedAdmin: isAdmin,
-          tier: rawUser.tier || (isAdmin ? 'VIP' : 'FREE'),
-          companyName: rawUser.companyName || rawUser.company_name || (isAdmin ? 'Trade Heaven Global Operations & Treasury' : 'Enterprise Trading Firm'),
-          country: rawUser.country || (isAdmin ? 'United Kingdom' : 'United States'),
-          phone: rawUser.phone || '',
-          avatarUrl: rawUser.avatarUrl || (isAdmin ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'),
-          token: json.token || rawUser.token
-        };
-
-        try {
-        } catch {}
-
-        return { 
-          success: true, 
-          token: json.token, 
-          data: json.data || normalizedUser, 
-          user: normalizedUser, 
-          message: json.message || 'Authenticated successfully' 
+      if (res.ok && json.success && json.user) {
+        return {
+          success: true,
+          token: json.token || json.user.token,
+          user: json.user,
+          message: json.message || 'OTP verified successfully.'
         };
       }
 
-      if (json && !isSuccess && json.message && !json.code?.includes('DATABASE')) {
-        const errMsg = json.message || json.error || 'Authentication failed. Please check your credentials.';
-        return { success: false, error: errMsg, message: errMsg };
-      }
-
-      // Resilient local auth fallback for seamless login
-      const isAdmin = cleanEmail === 'yr943334@gmail.com' || cleanEmail.includes('admin');
-      const fallbackUser: AuthUser = {
-        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        name: isAdmin ? 'Administrator' : cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-        email: cleanEmail,
-        role: isAdmin ? 'ADMIN' : 'BUYER',
-        isPremium: isAdmin,
-        membershipStatus: isAdmin ? 'paid' : 'free',
-        status: 'ACTIVE',
-        isVerified: true,
-        isVerifiedAdmin: isAdmin,
-        tier: isAdmin ? 'VIP' : 'FREE',
-        companyName: isAdmin ? 'Trade Heaven Global Operations & Treasury' : 'Enterprise Trading Firm',
-        country: isAdmin ? 'United Kingdom' : 'United States',
-        phone: '',
-        avatarUrl: isAdmin ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        token: `jwt_session_${Date.now()}`
-      };
-
+      const errMsg = json?.message || json?.error || 'Invalid or expired 6-digit OTP code.';
       return {
-        success: true,
-        token: fallbackUser.token,
-        data: fallbackUser,
-        user: fallbackUser,
-        message: 'Signed in successfully'
+        success: false,
+        error: errMsg,
+        message: errMsg
       };
     } catch (e: any) {
-      console.warn('[Authentication Connection Exception - Using Fallback]:', e);
-      const cleanEmail = (email || '').trim().toLowerCase();
-      const isAdmin = cleanEmail === 'yr943334@gmail.com';
-      const fallbackUser: AuthUser = {
-        id: `usr_${Date.now()}`,
-        name: isAdmin ? 'Administrator' : (cleanEmail.split('@')[0] || 'Trade Partner'),
-        email: cleanEmail,
-        role: isAdmin ? 'ADMIN' : 'BUYER',
-        isPremium: isAdmin,
-        membershipStatus: isAdmin ? 'paid' : 'free',
-        status: 'ACTIVE',
-        isVerified: true,
-        tier: isAdmin ? 'VIP' : 'FREE',
-        companyName: 'Enterprise Trading Firm',
-        country: 'United States',
-        phone: '',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        token: `jwt_session_${Date.now()}`
+      return {
+        success: false,
+        error: e?.message || 'Failed to verify OTP. Please try again.',
+        message: e?.message || 'Failed to verify OTP. Please try again.'
       };
-      return { success: true, user: fallbackUser, token: fallbackUser.token, message: 'Signed in successfully' };
     }
   },
 
   /**
-   * Register new B2B user account
+   * Resend a fresh 6-digit Login OTP to the user's registered email address
+   */
+  async resendLoginOtp(email: string): Promise<{
+    success: boolean;
+    maskedEmail?: string;
+    message: string;
+  }> {
+    try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const res = await fetch('/api/v1/auth/resend-login-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email: cleanEmail })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success) {
+        return {
+          success: true,
+          maskedEmail: json.maskedEmail,
+          message: json.message || `A fresh 6-digit OTP has been sent to ${cleanEmail}.`
+        };
+      }
+      return {
+        success: false,
+        message: json?.message || 'Could not resend OTP. Please check your registered email.'
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Network error while resending OTP. Please try again.'
+      };
+    }
+  },
+
+  /**
+   * Register new B2B user account (Strictly Buyer or Supplier — never Admin)
    */
   async register(payload: {
     name: string;
@@ -478,6 +513,18 @@ export const apiClient = {
       const cleanEmail = (payload.email || '').trim().toLowerCase();
       if (!cleanEmail) {
         return { success: false, error: 'Email address is required.', message: 'Email address is required.' };
+      }
+
+      if (
+        cleanEmail === 'yr943334@gmail.com' ||
+        cleanEmail === 'sankalprajput15@gmail.com' ||
+        cleanEmail === 'admin@tradeheaven.net'
+      ) {
+        return {
+          success: false,
+          error: 'This email is reserved for system administration. Please sign in with your registered credentials and email OTP.',
+          message: 'This email is reserved for system administration.'
+        };
       }
 
       const company = (payload.company_name || payload.companyName || payload.company || 'Enterprise Trading Firm').trim();
@@ -513,19 +560,18 @@ export const apiClient = {
 
       if (isSuccess && (json.user || json.data)) {
         const rawUser = json.user || json.data;
-        const isAdmin = rawUser.role === 'ADMIN' || cleanEmail === 'yr943334@gmail.com';
         const isSupplier = resolvedRole === 'supplier';
         const normalizedUser: AuthUser = {
           id: String(rawUser.id || `user-${Date.now()}`),
           name: rawUser.name || requestPayload.name,
           email: rawUser.email || cleanEmail,
-          role: isAdmin ? 'ADMIN' : (isSupplier ? 'SUPPLIER' : 'BUYER'),
-          isPremium: isAdmin || isSupplier,
-          membershipStatus: isAdmin ? 'paid' : 'free',
+          role: isSupplier ? 'SUPPLIER' : 'BUYER',
+          isPremium: false,
+          membershipStatus: 'free',
           status: 'ACTIVE',
           isVerified: true,
-          isVerifiedAdmin: isAdmin,
-          tier: isAdmin ? 'VIP' : (isSupplier ? 'SILVER' : 'FREE'),
+          isVerifiedAdmin: false,
+          tier: isSupplier ? 'SILVER' : 'FREE',
           companyName: company,
           country: requestPayload.country,
           phone: phone,
@@ -542,75 +588,34 @@ export const apiClient = {
         };
       }
 
-      // Check if duplicate user
-      if (json && json.message && (json.message.toLowerCase().includes('already') || json.message.toLowerCase().includes('duplicate'))) {
-        return { success: false, error: json.message, message: json.message };
-      }
-
-      // Resilient fallback registration to keep user workflow smooth
-      const isSupplier = resolvedRole === 'supplier';
-      const fallbackUser: AuthUser = {
-        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        name: requestPayload.name,
-        email: cleanEmail,
-        role: isSupplier ? 'SUPPLIER' : 'BUYER',
-        isPremium: isSupplier,
-        membershipStatus: 'free',
-        status: 'ACTIVE',
-        isVerified: true,
-        tier: isSupplier ? 'SILVER' : 'FREE',
-        companyName: company,
-        country: requestPayload.country,
-        phone: phone,
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        token: `jwt_reg_${Date.now()}`
-      };
-
-      return { 
-        success: true, 
-        token: fallbackUser.token, 
-        data: fallbackUser, 
-        user: fallbackUser, 
-        message: 'Account successfully registered and active!' 
+      return {
+        success: false,
+        error: json?.message || 'Registration failed. Please check your information.',
+        message: json?.message || 'Registration failed. Please check your information.'
       };
     } catch (e: any) {
-      console.warn('[Registration Connection Exception - Fallback Engaged]:', e);
-      const cleanEmail = (payload.email || '').trim().toLowerCase();
-      const isSupplier = payload.accountType === 'SUPPLIER' || payload.role === 'supplier';
-      const fallbackUser: AuthUser = {
-        id: `usr_${Date.now()}`,
-        name: (payload.name || 'Trade Partner').trim(),
-        email: cleanEmail,
-        role: isSupplier ? 'SUPPLIER' : 'BUYER',
-        isPremium: isSupplier,
-        membershipStatus: 'free',
-        status: 'ACTIVE',
-        isVerified: true,
-        tier: isSupplier ? 'SILVER' : 'FREE',
-        companyName: (payload.company_name || payload.companyName || payload.company || 'Enterprise Trading Firm').trim(),
-        country: (payload.country || 'United States').trim(),
-        phone: (payload.phone || payload.phoneOrWhatsapp || '').trim(),
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        token: `jwt_reg_${Date.now()}`
+      return {
+        success: false,
+        error: e?.message || 'Registration service unavailable. Please retry.',
+        message: e?.message || 'Registration service unavailable. Please retry.'
       };
-      return { success: true, user: fallbackUser, token: fallbackUser.token, message: 'Account registered successfully!' };
     }
   },
 
   /**
    * Request a 6-digit password reset code automatically dispatched from noreply@tradeheaven.net
+   * strictly to registered user email addresses (never returns the code in response)
    */
   async sendResetCode(email: string): Promise<{
     success: boolean;
     message: string;
-    code?: string;
     sender?: string;
     emailSent?: boolean;
   }> {
     const rawClean = (email || '').trim().toLowerCase();
     const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      return { success: false, message: 'Please enter a valid corporate email address.' };
+      return { success: false, message: 'Please enter a valid registered email address.' };
     }
 
     try {
@@ -624,78 +629,25 @@ export const apiClient = {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && (json.success || json.status === 'success')) {
-        const otpCode = String(json.verification_code || json.code || '').trim();
-        if (otpCode) {
-          try {
-            const storeRaw = localStorage.getItem('th_password_reset_tokens');
-            const store = storeRaw ? JSON.parse(storeRaw) : {};
-            store[cleanEmail] = { code: otpCode, expiry: Date.now() + 3600000 };
-            localStorage.setItem('th_password_reset_tokens', JSON.stringify(store));
-          } catch {}
-        }
         return {
           success: true,
           sender: json.sender || 'noreply@tradeheaven.net',
           emailSent: Boolean(json.emailSent ?? true),
-          code: otpCode || undefined,
           message:
             json.message ||
-            `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
+            `A 6-digit verification OTP has been sent to ${cleanEmail} from noreply@tradeheaven.net.`
         };
       }
+      return {
+        success: false,
+        message: json?.message || 'Could not send OTP. Ensure this email is registered on Trade Heaven.'
+      };
     } catch (e: any) {
-      console.warn('[apiClient.sendResetCode primary gateway fallback]:', e);
+      return {
+        success: false,
+        message: e?.message || 'Unable to reach OTP dispatch server. Please try again.'
+      };
     }
-
-    // Secondary fallback via /api/auth/forgot-password
-    try {
-      const res2 = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ email: cleanEmail })
-      });
-      const json2 = await res2.json().catch(() => ({}));
-      if (res2.ok && json2.success) {
-        const otpCode = String(json2.verification_code || json2.code || '').trim();
-        if (otpCode) {
-          try {
-            const storeRaw = localStorage.getItem('th_password_reset_tokens');
-            const store = storeRaw ? JSON.parse(storeRaw) : {};
-            store[cleanEmail] = { code: otpCode, expiry: Date.now() + 3600000 };
-            localStorage.setItem('th_password_reset_tokens', JSON.stringify(store));
-          } catch {}
-        }
-        return {
-          success: true,
-          sender: json2.sender || 'noreply@tradeheaven.net',
-          emailSent: Boolean(json2.emailSent ?? true),
-          code: otpCode || undefined,
-          message:
-            json2.message ||
-            `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
-        };
-      }
-    } catch {}
-
-    // Resilient client-side automatic OTP generation if server is unreachable
-    const fallbackCode = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-      const storeRaw = localStorage.getItem('th_password_reset_tokens');
-      const store = storeRaw ? JSON.parse(storeRaw) : {};
-      store[cleanEmail] = { code: fallbackCode, expiry: Date.now() + 3600000 };
-      localStorage.setItem('th_password_reset_tokens', JSON.stringify(store));
-    } catch {}
-
-    return {
-      success: true,
-      sender: 'noreply@tradeheaven.net',
-      emailSent: false,
-      code: fallbackCode,
-      message: `Automated 6-digit verification code generated by noreply@tradeheaven.net for ${cleanEmail}.`
-    };
   },
 
   /**

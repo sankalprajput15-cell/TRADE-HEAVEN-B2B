@@ -471,12 +471,12 @@ export const Header: React.FC<Props> = ({
 
   const isAdmin =
     !isRestrictedClient &&
-    currentUser?.role === 'ADMIN';
+    currentUser?.role === 'ADMIN' &&
+    Boolean((currentUser as any)?.otpVerified) &&
+    Boolean(currentUser?.token);
 
-  const handleToggleTopBarRealtimeEdit = async () => {
-    if (!currentUser || currentUser.role !== 'ADMIN') {
-      await login('yr943334@gmail.com', 'Admin@2026!');
-    }
+  const handleToggleTopBarRealtimeEdit = () => {
+    if (!isAdmin) return;
     toggleLiveEditMode();
   };
 
@@ -574,10 +574,8 @@ export const Header: React.FC<Props> = ({
 
               <button
                 type="button"
-                onClick={async () => {
-                  if (!currentUser || currentUser.role !== 'ADMIN') {
-                    await login('yr943334@gmail.com', 'Admin@2026!');
-                  }
+                onClick={() => {
+                  if (!isAdmin) return;
                   setQuickUploadMessage('');
                   setShowAdminQuickUploadModal(true);
                 }}
@@ -612,10 +610,8 @@ export const Header: React.FC<Props> = ({
 
               <button
                 type="button"
-                onClick={async () => {
-                  if (!currentUser || currentUser.role !== 'ADMIN') {
-                    await login('yr943334@gmail.com', 'Admin@2026!');
-                  }
+                onClick={() => {
+                  if (!isAdmin) return;
                   handleNavClick('PRODUCT_IMAGE_ADMIN');
                 }}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 border transition-colors cursor-pointer ${
@@ -882,32 +878,31 @@ export const Header: React.FC<Props> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
-                              sessionStorage.setItem('th_open_add_user_modal', 'true');
-                            } catch {}
-                            if (!currentUser || currentUser.role !== 'ADMIN') {
-                              await login('yr943334@gmail.com', 'Admin@2026!');
-                            }
-                            handleNavClick('CLIENT_ADMIN', { tab: 'DATABASE' });
-                            setTimeout(() => {
-                              window.dispatchEvent(
-                                new CustomEvent('tradeheaven_admin_switch_tab', {
-                                  detail: { tab: 'DATABASE' }
-                                })
-                              );
-                              window.dispatchEvent(new CustomEvent('tradeheaven_open_user_registration'));
-                            }, 60);
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap shadow-2xs"
-                          title="Register & Add New Users"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                          <span>User Registration</span>
-                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              try {
+                                sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
+                                sessionStorage.setItem('th_open_add_user_modal', 'true');
+                              } catch {}
+                              handleNavClick('CLIENT_ADMIN', { tab: 'DATABASE' });
+                              setTimeout(() => {
+                                window.dispatchEvent(
+                                  new CustomEvent('tradeheaven_admin_switch_tab', {
+                                    detail: { tab: 'DATABASE' }
+                                  })
+                                );
+                                window.dispatchEvent(new CustomEvent('tradeheaven_open_user_registration'));
+                              }, 60);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer whitespace-nowrap shadow-2xs"
+                            title="Register & Add New Users"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            <span>User Registration</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleNavClick('DASHBOARD')}
@@ -1067,14 +1062,12 @@ export const Header: React.FC<Props> = ({
                     <div className="grid grid-cols-2 gap-1">
                       <button
                         type="button"
-                        onClick={async () => {
+                        onClick={() => {
+                          if (!isAdmin) return;
                           try {
                             sessionStorage.setItem('th_client_admin_active_tab', 'RBAC_USERS');
                             sessionStorage.setItem('th_open_add_user_modal', 'true');
                           } catch {}
-                          if (!currentUser || currentUser.role !== 'ADMIN') {
-                            await login('yr943334@gmail.com', 'Admin@2026!');
-                          }
                           handleNavClick('CLIENT_ADMIN', { tab: 'DATABASE' });
                           setTimeout(() => {
                             window.dispatchEvent(
