@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ShieldCheck, Lock, Verified, Search, Anchor } from 'lucide-react';
 import { TradeHeavenMediatorView } from './TradeHeavenMediatorView';
+import { B2BTrustCertificatePillarsSection } from '../services/B2BTrustCertificatePillarsSection';
 
 export const TrustAndSafety: React.FC = () => {
   useEffect(() => {
@@ -23,6 +24,16 @@ export const TrustAndSafety: React.FC = () => {
             At Trade Heaven, our mission is to eliminate the risks of cross-border commerce. We are strictly a physical goods B2B marketplace, dedicated to connecting legitimate manufacturers with serious global buyers through ACID-compliant escrow mediation.
           </p>
         </div>
+
+        {/* 5-Pillar B2B Trust Certificate & Independent Third-Party Verification Framework */}
+        <B2BTrustCertificatePillarsSection
+          onVerifyClick={() => {
+            window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'TRADE_ASSURANCE_CERTIFICATES' }));
+          }}
+          onApplyClick={() => {
+            window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'TRADE_ASSURANCE_CERTIFICATES' }));
+          }}
+        />
 
         {/* Interactive TradeHeavenMediatorEngine Console */}
         <TradeHeavenMediatorView embedded={true} />

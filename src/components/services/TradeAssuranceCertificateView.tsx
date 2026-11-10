@@ -40,6 +40,7 @@ import {
 } from '../common/ExportToPDF';
 import { TradeAssuranceBrochure } from './TradeAssuranceBrochure';
 import { ClassicTradeAssuranceCertificateCard, getTodayDdMmYyyy } from './ClassicTradeAssuranceCertificateCard';
+import { B2BTrustCertificatePillarsSection } from './B2BTrustCertificatePillarsSection';
 
 export interface TradeAssuranceCertificateRecord {
   certificateNumber: string;
@@ -1101,6 +1102,21 @@ export const TradeAssuranceCertificateView: React.FC<Props> = ({
           </div>
         </div>
       </section>
+
+      {/* 5-PILLAR B2B TRUST CERTIFICATE & INDEPENDENT THIRD-PARTY VERIFICATION FRAMEWORK */}
+      <B2BTrustCertificatePillarsSection
+        onVerifyClick={() => {
+          setActiveSectionTab('VERIFY');
+          const inputEl = document.getElementById('certificate-number-search-input');
+          inputEl?.focus();
+          inputEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }}
+        onApplyClick={() => {
+          setActiveSectionTab('APPLY');
+          const el = document.getElementById('request-certificate-section');
+          el?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
       {/* WORKING OF TRADE ASSURANCE CERTIFICATE — OFFICIAL PDF BROCHURE & SUPPLIER/BUYER DISPATCH STUDIO (ADMIN ONLY) */}
       {isAdmin && (
