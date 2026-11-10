@@ -490,7 +490,6 @@ export const Header: React.FC<Props> = ({
     { label: 'Products', view: 'PRODUCT_DIRECTORY', activeMatch: ['PRODUCT_DIRECTORY'] },
     { label: 'Suppliers', view: 'SUPPLIERS_DIRECTORY', activeMatch: ['SUPPLIERS_DIRECTORY', 'VENDOR_PROFILE'] },
     { label: 'Buy Leads', view: 'BUY_LEADS', activeMatch: ['BUY_LEADS', 'RFQ_HUB'] },
-    { label: 'Trust Certificate', view: 'B2B_TRUST_CERTIFICATE', activeMatch: ['B2B_TRUST_CERTIFICATE'] },
     { label: 'Services', view: 'PREMIUM_SERVICES', activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] }
   ];
 
@@ -951,6 +950,27 @@ export const Header: React.FC<Props> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Dedicated B2B Trust Certificate Option in Toggle Bar (Always visible) */}
+                <div className="mb-2">
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('B2B_TRUST_CERTIFICATE')}
+                    className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-bold flex items-center justify-between gap-2 transition-colors cursor-pointer border ${
+                      activeView === 'B2B_TRUST_CERTIFICATE'
+                        ? 'bg-slate-900 text-amber-300 border-slate-900'
+                        : 'bg-amber-50/90 hover:bg-amber-100/80 text-slate-900 border-amber-200'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <ShieldCheck className={`w-4 h-4 shrink-0 ${activeView === 'B2B_TRUST_CERTIFICATE' ? 'text-amber-400' : 'text-amber-600'}`} />
+                      <span className="truncate">B2B Trust Certificate ($1,950 USD · 7 Days)</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-semibold text-amber-700 shrink-0">
+                      Apply / PDF
+                    </span>
+                  </button>
+                </div>
 
                 {/* All Marketplace & Directory Options (Shown after login only) */}
                 {currentUser && (

@@ -76,175 +76,272 @@ export function generateB2BTrustCertificateBrochurePDF(applicantCompany?: string
   const contentW = pageW - margin * 2;
   const nowStr = new Date().toISOString().split('T')[0];
 
-  // =========================================================================
-  // PAGE 1: FEATURES, 5 VERIFICATION PILLARS & CLIENT BENEFITS
-  // =========================================================================
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, 38, 'F');
+  const drawPageHeader = (
+    kicker: string,
+    title: string,
+    subtitle: string
+  ) => {
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageW, 35, 'F');
+    doc.setFillColor(245, 158, 11);
+    doc.rect(0, 35, pageW, 1.2, 'F');
 
-  doc.setTextColor(251, 191, 36);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('TRADE HEAVEN OFFICIAL EXECUTIVE BROCHURE & COMPLIANCE DOSSIER', margin, 12);
+    // Brand monogram emblem box
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin, 8, 14, 14, 2, 2, 'F');
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('TH', margin + 4.1, 16.8);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(17);
-  doc.text('B2B Trust Certificate — Features, Benefits & Application Guide', margin, 21);
+    const textX = margin + 18;
+    doc.setTextColor(251, 191, 36);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.8);
+    doc.text(kicker, textX, 11);
 
-  doc.setTextColor(203, 213, 225);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(
-    'Fee: $1,950 USD (Strictly from Applying Company Corporate Bank Account)  |  Complete Process Time: 7 Days',
-    margin,
-    29
-  );
-  if (applicantCompany) {
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14.5);
+    doc.text(title, textX, 18.5);
+
+    doc.setTextColor(203, 213, 225);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.2);
+    doc.text(subtitle, textX, 24.5);
+
+    const prepLine = applicantCompany
+      ? `Prepared for: ${applicantCompany}   |   Issued Date: ${nowStr}   |   Portal: https://tradeheaven.net`
+      : `Official Compliance Dossier   |   Date: ${nowStr}   |   Portal: https://tradeheaven.net/?view=B2B_TRUST_CERTIFICATE`;
     doc.setTextColor(110, 231, 183);
-    doc.text(`Prepared for: ${applicantCompany}  |  Date: ${nowStr}`, margin, 35);
-  }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.8);
+    doc.text(prepLine, margin, 31.5);
+  };
 
-  let y = 46;
+  const drawPageFooter = (leftText: string, pageNumText: string) => {
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, pageH - 11, pageW, 11, 'F');
+    doc.setFillColor(245, 158, 11);
+    doc.rect(0, pageH - 11.6, pageW, 0.6, 'F');
+    doc.setTextColor(226, 232, 240);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.6);
+    doc.text(leftText, margin, pageH - 4.2);
+    doc.setFont('helvetica', 'bold');
+    doc.text(pageNumText, pageW - margin, pageH - 4.2, { align: 'right' });
+  };
 
-  // Intro Box
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(margin, y, contentW, 22, 2, 2, 'FD');
-  doc.setTextColor(15, 23, 42);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('What a Trade Heaven B2B Trust Certificate Shows & Proves', margin + 4, y + 6.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  const introLines = doc.splitTextToSize(
-    'A B2B Trust Certificate (Serial Format: THC-TRUST-2026-XXXX) proves that an independent third party has verified a company’s quality systems, data security, country-specific government legal standing, and real-world trade performance rather than relying on self-reported marketing claims.',
-    contentW - 8
+  // =========================================================================
+  // PAGE 1: EXECUTIVE OVERVIEW, 5 VERIFICATION PILLARS & CLIENT BENEFITS
+  // =========================================================================
+  drawPageHeader(
+    'TRADE HEAVEN OFFICIAL EXECUTIVE BROCHURE & COMPLIANCE DOSSIER',
+    'B2B Trust Certificate - Features, Benefits & Audit Guide',
+    'Certification Fee: $1,950.00 USD (Strictly from Applying Company Bank Account)  |  Process Time: 7 Days'
   );
-  doc.text(introLines, margin + 4, y + 12);
 
-  y += 28;
+  let y = 41;
 
-  // 5 Core Verification Pillars Heading
+  // 4-Metric Executive Highlight Bar
+  const metricGap = 3;
+  const metricW = (contentW - metricGap * 3) / 4;
+  const metrics = [
+    { label: 'CERTIFICATION FEE', value: '$1,950.00 USD', sub: 'Company Bank Wire Only' },
+    { label: 'PROCESS TURNAROUND', value: '7 Calendar Days', sub: 'Complete Audit & Issue' },
+    { label: 'SERIAL CREDENTIAL', value: 'THC-TRUST-2026', sub: 'Live Portal Searchable' },
+    { label: 'JURISDICTION SCOPE', value: '190+ Countries', sub: 'Sovereign Govt. Checked' }
+  ];
+
+  metrics.forEach((m, idx) => {
+    const mx = margin + idx * (metricW + metricGap);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(mx, y, metricW, 16, 1.8, 1.8, 'FD');
+
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.text(m.label, mx + 3, y + 4.5);
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.8);
+    doc.text(m.value, mx + 3, y + 10.2);
+
+    doc.setTextColor(30, 64, 175);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.8);
+    doc.text(m.sub, mx + 3, y + 14.2);
+  });
+
+  y += 20.5;
+
+  // Intro Definition Box (Dynamic Height)
+  const introText =
+    'A Trade Heaven B2B Trust Certificate (Serial Format: THC-TRUST-2026-XXXX) proves that an independent third party has verified a company\'s quality management systems, data security controls, country-specific government legal standing, and real-world trade fulfillment rather than relying on self-reported marketing claims.';
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.2);
+  const introLines = doc.splitTextToSize(introText, contentW - 8);
+  const introBoxH = 9.5 + introLines.length * 3.7 + 2.5;
+
+  doc.setFillColor(241, 245, 249);
+  doc.setDrawColor(148, 163, 184);
+  doc.roundedRect(margin, y, contentW, introBoxH, 2, 2, 'FD');
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(9.2);
+  doc.text('What a Trade Heaven B2B Trust Certificate Shows & Proves', margin + 4, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.2);
+  doc.setTextColor(51, 65, 85);
+  doc.text(introLines, margin + 4, y + 10.8);
+
+  y += introBoxH + 5;
+
+  // Section 1: The 5 Core Independent Verification Pillars
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10.5);
   doc.text('1. The 5 Core Independent Verification Pillars', margin, y);
-  y += 5;
+  y += 3.5;
 
   const pillars = [
     {
-      title: '01. Verified Quality & Management (ISO 9001:2015 · Six Sigma · IATF 16949 · SGS/TÜV)',
-      body: 'Confirms repeatable, documented quality control processes, batch calibration logs, and AQL 1.5/2.5 pre-shipment inspection readiness.'
+      num: '01',
+      title: 'Verified Quality & Management (ISO 9001:2015 / Six Sigma / IATF 16949 / SGS & TUV)',
+      body: 'Confirms repeatable, documented quality control processes, batch calibration logs, IQC/OQC procedures, and AQL 1.5/2.5 pre-shipment inspection readiness.'
     },
     {
-      title: '02. Security & Data Protection (SOC 2 Type I/II · ISO/IEC 27001 · ACID Escrow Controls)',
-      body: 'Proves auditor-tested information security, encrypted Proforma Invoices & L/C documents, and verified corporate bank account coordinates.'
+      num: '02',
+      title: 'Security & Data Protection (SOC 2 Type I & II / ISO/IEC 27001 / ACID Escrow Controls)',
+      body: 'Proves auditor-tested information security, encrypted Proforma Invoices and L/C documents, and verified corporate beneficiary bank account coordinates.'
     },
     {
-      title: '03. Country-Specific Legal & Regulatory Compliance (Sovereign Government Documents)',
-      body: 'GST & DGFT IEC are checked strictly in India. Outside India, Trade Heaven checks the official government documents of that specific country: IRS EIN & State Incorporation (USA), VAT & EORI (UK/EU), ABN/ACN (Australia), FTA TRN & Trade License (UAE), or USCC (China).'
+      num: '03',
+      title: 'Country-Specific Legal & Regulatory Compliance (Sovereign Government Documents)',
+      body: 'GST & DGFT IEC are verified strictly in India. Outside India, Trade Heaven verifies the official government documents of that specific country: IRS EIN & State Incorporation (USA), VAT & EORI (UK/EU), ABN/ACN (Australia), FTA TRN & Trade License (UAE), or USCC (China).'
     },
     {
-      title: '04. Operational Integrity & Independence (Objective Third-Party Evaluator Proof)',
-      body: 'Replaces self-written website copy with an unbiased third-party audit dossier verifying physical factory/warehouse premises and export records.'
+      num: '04',
+      title: 'Operational Integrity & Independence (Objective Third-Party Evaluator Proof)',
+      body: 'Replaces self-written website marketing claims with an unbiased third-party audit dossier verifying physical factory/warehouse premises and export records.'
     },
     {
-      title: '05. Performance & Customer Satisfaction (Verified Buyer Reviews · G2 & Google Trust Signals)',
-      body: 'Validates real-world contract fulfillment through authenticated Bill of Lading shipment records and peer buyer satisfaction ratings.'
+      num: '05',
+      title: 'Performance & Customer Satisfaction (Verified Buyer Reviews / G2 & Google Signals)',
+      body: 'Validates real-world B2B contract fulfillment through authenticated Bill of Lading shipment records, on-time dispatch ratios, and verified buyer ratings.'
     }
   ];
 
   for (const p of pillars) {
-    const bodyLines = doc.splitTextToSize(p.body, contentW - 8);
-    const boxH = 9 + bodyLines.length * 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const bodyLines = doc.splitTextToSize(p.body, contentW - 18);
+    const boxH = Math.max(14.5, 7.5 + bodyLines.length * 3.6 + 2.5);
+
     doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(226, 232, 240);
+    doc.setDrawColor(203, 213, 225);
     doc.roundedRect(margin, y, contentW, boxH, 1.5, 1.5, 'FD');
 
-    doc.setTextColor(30, 64, 175);
+    // Left badge
+    doc.setFillColor(15, 23, 42);
+    doc.roundedRect(margin + 2.5, y + 2.5, 9, 9, 1.2, 1.2, 'F');
+    doc.setTextColor(251, 191, 36);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text(p.title, margin + 3.5, y + 5.5);
+    doc.setFontSize(8);
+    doc.text(p.num, margin + 4.5, y + 8.2);
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.8);
+    doc.text(p.title, margin + 14, y + 5.6);
 
     doc.setTextColor(71, 85, 105);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.2);
-    doc.text(bodyLines, margin + 3.5, y + 10);
+    doc.setFontSize(8);
+    doc.text(bodyLines, margin + 14, y + 9.8);
 
-    y += boxH + 3;
+    y += boxH + 2.4;
   }
 
   y += 3;
 
-  // Client Benefits Section
+  // Section 2: Key Features & How It Benefits Suppliers and Buyers (Dynamic Box Height)
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.text('2. Key Features & How It Benefits Suppliers and Buyers', margin, y);
-  y += 5;
+  y += 3.5;
 
   const colW = (contentW - 4) / 2;
+  const supBenefits = [
+    '- Instant buyer credibility with a live searchable serial (THC-TRUST-2026-XXXX).',
+    '- Accelerates enterprise procurement and vendor onboarding from weeks to minutes.',
+    '- Priority top-tier ranking across Trade Heaven search results and RFQ matching.',
+    '- Official downloadable Trust Certificate PDF and verified seal on all listings.',
+    '- Full access to ACID Escrow Protection & Direct-Loss Assurance of Trade Heaven.'
+  ];
+  const buyBenefits = [
+    '- Eliminates shell intermediaries by matching legal entity & corporate bank account.',
+    '- Confirms country-specific sovereign government tax and export license standing.',
+    '- Verifies ISO 9001 quality control and SOC 2 / ISO 27001 security compliance.',
+    '- Provides independent third-party audit proof before wiring container deposits.',
+    '- Protected by Trade Heaven Escrow & Direct-Loss Assurance coverage.'
+  ];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.9);
+  const supWrapped = supBenefits.map(item => doc.splitTextToSize(item, colW - 7));
+  const buyWrapped = buyBenefits.map(item => doc.splitTextToSize(item, colW - 7));
+
+  const supTotalLines = supWrapped.reduce((acc, l) => acc + l.length, 0);
+  const buyTotalLines = buyWrapped.reduce((acc, l) => acc + l.length, 0);
+  const maxLines = Math.max(supTotalLines, buyTotalLines);
+  const benefitBoxH = 11 + maxLines * 3.6 + supBenefits.length * 1.4 + 3.5;
+
+  // Left Card: Suppliers
   doc.setFillColor(240, 253, 244);
-  doc.setDrawColor(167, 243, 208);
-  doc.roundedRect(margin, y, colW, 48, 2, 2, 'FD');
+  doc.setDrawColor(134, 239, 172);
+  doc.roundedRect(margin, y, colW, benefitBoxH, 2, 2, 'FD');
 
   doc.setTextColor(6, 95, 70);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.text('Benefits for Verified Suppliers & Exporters', margin + 3.5, y + 6);
+
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7.9);
   doc.setTextColor(20, 83, 45);
-  const supBenefits = [
-    '• Instant buyer credibility with a live searchable serial (THC-TRUST-2026-XXXX).',
-    '• Accelerates enterprise procurement & vendor onboarding from weeks to minutes.',
-    '• Priority top-tier ranking across Trade Heaven search results and RFQ matching.',
-    '• Official downloadable Trust Certificate PDF & verified seal on all listings.',
-    '• Access to ACID Escrow Protection & Full Assurance of Trade Heaven.'
-  ];
-  let sy = y + 12;
-  for (const b of supBenefits) {
-    const lines = doc.splitTextToSize(b, colW - 7);
+  let sy = y + 11;
+  for (const lines of supWrapped) {
     doc.text(lines, margin + 3.5, sy);
-    sy += lines.length * 3.8 + 1.2;
+    sy += lines.length * 3.6 + 1.4;
   }
 
+  // Right Card: Buyers
   const rightX = margin + colW + 4;
   doc.setFillColor(239, 246, 255);
-  doc.setDrawColor(191, 219, 254);
-  doc.roundedRect(rightX, y, colW, 48, 2, 2, 'FD');
+  doc.setDrawColor(147, 197, 253);
+  doc.roundedRect(rightX, y, colW, benefitBoxH, 2, 2, 'FD');
 
   doc.setTextColor(30, 58, 138);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.text('Benefits for Global Buyers & Importers', rightX + 3.5, y + 6);
+
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7.9);
   doc.setTextColor(30, 64, 175);
-  const buyBenefits = [
-    '• Eliminates shell intermediaries by matching legal entity & corporate bank account.',
-    '• Confirms country-specific government tax & export license standing.',
-    '• Verifies ISO 9001 quality control and SOC 2 / ISO 27001 security compliance.',
-    '• Independent third-party audit proof before wiring container deposits.',
-    '• Protected by Trade Heaven Escrow & Direct-Loss Assurance coverage.'
-  ];
-  let by = y + 12;
-  for (const b of buyBenefits) {
-    const lines = doc.splitTextToSize(b, colW - 7);
+  let by = y + 11;
+  for (const lines of buyWrapped) {
     doc.text(lines, rightX + 3.5, by);
-    by += lines.length * 3.8 + 1.2;
+    by += lines.length * 3.6 + 1.4;
   }
 
-  // Footer Page 1
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, pageH - 12, pageW, 12, 'F');
-  doc.setTextColor(203, 213, 225);
-  doc.setFontSize(8);
-  doc.text(
-    'Trade Heaven (Tradeheaven ECOM Solution LLP)  |  https://tradeheaven.net/?view=B2B_TRUST_CERTIFICATE  |  Page 1 of 2',
-    margin,
-    pageH - 4.5
+  drawPageFooter(
+    'Trade Heaven (Tradeheaven ECOM Solution LLP)  |  https://tradeheaven.net/?view=B2B_TRUST_CERTIFICATE',
+    'Page 1 of 2'
   );
 
   // =========================================================================
@@ -252,141 +349,171 @@ export function generateB2BTrustCertificateBrochurePDF(applicantCompany?: string
   // =========================================================================
   doc.addPage();
 
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageW, 32, 'F');
-  doc.setTextColor(251, 191, 36);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.text('OFFICIAL REMITTANCE & APPLICATION PROTOCOL', margin, 11);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(15);
-  doc.text('How to Pay the $1,950 USD Fee & Apply via Official Email (7-Day Process)', margin, 21);
+  drawPageHeader(
+    'OFFICIAL CORPORATE BANK REMITTANCE & EMAIL APPLICATION PROTOCOL',
+    'How to Pay the $1,950 USD Fee & Apply via Official Email (7-Day Process)',
+    'Strictly Remitted from Applying Company Corporate Bank Account  |  Email: help@tradeheaven.net'
+  );
 
-  y = 40;
+  y = 41;
 
-  // Mandatory Corporate Bank Account Rule Banner
+  // Mandatory Corporate Bank Account Rule Banner (Dynamic Height — Zero Overflow)
+  const ruleItems = [
+    '1. Official Certification & Audit Fee: $1,950.00 USD (covers full 5-pillar third-party audit, country-specific sovereign government document verification, and 12-month B2B Trust Certificate issuance).',
+    '2. Strict Corporate Bank Account Matching Rule: The $1,950.00 USD wire transfer MUST originate strictly from the corporate bank account of the company applying for the certificate. The remitter company name on the SWIFT MT103 slip must match the legal entity name on your government registration documents. Personal or third-party bank transfers are strictly rejected.'
+  ];
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  const wrappedRuleItems = ruleItems.map(r => doc.splitTextToSize(r, contentW - 8));
+  const ruleTotalLines = wrappedRuleItems.reduce((acc, l) => acc + l.length, 0);
+  const ruleBoxH = 10 + ruleTotalLines * 3.7 + 4.5;
+
   doc.setFillColor(254, 243, 199);
   doc.setDrawColor(245, 158, 11);
-  doc.roundedRect(margin, y, contentW, 24, 2, 2, 'FD');
+  doc.roundedRect(margin, y, contentW, ruleBoxH, 2, 2, 'FD');
+
   doc.setTextColor(146, 64, 14);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.8);
   doc.text(
-    'MANDATORY REQUIREMENT: $1,950 USD FEE MUST BE PAID FROM APPLYING COMPANY BANK ACCOUNT',
+    'MANDATORY COMPLIANCE RULE: $1,950 USD FEE MUST BE PAID FROM APPLYING COMPANY BANK ACCOUNT',
     margin + 4,
-    y + 6.5
+    y + 6
   );
+
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.3);
+  doc.setFontSize(8);
   doc.setTextColor(120, 53, 15);
-  const bankRuleText = doc.splitTextToSize(
-    '1. Certification Fee: $1,950 USD (covers full 5-pillar third-party audit, sovereign government registry check, and 12-month certificate issuance).\n2. Corporate Bank Matching Rule: The $1,950 USD wire transfer MUST originate strictly from the corporate bank account of the company applying for the certificate. The remitter company name on the SWIFT MT103 receipt must match the legal entity name on your government registration documents. Personal or third-party bank transfers are strictly rejected.',
-    contentW - 8
-  );
-  doc.text(bankRuleText, margin + 4, y + 11.5);
+  let ry = y + 10.8;
+  for (const lines of wrappedRuleItems) {
+    doc.text(lines, margin + 4, ry);
+    ry += lines.length * 3.7 + 1.5;
+  }
 
-  y += 30;
+  y += ruleBoxH + 5.5;
 
-  // Step 1: Trade Heaven Official Bank Account Coordinates
+  // Step 1: Remit $1,950 USD to Trade Heaven Corporate Bank Account
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('Step 1: Remit $1,950 USD to Trade Heaven Corporate Bank Account', margin, y);
-  y += 4.5;
+  doc.setFontSize(10.5);
+  doc.text('Step 1: Remit $1,950.00 USD to Trade Heaven Corporate Bank Account', margin, y);
+  y += 3.5;
 
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(148, 163, 184);
-  doc.roundedRect(margin, y, contentW, 48, 2, 2, 'FD');
+  const cleanBankAddress = OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress.includes(
+    OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry
+  )
+    ? OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress
+    : `${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress}, ${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry}`;
 
-  const bankRows = [
+  const bankRows: [string, string][] = [
     ['Beneficiary Account Name', OFFICIAL_SWIFT_BANK_DETAILS.accountHolderName],
     ['Certification Fee Amount', '$1,950.00 USD (United States Dollars)'],
-    ['Payment Method', `${OFFICIAL_SWIFT_BANK_DETAILS.paymentMethod} — Strictly from Applying Company Bank Account`],
+    ['Payment Method', `${OFFICIAL_SWIFT_BANK_DETAILS.paymentMethod} - Strictly from Applying Company Bank Account`],
     ['IBAN / Account Number', OFFICIAL_SWIFT_BANK_DETAILS.iban],
     ['BIC / SWIFT Code', OFFICIAL_SWIFT_BANK_DETAILS.bicSwift],
     ['Receiving Bank Name', OFFICIAL_SWIFT_BANK_DETAILS.bankName],
-    ['Bank Address', `${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress}, ${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry}`],
-    ['Mandatory Wire Remark', `${OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark} - B2B TRUST CERTIFICATE [Your Company Name]`]
+    ['Beneficiary Bank Address', cleanBankAddress],
+    ['Mandatory Wire Remark', `${OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark} - B2B TRUST CERTIFICATE [${applicantCompany || 'Your Company Name'}]`]
   ];
 
-  let byRow = y + 6;
-  for (const [label, val] of bankRows) {
+  const rowH = 5.8;
+  const tableH = bankRows.length * rowH + 3;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(148, 163, 184);
+  doc.roundedRect(margin, y, contentW, tableH, 2, 2, 'FD');
+
+  bankRows.forEach(([label, val], idx) => {
+    const rowY = y + 1.5 + idx * rowH;
+    if (idx % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin + 1, rowY, contentW - 2, rowH, 'F');
+    }
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.3);
+    doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    doc.text(`${label}:`, margin + 4, byRow);
+    doc.text(`${label}:`, margin + 4, rowY + 4);
+
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
-    doc.text(String(val), margin + 56, byRow);
-    byRow += 5.4;
-  }
+    doc.text(String(val), margin + 54, rowY + 4);
+  });
 
-  y += 54;
+  y += tableH + 5.5;
 
-  // Step 2: How to Apply on Trade Heaven Official Emails
+  // Step 2: Submit Your Application & Wire Proof to Trade Heaven Official Emails (Dynamic Height — Zero Overflow)
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.text('Step 2: Submit Your Application & Wire Proof to Trade Heaven Official Emails', margin, y);
-  y += 4.5;
+  y += 3.5;
 
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(margin, y, contentW, 48, 2, 2, 'FD');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.8);
-  doc.setTextColor(30, 64, 175);
-  doc.text(
-    'Official Application Emails:  help@tradeheaven.net   (CC: compliance@tradeheaven.net)',
-    margin + 4,
-    y + 6.5
-  );
-  doc.setTextColor(15, 23, 42);
-  doc.text(
-    'Email Subject Line:  B2B Trust Certificate Application - [Your Legal Company Name] - $1,950 USD Wire Attached',
-    margin + 4,
-    y + 12
-  );
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.2);
-  doc.setTextColor(51, 65, 85);
   const emailChecklist = [
-    '1. Corporate Bank Wire Receipt ($1,950 USD): Attach the official SWIFT MT103 / Wire Transfer slip showing payment from your applying company’s corporate bank account to TRADEHEAVEN ECOM SOLUTION LLP.',
+    '1. Corporate Bank Wire Receipt ($1,950 USD): Attach the official SWIFT MT103 / Wire Transfer slip showing payment from your applying company\'s corporate bank account to TRADEHEAVEN ECOM SOLUTION LLP.',
     '2. Country-Specific Government Legal & Tax Document: Attach your official sovereign government registration (GST Certificate & IEC Code if in India; IRS EIN & Articles of Incorporation for USA; VAT & EORI & Companies House for UK/EU; ABN/ACN for Australia; TRN & Trade License for UAE; or USCC for China).',
     '3. Quality & Security Credentials: Attach ISO 9001 / Six Sigma quality records, SOC 2 / ISO 27001 security policies (if applicable), and a voided corporate check or bank comfort letter matching your company name.',
     '4. Authorized Signatory Details: Full name, designation, corporate email, phone/WhatsApp, and registered physical office/factory street address.'
   ];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.9);
+  const wrappedChecklist = emailChecklist.map(item => doc.splitTextToSize(item, contentW - 8));
+  const checklistTotalLines = wrappedChecklist.reduce((acc, l) => acc + l.length, 0);
+  const step2BoxH = 16 + checklistTotalLines * 3.6 + wrappedChecklist.length * 1.4 + 3;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(148, 163, 184);
+  doc.roundedRect(margin, y, contentW, step2BoxH, 2, 2, 'FD');
+
+  doc.setFillColor(239, 246, 255);
+  doc.rect(margin + 1, y + 1, contentW - 2, 12.5, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.4);
+  doc.setTextColor(30, 64, 175);
+  doc.text(
+    'Official Application Emails:   help@tradeheaven.net   (CC: compliance@tradeheaven.net)',
+    margin + 4,
+    y + 5.8
+  );
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(8);
+  doc.text(
+    `Subject Line:   B2B Trust Certificate Application - [${applicantCompany || 'Your Legal Company Name'}] - $1,950 USD Wire Attached`,
+    margin + 4,
+    y + 11
+  );
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.9);
+  doc.setTextColor(51, 65, 85);
   let ey = y + 17.5;
-  for (const item of emailChecklist) {
-    const lines = doc.splitTextToSize(item, contentW - 8);
+  for (const lines of wrappedChecklist) {
     doc.text(lines, margin + 4, ey);
-    ey += lines.length * 3.7 + 1.3;
+    ey += lines.length * 3.6 + 1.4;
   }
 
-  y += 54;
+  y += step2BoxH + 5.5;
 
   // Step 3: 7-Day Complete Verification & Issuance Timeline
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(10.5);
   doc.text('Step 3: 7-Day Complete Verification, Audit & Certificate Issuance Schedule', margin, y);
-  y += 4.5;
+  y += 3.5;
 
   const timelineSteps = [
     {
-      days: 'Days 1 – 2',
+      days: 'Days 1 - 2',
       title: 'Corporate Bank Remittance & Sovereign Government Registry Check',
-      desc: 'Verification of the $1,950 USD wire from the applying company’s bank account and live lookup of country-specific government documents (GST/IEC in India; EIN/VAT/EORI/ABN/TRN/USCC globally).'
+      desc: 'Verification of the $1,950 USD wire from the applying company\'s bank account and live lookup of country-specific government documents (GST/IEC in India; EIN/VAT/EORI/ABN/TRN/USCC globally).'
     },
     {
-      days: 'Days 3 – 4',
+      days: 'Days 3 - 4',
       title: 'Quality Management (ISO 9001) & Data Security (SOC 2 / ISO 27001) Audit',
       desc: 'Audit of quality management SOPs, batch inspection logs, trade document data security controls, and corporate beneficiary bank account ownership.'
     },
     {
-      days: 'Days 5 – 6',
+      days: 'Days 5 - 6',
       title: 'Independent Evaluator Assessment & Buyer Fulfillment Validation',
       desc: 'Review of physical operational standing, past Bill of Lading export history, and verified buyer satisfaction signals by third-party compliance officers.'
     },
@@ -398,40 +525,38 @@ export function generateB2BTrustCertificateBrochurePDF(applicantCompany?: string
   ];
 
   for (const step of timelineSteps) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.6);
+    const dLines = doc.splitTextToSize(step.desc, contentW - 32);
+    const tBoxH = Math.max(13, 6.5 + dLines.length * 3.4 + 2);
+
     doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(margin, y, contentW, 13.5, 1.5, 1.5, 'FD');
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(margin, y, contentW, tBoxH, 1.5, 1.5, 'FD');
 
     doc.setFillColor(15, 23, 42);
-    doc.roundedRect(margin + 2.5, y + 2.5, 24, 8.5, 1, 1, 'F');
+    doc.roundedRect(margin + 2.5, y + 2.2, 23, tBoxH - 4.4, 1.2, 1.2, 'F');
     doc.setTextColor(251, 191, 36);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text(step.days, margin + 5, y + 8);
+    doc.setFontSize(7.8);
+    doc.text(step.days, margin + 14, y + tBoxH / 2 + 1, { align: 'center' });
 
     doc.setTextColor(15, 23, 42);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.7);
-    doc.text(step.title, margin + 30, y + 5.2);
+    doc.setFontSize(8.5);
+    doc.text(step.title, margin + 28.5, y + 5);
 
     doc.setTextColor(71, 85, 105);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.6);
-    const dLines = doc.splitTextToSize(step.desc, contentW - 33);
-    doc.text(dLines, margin + 30, y + 9.2);
+    doc.text(dLines, margin + 28.5, y + 8.8);
 
-    y += 15;
+    y += tBoxH + 2.2;
   }
 
-  // Footer Page 2
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, pageH - 12, pageW, 12, 'F');
-  doc.setTextColor(203, 213, 225);
-  doc.setFontSize(8);
-  doc.text(
-    'Apply via Email: help@tradeheaven.net (CC: compliance@tradeheaven.net)  |  Fee: $1,950 USD  |  7-Day Turnaround  |  Page 2 of 2',
-    margin,
-    pageH - 4.5
+  drawPageFooter(
+    'Apply via Email: help@tradeheaven.net (CC: compliance@tradeheaven.net)  |  Fee: $1,950 USD  |  7-Day Turnaround',
+    'Page 2 of 2'
   );
 
   const safeSlug = (applicantCompany || 'Official-Guide')
@@ -914,7 +1039,13 @@ ${companyName || '[Applying Company Name]'}`;
                   { label: 'IBAN / Account Number', value: OFFICIAL_SWIFT_BANK_DETAILS.iban, key: 'iban' },
                   { label: 'BIC / SWIFT Code', value: OFFICIAL_SWIFT_BANK_DETAILS.bicSwift, key: 'swift' },
                   { label: 'Receiving Bank Name', value: OFFICIAL_SWIFT_BANK_DETAILS.bankName, key: 'bank' },
-                  { label: 'Beneficiary Bank Address', value: `${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress}, ${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry}`, key: 'addr' },
+                  {
+                    label: 'Beneficiary Bank Address',
+                    value: OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress.includes(OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry)
+                      ? OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress
+                      : `${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryAddress}, ${OFFICIAL_SWIFT_BANK_DETAILS.beneficiaryBankCountry}`,
+                    key: 'addr'
+                  },
                   { label: 'Mandatory Payment Remark', value: `${OFFICIAL_SWIFT_BANK_DETAILS.mandatoryRemark} - B2B TRUST CERT`, key: 'remark' }
                 ].map(item => (
                   <div
