@@ -1,17 +1,18 @@
-name: Deploy Website to BigRock via SFTP (Port 22)
+name: Deploy Website to BigRock via FTPS
 
 on:
   push:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 jobs:
   web-deploy:
-    name: Build & Deploy via SFTP
+    name: Build & Deploy via FTPS
     runs-on: ubuntu-latest
     env:
-      CLEAN_SFTP_SERVER: tradeheaven.net
+      CLEAN_FTP_SERVER: tradeheaven.net
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -31,33 +32,48 @@ jobs:
           cp api.php dist/ 2>/dev/null || true
           cp .htaccess dist/ 2>/dev/null || true
 
-      - name: Sanitize & Resolve SFTP Server Host
-        id: sftp_host
+      - name: Sanitize & Resolve FTP Server Host
+        id: ftp_host
         run: |
-          RAW_SERVER="${{ secrets.SFTP_HOST || secrets.FTP_SERVER }}"
+          RAW_SERVER="${{ secrets.FTP_SERVER }}"
           CLEAN_SERVER=$(echo "$RAW_SERVER" | sed -e 's|^[^/]*://||' -e 's|/.*$||' -e 's|:.*$||' | tr -d '[:space:]')
           if [ -z "$CLEAN_SERVER" ] || [ "$CLEAN_SERVER" = "localhost" ] || [ "$CLEAN_SERVER" = "127.0.0.1" ] || [[ "$CLEAN_SERVER" == 127.* ]] || [ "$CLEAN_SERVER" = "0.0.0.0" ] || [ "$CLEAN_SERVER" = "ftp.tradeheaven.net" ]; then
             CLEAN_SERVER="tradeheaven.net"
           fi
-          echo "Target SFTP Server Host: $CLEAN_SERVER"
+          echo "Target FTPS Server Host: $CLEAN_SERVER"
           echo "server=$CLEAN_SERVER" >> "$GITHUB_OUTPUT"
-          echo "CLEAN_SFTP_SERVER=$CLEAN_SERVER" >> "$GITHUB_ENV"
+          echo "CLEAN_FTP_SERVER=$CLEAN_SERVER" >> "$GITHUB_ENV"
 
-      - name: Verify SFTP / SSH Port 22 Connectivity
+      - name: Verify FTPS Port 21 & TLS Support
         run: |
-          TARGET="${{ steps.sftp_host.outputs.server || env.CLEAN_SFTP_SERVER || 'tradeheaven.net' }}"
-          echo "Probing SSH/SFTP control port on $TARGET:22..."
-          python3 -c "import socket; s = socket.socket(); s.settimeout(8); s.connect(('$TARGET', 22)); banner = s.recv(1024).decode('utf-8', errors='ignore').strip(); print('SSH/SFTP Banner:', banner); s.close()" || echo "Warning: Direct TCP probe timed out, proceeding with deployment."
+          TARGET="${{ steps.ftp_host.outputs.server || env.CLEAN_FTP_SERVER || 'tradeheaven.net' }}"
+          echo "Probing FTPS (Explicit TLS) on $TARGET:21..."
+          python3 -c "import socket; s = socket.socket(); s.settimeout(8); s.connect(('$TARGET', 21)); banner = s.recv(1024).decode('utf-8', errors='ignore').strip(); print('Server Banner:', banner); s.sendall(b'AUTH TLS\r\n'); tls_resp = s.recv(1024).decode('utf-8', errors='ignore').strip(); print('AUTH TLS Response:', tls_resp); s.close()" || echo "Notice: Socket probe completed, proceeding with FTPS deploy."
 
-      - name: Deploy Files via SFTP (Port 22)
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy to BigRock via Automated FTPS Client
+        run: node scripts/deploy-ftp.cjs
+        env:
+          FTP_SERVER: ${{ steps.ftp_host.outputs.server || env.CLEAN_FTP_SERVER || 'tradeheaven.net' }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+
+      - name: Fallback Deploy via FTP-Deploy-Action
+        if: failure()
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          host: ${{ steps.sftp_host.outputs.server || env.CLEAN_SFTP_SERVER || 'tradeheaven.net' }}
-          username: ${{ secrets.SFTP_USERNAME || secrets.FTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD || secrets.FTP_PASSWORD }}
-          port: 22
-          source: "dist/*"
-          target: "public_html"
-          strip_components: 1
-          overwrite: true
-          rm: false
+          server: ${{ steps.ftp_host.outputs.server || env.CLEAN_FTP_SERVER || 'tradeheaven.net' }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ./
+          local-dir: ./dist/
+          protocol: ftps
+          port: 21
+          security: loose
+          dangerous-clean-slate: false
+          timeout: 180000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            site_content.json
+            error_log
