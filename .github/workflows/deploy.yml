@@ -11,8 +11,6 @@ jobs:
   web-deploy:
     name: Build & Deploy via FTPS
     runs-on: ubuntu-latest
-    env:
-      CLEAN_FTP_SERVER: tradeheaven.net
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -32,43 +30,17 @@ jobs:
           cp api.php dist/ 2>/dev/null || true
           cp .htaccess dist/ 2>/dev/null || true
 
-      - name: Sanitize & Resolve FTP Server Host
-        id: ftp_host
-        run: |
-          RAW_SERVER="${{ secrets.FTP_SERVER }}"
-          CLEAN_SERVER=$(echo "$RAW_SERVER" | sed -e 's|^[^/]*://||' -e 's|/.*$||' -e 's|:.*$||' | tr -d '[:space:]')
-          if [ -z "$CLEAN_SERVER" ] || [ "$CLEAN_SERVER" = "localhost" ] || [ "$CLEAN_SERVER" = "127.0.0.1" ] || [[ "$CLEAN_SERVER" == 127.* ]] || [ "$CLEAN_SERVER" = "0.0.0.0" ] || [ "$CLEAN_SERVER" = "ftp.tradeheaven.net" ]; then
-            CLEAN_SERVER="tradeheaven.net"
-          fi
-          echo "Target FTPS Server Host: $CLEAN_SERVER"
-          echo "server=$CLEAN_SERVER" >> "$GITHUB_OUTPUT"
-          echo "CLEAN_FTP_SERVER=$CLEAN_SERVER" >> "$GITHUB_ENV"
-
-      - name: Verify FTPS Port 21 & TLS Support
-        run: |
-          TARGET="${{ steps.ftp_host.outputs.server || env.CLEAN_FTP_SERVER || 'tradeheaven.net' }}"
-          echo "Probing FTPS (Explicit TLS) on $TARGET:21..."
-          python3 -c "import socket; s = socket.socket(); s.settimeout(8); s.connect(('$TARGET', 21)); banner = s.recv(1024).decode('utf-8', errors='ignore').strip(); print('Server Banner:', banner); s.sendall(b'AUTH TLS\r\n'); tls_resp = s.recv(1024).decode('utf-8', errors='ignore').strip(); print('AUTH TLS Response:', tls_resp); s.close()" || echo "Notice: Socket probe completed, proceeding with FTPS deploy."
-
-      - name: Deploy to BigRock via Automated FTPS Client
-        run: node scripts/deploy-ftp.cjs
-        env:
-          FTP_SERVER: ${{ steps.ftp_host.outputs.server || env.CLEAN_FTP_SERVER || 'tradeheaven.net' }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-
-      - name: Fallback Deploy via FTP-Deploy-Action
-        if: failure()
+      - name: Deploy to BigRock
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ steps.ftp_host.outputs.server || env.CLEAN_FTP_SERVER || 'tradeheaven.net' }}
+          server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ./
-          local-dir: ./dist/
           protocol: ftps
           port: 21
           security: loose
+          local-dir: ./dist/
+          server-dir: ./
           dangerous-clean-slate: false
           timeout: 180000
           exclude: |
