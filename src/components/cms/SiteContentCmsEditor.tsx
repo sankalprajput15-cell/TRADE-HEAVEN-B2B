@@ -69,7 +69,17 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
   const [jsonError, setJsonError] = useState<string | null>(null);
 
   const auth = isUserAuthorized(currentUser);
-  const isAdmin = true || auth.isAuthorized || currentUser?.role === 'ADMIN' || currentUser?.isVerifiedAdmin === true;
+  const isAdmin = Boolean(
+    auth.isAuthorized &&
+      currentUser &&
+      ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(
+        (currentUser.email || '').trim().toLowerCase()
+      ) &&
+      currentUser.role === 'ADMIN' &&
+      currentUser.isVerifiedAdmin === true &&
+      (currentUser as any).otpVerified === true &&
+      currentUser.token
+  );
 
   // Sync state if context changes externally
   React.useEffect(() => {

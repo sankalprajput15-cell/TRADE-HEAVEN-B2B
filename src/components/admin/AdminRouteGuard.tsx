@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthUser, ActiveView } from '../../types';
-import { ShieldAlert, Lock, KeyRound, ArrowLeft, UserX, ExternalLink } from 'lucide-react';
+import { isStrictVerifiedRootAdmin } from '../../context/AuthContext';
+import { ShieldAlert, Lock, KeyRound, ArrowLeft, UserX } from 'lucide-react';
 
 interface AdminRouteGuardProps {
   children: React.ReactNode;
@@ -86,11 +87,7 @@ export const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
   }
 
   // 2. Authenticated but Non-Admin Role (403 Forbidden)
-  const isZacClient =
-    currentUser.email?.toLowerCase() === 'zac@otec.ltd' ||
-    currentUser.email?.toLowerCase() === 'zac@fadetech.com' ||
-    currentUser.id === 'user-supplier-zac';
-  if (isZacClient || (currentUser.role !== 'ADMIN' && !currentUser.isVerifiedAdmin)) {
+  if (!isStrictVerifiedRootAdmin(currentUser)) {
     return (
       <div 
         id="admin-guard-forbidden-403" 

@@ -1230,9 +1230,10 @@ switch ($action) {
             }
         }
 
-        // Check Master Admin fallback
-        if ($email === 'admin@tradeheaven.net' || $email === 'admin@trade4deals.com' || $email === 'yr943334@gmail.com') {
-            if ($password === 'Admin@2026!' || $password === 'admin123' || empty($password) || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password']))) {
+        // Check Master Admin fallback (strictly restricted to authorized root admin emails)
+        $is_authorized_root_admin_email = ($email === 'yr943334@gmail.com' || $email === 'sankalprajput15@gmail.com');
+        if ($is_authorized_root_admin_email) {
+            if (!empty($password) && ($password === 'Admin@2026!' || $password === 'admin123' || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password'])))) {
                 $token = "jwt_" . md5($email . time());
                 $admin_id = $user_found ? $user_found['id'] : 1;
                 
@@ -1302,6 +1303,10 @@ switch ($action) {
         $token = "jwt_" . md5($user_found['email'] . time());
         $company_display = $user_found['company_name'] ?: ($user_found['company'] ?? 'Enterprise Trading Firm');
         $resolved_role = strtoupper($user_found['role'] ?: 'BUYER');
+        // Never allow non-root-admin emails to receive ADMIN role from the database
+        if ($resolved_role === 'ADMIN' && !$is_authorized_root_admin_email) {
+            $resolved_role = 'SUPPLIER';
+        }
 
         // Trigger Instant Email Notification on Login
         sendPhpMailAlert(

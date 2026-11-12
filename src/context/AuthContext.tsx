@@ -55,12 +55,32 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const VERIFIED_OTP_SESSION_KEY = 'th_verified_otp_session_v4_otp_only';
+export const VERIFIED_OTP_SESSION_KEY = 'th_verified_otp_session_v5_strict_admin';
 
-const AUTHORIZED_ADMIN_EMAILS = new Set([
+export const AUTHORIZED_ADMIN_EMAILS = new Set([
   'yr943334@gmail.com',
   'sankalprajput15@gmail.com'
 ]);
+
+export function isStrictVerifiedRootAdmin(u: AuthUser | null | undefined): boolean {
+  if (!u || typeof u !== 'object') return false;
+  const emailLower = (u.email || '').trim().toLowerCase();
+  if (
+    emailLower === 'zac@otec.ltd' ||
+    emailLower === 'zac@fadetech.com' ||
+    u.id === 'user-supplier-zac'
+  ) {
+    return false;
+  }
+  return Boolean(
+    AUTHORIZED_ADMIN_EMAILS.has(emailLower) &&
+      u.role === 'ADMIN' &&
+      u.isVerifiedAdmin === true &&
+      (u as any).otpVerified === true &&
+      typeof u.token === 'string' &&
+      u.token.trim().length >= 8
+  );
+}
 
 const DEFAULT_ZAC_CLIENT_USER: AuthUser = {
   id: 'user-supplier-zac',
@@ -112,10 +132,17 @@ function sanitizeUserRole(u: AuthUser): AuthUser {
         avatarUrl: baseAvatar
       };
     }
+    return {
+      ...u,
+      role: 'ADMIN',
+      isVerifiedAdmin: true,
+      avatarUrl: baseAvatar
+    };
   }
 
   return {
     ...u,
+    isVerifiedAdmin: false,
     avatarUrl: baseAvatar
   };
 }
@@ -124,17 +151,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       if (typeof window !== 'undefined') {
-        // Purge all legacy / exposed-key session tokens so any administrator logged in anywhere is signed out immediately
+        // Purge all legacy / exposed-key session tokens so any unverified session is signed out immediately
         localStorage.removeItem('th_admin_session_v1');
         localStorage.removeItem('th_session_user');
         localStorage.removeItem('th_verified_otp_session_v2');
         localStorage.removeItem('th_verified_otp_session_v3');
+        localStorage.removeItem('th_verified_otp_session_v4_otp_only');
         localStorage.removeItem('tradeheaven_user');
         localStorage.removeItem('tradeheaven_auth_user');
 
         const params = new URLSearchParams(window.location.search);
         const paramEmail = (params.get('email') || '').trim().toLowerCase();
         if (params.get('pay_zac') === '1' || paramEmail === 'zac@otec.ltd' || paramEmail === 'zac@fadetech.com') {
+          localStorage.removeItem('th_live_edit_mode');
           return DEFAULT_ZAC_CLIENT_USER;
         }
         if (
@@ -142,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           paramEmail &&
           !AUTHORIZED_ADMIN_EMAILS.has(paramEmail)
         ) {
+          localStorage.removeItem('th_live_edit_mode');
           const clientRenewalUser: AuthUser = {
             id: `client-${paramEmail.replace(/[^a-z0-9]/g, '')}`,
             name: params.get('decisionMaker') || paramEmail.split('@')[0],
@@ -170,10 +200,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             parsedUser.token &&
             parsedUser.otpVerified === true
           ) {
-            return sanitizeUserRole(parsedUser);
+            const sanitized = sanitizeUserRole(parsedUser);
+            if (!isStrictVerifiedRootAdmin(sanitized)) {
+              localStorage.removeItem('th_live_edit_mode');
+            }
+            return sanitized;
           } else {
             localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
+            localStorage.removeItem('th_live_edit_mode');
           }
+        } else {
+          localStorage.removeItem('th_live_edit_mode');
         }
       }
     } catch {}
@@ -375,6 +412,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('th_admin_session_v1');
       localStorage.removeItem('th_verified_otp_session_v2');
       localStorage.removeItem('th_verified_otp_session_v3');
+      localStorage.removeItem('th_verified_otp_session_v4_otp_only');
       localStorage.removeItem(VERIFIED_OTP_SESSION_KEY);
       localStorage.removeItem('th_session_jwt_token');
       localStorage.removeItem('tradeheaven_auth_user');
@@ -402,6 +440,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(sanitized);
       setIsAuthenticated(true);
       try {
+        if (!isStrictVerifiedRootAdmin(sanitized)) {
+          localStorage.removeItem('th_live_edit_mode');
+        }
         if ((sanitized as any).otpVerified === true && sanitized.token) {
           localStorage.setItem(VERIFIED_OTP_SESSION_KEY, JSON.stringify(sanitized));
         }
@@ -414,19 +455,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const lowerUserEmail = (user?.email || '').trim().toLowerCase();
-  const isZacClient =
-    lowerUserEmail === 'zac@otec.ltd' ||
-    lowerUserEmail === 'zac@fadetech.com' ||
-    user?.id === 'user-supplier-zac';
-  const isAdmin = Boolean(
-    isAuthenticated &&
-      !isZacClient &&
-      AUTHORIZED_ADMIN_EMAILS.has(lowerUserEmail) &&
-      (user as any)?.otpVerified === true &&
-      Boolean(user?.token) &&
-      (user?.role === 'ADMIN' || user?.isVerifiedAdmin === true)
-  );
+  const isAdmin = Boolean(isAuthenticated && isStrictVerifiedRootAdmin(user));
   const isImpersonating = Boolean(originalAdminUser);
   const otpService: OtpService = {
     requestLoginOtp: async (email: string, password?: string) => {

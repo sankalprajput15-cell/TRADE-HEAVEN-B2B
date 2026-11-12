@@ -3,7 +3,7 @@ import { Currency, PaymentTerms, AuthUser, UserRole, MembershipStatus, AccountSt
 import { CURRENCY_RATES } from '../../data/mockData';
 import { api, getPermanentlyDeletedUsers, getUserDeletionLogs } from '../../services/apiService';
 import { UserDeletionLogModule } from '../admin/UserDeletionLogModule';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isStrictVerifiedRootAdmin } from '../../context/AuthContext';
 import { securityService } from '../../services/securityService';
 import { AdminActivityLogger, adminActivityBus } from '../admin/AdminActivityLogger';
 import { bigrockApi, DbInquiry, DbListing, DbFaq, DbUser } from '../../services/bigrockApi';
@@ -848,7 +848,7 @@ export const ClientAdminView: React.FC<Props> = ({
     }, 800);
   };
 
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.isVerifiedAdmin === true;
+  const isAdmin = isStrictVerifiedRootAdmin(currentUser || authContextUser);
 
   const filteredInquiries = inquiries.filter(inq => {
     const matchStatus = inquiryStatusFilter === 'ALL' || inq.status === inquiryStatusFilter;

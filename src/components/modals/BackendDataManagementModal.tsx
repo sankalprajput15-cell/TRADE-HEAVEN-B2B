@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/apiService';
 import { AuthUser } from '../../types';
+import { isStrictVerifiedRootAdmin } from '../../context/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -37,12 +38,7 @@ export const BackendDataManagementModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const isAdmin = Boolean(
-    currentUser && (
-      currentUser.role === 'ADMIN' || 
-      (currentUser.email && currentUser.email.toLowerCase() === 'admin@tradeheaven.net')
-    )
-  );
+  const isAdmin = isStrictVerifiedRootAdmin(currentUser);
 
   if (!isAdmin) {
     return (

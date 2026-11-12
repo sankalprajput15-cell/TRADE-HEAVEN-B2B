@@ -270,13 +270,22 @@ function checkIsAdminLiveEditActive(): boolean {
   try {
     const liveMode = localStorage.getItem('th_live_edit_mode') === 'true';
     if (!liveMode) return false;
-    const rawUser = localStorage.getItem('th_admin_session_v1') || localStorage.getItem('th_session_user');
-    if (rawUser) {
-      const parsed = JSON.parse(rawUser);
-      const email = String(parsed?.email || '').toLowerCase();
-      if (email === 'zac@otec.ltd' || email === 'zac@fadetech.com') return false;
-    }
-    return true;
+    const rawUser = localStorage.getItem('th_verified_otp_session_v5_strict_admin');
+    if (!rawUser) return false;
+    const parsed = JSON.parse(rawUser);
+    if (!parsed || typeof parsed !== 'object') return false;
+    const email = String(parsed.email || '').trim().toLowerCase();
+    const isRootAdminEmail =
+      email === 'yr943334@gmail.com' ||
+      email === 'sankalprajput15@gmail.com';
+    return Boolean(
+      isRootAdminEmail &&
+        parsed.role === 'ADMIN' &&
+        parsed.isVerifiedAdmin === true &&
+        parsed.otpVerified === true &&
+        typeof parsed.token === 'string' &&
+        parsed.token.trim().length >= 8
+    );
   } catch {
     return false;
   }

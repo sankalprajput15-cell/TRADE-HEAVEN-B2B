@@ -556,9 +556,25 @@ const MainApp: React.FC = () => {
         setSharedNote(null);
       }
 
+      const restrictedAdminViews: ActiveView[] = [
+        'CLIENT_ADMIN',
+        'PLAN_PRICING_ADMIN',
+        'CMS_MANAGEMENT',
+        'BULK_ENTITY_CRM',
+        'PRODUCT_IMAGE_ADMIN',
+        'RENEWAL_INSIGHTS',
+        'RENEWAL_EMAIL_EDITOR',
+        'MAIL_DELIVERY_HISTORY'
+      ];
+
       if (rawView) {
         const lower = rawView.toLowerCase();
-        setActiveView(VIEW_ALIASES[lower] || (rawView as ActiveView));
+        const targetView = VIEW_ALIASES[lower] || (rawView as ActiveView);
+        if (restrictedAdminViews.includes(targetView) && (!currentUser || !isAdmin)) {
+          setActiveView('HOMEPAGE');
+        } else {
+          setActiveView(targetView);
+        }
       } else if (params.get('article') || params.get('post')) {
         setActiveView('INSIGHTS');
       } else if (buyerIdParam) {
@@ -1997,6 +2013,27 @@ const MainApp: React.FC = () => {
       return;
     }
 
+    const restrictedAdminTargets = [
+      'CLIENT_ADMIN',
+      'PLAN_PRICING_ADMIN',
+      'CMS_MANAGEMENT',
+      'BULK_ENTITY_CRM',
+      'PRODUCT_IMAGE_ADMIN',
+      'RENEWAL_INSIGHTS',
+      'RENEWAL_EMAIL_EDITOR',
+      'MAIL_DELIVERY_HISTORY'
+    ];
+    if (restrictedAdminTargets.includes(target)) {
+      if (!currentUser || !isAdmin) {
+        setActiveView('HOMEPAGE');
+        setAuthModalMode('LOGIN');
+        setIsAuthModalOpen(true);
+        return;
+      }
+      setActiveView(target as ActiveView);
+      return;
+    }
+
     setActiveView(view as ActiveView);
   };
 
@@ -2496,11 +2533,20 @@ const MainApp: React.FC = () => {
 
               case 'MAIL_DELIVERY_HISTORY':
                 return (
-                  <MailDeliveryHistoryPage
+                  <AdminRouteGuard
                     currentUser={currentUser}
                     onOpenAuthModal={() => setIsAuthModalOpen(true)}
                     onNavigate={handleNavigate}
-                  />
+                    title="Mail Delivery History & Telemetry Hub"
+                    description="Email delivery telemetry, SMTP status logs, and open/click tracking are restricted to verified System Administrators."
+                    targetViewName="MAIL_DELIVERY_HISTORY"
+                  >
+                    <MailDeliveryHistoryPage
+                      currentUser={currentUser}
+                      onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                      onNavigate={handleNavigate}
+                    />
+                  </AdminRouteGuard>
                 );
 
               case 'RENEWAL_INSIGHTS':

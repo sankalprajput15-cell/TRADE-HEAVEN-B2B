@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { SiteContent, DEFAULT_SITE_CONTENT } from '../data/defaultSiteContent';
 import { AuthUser, CmsAuthorizedUser, CmsAccessRequest, CmsPermissionScope, UserRole } from '../types';
-import { useAuth } from './AuthContext';
+import { useAuth, isStrictVerifiedRootAdmin } from './AuthContext';
 import { api } from '../services/apiService';
 import { securityService } from '../services/securityService';
 import { apiClient } from '../services/apiClient';
@@ -325,18 +325,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
 
-    const emailLower = (user.email || '').trim().toLowerCase();
-    if (emailLower === 'zac@otec.ltd' || emailLower === 'zac@fadetech.com' || user.id === 'user-supplier-zac') {
-      return {
-        isAuthorized: false,
-        isSuperAdmin: false,
-        scopes: [],
-        statusText: 'Verified Supplier Client (Non-Admin)'
-      };
-    }
-
-    // 1. Strict Server-Resolved Administrator Role
-    if (user.role === 'ADMIN' || user.isVerifiedAdmin === true) {
+    // Strict Root Admin Verification: ONLY yr943334@gmail.com and sankalprajput15@gmail.com with verified OTP session
+    if (isStrictVerifiedRootAdmin(user)) {
       return {
         isAuthorized: true,
         isSuperAdmin: true,
@@ -345,22 +335,7 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
 
-    // 2. Check explicitly granted delegated permission matrix
-    const email = (user.email || '').trim().toLowerCase();
-    const delegated = authorizedUsers.find(
-      u => u.status === 'ACTIVE' && u.email.toLowerCase() === email
-    );
-    if (delegated) {
-      return {
-        isAuthorized: true,
-        isSuperAdmin: false,
-        permission: delegated,
-        scopes: delegated.scopes,
-        statusText: `Delegated Staff (${delegated.role})`
-      };
-    }
-    
-    // Non-admin users have zero edit/admin access
+    // Non-admin users (buyers, suppliers, guests) have zero edit/admin access
     return {
       isAuthorized: false,
       isSuperAdmin: false,
@@ -369,8 +344,10 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
   };
 
-
   const updateField = (path: string, value: any) => {
+    if (!isUserAuthorized(currentUser).isAuthorized) {
+      return;
+    }
     setSiteContent(prev => {
       const clone = JSON.parse(JSON.stringify(prev));
       const parts = path.split('.');
@@ -549,8 +526,11 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const [isLiveEditMode, setIsLiveEditModeState] = useState<boolean>(() => {
     try {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && isStrictVerifiedRootAdmin(currentUser)) {
         return localStorage.getItem('th_live_edit_mode') === 'true';
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('th_live_edit_mode');
       }
     } catch {}
     return false;
@@ -558,23 +538,37 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [activeQuickEditSection, setActiveQuickEditSection] = useState<string | null>(null);
 
   const setIsLiveEditMode = (val: boolean) => {
-    setIsLiveEditModeState(val);
+    const allowed = isUserAuthorized(currentUser).isAuthorized;
+    const effectiveVal = allowed ? val : false;
+    setIsLiveEditModeState(effectiveVal);
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('th_live_edit_mode', val ? 'true' : 'false');
+        if (effectiveVal) {
+          localStorage.setItem('th_live_edit_mode', 'true');
+        } else {
+          localStorage.removeItem('th_live_edit_mode');
+        }
         window.dispatchEvent(
-          new CustomEvent('tradeheaven_live_edit_mode_changed', { detail: { isLiveEditMode: val } })
+          new CustomEvent('tradeheaven_live_edit_mode_changed', { detail: { isLiveEditMode: effectiveVal } })
         );
       }
     } catch {}
   };
 
-  // Automatically deactivate live edit mode if current user is not an administrator or creator
+  // Automatically deactivate live edit mode if current user is not a strict verified root administrator
   useEffect(() => {
     const auth = isUserAuthorized(currentUser);
     if (!auth.isAuthorized) {
       setIsLiveEditModeState(false);
       setActiveQuickEditSection(null);
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('th_live_edit_mode');
+          window.dispatchEvent(
+            new CustomEvent('tradeheaven_live_edit_mode_changed', { detail: { isLiveEditMode: false } })
+          );
+        }
+      } catch {}
     } else {
       try {
         if (localStorage.getItem('th_live_edit_mode') === 'true') {

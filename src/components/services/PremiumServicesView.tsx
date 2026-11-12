@@ -124,8 +124,7 @@ export const PremiumServicesView: React.FC<Props> = ({
 
   const [promoCodeApplied, setPromoCodeApplied] = useState<boolean>(true);
 
-  const { currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.isVerifiedAdmin === true;
+  const { isAdmin } = useAuth();
 
   const handleDownloadPdf = (plan: SaaSPlan) => {
     if (!isAdmin) {

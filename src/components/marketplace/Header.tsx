@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Currency, UserRole, ActiveView, AuthUser, Product } from '../../types';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isStrictVerifiedRootAdmin } from '../../context/AuthContext';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { MOCK_PRODUCTS } from '../../data/mockData';
@@ -417,15 +417,7 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const isRestrictedClient =
-    currentUser?.email?.toLowerCase() === 'zac@otec.ltd' ||
-    currentUser?.email?.toLowerCase() === 'zac@fadetech.com';
-
-  const isAdmin =
-    !isRestrictedClient &&
-    currentUser?.role === 'ADMIN' &&
-    Boolean((currentUser as any)?.otpVerified) &&
-    Boolean(currentUser?.token);
+  const isAdmin = isStrictVerifiedRootAdmin(currentUser);
 
   const handleToggleTopBarRealtimeEdit = () => {
     if (!isAdmin) return;

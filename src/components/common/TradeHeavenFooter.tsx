@@ -23,6 +23,7 @@ import { TradeHeavenLogo } from './TradeHeavenLogo';
 import { SOCIAL_LINKS, OFFICIAL_WHATSAPP_DATA } from './TradeHeavenSocialBar';
 import { ActiveView, AuthUser } from '../../types';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { isStrictVerifiedRootAdmin } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
@@ -44,17 +45,10 @@ export const TradeHeavenFooter: React.FC<Props> = ({
   onContactClick,
   onOpenAuthModal
 }) => {
-  const { siteContent, isUserAuthorized, isLiveEditMode, openQuickEdit, currentUser: contextUser } = useSiteContent();
+  const { siteContent, isLiveEditMode, openQuickEdit, currentUser: contextUser } = useSiteContent();
   const { t, tText } = useLanguage();
   const effectiveUser = currentUser || contextUser || null;
-  const userAuth = isUserAuthorized(effectiveUser);
-  const isAdmin = Boolean(
-    effectiveUser && (
-      effectiveUser.role === 'ADMIN' || 
-      userAuth.isSuperAdmin || 
-      userAuth.isAuthorized
-    )
-  );
+  const isAdmin = isStrictVerifiedRootAdmin(effectiveUser);
 
   const handleCmsClick = () => {
     if (isAdmin) {

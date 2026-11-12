@@ -28,6 +28,7 @@ import { ClientUploadsAdminModule } from './ClientUploadsAdminModule';
 import { UniversalSiteUploadsVault } from './UniversalSiteUploadsVault';
 import { SeoHealthDashboard } from './SeoHealthDashboard';
 import { DeploymentHealthMonitor } from './DeploymentHealthMonitor';
+import { AdminRouteGuard } from './AdminRouteGuard';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -153,22 +154,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<AdminDashboardTabId>(getInitialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const effectiveAdminUser: AuthUser = currentUser && currentUser.role === 'ADMIN'
-    ? currentUser
-    : {
-        id: currentUser?.id || 'admin-master-01',
-        name: currentUser?.name || 'Sankalp Rajput (Admin)',
-        email: currentUser?.email || 'sankalprajput15@gmail.com',
-        companyName: currentUser?.companyName || 'Trade Heaven Global B2B Administration',
-        country: currentUser?.country || 'United States',
-        role: 'ADMIN',
-        status: 'ACTIVE',
-        tier: 'VIP',
-        isVerified: true,
-        isVerifiedAdmin: true,
-        isPremium: true,
-        membershipStatus: 'paid'
-      };
+  const isStrictAdmin = Boolean(
+    currentUser &&
+      ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(
+        (currentUser.email || '').trim().toLowerCase()
+      ) &&
+      currentUser.role === 'ADMIN' &&
+      currentUser.isVerifiedAdmin === true &&
+      (currentUser as any).otpVerified === true &&
+      typeof currentUser.token === 'string' &&
+      currentUser.token.trim().length >= 8
+  );
+
+  const effectiveAdminUser: AuthUser | null = isStrictAdmin ? currentUser : null;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -654,6 +652,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     }
   };
+
+  if (!isStrictAdmin || !effectiveAdminUser) {
+    return (
+      <AdminRouteGuard
+        currentUser={currentUser}
+        onOpenAuthModal={() => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tradeheaven_open_login'));
+          }
+        }}
+        onNavigate={onNavigate}
+        title="Administrator Control Portal"
+        description="The Trade Heaven Admin Console is strictly restricted to verified root System Administrators."
+      >
+        {null}
+      </AdminRouteGuard>
+    );
+  }
 
   return (
     <div id="unified-admin-dashboard" className="min-h-screen bg-slate-50 flex flex-col lg:flex-row rounded-3xl overflow-hidden border border-slate-200 shadow-xs">

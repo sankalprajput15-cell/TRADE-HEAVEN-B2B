@@ -29,7 +29,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
   aspectRatio,
   onImageChange
 }) => {
-  const { siteContent, updateField, isUserAuthorized, currentUser } = useSiteContent();
+  const { siteContent, updateField, isUserAuthorized, currentUser, isLiveEditMode } = useSiteContent();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const onImageChangeRef = useRef(onImageChange);
   onImageChangeRef.current = onImageChange;
@@ -43,7 +43,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
   const [tick, setTick] = useState<number>(0);
   const [imgLoadError, setImgLoadError] = useState<boolean>(false);
 
-  const canEdit = isUserAuthorized(currentUser).isAuthorized;
+  const canEdit = Boolean(isUserAuthorized(currentUser).isAuthorized && isLiveEditMode);
 
   // Purely derived image source computed during render — NEVER calls setState in useEffect
   const currentSrc = useMemo((): string => {

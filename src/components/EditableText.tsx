@@ -12,8 +12,8 @@ interface Props {
 }
 
 export const EditableText: React.FC<Props> = ({ contentKey, defaultText, as: Component = 'span', className = '' }) => {
-  const { siteContent, updateField, isUserAuthorized, currentUser } = useSiteContent();
-  const canEdit = isUserAuthorized(currentUser).isAuthorized;
+  const { siteContent, updateField, isUserAuthorized, currentUser, isLiveEditMode } = useSiteContent();
+  const canEdit = Boolean(isUserAuthorized(currentUser).isAuthorized && isLiveEditMode);
   
   const siteValue = contentKey.split('.').reduce((o, i) => (o ? o[i] : null), siteContent);
   const defaultEnglishValue = contentKey.split('.').reduce((o, i) => (o ? o[i] : null), DEFAULT_SITE_CONTENT);
