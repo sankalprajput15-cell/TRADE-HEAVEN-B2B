@@ -839,6 +839,69 @@ export const apiClient = {
       success: false,
       message: 'Invalid or expired verification code. Please request a new OTP or contact Trade Heaven on WhatsApp (+91 8532934479) for instant assistance.'
     };
+  },
+
+  /**
+   * Fetches real-time deployment health status between Trade Heaven and BigRock cPanel
+   */
+  async getDeploymentHealth(): Promise<{ success: boolean; data?: DeploymentHealthData; error?: string }> {
+    try {
+      const res = await fetch('/api/v1/deployment/health');
+      if (!res.ok) {
+        throw new Error(`Deployment health endpoint responded with status ${res.status}`);
+      }
+      const data: DeploymentHealthData = await res.json();
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to query deployment health endpoint' };
+    }
   }
 };
+
+export interface DeploymentServiceStatus {
+  name: string;
+  port: number;
+  protocol: string;
+  status: 'OPERATIONAL' | 'DEGRADED' | 'DOWN';
+  reachable: boolean;
+  tlsSupported?: boolean;
+  latencyMs: number;
+  banner: string;
+  error?: string;
+}
+
+export interface DeploymentHealthData {
+  success: boolean;
+  timestamp: string;
+  overallStatus: 'HEALTHY' | 'DEGRADED' | 'OFFLINE';
+  targetHost: string;
+  resolvedIps: string[];
+  primaryIp: string;
+  cpanelUser: string;
+  targetDirectory: string;
+  activeProtocol: string;
+  services: {
+    ftps: DeploymentServiceStatus;
+    sftp: DeploymentServiceStatus;
+    http: DeploymentServiceStatus;
+  };
+  secretsConfig: {
+    ftpServerSet: boolean;
+    ftpUsernameSet: boolean;
+    ftpPasswordSet: boolean;
+    hostConfigured: string;
+  };
+  buildState: {
+    distExists: boolean;
+    fileCount: number;
+    hasIndexHtml: boolean;
+    hasApiPhp: boolean;
+    hasHtaccess: boolean;
+    lastBuildTime: string | null;
+  };
+  systemUptimeSeconds: number;
+  summary: string;
+  error?: string;
+}
+
 

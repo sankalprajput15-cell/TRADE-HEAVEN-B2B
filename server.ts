@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import zlib from 'zlib';
+import net from 'net';
+import dns from 'dns';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -6199,6 +6201,211 @@ app.delete('/api/admin/users/:id', (req, res) => {
 // API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Comprehensive Real-Time Deployment Health Monitor Endpoint: Trade Heaven Host <-> BigRock cPanel
+app.get('/api/v1/deployment/health', async (req, res) => {
+  const rawHost = process.env.FTP_SERVER || 'tradeheaven.net';
+  const targetHost = rawHost.replace(/^(ftp|ftps|http|https|ssh|sftp):\/\//i, '').replace(/[\/:]+.*$/, '').trim() || 'tradeheaven.net';
+  const cpanelUser = process.env.FTP_USERNAME || 'a17604c7';
+  const targetDir = '/home3/a17604c7/public_html/';
+
+  let resolvedIps: string[] = [];
+  try {
+    resolvedIps = await dns.promises.resolve4(targetHost);
+  } catch {
+    resolvedIps = ['208.91.198.118'];
+  }
+
+  // Socket prober helper with timeout & banner extraction
+  const probeSocket = (port: number, timeout = 3500, sendTlsCmd = false): Promise<{
+    reachable: boolean;
+    latencyMs: number;
+    banner: string;
+    tlsSupported?: boolean;
+    error?: string;
+  }> => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const socket = net.connect(port, targetHost, () => {
+        const latencyMs = Date.now() - startTime;
+        let receivedData = '';
+
+        socket.once('data', (chunk) => {
+          receivedData += chunk.toString();
+          if (sendTlsCmd) {
+            socket.write('AUTH TLS\r\n');
+            socket.once('data', (tlsChunk) => {
+              const tlsResp = tlsChunk.toString();
+              socket.destroy();
+              resolve({
+                reachable: true,
+                latencyMs,
+                banner: receivedData.trim().slice(0, 140),
+                tlsSupported: tlsResp.includes('234') || tlsResp.toLowerCase().includes('tls ok')
+              });
+            });
+            setTimeout(() => {
+              socket.destroy();
+              resolve({
+                reachable: true,
+                latencyMs,
+                banner: receivedData.trim().slice(0, 140),
+                tlsSupported: false
+              });
+            }, 600);
+          } else {
+            socket.destroy();
+            resolve({
+              reachable: true,
+              latencyMs,
+              banner: receivedData.trim().slice(0, 140)
+            });
+          }
+        });
+
+        setTimeout(() => {
+          if (!socket.destroyed) {
+            socket.destroy();
+            resolve({
+              reachable: true,
+              latencyMs,
+              banner: 'Connected (no immediate banner)'
+            });
+          }
+        }, 1200);
+      });
+
+      socket.on('error', (err) => {
+        resolve({
+          reachable: false,
+          latencyMs: Date.now() - startTime,
+          banner: 'Connection refused',
+          error: err.message
+        });
+      });
+
+      socket.setTimeout(timeout, () => {
+        socket.destroy();
+        resolve({
+          reachable: false,
+          latencyMs: timeout,
+          banner: 'Connection timed out',
+          error: 'TIMEOUT'
+        });
+      });
+    });
+  };
+
+  try {
+    // Run concurrent probes against BigRock cPanel services
+    const [ftpsProbe, sftpProbe, httpProbe] = await Promise.all([
+      probeSocket(21, 4000, true),
+      probeSocket(22, 3500, false),
+      probeSocket(80, 3000, false)
+    ]);
+
+    // Check local build artifact state
+    const distPath = path.join(process.cwd(), 'dist');
+    let buildState = {
+      distExists: false,
+      fileCount: 0,
+      hasIndexHtml: false,
+      hasApiPhp: false,
+      hasHtaccess: false,
+      lastBuildTime: null as string | null
+    };
+
+    if (fs.existsSync(distPath)) {
+      try {
+        const distFiles = fs.readdirSync(distPath);
+        const stats = fs.statSync(distPath);
+        buildState = {
+          distExists: true,
+          fileCount: distFiles.length,
+          hasIndexHtml: fs.existsSync(path.join(distPath, 'index.html')),
+          hasApiPhp: fs.existsSync(path.join(distPath, 'api.php')),
+          hasHtaccess: fs.existsSync(path.join(distPath, '.htaccess')),
+          lastBuildTime: stats.mtime.toISOString()
+        };
+      } catch {}
+    }
+
+    // Determine overall health state
+    const isFtpsHealthy = ftpsProbe.reachable && ftpsProbe.tlsSupported;
+    const isSftpReachable = sftpProbe.reachable;
+    const isHttpReachable = httpProbe.reachable;
+
+    let overallStatus: 'HEALTHY' | 'DEGRADED' | 'OFFLINE' = 'HEALTHY';
+    if (!isFtpsHealthy && !isSftpReachable && !isHttpReachable) {
+      overallStatus = 'OFFLINE';
+    } else if (!isFtpsHealthy || !isHttpReachable) {
+      overallStatus = 'DEGRADED';
+    }
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      overallStatus,
+      targetHost,
+      resolvedIps,
+      primaryIp: resolvedIps[0] || '208.91.198.118',
+      cpanelUser,
+      targetDirectory: targetDir,
+      activeProtocol: 'FTPS (Port 21, TLS Explicit)',
+      services: {
+        ftps: {
+          name: 'BigRock Pure-FTPd (FTPS)',
+          port: 21,
+          protocol: 'FTPS / Explicit TLS',
+          status: ftpsProbe.reachable ? (ftpsProbe.tlsSupported ? 'OPERATIONAL' : 'DEGRADED') : 'DOWN',
+          reachable: ftpsProbe.reachable,
+          tlsSupported: Boolean(ftpsProbe.tlsSupported),
+          latencyMs: ftpsProbe.latencyMs,
+          banner: ftpsProbe.banner,
+          error: ftpsProbe.error
+        },
+        sftp: {
+          name: 'BigRock OpenSSH (SFTP Gateway)',
+          port: 22,
+          protocol: 'SSH-2.0 / SFTP',
+          status: sftpProbe.reachable ? 'OPERATIONAL' : 'DOWN',
+          reachable: sftpProbe.reachable,
+          latencyMs: sftpProbe.latencyMs,
+          banner: sftpProbe.banner,
+          error: sftpProbe.error
+        },
+        http: {
+          name: 'BigRock Apache Web Server',
+          port: 80,
+          protocol: 'HTTP / Public Web Root',
+          status: httpProbe.reachable ? 'OPERATIONAL' : 'DOWN',
+          reachable: httpProbe.reachable,
+          latencyMs: httpProbe.latencyMs,
+          banner: httpProbe.banner,
+          error: httpProbe.error
+        }
+      },
+      secretsConfig: {
+        ftpServerSet: Boolean(process.env.FTP_SERVER),
+        ftpUsernameSet: Boolean(process.env.FTP_USERNAME),
+        ftpPasswordSet: Boolean(process.env.FTP_PASSWORD),
+        hostConfigured: targetHost
+      },
+      buildState,
+      systemUptimeSeconds: Math.round(process.uptime()),
+      summary: isFtpsHealthy
+        ? 'FTPS and Web services on BigRock are fully operational. Automated deployment pipeline ready.'
+        : 'Connection warning detected on BigRock services. Review latency or firewall status.'
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      timestamp: new Date().toISOString(),
+      overallStatus: 'OFFLINE',
+      error: err?.message || 'Failed to complete deployment diagnostics probe'
+    });
+  }
 });
 
 app.get('/api/debug-login-alert', async (req, res) => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/apiClient';
-import { Database, ShieldCheck, AlertTriangle, RefreshCw, Send, CheckCircle2, XCircle, Code, UserCheck, Terminal } from 'lucide-react';
+import { Database, ShieldCheck, AlertTriangle, RefreshCw, Send, CheckCircle2, XCircle, Code, UserCheck, Terminal, Server } from 'lucide-react';
+import { DeploymentHealthMonitor } from '../admin/DeploymentHealthMonitor';
 
 export const DatabaseDiagnosticTool: React.FC = () => {
   const [testForm, setTestForm] = useState({
@@ -19,7 +20,7 @@ export const DatabaseDiagnosticTool: React.FC = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'test_register' | 'raw_logs' | 'db_schema'>('test_register');
+  const [activeTab, setActiveTab] = useState<'test_register' | 'raw_logs' | 'db_schema' | 'deployment_health'>('test_register');
 
   const checkDatabaseConnection = async () => {
     setDbStatus('checking');
@@ -175,6 +176,15 @@ export const DatabaseDiagnosticTool: React.FC = () => {
         >
           <UserCheck className="w-4 h-4" />
           <span>Database Users ({registeredUsers.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('deployment_health')}
+          className={`pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
+            activeTab === 'deployment_health' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Server className="w-4 h-4" />
+          <span>BigRock Deployment Health</span>
         </button>
       </div>
 
@@ -415,6 +425,11 @@ export const DatabaseDiagnosticTool: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Tab 4: BigRock Deployment Health Monitor */}
+      {activeTab === 'deployment_health' && (
+        <DeploymentHealthMonitor />
       )}
     </div>
   );

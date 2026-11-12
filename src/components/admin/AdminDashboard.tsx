@@ -27,6 +27,7 @@ import { UserDeletionLogModule } from './UserDeletionLogModule';
 import { ClientUploadsAdminModule } from './ClientUploadsAdminModule';
 import { UniversalSiteUploadsVault } from './UniversalSiteUploadsVault';
 import { SeoHealthDashboard } from './SeoHealthDashboard';
+import { DeploymentHealthMonitor } from './DeploymentHealthMonitor';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -60,7 +61,8 @@ import {
   TrendingUp, 
   Zap, 
   FileCheck,
-  FolderLock
+  FolderLock,
+  Server
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
@@ -83,7 +85,8 @@ export type AdminDashboardTabId =
   | 'BULK_CSV_IMPORT' 
   | 'BATCH_IMAGE_IMPORT' 
   | 'MULTI_FILE_UPLOAD'
-  | 'SEO_HEALTH';
+  | 'SEO_HEALTH'
+  | 'DEPLOYMENT_HEALTH';
 
 interface AdminDashboardProps {
   initialTab?: AdminDashboardTabId;
@@ -634,6 +637,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'REGISTERED_SUPPLIERS', label: '🏭 Registered Suppliers', icon: Building2 },
     { id: 'COUNTRIES', label: '📄 Country Portals (SEO)', icon: Globe },
     { id: 'SEO_HEALTH', label: '📈 SEO Health Dashboard', icon: Activity },
+    { id: 'DEPLOYMENT_HEALTH', label: '🚀 Deployment & cPanel Health', icon: Server },
     { id: 'CRM', label: '📊 Lead CRM Hub', icon: Users },
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
     { id: 'USER_DELETION_LOG', label: '🗑️ User Deletion Log', icon: Trash2 },
@@ -1321,6 +1325,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'SEO_HEALTH' && (
           <SeoHealthDashboard />
+        )}
+
+        {activeTab === 'DEPLOYMENT_HEALTH' && (
+          <DeploymentHealthMonitor />
         )}
 
         {activeTab === 'COUNTRIES' && (
