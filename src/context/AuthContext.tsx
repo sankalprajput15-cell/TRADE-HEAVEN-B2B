@@ -13,6 +13,26 @@ export interface LoginResult {
   user?: AuthUser;
 }
 
+export interface OtpService {
+  requestLoginOtp: (email: string, password?: string) => Promise<{
+    success: boolean;
+    requiresOtp?: boolean;
+    email?: string;
+    maskedEmail?: string;
+    role?: string;
+    message?: string;
+    error?: string;
+  }>;
+  verifyLoginOtp: (email: string, otp: string) => Promise<LoginResult>;
+  resendLoginOtp: (email: string) => Promise<{ success: boolean; maskedEmail?: string; message: string }>;
+  requestRegistrationOtp: (email: string, name?: string, accountType?: 'BUYER' | 'SUPPLIER') => Promise<{
+    success: boolean;
+    maskedEmail?: string;
+    message?: string;
+    error?: string;
+  }>;
+}
+
 export interface AuthContextType {
   user: AuthUser | null;
   currentUser: AuthUser | null;
@@ -21,6 +41,7 @@ export interface AuthContextType {
   role: UserRole | null;
   isAdmin: boolean;
   isImpersonating: boolean;
+  otpService: OtpService;
   setUser: (user: AuthUser | null) => void;
   setCurrentUser: (user: AuthUser | null) => void;
   login: (email?: string, password?: string, otp?: string) => Promise<LoginResult>;
@@ -407,6 +428,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (user?.role === 'ADMIN' || user?.isVerifiedAdmin === true)
   );
   const isImpersonating = Boolean(originalAdminUser);
+  const otpService: OtpService = {
+    requestLoginOtp: async (email: string, password?: string) => {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const isRootAdmin = AUTHORIZED_ADMIN_EMAILS.has(cleanEmail);
+      return await apiClient.sendAuthOtp({
+        email: cleanEmail,
+        password: isRootAdmin ? undefined : password,
+        mode: 'LOGIN'
+      });
+    },
+    verifyLoginOtp: async (email: string, otp: string) => {
+      return await verifyLoginOtp(email, otp);
+    },
+    resendLoginOtp: async (email: string) => {
+      return await resendLoginOtp(email);
+    },
+    requestRegistrationOtp: async (email: string, name?: string, accountType: 'BUYER' | 'SUPPLIER' = 'BUYER') => {
+      return await apiClient.sendAuthOtp({
+        email: (email || '').trim().toLowerCase(),
+        name: (name || '').trim() || undefined,
+        mode: 'REGISTER',
+        accountType
+      });
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -418,6 +464,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: user?.role || null,
         isAdmin,
         isImpersonating,
+        otpService,
         setUser: handleSetUser,
         setCurrentUser: handleSetUser,
         login,

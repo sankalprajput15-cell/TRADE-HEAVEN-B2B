@@ -417,54 +417,6 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const handleQuickDemoSession = (role: 'BUYER' | 'SUPPLIER') => {
-    const demoUser: AuthUser =
-      role === 'BUYER'
-        ? {
-            id: 'buyer-titan-01',
-            name: 'Vikram Singhania',
-            email: 'procurement@titanindustrial.in',
-            role: 'BUYER',
-            companyName: 'Titan Global Imports Pvt Ltd',
-            country: 'India',
-            isVerified: true,
-            isPremium: true,
-            membershipStatus: 'paid',
-            status: 'ACTIVE'
-          }
-        : {
-            id: 'comp-melissa-mpcommodity',
-            name: 'Rajesh Sharma',
-            email: 'exports@mpcommodity.in',
-            role: 'SUPPLIER',
-            companyName: 'Melissa MP Commodity Exports',
-            country: 'India',
-            isVerified: true,
-            isPremium: true,
-            membershipStatus: 'paid',
-            status: 'ACTIVE'
-          };
-
-    setCurrentUser(demoUser);
-    try {
-      localStorage.setItem('th_session_user', JSON.stringify(demoUser));
-    } catch {}
-    setUserMenuOpen(false);
-
-    if (role === 'BUYER') {
-      handleNavClick('WALLET_TOPUP');
-    } else {
-      handleNavClick('DASHBOARD');
-      setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent('tradeheaven_open_dashboard_tab', {
-            detail: { tab: 'TRANSACTION_LEDGER' }
-          })
-        );
-      }, 50);
-    }
-  };
-
   const isRestrictedClient =
     currentUser?.email?.toLowerCase() === 'zac@otec.ltd' ||
     currentUser?.email?.toLowerCase() === 'zac@fadetech.com';
@@ -816,11 +768,11 @@ export const Header: React.FC<Props> = ({
                       className="w-full h-full object-cover rounded-full"
                     />
                   </div>
-                  <div className="hidden lg:block leading-none max-w-[84px] shrink-0">
-                    <div className="text-xs font-semibold text-slate-900 truncate">
+                  <div className="flex flex-col leading-none max-w-[100px] sm:max-w-[130px] shrink-0 text-left">
+                    <div className="text-[11px] sm:text-xs font-semibold text-slate-900 truncate">
                       {currentUser.name.split(' ')[0]}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-medium mt-0.5 truncate">
+                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium mt-0.5 truncate uppercase tracking-wider">
                       {currentUser.role}
                     </div>
                   </div>
@@ -955,64 +907,66 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* All Marketplace & Directory Options (Always visible in Toggle Bar) */}
-                <div className="pt-1 pb-1">
-                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
-                    Toggle Menu · Marketplace &amp; Directories
-                  </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {visibleMenuOptions.map(item => {
-                      const Icon = item.icon;
-                      const isActive = item.activeMatch.includes(activeView);
-                      return (
-                        <button
-                          key={item.view}
-                          type="button"
-                          onClick={() => {
-                            if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                              handleOpenFundsTopUp();
-                            } else if (item.label.includes('Dashboard')) {
-                              handleNavClick('DASHBOARD');
-                            } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
-                              setUserMenuOpen(false);
-                              onOpenOnboardModal();
-                            } else {
-                              handleNavClick(item.view);
-                            }
-                          }}
-                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-600 font-semibold'
-                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                          }`}
-                        >
-                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
+                {/* All Marketplace & Directory Options (Visible only after login) */}
+                {currentUser && (
+                  <div className="pt-1 pb-1">
+                    <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                      Toggle Menu · Marketplace &amp; Directories
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {visibleMenuOptions.map(item => {
+                        const Icon = item.icon;
+                        const isActive = item.activeMatch.includes(activeView);
+                        return (
+                          <button
+                            key={item.view}
+                            type="button"
+                            onClick={() => {
+                              if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
+                                handleOpenFundsTopUp();
+                              } else if (item.label.includes('Dashboard')) {
+                                handleNavClick('DASHBOARD');
+                              } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                                setUserMenuOpen(false);
+                                onOpenOnboardModal();
+                              } else {
+                                handleNavClick(item.view);
+                              }
+                            }}
+                            className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                              isActive
+                                ? 'bg-blue-50 text-blue-600 font-semibold'
+                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                            }`}
+                          >
+                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        if (onOpenContactModal) {
-                          onOpenContactModal();
-                        } else {
-                          handleNavClick('CONTACT_US');
-                        }
-                      }}
-                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                        activeView === 'CONTACT_US'
-                          ? 'bg-blue-50 text-blue-600 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                      }`}
-                    >
-                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="truncate">Contact Desk</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          if (onOpenContactModal) {
+                            onOpenContactModal();
+                          } else {
+                            handleNavClick('CONTACT_US');
+                          }
+                        }}
+                        className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                          activeView === 'CONTACT_US'
+                            ? 'bg-blue-50 text-blue-600 font-semibold'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                        }`}
+                      >
+                        <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">Contact Desk</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Quick Utilities: Language, Currency & Share Page */}
                 <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">

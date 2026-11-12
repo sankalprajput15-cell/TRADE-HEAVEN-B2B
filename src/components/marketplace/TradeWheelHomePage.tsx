@@ -224,16 +224,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
 
       {/* 3. FEATURED PRODUCTS CATALOG SECTION */}
       <div id="featured-products-section" className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-              <Package className="w-6 h-6 text-blue-600" />
-              {t('featuredProducts')}
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Source directly from audited manufacturing plants with live FOB/CIF tier pricing and guaranteed lead times.
-            </p>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
           <button
             onClick={() => onNavigate('PRODUCT_DIRECTORY')}
             className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 shrink-0 cursor-pointer"

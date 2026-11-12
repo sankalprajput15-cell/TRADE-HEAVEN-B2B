@@ -32,7 +32,7 @@
   {
     "id": "user-admin-root",
     "email": "yr943334@gmail.com",
-    "passwordHash": "Yash@8532",
+    "passwordHash": "OTP_ONLY_ADMIN_AUTH_REQUIRED",
     "name": "Administrator",
     "role": "ADMIN",
     "companyName": "Trade Heaven Global Operations & Treasury",
@@ -42,22 +42,9 @@
     "isPremium": true,
     "membershipStatus": "paid",
     "tier": "VIP",
-    "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
-  },
-  {
-    "id": "user-admin-legacy",
-    "email": "admin@tradeheaven.net",
-    "passwordHash": "Yash@8532",
-    "name": "Sarah Jenkins",
-    "role": "ADMIN",
-    "companyName": "Trade Heaven Global Operations & Treasury",
-    "country": "United Kingdom",
-    "status": "ACTIVE",
-    "isVerified": true,
-    "isPremium": true,
-    "membershipStatus": "paid",
-    "tier": "VIP",
-    "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80"
+    "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+    "login_otp_code": null,
+    "login_otp_expiry": null
   },
   {
     "id": "user-supplier-melissa",
@@ -72,7 +59,10 @@
     "isPremium": true,
     "membershipStatus": "paid",
     "tier": "Basic Plan",
-    "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
+    "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    "login_otp_code": "235600",
+    "login_otp_expiry": 1794474131146,
+    "login_otp_attempts": 0
   },
   {
     "id": "user-supplier-zac",
@@ -180,5 +170,22 @@
     "membershipStatus": "free",
     "tier": "Free Member",
     "avatarUrl": "/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg"
+  },
+  {
+    "id": "user-admin-sankalp",
+    "email": "sankalprajput15@gmail.com",
+    "passwordHash": "OTP_ONLY_ADMIN_AUTH_REQUIRED",
+    "name": "Sankalp Rajput (Master Admin)",
+    "role": "ADMIN",
+    "companyName": "Trade Heaven Global Operations & Treasury",
+    "country": "United Kingdom",
+    "status": "ACTIVE",
+    "isVerified": true,
+    "isPremium": true,
+    "membershipStatus": "paid",
+    "tier": "VIP",
+    "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+    "login_otp_code": null,
+    "login_otp_expiry": null
   }
 ]

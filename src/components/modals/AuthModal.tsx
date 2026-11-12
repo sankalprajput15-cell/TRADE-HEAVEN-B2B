@@ -92,7 +92,7 @@ export const AuthModal: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const { login, verifyLoginOtp, resendLoginOtp, revokeAllAdminSessions } = useAuth();
+  const { login, verifyLoginOtp, resendLoginOtp, revokeAllAdminSessions, otpService } = useAuth();
 
   const isAdminEmailInput = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(
     email.trim().toLowerCase()
@@ -189,11 +189,7 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsSendingLoginOtp(true);
     try {
-      const res = await apiClient.sendAuthOtp({
-        email: cleanEmail,
-        password: isRootAdmin ? undefined : password,
-        mode: 'LOGIN'
-      });
+      const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : password);
       if (res.success) {
         setLoginOtpSent(true);
         setPendingOtpEmail(res.email || cleanEmail);
@@ -225,12 +221,7 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsSendingRegOtp(true);
     try {
-      const res = await apiClient.sendAuthOtp({
-        email: cleanEmail,
-        name: regName.trim() || undefined,
-        mode: 'REGISTER',
-        accountType: regAccountType
-      });
+      const res = await otpService.requestRegistrationOtp(cleanEmail, regName.trim(), regAccountType);
       if (res.success) {
         setRegOtpSent(true);
         setSuccess(
@@ -267,11 +258,28 @@ export const AuthModal: React.FC<Props> = ({
 
     const cleanOtp = loginOtpCode.trim();
     if (!cleanOtp || cleanOtp.length !== 6) {
-      if (!loginOtpSent) {
-        await handleSendLoginOtpClick();
-        return;
+      // Step 1: User submitted credentials without OTP - automatically dispatch OTP to registered email
+      setIsLoading(true);
+      try {
+        const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : password);
+        if (res.success) {
+          setLoginOtpSent(true);
+          setPendingOtpEmail(res.email || cleanEmail);
+          setPendingMaskedEmail(res.maskedEmail || cleanEmail);
+          setLoginOtpCode('');
+          setAuthMode('LOGIN_OTP');
+          setSuccess(
+            res.message ||
+              `A 6-digit verification code has been dispatched to your registered email (${res.maskedEmail || cleanEmail}). Enter it below to complete sign-in.`
+          );
+        } else {
+          setError(res.message || 'Unable to send OTP. Please verify your credentials.');
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Network error while dispatching login OTP.');
+      } finally {
+        setIsLoading(false);
       }
-      setError('Please enter the 6-digit OTP verification code sent to your registered email before signing in.');
       return;
     }
 
@@ -283,6 +291,7 @@ export const AuthModal: React.FC<Props> = ({
         setPendingOtpEmail(res.email || cleanEmail);
         setPendingMaskedEmail(res.maskedEmail || cleanEmail);
         setLoginOtpCode('');
+        setAuthMode('LOGIN_OTP');
         setSuccess(
           res.message ||
             `6-digit security OTP has been sent to your registered email (${res.maskedEmail || cleanEmail}). Enter it below to complete sign-in.`
@@ -972,11 +981,17 @@ export const AuthModal: React.FC<Props> = ({
 
                 <button
                   type="submit"
-                  disabled={isLoading || loginOtpCode.trim().length !== 6}
+                  disabled={isLoading || !email.trim() || (!isAdminEmailInput && !password.trim())}
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>{isLoading ? 'Verifying OTP & Signing In...' : 'Verify OTP & Sign In'}</span>
+                  <span>
+                    {isLoading
+                      ? 'Processing 2FA Authentication...'
+                      : loginOtpCode.trim().length === 6
+                      ? 'Verify OTP & Sign In'
+                      : 'Continue with Registered Email OTP →'}
+                  </span>
                 </button>
 
                 {/* Login UI WhatsApp Support Link for Any Sign-In / OTP Issues */}
