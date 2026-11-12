@@ -226,6 +226,20 @@ const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
     uploadedAt: '2026-11-06T07:21:43Z'
   },
   {
+    id: 'builtin-black-jade-torch-veined-boulder',
+    url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
+    name: 'Blackstone Jade Co - Torch-Illuminated Nephrite Jade Boulder with Gold Veining.jpeg',
+    format: 'JPG',
+    uploadedAt: '2026-11-12T07:26:16Z'
+  },
+  {
+    id: 'builtin-black-jade-gia-cabochon-box',
+    url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
+    name: 'Blackstone Jade Co - GIA Certified Polished Black Jade Cabochon in Display Case.jpeg',
+    format: 'JPG',
+    uploadedAt: '2026-11-12T07:26:17Z'
+  },
+  {
     id: 'builtin-black-jade-cabochon',
     url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
     name: 'Blackstone Jade Co - Natural Black Jade Cabochon.jpeg',

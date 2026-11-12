@@ -5045,8 +5045,8 @@ let serverListingsStore: any[] = [
   },
   {
     id: 12,
-    title: 'Natural Hand-Polished Black Jade Cabochon Gemstones & Raw Nephrite Blocks (Wyoming Export Grade)',
-    description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). Direct quarry & lapidary export of 100% natural, untreated Black Jade cabochons, polished gemstones, and raw nephrite jade boulders for fine jewelry manufacturers and collectors.',
+    title: 'Natural Hand-Polished Black Jade Cabochon Gemstones & Raw Nephrite Blocks (GIA Report & Attorney Escrow Ready)',
+    description: 'Supplied by Brat / Lars Barnhart, Blackstone Jade Co (USA). Direct quarry & lapidary export of 100% natural, untreated GIA-inspected Black Jade cabochons, torch-verified translucent green/gold-veined nephrite boulders, and precision-domed gemstones.',
     category: 'Raw Materials',
     sub_category: 'Gemstones, Jade & Mineral Specimens',
     price: '450',
@@ -5054,15 +5054,15 @@ let serverListingsStore: any[] = [
     moq_unit: 'Kgs',
     supplier_name: 'Blackstone Jade Co',
     supplier_country: 'United States',
-    owner_email: 'lars.barnhart@gmail.com',
+    owner_email: 'Larsbarnhart25@gmail.com',
     owner_id: 'usr-lars-barnhart-blackstone-jade',
-    image_url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
+    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
     created_at: new Date().toISOString()
   },
   {
     id: 13,
-    title: 'Natural Uncut Turquoise Rough Mineral Matrix & Raw Lapidary Gemstone Slabs',
-    description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). High-grade natural blue-green turquoise rough in host matrix stone, direct from American mines for wholesale lapidary cutting, cabochons, and artisan jewelry.',
+    title: 'Torch-Verified Veined Nephrite Jade Boulder & Natural Turquoise Matrix Specimens',
+    description: 'Supplied by Brat / Lars Barnhart, Blackstone Jade Co (USA). High-grade torch-illuminated nephrite jade boulder with natural gold-yellow mineral veining alongside natural blue-green turquoise rough in host matrix stone.',
     category: 'Raw Materials',
     sub_category: 'Gemstones, Jade & Mineral Specimens',
     price: '680',
@@ -5070,9 +5070,9 @@ let serverListingsStore: any[] = [
     moq_unit: 'Kgs',
     supplier_name: 'Blackstone Jade Co',
     supplier_country: 'United States',
-    owner_email: 'lars.barnhart@gmail.com',
+    owner_email: 'Larsbarnhart25@gmail.com',
     owner_id: 'usr-lars-barnhart-blackstone-jade',
-    image_url: '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+    image_url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
     created_at: new Date().toISOString()
   },
   {
@@ -9062,11 +9062,12 @@ app.post('/api/v1/admin/send-donald-47-buyers-coal-alert', async (req, res) => {
   }
 });
 
-// POST /api/v1/admin/send-blackstone-jade-59-buyers-stones-alert - Dispatch official alert to Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co) about 59 verified buyers offered on Trade Heaven to buy stones + copy to yr943334@gmail.com
-app.post('/api/v1/admin/send-blackstone-jade-59-buyers-stones-alert', async (req, res) => {
+// POST /api/v1/admin/send-blackstone-jade-59-buyers-stones-alert & /api/v1/admin/send-lars-barnhart-attorney-usd-stones-alert
+// Dispatch official alert to Brat / Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co) about 5+ buyers visiting site showing interest in buying stones + Attorney USD Money, Contract, Bank Financials & Proof of Business verification package
+const handleSendLarsBarnhartAttorneyUsdStonesEmail = async (req: express.Request, res: express.Response) => {
   try {
-    const adminCopyEmail = String(req.body?.adminEmail || 'yr943334@gmail.com').trim();
-    const result = await automatedSmtpService.sendBlackstoneJadeFiftyNineBuyersStonesEmail({
+    const adminCopyEmail = String(req.body?.adminEmail || 'sankalprajput15@gmail.com').trim();
+    const result = await automatedSmtpService.sendLarsBarnhartStonesVisitorsAttorneyVerificationEmail({
       dispatchType: 'MANUAL',
       sendAdminCopy: true,
       adminEmail: adminCopyEmail
@@ -9074,29 +9075,33 @@ app.post('/api/v1/admin/send-blackstone-jade-59-buyers-stones-alert', async (req
 
     logServerActivity(
       req,
-      'BLACKSTONE_JADE_59_BUYERS_STONES_ALERT_SENT',
+      'BLACKSTONE_JADE_ATTORNEY_USD_VERIFICATION_SENT',
       'Larsbarnhart25@gmail.com',
       'ADMIN',
-      '/api/v1/admin/send-blackstone-jade-59-buyers-stones-alert',
-      `Dispatched message to Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 59 verified buyers offered on Trade Heaven to buy black jade and precious stones. Copy dispatched to ${adminCopyEmail}.`,
+      req.path,
+      `Dispatched message to Brat / Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 5+ verified buyers visited site showing interest in buying stones + Attorney USD Money, Contract (TRD-INV-27-0003), Bank Financials & Proof of Business verification package. Copy dispatched to ${adminCopyEmail} and yr943334@gmail.com.`,
       result.success ? 'SUCCESS' : 'FAILED'
     );
 
     return res.json({
       success: result.success,
       message:
-        `⚡💎 Dispatched official inquiry alert to Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 59 verified buyers offered on Trade Heaven to buy black jade and precious stones! A copy was sent to ${adminCopyEmail}.`,
+        `⚡💎 Dispatched official email to Brat / Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 5+ buyers visited site showing interest in buying stones + Attorney USD Money, Contract, Bank Financials & Proof of Business verification package! Copies sent to ${adminCopyEmail} & yr943334@gmail.com.`,
       larsReceipt: result.larsReceipt,
       adminReceipt: result.adminReceipt,
+      secondaryAdminReceipt: result.secondaryAdminReceipt,
       history: serverDeliveryQueueManager.getEmailHistory()
     });
   } catch (err: any) {
     return res.status(500).json({
       success: false,
-      message: `Failed to dispatch message to Lars Barnhart: ${err?.message || err}`
+      message: `Failed to dispatch message to Brat / Lars Barnhart: ${err?.message || err}`
     });
   }
-});
+};
+
+app.post('/api/v1/admin/send-blackstone-jade-59-buyers-stones-alert', handleSendLarsBarnhartAttorneyUsdStonesEmail);
+app.post('/api/v1/admin/send-lars-barnhart-attorney-usd-stones-alert', handleSendLarsBarnhartAttorneyUsdStonesEmail);
 
 // POST /api/v1/admin/send-realistic-client-demo-mail - Delivers ultra-realistic client correspondence (bank payment reconciliation voucher, commercial invoice, and trade assurance certificate draft indenture) to clients, with demo copy delivered to yr943334@gmail.com after yesterday's mails
 app.post('/api/v1/admin/send-realistic-client-demo-mail', async (req, res) => {

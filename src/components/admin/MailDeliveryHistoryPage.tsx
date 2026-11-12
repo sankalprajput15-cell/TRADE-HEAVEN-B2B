@@ -31,9 +31,14 @@ import { AuthUser, ActiveView } from '../../types';
 function sanitizeAndResolveEmailPreviewHtml(html: string): string {
   if (!html) return '';
   return html
+    .replace(/cid:torchveinedboulder(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg')
+    .replace(/cid:giacabochonspecimen(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg')
+    .replace(/cid:giacabochonbox(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg')
     .replace(/cid:blackjadecabochon(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg')
     .replace(/cid:turquoisematrix(@tradeheaven\.net)?/gi, '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg')
-    .replace(/https:\/\/ais-(?:dev|pre)-[^"'\s\)]+\/assets\/aistudio\//gi, '/assets/aistudio/');
+    .replace(/https:\/\/ais-(?:dev|pre)-[^"'\s\)]+\/assets\/aistudio\//gi, '/assets/aistudio/')
+    .replace(/display:\s*flex;\s*gap:\s*[^;]+;\s*flex-wrap:\s*wrap;?/gi, 'display: block; width: 100%; max-width: 100%; box-sizing: border-box;')
+    .replace(/flex:\s*1;\s*min-width:\s*\d+px;/gi, 'display: block; width: 100%; max-width: 100%; box-sizing: border-box; margin-bottom: 12px;');
 }
 
 interface MailDeliveryHistoryPageProps {
@@ -466,18 +471,18 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
           type: 'success',
           message:
             data.message ||
-            '⚡💎 Dispatched message to Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 59 verified buyers offered on Trade Heaven to buy black jade and precious stones + copy to yr943334@gmail.com!'
+            '⚡💎 Dispatched email to Brat / Lars Barnhart (Larsbarnhart25@gmail.com • Blackstone Jade Co): 5+ buyers visited site showing interest in buying stones + Attorney USD Money, Contract, Bank Financials & Proof of Business verification package!'
         });
       } else {
         setStatusBanner({
           type: 'error',
-          message: data?.message || 'Failed to dispatch message to Lars Barnhart.'
+          message: data?.message || 'Failed to dispatch message to Brat / Lars Barnhart.'
         });
       }
     } catch (err: any) {
       setStatusBanner({
         type: 'error',
-        message: err?.message || 'Network error while dispatching message to Lars Barnhart.'
+        message: err?.message || 'Network error while dispatching message to Brat / Lars Barnhart.'
       });
     } finally {
       setIsLoading(false);
@@ -633,7 +638,7 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-950 via-teal-900 to-cyan-900 hover:from-black hover:to-teal-950 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-teal-400/40"
             >
               <Send className="w-3.5 h-3.5 text-teal-300" />
-              <span>⚡💎 Send Lars Barnhart: 59 Buyers (Stones)</span>
+              <span>⚡💎 Email Brat / Lars Barnhart: 5+ Stone Buyers + Attorney USD &amp; Contract Proof</span>
             </button>
 
             <button

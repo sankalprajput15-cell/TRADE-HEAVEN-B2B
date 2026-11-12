@@ -7456,26 +7456,28 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
     unit: 'Kgs',
     images: [
+      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
+      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
     ],
-    description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). Direct quarry & lapidary export of 100% natural, untreated Black Jade cabochons, precision-domed gemstones, and raw nephrite jade blocks for fine jewelry manufacturers, lapidary studios, and collectors.',
+    description: 'Supplied by Brat / Lars Barnhart, Blackstone Jade Co (USA). Direct quarry & lapidary export of 100% natural, untreated GIA-inspected Black Jade cabochons, torch-verified translucent green/gold-veined nephrite boulders, and precision-domed gemstones for fine jewelry manufacturers, lapidary studios, and institutional collectors.',
     specifications: {
       'Supplier': 'Blackstone Jade Co',
-      'Representative': 'Lars Barnhart (lars.barnhart@gmail.com)',
-      'Gemstone Type': '100% Natural Untreated Black Nephrite Jade Cabochon & Rough',
-      'Origin': 'Wyoming / United States',
-      'Finish': 'Mirror-Polished High-Dome Cabochon & Raw Lapidary Slabs',
-      'Inspection': 'GIA / Gemological Authenticity Certificate Available'
+      'Representative': 'Brat / Lars Barnhart (Larsbarnhart25@gmail.com)',
+      'Gemstone Type': '100% Natural Untreated Black Nephrite Jade Cabochon & Veined Boulder Rough',
+      'Origin': 'Wyoming / Idaho, United States',
+      'Finish': 'GIA-Inspected Mirror-Polished High-Dome Cabochon & Torch-Verified Nephrite Boulder',
+      'Inspection': 'GIA Gemological Report & Attorney Escrow Verification Ready'
     },
     featured: true,
     inStock: true,
     rating: 5.0,
-    reviewCount: 31
+    reviewCount: 38
   },
   {
     id: 'prod-blackstone-turquoise-rough-matrix',
-    title: 'Natural Uncut Turquoise Rough Mineral Matrix & Raw Lapidary Gemstone Specimens',
+    title: 'Torch-Verified Veined Nephrite Jade Boulder & Natural Turquoise Matrix Specimens',
     category: 'Energy, Minerals & Metals',
     subCategory: 'Gemstones, Jade & Mineral Specimens',
     supplierId: 'comp-lars-barnhart-blackstone-jade',
@@ -7498,22 +7500,24 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
     unit: 'Kgs',
     images: [
+      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
+      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
     ],
-    description: 'Supplied by Lars Barnhart, Blackstone Jade Co (USA). High-grade natural blue-green turquoise rough in natural host mineral matrix stone, direct from American mines for wholesale lapidary cutting, cabochons, inlay work, and artisan jewelry.',
+    description: 'Supplied by Brat / Lars Barnhart, Blackstone Jade Co (USA). High-grade torch-illuminated nephrite jade boulder with natural gold-yellow mineral veining alongside natural blue-green turquoise rough in host mineral matrix stone, direct from American mines.',
     specifications: {
       'Supplier': 'Blackstone Jade Co',
-      'Representative': 'Lars Barnhart (lars.barnhart@gmail.com)',
-      'Gemstone Type': 'Natural Uncut Turquoise Rough in Host Matrix',
-      'Origin': 'Southwestern United States',
-      'Grade': 'AAA Natural High-Color Lapidary & Specimen Rough',
-      'Treatment': '100% Natural Untreated Mine-Run Rough'
+      'Representative': 'Brat / Lars Barnhart (Larsbarnhart25@gmail.com)',
+      'Gemstone Type': 'Torch-Verified Veined Nephrite Boulder & Uncut Turquoise Matrix',
+      'Origin': 'United States',
+      'Grade': 'AAA Investment & Museum Grade Lapidary Specimen Rough',
+      'Treatment': '100% Natural Untreated Mine-Run Rough (GIA Report Available)'
     },
     featured: true,
     inStock: true,
     rating: 5.0,
-    reviewCount: 27
+    reviewCount: 34
   },
   {
     id: 'prod-reverse-energy-sa-coal',
