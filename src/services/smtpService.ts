@@ -1538,8 +1538,8 @@ const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
               <td style="padding: 8px 10px; font-weight: 700; color: #0f172a;">Melissa Prezios (Managing Director — Fuel &amp; Petroleum Brokerage)</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px 10px; font-weight: 700; color: #475569;">Registered Office &amp; ABN / Tax ID:</td>
-              <td style="padding: 8px 10px; color: #0f172a;">2 Park Road, Sans souci NSW 2219, SYDNEY Australia • ABN-61-648-291-004 • AU-GST-61648291004</td>
+              <td style="padding: 8px 10px; font-weight: 700; color: #475569;">Location &amp; ABN / Tax ID:</td>
+              <td style="padding: 8px 10px; color: #0f172a;">Sydney, Australia • ABN-61-648-291-004 • AU-GST-61648291004</td>
             </tr>
             <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
               <td style="padding: 8px 10px; font-weight: 700; color: #475569;">Guaranteed Escrow &amp; Indemnity Limit:</td>
@@ -7000,12 +7000,12 @@ export class AutomatedSmtpService {
       applicantName: String(certInput?.applicantName || 'Melissa Prezios (Managing Director)'),
       applicantEmail: String(certInput?.applicantEmail || 'melissa@mpcommoditybrokers.com'),
       registeredAddress: String(
-        certInput?.registeredAddress || '2 Park Road, Sans souci NSW 2219, SYDNEY Australia'
+        certInput?.registeredAddress || 'Sydney, Australia'
       ),
       country: String(certInput?.country || 'Australia'),
       businessType: String(
         certInput?.businessType ||
-          'Fuel & Petroleum Commodity Broker (EN590 10PPM, Jet A-1, D6 Virgin Fuel Oil)'
+          'Fuel & Petroleum Commodity Broker (Pricing as per Platts • SBLC Only)'
       ),
       legalRegistrationNumber: String(certInput?.legalRegistrationNumber || 'ABN-61-648-291-004'),
       taxOrVatId: String(certInput?.taxOrVatId || 'AU-GST-61648291004'),
@@ -8032,10 +8032,10 @@ export class AutomatedSmtpService {
             <!-- Section 1 -->
             <div style="border-left: 3px solid #0f172a; padding-left: 14px; margin-bottom: 16px;">
               <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
-                1. Legal Corporate Entity &amp; Registered Office Identification
+                1. Legal Corporate Entity &amp; Location Identification
               </div>
               <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #475569; line-height: 1.55;">
-                Formally establishes <strong>MP Commodity Brokers Australia Pty Ltd</strong> as a verified corporate trading entity with registered office at <strong>2 Park Road, Sans Souci NSW 2219, Sydney Australia</strong>, registered under <strong>ABN 61 648 291 004</strong>, GST <strong>AU-61648291004</strong>, and Dun &amp; Bradstreet <strong>D-U-N-S 75-391-8842</strong>, with Melissa Prezios recognized as Authorized Principal Signatory.
+                Formally establishes <strong>MP Commodity Brokers Australia Pty Ltd</strong> as a verified corporate trading entity located in <strong>Sydney, Australia</strong>, registered under <strong>ABN 61 648 291 004</strong>, GST <strong>AU-61648291004</strong>, and Dun &amp; Bradstreet <strong>D-U-N-S 75-391-8842</strong>, with Melissa Prezios recognized as Authorized Principal Signatory (Payment: SBLC Only • Pricing as per Platts).
               </p>
             </div>
 
@@ -8569,8 +8569,273 @@ export class AutomatedSmtpService {
       secondaryAdminReceipt
     };
   }
-}
 
+  /**
+   * Dispatch official profile & listing update confirmation email to Melissa Prezios
+   * (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd • WhatsApp: +61411510887)
+   * confirming:
+   * 1. Street address completely removed from platform; location now displays strictly as "Sydney, Australia"
+   * 2. SBLC (Standby Letter of Credit) set as the ONLY accepted form of payment
+   * 3. Pricing updated strictly to "As per Platts (There is no set price)"
+   */
+  public async sendMelissaProfileUpdateConfirmationEmail(options?: {
+    melissaEmail?: string;
+    adminEmail?: string;
+    secondaryAdminEmail?: string;
+    sendAdminCopy?: boolean;
+    dispatchType?: 'AUTOMATED' | 'MANUAL';
+  }): Promise<{
+    success: boolean;
+    melissaReceipt: SerializedDeliveryReceipt;
+    adminReceipt?: SerializedDeliveryReceipt;
+    secondaryAdminReceipt?: SerializedDeliveryReceipt;
+  }> {
+    const melissaEmail = (options?.melissaEmail || 'melissa@mpcommoditybrokers.com').trim();
+    const adminEmail = (options?.adminEmail || 'sankalprajput15@gmail.com').trim();
+    const secondaryAdminEmail = (options?.secondaryAdminEmail || 'yr943334@gmail.com').trim();
+    const transporter = this.createPrimaryTransporter();
+
+    const subject =
+      '✅ Profile & Listing Updates Completed — MP Commodity Brokers Australia Pty Ltd (SBLC Only • Pricing as per Platts • Sydney, Australia)';
+
+    const text = `Hi Melissa,
+
+Thank you for reaching out to Chris and our Trade Heaven Support & Compliance Desk.
+
+We have immediately reviewed and updated your company profile, supplier storefront, product listings, and Trade Assurance records for MP Commodity Brokers Australia Pty Ltd across the entire Trade Heaven platform in strict accordance with your instructions:
+
+1. PAYMENT TERMS UPDATED TO SBLC ONLY:
+   • SBLC (Standby Letter of Credit) is now displayed as the ONLY accepted form of payment across your supplier profile, product listings, and inquiry checkout.
+   • All references to other payment methods (such as Bank Transfer / T/T) have been completely removed.
+
+2. PRICING UPDATED TO "AS PER PLATTS (NO SET PRICE)":
+   • All fixed prices and static price tiers have been removed from your EN590 10PPM and Jet Fuel A1 listings.
+   • Your pricing is now strictly displayed across the platform as: "Pricing as per Platts (There is no set price)".
+
+3. STREET ADDRESS COMPLETELY REMOVED FOR YOUR PRIVACY & SECURITY:
+   • Your street address has been permanently purged from your public supplier profile, product pages, supplier directory, and platform certificates so your private location is protected.
+   • Your location now displays strictly as: "Sydney, Australia".
+
+4. VERIFIED ACCOUNT & CONTACT DETAILS ON FILE:
+   • Contact Person: Melissa Prezios
+   • Company Name: MP Commodity Brokers Australia Pty Ltd
+   • Location Displayed: Sydney, Australia
+   • WhatsApp: +61411510887 (Sydney, Australia)
+   • Official Email: melissa@mpcommoditybrokers.com
+   • Payment Terms: SBLC (Standby Letter of Credit Only)
+   • Pricing Basis: Pricing as per Platts (There is no set price)
+
+You can view your live updated storefront anytime at:
+https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity
+
+Please let us know if you would like any additional adjustments made to your profile or listings.
+
+Warm regards,
+Chris & The Trade Heaven Global Support Desk
+Trade Heaven Global B2B Network
+Email: info@tradeheaven.net | Web: www.tradeheaven.net`;
+
+    const html = `
+      <div class="email-style-container" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; width: 100%; max-width: 640px; margin: 0 auto; box-sizing: border-box; background: #ffffff; border: 2px solid #0f172a; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);">
+        <!-- Header Banner -->
+        <div style="width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #064e3b 100%); padding: 22px 18px; color: #ffffff; border-bottom: 3px solid #10b981;">
+          <div style="display: inline-block; box-sizing: border-box; background: rgba(16, 185, 129, 0.20); border: 1.5px solid #34d399; color: #a7f3d0; font-size: 10.5px; font-weight: 800; padding: 5px 11px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px;">
+            ✅ SUPPLIER PROFILE &amp; PRIVACY UPDATES COMPLETED • SYDNEY, AUSTRALIA
+          </div>
+          <h1 style="margin: 0; font-size: 19px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.35; color: #ffffff;">
+            MP Commodity Brokers Australia Pty Ltd &mdash; Profile, Payment Terms, Platts Pricing &amp; Location Updated
+          </h1>
+          <p style="margin: 8px 0 0 0; font-size: 12.5px; color: #e2e8f0; line-height: 1.5;">
+            Prepared for <strong>Melissa Prezios</strong> (<span style="color: #6ee7b7;">melissa@mpcommoditybrokers.com</span> • WhatsApp: <strong>+61411510887</strong> • Sydney, Australia)
+          </p>
+        </div>
+
+        <!-- Body Container -->
+        <div style="width: 100%; box-sizing: border-box; padding: 18px 16px; color: #1e293b; font-size: 13.5px; line-height: 1.6;">
+          <!-- Greeting & Opening Box (Strictly Bordered) -->
+          <div style="width: 100%; box-sizing: border-box; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: #0f172a;">
+              Hi Melissa,
+            </p>
+            <p style="margin: 0; color: #334155; font-size: 13px; line-height: 1.6;">
+              Thank you for your email to <strong>Chris</strong>. We have immediately reviewed and updated your supplier profile, product listings, and platform records for <strong>MP Commodity Brokers Australia Pty Ltd</strong> in strict accordance with your instructions. All changes are now <strong>100% live</strong> across the Trade Heaven platform.
+            </p>
+          </div>
+
+          <!-- 3 Completed Updates Section (Strictly Bordered) -->
+          <div style="width: 100%; box-sizing: border-box; background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 15px; margin-bottom: 18px;">
+            <div style="font-size: 11.5px; font-weight: 900; color: #065f46; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1.5px solid #a7f3d0;">
+              📋 SUMMARY OF COMPLETED CHANGES ON YOUR PROFILE &amp; LISTINGS
+            </div>
+
+            <!-- Update 1: SBLC Only -->
+            <div style="width: 100%; box-sizing: border-box; background: #ffffff; border: 1.5px solid #10b981; border-left: 4px solid #059669; border-radius: 8px; padding: 11px 12px; margin-bottom: 10px;">
+              <div style="font-size: 12.5px; font-weight: 800; color: #065f46; margin-bottom: 4px;">
+                1. Payment Terms Updated Strictly to: SBLC Only
+              </div>
+              <p style="margin: 0; font-size: 12px; color: #334155; line-height: 1.5;">
+                <strong>SBLC (Standby Letter of Credit)</strong> is now set as the <strong>only form of payment</strong> across your storefront, product cards, and buyer inquiry modals. All references to other payment methods have been removed.
+              </p>
+            </div>
+
+            <!-- Update 2: Pricing as per Platts (No set price) -->
+            <div style="width: 100%; box-sizing: border-box; background: #ffffff; border: 1.5px solid #0284c7; border-left: 4px solid #0369a1; border-radius: 8px; padding: 11px 12px; margin-bottom: 10px;">
+              <div style="font-size: 12.5px; font-weight: 800; color: #075985; margin-bottom: 4px;">
+                2. Pricing Updated Strictly to: &ldquo;As per Platts (There is no set price)&rdquo;
+              </div>
+              <p style="margin: 0; font-size: 12px; color: #334155; line-height: 1.5;">
+                All fixed dollar amounts and static price ranges have been completely removed. Your fuel and commodity listings now state: <strong>&ldquo;Pricing as per Platts (There is no set price)&rdquo;</strong>.
+              </p>
+            </div>
+
+            <!-- Update 3: Address Removed -> Sydney, Australia Only -->
+            <div style="width: 100%; box-sizing: border-box; background: #ffffff; border: 1.5px solid #f59e0b; border-left: 4px solid #d97706; border-radius: 8px; padding: 11px 12px;">
+              <div style="font-size: 12.5px; font-weight: 800; color: #92400e; margin-bottom: 4px;">
+                3. Street Address Removed for Privacy &amp; Security &mdash; Location Set to &ldquo;Sydney, Australia&rdquo;
+              </div>
+              <p style="margin: 0; font-size: 12px; color: #334155; line-height: 1.5;">
+                Your street address has been completely purged from your public profile, supplier directory, product pages, and certificates so scammers or unauthorized third parties cannot see your street location. Your location now displays strictly as <strong>Sydney, Australia</strong>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Live Verification Table (Strictly Bordered) -->
+          <div style="width: 100%; box-sizing: border-box; background: #f8fafc; border: 1.5px solid #94a3b8; border-radius: 12px; padding: 14px; margin-bottom: 18px; overflow: hidden;">
+            <div style="font-size: 11.5px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #cbd5e1;">
+              🔒 VERIFIED PUBLIC PROFILE &amp; LISTING CONFIGURATION (LIVE NOW)
+            </div>
+            <table style="width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; background: #ffffff; border: 1.5px solid #cbd5e1; box-sizing: border-box; word-break: break-word; overflow-wrap: anywhere;">
+              <tr>
+                <td style="width: 38%; padding: 8px 10px; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; background: #f1f5f9;">Contact Person:</td>
+                <td style="width: 62%; padding: 8px 10px; color: #0f172a; font-weight: 800; border: 1px solid #cbd5e1;">Melissa Prezios</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; background: #f1f5f9;">Company Name:</td>
+                <td style="padding: 8px 10px; color: #0f172a; font-weight: 800; border: 1px solid #cbd5e1;">MP Commodity Brokers Australia Pty Ltd</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; background: #f1f5f9;">Displayed Location:</td>
+                <td style="padding: 8px 10px; color: #047857; font-weight: 800; border: 1px solid #cbd5e1;">Sydney, Australia (Street Address Removed)</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; background: #f1f5f9;">Accepted Payment Terms:</td>
+                <td style="padding: 8px 10px; color: #047857; font-weight: 800; border: 1px solid #cbd5e1;">SBLC (Standby Letter of Credit Only)</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; background: #f1f5f9;">Pricing Structure:</td>
+                <td style="padding: 8px 10px; color: #0369a1; font-weight: 800; border: 1px solid #cbd5e1;">Pricing as per Platts (There is no set price)</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; background: #f1f5f9;">WhatsApp &amp; Email:</td>
+                <td style="padding: 8px 10px; color: #0f172a; font-weight: 700; border: 1px solid #cbd5e1;">+61411510887 (Sydney, Australia) • melissa@mpcommoditybrokers.com</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- CTA Section (Strictly Bordered) -->
+          <div style="width: 100%; box-sizing: border-box; background: #0f172a; border: 2px solid #10b981; border-radius: 12px; padding: 16px 14px; text-align: center; color: #ffffff;">
+            <div style="font-size: 13.5px; font-weight: 800; color: #ffffff; margin-bottom: 6px;">
+              Review Your Updated Storefront on Trade Heaven
+            </div>
+            <p style="margin: 0 0 12px 0; font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+              Click below to inspect your live profile for <strong>MP Commodity Brokers Australia Pty Ltd</strong> or reply directly to this email if you need any further changes:
+            </p>
+            <a href="https://www.tradeheaven.net/?view=VENDOR_PROFILE&supplier=comp-melissa-mpcommodity" style="display: block; width: 100%; max-width: 400px; margin: 0 auto; box-sizing: border-box; background: #10b981; color: #022c22; text-decoration: none; font-size: 13px; font-weight: 900; padding: 11px 16px; border-radius: 8px; border: 1.5px solid #6ee7b7; text-align: center;">
+              View Updated Storefront (MP Commodity Brokers Australia) &rarr;
+            </a>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="width: 100%; box-sizing: border-box; background: #020617; padding: 14px 12px; text-align: center; color: #94a3b8; font-size: 10.5px; line-height: 1.55; border-top: 2px solid #1e293b;">
+          Chris &amp; The Trade Heaven Global Support &amp; Compliance Desk • Trade Heaven Global B2B Network<br/>
+          MP Commodity Brokers Australia Pty Ltd (Sydney, Australia) • SBLC Only • Pricing as per Platts<br/>
+          Direct Support: info@tradeheaven.net • www.tradeheaven.net
+        </div>
+      </div>
+    `;
+
+    const melissaReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      melissaEmail,
+      {
+        from: this.senderFormatted,
+        replyTo: this.replyToAddress,
+        subject,
+        text,
+        html,
+        rawHtmlPreview: html,
+        dispatchType: options?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: 'MP Commodity Brokers Australia Pty Ltd',
+        companyId: 'comp-melissa-mpcommodity',
+        recipientName: 'Melissa Prezios',
+        trackingId: `ms-trk-melissa-profile-updates-${Date.now().toString(36)}`,
+        summaryText:
+          'PROFILE & LISTING UPDATES CONFIRMATION SENT TO MELISSA PREZIOS (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd • +61411510887): Confirmed (1) SBLC is the only form of payment, (2) Pricing is strictly as per Platts with no set price, and (3) Street address completely removed from platform — displaying Sydney, Australia only.'
+      },
+      transporter || undefined
+    );
+
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    if (options?.sendAdminCopy !== false && adminEmail) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: this.senderFormatted,
+          replyTo: this.replyToAddress,
+          subject: `[ADMIN COPY] ${subject}`,
+          text,
+          html,
+          rawHtmlPreview: html,
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-melissa-profile-updates-admin1-${Date.now().toString(36)}`,
+          summaryText:
+            `[ADMIN COPY] Confirmation email sent to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd) confirming SBLC Only payment terms, Pricing as per Platts (no set price), and removal of street address (Sydney, Australia only).`
+        },
+        transporter || undefined
+      );
+    }
+
+    let secondaryAdminReceipt: SerializedDeliveryReceipt | undefined;
+    if (
+      options?.sendAdminCopy !== false &&
+      secondaryAdminEmail &&
+      secondaryAdminEmail.toLowerCase() !== adminEmail.toLowerCase()
+    ) {
+      secondaryAdminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        secondaryAdminEmail,
+        {
+          from: this.senderFormatted,
+          replyTo: this.replyToAddress,
+          subject: `[ADMIN COPY] ${subject}`,
+          text,
+          html,
+          rawHtmlPreview: html,
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: 'comp-melissa-mpcommodity',
+          recipientName: `Admin Copy (${secondaryAdminEmail})`,
+          trackingId: `ms-trk-melissa-profile-updates-admin2-${Date.now().toString(36)}`,
+          summaryText:
+            `[ADMIN COPY] Confirmation email sent to Melissa Prezios (melissa@mpcommoditybrokers.com • MP Commodity Brokers Australia Pty Ltd) confirming SBLC Only payment terms, Pricing as per Platts (no set price), and removal of street address (Sydney, Australia only).`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: melissaReceipt.success,
+      melissaReceipt,
+      adminReceipt,
+      secondaryAdminReceipt
+    };
+  }
+}
 
 export const automatedSmtpService = new AutomatedSmtpService();
 

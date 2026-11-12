@@ -135,13 +135,6 @@ export const DailyFreeLeadBanner: React.FC<Props> = ({
             )}
           </div>
 
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-            ⚡ Claim Your 1 Free Buy Order Today!
-          </h2>
-
-          <p className="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed max-w-3xl">
-            Anyone—whether registered or unregistered—can unlock 1 open buy order inquiry every 24 hours—100% free. Pitch directly to prospective buyers and start exporting!
-          </p>
         </div>
 
         {/* Free Leads Disclaimer / Community Note */}

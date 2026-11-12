@@ -1120,7 +1120,7 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
                       <span>{copiedId === 'html-body' ? 'Copied HTML' : 'Copy HTML'}</span>
                     </button>
                   </div>
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white p-4 max-h-96 overflow-y-auto shadow-inner">
+                  <div className="email-style-container email-preview-wrapper overflow-y-auto max-h-96">
                     {selectedEntry.htmlPreview ? (
                       <div dangerouslySetInnerHTML={{ __html: sanitizeAndResolveEmailPreviewHtml(selectedEntry.htmlPreview) }} />
                     ) : (

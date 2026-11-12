@@ -331,12 +331,6 @@ export const PaymentCheckoutModal: React.FC<Props> = ({
           <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">
             <Lock className="w-3.5 h-3.5" /> 256-Bit SSL Encrypted trade protection Rail
           </div>
-          <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-            Secure Trade Protection Checkout &amp; Wallet Top-Up
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
-            Top up your Trade Heaven buyer wallet (`creditBuyerDeposit`) or lock funds in mediated escrow.
-          </p>
         </div>
 
         {/* Order Summary Strip + Direct Funds Top-Up Action */}

@@ -844,8 +844,8 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     companyName: 'MP Commodity Brokers Australia Pty Ltd',
     legalRegistrationNumber: 'ABN-61-648-291-004',
     country: 'Australia',
-    city: 'Sydney, NSW',
-    address: '2 Park Road, Sans souci NSW 2219, SYDNEY Australia',
+    city: 'Sydney',
+    address: 'Sydney, Australia',
     establishedYear: 2016,
     businessType: 'Fuel & Petroleum Commodity Broker',
     tier: 'SILVER',
@@ -862,13 +862,13 @@ export const MOCK_COMPANIES: CompanyProfile[] = [
     productionLines: 6,
     logoUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
     bannerUrl: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
-    description: 'MP Commodity Brokers Australia Pty Ltd — Paid Basic Plan Member with all platform services enabled. Specializing in bulk Fuel & Petroleum commodities (EN590 10PPM Diesel, Jet Fuel A-1, D6 Virgin Fuel Oil, Automotive & Marine Fuel). Direct street address and brokerage desk contacts are protected for Paid Members.',
+    description: 'MP Commodity Brokers Australia Pty Ltd (Sydney, Australia) — Paid Basic Plan Member with all platform services enabled. Specializing in bulk Fuel & Petroleum commodities (EN590 10PPM Diesel, Jet Fuel A-1, D6 Virgin Fuel Oil, Automotive & Marine Fuel). Pricing is as per Platts (no set price). SBLC is the only form of payment.',
     contactPerson: 'Melissa Prezios',
     contactEmail: 'melissa@mpcommoditybrokers.com',
     contactPhone: '+61411510887',
     whatsapp: '+61411510887',
     isContactMasked: true,
-    certifications: ['Paid Basic Plan', 'All Services Enabled', 'Fuel & Petroleum Broker', 'Payment: Bank transfer', 'ASIC Registered', 'ISO 9001:2015']
+    certifications: ['Paid Basic Plan', 'All Services Enabled', 'Fuel & Petroleum Broker', 'Payment: SBLC Only', 'Pricing: As per Platts (No Set Price)', 'ASIC Registered', 'ISO 9001:2015']
   },
   {
     id: 'comp-middle-fox-llc',
@@ -7663,26 +7663,27 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: '5,000 Metric Tons',
     moq: 5000,
     moqUnit: 'Metric Tons',
-    priceRangeUsd: '$520 - $580 / MT',
+    priceRangeUsd: 'Pricing as per Platts (No Set Price)',
     priceTiers: [
-      { minUnits: 5000, maxUnits: 15000, priceUsd: 580 },
-      { minUnits: 15001, maxUnits: 50000, priceUsd: 545 },
-      { minUnits: 50001, priceUsd: 520 }
+      { minUnits: 5000, maxUnits: 15000, priceUsd: 0 },
+      { minUnits: 15001, maxUnits: 50000, priceUsd: 0 },
+      { minUnits: 50001, priceUsd: 0 }
     ],
     leadTimeDays: 10,
-    portOfDispatch: 'Port of Sydney, NSW Australia',
+    portOfDispatch: 'Sydney, Australia',
     supportedIncoterms: ['FOB', 'CIF', 'CFR', 'TTO'],
     unit: 'Metric Tons',
     images: [
       'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
       '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
     ],
-    description: 'Bulk EN590 10PPM Ultra-Low Sulfur Diesel, Jet Fuel A-1, and D6 Virgin Fuel Oil brokered by MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia). Paid Basic Plan verified supplier with all platform services enabled. Payment terms: Bank transfer.',
+    description: 'Bulk EN590 10PPM Ultra-Low Sulfur Diesel, Jet Fuel A-1, and D6 Virgin Fuel Oil brokered by MP Commodity Brokers Australia Pty Ltd (Sydney, Australia). Pricing is as per Platts (there is no set price). SBLC is the only form of payment.',
     specifications: {
       'Company': 'MP Commodity Brokers Australia Pty Ltd',
-      'Address': '2 Park Road, Sans souci NSW 2219, SYDNEY Australia',
-      'Supplier Contact': 'Melissa Prezios (melissa@mpcommoditybrokers.com | +61411510887)',
-      'Payment Terms': 'Bank transfer',
+      'Location': 'Sydney, Australia',
+      'Supplier Contact': 'Melissa Prezios (melissa@mpcommoditybrokers.com | WhatsApp: +61411510887)',
+      'Pricing': 'As per Platts (No Set Price)',
+      'Payment Terms': 'SBLC Only (Standby Letter of Credit)',
       'Membership Plan': 'Paid Basic Plan — All Services Enabled',
       'Inspection': 'SGS / Saybolt Dip Test at Loading Port'
     },
@@ -7704,25 +7705,26 @@ export const MOCK_PRODUCTS: Product[] = [
     minOrderQuantity: '10,000 Barrels',
     moq: 10000,
     moqUnit: 'Barrels',
-    priceRangeUsd: '$74 - $82 / BBL',
+    priceRangeUsd: 'Pricing as per Platts (No Set Price)',
     priceTiers: [
-      { minUnits: 10000, maxUnits: 50000, priceUsd: 82 },
-      { minUnits: 50001, priceUsd: 74 }
+      { minUnits: 10000, maxUnits: 50000, priceUsd: 0 },
+      { minUnits: 50001, priceUsd: 0 }
     ],
     leadTimeDays: 12,
-    portOfDispatch: 'Port of Sydney, NSW Australia',
+    portOfDispatch: 'Sydney, Australia',
     supportedIncoterms: ['FOB', 'CIF', 'TTO'],
     unit: 'Barrels',
     images: [
       '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
       'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
     ],
-    description: 'High-grade D6 Virgin Fuel Oil and Marine Gasoil (MGO) supplied by MP Commodity Brokers Australia Pty Ltd (2 Park Road, Sans souci NSW 2219, SYDNEY Australia). Accepted payment: Bank transfer.',
+    description: 'High-grade D6 Virgin Fuel Oil and Marine Gasoil (MGO) supplied by MP Commodity Brokers Australia Pty Ltd (Sydney, Australia). Pricing is as per Platts (there is no set price). SBLC is the only form of payment.',
     specifications: {
       'Company': 'MP Commodity Brokers Australia Pty Ltd',
-      'Address': '2 Park Road, Sans souci NSW 2219, SYDNEY Australia',
-      'Supplier Contact': 'Melissa Prezios (melissa@mpcommoditybrokers.com | +61411510887)',
-      'Payment Terms': 'Bank transfer',
+      'Location': 'Sydney, Australia',
+      'Supplier Contact': 'Melissa Prezios (melissa@mpcommoditybrokers.com | WhatsApp: +61411510887)',
+      'Pricing': 'As per Platts (No Set Price)',
+      'Payment Terms': 'SBLC Only (Standby Letter of Credit)',
       'Membership Plan': 'Paid Basic Plan — All Services Enabled'
     },
     featured: true,
@@ -13501,10 +13503,10 @@ export const MOCK_PAID_CLIENTS: PaidClientRecord[] = [
     totalPaidUsd: 1100,
     ltvUsd: 1100,
     quoteCreditsRemaining: 500,
-    paymentMethod: 'Bank transfer',
+    paymentMethod: 'SBLC',
     contactPerson: 'Melissa Prezios (+61411510887)',
     contactEmail: 'melissa@mpcommoditybrokers.com',
-    country: 'Australia',
+    country: 'Australia (Sydney)',
     autoRenew: true,
     lastInvoiceRef: 'INV-TH-2026-1100-MP',
     assignedAccountManager: 'Sophia Sterling (Senior Enterprise VP)'

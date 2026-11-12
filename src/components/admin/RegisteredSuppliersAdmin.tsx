@@ -164,12 +164,12 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       company_name: 'MP Commodity Brokers Australia Pty Ltd',
       companyName: 'MP Commodity Brokers Australia Pty Ltd',
       phone: '+61411510887',
-      country: 'SYDNEY, Australia (2 Park Road, Sans souci NSW 2219)',
+      country: 'Sydney, Australia',
       role: 'SUPPLIER',
       status: 'ACTIVE',
       is_verified: 1,
       isVerified: true,
-      tier: 'Paid Basic Plan (Fuel • All Services Enabled)',
+      tier: 'Paid Basic Plan (Fuel • Pricing as per Platts • SBLC Only)',
       created_at: '2026-10-19 21:34:46 UTC'
     };
     const svetlanaSupplier: RegisteredSupplier = {

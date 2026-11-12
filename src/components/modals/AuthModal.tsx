@@ -461,26 +461,6 @@ export const AuthModal: React.FC<Props> = ({
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Secure Enterprise Authentication</span>
           </div>
-          <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
-            {currentUser 
-              ? 'Verified Account Credentials' 
-              : (authMode === 'LOGIN_OTP'
-                  ? '2-Step Registered Email OTP Verification'
-                  : (authMode === 'LOGIN' 
-                      ? 'Corporate Sign In (2FA Protected)' 
-                      : (authMode === 'REGISTER' ? 'Register Free Account' : 'Work With Us (Partner Vetting)')))}
-          </h2>
-          <p className="text-xs text-slate-300 mt-1 font-normal leading-relaxed">
-            {currentUser 
-              ? 'Zero-trust authorization active. Session claims validated by server.' 
-              : (authMode === 'LOGIN_OTP'
-                  ? `Enter the 6-digit OTP dispatched to your registered email (${pendingMaskedEmail || pendingOtpEmail}) to verify your identity.`
-                  : (authMode === 'REGISTER'
-                      ? '100% Free Forever • Zero Subscription Fee • Connect with Real Buyers & Suppliers.'
-                      : (authMode === 'WORK_WITH_US' 
-                          ? 'Enterprise KYC & Verification Onboarding to trade with real, genuine global partners.'
-                          : 'Strict 2-Factor Email OTP verification is enforced for all registered users and administrators.')))}
-          </p>
         </div>
 
         {/* ACTIVE SESSION VIEW (When Logged In) */}
@@ -948,7 +928,7 @@ export const AuthModal: React.FC<Props> = ({
                       inputMode="numeric"
                       pattern="[0-9]{6}"
                       maxLength={6}
-                      placeholder="Enter 6-digit OTP sent to your email"
+                      placeholder=""
                       value={loginOtpCode}
                       onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       data-testid="auth-login-otp-input"
@@ -1054,7 +1034,7 @@ export const AuthModal: React.FC<Props> = ({
                     required
                     maxLength={6}
                     autoFocus
-                    placeholder="••••••"
+                    placeholder=""
                     value={loginOtpCode}
                     onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-900 font-mono text-center text-base font-black tracking-[0.4em] focus:outline-none focus:border-blue-600 focus:bg-white"
@@ -1445,7 +1425,7 @@ export const AuthModal: React.FC<Props> = ({
                     pattern="[0-9]{6}"
                     required
                     maxLength={6}
-                    placeholder="Enter 6-digit OTP sent to your email"
+                    placeholder=""
                     value={regOtpCode}
                     onChange={e => setRegOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     data-testid="auth-register-otp-input"

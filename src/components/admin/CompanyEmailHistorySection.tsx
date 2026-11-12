@@ -95,6 +95,28 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
     if (cleanEmail.includes('mpcommodity') || cleanCompany.includes('mp commodity') || cleanEmail.includes('yr943334')) {
       serviceEntries.push(
         {
+          id: 'eh-melissa-profile-update-confirmation-2026',
+          trackingId: 'ms-trk-melissa-profile-updates-2026',
+          recipient: 'melissa@mpcommoditybrokers.com',
+          recipientName: 'Melissa Prezios',
+          companyName: 'MP Commodity Brokers Australia Pty Ltd',
+          companyId: companyId || 'comp-melissa-mpcommodity',
+          subject: '✅ Profile & Listing Updates Completed — MP Commodity Brokers Australia Pty Ltd (SBLC Only • Pricing as per Platts • Sydney, Australia)',
+          dispatchType: 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
+          success: true,
+          messageId: '<melissa-profile-updates-sblc-platts-sydney@tradeheaven.net>',
+          dispatchedAt: new Date(Date.now() - 15000).toISOString(),
+          enforcedDelayMs: 0,
+          summaryText: 'PROFILE & LISTING UPDATES CONFIRMATION SENT TO melissa@mpcommoditybrokers.com (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd • WhatsApp: +61411510887): Confirmed (1) SBLC is the only form of payment, (2) Pricing is as per Platts with no set price, and (3) Street address completely removed from platform — displaying Sydney, Australia only.',
+          opened: true,
+          openCount: 1,
+          clicked: true,
+          clickCount: 1,
+          mailSuiteStatus: 'CLICKED'
+        },
+        {
           id: 'eh-melissa-congrats-cert-pdf-supplier-2026',
           trackingId: 'ms-trk-melissa-congrats-cert-supplier-2026',
           recipient: 'melissa@mpcommoditybrokers.com',

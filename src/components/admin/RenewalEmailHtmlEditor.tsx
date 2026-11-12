@@ -1630,7 +1630,7 @@ export const RenewalEmailHtmlEditor: React.FC<RenewalEmailHtmlEditorProps> = ({
             <div className="bg-slate-100 border border-slate-200 rounded-xl p-4 sm:p-6 overflow-x-auto">
               <div
                 onClick={handlePreviewContainerClick}
-                className={`mx-auto transition-all ${
+                className={`email-style-container email-preview-wrapper mx-auto transition-all ${
                   previewViewport === 'MOBILE' ? 'max-w-[375px]' : 'max-w-[650px]'
                 }`}
                 dangerouslySetInnerHTML={{ __html: renderedOutput.html }}

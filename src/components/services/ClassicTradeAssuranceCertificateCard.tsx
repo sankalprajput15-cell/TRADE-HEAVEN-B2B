@@ -44,7 +44,7 @@ export function resolveCertificateAddress(cert: TradeAssuranceCertificateRecord)
   }
   const fallbackByCountry: Record<string, string> = {
     India: '294/88khala bazar, Charminari Masjid ,Lucknow UTTAR PRADESH, 226003, Lucknow',
-    Australia: '2 Park Road, Sans Souci NSW 2219, Sydney, Australia',
+    Australia: 'Sydney, Australia',
     Germany: 'Thyssenstraße 142, 47166 Duisburg, North Rhine-Westphalia, Germany',
     'United States': 'Suite 400, 1200 Harbor Boulevard, Weehawken, NJ 07086, United States',
     'United Kingdom': '71-75 Shelton Street, Covent Garden, London WC2H 9JQ, United Kingdom',

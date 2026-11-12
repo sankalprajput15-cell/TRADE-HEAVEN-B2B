@@ -9483,6 +9483,47 @@ app.post('/api/v1/seo/send-alert', async (req, res) => {
   }
 });
 
+// POST /api/v1/admin/send-melissa-profile-update-email - Dispatch live confirmation email to Melissa Prezios (melissa@mpcommoditybrokers.com)
+app.post('/api/v1/admin/send-melissa-profile-update-email', async (req, res) => {
+  try {
+    const melissaEmail = req.body?.melissaEmail || 'melissa@mpcommoditybrokers.com';
+    const adminEmail = req.body?.adminEmail || 'sankalprajput15@gmail.com';
+    const secondaryAdminEmail = req.body?.secondaryAdminEmail || 'yr943334@gmail.com';
+    const sendAdminCopy = req.body?.sendAdminCopy !== false;
+
+    const result = await automatedSmtpService.sendMelissaProfileUpdateConfirmationEmail({
+      melissaEmail,
+      adminEmail,
+      secondaryAdminEmail,
+      sendAdminCopy,
+      dispatchType: 'MANUAL'
+    });
+
+    logServerActivity(
+      req,
+      'ADMIN_EMAIL_DISPATCH',
+      melissaEmail,
+      'ADMIN',
+      '/api/v1/admin/send-melissa-profile-update-email',
+      `Dispatched profile & listing update confirmation email to Melissa Prezios (${melissaEmail} • MP Commodity Brokers Australia Pty Ltd): SBLC Only, Pricing as per Platts, Street Address Removed (Sydney, Australia only).`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      recipient: melissaEmail,
+      melissaReceipt: result.melissaReceipt,
+      adminReceipt: result.adminReceipt,
+      secondaryAdminReceipt: result.secondaryAdminReceipt
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to dispatch Melissa Prezios profile update confirmation email'
+    });
+  }
+});
+
 // -------------------------------------------------------------
 // FAST STATIC DIST + GZIP SERVING WITH VITE FALLBACK
 // -------------------------------------------------------------

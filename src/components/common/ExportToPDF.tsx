@@ -191,7 +191,7 @@ export const generateCertificatePDF = (
     (cert.country === 'India'
       ? '294/88khala bazar, Charminari Masjid ,Lucknow UTTAR PRADESH, 226003, Lucknow'
       : cert.country === 'Australia'
-        ? '2 Park Road, Sans Souci NSW 2219, Sydney, Australia'
+        ? 'Sydney, Australia'
         : `Corporate Export Trade Zone, ${cert.country}`);
   const now = new Date();
   const todayDdMmYyyy = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;

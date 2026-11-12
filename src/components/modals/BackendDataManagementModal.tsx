@@ -203,12 +203,6 @@ export const BackendDataManagementModal: React.FC<Props> = ({
           <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
             <Database className="w-4 h-4 text-amber-400" /> Database &amp; State Persistence Console
           </div>
-          <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-            Live Database Backup &amp; JSON Engine
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-md font-normal">
-            Export, import, inspect schemas, and administer realtime persisted storage entities.
-          </p>
         </div>
 
         {/* Status Message */}

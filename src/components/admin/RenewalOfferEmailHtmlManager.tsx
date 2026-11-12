@@ -2005,7 +2005,7 @@ export const RenewalOfferEmailHtmlManager: React.FC<RenewalOfferEmailHtmlManager
               className="flex-1 bg-slate-100 p-4 sm:p-6 overflow-y-auto max-h-[760px] flex justify-center"
             >
               <div
-                className={`w-full transition-all duration-200 ${
+                className={`email-style-container email-preview-wrapper w-full transition-all duration-200 ${
                   viewportSize === 'MOBILE' ? 'max-w-[375px]' : 'max-w-[640px]'
                 }`}
                 dangerouslySetInnerHTML={{ __html: resolvedHtml }}
