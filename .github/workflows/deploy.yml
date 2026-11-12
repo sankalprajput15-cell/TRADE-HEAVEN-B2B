@@ -33,7 +33,7 @@ jobs:
       - name: Deploy to BigRock
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ftp.trade4deals.com
+          server: 208.91.198.118
           username: deploy@tradeheaven.net
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
