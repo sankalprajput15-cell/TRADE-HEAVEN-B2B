@@ -915,64 +915,66 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* All Marketplace & Directory Options */}
-                <div className="pt-1 pb-1">
-                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
-                    Toggle Menu · Marketplace &amp; Directories
-                  </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {visibleMenuOptions.map(item => {
-                      const Icon = item.icon;
-                      const isActive = item.activeMatch.includes(activeView);
-                      return (
-                        <button
-                          key={item.view}
-                          type="button"
-                          onClick={() => {
-                            if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                              handleOpenFundsTopUp();
-                            } else if (item.label.includes('Dashboard')) {
-                              handleNavClick('DASHBOARD');
-                            } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
-                              setUserMenuOpen(false);
-                              onOpenOnboardModal();
-                            } else {
-                              handleNavClick(item.view);
-                            }
-                          }}
-                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-600 font-semibold'
-                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                          }`}
-                        >
-                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
+                {/* All Marketplace & Directory Options (Strictly Visible After Login) */}
+                {currentUser && (
+                  <div className="pt-1 pb-1">
+                    <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                      Toggle Menu · Marketplace &amp; Directories
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {visibleMenuOptions.map(item => {
+                        const Icon = item.icon;
+                        const isActive = item.activeMatch.includes(activeView);
+                        return (
+                          <button
+                            key={item.view}
+                            type="button"
+                            onClick={() => {
+                              if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
+                                handleOpenFundsTopUp();
+                              } else if (item.label.includes('Dashboard')) {
+                                handleNavClick('DASHBOARD');
+                              } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                                setUserMenuOpen(false);
+                                onOpenOnboardModal();
+                              } else {
+                                handleNavClick(item.view);
+                              }
+                            }}
+                            className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                              isActive
+                                ? 'bg-blue-50 text-blue-600 font-semibold'
+                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                            }`}
+                          >
+                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        if (onOpenContactModal) {
-                          onOpenContactModal();
-                        } else {
-                          handleNavClick('CONTACT_US');
-                        }
-                      }}
-                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                        activeView === 'CONTACT_US'
-                          ? 'bg-blue-50 text-blue-600 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                      }`}
-                    >
-                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="truncate">Contact Desk</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          if (onOpenContactModal) {
+                            onOpenContactModal();
+                          } else {
+                            handleNavClick('CONTACT_US');
+                          }
+                        }}
+                        className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                          activeView === 'CONTACT_US'
+                            ? 'bg-blue-50 text-blue-600 font-semibold'
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                        }`}
+                      >
+                        <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">Contact Desk</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Quick Utilities: Language, Currency & Share Page */}
                 <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">
