@@ -185,8 +185,27 @@
     "membershipStatus": "paid",
     "tier": "VIP",
     "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
-    "login_otp_code": "996328",
-    "login_otp_expiry": 1794550106620,
+    "login_otp_code": null,
+    "login_otp_expiry": null,
+    "login_otp_attempts": 0
+  },
+  {
+    "id": "user-supplier-afreh-yaw",
+    "email": "yaw.afreh@afrehgroup.com",
+    "passwordHash": "Afreh@2026",
+    "name": "Yaw Afreh Poku",
+    "role": "SUPPLIER",
+    "companyName": "AFREH GROUP LIMITED",
+    "country": "United Kingdom",
+    "phone": "Card Payment Verified",
+    "status": "ACTIVE",
+    "isVerified": true,
+    "isPremium": false,
+    "membershipStatus": "paid",
+    "tier": "Basic Plan",
+    "avatarUrl": "/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg",
+    "login_otp_code": "833078",
+    "login_otp_expiry": 1794552051624,
     "login_otp_attempts": 0
   }
 ]

@@ -1018,6 +1018,22 @@ const DEFAULT_SERVER_USERS: ServerUserRecord[] = [
     membershipStatus: 'free',
     tier: 'Free Member',
     avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+  },
+  {
+    id: 'user-supplier-afreh-yaw',
+    email: 'yaw.afreh@afrehgroup.com',
+    passwordHash: 'Afreh@2026',
+    name: 'Yaw Afreh Poku',
+    role: 'SUPPLIER',
+    companyName: 'AFREH GROUP LIMITED',
+    country: 'United Kingdom',
+    phone: 'Card Payment Verified',
+    status: 'ACTIVE',
+    isVerified: true,
+    isPremium: false,
+    membershipStatus: 'paid',
+    tier: 'Basic Plan',
+    avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg'
   }
 ];
 
@@ -10378,6 +10394,462 @@ app.post('/api/v1/admin/send-melissa-profile-update-email', async (req, res) => 
     return res.status(500).json({
       success: false,
       message: err?.message || 'Failed to dispatch Melissa Prezios profile update confirmation email'
+    });
+  }
+});
+
+// POST /api/v1/admin/send-afreh-copper-powder-offers-email - Notify AFREH GROUP LIMITED (yaw.afreh@afrehgroup.com) of 50 buyers offering Advance Payment (24h expiry)
+app.post('/api/v1/admin/send-afreh-copper-powder-offers-email', async (req, res) => {
+  try {
+    const afrehEmail = req.body?.afrehEmail || 'yaw.afreh@afrehgroup.com';
+    const adminEmail = req.body?.adminEmail || 'yr943334@gmail.com';
+    const sendAdminCopy = req.body?.sendAdminCopy !== false;
+
+    const result = await automatedSmtpService.sendAfrehGroupFiftyBuyersCopperPowderAdvanceOfferEmail({
+      afrehEmail,
+      adminEmail,
+      sendAdminCopy,
+      dispatchType: 'MANUAL'
+    });
+
+    logServerActivity(
+      req,
+      'ADMIN_EMAIL_DISPATCH',
+      afrehEmail,
+      'ADMIN',
+      '/api/v1/admin/send-afreh-copper-powder-offers-email',
+      `Dispatched 50 buyers Advance Payment offer notification (expires in 24 hours; login to counter offer or accept) to Yaw Afreh Poku (${afrehEmail} • AFREH GROUP LIMITED).`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      recipient: afrehEmail,
+      afrehReceipt: result.afrehReceipt,
+      adminReceipt: result.adminReceipt
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to dispatch AFREH GROUP LIMITED copper powder advance payment offer email'
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// SELF-SERVICE ADMIN CLIENT ONBOARDING, LISTING & OFFER STUDIO API
+// -------------------------------------------------------------
+const CUSTOM_CATALOG_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'custom-catalog-store.json');
+
+interface CustomCatalogStore {
+  companies: any[];
+  products: any[];
+}
+
+function loadCustomCatalogFromDisk(): CustomCatalogStore {
+  try {
+    if (fs.existsSync(CUSTOM_CATALOG_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(CUSTOM_CATALOG_FILE, 'utf-8'));
+      return {
+        companies: Array.isArray(parsed?.companies) ? parsed.companies : [],
+        products: Array.isArray(parsed?.products) ? parsed.products : []
+      };
+    }
+  } catch (err) {
+    console.warn('[CustomCatalog] Failed to read custom-catalog-store.json:', err);
+  }
+  return { companies: [], products: [] };
+}
+
+function saveCustomCatalogToDisk(store: CustomCatalogStore) {
+  try {
+    if (!fs.existsSync(uploadsStaticDir)) {
+      fs.mkdirSync(uploadsStaticDir, { recursive: true });
+    }
+    fs.writeFileSync(CUSTOM_CATALOG_FILE, JSON.stringify(store, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[CustomCatalog] Failed to save custom-catalog-store.json:', err);
+  }
+}
+
+app.get('/api/v1/public/custom-catalog', (_req, res) => {
+  const store = loadCustomCatalogFromDisk();
+  return res.json({
+    success: true,
+    companies: store.companies,
+    products: store.products
+  });
+});
+
+app.post('/api/v1/admin/upload-document-or-image', async (req, res) => {
+  try {
+    const { filename = 'upload-file', dataUrl } = req.body || {};
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      return res.status(400).json({ success: false, message: 'Valid base64 dataUrl is required.' });
+    }
+    if (!fs.existsSync(uploadsStaticDir)) {
+      fs.mkdirSync(uploadsStaticDir, { recursive: true });
+    }
+    const safeStem =
+      path
+        .basename(String(filename), path.extname(String(filename)))
+        .replace(/[^a-zA-Z0-9_-]/g, '-')
+        .slice(0, 40) || 'asset';
+
+    const imgMatch = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/i);
+    if (imgMatch) {
+      const buffer = Buffer.from(imgMatch[2], 'base64');
+      if (buffer.length > 10 * 1024 * 1024) {
+        return res.status(400).json({ success: false, message: 'Image must be under 10 MB.' });
+      }
+      const outFile = `${safeStem}-${Date.now()}.jpg`;
+      const outPath = path.join(uploadsStaticDir, outFile);
+      await sharp(buffer)
+        .resize({ width: 1400, withoutEnlargement: true })
+        .jpeg({ quality: 88, progressive: true })
+        .toFile(outPath);
+      void prewarmSingleImageFile(outPath);
+      return res.json({ success: true, kind: 'IMAGE', url: `/assets/uploads/${outFile}` });
+    }
+
+    const pdfMatch = dataUrl.match(/^data:application\/pdf;base64,(.+)$/i);
+    if (pdfMatch) {
+      const buffer = Buffer.from(pdfMatch[1], 'base64');
+      if (buffer.length > 15 * 1024 * 1024) {
+        return res.status(400).json({ success: false, message: 'PDF document must be under 15 MB.' });
+      }
+      const outFile = `${safeStem}-${Date.now()}.pdf`;
+      const outPath = path.join(uploadsStaticDir, outFile);
+      fs.writeFileSync(outPath, buffer);
+      return res.json({ success: true, kind: 'PDF', url: `/assets/uploads/${outFile}` });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: 'Unsupported file format. Upload PNG, JPG, WEBP, or PDF.'
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to upload file.'
+    });
+  }
+});
+
+app.post('/api/v1/admin/onboard-member-and-listing', async (req, res) => {
+  try {
+    const {
+      companyName,
+      contactName,
+      email,
+      phone = '',
+      address = '',
+      country = 'United Kingdom',
+      planName = 'Basic Plan',
+      paymentMethod = 'Card Payment',
+      accountPassword = '',
+      productTitle,
+      category = 'Energy, Minerals & Metals',
+      subCategory = 'Industrial Commodities',
+      priceRangeUsd = 'Counter-Offer / Advance Payment Open',
+      moq = 1,
+      moqUnit = 'Units',
+      portOfDispatch = 'Global Dispatch Port',
+      productDescription = '',
+      specsLines = '',
+      images = [],
+      pdfUrl = '',
+      sendOfferEmail = true,
+      buyerOfferCount = 50,
+      offerPaymentType = 'Advance Payment',
+      offerExpiryText = '24 hours',
+      customBuyerNames = '',
+      adminCopyEmail = 'yr943334@gmail.com'
+    } = req.body || {};
+
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanCompany = String(companyName || '').trim();
+    const cleanContact = String(contactName || cleanCompany || 'Trade Partner').trim();
+    const cleanProductTitle = String(productTitle || '').trim();
+
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanCompany || !cleanProductTitle) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company Name, valid Email Address, and Product Title are required.'
+      });
+    }
+
+    const slug = cleanCompany
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 32) || Date.now().toString(36);
+    const userId = `user-supplier-${slug}`;
+    const companyId = `comp-${slug}`;
+    const productId = `prod-${slug}-${Date.now().toString(36).slice(-4)}`;
+
+    const tierMap: Record<string, 'FREE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'VIP'> = {
+      Free: 'FREE',
+      'Basic Plan': 'SILVER',
+      Silver: 'SILVER',
+      Gold: 'GOLD',
+      Platinum: 'PLATINUM',
+      VIP: 'VIP'
+    };
+    const resolvedTier = tierMap[planName] || 'SILVER';
+    const isPaid = planName !== 'Free';
+    const finalPassword = String(accountPassword || '').trim() || `Trade${Math.floor(1000 + Math.random() * 9000)}!`;
+
+    // 1. Upsert user in serverUsersStore + registered-users.json
+    const userRecord: ServerUserRecord = {
+      id: userId,
+      email: cleanEmail,
+      passwordHash: finalPassword,
+      name: cleanContact,
+      role: 'SUPPLIER',
+      companyName: cleanCompany,
+      country: String(country || 'United Kingdom').trim(),
+      phone: String(phone || paymentMethod || 'Verified').trim(),
+      status: 'ACTIVE',
+      isVerified: true,
+      isPremium: resolvedTier === 'GOLD' || resolvedTier === 'PLATINUM' || resolvedTier === 'VIP',
+      membershipStatus: isPaid ? 'paid' : 'free',
+      tier: planName as any,
+      avatarUrl: Array.isArray(images) && images[0] ? String(images[0]) : '/assets/uploads/logo.png'
+    };
+
+    const existingIdx = serverUsersStore.findIndex(
+      u => u.email.toLowerCase().trim() === cleanEmail || u.id === userId
+    );
+    if (existingIdx >= 0) {
+      serverUsersStore[existingIdx] = { ...serverUsersStore[existingIdx], ...userRecord };
+    } else {
+      serverUsersStore.unshift(userRecord);
+    }
+    saveServerUsersToDisk();
+
+    // 2. Build Company & Product entries and persist in custom-catalog-store.json
+    const parsedSpecs: Record<string, string> = {
+      Company: cleanCompany,
+      'Registered Address': String(address || country).trim(),
+      'Primary Contact': `${cleanContact} (${cleanEmail})`,
+      'Membership & Billing': `${planName} Member • ${paymentMethod}`,
+      ...(pdfUrl ? { 'Certificate / Report PDF': String(pdfUrl) } : {})
+    };
+    String(specsLines || '')
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)
+      .forEach((line, idx) => {
+        const colonIdx = line.indexOf(':');
+        if (colonIdx > 0 && colonIdx < 45) {
+          parsedSpecs[line.slice(0, colonIdx).trim()] = line.slice(colonIdx + 1).trim();
+        } else {
+          parsedSpecs[`Specification ${idx + 1}`] = line;
+        }
+      });
+
+    const validImages = (Array.isArray(images) ? images : []).filter(Boolean).map(String);
+    const defaultImg = validImages[0] || '/assets/uploads/logo.png';
+
+    const companyEntry = {
+      id: companyId,
+      ownerUid: userId,
+      companyName: cleanCompany,
+      legalRegistrationNumber: `TH-REG-${slug.toUpperCase().slice(0, 10)}`,
+      country: String(country || 'United Kingdom').trim(),
+      city: String(address || country).trim(),
+      address: String(address || country).trim(),
+      establishedYear: new Date().getFullYear(),
+      businessType: `${subCategory} Supplier`,
+      tier: resolvedTier,
+      status: 'ACTIVE',
+      isVerifiedKYC: true,
+      kycVerificationDate: new Date().toISOString().slice(0, 10),
+      trustScore: 98,
+      responseRate: '99.0%',
+      avgResponseTime: '< 1 hour',
+      totalEmployees: '10-50 Staff',
+      annualRevenueUsd: '$5M - $25M USD',
+      mainMarkets: ['Europe', 'North America', 'Asia-Pacific', 'Middle East'],
+      tradeAssuranceLimitUsd: 850000,
+      completedOrdersCount: Number(buyerOfferCount) || 12,
+      factorySizeSqM: 10000,
+      productionLines: 4,
+      logoUrl: defaultImg,
+      bannerUrl: validImages[1] || defaultImg,
+      description:
+        String(productDescription || '').trim() ||
+        `${cleanCompany} (${String(address || country).trim()}) — ${planName} Member (${paymentMethod}). Supplying ${cleanProductTitle}.`,
+      contactPerson: cleanContact,
+      contactEmail: cleanEmail,
+      contactPhone: String(phone || cleanEmail).trim(),
+      whatsapp: String(phone || cleanEmail).trim(),
+      isContactMasked: true,
+      certifications: [
+        `${planName} Member`,
+        `${paymentMethod} Verified`,
+        ...(pdfUrl ? ['Lab / Inspection Report Attached'] : [])
+      ]
+    };
+
+    const numericMoq = Math.max(1, Number(moq) || 1);
+    const productEntry = {
+      id: productId,
+      title: cleanProductTitle,
+      category: String(category || 'Energy, Minerals & Metals'),
+      subCategory: String(subCategory || 'Industrial Commodities'),
+      supplierId: companyId,
+      supplierName: cleanCompany,
+      supplierCountry: String(country || 'United Kingdom').trim(),
+      supplierIsVerified: true,
+      supplierTier: resolvedTier,
+      minOrderQuantity: `${numericMoq} ${String(moqUnit || 'Units')}`,
+      moq: numericMoq,
+      moqUnit: String(moqUnit || 'Units'),
+      priceRangeUsd: String(priceRangeUsd || 'Counter-Offer / Advance Payment Open'),
+      priceTiers: [{ minUnits: numericMoq, priceUsd: 0 }],
+      leadTimeDays: 5,
+      portOfDispatch: String(portOfDispatch || address || country).trim(),
+      supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
+      unit: String(moqUnit || 'Units'),
+      images: validImages.length > 0 ? validImages : [defaultImg],
+      description:
+        String(productDescription || '').trim() ||
+        `${cleanProductTitle} supplied by ${cleanCompany} (${planName} Member • ${paymentMethod}).`,
+      specifications: parsedSpecs,
+      featured: true,
+      inStock: true,
+      rating: 4.9,
+      reviewCount: Number(buyerOfferCount) || 25
+    };
+
+    const catalogStore = loadCustomCatalogFromDisk();
+    catalogStore.companies = [
+      companyEntry,
+      ...catalogStore.companies.filter(c => c.id !== companyId)
+    ];
+    catalogStore.products = [
+      productEntry,
+      ...catalogStore.products.filter(p => p.id !== productId)
+    ];
+    saveCustomCatalogToDisk(catalogStore);
+
+    // 3. Dispatch Offer Alert Email if requested
+    let emailReceipt: any = null;
+    let adminCopyReceipt: any = null;
+    if (sendOfferEmail) {
+      const count = Math.max(1, Math.min(100, Number(buyerOfferCount) || 50));
+      const customLines = String(customBuyerNames || '')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
+      const regions = ['Germany', 'United Kingdom', 'Switzerland', 'USA', 'Japan', 'South Korea', 'France', 'Netherlands', 'UAE', 'Singapore'];
+      const esc = (s: string) =>
+        String(s || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+
+      const buyerRowsHtml: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const bName = customLines[i] || `Verified Institutional Buyer #${i + 1} (${regions[i % regions.length]})`;
+        buyerRowsHtml.push(
+          `<tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 6px; font-weight: 700; color: #475569;">${i + 1}</td>
+            <td style="padding: 6px; font-weight: 700; color: #0f172a;">${esc(bName)}</td>
+            <td style="padding: 6px; color: #047857; font-weight: 700;">${esc(String(offerPaymentType))}</td>
+            <td style="padding: 6px; color: #b91c1c; font-weight: 800;">Expires in ${esc(String(offerExpiryText))}</td>
+          </tr>`
+        );
+      }
+
+      const subject = `⏳ URGENT (${offerExpiryText} Expiry): ${count} Buyers Offered ${offerPaymentType} for ${cleanProductTitle} — Login to Accept or Counter Offer (${cleanCompany})`;
+      const portalLoginUrl = `https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=${encodeURIComponent(cleanEmail)}`;
+      const rawHtml = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 740px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #d97706;">
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #92400e 100%); padding: 28px 22px; text-align: center; color: #ffffff;">
+            <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #fde68a; text-transform: uppercase; margin-bottom: 8px;">
+              ⏳ ${esc(String(offerExpiryText))} OFFER EXPIRY • ${esc(String(offerPaymentType).toUpperCase())}
+            </div>
+            <h1 style="margin: 0 0 8px 0; font-size: 21px; font-weight: 900;">
+              ${count} Buyers Offered ${esc(String(offerPaymentType))} for ${esc(cleanProductTitle)}
+            </h1>
+            <p style="margin: 0; font-size: 13px; color: #fef3c7;">
+              ${esc(cleanCompany)} • Attn: ${esc(cleanContact)} • ${esc(planName)} Member (${esc(paymentMethod)})
+            </p>
+          </div>
+          <div style="padding: 24px;">
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 14px; margin-bottom: 16px; font-size: 12.5px; color: #7f1d1d;">
+              <strong>Action Required:</strong> ${count} verified buyers till now have offered <strong>${esc(String(offerPaymentType))}</strong> for your listing. These offers expire in <strong>${esc(String(offerExpiryText))}</strong>. Please log in to submit a <strong>Counter Offer</strong> or <strong>Accept</strong>.
+            </div>
+            <div style="text-align: center; margin: 18px 0;">
+              <a href="${esc(portalLoginUrl)}" style="display: inline-block; background: #b45309; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 900; padding: 12px 26px; border-radius: 9px;">
+                Login Now to Accept or Counter Offer &rarr;
+              </a>
+            </div>
+            <div style="max-height: 440px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; background: #f8fafc;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                <thead>
+                  <tr style="background: #1e293b; color: #ffffff; text-align: left;">
+                    <th style="padding: 7px 6px;">#</th>
+                    <th style="padding: 7px 6px;">Buyer Organization</th>
+                    <th style="padding: 7px 6px;">Payment Offer</th>
+                    <th style="padding: 7px 6px;">Validity</th>
+                  </tr>
+                </thead>
+                <tbody>${buyerRowsHtml.join('')}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      emailReceipt = await automatedSmtpService.sendCustomAdminEmail({
+        recipientEmail: cleanEmail,
+        recipientName: cleanContact,
+        companyName: cleanCompany,
+        subject,
+        rawHtmlOverride: rawHtml,
+        introMessage: `Hello ${cleanContact} (${cleanCompany}), ${count} buyers offered ${offerPaymentType} for ${cleanProductTitle}. Offer expires in ${offerExpiryText}. Login at ${portalLoginUrl} to accept or counter offer.`
+      });
+
+      const cleanAdminCopy = String(adminCopyEmail || '').trim().toLowerCase();
+      if (cleanAdminCopy && cleanAdminCopy.includes('@') && cleanAdminCopy !== cleanEmail) {
+        adminCopyReceipt = await automatedSmtpService.sendCustomAdminEmail({
+          recipientEmail: cleanAdminCopy,
+          recipientName: `Admin Copy (${cleanCompany})`,
+          companyName: cleanCompany,
+          subject: `[ADMIN COPY] ${subject}`,
+          rawHtmlOverride: rawHtml,
+          introMessage: `[ADMIN COPY] Sent to ${cleanEmail}: ${count} buyers offered ${offerPaymentType} for ${cleanProductTitle} (${offerExpiryText} expiry).`
+        });
+      }
+    }
+
+    logServerActivity(
+      req,
+      'ADMIN_ONBOARD_MEMBER_LISTING',
+      cleanEmail,
+      'ADMIN',
+      '/api/v1/admin/onboard-member-and-listing',
+      `Admin onboarded ${cleanCompany} (${planName} • ${paymentMethod}) & listed "${cleanProductTitle}"${sendOfferEmail ? ` + sent ${buyerOfferCount}-buyer offer alert` : ''}.`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      user: { ...userRecord, password: finalPassword },
+      company: companyEntry,
+      product: productEntry,
+      emailReceipt,
+      adminCopyReceipt
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to onboard member & create listing.'
     });
   }
 });

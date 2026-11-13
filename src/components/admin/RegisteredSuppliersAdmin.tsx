@@ -232,6 +232,21 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       tier: 'Free Member (Wyoming/Idaho Black Jade, Rough Matrix & Precious Gemstones Exporter)',
       created_at: '2026-11-04 11:00:00 UTC'
     };
+    const afrehGroupSupplier: RegisteredSupplier = {
+      id: 'user-supplier-afreh-yaw',
+      name: 'Yaw Afreh Poku',
+      email: 'yaw.afreh@afrehgroup.com',
+      company_name: 'AFREH GROUP LIMITED',
+      companyName: 'AFREH GROUP LIMITED',
+      phone: 'Card Payment Verified',
+      country: 'England (31 The Ridgeway, Braeside, Chatham, Kent, England)',
+      role: 'SUPPLIER',
+      status: 'ACTIVE',
+      is_verified: 1,
+      isVerified: true,
+      tier: 'Basic Plan Member (Card Payment • Ultra Dispersed Copper Powder TU 1793-001-74350164-2005)',
+      created_at: '2026-11-12 22:25:00 UTC'
+    };
 
     const filterOutDeleted = (list: RegisteredSupplier[]) => {
       const deleted = getPermanentlyDeletedUsers();
@@ -279,6 +294,9 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
 
       const finalSuppliers = (supplierList.length > 0 ? supplierList : usersList).map((s) => {
         const emailLower = String(s.email || '').toLowerCase();
+        if (emailLower.includes('afrehgroup')) {
+          return { ...s, ...afrehGroupSupplier };
+        }
         if (emailLower.includes('atlanticpowerequip')) {
           return { ...s, ...markJohnsonSupplier };
         }
@@ -306,6 +324,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         return s;
       });
 
+      const hasAfreh = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('afrehgroup') || String(s.company_name || '').toLowerCase().includes('afreh group'));
       const hasLars = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('larsbarnhart') || String(s.company_name || '').toLowerCase().includes('blackstone jade'));
       const hasEmmanuel = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('reverseenergypty') || String(s.company_name || '').toLowerCase().includes('reverse energy'));
       const hasMark = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('atlanticpowerequip'));
@@ -316,6 +335,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       const hasAce = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('ezekiahali') || String(s.company_name || '').toLowerCase().includes('ace intermediary'));
 
       let merged = [...finalSuppliers];
+      if (!hasAfreh) merged = [afrehGroupSupplier, ...merged];
       if (!hasLars) merged = [larsBarnhartSupplier, ...merged];
       if (!hasEmmanuel) merged = [emmanuelSupplier, ...merged];
       if (!hasAce) merged = [aceIntermediarySupplier, ...merged];
@@ -327,7 +347,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       setSuppliers(filterOutDeleted(merged));
     } catch (err: any) {
       console.warn('[RegisteredSuppliersAdmin] Using local supplier store:', err);
-      setSuppliers(filterOutDeleted([larsBarnhartSupplier, emmanuelSupplier, aceIntermediarySupplier, markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
+      setSuppliers(filterOutDeleted([afrehGroupSupplier, larsBarnhartSupplier, emmanuelSupplier, aceIntermediarySupplier, markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
     } finally {
       setLoading(false);
     }

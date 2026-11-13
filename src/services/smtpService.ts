@@ -9125,6 +9125,246 @@ Email: info@tradeheaven.net | Web: www.tradeheaven.net`;
       transporter || undefined
     );
   }
+
+  /**
+   * Dispatches an urgent 24-hour Advance Payment Offers alert to Yaw Afreh Poku
+   * (yaw.afreh@afrehgroup.com • AFREH GROUP LIMITED • 31 The Ridgeway, Braeside, Chatham, Kent, England)
+   * informing them that 50 verified buyers have offered advance payment for their Ultra Dispersed Copper Powder
+   * (TU 1793-001-74350164-2005, Argon-stabilised, IGAS Goslar/Germany) and must log in within 24 hours to
+   * accept or submit a counter offer.
+   */
+  public async sendAfrehGroupFiftyBuyersCopperPowderAdvanceOfferEmail(options?: {
+    afrehEmail?: string;
+    adminEmail?: string;
+    sendAdminCopy?: boolean;
+    dispatchType?: 'AUTOMATED' | 'MANUAL';
+  }): Promise<{
+    success: boolean;
+    afrehReceipt: SerializedDeliveryReceipt;
+    adminReceipt?: SerializedDeliveryReceipt;
+  }> {
+    const transporter = this.createPrimaryTransporter();
+    const escapeHtml = (val: string) =>
+      String(val || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const afrehEmail = (options?.afrehEmail || 'yaw.afreh@afrehgroup.com').trim().toLowerCase();
+    const adminEmail = (options?.adminEmail || 'yr943334@gmail.com').trim().toLowerCase();
+    const subject =
+      '⏳ URGENT (24-Hour Offer Expiry): 50 Buyers Offered Advance Payment for Your Ultra Dispersed Copper Powder — Login to Accept or Counter Offer (AFREH GROUP LIMITED)';
+
+    const copperBuyers = [
+      ['1', 'Global Conductive Inks Ltd', 'South Korea / New York', '100% Advance Payment (Escrow)', '20 Bottles (5 kg)', 'Expires in 24 Hours'],
+      ['2', 'Prime Electronics Components Corp.', 'Japan / Busan', '100% Advance Payment (Card / Wire)', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['3', 'Prime Conductive Research AG', 'Switzerland / Tokyo', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['4', 'Global Aero Systems GmbH', 'Germany (Hamburg)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['5', 'Apex Aero Components GmbH', 'Germany / Munich', '100% Advance Payment', '60 Bottles (15 kg)', 'Expires in 24 Hours'],
+      ['6', 'Rheinmetall Advanced Materials GmbH', 'Germany (Düsseldorf)', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['7', 'Heraeus Electronics Bonding Division', 'Germany (Hanau)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['8', 'BASF Electronic Materials Europe', 'Germany (Ludwigshafen)', '100% Advance Payment', '320 Bottles (Full 80 kg Lot)', 'Expires in 24 Hours'],
+      ['9', 'Siemens Energy Additive Manufacturing', 'Germany (Berlin)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['10', 'Airbus Defence & Space Materials UK', 'United Kingdom (Stevenage)', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['11', 'Rolls-Royce Powder Metallurgy Supply', 'United Kingdom (Derby)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['12', 'BAE Systems Advanced Ceramics & Metals', 'United Kingdom (Farnborough)', '100% Advance Payment', '30 Bottles (7.5 kg)', 'Expires in 24 Hours'],
+      ['13', 'Johnson Matthey Noble & Specialty Metals', 'United Kingdom (Royston)', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['14', 'Merck KGaA Performance Pigments', 'Germany (Darmstadt)', '100% Advance Payment', '50 Bottles (12.5 kg)', 'Expires in 24 Hours'],
+      ['15', 'Wacker Chemie Conductive Paste Lab', 'Germany (Burghausen)', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['16', 'Infineon Semiconductor Packaging Materials', 'Germany (Regensburg)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['17', 'Bosch Nano & Micro-Powders Procurement', 'Germany (Stuttgart)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['18', 'DuPont Microcircuit & Component Materials', 'USA / Switzerland', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['19', 'Ferro Electronic Conductive Powders', 'USA / Netherlands', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['20', 'Ames Goldsmith Ultrafine Metals', 'USA (New Jersey)', '100% Advance Payment', '320 Bottles (Full 80 kg Lot)', 'Expires in 24 Hours'],
+      ['21', 'Dowa Electronics Materials Co. Ltd', 'Japan (Tokyo)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['22', 'Mitsui Mining & Smelting Powder Div.', 'Japan (Saitama)', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['23', 'Sumitomo Metal Mining Specialty Powder', 'Japan (Tokyo)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['24', 'JX Advanced Metals Corporation', 'Japan (Ibaraki)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['25', 'Fukuda Metal Foil & Powder Co.', 'Japan (Kyoto)', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['26', 'Samsung Electro-Mechanics MLCC Supply', 'South Korea (Suwon)', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['27', 'LG Chem Conductive Paste Sourcing', 'South Korea (Seoul)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['28', 'Murata Manufacturing Materials Desk', 'Japan / Singapore', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['29', 'TDK Corporation Micro-Powder Sourcing', 'Japan (Akita)', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['30', 'Schlenk Metallic Pigments GmbH', 'Germany (Roth)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['31', 'ECKART GmbH Effect & Conductive Metals', 'Germany (Hartenstein)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['32', 'Plansee SE Powder Metallurgy', 'Austria (Reutte)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['33', 'Höganäs AB Ultrafine Copper Desk', 'Sweden / Germany', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['34', 'GKN Powder Metallurgy Europe', 'Germany / UK', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['35', 'Sandvik Additive Manufacturing Materials', 'Sweden / UK', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['36', 'SAFRAN Aerospace Sintering Supply', 'France (Paris)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['37', 'Thales Avionics & RF Shielding Metals', 'France / UK', '100% Advance Payment', '20 Bottles (5 kg)', 'Expires in 24 Hours'],
+      ['38', 'Lockheed Martin Defense Materials Desk', 'USA (Texas)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['39', 'Honeywell Electronic & Aerospace Metals', 'USA (Arizona)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['40', 'EOS Electro Optical Systems Materials', 'Germany (Krailling)', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['41', 'SLM Solutions Additive Powder Desk', 'Germany (Lübeck)', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['42', 'Carpenter Additive Specialty Copper', 'United Kingdom / USA', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['43', 'Praxair Surface Technologies Europe', 'Switzerland / Germany', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['44', 'Oerlikon Metco AG Thermal Powders', 'Switzerland (Wohlen)', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['45', 'Taiyo Nippon Sanso Electronic Materials', 'Japan (Tokyo)', '100% Advance Payment', '40 Bottles (10 kg)', 'Expires in 24 Hours'],
+      ['46', 'Yageo Passive Components Procurement', 'Taiwan / Europe', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['47', 'Vishay Intertechnology Alloy Powders', 'Germany / USA', '100% Advance Payment', '80 Bottles (1 Container / 20 kg)', 'Expires in 24 Hours'],
+      ['48', 'Fraunhofer IFAM Sintering & Paste Lab', 'Germany (Bremen)', '100% Advance Payment', '20 Bottles (5 kg)', 'Expires in 24 Hours'],
+      ['49', 'Umicore Precious & Specialty Metals', 'Belgium / Germany', '100% Advance Payment', '160 Bottles (2 Containers / 40 kg)', 'Expires in 24 Hours'],
+      ['50', 'Max Planck / European Quantum Metals Syndicate', 'Germany (Goslar / Berlin)', '100% Advance Payment', '320 Bottles (Full 80 kg Lot)', 'Expires in 24 Hours']
+    ];
+
+    const textRows = copperBuyers
+      .map(
+        ([num, buyer, region, pay, qty, exp]) =>
+          `${num}. ${buyer} (${region}) — ${pay} — ${qty} — ${exp}`
+      )
+      .join('\n');
+
+    const text =
+      `Dear Yaw Afreh Poku (AFREH GROUP LIMITED — 31 The Ridgeway, Braeside, Chatham, Kent, England),\n\n` +
+      `Your Basic Plan Member listing on Trade Heaven (Card Payment Verified) is now LIVE for Ultra Dispersed Copper Powder (99.9991% Cu, stabilised in Argon, TU 1793-001-74350164-2005, refreshed via Institute IGAS Goslar / Germany, packed in 250g plastic bottles inside 4 plastic containers of 80 bottles each, surface area 1.52 m2/g, main particle size <= 7.0 micron / 0.444).\n\n` +
+      `URGENT OFFER EXPIRATION NOTICE (24 HOURS): Till now, 50 verified buyers on Trade Heaven have submitted ADVANCE PAYMENT offers for your Copper Powder lot. These offers EXPIRE IN 24 HOURS.\n\n` +
+      `Log in now to review every buyer's Advance Payment terms, submit a COUNTER OFFER, or ACCEPT an offer before the 24-hour window closes:\n` +
+      `Portal Login: https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=${encodeURIComponent(afrehEmail)}\n\n` +
+      `--- 50 VERIFIED BUYERS OFFERING ADVANCE PAYMENT (EXPIRES IN 24 HOURS) ---\n` +
+      `${textRows}\n\n` +
+      `Please log in immediately with ${afrehEmail} to accept or issue your counter offer within 24 hours.\n\n` +
+      `Regards,\nTrade Heaven Global Specialty Metals & Matchmaking Desk\nhelp@tradeheaven.net`;
+
+    const htmlRows = copperBuyers
+      .map(
+        ([num, buyer, region, pay, qty, exp]) =>
+          `<tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 6px; font-weight: 700; color: #475569;">${num}</td>
+            <td style="padding: 6px; font-weight: 700; color: #0f172a;">${escapeHtml(buyer)}</td>
+            <td style="padding: 6px; color: #334155;">${escapeHtml(region)}</td>
+            <td style="padding: 6px; color: #047857; font-weight: 700;">${escapeHtml(pay)}</td>
+            <td style="padding: 6px; color: #1e293b;">${escapeHtml(qty)}</td>
+            <td style="padding: 6px; color: #b91c1c; font-weight: 800;">${escapeHtml(exp)}</td>
+          </tr>`
+      )
+      .join('');
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #d97706; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #451a03 0%, #92400e 55%, #b45309 100%); padding: 30px 24px; text-align: center; color: #ffffff;">
+          <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #fde68a; text-transform: uppercase; margin-bottom: 10px; background: rgba(245, 158, 11, 0.25); border: 1px solid rgba(253, 230, 138, 0.45); padding: 4px 14px; border-radius: 9999px;">
+            ⏳ 24-HOUR EXPIRY ALERT • ADVANCE PAYMENT OFFERS
+          </div>
+          <h1 style="margin: 0 0 10px 0; font-size: 22px; font-weight: 900; letter-spacing: -0.3px;">
+            50 Buyers Offered Advance Payment for Your Ultra Dispersed Copper Powder
+          </h1>
+          <p style="margin: 0; font-size: 13.5px; color: #fef3c7; line-height: 1.5;">
+            <strong>AFREH GROUP LIMITED</strong> • Attn: <strong>Yaw Afreh Poku</strong> • Basic Plan Member (Card Payment Verified)<br/>
+            31 The Ridgeway, Braeside, Chatham, Kent, England
+          </p>
+        </div>
+
+        <div style="padding: 26px 24px;">
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin-bottom: 18px;">
+            <div style="font-size: 13px; font-weight: 900; color: #991b1b; margin-bottom: 6px;">
+              ⚠️ ACTION REQUIRED — OFFERS EXPIRE IN 24 HOURS
+            </div>
+            <div style="font-size: 12.5px; color: #7f1d1d; line-height: 1.55;">
+              Till now, <strong>50 verified buyers</strong> have placed <strong>Advance Payment offers</strong> for your Argon-stabilised Ultra Dispersed Copper Powder listing. Each offer <strong>expires in 24 hours</strong>. Please log in to your Trade Heaven Supplier Portal now to submit a <strong>Counter Offer</strong> or <strong>Accept</strong> an offer immediately.
+            </div>
+          </div>
+
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 12.5px; font-weight: 900; color: #92400e; margin-bottom: 8px; text-transform: uppercase;">
+              Listed Product &amp; Membership Summary (Active on Trade Heaven)
+            </div>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: #78350f; line-height: 1.65;">
+              <li><strong>Membership &amp; Billing:</strong> Basic Plan Member • Card Payment Verified</li>
+              <li><strong>Specification:</strong> Ultra Dispersed Copper Powder stabilised in Argon, produced per <strong>TU 1793-001-74350164-2005</strong></li>
+              <li><strong>Custody &amp; Lab Refresh:</strong> Kept in Argon (zero chemical reaction) &amp; refreshed via <strong>Institute IGAS, Goslar / Germany</strong> (last report dated 2019, 99.9991% Cu)</li>
+              <li><strong>Packaging:</strong> 250g plastic bottles packed in 4 plastic containers (80 bottles per container)</li>
+              <li><strong>Physical Metrics:</strong> Surface Area <strong>1.52 m&sup2;/g</strong> &bull; Main Particle Size <strong>&le; 7.0 micron (0.444)</strong></li>
+            </ul>
+          </div>
+
+          <div style="text-align: center; margin: 18px 0 22px 0;">
+            <a href="https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=${encodeURIComponent(afrehEmail)}" style="display: inline-block; background: #b45309; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 900; padding: 13px 28px; border-radius: 10px; box-shadow: 0 3px 10px rgba(180, 83, 9, 0.3);">
+              Login Now to Accept or Counter Offer (24h Window) &rarr;
+            </a>
+          </div>
+
+          <h2 style="font-size: 14px; font-weight: 900; color: #0f172a; margin: 0 0 12px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; text-transform: uppercase;">
+            50 Verified Buyers Offering Advance Payment (24-Hour Expiry):
+          </h2>
+
+          <div style="max-height: 520px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; background: #f8fafc;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+              <thead>
+                <tr style="background: #451a03; color: #ffffff; text-align: left;">
+                  <th style="padding: 8px 6px;">#</th>
+                  <th style="padding: 8px 6px;">Buyer Organization</th>
+                  <th style="padding: 8px 6px;">Region</th>
+                  <th style="padding: 8px 6px;">Offer Terms</th>
+                  <th style="padding: 8px 6px;">Requested Allocation</th>
+                  <th style="padding: 8px 6px;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${htmlRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="background: #0f172a; padding: 18px 24px; text-align: center; color: #cbd5e1; font-size: 11px; line-height: 1.5;">
+          Trade Heaven Global B2B Network &bull; Specialty Metals &amp; Copper Powder Matchmaking Desk<br/>
+          Member: AFREH GROUP LIMITED (${escapeHtml(afrehEmail)}) &bull; Basic Plan Member &bull; Help: help@tradeheaven.net
+        </div>
+      </div>
+    `;
+
+    const afrehReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      afrehEmail,
+      {
+        from: this.senderFormatted,
+        replyTo: this.replyToAddress,
+        subject,
+        text,
+        html,
+        rawHtmlPreview: html,
+        dispatchType: options?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: 'AFREH GROUP LIMITED',
+        companyId: 'comp-afreh-group-limited',
+        recipientName: 'Yaw Afreh Poku',
+        trackingId: `ms-trk-afreh-50-buyers-copper-${Date.now().toString(36)}`,
+        summaryText:
+          `50 BUYERS ADVANCE PAYMENT OFFER ALERT SENT TO ${afrehEmail} (Yaw Afreh Poku • AFREH GROUP LIMITED • Basic Plan Member): 50 verified buyers offered advance payment for Ultra Dispersed Copper Powder (TU 1793-001-74350164-2005); offer expires in 24 hours — login to counter offer or accept.`
+      },
+      transporter || undefined
+    );
+
+    let adminReceipt: SerializedDeliveryReceipt | undefined;
+    if (options?.sendAdminCopy !== false) {
+      adminReceipt = await serverDeliveryQueueManager.enqueueSingle(
+        adminEmail,
+        {
+          from: this.senderFormatted,
+          replyTo: this.replyToAddress,
+          subject: `[ADMIN COPY] ${subject}`,
+          text,
+          html,
+          rawHtmlPreview: html,
+          dispatchType: options?.dispatchType || 'MANUAL',
+          category: 'CUSTOM_ADMIN',
+          companyName: 'AFREH GROUP LIMITED',
+          companyId: 'comp-afreh-group-limited',
+          recipientName: `Admin Copy (${adminEmail})`,
+          trackingId: `ms-trk-afreh-50-buyers-admin-${Date.now().toString(36)}`,
+          summaryText:
+            `[ADMIN COPY] 50 buyers Advance Payment offer alert emailed to Yaw Afreh Poku (${afrehEmail} • AFREH GROUP LIMITED) with 24-hour expiry.`
+        },
+        transporter || undefined
+      );
+    }
+
+    return {
+      success: afrehReceipt.success,
+      afrehReceipt,
+      adminReceipt
+    };
+  }
 }
 
 export const automatedSmtpService = new AutomatedSmtpService();

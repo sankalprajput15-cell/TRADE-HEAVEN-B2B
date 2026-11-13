@@ -815,6 +815,109 @@ export const DETAILED_VENDOR_PROFILES: Record<string, DetailedVendorProfile> = {
       ]
     }
   },
+  'comp-afreh-group-limited': {
+    id: 'comp-afreh-group-limited',
+    companyName: 'AFREH GROUP LIMITED',
+    tradeName: 'AFREH GROUP LIMITED',
+    legalRegistrationNumber: 'UK-CO-AFREH-2019',
+    country: 'United Kingdom',
+    city: 'Chatham, Kent',
+    address: '31 The Ridgeway, Braeside, Chatham, Kent, England',
+    establishedYear: 2019,
+    yearsInBusiness: 7,
+    businessType: 'Ultra Dispersed Copper Powder & Specialty Metals Supplier',
+    tier: 'SILVER',
+    memberTierLabel: 'Basic Plan Member • Card Payment Verified • Copper Powder',
+    isVerifiedKYC: true,
+    kycVerificationDate: '2026-11-12',
+    trustScore: 98,
+    responseRate: '99.4%',
+    avgResponseTime: '< 1 hour',
+    totalEmployees: '10-30 Staff',
+    annualRevenueUsd: '$10M - $25M USD',
+    tradeAssuranceLimitUsd: 950000,
+    completedOrdersCount: 42,
+    factorySizeSqM: 12000,
+    productionLines: 4,
+    logoUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg',
+    bannerUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.18_AM_823e9808.jpeg',
+    tagline: 'Ultra Dispersed Copper Powder (99.9991% Cu) • Argon Stabilised • TU 1793-001-74350164-2005 • IGAS Research Goslar / Germany',
+    description: 'AFREH GROUP LIMITED (31 The Ridgeway, Braeside, Chatham, Kent, England) — Basic Plan Member (Card Payment Verified). Direct holder of an 80 kg lot of Ultra Dispersed Copper Powder (99.9991% Cu purity) stabilised in Argon so there are no chemical reactions, produced in accordance with TU 1793-001-74350164-2005, and refreshed through Institute IGAS, Goslar / Germany (last report completed in 2019). Packed in 250g plastic bottles packed in four plastic containers (80 bottles per container). Surface area: 1.52 m²/g; main particle size not more than 7.0 micron (0.444).',
+    acceptedPaymentTerms: ['Card Payment', 'Advance Payment (Escrow)', 'Trade Protection Certificate'],
+    supportedIncotermsList: ['EXW', 'FOB', 'CIF', 'DDP'],
+    portsOfDispatch: ['Goslar / Hamburg Bonded Warehouse, Germany', 'London Gateway / Chatham, Kent, UK'],
+    marketDistribution: [
+      { market: 'Europe (Germany / UK)', percentage: 45 },
+      { market: 'North America', percentage: 25 },
+      { market: 'Asia-Pacific', percentage: 20 },
+      { market: 'Middle East & Global', percentage: 10 }
+    ],
+    contactPerson: 'Yaw Afreh Poku',
+    contactEmail: 'yaw.afreh@afrehgroup.com',
+    contactPhone: 'yaw.afreh@afrehgroup.com',
+    whatsapp: 'yaw.afreh@afrehgroup.com',
+    contactPersonDetails: {
+      avatarUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg',
+      name: 'Yaw Afreh Poku',
+      designation: 'Director — AFREH GROUP LIMITED (Chatham, Kent, England)',
+      email: 'yaw.afreh@afrehgroup.com',
+      phone: 'yaw.afreh@afrehgroup.com',
+      whatsapp: 'yaw.afreh@afrehgroup.com',
+      languages: ['English'],
+      isVerified: true,
+      responseTime: '< 1 hour'
+    },
+    complianceCertificates: [
+      {
+        id: 'cert-afreh-igas-2019',
+        name: 'IGAS Research (Goslar, Germany) Deposit Receipt & Copper Powder Evaluation Report (2019)',
+        category: 'QUALITY',
+        issuingAuthority: 'IGAS Research — Dr. Ernst Joachim Martin, D-38644 Goslar, Germany',
+        issueDate: '2019-11-07',
+        expiryDate: '2029-11-07',
+        certificateNumber: 'TU 1793-001-74350164-2005 / Lot 80kg',
+        type: 'PDF',
+        verified: true,
+        thumbnailUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg',
+        documentUrl: '/assets/aistudio/DOC-20260420-WA0003_260512_110731_a307beec.pdf'
+      },
+      {
+        id: 'cert-afreh-card-basic',
+        name: 'AFREH GROUP LIMITED — Basic Plan Membership & Card Payment Verification',
+        category: 'TRADE',
+        issuingAuthority: 'Trade Heaven Compliance & Billing Desk',
+        issueDate: '2026-11-12',
+        expiryDate: '2027-11-12',
+        certificateNumber: 'TH-BASIC-AFREH-2026',
+        type: 'IMAGE',
+        verified: true,
+        thumbnailUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.18_AM_823e9808.jpeg',
+        documentUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.18_AM_823e9808.jpeg'
+      }
+    ],
+    factoryDetails: {
+      factorySizeSqM: 12000,
+      productionLines: 4,
+      annualOutputUnits: '80 kg Verified Argon-Stabilised Stock Lot (4 Containers × 80 Bottles)',
+      monthlyCapacity: '320 Plastic Bottles Immediate Dispatch',
+      tourGallery: [
+        {
+          id: 'tour-afreh-1',
+          title: 'Ultra Dispersed Copper Powder Bottle (№ 21566 • Party 181202/04 • NK-07)',
+          department: 'Argon-Stabilised Sealed Bottle Packaging',
+          imageUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg',
+          caption: '250g plastic bottle packaging (Party № 181202/04, NK-07) stabilised in Argon per TU 1793-001-74350164-2005 (Surface area 1.52 m²/g, main particle size ≤ 7.0 µm / 0.444).'
+        },
+        {
+          id: 'tour-afreh-2',
+          title: 'Four Sealed Plastic Storage Containers (Ref 0001999 • 80 Bottles Each)',
+          department: 'IGAS Goslar / Germany Refreshed Bonded Storage',
+          imageUrl: '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.18_AM_823e9808.jpeg',
+          caption: 'Four sealed industrial containers (each containing 80 bottles) safeguarded under Argon atmosphere.'
+        }
+      ]
+    }
+  },
   'comp-joy-bamboo-forest-farm': {
     id: 'comp-joy-bamboo-forest-farm',
     companyName: 'Joy Bamboo Forest Farm LLC',
@@ -1614,6 +1717,9 @@ export function getDetailedVendorProfile(companyId: string, fallbackBase?: any):
   }
   if (companyId === 'user-supplier-mark' || companyId === 'comp-atlantic-power-equip') {
     return DETAILED_VENDOR_PROFILES['comp-atlantic-power-equip'];
+  }
+  if (companyId === 'user-supplier-afreh-yaw' || companyId === 'comp-afreh-group-limited') {
+    return DETAILED_VENDOR_PROFILES['comp-afreh-group-limited'];
   }
   if (DETAILED_VENDOR_PROFILES[companyId]) {
     return DETAILED_VENDOR_PROFILES[companyId];

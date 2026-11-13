@@ -422,6 +422,69 @@ const MainApp: React.FC = () => {
     } catch {}
     return productImageManagerService.applyOverridesToProductList(baseList);
   });
+
+  useEffect(() => {
+    const mergeCustomCatalog = (companies: any[], customProducts: any[]) => {
+      try {
+        if (Array.isArray(companies) && companies.length > 0) {
+          companies.forEach(comp => {
+            if (comp && comp.id) {
+              const existingIdx = MOCK_COMPANIES.findIndex(c => c.id === comp.id);
+              if (existingIdx >= 0) {
+                MOCK_COMPANIES[existingIdx] = { ...MOCK_COMPANIES[existingIdx], ...comp };
+              } else {
+                MOCK_COMPANIES.unshift(comp);
+              }
+            }
+          });
+        }
+        if (Array.isArray(customProducts) && customProducts.length > 0) {
+          setProducts(prev => {
+            const byId = new Map<string, Product>();
+            prev.forEach(p => byId.set(p.id, p));
+            const additions: Product[] = [];
+            customProducts.forEach(cp => {
+              if (cp && cp.id) {
+                if (byId.has(cp.id)) {
+                  byId.set(cp.id, { ...byId.get(cp.id)!, ...cp });
+                } else {
+                  additions.push(cp);
+                }
+              }
+            });
+            return productImageManagerService.applyOverridesToProductList([
+              ...additions,
+              ...Array.from(byId.values())
+            ]);
+          });
+        }
+      } catch {}
+    };
+
+    const syncFromServer = async () => {
+      try {
+        const res = await fetch('/api/v1/public/custom-catalog');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.success) {
+          mergeCustomCatalog(data.companies || [], data.products || []);
+        }
+      } catch {}
+    };
+
+    void syncFromServer();
+
+    const handleStudioUpdated = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.company || detail?.product) {
+        mergeCustomCatalog(detail.company ? [detail.company] : [], detail.product ? [detail.product] : []);
+      } else {
+        void syncFromServer();
+      }
+    };
+    window.addEventListener('tradeheaven_custom_catalog_updated', handleStudioUpdated);
+    return () => window.removeEventListener('tradeheaven_custom_catalog_updated', handleStudioUpdated);
+  }, []);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);

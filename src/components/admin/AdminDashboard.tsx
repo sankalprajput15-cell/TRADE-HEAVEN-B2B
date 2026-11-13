@@ -30,6 +30,7 @@ import { SeoHealthDashboard } from './SeoHealthDashboard';
 import { DeploymentHealthMonitor } from './DeploymentHealthMonitor';
 import { AdminRouteGuard } from './AdminRouteGuard';
 import { OffersAnnouncementsAdminModule } from './OffersAnnouncementsAdminModule';
+import { MemberListingOfferStudio } from './MemberListingOfferStudio';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -69,6 +70,7 @@ import {
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
+  | 'CLIENT_LISTING_OFFER_STUDIO'
   | 'OFFERS_ANNOUNCEMENTS'
   | 'MASTER_UPLOADS_VAULT'
   | 'CLIENT_UPLOADS'
@@ -123,6 +125,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         
         // Define all valid tabs for strict validation
         const validTabs: string[] = [
+          'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
@@ -478,6 +481,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     label: string;
     icon: any;
   }> = [
+    { id: 'CLIENT_LISTING_OFFER_STUDIO', label: '➕ Client, Listing & Offer Studio', icon: Plus },
     { id: 'OFFERS_ANNOUNCEMENTS', label: '📢 Offers, Banners & Announcements', icon: Megaphone },
     { id: 'MASTER_UPLOADS_VAULT', label: '🌐 Universal Site Uploads & Files Vault', icon: FolderLock },
     { id: 'CLIENT_UPLOADS', label: '📄 Client Uploads & Wire Slips', icon: FileCheck },
@@ -819,6 +823,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* VIEW CONDITIONAL RENDERING */}
+        {activeTab === 'CLIENT_LISTING_OFFER_STUDIO' && (
+          <div className="space-y-4">
+            <MemberListingOfferStudio onNavigate={onNavigate} />
+          </div>
+        )}
+
         {activeTab === 'OFFERS_ANNOUNCEMENTS' && (
           <div className="space-y-4">
             <OffersAnnouncementsAdminModule onRefreshQueue={refreshDeliveryQueueStatus} />

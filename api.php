@@ -642,6 +642,21 @@ function getBuiltInSeedAuthUsers() {
             'status' => 'ACTIVE',
             'isVerified' => true,
             'avatarUrl' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+        ],
+        'yaw.afreh@afrehgroup.com' => [
+            'id' => 'user-supplier-afreh-yaw',
+            'name' => 'Yaw Afreh Poku',
+            'email' => 'yaw.afreh@afrehgroup.com',
+            'password_plain' => 'Afreh@2026',
+            'role' => 'SUPPLIER',
+            'companyName' => 'AFREH GROUP LIMITED',
+            'country' => 'United Kingdom',
+            'tier' => 'Basic Plan',
+            'isPremium' => false,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg'
         ]
     ];
 }
