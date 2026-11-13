@@ -1,7 +1,13 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  
+
+  # Preserve Authorization header for PHP FastCGI/CGI Bearer token verification
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Route Node-compatible auth endpoints directly to api.php on Apache/cPanel hosts
+  RewriteRule ^api/v1/auth/([^/]+)/?$ /api.php?action=$1 [QSA,L,NC]
+
   # Allow direct access to api.php without rewriting to index.html
   RewriteRule ^api\.php$ - [L]
 

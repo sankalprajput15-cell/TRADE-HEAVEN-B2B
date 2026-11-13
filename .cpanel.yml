@@ -4,3 +4,4 @@ deployment:
     - export DEPLOYPATH=/home3/a17604c7/public_html/
     - /bin/cp -R dist/* $DEPLOYPATH
     - /bin/cp api.php $DEPLOYPATH
+    - /bin/cp .htaccess $DEPLOYPATH
