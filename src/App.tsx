@@ -1194,6 +1194,16 @@ const MainApp: React.FC = () => {
       }
       return;
     }
+    if (currentUser?.token) {
+      fetch('/api/v1/auth/heartbeat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentUser.token}`
+        },
+        body: JSON.stringify({ currentView: activeView })
+      }).catch(() => {});
+    }
   }, [activeView, currentUser, isAdmin]);
 
   // Dynamic SEO, OpenGraph & Meta Tags based on active view, selected product, and dynamic hero placeholder
@@ -2665,7 +2675,7 @@ const MainApp: React.FC = () => {
                     targetViewName="CLIENT_ADMIN"
                   >
                     <AdminDashboard
-                      initialTab="RENEWAL_INSIGHTS"
+                      initialTab="ADMIN_MENU_OVERVIEW"
                       currentUser={currentUser}
                       onNavigate={handleNavigate}
                       selectedCurrency={selectedCurrency}

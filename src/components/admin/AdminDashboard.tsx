@@ -71,6 +71,7 @@ import {
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
+  | 'ADMIN_MENU_OVERVIEW'
   | 'CLIENT_LISTING_OFFER_STUDIO'
   | 'OFFERS_ANNOUNCEMENTS'
   | 'MASTER_UPLOADS_VAULT'
@@ -95,6 +96,23 @@ export type AdminDashboardTabId =
   | 'SEO_HEALTH'
   | 'DEPLOYMENT_HEALTH';
 
+interface ActivePlatformUserSession {
+  userId: string;
+  email: string;
+  name: string;
+  role: string;
+  tier: string;
+  companyName: string;
+  country: string;
+  currentView: string;
+  userAgent: string;
+  ipAddress: string;
+  loggedInAt: number;
+  lastActiveAt: number;
+  isOnlineNow: boolean;
+  secondsAgo: number;
+}
+
 interface AdminDashboardProps {
   initialTab?: AdminDashboardTabId;
   currentUser: AuthUser | null;
@@ -105,7 +123,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  initialTab = 'CUSTOM_EMAIL_DISPATCHER',
+  initialTab = 'ADMIN_MENU_OVERVIEW',
   currentUser,
   onNavigate,
   selectedCurrency,
@@ -126,13 +144,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         
         // Define all valid tabs for strict validation
         const validTabs: string[] = [
+          'ADMIN_MENU_OVERVIEW',
           'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
           'REGISTERED_SUPPLIERS', 'COUNTRIES', 'CRM', 'PRICING',
           'ACTIVITY_LOGS', 'USER_DELETION_LOG', 'BULK_CSV_IMPORT',
-          'BATCH_IMAGE_IMPORT', 'MULTI_FILE_UPLOAD', 'SEO_HEALTH'
+          'BATCH_IMAGE_IMPORT', 'MULTI_FILE_UPLOAD', 'SEO_HEALTH', 'DEPLOYMENT_HEALTH'
         ];
 
         // Direct match
@@ -217,12 +236,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
         
         const validTabs: string[] = [
+          'ADMIN_MENU_OVERVIEW', 'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
           'REGISTERED_SUPPLIERS', 'COUNTRIES', 'CRM', 'PRICING',
           'ACTIVITY_LOGS', 'USER_DELETION_LOG', 'BULK_CSV_IMPORT',
-          'BATCH_IMAGE_IMPORT', 'MULTI_FILE_UPLOAD', 'SEO_HEALTH'
+          'BATCH_IMAGE_IMPORT', 'MULTI_FILE_UPLOAD', 'SEO_HEALTH', 'DEPLOYMENT_HEALTH'
         ];
 
         if (validTabs.includes(normalized)) {
@@ -257,6 +277,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  const [liveUserSessions, setLiveUserSessions] = useState<ActivePlatformUserSession[]>([]);
+  const [liveUserCounts, setLiveUserCounts] = useState<{
+    onlineCount: number;
+    activeSessionCount: number;
+    totalRegisteredUsers: number;
+  }>({ onlineCount: 0, activeSessionCount: 0, totalRegisteredUsers: 0 });
+  const [isLoadingLiveUsers, setIsLoadingLiveUsers] = useState(false);
+
+  const fetchLiveActiveUsers = async () => {
+    if (!isStrictAdmin) return;
+    setIsLoadingLiveUsers(true);
+    try {
+      const res = await fetch('/api/v1/admin/active-users', { cache: 'no-cache' });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setLiveUserSessions(Array.isArray(data.sessions) ? data.sessions : []);
+        setLiveUserCounts({
+          onlineCount: Number(data.onlineCount || 0),
+          activeSessionCount: Number(data.activeSessionCount || 0),
+          totalRegisteredUsers: Number(data.totalRegisteredUsers || 0)
+        });
+      }
+    } catch {} finally {
+      setIsLoadingLiveUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isStrictAdmin || activeTab !== 'ADMIN_MENU_OVERVIEW') return;
+    void fetchLiveActiveUsers();
+    const interval = window.setInterval(() => {
+      void fetchLiveActiveUsers();
+    }, 15000);
+    return () => window.clearInterval(interval);
+  }, [isStrictAdmin, activeTab]);
 
   const {
     notifications,
@@ -516,6 +572,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     label: string;
     icon: any;
   }> = [
+    { id: 'ADMIN_MENU_OVERVIEW', label: '🏠 Admin Menu & Live Users', icon: Layout },
     { id: 'CLIENT_LISTING_OFFER_STUDIO', label: '➕ Client, Listing & Offer Studio', icon: Plus },
     { id: 'OFFERS_ANNOUNCEMENTS', label: '📢 Offers, Banners & Announcements', icon: Megaphone },
     { id: 'MASTER_UPLOADS_VAULT', label: '🌐 Universal Site Uploads & Files Vault', icon: FolderLock },
@@ -792,7 +849,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             isHighContrast ? 'border-b-2 border-white' : 'border-slate-200'
           }`}
         >
-          <div className="min-w-0 flex items-center gap-2 text-xs">
+          <div className="min-w-0 flex items-center gap-2.5 text-xs">
+            {activeTab !== 'ADMIN_MENU_OVERVIEW' && (
+              <button
+                type="button"
+                onClick={() => handleSelectSidebarTab('ADMIN_MENU_OVERVIEW')}
+                data-testid="admin-back-to-menu-btn"
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors ${
+                  isHighContrast
+                    ? 'bg-black text-white border-2 border-white hover:border-[#ffe600]'
+                    : 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-300'
+                }`}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Admin Menu</span>
+              </button>
+            )}
             <span className={isHighContrast ? 'font-bold text-slate-200 whitespace-nowrap' : 'font-semibold text-slate-500 whitespace-nowrap'}>
               Admin Console
             </span>
@@ -976,6 +1048,153 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {/* VIEW CONDITIONAL RENDERING */}
+        {activeTab === 'ADMIN_MENU_OVERVIEW' && (
+          <div className="space-y-6" data-testid="admin-menu-overview">
+            {/* ADMIN MENU GRID RIGHT IN MAIN VIEWPORT */}
+            <section
+              aria-labelledby="admin-viewport-menu-heading"
+              data-testid="admin-viewport-menu"
+              className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 id="admin-viewport-menu-heading" className="text-base sm:text-lg font-black text-slate-900">
+                    Admin Menu
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Select any management tool below to open it inside this workspace.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-slate-500 tabular-nums">
+                  {navigationItems.filter(i => i.id !== 'ADMIN_MENU_OVERVIEW').length} Modules
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {navigationItems
+                  .filter(item => item.id !== 'ADMIN_MENU_OVERVIEW')
+                  .map(item => {
+                    const Icon = item.icon;
+                    const cleanLabel = item.label.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectSidebarTab(item.id)}
+                        className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-500 text-left flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+                      >
+                        <span className="flex items-center gap-3 min-w-0">
+                          <span className="w-9 h-9 rounded-lg bg-white border border-slate-200 text-blue-600 flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4" />
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 truncate">
+                            {cleanLabel}
+                          </span>
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+                      </button>
+                    );
+                  })}
+              </div>
+            </section>
+
+            {/* CURRENT USERS LOGGED IN & USING PLATFORM */}
+            <section
+              aria-labelledby="admin-live-users-heading"
+              data-testid="admin-live-users-panel"
+              className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <h3 id="admin-live-users-heading" className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <span>Current Users Logged In &amp; Using Platform</span>
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1 tabular-nums">
+                    <span className="font-bold text-emerald-700">{liveUserCounts.onlineCount} Active Now</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{liveUserCounts.activeSessionCount} Logged-In Sessions (15m)</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{liveUserCounts.totalRegisteredUsers} Total Registered Accounts</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void fetchLiveActiveUsers()}
+                  disabled={isLoadingLiveUsers}
+                  data-testid="refresh-live-users-btn"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingLiveUsers ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingLiveUsers ? 'Refreshing...' : 'Refresh Live Users'}</span>
+                </button>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="p-3 font-extrabold text-slate-700 uppercase">User</th>
+                      <th className="p-3 font-extrabold text-slate-700 uppercase">Role &amp; Plan</th>
+                      <th className="p-3 font-extrabold text-slate-700 uppercase">Company / Country</th>
+                      <th className="p-3 font-extrabold text-slate-700 uppercase">Current Page</th>
+                      <th className="p-3 font-extrabold text-slate-700 uppercase">Last Active</th>
+                      <th className="p-3 font-extrabold text-slate-700 uppercase">Session Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {liveUserSessions.map(sess => (
+                      <tr key={sess.email} className="hover:bg-slate-50">
+                        <td className="p-3">
+                          <div className="font-bold text-slate-900">{sess.name}</div>
+                          <div className="text-[11px] font-mono text-slate-500">{sess.email}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-bold text-slate-900">{sess.role}</div>
+                          <div className="text-[11px] text-slate-500">{sess.tier}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-semibold text-slate-800">{sess.companyName}</div>
+                          <div className="text-[11px] text-slate-500">{sess.country}</div>
+                        </td>
+                        <td className="p-3 font-mono text-[11px] text-blue-700">
+                          {sess.currentView || 'HOMEPAGE'}
+                        </td>
+                        <td className="p-3 font-mono text-slate-600 tabular-nums whitespace-nowrap">
+                          {sess.secondsAgo < 10
+                            ? 'Just now'
+                            : sess.secondsAgo < 60
+                              ? `${sess.secondsAgo}s ago`
+                              : `${Math.floor(sess.secondsAgo / 60)}m ago`}
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          <span
+                            className={`font-bold ${
+                              sess.isOnlineNow ? 'text-emerald-700' : 'text-amber-700'
+                            }`}
+                          >
+                            {sess.isOnlineNow ? 'Active Now' : 'Recently Active'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {liveUserSessions.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-slate-500 font-medium">
+                          {isLoadingLiveUsers
+                            ? 'Checking live authenticated sessions...'
+                            : 'No other active sessions detected in the last 15 minutes. Authenticated users appear automatically as soon as they sign in or browse.'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        )}
+
         {activeTab === 'CLIENT_LISTING_OFFER_STUDIO' && (
           <div className="space-y-4">
             <MemberListingOfferStudio onNavigate={onNavigate} />

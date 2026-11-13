@@ -525,6 +525,12 @@ div#root:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-t
   border: 2px solid #ffe600;
 }
 
+#unified-admin-dashboard[data-admin-theme="high-contrast"] [data-testid="admin-viewport-menu"] button:hover {
+  border-color: #ffe600;
+  background-color: #161616;
+}
+
+
 
 
 

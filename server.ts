@@ -1393,6 +1393,11 @@ function revokeAllAdminSessionsWorldwide(reason: string = 'Compromised secret ke
     }
   }
   saveServerUsersToDisk();
+  for (const [sessKey, sess] of activePlatformSessions.entries()) {
+    if (sess.role === 'ADMIN') {
+      activePlatformSessions.delete(sessKey);
+    }
+  }
   logServerActivity(
     null,
     'GLOBAL_ADMIN_SESSIONS_REVOKED',
@@ -1402,6 +1407,63 @@ function revokeAllAdminSessionsWorldwide(reason: string = 'Compromised secret ke
     `${reason} (New Epoch: ${GLOBAL_ADMIN_REVOCATION_EPOCH})`,
     'SUCCESS'
   );
+}
+
+interface ActivePlatformSession {
+  userId: string;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER';
+  tier: string;
+  companyName: string;
+  country: string;
+  currentView: string;
+  userAgent: string;
+  ipAddress: string;
+  loggedInAt: number;
+  lastActiveAt: number;
+}
+
+const activePlatformSessions = new Map<string, ActivePlatformSession>();
+
+function touchActivePlatformSession(
+  req: express.Request | null,
+  u: {
+    id?: string;
+    uid?: string;
+    email?: string;
+    name?: string;
+    role?: string;
+    tier?: string;
+    companyName?: string;
+    country?: string;
+  },
+  currentView?: string
+) {
+  const cleanEmail = normalizeRecipientEmail(String(u.email || ''));
+  if (!cleanEmail) return;
+  const existing = activePlatformSessions.get(cleanEmail);
+  const now = Date.now();
+  const ua = req ? String(req.headers['user-agent'] || '').slice(0, 140) : existing?.userAgent || 'Browser';
+  const ip = req
+    ? String((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '').trim()
+    : existing?.ipAddress || '';
+  const storedUser = serverUsersStore.find(su => normalizeRecipientEmail(su.email) === cleanEmail);
+
+  activePlatformSessions.set(cleanEmail, {
+    userId: String(u.id || u.uid || existing?.userId || cleanEmail),
+    email: cleanEmail,
+    name: String(u.name || storedUser?.name || existing?.name || cleanEmail),
+    role: ((u.role || existing?.role || 'BUYER') as ActivePlatformSession['role']),
+    tier: String(u.tier || storedUser?.tier || existing?.tier || 'FREE'),
+    companyName: String(u.companyName || storedUser?.companyName || existing?.companyName || 'Global Trade Member'),
+    country: String(u.country || storedUser?.country || existing?.country || 'Global'),
+    currentView: String(currentView || existing?.currentView || 'HOMEPAGE'),
+    userAgent: ua,
+    ipAddress: ip,
+    loggedInAt: existing?.loggedInAt || now,
+    lastActiveAt: now
+  });
 }
 
 // GET /api/v1/auth/session-epoch - Check active global revocation epoch
@@ -1849,6 +1911,7 @@ app.post('/api/v1/auth/verify-login-otp', (req, res) => {
     matchedUser.role === 'ADMIN';
   const resolvedRole = isAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
   const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
+  touchActivePlatformSession(req, { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
 
   sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
   logServerActivity(
@@ -5488,6 +5551,7 @@ app.post('/api/v1/auth/register', (req, res) => {
   serverUsersStore.unshift(newRecord);
   saveServerUsersToDisk();
   const token = generateServerJwt(newRecord);
+  touchActivePlatformSession(req, newRecord, 'HOMEPAGE');
 
   logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api/v1/auth/register', `User ${name} verified 6-digit email OTP and registered successfully as ${resolvedRole} for company ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
 
@@ -5534,6 +5598,9 @@ app.get('/api/v1/auth/me', (req, res) => {
     });
   }
 
+  const viewParam = typeof req.query.view === 'string' ? req.query.view : undefined;
+  touchActivePlatformSession(req, payload, viewParam);
+
   return res.json({
     success: true,
     adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
@@ -5552,6 +5619,71 @@ app.get('/api/v1/auth/me', (req, res) => {
       companyName: payload.companyName,
       token
     }
+  });
+});
+
+// POST /api/v1/auth/heartbeat - Update live active view & presence timestamp for currently signed-in user
+app.post('/api/v1/auth/heartbeat', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Unauthenticated' });
+  }
+  const token = authHeader.split(' ')[1];
+  const payload = verifyServerJwt(token);
+  if (!payload) {
+    return res.status(401).json({ success: false, revoked: true, message: 'Session invalid' });
+  }
+  const currentView = typeof req.body?.currentView === 'string' ? req.body.currentView : undefined;
+  touchActivePlatformSession(req, payload, currentView);
+  return res.json({ success: true, serverTime: Date.now() });
+});
+
+// POST /api/v1/auth/logout - Remove active platform presence session immediately on sign-out
+app.post('/api/v1/auth/logout', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    const payload = verifyServerJwt(token);
+    if (payload?.email) {
+      activePlatformSessions.delete(normalizeRecipientEmail(payload.email));
+    }
+  }
+  const bodyEmail = typeof req.body?.email === 'string' ? normalizeRecipientEmail(req.body.email) : '';
+  if (bodyEmail) {
+    activePlatformSessions.delete(bodyEmail);
+  }
+  return res.json({ success: true });
+});
+
+// GET /api/v1/admin/active-users - Return currently logged-in & recently active platform users
+app.get('/api/v1/admin/active-users', (req, res) => {
+  const now = Date.now();
+  const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+  const ACTIVE_SESSION_WINDOW_MS = 15 * 60 * 1000;
+
+  // Prune stale sessions older than 30 minutes
+  for (const [k, s] of activePlatformSessions.entries()) {
+    if (now - s.lastActiveAt > 30 * 60 * 1000) {
+      activePlatformSessions.delete(k);
+    }
+  }
+
+  const activeSessions = Array.from(activePlatformSessions.values())
+    .filter(s => now - s.lastActiveAt <= ACTIVE_SESSION_WINDOW_MS)
+    .sort((a, b) => b.lastActiveAt - a.lastActiveAt)
+    .map(s => ({
+      ...s,
+      isOnlineNow: now - s.lastActiveAt <= ONLINE_WINDOW_MS,
+      secondsAgo: Math.max(0, Math.floor((now - s.lastActiveAt) / 1000))
+    }));
+
+  return res.json({
+    success: true,
+    serverTime: now,
+    onlineCount: activeSessions.filter(s => s.isOnlineNow).length,
+    activeSessionCount: activeSessions.length,
+    totalRegisteredUsers: serverUsersStore.length,
+    sessions: activeSessions
   });
 });
 
