@@ -242,5 +242,289 @@ div#root:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-t
   opacity: 0 !important;
 }
 
+/* =========================================================================
+   ADMIN DASHBOARD ACCESSIBILITY THEME: HIGH CONTRAST (WCAG AAA)
+   Scoped strictly to #unified-admin-dashboard[data-admin-theme="high-contrast"]
+   ========================================================================= */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] {
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+/* Neutral & Structural Surfaces */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-white,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-slate-50,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-gray-50 {
+  background-color: #0a0a0a;
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-slate-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-slate-200,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-gray-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-gray-200 {
+  background-color: #161616;
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-slate-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-slate-900,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-slate-950,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] [class*="bg-slate-800/"],
+#unified-admin-dashboard[data-admin-theme="high-contrast"] [class*="bg-slate-900/"] {
+  background-color: #050505;
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] [class*="bg-gradient-to-"] {
+  background-image: none;
+  background-color: #0a0a0a;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+/* Crisp High-Visibility Borders */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-slate-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-slate-200,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-slate-250,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-slate-300,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-slate-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-slate-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .border-gray-200,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] [class*="border-slate-700/"] {
+  border-color: #ffffff;
+}
+
+/* High-Contrast Typography Hierarchy */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-950,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-900,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-850,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-gray-900,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-gray-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-gray-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-white {
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-500,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-400,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-slate-300,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-gray-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-gray-500,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-gray-400 {
+  color: #e5e7eb;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-blue-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-blue-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-blue-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-blue-500,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-blue-400,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-blue-300,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-indigo-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-indigo-700 {
+  color: #93c5fd;
+}
+
+/* Interactive Form Controls & Focus Visibility */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+#unified-admin-dashboard[data-admin-theme="high-contrast"] textarea,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] select {
+  background-color: #000000;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] input::placeholder,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] textarea::placeholder {
+  color: #d1d5db;
+  opacity: 1;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] input:focus-visible,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] textarea:focus-visible,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] select:focus-visible,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button:focus-visible,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] a:focus-visible,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] [tabindex]:focus-visible {
+  outline: 3px solid #ffe600;
+  outline-offset: 2px;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] input[type="checkbox"],
+#unified-admin-dashboard[data-admin-theme="high-contrast"] input[type="radio"] {
+  accent-color: #ffe600;
+  outline: 1px solid #ffffff;
+}
+
+/* Tables & High-Density Data Grids */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] th {
+  background-color: #141414;
+  color: #ffe600;
+  border-bottom: 2px solid #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] td {
+  color: #ffffff;
+  border-bottom: 1px solid #d1d5db;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] tbody tr:hover {
+  background-color: #1f1f1f;
+}
+
+/* Semantic Interactive Buttons & Paired Foreground Colors */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button.bg-slate-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button.bg-slate-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button.bg-slate-900,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] label.bg-slate-800 {
+  background-color: #141414;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button.bg-slate-100:hover,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button.bg-slate-800:hover,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] button.bg-slate-900:hover,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] label.bg-slate-800:hover {
+  background-color: #262626;
+  border-color: #ffe600;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-blue-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-blue-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-indigo-600 {
+  background-color: #0044cc;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-blue-600 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-blue-700 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-indigo-600 * {
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-emerald-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-emerald-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-green-600 {
+  background-color: #065f46;
+  color: #ffffff;
+  border: 2px solid #6ee7b7;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-emerald-600 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-emerald-700 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-green-600 * {
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-rose-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-rose-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-red-600 {
+  background-color: #991b1b;
+  color: #ffffff;
+  border: 2px solid #fca5a5;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-rose-600 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-rose-700 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-red-600 * {
+  color: #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-400,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-500,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-400,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-500,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-black {
+  color: #000000;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-400,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-500,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-400,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-500 {
+  background-color: #ffe600;
+  border: 2px solid #ffffff;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-400 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-500 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-400 *,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-500 * {
+  color: #000000;
+}
+
+/* Soft Semantic Alert Banners & Badges */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-emerald-50,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-emerald-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-green-50 {
+  background-color: #032612;
+  color: #a7f3d0;
+  border-color: #4ade80;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-emerald-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-emerald-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-emerald-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-emerald-900 {
+  color: #a7f3d0;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-rose-50,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-rose-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-red-50 {
+  background-color: #33050b;
+  color: #fecaca;
+  border-color: #f87171;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-rose-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-rose-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-rose-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-rose-900,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-rose-950 {
+  color: #fecaca;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-blue-50,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-blue-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-indigo-50,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-indigo-100 {
+  background-color: #051b3b;
+  color: #bfdbfe;
+  border-color: #60a5fa;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-50,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-amber-100,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .bg-yellow-50 {
+  background-color: #2b1800;
+  color: #fde68a;
+  border-color: #facc15;
+}
+
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-amber-600,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-amber-700,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-amber-800,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .text-amber-900 {
+  color: #fde68a;
+}
+
+/* Preserve inline HTML email preview cards with high-contrast frame */
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .email-style-container,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .email-preview-wrapper,
+#unified-admin-dashboard[data-admin-theme="high-contrast"] .email-responsive-card {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #ffe600;
+}
+
+
 
 

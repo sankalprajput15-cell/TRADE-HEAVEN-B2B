@@ -66,7 +66,8 @@ import {
   FileCheck,
   FolderLock,
   Server,
-  Megaphone
+  Megaphone,
+  Contrast
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
@@ -159,6 +160,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [activeTab, setActiveTab] = useState<AdminDashboardTabId>(getInitialTab);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const ADMIN_THEME_STORAGE_KEY = 'tradeheaven_admin_theme';
+  const [adminTheme, setAdminTheme] = useState<'default' | 'high-contrast'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = window.localStorage.getItem('tradeheaven_admin_theme');
+        if (stored === 'high-contrast' || stored === 'default') {
+          return stored;
+        }
+      } catch {}
+    }
+    return 'default';
+  });
+  const isHighContrast = adminTheme === 'high-contrast';
+
+  const handleSetAdminTheme = (nextTheme: 'default' | 'high-contrast') => {
+    setAdminTheme(nextTheme);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(ADMIN_THEME_STORAGE_KEY, nextTheme);
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ADMIN_THEME_STORAGE_KEY && (e.newValue === 'default' || e.newValue === 'high-contrast')) {
+        setAdminTheme(e.newValue);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const isStrictAdmin = Boolean(
     currentUser &&
@@ -540,34 +575,83 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   }
 
+  const activeNavigationItem = navigationItems.find(item => item.id === activeTab);
+  const activeTabLabel = (activeNavigationItem?.label || activeTab).replace(/^[^\p{L}\p{N}]+/u, '').trim();
+
   return (
-    <div id="unified-admin-dashboard" className="min-h-screen bg-slate-50 flex flex-col lg:flex-row rounded-3xl overflow-hidden border border-slate-200 shadow-xs">
-      
+    <div
+      id="unified-admin-dashboard"
+      data-admin-theme={adminTheme}
+      className={`min-h-screen flex flex-col lg:flex-row rounded-3xl overflow-hidden shadow-xs transition-colors duration-200 ${
+        isHighContrast
+          ? 'bg-black text-white border-2 border-white'
+          : 'bg-slate-50 text-slate-900 border border-slate-200'
+      }`}
+    >
+      <div className="sr-only" role="status" aria-live="polite">
+        {isHighContrast
+          ? 'Admin Dashboard theme set to High Contrast accessibility mode.'
+          : 'Admin Dashboard theme set to Default mode.'}
+      </div>
+
       {/* MOBILE HEADER BAR */}
-      <div className="lg:hidden bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-xs">
+      <div
+        className={`lg:hidden p-4 flex items-center justify-between gap-2 border-b ${
+          isHighContrast ? 'bg-black text-white border-b-2 border-white' : 'bg-slate-900 text-white border-slate-800'
+        }`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
+              isHighContrast ? 'bg-[#ffe600] text-black border-2 border-white' : 'bg-blue-600 text-white'
+            }`}
+          >
             TH
           </div>
-          <div>
-            <div className="font-extrabold text-xs tracking-wider">TRADE HEAVEN</div>
-            <div className="text-[10px] text-blue-400 font-bold uppercase">System Control Center</div>
+          <div className="min-w-0">
+            <div className="font-extrabold text-xs tracking-wider truncate">TRADE HEAVEN</div>
+            <div className={`text-[10px] font-bold uppercase truncate ${isHighContrast ? 'text-[#ffe600]' : 'text-blue-400'}`}>
+              System Control Center
+            </div>
           </div>
         </div>
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-          type="button"
-        >
-          {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          <span>{isSidebarOpen ? 'Close Menu' : 'Admin Menu'}</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleSetAdminTheme(isHighContrast ? 'default' : 'high-contrast')}
+            aria-pressed={isHighContrast}
+            aria-label={`Switch Admin Dashboard theme to ${isHighContrast ? 'Default' : 'High Contrast'}`}
+            className={`px-3 py-2 min-h-[40px] rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+              isHighContrast
+                ? 'bg-[#ffe600] text-black border-2 border-white'
+                : 'bg-slate-800 hover:bg-slate-700 text-white border border-slate-700'
+            }`}
+          >
+            <Contrast className="w-4 h-4 shrink-0" />
+            <span>{isHighContrast ? 'High Contrast' : 'Default'}</span>
+          </button>
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`px-3 py-2 min-h-[40px] rounded-lg text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+              isHighContrast
+                ? 'bg-black text-white border-2 border-white hover:border-[#ffe600] hover:bg-neutral-900'
+                : 'bg-blue-600 hover:bg-blue-500 text-white'
+            }`}
+            type="button"
+          >
+            {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            <span>{isSidebarOpen ? 'Close Menu' : 'Admin Menu'}</span>
+          </button>
+        </div>
       </div>
 
       {/* PERSISTENT SIDEBAR DESKTOP / COLLAPSED MOBILE */}
       <div className={`
         ${isSidebarOpen ? 'flex' : 'hidden lg:flex'}
-        w-full lg:w-72 bg-slate-900 text-slate-200 flex-col border-b lg:border-b-0 lg:border-r border-slate-800 shrink-0 lg:min-h-screen
+        w-full lg:w-72 flex-col border-b lg:border-b-0 lg:border-r shrink-0 lg:min-h-screen
+        ${isHighContrast
+          ? 'bg-black text-white border-white lg:border-r-2'
+          : 'bg-slate-900 text-slate-200 border-slate-800'}
       `}>
         {/* LOGO SECTION */}
         <div className="p-5 border-b border-slate-800 hidden lg:flex items-center justify-between gap-3">
@@ -659,26 +743,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className={`
                   w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2.5 transition-all cursor-pointer text-left
                   ${isActive 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-black ring-1 ring-blue-400/40' 
-                    : 'hover:bg-slate-800 text-slate-300 hover:text-white'}
+                    ? (isHighContrast
+                        ? 'bg-[#ffe600] text-black border-2 border-white font-black'
+                        : 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-black ring-1 ring-blue-400/40')
+                    : (isHighContrast
+                        ? 'bg-black text-white border border-transparent hover:border-[#ffe600] hover:underline'
+                        : 'hover:bg-slate-800 text-slate-300 hover:text-white')}
                 `}
               >
                 <span className="flex items-center gap-2.5 min-w-0">
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? (isHighContrast ? 'text-black' : 'text-white') : (isHighContrast ? 'text-white' : 'text-slate-400')}`} />
                   <span className="truncate">{item.label}</span>
                 </span>
-                {isActive && <ChevronRight className="w-3.5 h-3.5 text-blue-200 shrink-0" />}
+                {isActive && <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isHighContrast ? 'text-black' : 'text-blue-200'}`} />}
               </button>
             );
           })}
         </nav>
 
         {/* FOOTER ACTION */}
-        <div className="p-4 border-t border-slate-800 mt-auto">
+        <div className={`p-4 border-t mt-auto space-y-2.5 ${isHighContrast ? 'border-t-2 border-white' : 'border-slate-800'}`}>
           <button
             type="button"
             onClick={() => onNavigate('HOMEPAGE')}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700"
+            className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 border ${
+              isHighContrast
+                ? 'bg-black hover:bg-neutral-900 text-white border-2 border-white hover:border-[#ffe600]'
+                : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+            }`}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Marketplace Home</span>
@@ -687,7 +779,68 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* MAIN VIEWPORT */}
-      <main id="admin-main-viewport" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6">
+      <main
+        id="admin-main-viewport"
+        className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6 ${
+          isHighContrast ? 'bg-black text-white' : ''
+        }`}
+      >
+        {/* TOP WORKSPACE UTILITY BAR WITH ACCESSIBILITY THEME TOGGLE */}
+        <div
+          id="admin-workspace-topbar"
+          className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b ${
+            isHighContrast ? 'border-b-2 border-white' : 'border-slate-200'
+          }`}
+        >
+          <div className="min-w-0 flex items-center gap-2 text-xs">
+            <span className={isHighContrast ? 'font-bold text-slate-200 whitespace-nowrap' : 'font-semibold text-slate-500 whitespace-nowrap'}>
+              Admin Console
+            </span>
+            <span aria-hidden="true" className={isHighContrast ? 'text-white font-bold' : 'text-slate-400'}>/</span>
+            <h2 className={`font-black text-sm sm:text-base truncate ${isHighContrast ? 'text-white' : 'text-slate-900'}`}>
+              {activeTabLabel}
+            </h2>
+          </div>
+
+          <div
+            role="group"
+            aria-label="Admin Dashboard Accessibility Theme"
+            data-testid="admin-theme-toggle-group"
+            className={`inline-flex items-center p-1 rounded-xl gap-1 shrink-0 self-start sm:self-auto ${
+              isHighContrast
+                ? 'bg-black border-2 border-white'
+                : 'bg-slate-200/80 border border-slate-300/80'
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => handleSetAdminTheme('default')}
+              aria-pressed={!isHighContrast}
+              data-testid="admin-theme-default-btn"
+              className={`px-4 py-2 min-h-[40px] rounded-lg text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+                !isHighContrast
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'bg-black text-white hover:underline border border-transparent'
+              }`}
+            >
+              Default
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetAdminTheme('high-contrast')}
+              aria-pressed={isHighContrast}
+              data-testid="admin-theme-high-contrast-btn"
+              className={`px-4 py-2 min-h-[40px] rounded-lg text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffe600] ${
+                isHighContrast
+                  ? 'bg-[#ffe600] text-black font-black border-2 border-white'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Contrast className="w-4 h-4 shrink-0" />
+              <span>High Contrast</span>
+            </button>
+          </div>
+        </div>
         
         {/* TOAST ALERT */}
         {toastMessage && (
