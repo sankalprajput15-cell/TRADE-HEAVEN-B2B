@@ -290,15 +290,18 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
           api.getCmsPermissions()
         ]);
         if (res.ok) {
-          const data = await res.json();
-          if (data && data.data) {
-            setSiteContent(prev => {
-              const merged = { ...DEFAULT_SITE_CONTENT, ...prev, ...data.data };
-              try {
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-              } catch {}
-              return merged;
-            });
+          const contentType = res.headers.get('content-type') || '';
+          if (!contentType || contentType.includes('application/json')) {
+            const data = await res.json().catch(() => null);
+            if (data && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+              setSiteContent(prev => {
+                const merged = { ...DEFAULT_SITE_CONTENT, ...prev, ...data.data };
+                try {
+                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+                } catch {}
+                return merged;
+              });
+            }
           }
         }
         if (permsData) {

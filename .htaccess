@@ -5,11 +5,16 @@
   # Preserve Authorization header for PHP FastCGI/CGI Bearer token verification
   RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-  # Route Node-compatible auth endpoints directly to api.php on Apache/cPanel hosts
-  RewriteRule ^api/v1/auth/([^/]+)/?$ /api.php?action=$1 [QSA,L,NC]
+  # Allow direct access to api.php without rewriting
+  RewriteRule ^api\.php$ - [L]
 
-  RewriteCond %{REQUEST_URI} ^/api\.php [NC]
-  RewriteRule ^ - [L]
+  # Route ALL /api/* and /api/v1/* requests to api.php (never rewrite /api/ to index.html)
+  RewriteCond %{REQUEST_URI} ^/api(?:/.*)?$ [NC]
+  RewriteRule ^api(?:/(.*))?$ /api.php?__route=$1 [QSA,L,NC]
+
+  # Catch-all failsafe: Under NO circumstance rewrite /api requests to index.html
+  RewriteCond %{REQUEST_URI} ^/api [NC]
+  RewriteRule ^ - [R=404,L]
 
   # Allow direct access to existing files and directories
   RewriteCond %{REQUEST_FILENAME} -f [OR]

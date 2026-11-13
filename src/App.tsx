@@ -504,8 +504,10 @@ const MainApp: React.FC = () => {
       try {
         const res = await fetch('/api/v1/public/custom-catalog');
         if (!res.ok) return;
-        const data = await res.json();
-        if (data?.success) {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType && !contentType.includes('application/json')) return;
+        const data = await res.json().catch(() => null);
+        if (data && (data.success || data.status === 'success')) {
           mergeCustomCatalog(data.companies || [], data.products || []);
         }
       } catch {}

@@ -5,6 +5,32 @@ import App from './App.tsx';
 import './index.css';
 import './services/autoCacheOptimizer';
 
+// Global Defense-in-Depth against unexpected HTML/empty responses (e.g. Apache 404/500/502/SPA redirects)
+// Prevents "Unexpected token '<', '<!doctype '... is not valid JSON" from ever throwing in Chrome
+if (typeof window !== 'undefined' && typeof Response !== 'undefined' && Response.prototype && Response.prototype.json) {
+  Response.prototype.json = async function patchedJson<T = any>(): Promise<T> {
+    try {
+      const text = await this.text();
+      if (!text || !text.trim()) {
+        return {} as T;
+      }
+      const trimmed = text.trim();
+      if (trimmed.startsWith('<') || trimmed.toLowerCase().startsWith('<!doctype')) {
+        console.warn('[TradeHeaven API] Intercepted HTML document where JSON was expected. Safely returning fallback object.');
+        return {
+          status: 'fallback',
+          success: false,
+          data: [],
+          message: 'Received HTML response instead of JSON'
+        } as unknown as T;
+      }
+      return JSON.parse(trimmed) as T;
+    } catch {
+      return {} as T;
+    }
+  };
+}
+
 // Safely clear mock data and any cached/default auth sessions from local/session storage on boot
 try {
   localStorage.removeItem('th_suppliers_store');

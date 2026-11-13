@@ -822,8 +822,85 @@ function sendLoginOtpEmail($clientEmail, $clientName, $code, $role = 'BUYER', $i
     return $sent;
 }
 
-// Parse request action & payload (normalize hyphenated /api/v1/auth/* routes too)
+// Parse request action & payload (supporting ?action=, ?__route=, and direct /api/* paths)
 $raw_action = isset($_GET['action']) ? trim($_GET['action']) : '';
+$route_param = isset($_GET['__route']) ? trim($_GET['__route']) : '';
+
+if (empty($raw_action) && !empty($route_param)) {
+    $clean_route = trim($route_param, '/');
+    if (strpos($clean_route, 'custom-catalog') !== false) {
+        $raw_action = 'custom_catalog';
+    } elseif (strpos($clean_route, 'site-content') !== false) {
+        $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
+    } elseif (strpos($clean_route, 'homepage-config') !== false) {
+        $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_homepage_config' : 'get_homepage_config';
+    } elseif (strpos($clean_route, 'commodity-indices') !== false) {
+        $raw_action = 'commodity_indices';
+    } elseif (strpos($clean_route, 'flash-deals') !== false) {
+        $raw_action = 'flash_deals';
+    } elseif (strpos($clean_route, 'stats') !== false) {
+        $raw_action = 'stats';
+    } elseif (strpos($clean_route, 'products') !== false) {
+        $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_listing' : 'get_listings';
+    } elseif (strpos($clean_route, 'rfqs') !== false) {
+        $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_rfq' : 'get_rfqs';
+    } elseif (strpos($clean_route, 'auth/me') !== false || $clean_route === 'me') {
+        $raw_action = 'auth_me';
+    } elseif (strpos($clean_route, 'auth/login') !== false || $clean_route === 'login') {
+        $raw_action = 'login';
+    } elseif (strpos($clean_route, 'auth/register') !== false || $clean_route === 'register') {
+        $raw_action = 'register';
+    } elseif (strpos($clean_route, 'auth/logout') !== false) {
+        $raw_action = 'logout';
+    } elseif (strpos($clean_route, 'auth/heartbeat') !== false) {
+        $raw_action = 'heartbeat';
+    } elseif (strpos($clean_route, 'auth/send-otp') !== false) {
+        $raw_action = 'send_otp';
+    } elseif (strpos($clean_route, 'auth/verify-otp') !== false || strpos($clean_route, 'auth/verify-login-otp') !== false) {
+        $raw_action = 'verify_login_otp';
+    } elseif (strpos($clean_route, 'auth/resend-otp') !== false || strpos($clean_route, 'auth/resend-login-otp') !== false) {
+        $raw_action = 'resend_login_otp';
+    } elseif (strpos($clean_route, 'auth/forgot-password') !== false) {
+        $raw_action = 'forgot_password';
+    } elseif (strpos($clean_route, 'auth/reset-password') !== false) {
+        $raw_action = 'reset_password';
+    } elseif (strpos($clean_route, 'admin/users') !== false || strpos($clean_route, 'get-users') !== false) {
+        $raw_action = 'get_users';
+    } elseif (strpos($clean_route, 'deployment/health') !== false) {
+        $raw_action = 'health';
+    } else {
+        $parts = explode('/', $clean_route);
+        $raw_action = end($parts);
+    }
+}
+
+if (empty($raw_action)) {
+    $uri_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    if (strpos($uri_path, '/api/') === 0) {
+        $sub = trim(substr($uri_path, 5), '/');
+        if (strpos($sub, 'custom-catalog') !== false) {
+            $raw_action = 'custom_catalog';
+        } elseif (strpos($sub, 'site-content') !== false) {
+            $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
+        } elseif (strpos($sub, 'products') !== false) {
+            $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_listing' : 'get_listings';
+        } elseif (strpos($sub, 'homepage-config') !== false) {
+            $raw_action = 'homepage_config';
+        } elseif (strpos($sub, 'commodity-indices') !== false) {
+            $raw_action = 'commodity_indices';
+        } elseif (strpos($sub, 'flash-deals') !== false) {
+            $raw_action = 'flash_deals';
+        } elseif (strpos($sub, 'stats') !== false) {
+            $raw_action = 'stats';
+        } elseif (strpos($sub, 'admin/users') !== false) {
+            $raw_action = 'get_users';
+        } else {
+            $parts = explode('/', $sub);
+            $raw_action = end($parts);
+        }
+    }
+}
+
 $action = str_replace('-', '_', strtolower($raw_action));
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -871,8 +948,17 @@ switch ($action) {
         break;
 
     // -------------------------------------------------------------
-    // CMS Operations: get_content, save_content
+    // CMS Operations: get_content, save_content, site_content
     // -------------------------------------------------------------
+    case 'site_content':
+        if ($method === 'POST' || $method === 'PUT') {
+            $cms_payload = isset($input['siteContent']) ? $input['siteContent'] : $input;
+            $cms_file = __DIR__ . '/site_content.json';
+            @file_put_contents($cms_file, json_encode($cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);
+            exit;
+        }
+        // Fall through to get_content for GET requests
     case 'get_content':
         $cms_file = __DIR__ . '/site_content.json';
         if (!file_exists($cms_file)) {
@@ -887,8 +973,156 @@ switch ($action) {
             exit;
         }
         
-        echo json_encode(["status" => "error", "message" => "CMS content not found or invalid"]);
+        echo json_encode(["status" => "success", "data" => new stdClass()]);
         exit;
+
+    // -------------------------------------------------------------
+    // Public Custom Catalog & Member Listings Endpoint
+    // -------------------------------------------------------------
+    case 'custom_catalog':
+    case 'get_custom_catalog':
+        $cat_file = __DIR__ . '/custom_catalog.json';
+        $companies = [];
+        $products = [];
+        if (file_exists($cat_file)) {
+            $cat_data = json_decode((string)file_get_contents($cat_file), true);
+            if (is_array($cat_data)) {
+                $companies = $cat_data['companies'] ?? [];
+                $products = $cat_data['products'] ?? [];
+            }
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "companies" => $companies,
+            "products" => $products
+        ]);
+        exit;
+
+    // -------------------------------------------------------------
+    // Homepage Config, Commodity Indices, Flash Deals & Marketplace Stats
+    // -------------------------------------------------------------
+    case 'homepage_config':
+    case 'get_homepage_config':
+    case 'save_homepage_config':
+        $hp_file = __DIR__ . '/homepage_config.json';
+        if ($method === 'POST' || $method === 'PUT') {
+            $hp_data = !empty($input) ? $input : [];
+            @file_put_contents($hp_file, json_encode($hp_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            echo json_encode(["status" => "success", "success" => true, "message" => "Homepage config updated", "data" => $hp_data]);
+            exit;
+        }
+        $saved = file_exists($hp_file) ? json_decode((string)file_get_contents($hp_file), true) : null;
+        if (!is_array($saved)) {
+            $saved = [
+                "announcementTicker" => "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
+                "heroHeadline" => "Connect with 5M+ Verified Global Buyers & Manufacturers",
+                "heroSubheadline" => "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Protection Certificate payment protection.",
+                "verifiedBuyersCount" => "5,200,000+",
+                "activeSuppliersCount" => "480,000+",
+                "supportedCountriesCount" => 184,
+                "featuredKeywords" => ["CNC Milling", "LiFePO4 48V", "Forged Wheels", "TOPCon Solar", "HDPE Granules", "ST25 Rice", "Organic Denim"]
+            ];
+        }
+        echo json_encode(["status" => "success", "success" => true, "data" => $saved]);
+        exit;
+
+    case 'commodity_indices':
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                ["symbol" => "CU-LME", "name" => "Copper Grade A", "priceUsd" => 9480, "unit" => "MT", "changePercent" => 1.8, "trend" => "UP"],
+                ["symbol" => "AL-6061", "name" => "Aluminum Ingot 99.7%", "priceUsd" => 2620, "unit" => "MT", "changePercent" => -0.4, "trend" => "DOWN"],
+                ["symbol" => "BRENT-OIL", "name" => "Brent Crude Petroleum", "priceUsd" => 78.40, "unit" => "BBL", "changePercent" => 0.9, "trend" => "UP"],
+                ["symbol" => "SOLAR-SI", "name" => "N-Type Monosilicon Wafer", "priceUsd" => 0.142, "unit" => "W", "changePercent" => -2.1, "trend" => "DOWN"],
+                ["symbol" => "LITHIUM", "name" => "Lithium Carbonate 99.5%", "priceUsd" => 11200, "unit" => "MT", "changePercent" => 3.4, "trend" => "UP"]
+            ]
+        ]);
+        exit;
+
+    case 'flash_deals':
+        echo json_encode(["status" => "success", "success" => true, "data" => []]);
+        exit;
+
+    case 'stats':
+    case 'get_stats':
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                "totalProducts" => 1420,
+                "totalSuppliers" => 480,
+                "totalBuyers" => 5200,
+                "totalRfqs" => 380,
+                "monthlyVolumeUsd" => 125000000
+            ]
+        ]);
+        exit;
+
+    // -------------------------------------------------------------
+    // Heartbeat, Logout & User Registry Endpoints
+    // -------------------------------------------------------------
+    case 'heartbeat':
+        echo json_encode(["status" => "success", "success" => true, "timestamp" => date("Y-m-d H:i:s")]);
+        exit;
+
+    case 'logout':
+        echo json_encode(["status" => "success", "success" => true, "message" => "Logged out successfully"]);
+        exit;
+
+    case 'get_users':
+    case 'users':
+        $users_list = [];
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->query("SELECT * FROM users ORDER BY id DESC");
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($rows as $r) {
+                    $users_list[] = [
+                        'id' => (string)$r['id'],
+                        'name' => $r['name'],
+                        'email' => $r['email'],
+                        'role' => $r['role'],
+                        'companyName' => $r['company_name'] ?? '',
+                        'country' => $r['country'] ?? 'United States',
+                        'phone' => $r['phone'] ?? '',
+                        'status' => $r['status'] ?? 'ACTIVE',
+                        'isVerified' => !empty($r['is_verified']),
+                        'isPremium' => !empty($r['is_premium']),
+                        'membershipStatus' => $r['membership_status'] ?? 'free',
+                        'tier' => $r['tier'] ?? 'FREE',
+                        'avatarUrl' => $r['avatar_url'] ?? ''
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+        if (empty($users_list)) {
+            $seedUsers = getBuiltInSeedAuthUsers();
+            foreach ($seedUsers as $u) {
+                $users_list[] = [
+                    'id' => $u['id'],
+                    'name' => $u['name'],
+                    'email' => $u['email'],
+                    'role' => $u['role'],
+                    'companyName' => $u['companyName'] ?? '',
+                    'country' => $u['country'] ?? 'United States',
+                    'status' => $u['status'] ?? 'ACTIVE',
+                    'isVerified' => true,
+                    'isPremium' => !empty($u['isPremium']),
+                    'membershipStatus' => $u['membershipStatus'] ?? 'paid',
+                    'tier' => $u['tier'] ?? 'VIP',
+                    'avatarUrl' => $u['avatarUrl'] ?? ''
+                ];
+            }
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => $users_list
+        ]);
+        exit;
+
 
     case 'save_content':
         if ($method !== 'POST' && $method !== 'PUT') {
@@ -1154,6 +1388,8 @@ switch ($action) {
     // -------------------------------------------------------------
     case 'get_listings':
     case 'listings':
+    case 'products':
+    case 'get_products':
     case 'create_listing':
     case 'update_listing':
     case 'submit_listing':

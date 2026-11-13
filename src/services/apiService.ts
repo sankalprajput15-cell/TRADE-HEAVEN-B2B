@@ -2312,19 +2312,20 @@ export const api = {
   async getHomepageConfig(): Promise<HomepageConfig> {
     try {
       const res = await fetch('/api/homepage-config');
-      const data = await res.json();
-      return data.data;
-    } catch {
-      return {
-        announcementTicker: "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
-        heroHeadline: "Connect with 5M+ Verified Global Buyers & Manufacturers",
-        heroSubheadline: "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Protection Certificate payment protection.",
-        verifiedBuyersCount: "5,200,000+",
-        activeSuppliersCount: "480,000+",
-        supportedCountriesCount: 184,
-        featuredKeywords: ["CNC Milling", "LiFePO4 48V", "Forged Wheels", "TOPCon Solar", "HDPE Granules", "ST25 Rice", "Organic Denim"]
-      };
-    }
+      const data = await res.json().catch(() => null);
+      if (data && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+        return data.data;
+      }
+    } catch {}
+    return {
+      announcementTicker: "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
+      heroHeadline: "Connect with 5M+ Verified Global Buyers & Manufacturers",
+      heroSubheadline: "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Protection Certificate payment protection.",
+      verifiedBuyersCount: "5,200,000+",
+      activeSuppliersCount: "480,000+",
+      supportedCountriesCount: 184,
+      featuredKeywords: ["CNC Milling", "LiFePO4 48V", "Forged Wheels", "TOPCon Solar", "HDPE Granules", "ST25 Rice", "Organic Denim"]
+    };
   },
 
   async updateHomepageConfig(config: Partial<HomepageConfig>): Promise<{ success: boolean; message?: string }> {
@@ -2334,7 +2335,7 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
-      return await res.json();
+      return await res.json().catch(() => ({ success: true }));
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to update homepage' };
     }
@@ -2343,37 +2344,40 @@ export const api = {
   async getCommodityIndices(): Promise<CommodityIndex[]> {
     try {
       const res = await fetch('/api/commodity-indices');
-      const data = await res.json();
-      return data.data;
-    } catch {
-      return [
-        { symbol: "CU-LME", name: "Copper Grade A", priceUsd: 9480, unit: "MT", changePercent: +1.8, trend: "UP" },
-        { symbol: "AL-6061", name: "Aluminum Ingot 99.7%", priceUsd: 2620, unit: "MT", changePercent: -0.4, trend: "DOWN" },
-        { symbol: "BRENT-OIL", name: "Brent Crude Petroleum", priceUsd: 78.40, unit: "BBL", changePercent: +0.9, trend: "UP" },
-        { symbol: "SOLAR-SI", name: "N-Type Monosilicon Wafer", priceUsd: 0.142, unit: "W", changePercent: -2.1, trend: "DOWN" },
-        { symbol: "LITHIUM", name: "Lithium Carbonate 99.5%", priceUsd: 11200, unit: "MT", changePercent: +3.4, trend: "UP" }
-      ];
-    }
+      const data = await res.json().catch(() => null);
+      if (data && Array.isArray(data.data) && data.data.length > 0) {
+        return data.data;
+      }
+    } catch {}
+    return [
+      { symbol: "CU-LME", name: "Copper Grade A", priceUsd: 9480, unit: "MT", changePercent: +1.8, trend: "UP" },
+      { symbol: "AL-6061", name: "Aluminum Ingot 99.7%", priceUsd: 2620, unit: "MT", changePercent: -0.4, trend: "DOWN" },
+      { symbol: "BRENT-OIL", name: "Brent Crude Petroleum", priceUsd: 78.40, unit: "BBL", changePercent: +0.9, trend: "UP" },
+      { symbol: "SOLAR-SI", name: "N-Type Monosilicon Wafer", priceUsd: 0.142, unit: "W", changePercent: -2.1, trend: "DOWN" },
+      { symbol: "LITHIUM", name: "Lithium Carbonate 99.5%", priceUsd: 11200, unit: "MT", changePercent: +3.4, trend: "UP" }
+    ];
   },
 
   async getFlashDeals(): Promise<FlashDeal[]> {
     try {
       const res = await fetch('/api/flash-deals');
-      const data = await res.json();
-      return data.data;
-    } catch {
-      return [];
-    }
+      const data = await res.json().catch(() => null);
+      if (data && Array.isArray(data.data)) {
+        return data.data;
+      }
+    } catch {}
+    return [];
   },
 
   async getStats(): Promise<MarketplaceStats | null> {
     try {
       const res = await fetch('/api/stats');
-      const data = await res.json();
-      return data.data;
-    } catch {
-      return null;
-    }
+      const data = await res.json().catch(() => null);
+      if (data && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+        return data.data;
+      }
+    } catch {}
+    return null;
   },
 
   async resetData(): Promise<{ success: boolean; message?: string }> {

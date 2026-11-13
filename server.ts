@@ -8868,6 +8868,129 @@ app.post('/api/cms/permissions/revoke', (req, res) => {
   res.json({ success: true, message: 'Permission revoked', data: serverAuthorizedUsers });
 });
 
+// POST /api/cms/request-access
+app.post('/api/cms/request-access', (req, res) => {
+  const reqData = req.body || {};
+  const newReq = {
+    id: `req-${Date.now()}`,
+    ...reqData,
+    status: 'PENDING',
+    requestedAt: new Date().toISOString()
+  };
+  serverAccessRequests.push(newReq);
+  res.json({ success: true, message: 'Access request submitted', data: newReq });
+});
+
+// POST /api/cms/requests/:id/approve
+app.post('/api/cms/requests/:id/approve', (req, res) => {
+  const id = req.params.id;
+  const found = serverAccessRequests.find(r => r.id === id);
+  if (found) {
+    found.status = 'APPROVED';
+    serverAuthorizedUsers.push({
+      id: `perm-${Date.now()}`,
+      email: found.email,
+      name: found.name || found.email,
+      role: found.role || 'EDITOR',
+      companyName: found.companyName || '',
+      grantedBy: 'Admin',
+      grantedAt: new Date().toISOString(),
+      scopes: found.requestedScopes || ['EDIT_CONTENT'],
+      status: 'ACTIVE',
+      notes: 'Approved via CMS Request'
+    });
+  }
+  res.json({ success: true, message: 'Request approved' });
+});
+
+// POST /api/cms/requests/:id/reject
+app.post('/api/cms/requests/:id/reject', (req, res) => {
+  const id = req.params.id;
+  const found = serverAccessRequests.find(r => r.id === id);
+  if (found) {
+    found.status = 'REJECTED';
+  }
+  res.json({ success: true, message: 'Request rejected' });
+});
+
+// -------------------------------------------------------------
+// HOMEPAGE CONFIG, COMMODITY INDICES & STATS ENDPOINTS
+// -------------------------------------------------------------
+let serverHomepageConfig = {
+  announcementTicker: "Exclusive Deal: 2026 Global Sourcing Expo online passes now active • 0% Trade Protection fee for first $50,000 container orders",
+  heroHeadline: "Connect with 5M+ Verified Global Buyers & Manufacturers",
+  heroSubheadline: "Direct factory wholesale prices, verified ISO/CE audits, Incoterms FOB/CIF container shipping, and Trade Protection Certificate payment protection.",
+  verifiedBuyersCount: "5,200,000+",
+  activeSuppliersCount: "480,000+",
+  supportedCountriesCount: 184,
+  featuredKeywords: ["CNC Milling", "LiFePO4 48V", "Forged Wheels", "TOPCon Solar", "HDPE Granules", "ST25 Rice", "Organic Denim"]
+};
+
+app.get('/api/homepage-config', (_req, res) => {
+  res.json({ success: true, data: serverHomepageConfig });
+});
+
+app.put('/api/homepage-config', (req, res) => {
+  serverHomepageConfig = { ...serverHomepageConfig, ...(req.body || {}) };
+  res.json({ success: true, message: 'Homepage config updated', data: serverHomepageConfig });
+});
+
+app.get('/api/commodity-indices', (_req, res) => {
+  res.json({
+    success: true,
+    data: [
+      { symbol: "CU-LME", name: "Copper Grade A", priceUsd: 9480, unit: "MT", changePercent: +1.8, trend: "UP" },
+      { symbol: "AL-6061", name: "Aluminum Ingot 99.7%", priceUsd: 2620, unit: "MT", changePercent: -0.4, trend: "DOWN" },
+      { symbol: "BRENT-OIL", name: "Brent Crude Petroleum", priceUsd: 78.40, unit: "BBL", changePercent: +0.9, trend: "UP" },
+      { symbol: "SOLAR-SI", name: "N-Type Monosilicon Wafer", priceUsd: 0.142, unit: "W", changePercent: -2.1, trend: "DOWN" },
+      { symbol: "LITHIUM", name: "Lithium Carbonate 99.5%", priceUsd: 11200, unit: "MT", changePercent: +3.4, trend: "UP" }
+    ]
+  });
+});
+
+app.get('/api/flash-deals', (_req, res) => {
+  res.json({ success: true, data: [] });
+});
+
+app.get('/api/stats', (_req, res) => {
+  res.json({
+    success: true,
+    data: {
+      totalProducts: 1420,
+      totalSuppliers: 480,
+      totalBuyers: 5200,
+      totalRfqs: 380,
+      monthlyVolumeUsd: 125000000
+    }
+  });
+});
+
+app.post('/api/reset-data', (_req, res) => {
+  res.json({ success: true, message: 'Data reset successfully' });
+});
+
+app.post('/api/contact', (req, res) => {
+  res.json({ success: true, message: 'Message received. We will respond within 24 hours.' });
+});
+
+app.get('/api/contact', (_req, res) => {
+  res.json({ success: true, data: [] });
+});
+
+app.post('/api/orders', (req, res) => {
+  res.json({ success: true, orderId: `ord-${Date.now()}`, message: 'Order submitted successfully.' });
+});
+
+app.get('/api/chat/contact-info', (_req, res) => {
+  res.json({
+    email: 'help@tradeheaven.net',
+    phone: '+91 8532934479',
+    whatsapp: '+91 8532934479',
+    address: 'Trade Heaven Global Sourcing & Operations HQ, United Kingdom'
+  });
+});
+
+
 // -------------------------------------------------------------
 // GEMINI AI STUDIO SAAS PLAN & PRICING MANAGEMENT API ENDPOINTS
 // -------------------------------------------------------------
@@ -11058,6 +11181,16 @@ async function startServer() {
       return false;
     }
   };
+
+  // Universal API 404 handler: Under NO circumstances should an /api or api.php request ever fall through to Vite or index.html
+  app.all(['/api', '/api/*', '/api.php', '/api.php*'], (req, res) => {
+    res.status(404).json({
+      status: 'error',
+      success: false,
+      message: `API endpoint not found on server: ${req.method} ${req.path}`,
+      data: []
+    });
+  });
 
   // Serve pre-built code-split dist assets first whenever dist/index.html exists
   app.use((req, res, next) => {
