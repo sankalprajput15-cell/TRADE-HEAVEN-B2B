@@ -169,11 +169,39 @@ const CATEGORY_POOLS: Record<string, string[]> = {
     'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=480&auto=format&fit=crop&q=75',
     'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=480&auto=format&fit=crop&q=75',
     'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75'
+  ],
+  LEATHER: [
+    '/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg',
+    '/assets/uploads/leather_belt_3_trade_heaven_6962019f.jpeg',
+    '/assets/uploads/leather_belt_trade_heaven__3cd8dde8.jpeg',
+    '/assets/uploads/leather_belt__6cbe88c9.jpeg',
+    'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1627123424574-724758594e93?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1559563458-527698bf5295?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=480&auto=format&fit=crop&q=75'
   ]
 };
 
 const getCategoryPool = (categoryName?: string, titleName?: string): string[] => {
   const nameToSearch = `${categoryName || ''} ${titleName || ''}`.toUpperCase();
+
+  if (
+    nameToSearch.includes('LEATHER') ||
+    nameToSearch.includes('BELT') ||
+    nameToSearch.includes('COWHIDE') ||
+    nameToSearch.includes('CALFSKIN') ||
+    nameToSearch.includes('SADDLE') ||
+    nameToSearch.includes('BRIDLE') ||
+    nameToSearch.includes('TANNERY') ||
+    nameToSearch.includes('WALLET') ||
+    nameToSearch.includes('SCAFFOLDING BELT')
+  ) {
+    return CATEGORY_POOLS.LEATHER;
+  }
 
   if (nameToSearch.includes('JADE') || nameToSearch.includes('TURQUOISE') || nameToSearch.includes('CABOCHON') || nameToSearch.includes('GEMSTONE') || nameToSearch.includes('NEPHRITE')) {
     return CATEGORY_POOLS.JADE_GEMSTONE;
