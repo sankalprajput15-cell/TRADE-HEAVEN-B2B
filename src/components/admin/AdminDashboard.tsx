@@ -473,7 +473,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     c.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const navigationItems = [
+  const navigationItems: Array<{
+    id: AdminDashboardTabId | 'MAIL_DELIVERY_HISTORY';
+    label: string;
+    icon: any;
+  }> = [
     { id: 'OFFERS_ANNOUNCEMENTS', label: '📢 Offers, Banners & Announcements', icon: Megaphone },
     { id: 'MASTER_UPLOADS_VAULT', label: '🌐 Universal Site Uploads & Files Vault', icon: FolderLock },
     { id: 'CLIENT_UPLOADS', label: '📄 Client Uploads & Wire Slips', icon: FileCheck },
@@ -481,6 +485,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'CUSTOM_EMAIL_DISPATCHER', label: '✉️ Dispatch & Mail Center', icon: Mail },
     { id: 'RENEWAL_INSIGHTS', label: '📈 Renewal Insights (Open Rate)', icon: TrendingUp },
     { id: 'RENEWAL_EMAIL_HTML_EDITOR', label: '💻 Renewal Offer HTML Editor', icon: Code2 },
+    { id: 'MAIL_DELIVERY_HISTORY', label: '📬 Mail Delivery History & Telemetry Hub', icon: Mail },
     { id: 'PRODUCT_IMAGE_SYSTEM', label: '📸 Product Image System (All)', icon: ImageIcon },
     { id: 'CMS', label: '🌟 Site Content CMS', icon: Layout },
     { id: 'DATABASE', label: '🗄️ Core Database', icon: Database },
@@ -496,11 +501,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     { id: 'PRICING', label: '💎 Pricing & API Engine', icon: CreditCard },
     { id: 'USER_DELETION_LOG', label: '🗑️ User Deletion Log', icon: Trash2 },
     { id: 'ACTIVITY_LOGS', label: '🛡️ System Activity Logs', icon: Activity }
-  ] as const;
+  ];
 
-  const handleSelectSidebarTab = (tabId: AdminDashboardTabId) => {
-    setActiveTab(tabId);
+  const handleSelectSidebarTab = (tabId: AdminDashboardTabId | 'MAIL_DELIVERY_HISTORY') => {
     setIsSidebarOpen(false);
+    if (tabId === 'MAIL_DELIVERY_HISTORY') {
+      onNavigate('MAIL_DELIVERY_HISTORY');
+      return;
+    }
+    setActiveTab(tabId);
     if (typeof window !== 'undefined') {
       const mainEl = document.getElementById('admin-main-viewport');
       if (mainEl) {
@@ -675,133 +684,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* MAIN VIEWPORT */}
       <main id="admin-main-viewport" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6">
-        {/* TOP QUICK-SWITCH BAR FOR EMAIL OPEN RATE & RENEWAL MANAGEMENT */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('OFFERS_ANNOUNCEMENTS')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'OFFERS_ANNOUNCEMENTS'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300'
-              }`}
-            >
-              <Megaphone className="w-4 h-4" />
-              <span>📢 Offers, Banners &amp; Announcements Hub</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('MASTER_UPLOADS_VAULT')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'MASTER_UPLOADS_VAULT'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
-              }`}
-            >
-              <FolderLock className="w-4 h-4" />
-              <span>🌐 Universal Uploads Hub (Check &amp; Do Anything)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('CLIENT_UPLOADS')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'CLIENT_UPLOADS'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
-              }`}
-            >
-              <FileCheck className="w-4 h-4" />
-              <span>📄 Client Uploads &amp; Wire Slips</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('AUTOMATED_EMAIL_SUITE')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'AUTOMATED_EMAIL_SUITE'
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              <span>🚀 Automated Email Marketing &amp; Tracking Suite</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('RENEWAL_INSIGHTS')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'RENEWAL_INSIGHTS'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
-              }`}
-            >
-              <TrendingUp className="w-4 h-4" />
-              <span>📈 Mail Open Rate &amp; Renewal Insights</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('RENEWAL_EMAIL_HTML_EDITOR')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'RENEWAL_EMAIL_HTML_EDITOR'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200'
-              }`}
-            >
-              <Code2 className="w-4 h-4" />
-              <span>💻 Renewal Offer HTML &amp; Brand Header/Footer Studio</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onNavigate('MAIL_DELIVERY_HISTORY')}
-              className="px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200"
-              title="Open full Mail Delivery History & Telemetry Hub page"
-            >
-              <Mail className="w-4 h-4 text-purple-600" />
-              <span>📬 Mail Delivery History &amp; Telemetry Hub</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('SEO_HEALTH')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'SEO_HEALTH'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200'
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              <span>📈 SEO Health &amp; Geo-Traffic</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleSelectSidebarTab('CUSTOM_EMAIL_DISPATCHER')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'CUSTOM_EMAIL_DISPATCHER'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              <span>✉️ Dispatch &amp; Mail Center</span>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onNavigate('HOMEPAGE')}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Marketplace</span>
-          </button>
-        </div>
         
         {/* TOAST ALERT */}
         {toastMessage && (
