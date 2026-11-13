@@ -30,7 +30,7 @@ import { SEOManager } from './components/common/SEOManager';
 import { BreadcrumbNavigation } from './components/common/BreadcrumbNavigation';
 import { NotFoundView } from './components/common/NotFoundView';
 import { TradeWheelHomePage } from './components/marketplace/TradeWheelHomePage';
-import { DiwaliOfferBanner } from './components/marketplace/DiwaliOfferBanner';
+import { PlatformAnnouncementBanner } from './components/marketplace/PlatformAnnouncementBanner';
 import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { ProductCatalog } from './components/marketplace/ProductCatalog';
@@ -2084,8 +2084,8 @@ const MainApp: React.FC = () => {
         </div>
       )}
 
-      {/* 1.5 DIWALI MAHA UTSAV SITE-WIDE OFFER RIBBON */}
-      <DiwaliOfferBanner variant="top-ribbon" onNavigate={handleNavigate} />
+      {/* 1.5 DYNAMIC ADMIN-CONTROLLED PLATFORM OFFERS & ANNOUNCEMENTS RIBBON */}
+      <PlatformAnnouncementBanner variant="top-ribbon" onNavigate={handleNavigate} />
 
       {/* 2. MAIN MARKETPLACE APP HEADER */}
       <Header

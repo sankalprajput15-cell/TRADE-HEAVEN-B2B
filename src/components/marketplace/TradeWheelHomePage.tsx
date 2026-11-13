@@ -13,6 +13,7 @@ import { DynamicFaqSection } from '../common/DynamicFaqSection';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { SuppliersByRegionBar } from './SuppliersByRegionBar';
 import { CountryFlag } from '../common/CountryFlag';
+import { PlatformAnnouncementBanner } from './PlatformAnnouncementBanner';
 import { 
   ShieldCheck, 
   Award, 
@@ -194,6 +195,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onSelectRfq={onSelectRfq}
         onOpenRegisterFree={onOpenRegisterFree}
       />
+
+      {/* 1.5 ADMIN-PUBLISHED STOREFRONT BANNERS & ANNOUNCEMENTS */}
+      <PlatformAnnouncementBanner variant="hero-banner" onNavigate={onNavigate} />
 
       {/* 2. VERIFIED SECTORS & MEGA DIRECTORY */}
       <CategoryMegaMenu

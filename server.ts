@@ -85,7 +85,19 @@ app.use('/api', (req, res, next) => {
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use('/src/assets', express.static(path.join(process.cwd(), 'src', 'assets')));
+const srcAssetsStatic = express.static(path.join(process.cwd(), 'src', 'assets'));
+app.use('/src/assets', (req, res, next) => {
+  if (
+    'import' in req.query ||
+    'url' in req.query ||
+    'raw' in req.query ||
+    'inline' in req.query ||
+    req.headers['sec-fetch-dest'] === 'script'
+  ) {
+    return next();
+  }
+  return srcAssetsStatic(req, res, next);
+});
 
 interface HttpErrorLogEntry {
   method: string;
@@ -1635,47 +1647,143 @@ app.post('/api/v1/auth/email-queue-simulate-failures', (req, res) => {
   });
 });
 
-// Track latest Diwali Offer Campaign receipts and real-time step-by-step progress
-let lastDiwaliCampaignReport: {
+// -------------------------------------------------------------
+// DEDICATED PLATFORM OFFERS, BANNERS & ANNOUNCEMENTS HUB API
+// -------------------------------------------------------------
+
+const PLATFORM_OFFERS_FILE = path.join(process.cwd(), 'public', 'assets', 'uploads', 'platform-announcements.json');
+
+interface ServerPlatformOfferRecord {
+  id: string;
+  type: 'OFFER' | 'BANNER' | 'ANNOUNCEMENT';
+  title: string;
+  badgeLabel: string;
+  message: string;
+  ctaLabel: string;
+  ctaView: string;
+  ctaUrl?: string;
+  promoCode?: string;
+  discountPercent?: number;
+  bannerImageUrl?: string;
+  placement: 'TOP_RIBBON' | 'HERO_BANNER' | 'BOTH' | 'EMAIL_ONLY';
+  themePreset: 'SLATE_DARK' | 'INDIGO_ROYAL' | 'EMERALD_TRUST' | 'AMBER_GOLD' | 'CRIMSON_ALERT';
+  isActive: boolean;
+  startsAt?: string;
+  expiresAt?: string;
+  emailSubject?: string;
+  emailIntro?: string;
+  lastEmailedAt?: string;
+  lastEmailCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function loadPlatformOffersStore(): ServerPlatformOfferRecord[] {
+  try {
+    if (fs.existsSync(PLATFORM_OFFERS_FILE)) {
+      const raw = fs.readFileSync(PLATFORM_OFFERS_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item) => item && typeof item.id === 'string' && typeof item.title === 'string');
+      }
+    }
+  } catch (err) {
+    console.warn('[PlatformOffersStore] Failed to read platform-announcements.json:', err);
+  }
+  return [];
+}
+
+function savePlatformOffersStore(items: ServerPlatformOfferRecord[]) {
+  try {
+    const dir = path.dirname(PLATFORM_OFFERS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(PLATFORM_OFFERS_FILE, JSON.stringify(items, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[PlatformOffersStore] Failed to write platform-announcements.json:', err);
+  }
+}
+
+let platformOffersStore: ServerPlatformOfferRecord[] = loadPlatformOffersStore();
+
+let platformCampaignBatchReport: {
+  campaignId: string | null;
+  campaignTitle: string;
   isRunning: boolean;
-  launchedAt: string | null;
-  completedAt: string | null;
-  promoCode: string;
-  discount: string;
-  bannerUrl: string;
-  totalClients: number;
+  totalRecipients: number;
   processedCount: number;
   deliveredCount: number;
   failedCount: number;
   currentRecipient: string | null;
+  launchedAt: string | null;
+  completedAt: string | null;
   receipts: any[];
 } = {
+  campaignId: null,
+  campaignTitle: '',
   isRunning: false,
-  launchedAt: null,
-  completedAt: null,
-  promoCode: 'DIWALI10',
-  discount: 'FLAT 10% OFF',
-  bannerUrl: '/assets/aistudio/Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png',
-  totalClients: 4,
+  totalRecipients: 0,
   processedCount: 0,
   deliveredCount: 0,
   failedCount: 0,
   currentRecipient: null,
+  launchedAt: null,
+  completedAt: null,
   receipts: []
 };
 
-function getExistingClientRecordsForOffer() {
+function getClientRecipientsByAudience(audience: string, customEmailsRaw?: string) {
   const seen = new Set<string>();
-  const clients: Array<{ id: string; email: string; name: string; companyName: string; role: string; tier?: string }> = [];
+  const recipients: Array<{ id?: string; email: string; name: string; companyName: string; role: string; tier?: string }> = [];
+
+  if (audience === 'ADMIN_PREVIEW') {
+    for (const email of ['yr943334@gmail.com', 'sankalprajput15@gmail.com']) {
+      const clean = normalizeRecipientEmail(email);
+      if (clean && !seen.has(clean)) {
+        seen.add(clean);
+        recipients.push({
+          email: clean,
+          name: clean.startsWith('sankalp') ? 'Sankalp Rajput (Admin)' : 'Yash Rajput (Admin)',
+          companyName: 'Trade Heaven Operations',
+          role: 'ADMIN'
+        });
+      }
+    }
+    return recipients;
+  }
+
+  if (audience === 'CUSTOM' && customEmailsRaw) {
+    const tokens = String(customEmailsRaw)
+      .split(/[\s,;]+/)
+      .map((t) => normalizeRecipientEmail(t))
+      .filter((t) => t && t.includes('@'));
+    for (const clean of tokens) {
+      if (!seen.has(clean)) {
+        seen.add(clean);
+        const matched = serverUsersStore.find((u) => normalizeRecipientEmail(u.email) === clean);
+        recipients.push({
+          id: matched?.id,
+          email: clean,
+          name: matched?.name || clean.split('@')[0],
+          companyName: matched?.companyName || 'Trade Partner',
+          role: matched?.role || 'SUPPLIER',
+          tier: matched?.tier
+        });
+      }
+    }
+    return recipients;
+  }
 
   for (const u of serverUsersStore) {
     const clean = normalizeRecipientEmail(u.email);
     if (!clean || !clean.includes('@')) continue;
-    // Include all existing BUYER & SUPPLIER clients (exclude internal admin accounts)
     if (u.role === 'ADMIN') continue;
+    if (audience === 'SUPPLIERS_ONLY' && u.role !== 'SUPPLIER') continue;
+    if (audience === 'BUYERS_ONLY' && u.role !== 'BUYER') continue;
     if (seen.has(clean)) continue;
     seen.add(clean);
-    clients.push({
+    recipients.push({
       id: u.id,
       email: clean,
       name: u.name,
@@ -1685,88 +1793,302 @@ function getExistingClientRecordsForOffer() {
     });
   }
 
-  return clients;
+  return recipients;
 }
 
-// GET /api/v1/admin/diwali-offer-clients - Inspect existing clients and live batch progress for the Diwali Maha Utsav offer campaign
-app.get('/api/v1/admin/diwali-offer-clients', (_req, res) => {
-  const clients = getExistingClientRecordsForOffer();
-  if (!lastDiwaliCampaignReport.launchedAt && lastDiwaliCampaignReport.totalClients !== clients.length) {
-    lastDiwaliCampaignReport.totalClients = clients.length;
+function isCampaignInSchedule(item: ServerPlatformOfferRecord): boolean {
+  if (!item.isActive) return false;
+  if (item.placement === 'EMAIL_ONLY') return false;
+  const now = Date.now();
+  if (item.startsAt) {
+    const startMs = Date.parse(item.startsAt);
+    if (!Number.isNaN(startMs) && now < startMs) return false;
   }
+  if (item.expiresAt) {
+    // Allow full expiry day until 23:59:59 UTC if date-only string YYYY-MM-DD
+    const normalizedExp = /^\d{4}-\d{2}-\d{2}$/.test(item.expiresAt.trim())
+      ? `${item.expiresAt.trim()}T23:59:59Z`
+      : item.expiresAt;
+    const expMs = Date.parse(normalizedExp);
+    if (!Number.isNaN(expMs) && now > expMs) return false;
+  }
+  return true;
+}
+
+// GET /api/v1/platform-offers - List platform offers/banners/announcements (supports ?activeOnly=1)
+app.get('/api/v1/platform-offers', (req, res) => {
+  const activeOnly = req.query.activeOnly === '1' || req.query.activeOnly === 'true';
+  const items = activeOnly
+    ? platformOffersStore.filter((item) => isCampaignInSchedule(item))
+    : platformOffersStore;
+  const clients = getClientRecipientsByAudience('ALL_CLIENTS');
   return res.json({
     success: true,
-    clients,
-    lastCampaign: lastDiwaliCampaignReport,
+    items,
+    clientCounts: {
+      all: clients.length,
+      suppliers: clients.filter((c) => c.role === 'SUPPLIER').length,
+      buyers: clients.filter((c) => c.role === 'BUYER').length
+    }
+  });
+});
+
+// POST /api/v1/admin/platform-offers - Create or update an offer, banner, or announcement
+app.post('/api/v1/admin/platform-offers', (req, res) => {
+  try {
+    const body = req.body || {};
+    const title = String(body.title || '').trim();
+    const message = String(body.message || '').trim();
+    if (!title || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Title and message are required.'
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    const validTypes = ['OFFER', 'BANNER', 'ANNOUNCEMENT'];
+    const validPlacements = ['TOP_RIBBON', 'HERO_BANNER', 'BOTH', 'EMAIL_ONLY'];
+    const validThemes = ['SLATE_DARK', 'INDIGO_ROYAL', 'EMERALD_TRUST', 'AMBER_GOLD', 'CRIMSON_ALERT'];
+
+    const type = validTypes.includes(body.type) ? body.type : 'ANNOUNCEMENT';
+    const placement = validPlacements.includes(body.placement) ? body.placement : 'TOP_RIBBON';
+    const themePreset = validThemes.includes(body.themePreset) ? body.themePreset : 'SLATE_DARK';
+
+    const existingIdx = body.id ? platformOffersStore.findIndex((i) => i.id === String(body.id)) : -1;
+    const existing = existingIdx !== -1 ? platformOffersStore[existingIdx] : null;
+
+    const record: ServerPlatformOfferRecord = {
+      id: existing?.id || `camp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type,
+      title,
+      badgeLabel: String(body.badgeLabel || '').trim() || (type === 'OFFER' ? 'Limited Offer' : type === 'BANNER' ? 'Spotlight' : 'Announcement'),
+      message,
+      ctaLabel: String(body.ctaLabel || '').trim() || 'Learn More',
+      ctaView: String(body.ctaView || 'PREMIUM_MEMBERSHIP').trim(),
+      ctaUrl: body.ctaUrl ? String(body.ctaUrl).trim() : undefined,
+      promoCode: body.promoCode ? String(body.promoCode).trim().toUpperCase() : undefined,
+      discountPercent:
+        typeof body.discountPercent === 'number' && body.discountPercent > 0
+          ? Math.min(95, Math.max(0, Math.round(body.discountPercent)))
+          : body.discountPercent && Number(body.discountPercent) > 0
+          ? Math.min(95, Math.max(0, Math.round(Number(body.discountPercent))))
+          : undefined,
+      bannerImageUrl: body.bannerImageUrl ? String(body.bannerImageUrl).trim() : undefined,
+      placement,
+      themePreset,
+      isActive: body.isActive !== undefined ? Boolean(body.isActive) : true,
+      startsAt: body.startsAt ? String(body.startsAt).trim() : undefined,
+      expiresAt: body.expiresAt ? String(body.expiresAt).trim() : undefined,
+      emailSubject: body.emailSubject ? String(body.emailSubject).trim() : undefined,
+      emailIntro: body.emailIntro ? String(body.emailIntro).trim() : undefined,
+      lastEmailedAt: existing?.lastEmailedAt,
+      lastEmailCount: existing?.lastEmailCount,
+      createdAt: existing?.createdAt || nowIso,
+      updatedAt: nowIso
+    };
+
+    if (existingIdx !== -1) {
+      platformOffersStore[existingIdx] = record;
+    } else {
+      platformOffersStore.unshift(record);
+    }
+    savePlatformOffersStore(platformOffersStore);
+
+    logServerActivity(
+      req,
+      existing ? 'PLATFORM_OFFER_UPDATED' : 'PLATFORM_OFFER_CREATED',
+      'admin@tradeheaven.net',
+      'ADMIN',
+      `/api/v1/admin/platform-offers/${record.id}`,
+      `${existing ? 'Updated' : 'Created'} ${record.type} "${record.title}" (Active: ${record.isActive}, Placement: ${record.placement})`,
+      'SUCCESS'
+    );
+
+    return res.json({
+      success: true,
+      item: record,
+      items: platformOffersStore
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to save platform offer or announcement.'
+    });
+  }
+});
+
+// PATCH /api/v1/admin/platform-offers/:id/toggle - Toggle active state live
+app.patch('/api/v1/admin/platform-offers/:id/toggle', (req, res) => {
+  const id = String(req.params.id || '');
+  const idx = platformOffersStore.findIndex((i) => i.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: 'Campaign item not found.' });
+  }
+  const nextActive =
+    typeof req.body?.isActive === 'boolean' ? req.body.isActive : !platformOffersStore[idx].isActive;
+  platformOffersStore[idx] = {
+    ...platformOffersStore[idx],
+    isActive: nextActive,
+    updatedAt: new Date().toISOString()
+  };
+  savePlatformOffersStore(platformOffersStore);
+  return res.json({
+    success: true,
+    item: platformOffersStore[idx],
+    items: platformOffersStore
+  });
+});
+
+// DELETE /api/v1/admin/platform-offers/:id - Delete offer/banner/announcement
+app.delete('/api/v1/admin/platform-offers/:id', (req, res) => {
+  const id = String(req.params.id || '');
+  const beforeLen = platformOffersStore.length;
+  platformOffersStore = platformOffersStore.filter((i) => i.id !== id);
+  if (platformOffersStore.length === beforeLen) {
+    return res.status(404).json({ success: false, message: 'Campaign item not found.' });
+  }
+  savePlatformOffersStore(platformOffersStore);
+  return res.json({
+    success: true,
+    items: platformOffersStore
+  });
+});
+
+// POST /api/v1/admin/platform-offers/upload-banner - Upload custom visual banner image
+app.post('/api/v1/admin/platform-offers/upload-banner', async (req, res) => {
+  try {
+    const { filename = 'campaign-banner.jpg', dataUrl } = req.body || {};
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      return res.status(400).json({ success: false, message: 'Valid base64 image dataUrl is required.' });
+    }
+    const matches = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/i);
+    if (!matches) {
+      return res.status(400).json({ success: false, message: 'Supported formats: PNG, JPG, JPEG, WEBP.' });
+    }
+    const base64Body = matches[2];
+    const buffer = Buffer.from(base64Body, 'base64');
+    if (buffer.length > 8 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'Banner image must be under 8 MB.' });
+    }
+    const safeStem = path
+      .basename(String(filename), path.extname(String(filename)))
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .slice(0, 40) || 'campaign-banner';
+    const outFile = `${safeStem}-${Date.now()}.jpg`;
+    if (!fs.existsSync(uploadsStaticDir)) {
+      fs.mkdirSync(uploadsStaticDir, { recursive: true });
+    }
+    const outPath = path.join(uploadsStaticDir, outFile);
+    await sharp(buffer)
+      .resize({ width: 1400, withoutEnlargement: true })
+      .jpeg({ quality: 86, progressive: true })
+      .toFile(outPath);
+
+    return res.json({
+      success: true,
+      url: `/assets/uploads/${outFile}`
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to upload banner image.'
+    });
+  }
+});
+
+// GET /api/v1/admin/platform-offers/email-status - Poll live email broadcast progress
+app.get('/api/v1/admin/platform-offers/email-status', (_req, res) => {
+  return res.json({
+    success: true,
+    batch: platformCampaignBatchReport,
     queue: serverDeliveryQueueManager.getQueueStatus()
   });
 });
 
-// POST /api/v1/admin/launch-diwali-offer-campaign - Mail Diwali Maha Utsav (FLAT 10% OFF - Code: DIWALI10) banner offer to all existing clients
-app.post('/api/v1/admin/launch-diwali-offer-campaign', async (req, res) => {
+// POST /api/v1/admin/platform-offers/:id/send-email - Email selected offer/banner/announcement to targeted audience
+app.post('/api/v1/admin/platform-offers/:id/send-email', async (req, res) => {
   try {
-    if (lastDiwaliCampaignReport.isRunning) {
+    const id = String(req.params.id || '');
+    const idx = platformOffersStore.findIndex((i) => i.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Campaign not found.' });
+    }
+    if (platformCampaignBatchReport.isRunning) {
       return res.json({
         success: true,
-        message: `Diwali Maha Utsav campaign is currently in progress (Emails Sent ${lastDiwaliCampaignReport.processedCount}/${lastDiwaliCampaignReport.totalClients}).`,
-        campaign: lastDiwaliCampaignReport,
+        message: `An email campaign broadcast is currently running (${platformCampaignBatchReport.processedCount}/${platformCampaignBatchReport.totalRecipients}).`,
+        batch: platformCampaignBatchReport,
         queue: serverDeliveryQueueManager.getQueueStatus()
       });
     }
 
-    const customRecipients: Array<{ email: string; name?: string; companyName?: string; tier?: string }> | undefined =
-      Array.isArray(req.body?.clients) ? req.body.clients : undefined;
+    const campaign = platformOffersStore[idx];
+    const audience = String(req.body?.audience || 'ADMIN_PREVIEW');
+    const customEmailsRaw = typeof req.body?.customEmails === 'string' ? req.body.customEmails : '';
+    const emailSubject = typeof req.body?.emailSubject === 'string' ? req.body.emailSubject : campaign.emailSubject;
+    const emailIntro = typeof req.body?.emailIntro === 'string' ? req.body.emailIntro : campaign.emailIntro;
     const runAsync = Boolean(req.body?.async);
 
-    const rawClients =
-      customRecipients && customRecipients.length > 0
-        ? customRecipients
-        : getExistingClientRecordsForOffer();
-
-    const seen = new Set<string>();
-    const targetClients: Array<{ email: string; name?: string; companyName?: string; tier?: string }> = [];
-    for (const c of rawClients) {
-      const norm = normalizeRecipientEmail(c.email);
-      if (norm && norm.includes('@') && !seen.has(norm)) {
-        seen.add(norm);
-        targetClients.push({ ...c, email: norm });
-      }
+    const recipients = getClientRecipientsByAudience(audience, customEmailsRaw);
+    if (recipients.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid recipient email addresses found for the selected audience.'
+      });
     }
 
-    lastDiwaliCampaignReport = {
+    platformCampaignBatchReport = {
+      campaignId: campaign.id,
+      campaignTitle: campaign.title,
       isRunning: true,
-      launchedAt: new Date().toISOString(),
-      completedAt: null,
-      promoCode: 'DIWALI10',
-      discount: 'FLAT 10% OFF',
-      bannerUrl: '/assets/aistudio/Gemini_Generated_Image_obbsb1obbsb1obbs-clean_264b6c61.png',
-      totalClients: targetClients.length,
+      totalRecipients: recipients.length,
       processedCount: 0,
       deliveredCount: 0,
       failedCount: 0,
-      currentRecipient: targetClients[0]?.email || null,
+      currentRecipient: recipients[0]?.email || null,
+      launchedAt: new Date().toISOString(),
+      completedAt: null,
       receipts: []
     };
 
     const executeBatch = async () => {
       try {
-        for (let i = 0; i < targetClients.length; i++) {
-          const client = targetClients[i];
-          lastDiwaliCampaignReport.currentRecipient = client.email;
-          const receipt = await automatedSmtpService.sendDiwaliOfferEmailToClient(client);
-          lastDiwaliCampaignReport.receipts.push(receipt);
-          lastDiwaliCampaignReport.processedCount = i + 1;
+        for (let i = 0; i < recipients.length; i++) {
+          const r = recipients[i];
+          platformCampaignBatchReport.currentRecipient = r.email;
+          const receipt = await automatedSmtpService.sendPlatformOfferAnnouncementEmail({
+            campaign,
+            recipient: r,
+            emailSubject,
+            emailIntro,
+            dispatchType: 'MANUAL'
+          });
+          platformCampaignBatchReport.receipts.push(receipt);
+          platformCampaignBatchReport.processedCount = i + 1;
           if (receipt.success) {
-            lastDiwaliCampaignReport.deliveredCount += 1;
+            platformCampaignBatchReport.deliveredCount += 1;
           } else {
-            lastDiwaliCampaignReport.failedCount += 1;
+            platformCampaignBatchReport.failedCount += 1;
           }
-          lastDiwaliCampaignReport.currentRecipient = targetClients[i + 1]?.email || null;
+          platformCampaignBatchReport.currentRecipient = recipients[i + 1]?.email || null;
+        }
+        const refreshIdx = platformOffersStore.findIndex((i) => i.id === campaign.id);
+        if (refreshIdx !== -1) {
+          platformOffersStore[refreshIdx] = {
+            ...platformOffersStore[refreshIdx],
+            emailSubject: emailSubject || platformOffersStore[refreshIdx].emailSubject,
+            emailIntro: emailIntro || platformOffersStore[refreshIdx].emailIntro,
+            lastEmailedAt: new Date().toISOString(),
+            lastEmailCount: (platformOffersStore[refreshIdx].lastEmailCount || 0) + platformCampaignBatchReport.deliveredCount,
+            updatedAt: new Date().toISOString()
+          };
+          savePlatformOffersStore(platformOffersStore);
         }
       } finally {
-        lastDiwaliCampaignReport.isRunning = false;
-        lastDiwaliCampaignReport.currentRecipient = null;
-        lastDiwaliCampaignReport.completedAt = new Date().toISOString();
+        platformCampaignBatchReport.isRunning = false;
+        platformCampaignBatchReport.currentRecipient = null;
+        platformCampaignBatchReport.completedAt = new Date().toISOString();
       }
     };
 
@@ -1774,26 +2096,26 @@ app.post('/api/v1/admin/launch-diwali-offer-campaign', async (req, res) => {
       void executeBatch();
       return res.status(202).json({
         success: true,
-        message: `Started Diwali Maha Utsav batch campaign for ${targetClients.length} clients (Emails Sent 0/${targetClients.length}).`,
-        campaign: lastDiwaliCampaignReport,
+        message: `Started email broadcast for "${campaign.title}" (${recipients.length} recipients).`,
+        batch: platformCampaignBatchReport,
         queue: serverDeliveryQueueManager.getQueueStatus()
       });
     }
 
     await executeBatch();
-
     return res.json({
-      success: lastDiwaliCampaignReport.deliveredCount > 0,
-      message: `Diwali Maha Utsav (DIWALI10 - Flat 10% OFF) offer emailed to ${lastDiwaliCampaignReport.deliveredCount}/${lastDiwaliCampaignReport.totalClients} existing clients via serialized 2s delivery queue.`,
-      campaign: lastDiwaliCampaignReport,
+      success: platformCampaignBatchReport.deliveredCount > 0,
+      message: `Sent "${campaign.title}" email to ${platformCampaignBatchReport.deliveredCount}/${platformCampaignBatchReport.totalRecipients} recipient(s).`,
+      batch: platformCampaignBatchReport,
+      items: platformOffersStore,
       queue: serverDeliveryQueueManager.getQueueStatus()
     });
   } catch (err: any) {
-    lastDiwaliCampaignReport.isRunning = false;
-    lastDiwaliCampaignReport.currentRecipient = null;
+    platformCampaignBatchReport.isRunning = false;
+    platformCampaignBatchReport.currentRecipient = null;
     return res.status(500).json({
       success: false,
-      message: `Failed to dispatch Diwali offer campaign: ${err?.message || err}`
+      message: err?.message || 'Failed to dispatch campaign email.'
     });
   }
 });
@@ -9635,7 +9957,7 @@ async function startServer() {
     const getOrCreateVite = () => {
       if (!vitePromise) {
         vitePromise = createViteServer({
-          server: { middlewareMode: true, hmr: false },
+          server: { middlewareMode: true, hmr: false, allowedHosts: true },
           appType: 'spa',
         })
           .then((vite) => {

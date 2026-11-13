@@ -8835,6 +8835,238 @@ Email: info@tradeheaven.net | Web: www.tradeheaven.net`;
       secondaryAdminReceipt
     };
   }
+
+  /**
+   * Dispatches an admin-created Offer, Banner, or Announcement email to a single recipient
+   * via ServerDeliveryQueueManager with full responsive border framing and optional inline banner.
+   */
+  public async sendPlatformOfferAnnouncementEmail(params: {
+    campaign: {
+      id: string;
+      type: 'OFFER' | 'BANNER' | 'ANNOUNCEMENT';
+      title: string;
+      badgeLabel?: string;
+      message: string;
+      ctaLabel?: string;
+      ctaView?: string;
+      ctaUrl?: string;
+      promoCode?: string;
+      discountPercent?: number;
+      bannerImageUrl?: string;
+      themePreset?: string;
+      expiresAt?: string;
+    };
+    recipient: {
+      email: string;
+      name?: string;
+      companyName?: string;
+      role?: string;
+      tier?: string;
+    };
+    emailSubject?: string;
+    emailIntro?: string;
+    dispatchType?: 'MANUAL' | 'AUTOMATED';
+  }): Promise<SerializedDeliveryReceipt> {
+    const { campaign, recipient } = params;
+    const cleanEmail = normalizeRecipientEmail(recipient.email);
+    const displayName = (recipient.name || 'Valued Trade Partner').trim();
+    const companyLabel = recipient.companyName ? ` (${recipient.companyName})` : '';
+
+    const escapeHtml = (str: string) =>
+      String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const themeColors: Record<string, { headerBg: string; accent: string; border: string; badgeBg: string; badgeText: string }> = {
+      SLATE_DARK: { headerBg: '#0f172a', accent: '#2563eb', border: '#1e293b', badgeBg: '#1e293b', badgeText: '#93c5fd' },
+      INDIGO_ROYAL: { headerBg: '#1e1b4b', accent: '#4f46e5', border: '#312e81', badgeBg: '#312e81', badgeText: '#c7d2fe' },
+      EMERALD_TRUST: { headerBg: '#064e3b', accent: '#059669', border: '#065f46', badgeBg: '#065f46', badgeText: '#a7f3d0' },
+      AMBER_GOLD: { headerBg: '#451a03', accent: '#d97706', border: '#78350f', badgeBg: '#78350f', badgeText: '#fde68a' },
+      CRIMSON_ALERT: { headerBg: '#4c0519', accent: '#e11d48', border: '#881337', badgeBg: '#881337', badgeText: '#fecdd3' }
+    };
+    const palette = themeColors[campaign.themePreset || 'SLATE_DARK'] || themeColors.SLATE_DARK;
+
+    // Resolve local uploaded banner image path for inline CID embedding in emails
+    let localBannerPath: string | null = null;
+    if (campaign.bannerImageUrl && campaign.bannerImageUrl.startsWith('/')) {
+      const rel = campaign.bannerImageUrl.replace(/^\/+/, '');
+      const candidatePublic = path.join(process.cwd(), 'public', rel);
+      const candidateRoot = path.join(process.cwd(), rel);
+      if (fs.existsSync(candidatePublic)) {
+        localBannerPath = candidatePublic;
+      } else if (fs.existsSync(candidateRoot)) {
+        localBannerPath = candidateRoot;
+      }
+    }
+    const bannerCid = `th-campaign-${campaign.id.replace(/[^a-zA-Z0-9_-]/g, '')}@tradeheaven.net`;
+
+    const publicBase = 'https://www.tradeheaven.net';
+    const ctaHref =
+      campaign.ctaUrl && /^https?:\/\//i.test(campaign.ctaUrl)
+        ? campaign.ctaUrl
+        : campaign.ctaView && campaign.ctaView !== 'CUSTOM_URL'
+        ? `${publicBase}/?view=${encodeURIComponent(campaign.ctaView)}`
+        : publicBase;
+
+    const typeLabel =
+      campaign.type === 'OFFER'
+        ? 'EXCLUSIVE OFFER'
+        : campaign.type === 'BANNER'
+        ? 'FEATURED SPOTLIGHT'
+        : 'OFFICIAL ANNOUNCEMENT';
+    const badgeText = campaign.badgeLabel?.trim() || typeLabel;
+    const subject = (params.emailSubject || '').trim() || `${campaign.title} — Trade Heaven`;
+    const introText =
+      (params.emailIntro || '').trim() ||
+      `We are pleased to share an official ${campaign.type.toLowerCase()} update from the Trade Heaven Marketplace team for your business account.`;
+    const hasPromo = Boolean(campaign.promoCode && campaign.promoCode.trim());
+    const hasDiscount = typeof campaign.discountPercent === 'number' && campaign.discountPercent > 0;
+
+    const textBody = [
+      `TRADE HEAVEN — ${badgeText.toUpperCase()}`,
+      `${campaign.title}`,
+      ``,
+      `Hello ${displayName}${companyLabel},`,
+      ``,
+      `${introText}`,
+      ``,
+      `${campaign.message}`,
+      ...(hasPromo || hasDiscount
+        ? [
+            ``,
+            `PROMOTIONAL DETAILS:`,
+            ...(hasDiscount ? [`• Discount: ${campaign.discountPercent}% OFF`] : []),
+            ...(hasPromo ? [`• Promo Code: ${campaign.promoCode?.trim().toUpperCase()}`] : []),
+            ...(campaign.expiresAt ? [`• Valid Until: ${campaign.expiresAt}`] : [])
+          ]
+        : []),
+      ``,
+      `Action: ${campaign.ctaLabel || 'Explore on Trade Heaven'} -> ${ctaHref}`,
+      ``,
+      `Trade Heaven Support: ${this.replyToAddress} • WhatsApp ${this.whatsappSupportNumber}`
+    ].join('\n');
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; width: 100%; box-sizing: border-box; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 2px solid #cbd5e1;">
+        <div style="background: ${palette.headerBg}; padding: 24px 20px; text-align: center; color: #ffffff; border-bottom: 2px solid ${palette.border}; box-sizing: border-box;">
+          <div style="display: inline-block; background: ${palette.badgeBg}; color: ${palette.badgeText}; border: 1px solid ${palette.accent}; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;">
+            ${escapeHtml(badgeText)}
+          </div>
+          <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+            ${escapeHtml(campaign.title)}
+          </h2>
+        </div>
+
+        ${
+          localBannerPath
+            ? `<div style="background: #0f172a; border-bottom: 1px solid #cbd5e1; text-align: center;">
+                <img src="cid:${bannerCid}" alt="${escapeHtml(campaign.title)}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 0 auto;" />
+              </div>`
+            : campaign.bannerImageUrl && /^https?:\/\//i.test(campaign.bannerImageUrl)
+            ? `<div style="background: #0f172a; border-bottom: 1px solid #cbd5e1; text-align: center;">
+                <img src="${escapeHtml(campaign.bannerImageUrl)}" alt="${escapeHtml(campaign.title)}" style="width: 100%; max-width: 600px; height: auto; display: block; margin: 0 auto;" />
+              </div>`
+            : ''
+        }
+
+        <div style="padding: 24px 20px; background: #ffffff; color: #0f172a; box-sizing: border-box;">
+          <p style="font-size: 15px; line-height: 1.6; margin: 0 0 12px 0; color: #0f172a;">
+            Hello <strong>${escapeHtml(displayName)}</strong>${escapeHtml(companyLabel)},
+          </p>
+          <p style="font-size: 14px; line-height: 1.65; margin: 0 0 18px 0; color: #334155;">
+            ${escapeHtml(introText)}
+          </p>
+
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px; margin: 0 0 20px 0; box-sizing: border-box;">
+            <div style="font-size: 14px; line-height: 1.65; color: #1e293b; white-space: pre-line;">${escapeHtml(campaign.message)}</div>
+          </div>
+
+          ${
+            hasPromo || hasDiscount
+              ? `<table role="presentation" style="width: 100%; border-collapse: collapse; margin: 0 0 20px 0; border: 2px solid ${palette.accent}; border-radius: 10px; background: #f8fafc;">
+                  <tr>
+                    <td style="padding: 18px; text-align: center;">
+                      ${
+                        hasDiscount
+                          ? `<div style="font-size: 20px; font-weight: 900; color: ${palette.headerBg}; margin-bottom: 6px;">
+                              ${campaign.discountPercent}% OFF Special Benefit
+                            </div>`
+                          : ''
+                      }
+                      ${
+                        hasPromo
+                          ? `<div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                              Official Promo Code
+                            </div>
+                            <div style="display: inline-block; background: #0f172a; color: #f8fafc; padding: 8px 20px; border-radius: 8px; font-family: monospace; font-size: 18px; font-weight: 900; letter-spacing: 3px; border: 1px solid #334155;">
+                              ${escapeHtml(campaign.promoCode!.trim().toUpperCase())}
+                            </div>`
+                          : ''
+                      }
+                      ${
+                        campaign.expiresAt
+                          ? `<div style="font-size: 11px; color: #64748b; margin-top: 8px;">
+                              Valid until ${escapeHtml(campaign.expiresAt)}
+                            </div>`
+                          : ''
+                      }
+                    </td>
+                  </tr>
+                </table>`
+              : ''
+          }
+
+          <div style="text-align: center; margin: 22px 0 8px 0;">
+            <a href="${escapeHtml(ctaHref)}" style="display: inline-block; background: ${palette.accent}; color: #ffffff; font-weight: 800; font-size: 14px; text-decoration: none; padding: 13px 26px; border-radius: 9px; border: 1px solid ${palette.border};">
+              ${escapeHtml(campaign.ctaLabel || 'Open Trade Heaven')}
+            </a>
+          </div>
+        </div>
+
+        <div style="width: 100%; box-sizing: border-box; background: #f1f5f9; padding: 14px 18px; text-align: center; color: #475569; font-size: 11px; line-height: 1.5; border-top: 1px solid #cbd5e1;">
+          Trade Heaven Global B2B Marketplace • Automated Dispatch via ${this.senderAddress}<br/>
+          Support: ${this.replyToAddress} • WhatsApp ${this.whatsappSupportNumber} • www.tradeheaven.net
+        </div>
+      </div>
+    `;
+
+    const transporter = this.createPrimaryTransporter();
+    const attachments: nodemailer.SendMailOptions['attachments'] = localBannerPath
+      ? [
+          {
+            filename: path.basename(localBannerPath),
+            path: localBannerPath,
+            cid: bannerCid,
+            contentDisposition: 'inline'
+          }
+        ]
+      : undefined;
+
+    return await serverDeliveryQueueManager.enqueueSingle(
+      cleanEmail,
+      {
+        from: this.senderFormatted,
+        replyTo: this.replyToAddress,
+        subject,
+        text: textBody,
+        html: htmlBody,
+        rawHtmlPreview: htmlBody,
+        dispatchType: params.dispatchType || 'MANUAL',
+        category: 'CAMPAIGN',
+        companyName: recipient.companyName || 'Trade Heaven Client',
+        companyId: `campaign-${campaign.id}`,
+        recipientName: displayName,
+        trackingId: `ms-trk-campaign-${campaign.id.slice(-8)}-${Date.now().toString(36)}`,
+        summaryText: `[${badgeText}] "${campaign.title}" emailed to ${displayName} (${cleanEmail})${
+          hasPromo ? ` • Promo: ${campaign.promoCode}` : ''
+        }.`,
+        attachments
+      },
+      transporter || undefined
+    );
+  }
 }
 
 export const automatedSmtpService = new AutomatedSmtpService();

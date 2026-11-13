@@ -5,7 +5,7 @@ import { planPricingService } from '../../services/planPricingService';
 import { SaaSPlan } from '../../types/planPricingTypes';
 import { INITIAL_SAAS_PLANS } from '../../data/planPricingMockData';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
-import { DIWALI_PROMO_CODE } from '../marketplace/DiwaliOfferBanner';
+import { PlatformOfferAnnouncement } from '../../types/platformOfferTypes';
 import { useAuth } from '../../context/AuthContext';
 import { downloadPlanPdfBrochure } from '../../utils/planPdfGenerator';
 import { 
@@ -122,7 +122,41 @@ export const PremiumServicesView: React.FC<Props> = ({
     return `${curr.symbol}${converted.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   };
 
-  const [promoCodeApplied, setPromoCodeApplied] = useState<boolean>(true);
+  const [activeOffer, setActiveOffer] = useState<PlatformOfferAnnouncement | null>(null);
+  const [promoCodeApplied, setPromoCodeApplied] = useState<boolean>(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadOffer = async () => {
+      try {
+        const res = await fetch('/api/v1/platform-offers?activeOnly=1', {
+          headers: { Accept: 'application/json' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const found = (Array.isArray(data?.items) ? data.items : []).find(
+          (i: PlatformOfferAnnouncement) => i.isActive && i.promoCode && (i.discountPercent || 0) > 0
+        );
+        if (mounted) {
+          setActiveOffer(found || null);
+          try {
+            const savedCode = sessionStorage.getItem('th_active_promo_code');
+            setPromoCodeApplied(Boolean(found && savedCode && savedCode === found.promoCode));
+          } catch {
+            setPromoCodeApplied(false);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void loadOffer();
+    window.addEventListener('tradeheaven_platform_offers_updated', loadOffer);
+    return () => {
+      mounted = false;
+      window.removeEventListener('tradeheaven_platform_offers_updated', loadOffer);
+    };
+  }, []);
 
   const { isAdmin } = useAuth();
 
@@ -135,13 +169,18 @@ export const PremiumServicesView: React.FC<Props> = ({
   };
 
   const handleSelectPackage = (plan: SaaSPlan) => {
-    const finalUsd = promoCodeApplied ? Math.round(plan.annualPriceUsd * 0.9) : plan.annualPriceUsd;
+    const discountPct = promoCodeApplied && activeOffer?.discountPercent ? activeOffer.discountPercent : 0;
+    const finalUsd = discountPct > 0 ? Math.round(plan.annualPriceUsd * (1 - discountPct / 100)) : plan.annualPriceUsd;
     const checkoutPayload: PaymentCheckoutData = {
       planId: plan.slug || plan.id,
-      title: promoCodeApplied ? `${plan.name} (DIWALI10 - 10% OFF Applied)` : plan.name,
-      description: promoCodeApplied
-        ? `${plan.description || `${plan.name} membership plan`} • Diwali Maha Utsav Flat 10% OFF (Code: ${DIWALI_PROMO_CODE})`
-        : plan.description || `${plan.name} membership plan`,
+      title:
+        discountPct > 0 && activeOffer?.promoCode
+          ? `${plan.name} (${activeOffer.promoCode} - ${discountPct}% OFF Applied)`
+          : plan.name,
+      description:
+        discountPct > 0 && activeOffer?.promoCode
+          ? `${plan.description || `${plan.name} membership plan`} • ${activeOffer.title} ${discountPct}% OFF (Code: ${activeOffer.promoCode})`
+          : plan.description || `${plan.name} membership plan`,
       amountUsd: finalUsd,
       type: 'MEMBERSHIP',
       supplierCompany: plan.targetAudience || 'Trade Heaven Member'
@@ -176,28 +215,32 @@ export const PremiumServicesView: React.FC<Props> = ({
 
   return (
     <div id="premium-services-view" className="space-y-8 sm:space-y-10">
-      {/* Active Promo Code Toggle Bar */}
-      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-amber-950">
-          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-black font-mono tracking-wider">
-            {DIWALI_PROMO_CODE}
-          </span>
-          <span>
-            Diwali Maha Utsav Offer: <strong>FLAT 10% OFF</strong> on all Subscription &amp; Membership Plans!
-          </span>
+      {/* Active Admin-Published Promo Code Toggle Bar */}
+      {activeOffer && activeOffer.promoCode && (
+        <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold">
+            <span className="px-2.5 py-1 rounded-md bg-blue-600 text-white font-bold font-mono tracking-wider">
+              {activeOffer.promoCode}
+            </span>
+            <span>
+              {activeOffer.title}: <strong>{activeOffer.discountPercent}% OFF</strong> on Membership Plans
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPromoCodeApplied(!promoCodeApplied)}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+              promoCodeApplied
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            {promoCodeApplied
+              ? `Promo ${activeOffer.promoCode} Applied (-${activeOffer.discountPercent}%)`
+              : `Apply Promo Code ${activeOffer.promoCode}`}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setPromoCodeApplied(!promoCodeApplied)}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            promoCodeApplied
-              ? 'bg-emerald-600 text-white shadow-xs'
-              : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-          }`}
-        >
-          {promoCodeApplied ? '✓ Promo Code DIWALI10 Applied (-10%)' : 'Apply Promo Code DIWALI10'}
-        </button>
-      </div>
+      )}
 
       {/* Top Header */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-9 lg:p-12 shadow-xl relative overflow-hidden">

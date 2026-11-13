@@ -29,6 +29,7 @@ import { UniversalSiteUploadsVault } from './UniversalSiteUploadsVault';
 import { SeoHealthDashboard } from './SeoHealthDashboard';
 import { DeploymentHealthMonitor } from './DeploymentHealthMonitor';
 import { AdminRouteGuard } from './AdminRouteGuard';
+import { OffersAnnouncementsAdminModule } from './OffersAnnouncementsAdminModule';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -63,10 +64,12 @@ import {
   Zap, 
   FileCheck,
   FolderLock,
-  Server
+  Server,
+  Megaphone
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
+  | 'OFFERS_ANNOUNCEMENTS'
   | 'MASTER_UPLOADS_VAULT'
   | 'CLIENT_UPLOADS'
   | 'AUTOMATED_EMAIL_SUITE'
@@ -120,7 +123,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         
         // Define all valid tabs for strict validation
         const validTabs: string[] = [
-          'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
+          'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
           'REGISTERED_SUPPLIERS', 'COUNTRIES', 'CRM', 'PRICING',
@@ -176,7 +179,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
         
         const validTabs: string[] = [
-          'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
+          'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
           'REGISTERED_SUPPLIERS', 'COUNTRIES', 'CRM', 'PRICING',
@@ -225,154 +228,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     simulateDeliveryQueueFailures,
     refreshDeliveryQueueStatus
   } = useNotifications();
-
-  const [isSendingDiwaliOffer, setIsSendingDiwaliOffer] = useState(false);
-  const [diwaliCampaignSummary, setDiwaliCampaignSummary] = useState<string | null>(null);
-  const [diwaliBatchState, setDiwaliBatchState] = useState<{
-    isRunning: boolean;
-    totalClients: number;
-    processedCount: number;
-    deliveredCount: number;
-    failedCount: number;
-    currentRecipient: string | null;
-    launchedAt: string | null;
-    completedAt: string | null;
-    receipts: Array<{
-      recipient: string;
-      success: boolean;
-      enforcedDelayMs?: number;
-      messageId?: string;
-      dispatchedAt?: string;
-      error?: string;
-    }>;
-  }>({
-    isRunning: false,
-    totalClients: 4,
-    processedCount: 0,
-    deliveredCount: 0,
-    failedCount: 0,
-    currentRecipient: null,
-    launchedAt: null,
-    completedAt: null,
-    receipts: []
-  });
-
-  // Load initial Diwali campaign status & eligible client count
-  useEffect(() => {
-    let active = true;
-    fetch('/api/v1/admin/diwali-offer-clients', { headers: { Accept: 'application/json' } })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!active || !data?.success) return;
-        const c = data.lastCampaign;
-        const clientCount = Array.isArray(data.clients) ? data.clients.length : 4;
-        if (c) {
-          setDiwaliBatchState({
-            isRunning: Boolean(c.isRunning),
-            totalClients: Number(c.totalClients || clientCount || 4),
-            processedCount: Number(c.processedCount ?? c.deliveredCount ?? 0),
-            deliveredCount: Number(c.deliveredCount || 0),
-            failedCount: Number(c.failedCount || 0),
-            currentRecipient: c.currentRecipient || null,
-            launchedAt: c.launchedAt || null,
-            completedAt: c.completedAt || null,
-            receipts: Array.isArray(c.receipts) ? c.receipts : []
-          });
-          if (c.isRunning) {
-            setIsSendingDiwaliOffer(true);
-          }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Poll live batch progress every 600ms while the Diwali campaign is running
-  useEffect(() => {
-    if (!isSendingDiwaliOffer && !diwaliBatchState.isRunning) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const res = await fetch('/api/v1/admin/diwali-offer-clients', {
-          headers: { Accept: 'application/json' }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const c = data?.lastCampaign;
-        if (c) {
-          setDiwaliBatchState({
-            isRunning: Boolean(c.isRunning),
-            totalClients: Number(c.totalClients || 4),
-            processedCount: Number(c.processedCount ?? 0),
-            deliveredCount: Number(c.deliveredCount || 0),
-            failedCount: Number(c.failedCount || 0),
-            currentRecipient: c.currentRecipient || null,
-            launchedAt: c.launchedAt || null,
-            completedAt: c.completedAt || null,
-            receipts: Array.isArray(c.receipts) ? c.receipts : []
-          });
-
-          if (!c.isRunning && c.launchedAt) {
-            setIsSendingDiwaliOffer(false);
-            await refreshDeliveryQueueStatus();
-            const msg = `Diwali Maha Utsav (DIWALI10 - Flat 10% OFF) offer emailed to ${c.deliveredCount}/${c.totalClients} existing clients via serialized 2s delivery queue.`;
-            setDiwaliCampaignSummary(msg);
-          }
-        }
-      } catch {
-        // ignore transient poll error
-      }
-    }, 600);
-
-    return () => clearInterval(pollInterval);
-  }, [isSendingDiwaliOffer, diwaliBatchState.isRunning, refreshDeliveryQueueStatus]);
-
-  const handleBroadcastDiwaliOffer = async () => {
-    setIsSendingDiwaliOffer(true);
-    setDiwaliCampaignSummary(null);
-    setDiwaliBatchState((prev) => ({
-      ...prev,
-      isRunning: true,
-      processedCount: 0,
-      deliveredCount: 0,
-      failedCount: 0,
-      currentRecipient: null,
-      completedAt: null,
-      receipts: []
-    }));
-
-    try {
-      const res = await fetch('/api/v1/admin/launch-diwali-offer-campaign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ async: true })
-      });
-      const data = await res.json();
-      if (data?.campaign) {
-        const c = data.campaign;
-        setDiwaliBatchState({
-          isRunning: Boolean(c.isRunning),
-          totalClients: Number(c.totalClients || 4),
-          processedCount: Number(c.processedCount ?? 0),
-          deliveredCount: Number(c.deliveredCount || 0),
-          failedCount: Number(c.failedCount || 0),
-          currentRecipient: c.currentRecipient || null,
-          launchedAt: c.launchedAt || null,
-          completedAt: c.completedAt || null,
-          receipts: Array.isArray(c.receipts) ? c.receipts : []
-        });
-      }
-      if (!data?.success) {
-        setIsSendingDiwaliOffer(false);
-        triggerToast('error', data?.message || 'Failed to launch Diwali offer campaign.');
-      }
-    } catch (err: any) {
-      setIsSendingDiwaliOffer(false);
-      triggerToast('error', err?.message || 'Network error while dispatching Diwali offer emails.');
-    }
-  };
 
   const latestQueueAlertNotification = notifications.find(
     (n) => n.type === 'SYSTEM' && n.title.toLowerCase().includes('delivery queue')
@@ -619,6 +474,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   );
 
   const navigationItems = [
+    { id: 'OFFERS_ANNOUNCEMENTS', label: '📢 Offers, Banners & Announcements', icon: Megaphone },
     { id: 'MASTER_UPLOADS_VAULT', label: '🌐 Universal Site Uploads & Files Vault', icon: FolderLock },
     { id: 'CLIENT_UPLOADS', label: '📄 Client Uploads & Wire Slips', icon: FileCheck },
     { id: 'AUTOMATED_EMAIL_SUITE', label: '🚀 Automated Email & Tracking Suite', icon: Zap },
@@ -822,6 +678,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* TOP QUICK-SWITCH BAR FOR EMAIL OPEN RATE & RENEWAL MANAGEMENT */}
         <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSelectSidebarTab('OFFERS_ANNOUNCEMENTS')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+                activeTab === 'OFFERS_ANNOUNCEMENTS'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300'
+              }`}
+            >
+              <Megaphone className="w-4 h-4" />
+              <span>📢 Offers, Banners &amp; Announcements Hub</span>
+            </button>
+
             <button
               type="button"
               onClick={() => handleSelectSidebarTab('MASTER_UPLOADS_VAULT')}
@@ -1047,17 +916,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <button
                 type="button"
-                disabled={isSendingDiwaliOffer}
-                onClick={handleBroadcastDiwaliOffer}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-slate-950 text-[11px] font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                title="Send the Diwali Maha Utsav (FLAT 10% OFF • DIWALI10) banner offer email to all existing clients via the serialized 2s queue"
+                onClick={() => handleSelectSidebarTab('OFFERS_ANNOUNCEMENTS')}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
               >
-                <Mail className="w-3.5 h-3.5" />
-                <span>
-                  {isSendingDiwaliOffer
-                    ? `Emails Sent ${diwaliBatchState.processedCount}/${diwaliBatchState.totalClients} (2s Queue)...`
-                    : 'Mail Diwali Offer (DIWALI10) to Clients'}
-                </span>
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Offers &amp; Announcements Hub</span>
               </button>
 
               <button
@@ -1070,107 +933,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
           </div>
-
-          {/* DIWALI OFFER BATCH PROGRESS BAR & STATUS COUNTER */}
-          <div
-            id="admin-diwali-batch-progress-monitor"
-            className="mt-4 pt-3.5 border-t border-slate-200/80 space-y-2.5"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-slate-800 uppercase tracking-wide">
-                  🪔 Diwali Offer Batch Monitor (Code: DIWALI10)
-                </span>
-                <span
-                  id="admin-diwali-emails-sent-counter"
-                  className={`px-2.5 py-0.5 rounded-md font-mono text-xs font-black ${
-                    isSendingDiwaliOffer || diwaliBatchState.isRunning
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
-                      : diwaliBatchState.processedCount > 0 &&
-                        diwaliBatchState.processedCount === diwaliBatchState.totalClients
-                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                      : 'bg-slate-100 text-slate-700 border border-slate-200'
-                  }`}
-                >
-                  Emails Sent {diwaliBatchState.processedCount}/{diwaliBatchState.totalClients}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 text-[11px] font-bold text-slate-600">
-                {diwaliBatchState.currentRecipient && (isSendingDiwaliOffer || diwaliBatchState.isRunning) && (
-                  <span className="text-amber-700 font-mono">
-                    Dispatching: {diwaliBatchState.currentRecipient}
-                  </span>
-                )}
-                <span>
-                  {diwaliBatchState.totalClients > 0
-                    ? `${Math.round(
-                        (diwaliBatchState.processedCount / diwaliBatchState.totalClients) * 100
-                      )}% Complete`
-                    : '0% Complete'}
-                </span>
-              </div>
-            </div>
-
-            {/* Progress Bar Track */}
-            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-              <div
-                id="admin-diwali-batch-progress-bar"
-                className={`h-full transition-all duration-500 rounded-full ${
-                  diwaliBatchState.failedCount > 0
-                    ? 'bg-gradient-to-r from-amber-500 to-rose-500'
-                    : isSendingDiwaliOffer || diwaliBatchState.isRunning
-                    ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500'
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                }`}
-                style={{
-                  width: `${
-                    diwaliBatchState.totalClients > 0
-                      ? Math.min(
-                          100,
-                          Math.round(
-                            (diwaliBatchState.processedCount / diwaliBatchState.totalClients) * 100
-                          )
-                        )
-                      : 0
-                  }%`
-                }}
-              />
-            </div>
-
-            {/* Per-Recipient Serialized Receipt Badges */}
-            {diwaliBatchState.receipts.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                {diwaliBatchState.receipts.map((rec, idx) => (
-                  <span
-                    key={`${rec.recipient}-${idx}`}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
-                      rec.success
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-rose-50 text-rose-800 border-rose-200'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-3 h-3 shrink-0" />
-                    <span>{rec.recipient}</span>
-                    {typeof rec.enforcedDelayMs === 'number' && (
-                      <span className="text-slate-400">({rec.enforcedDelayMs / 1000}s)</span>
-                    )}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {diwaliCampaignSummary && (
-              <div className="text-xs font-bold text-emerald-700 flex items-center gap-2 pt-0.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{diwaliCampaignSummary}</span>
-              </div>
-            )}
-          </div>
         </div>
         )}
 
         {/* VIEW CONDITIONAL RENDERING */}
+        {activeTab === 'OFFERS_ANNOUNCEMENTS' && (
+          <div className="space-y-4">
+            <OffersAnnouncementsAdminModule onRefreshQueue={refreshDeliveryQueueStatus} />
+          </div>
+        )}
+
         {activeTab === 'MASTER_UPLOADS_VAULT' && (
           <div className="space-y-4">
             <UniversalSiteUploadsVault
