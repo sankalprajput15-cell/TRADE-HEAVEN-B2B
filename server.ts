@@ -85,19 +85,6 @@ app.use('/api', (req, res, next) => {
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-const srcAssetsStatic = express.static(path.join(process.cwd(), 'src', 'assets'));
-app.use('/src/assets', (req, res, next) => {
-  if (
-    'import' in req.query ||
-    'url' in req.query ||
-    'raw' in req.query ||
-    'inline' in req.query ||
-    req.headers['sec-fetch-dest'] === 'script'
-  ) {
-    return next();
-  }
-  return srcAssetsStatic(req, res, next);
-});
 
 interface HttpErrorLogEntry {
   method: string;
@@ -178,15 +165,295 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Explicitly serve /assets/uploads directory for uploaded product images with CORS
+// Explicitly serve /assets/uploads & /assets/aistudio directories for product/hero images with CORS + Sharp WebP CDN
 const uploadsStaticDir = path.join(process.cwd(), 'public', 'assets', 'uploads');
 const legacyAssetsStaticDir = path.join(process.cwd(), 'public', 'assets', 'aistudio');
+const srcImagesStaticDir = path.join(process.cwd(), 'src', 'assets', 'images');
+const renewalBrandingStaticDir = path.join(process.cwd(), 'public', 'uploads', 'renewal-branding');
+const diskImageCacheDir = path.join(process.cwd(), '.th-image-cache');
+const srcAssetsStatic = express.static(path.join(process.cwd(), 'src', 'assets'), {
+  maxAge: '7d',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+  }
+});
 
-// Cache for dynamically optimized WebP image variants in-memory
-const optimizedImageBufferCache = new Map<string, { buffer: Buffer; contentType: string; mtime: number }>();
+interface CachedOptimizedImage {
+  buffer: Buffer;
+  contentType: string;
+  mtime: number;
+  etag: string;
+}
 
-// Automated Image Optimization & High-Speed Cache Middleware
-app.get(['/assets/uploads/:filename', '/assets/tradeheaven/:filename'], async (req, res, next) => {
+const IMAGE_CACHE_MAX_ENTRIES = 1500;
+const AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS = 60 * 1000; // Every 1 minute automatically, zero permission required
+const IMAGE_WIDTH_BUCKETS = [160, 320, 480, 720, 960, 1280, 1600];
+const optimizedImageBufferCache = new Map<string, CachedOptimizedImage>();
+const inFlightImageOptimizations = new Map<string, Promise<CachedOptimizedImage>>();
+
+interface AutonomousImageOptimizerState {
+  enabled: boolean;
+  permissionRequired: boolean;
+  intervalSeconds: number;
+  isRunning: boolean;
+  totalCycles: number;
+  lastCycleTrigger: string;
+  lastCycleAt: string | null;
+  nextCycleAt: string | null;
+  lastCycleDurationMs: number;
+  totalSourceImages: number;
+  newlyOptimizedLastCycle: number;
+  prunedStaleCacheFiles: number;
+  totalBytesSaved: number;
+}
+
+const autonomousImageOptimizerState: AutonomousImageOptimizerState = {
+  enabled: true,
+  permissionRequired: false,
+  intervalSeconds: 60,
+  isRunning: false,
+  totalCycles: 0,
+  lastCycleTrigger: 'PENDING_BOOT',
+  lastCycleAt: null,
+  nextCycleAt: null,
+  lastCycleDurationMs: 0,
+  totalSourceImages: 0,
+  newlyOptimizedLastCycle: 0,
+  prunedStaleCacheFiles: 0,
+  totalBytesSaved: 0
+};
+
+function ensureDiskImageCacheDir() {
+  if (!fs.existsSync(diskImageCacheDir)) {
+    fs.mkdirSync(diskImageCacheDir, { recursive: true });
+  }
+}
+
+function getDiskCacheFilePath(cacheKey: string, mtime: number, formatKey: string): string {
+  const hash = crypto.createHash('sha1').update(`${cacheKey}:${Math.round(mtime)}`).digest('hex');
+  return path.join(diskImageCacheDir, `${hash}.${formatKey}`);
+}
+
+function putInMemoryImageCache(cacheKey: string, entry: CachedOptimizedImage) {
+  if (optimizedImageBufferCache.size >= IMAGE_CACHE_MAX_ENTRIES) {
+    const oldestKey = optimizedImageBufferCache.keys().next().value;
+    if (oldestKey) optimizedImageBufferCache.delete(oldestKey);
+  }
+  optimizedImageBufferCache.set(cacheKey, entry);
+}
+
+function snapImageWidthBucket(rawWidth?: number): number {
+  if (!rawWidth || !Number.isFinite(rawWidth) || rawWidth <= 0) {
+    return 1280; // Cap un-parameterized requests so multi-MB originals are never blasted raw
+  }
+  const clamped = Math.min(1920, Math.max(80, Math.round(rawWidth)));
+  for (const bucket of IMAGE_WIDTH_BUCKETS) {
+    if (clamped <= bucket) return bucket;
+  }
+  return 1600;
+}
+
+function getOrBuildOptimizedImage(
+  targetPath: string,
+  filename: string,
+  width: number,
+  acceptsWebp: boolean,
+  isOriginalRequested: boolean
+): Promise<{ entry: CachedOptimizedImage; newlyGenerated: boolean }> {
+  const stat = fs.statSync(targetPath);
+  const mtime = stat.mtimeMs;
+  const isAlreadyWebp = filename.toLowerCase().endsWith('.webp');
+  const formatKey = isOriginalRequested ? 'orig' : acceptsWebp || isAlreadyWebp ? 'webp' : 'jpeg';
+  const cacheKey = `${targetPath}_w${isOriginalRequested ? 'orig' : width}_${formatKey}`;
+
+  const cached = optimizedImageBufferCache.get(cacheKey);
+  if (cached && cached.mtime === mtime) {
+    // Refresh LRU recency
+    optimizedImageBufferCache.delete(cacheKey);
+    optimizedImageBufferCache.set(cacheKey, cached);
+    return Promise.resolve({ entry: cached, newlyGenerated: false });
+  }
+
+  const pending = inFlightImageOptimizations.get(cacheKey);
+  if (pending) {
+    return pending.then((entry) => ({ entry, newlyGenerated: false }));
+  }
+
+  let didGenerate = false;
+  const job = (async (): Promise<CachedOptimizedImage> => {
+    try {
+      const outType = formatKey === 'webp' ? 'image/webp' : formatKey === 'orig' ? `image/${path.extname(filename).slice(1).toLowerCase() || 'jpeg'}` : 'image/jpeg';
+      const diskPath = getDiskCacheFilePath(cacheKey, mtime, formatKey);
+
+      // Fast warm-restart hit from persistent disk cache
+      if (fs.existsSync(diskPath)) {
+        try {
+          const diskBuffer = fs.readFileSync(diskPath);
+          if (diskBuffer.length > 0) {
+            const etag = `"th-img-${Math.round(mtime)}-${width}-${formatKey}-${diskBuffer.length}"`;
+            const diskEntry: CachedOptimizedImage = { buffer: diskBuffer, contentType: outType, mtime, etag };
+            putInMemoryImageCache(cacheKey, diskEntry);
+            return diskEntry;
+          }
+        } catch {
+          // Rebuild if disk cache read fails
+        }
+      }
+
+      const quality = width <= 360 ? 74 : width <= 640 ? 78 : 82;
+      let pipeline = sharp(targetPath, { failOn: 'none' }).rotate();
+
+      if (!isOriginalRequested && width > 0 && width < 3000) {
+        pipeline = pipeline.resize({ width, withoutEnlargement: true });
+      }
+
+      let outBuffer: Buffer;
+      if (formatKey === 'webp') {
+        outBuffer = await pipeline.webp({ quality, effort: 4 }).toBuffer();
+      } else {
+        outBuffer = await pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toBuffer();
+      }
+
+      didGenerate = true;
+      autonomousImageOptimizerState.totalBytesSaved += Math.max(0, stat.size - outBuffer.length);
+
+      try {
+        ensureDiskImageCacheDir();
+        fs.writeFileSync(diskPath, outBuffer);
+      } catch {
+        // Non-fatal disk cache write error
+      }
+
+      const etag = `"th-img-${Math.round(mtime)}-${width}-${formatKey}-${outBuffer.length}"`;
+      const entry: CachedOptimizedImage = { buffer: outBuffer, contentType: outType, mtime, etag };
+      putInMemoryImageCache(cacheKey, entry);
+      return entry;
+    } finally {
+      inFlightImageOptimizations.delete(cacheKey);
+    }
+  })();
+
+  inFlightImageOptimizations.set(cacheKey, job);
+  return job.then((entry) => ({ entry, newlyGenerated: didGenerate }));
+}
+
+function getWidthsForAsset(fileName: string, fileSize: number): number[] {
+  const isBannerOrHero =
+    fileSize > 350 * 1024 ||
+    /hero|tanker|banner|evening|ship|port|cargo|slider|header/i.test(fileName);
+  return isBannerOrHero ? [320, 480, 720, 1280] : [320, 480];
+}
+
+async function prewarmSingleImageFile(targetPath: string): Promise<number> {
+  try {
+    if (!fs.existsSync(targetPath)) return 0;
+    const stat = fs.statSync(targetPath);
+    if (!stat.isFile()) return 0;
+    const fileName = path.basename(targetPath);
+    if (!/\.(jpg|jpeg|png|webp|avif)$/i.test(fileName)) return 0;
+    const widths = getWidthsForAsset(fileName, stat.size);
+    let generated = 0;
+    for (const w of widths) {
+      const res = await getOrBuildOptimizedImage(targetPath, fileName, w, true, false).catch(() => null);
+      if (res?.newlyGenerated) generated += 1;
+    }
+    return generated;
+  } catch {
+    return 0;
+  }
+}
+
+async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOMOUS_DAEMON') {
+  if (autonomousImageOptimizerState.isRunning) return;
+  autonomousImageOptimizerState.isRunning = true;
+  const startedAt = Date.now();
+
+  try {
+    ensureDiskImageCacheDir();
+    const scanDirs = [uploadsStaticDir, legacyAssetsStaticDir, renewalBrandingStaticDir, srcImagesStaticDir];
+    let sourceCount = 0;
+    let newlyOptimized = 0;
+
+    for (const dir of scanDirs) {
+      if (!fs.existsSync(dir)) continue;
+      let entries: string[] = [];
+      try {
+        entries = fs.readdirSync(dir).filter((f) => /\.(jpg|jpeg|png|webp|avif)$/i.test(f));
+      } catch {
+        continue;
+      }
+
+      for (const fileName of entries) {
+        sourceCount += 1;
+        const targetPath = path.join(dir, fileName);
+        const generated = await prewarmSingleImageFile(targetPath);
+        newlyOptimized += generated;
+        // Yield cleanly to keep HTTP latency unaffected while running every minute
+        if (generated > 0) {
+          await new Promise<void>((resolve) => setImmediate(resolve));
+        }
+      }
+    }
+
+    // Prune stale disk cache files older than 7 days to keep disk clutter-free
+    let pruned = 0;
+    try {
+      const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const cacheFiles = fs.readdirSync(diskImageCacheDir);
+      for (const cf of cacheFiles) {
+        const cfPath = path.join(diskImageCacheDir, cf);
+        const cfStat = fs.statSync(cfPath);
+        if (cfStat.atimeMs < cutoffMs && cfStat.mtimeMs < cutoffMs) {
+          fs.unlinkSync(cfPath);
+          pruned += 1;
+        }
+      }
+    } catch {
+      // Non-fatal prune skip
+    }
+
+    const now = new Date();
+    autonomousImageOptimizerState.totalCycles += 1;
+    autonomousImageOptimizerState.lastCycleTrigger = trigger;
+    autonomousImageOptimizerState.lastCycleAt = now.toISOString();
+    autonomousImageOptimizerState.nextCycleAt = new Date(now.getTime() + AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS).toISOString();
+    autonomousImageOptimizerState.lastCycleDurationMs = Date.now() - startedAt;
+    autonomousImageOptimizerState.totalSourceImages = sourceCount;
+    autonomousImageOptimizerState.newlyOptimizedLastCycle = newlyOptimized;
+    autonomousImageOptimizerState.prunedStaleCacheFiles += pruned;
+  } catch {
+    // Non-fatal autonomous optimizer cycle error
+  } finally {
+    autonomousImageOptimizerState.isRunning = false;
+  }
+}
+
+// Run unconditionally every 60 seconds (1 minute) with zero permission prompts
+setInterval(() => {
+  void runAutonomousImageOptimizerCycle('SCHEDULED_60S_AUTONOMOUS_DAEMON');
+}, AUTONOMOUS_IMAGE_OPTIMIZER_INTERVAL_MS);
+
+// Automated Image Optimization & High-Speed Cache Middleware (covers uploads, aistudio, tradeheaven, renewal-branding, and non-import src/assets/images)
+app.get([
+  '/assets/uploads/:filename',
+  '/assets/aistudio/:filename',
+  '/assets/tradeheaven/:filename',
+  '/uploads/renewal-branding/:filename',
+  '/src/assets/images/:filename'
+], async (req, res, next) => {
+  // Never intercept Vite JS module queries on /src/assets
+  if (
+    req.path.startsWith('/src/assets') &&
+    ('import' in req.query ||
+      'url' in req.query ||
+      'raw' in req.query ||
+      'inline' in req.query ||
+      req.headers['sec-fetch-dest'] === 'script')
+  ) {
+    return next();
+  }
+
   const filename = req.params.filename;
   if (!filename || !/\.(jpg|jpeg|png|webp|avif)$/i.test(filename)) {
     return next();
@@ -194,71 +461,77 @@ app.get(['/assets/uploads/:filename', '/assets/tradeheaven/:filename'], async (r
 
   const primaryPath = path.join(uploadsStaticDir, filename);
   const fallbackPath = path.join(legacyAssetsStaticDir, filename);
-  const targetPath = fs.existsSync(primaryPath) ? primaryPath : fs.existsSync(fallbackPath) ? fallbackPath : null;
+  const renewalPath = path.join(renewalBrandingStaticDir, filename);
+  const srcPath = path.join(srcImagesStaticDir, filename);
+  const targetPath = req.path.startsWith('/src/assets')
+    ? (fs.existsSync(srcPath) ? srcPath : null)
+    : req.path.startsWith('/uploads/renewal-branding')
+      ? (fs.existsSync(renewalPath) ? renewalPath : null)
+      : (fs.existsSync(primaryPath) ? primaryPath : fs.existsSync(fallbackPath) ? fallbackPath : null);
 
   if (!targetPath) {
     return next();
   }
 
   try {
-    const stat = fs.statSync(targetPath);
-    const mtime = stat.mtimeMs;
     const reqWidth = req.query.w ? parseInt(String(req.query.w), 10) : undefined;
     const isThumb = req.query.thumb === '1' || req.query.thumbnail === 'true';
-    const width = isThumb ? (reqWidth || 360) : reqWidth;
-    const quality = width && width <= 400 ? 75 : 82;
-
+    const isOrig = req.query.orig === '1';
+    const rawTargetWidth = isThumb ? (reqWidth || 320) : reqWidth;
+    const width = snapImageWidthBucket(rawTargetWidth);
     const acceptsWebp = (req.headers.accept || '').includes('image/webp');
-    const isAlreadyWebp = filename.toLowerCase().endsWith('.webp');
-    const cacheKey = `${filename}_w${width || 'orig'}_${isAlreadyWebp ? 'webp' : acceptsWebp ? 'webp' : 'orig'}`;
 
-    // Return from in-memory cache if file has not changed
-    const cached = optimizedImageBufferCache.get(cacheKey);
-    if (cached && cached.mtime === mtime) {
-      res.setHeader('Content-Type', cached.contentType);
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('X-Image-Cache', 'HIT');
-      return res.send(cached.buffer);
-    }
+    const wasCachedBefore = optimizedImageBufferCache.has(
+      `${targetPath}_w${isOrig ? 'orig' : width}_${isOrig ? 'orig' : acceptsWebp || filename.toLowerCase().endsWith('.webp') ? 'webp' : 'jpeg'}`
+    );
 
-    // Process & compress on-the-fly with sharp
-    let pipeline = sharp(targetPath);
-    if (width && width > 0 && width < 3000) {
-      pipeline = pipeline.resize({ width, withoutEnlargement: true });
-    }
+    const { entry: optimized } = await getOrBuildOptimizedImage(targetPath, filename, width, acceptsWebp, isOrig);
 
-    let outBuffer: Buffer;
-    let outType: string;
-
-    if (acceptsWebp || isAlreadyWebp) {
-      outBuffer = await pipeline.webp({ quality, effort: 4 }).toBuffer();
-      outType = 'image/webp';
-    } else {
-      outBuffer = await pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toBuffer();
-      outType = 'image/jpeg';
-    }
-
-    // Keep cache size bounded (max 150 items)
-    if (optimizedImageBufferCache.size > 150) {
-      const oldestKey = optimizedImageBufferCache.keys().next().value;
-      if (oldestKey) optimizedImageBufferCache.delete(oldestKey);
-    }
-
-    optimizedImageBufferCache.set(cacheKey, { buffer: outBuffer, contentType: outType, mtime });
-
-    res.setHeader('Content-Type', outType);
+    res.setHeader('ETag', optimized.etag);
+    res.setHeader('Vary', 'Accept');
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('X-Image-Cache', 'OPTIMIZED');
-    return res.send(outBuffer);
-  } catch (err) {
-    // Fall back to standard static file serving if sharp encounters an issue
+
+    if (req.headers['if-none-match'] === optimized.etag) {
+      res.setHeader('X-Image-Cache', 'NOT_MODIFIED');
+      return res.status(304).end();
+    }
+
+    res.setHeader('Content-Type', optimized.contentType);
+    res.setHeader('X-Image-Cache', wasCachedBefore ? 'HIT' : 'OPTIMIZED');
+    return res.send(optimized.buffer);
+  } catch {
     return next();
   }
 });
 
-// Explicitly serve /assets/uploads directory for uploaded product images with CORS
+// Read-only status endpoint for the automatic every-minute image optimizer
+app.get('/api/v1/system/image-optimizer/status', (_req, res) => {
+  return res.json({
+    success: true,
+    optimizer: {
+      ...autonomousImageOptimizerState,
+      cachedVariantsInMemory: optimizedImageBufferCache.size,
+      maxMemoryVariants: IMAGE_CACHE_MAX_ENTRIES
+    }
+  });
+});
+
+// Vite ?import-safe static fallback for /src/assets
+app.use('/src/assets', (req, res, next) => {
+  if (
+    'import' in req.query ||
+    'url' in req.query ||
+    'raw' in req.query ||
+    'inline' in req.query ||
+    req.headers['sec-fetch-dest'] === 'script'
+  ) {
+    return next();
+  }
+  return srcAssetsStatic(req, res, next);
+});
+
+// Static fallbacks for /assets/uploads, /assets/aistudio, /assets/tradeheaven (non-raster files / fallback)
 app.use('/assets/uploads', express.static(uploadsStaticDir, {
   maxAge: '7d',
   setHeaders: (res) => {
@@ -267,6 +540,13 @@ app.use('/assets/uploads', express.static(uploadsStaticDir, {
   }
 }));
 app.use('/assets/uploads', express.static(legacyAssetsStaticDir, {
+  maxAge: '7d',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+  }
+}));
+app.use('/assets/aistudio', express.static(legacyAssetsStaticDir, {
   maxAge: '7d',
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1985,6 +2265,8 @@ app.post('/api/v1/admin/platform-offers/upload-banner', async (req, res) => {
       .jpeg({ quality: 86, progressive: true })
       .toFile(outPath);
 
+    void prewarmSingleImageFile(outPath);
+
     return res.json({
       success: true,
       url: `/assets/uploads/${outFile}`
@@ -2725,6 +3007,7 @@ app.post('/api/v1/admin/renewal-offer-template/upload-asset', (req, res) => {
     const safeName = `${cleanSegment}-${cleanSlot}-${Date.now()}.${ext}`;
     const filePath = path.join(uploadDir, safeName);
     fs.writeFileSync(filePath, buffer);
+    void prewarmSingleImageFile(filePath);
 
     const publicUrl = `/uploads/renewal-branding/${safeName}`;
 
@@ -7162,18 +7445,8 @@ app.post('/api/v1/admin/upload-product-image', (req, res) => {
     const filePath = path.join(UPLOADS_DIR, finalFileName);
     fs.writeFileSync(filePath, buffer);
 
-    // Automatically optimize images in background (generate lightweight webp version)
-    if (ext === 'jpg' || ext === 'png') {
-      sharp(buffer)
-        .resize({ width: 1400, withoutEnlargement: true })
-        .webp({ quality: 82 })
-        .toBuffer()
-        .then((optWebp) => {
-          const webpName = `${baseName}-${Date.now()}.webp`;
-          fs.writeFileSync(path.join(UPLOADS_DIR, webpName), optWebp);
-        })
-        .catch(() => {});
-    }
+    // Pre-warm compressed WebP variants immediately into RAM & disk cache without writing clutter duplicates
+    void prewarmSingleImageFile(filePath);
 
     const uploadedUrl = `/assets/uploads/${finalFileName}`;
     const nowIso = new Date().toISOString();
@@ -7792,6 +8065,7 @@ app.post('/api/v1/admin/master-uploads', (req, res) => {
     const finalFileName = `${sanitizedBase}-${Date.now()}.${ext}`;
     const diskPath = path.join(UPLOADS_DIR, finalFileName);
     fs.writeFileSync(diskPath, buffer);
+    void prewarmSingleImageFile(diskPath);
 
     const uploadedUrl = `/assets/uploads/${finalFileName}`;
     const nowIso = new Date().toISOString();
@@ -9994,6 +10268,9 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
+    setTimeout(() => {
+      void runAutonomousImageOptimizerCycle('BOOT_INITIALIZATION_EVERY_MINUTE_DAEMON');
+    }, 150);
     setTimeout(() => {
       executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
     }, 1500);

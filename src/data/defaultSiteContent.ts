@@ -302,7 +302,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Leather Belts & Genuine Leather Goods",
         description: "Full-grain cowhide belts, buffalo grain dress belts, scaffolding tool belts, exotic crocodile belts.",
         iconName: "Briefcase",
-        image: "/assets/aistudio/leather_belt_trade_heaven_2_1f3c8230.jpeg",
+        image: "/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg",
         badge: "Verified Tannery",
         productCount: "2,420+ Products"
       },
@@ -347,7 +347,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Textiles, Garments & Leather Accessories",
         description: "Genuine leather belts, organic cotton yarns, technical outerwear, wallets & bags.",
         iconName: "Scissors",
-        image: "/assets/aistudio/leather_belt_3_trade_heaven_6962019f.jpeg",
+        image: "/assets/uploads/leather_belt_3_trade_heaven_6962019f.jpeg",
         badge: "LWG / OEKO-TEX",
         productCount: "52,400+ Products"
       },

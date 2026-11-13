@@ -104,7 +104,46 @@ const IDB_KEY = 'active_state_v1';
 
 export function normalizeProductAssetUrl(url: string | undefined | null): string {
   if (!url || typeof url !== 'string') return '';
-  return url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+  let clean = url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+  // Repair malformed double-query Unsplash strings like "...?w=800&auto=format&fit=crop&q=80-hash?w=100..."
+  if (clean.includes('images.unsplash.com/photo-')) {
+    const basePhoto = clean.split('?')[0];
+    const lastQueryIdx = clean.lastIndexOf('?');
+    if (lastQueryIdx > clean.indexOf('?')) {
+      clean = `${basePhoto}?${clean.slice(lastQueryIdx + 1)}`;
+    }
+  }
+  return clean;
+}
+
+export function optimizeImageUrl(
+  rawUrl: string | undefined | null,
+  options: { width?: number; quality?: number; isThumbnail?: boolean } = {}
+): string {
+  const clean = normalizeProductAssetUrl(rawUrl);
+  if (!clean || clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
+
+  const targetWidth = options.width || (options.isThumbnail ? 320 : 480);
+
+  if (clean.includes('images.unsplash.com')) {
+    const base = clean.split('?')[0];
+    const q = options.quality || (targetWidth <= 360 ? 72 : 76);
+    return `${base}?auto=format&fit=crop&w=${targetWidth}&q=${q}`;
+  }
+
+  if (
+    clean.startsWith('/assets/uploads/') ||
+    clean.startsWith('/assets/tradeheaven/') ||
+    clean.startsWith('/src/assets/images/')
+  ) {
+    if (clean.toLowerCase().endsWith('.svg') || clean.toLowerCase().endsWith('.gif')) {
+      return clean;
+    }
+    const base = clean.split('?')[0];
+    return `${base}?w=${targetWidth}`;
+  }
+
+  return clean;
 }
 
 const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
@@ -227,14 +266,14 @@ const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
   },
   {
     id: 'builtin-black-jade-torch-veined-boulder',
-    url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
+    url: '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
     name: 'Blackstone Jade Co - Torch-Illuminated Nephrite Jade Boulder with Gold Veining.jpeg',
     format: 'JPG',
     uploadedAt: '2026-11-12T07:26:16Z'
   },
   {
     id: 'builtin-black-jade-gia-cabochon-box',
-    url: '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
+    url: '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
     name: 'Blackstone Jade Co - GIA Certified Polished Black Jade Cabochon in Display Case.jpeg',
     format: 'JPG',
     uploadedAt: '2026-11-12T07:26:17Z'

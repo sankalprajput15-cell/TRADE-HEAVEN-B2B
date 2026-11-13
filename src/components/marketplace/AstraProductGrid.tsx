@@ -31,20 +31,14 @@ export const AstraProductGrid: React.FC<Props> = ({
             className="h-44 w-full bg-slate-100 overflow-hidden cursor-pointer relative"
           >
             <SafeImage
-              src={product.images?.[0] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-cd874c4e31d2?w=400'}
+              src={product.images?.[0] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75'}
               alt={product.title}
               category={product.category}
               productId={product.id}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover hover:scale-105 transition-transform"
+              targetWidth={480}
+              className="w-full h-full"
+              imgClassName="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
-            <div className="absolute bottom-2.5 right-2.5">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
-                <Lock className="w-2.5 h-2.5 text-amber-400" />
-                <span>Protected Rate</span>
-              </span>
-            </div>
           </div>
           <div className="p-4 space-y-2">
             <h4 

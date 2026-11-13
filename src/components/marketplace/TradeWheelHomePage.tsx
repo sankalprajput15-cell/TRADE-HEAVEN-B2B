@@ -303,8 +303,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
                   <SafeImage
                     src={company.logoUrl}
                     alt={company.companyName}
-                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-50 shrink-0"
-                    fetchPriority="high"
+                    type="logo"
+                    isThumbnail={true}
+                    className="w-12 h-12 rounded-xl border border-slate-200 bg-slate-50 shrink-0"
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -545,8 +546,9 @@ export const TradeWheelHomePage: React.FC<Props> = ({
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-slate-200/80 bg-white">
               <EditableImage
                 contentKey="homepage.onboardingBannerImage"
-                defaultSrc="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+                defaultSrc="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=320&auto=format&fit=crop&q=75"
                 alt="Trade Heaven Verified Global Partner Network"
+                targetWidth={320}
                 className="w-full h-full"
                 imgClassName="w-full h-full object-cover"
               />

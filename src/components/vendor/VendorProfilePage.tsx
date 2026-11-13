@@ -900,8 +900,10 @@ export const VendorProfilePage: React.FC<Props> = ({
                       <div className="flex items-start justify-between gap-3">
                         <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
                           <SafeImage
-                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-ad8dd3c8310d?w=400'}
+                            src={cert.thumbnailUrl || cert.documentUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=320&q=75'}
                             alt={cert.name}
+                            isThumbnail={true}
+                            targetWidth={320}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                           <button
@@ -1033,8 +1035,9 @@ export const VendorProfilePage: React.FC<Props> = ({
                     >
                       <div className="relative h-44 overflow-hidden bg-slate-200">
                         <SafeImage
-                          src={tour.imageUrl || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
+                          src={tour.imageUrl || '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
                           alt={tour.title}
+                          targetWidth={480}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-slate-900/80 text-white text-xs shadow-md">

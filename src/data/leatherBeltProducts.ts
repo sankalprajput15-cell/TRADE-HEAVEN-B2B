@@ -1,10 +1,10 @@
 import { Product } from '../types';
 import { GLOBAL_LEATHER_BELT_COMPANIES } from './leatherBeltCompanies';
 
-const IMG_PEBBLE_TAN = '/assets/aistudio/leather_belt_3_trade_heaven_6962019f.jpeg';
-const IMG_STACK_FIVE = '/assets/aistudio/leather_belt_trade_heaven_2_1f3c8230.jpeg';
-const IMG_FOUR_CATALOG = '/assets/aistudio/leather_belt_trade_heaven__3cd8dde8.jpeg';
-const IMG_FLYER_TWOTONE = '/assets/aistudio/leather_belt__6cbe88c9.jpeg';
+const IMG_PEBBLE_TAN = '/assets/uploads/leather_belt_3_trade_heaven_6962019f.jpeg';
+const IMG_STACK_FIVE = '/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg';
+const IMG_FOUR_CATALOG = '/assets/uploads/leather_belt_trade_heaven__3cd8dde8.jpeg';
+const IMG_FLYER_TWOTONE = '/assets/uploads/leather_belt__6cbe88c9.jpeg';
 
 const ALL_BELT_IMGS = [IMG_STACK_FIVE, IMG_PEBBLE_TAN, IMG_FOUR_CATALOG, IMG_FLYER_TWOTONE];
 

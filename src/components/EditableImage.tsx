@@ -5,7 +5,8 @@ import {
   productImageManagerService,
   PRODUCT_IMAGE_SAVED_EVENT,
   PRODUCT_IMAGE_STORAGE_SAVED_EVENT,
-  ProductImageSavedEventDetail
+  ProductImageSavedEventDetail,
+  optimizeImageUrl
 } from '../services/productImageManagerService';
 
 export interface EditableImageProps {
@@ -16,6 +17,7 @@ export interface EditableImageProps {
   imgClassName?: string;
   productId?: string;
   aspectRatio?: string;
+  targetWidth?: number;
   onImageChange?: (newUrl: string) => void;
 }
 
@@ -27,6 +29,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({
   imgClassName = '',
   productId,
   aspectRatio,
+  targetWidth = 480,
   onImageChange
 }) => {
   const { siteContent, updateField, isUserAuthorized, currentUser, isLiveEditMode } = useSiteContent();
@@ -47,43 +50,44 @@ export const EditableImage: React.FC<EditableImageProps> = ({
 
   // Purely derived image source computed during render — NEVER calls setState in useEffect
   const currentSrc = useMemo((): string => {
-    if (imgLoadError) {
-      return defaultSrc && defaultSrc.trim()
-        ? defaultSrc.trim()
-        : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80';
-    }
+    const pick = (): string => {
+      if (imgLoadError) {
+        return defaultSrc && defaultSrc.trim()
+          ? defaultSrc.trim()
+          : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75';
+      }
 
-    if (localEditedSrc) {
-      return localEditedSrc;
-    }
+      if (localEditedSrc) {
+        return localEditedSrc;
+      }
 
-    const key = (productId || contentKey || '').trim();
-    const overrides = productImageManagerService.getState()?.overrides || {};
+      const key = (productId || contentKey || '').trim();
+      const overrides = productImageManagerService.getState()?.overrides || {};
 
-    // 1. Direct override from productImageManagerService by productId or contentKey
-    if (key && overrides[key]?.primary) {
-      return overrides[key].primary;
-    }
+      if (key && overrides[key]?.primary) {
+        return overrides[key].primary;
+      }
 
-    // 2. Resolve via siteContent path (e.g. homepage.heroBgImage)
-    const rawSrc = contentKey.split('.').reduce((o: any, i: string) => (o ? o[i] : null), siteContent);
-    if (rawSrc && typeof rawSrc === 'string' && rawSrc.trim()) {
-      const clean = rawSrc.trim();
-      const resolved = productImageManagerService.resolveImageSrc({ src: clean, productId: key });
-      return resolved || overrides[clean]?.primary || overrides[key]?.primary || clean;
-    }
+      const rawSrc = contentKey.split('.').reduce((o: any, i: string) => (o ? o[i] : null), siteContent);
+      if (rawSrc && typeof rawSrc === 'string' && rawSrc.trim()) {
+        const clean = rawSrc.trim();
+        const resolved = productImageManagerService.resolveImageSrc({ src: clean, productId: key });
+        return resolved || overrides[clean]?.primary || overrides[key]?.primary || clean;
+      }
 
-    // 3. Fallback to defaultSrc resolved via productImageManagerService
-    if (defaultSrc && typeof defaultSrc === 'string' && defaultSrc.trim()) {
-      const resolvedDefault = productImageManagerService.resolveImageSrc({
-        src: defaultSrc.trim(),
-        productId: key || undefined
-      });
-      return resolvedDefault || defaultSrc.trim();
-    }
+      if (defaultSrc && typeof defaultSrc === 'string' && defaultSrc.trim()) {
+        const resolvedDefault = productImageManagerService.resolveImageSrc({
+          src: defaultSrc.trim(),
+          productId: key || undefined
+        });
+        return resolvedDefault || defaultSrc.trim();
+      }
 
-    return 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80';
-  }, [localEditedSrc, productId, contentKey, siteContent, defaultSrc, tick, imgLoadError]);
+      return 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75';
+    };
+
+    return optimizeImageUrl(pick(), { width: targetWidth });
+  }, [localEditedSrc, productId, contentKey, siteContent, defaultSrc, tick, imgLoadError, targetWidth]);
 
   const lastHandledEventTsRef = useRef<number>(0);
 

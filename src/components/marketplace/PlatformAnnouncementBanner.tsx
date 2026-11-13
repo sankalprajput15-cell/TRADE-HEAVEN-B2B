@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 import { PlatformOfferAnnouncement, PlatformCampaignTheme } from '../../types/platformOfferTypes';
+import { optimizeImageUrl } from '../../services/productImageManagerService';
 
 interface PlatformAnnouncementBannerProps {
   onNavigate?: (view: ActiveView) => void;
@@ -309,7 +310,7 @@ export const PlatformAnnouncementBanner: React.FC<PlatformAnnouncementBannerProp
               >
                 <X className="w-5 h-5" />
               </button>
-              <img src={lightboxUrl} alt={current.title} referrerPolicy="no-referrer" className="w-full h-auto block" />
+              <img src={optimizeImageUrl(lightboxUrl, { width: 1280, quality: 82 })} alt={current.title} decoding="async" referrerPolicy="no-referrer" className="w-full h-auto block" />
             </div>
           </div>
         )}
@@ -332,8 +333,10 @@ export const PlatformAnnouncementBanner: React.FC<PlatformAnnouncementBannerProp
               {item.bannerImageUrl && (
                 <div className="lg:col-span-7 relative bg-slate-950 flex items-center justify-center">
                   <img
-                    src={item.bannerImageUrl}
+                    src={optimizeImageUrl(item.bannerImageUrl, { width: 960, quality: 80 })}
                     alt={item.title}
+                    loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     className="w-full h-full max-h-[380px] object-cover block cursor-pointer"
                     onClick={() => setLightboxUrl(item.bannerImageUrl || null)}
@@ -426,7 +429,7 @@ export const PlatformAnnouncementBanner: React.FC<PlatformAnnouncementBannerProp
             >
               <X className="w-5 h-5" />
             </button>
-            <img src={lightboxUrl} alt="Banner preview" referrerPolicy="no-referrer" className="w-full h-auto block" />
+            <img src={optimizeImageUrl(lightboxUrl, { width: 1280, quality: 82 })} alt="Banner preview" decoding="async" referrerPolicy="no-referrer" className="w-full h-auto block" />
           </div>
         </div>
       )}

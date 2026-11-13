@@ -79,12 +79,19 @@ export const buildOptimizedUnsplashUrl = (
   quality = 80,
   blur?: number
 ): string => {
-  if (!baseUrl || !baseUrl.includes('unsplash.com')) {
-    return baseUrl;
+  if (!baseUrl) return baseUrl;
+  const normalized = baseUrl.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+
+  if (normalized.startsWith('/assets/uploads/') || normalized.startsWith('/assets/tradeheaven/')) {
+    const cleanLocal = normalized.split('?')[0];
+    return `${cleanLocal}?w=${width}`;
   }
 
-  // Remove existing query string if present
-  const cleanUrl = baseUrl.split('?')[0];
+  if (!normalized.includes('unsplash.com')) {
+    return normalized;
+  }
+
+  const cleanUrl = normalized.split('?')[0];
   const params = new URLSearchParams();
   params.set('auto', 'format');
   params.set('fit', 'crop');
@@ -103,15 +110,23 @@ export const buildOptimizedUnsplashUrl = (
  * Generate responsive srcset for modern viewport breakpoints
  */
 export const generateSrcSet = (rawUrl: string, aspectConfig: AspectRatioDimensions): string => {
-  if (!rawUrl || !rawUrl.includes('unsplash.com')) {
+  if (!rawUrl) return '';
+  const normalized = rawUrl.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
+
+  if (normalized.startsWith('/assets/uploads/') || normalized.startsWith('/assets/tradeheaven/')) {
+    const cleanLocal = normalized.split('?')[0];
+    return `${cleanLocal}?w=720 720w, ${cleanLocal}?w=1280 1280w`;
+  }
+
+  if (!normalized.includes('unsplash.com')) {
     return '';
   }
 
-  const widths = [640, 960, 1200, 1600, 2000];
+  const widths = [720, 960, 1280, 1600];
   return widths
     .map(w => {
       const h = aspectConfig.calcHeight(w);
-      const optUrl = buildOptimizedUnsplashUrl(rawUrl, w, h, 80);
+      const optUrl = buildOptimizedUnsplashUrl(normalized, w, h, 80);
       return `${optUrl} ${w}w`;
     })
     .join(', ');

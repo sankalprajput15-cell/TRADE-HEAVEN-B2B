@@ -146,7 +146,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
         description: (c.subcategories || []).join(', '),
         subcategories: c.subcategories || [],
         iconName: c.icon,
-        image: (c as any).image || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-9583fe92d232?w=600&auto=format&fit=crop&q=80',
+        image: (c as any).image || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=320&auto=format&fit=crop&q=72',
         badge: 'Verified',
         productCount: c.count || '25,000+ Items'
       }));
@@ -261,7 +261,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categoriesToRender.map(cat => {
           const isSelected = selectedCategory === cat.name;
-          const catImage = cat.image || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
+          const catImage = cat.image || '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
           
           // Parse subcategories into array
           const rawSubcats = (cat as any).subcategories && Array.isArray((cat as any).subcategories) && (cat as any).subcategories.length > 0
@@ -282,29 +282,27 @@ export const CategoryMegaMenu: React.FC<Props> = ({
               }`}
             >
               <div>
-                {/* Header Row: Thumbnail + Title & Count */}
+                {/* Header Row: Clean Unobstructed Thumbnail + Title & Count */}
                 <div className="flex items-start gap-3.5">
-                  {/* Category Photo Thumbnail */}
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200 relative group-hover:scale-105 transition-transform">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200 relative">
                     <SafeImage 
                       src={catImage} 
                       alt={tText(cat.name)} 
                       category={cat.name}
                       productId={cat.id}
                       type="category"
-                      className="w-full h-full object-cover" 
+                      isThumbnail={true}
+                      className="w-full h-full"
+                      imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
-                    <div className="absolute bottom-1 right-1 p-1 rounded-md bg-white/95 text-slate-900 shadow-xs z-10">
-                      {getCategoryIcon(cat.iconName || 'Box')}
-                    </div>
                   </div>
 
                   {/* Category Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
-                        {cat.productCount}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
+                        <span className="shrink-0">{getCategoryIcon(cat.iconName || 'Box')}</span>
+                        <span>{cat.productCount}</span>
                       </span>
                       {cat.badge && (
                         <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60 flex items-center gap-0.5">

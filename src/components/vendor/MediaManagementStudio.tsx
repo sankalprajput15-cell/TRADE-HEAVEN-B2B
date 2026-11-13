@@ -155,7 +155,7 @@ export const MediaManagementStudio: React.FC<Props> = ({
         issueDate: new Date().toISOString().split('T')[0],
         expiryDate: newCertExpiry || '2027-12-31',
         documentUrl: dataUrl,
-        thumbnailUrl: isPdf ? 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-8d04cb21cd6c?w=300&auto=format&fit=crop&q=80' : dataUrl,
+        thumbnailUrl: isPdf ? 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=320&q=75' : dataUrl,
         type: isPdf ? 'PDF' : 'IMAGE',
         verified: true,
         fileSizeMb: parseFloat((file.size / (1024 * 1024)).toFixed(2))
@@ -668,8 +668,10 @@ export const MediaManagementStudio: React.FC<Props> = ({
                       <div>
                         <div className="relative h-32 rounded-xl overflow-hidden bg-slate-100 mb-3 border border-slate-100">
                           <img
-                            src={cert.thumbnailUrl || cert.documentUrl || '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
+                            src={cert.thumbnailUrl || cert.documentUrl || '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg?w=320'}
                             alt={cert.name}
+                            loading="lazy"
+                            decoding="async"
                             referrerPolicy="no-referrer"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
@@ -816,8 +818,10 @@ export const MediaManagementStudio: React.FC<Props> = ({
                     <div>
                       <div className="relative h-36 rounded-xl overflow-hidden bg-slate-100 mb-2 border border-slate-100">
                         <img
-                          src={img.imageUrl || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-ee22621dd758?w=600'}
+                          src={img.imageUrl || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=480&q=75'}
                           alt={img.title}
+                          loading="lazy"
+                          decoding="async"
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-cover"
                         />

@@ -56,8 +56,10 @@ export const CompanyHeader: React.FC<Props> = ({
       {/* Panoramic 16:9 Cover Banner */}
       <div className="relative h-56 sm:h-72 md:h-80 w-full bg-slate-900">
         <SafeImage
-          src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-527eed3abbec?w=1200&auto=format&fit=crop&q=80'}
+          src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1280&q=80'}
           alt={`${profile.companyName} Factory Banner`}
+          targetWidth={1280}
+          priority={true}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/10" />
@@ -90,6 +92,8 @@ export const CompanyHeader: React.FC<Props> = ({
                 src={profile.logoUrl}
                 alt={`${profile.companyName} Logo`}
                 type="logo"
+                isThumbnail={true}
+                targetWidth={320}
                 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white object-cover shadow-2xl"
               />
               <div className={`absolute -bottom-2 -right-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider shadow-sm border ${

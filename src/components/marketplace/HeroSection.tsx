@@ -474,7 +474,7 @@ export const HeroSection: React.FC<Props> = ({
       {/* Background Image with Dynamic Placeholder, Optimized Aspect Ratio & Blur-Up Effect */}
       <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl sm:rounded-3xl pointer-events-none">
         <OptimizedHeroImage
-          imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1920, 85)}
+          imageData={getDynamicHeroImageForView('HOMEPAGE', siteContent, '16:9', 1280, 82)}
           src={
             hp.heroBgImage && hp.heroBgImage.trim() && !hp.heroBgImage.includes('unsplash.com')
               ? hp.heroBgImage.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/')

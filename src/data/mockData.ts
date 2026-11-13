@@ -173,7 +173,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-leather-belts-goods',
     name: 'Leather Belts & Genuine Leather Goods',
     icon: 'Briefcase',
-    image: '/assets/aistudio/leather_belt_trade_heaven_2_1f3c8230.jpeg',
+    image: '/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg',
     subcategories: [
       'Leather Belt',
       'Genuine Leather Belt',
@@ -756,7 +756,7 @@ export const CATEGORIES_TREE = [
     id: 'cat-textiles-apparel-footwear',
     name: 'Textiles, Garment, Fashion Accessories & Footwear',
     icon: 'Shirt',
-    image: '/assets/aistudio/leather_belt_3_trade_heaven_6962019f.jpeg',
+    image: '/assets/uploads/leather_belt_3_trade_heaven_6962019f.jpeg',
     subcategories: ['Leather Belt', 'Genuine Leather Belt', 'Abaya', 'Acrylic Fiber', 'Acrylic Yarn', 'Activewear', 'Air Bags', 'Apparel, Clothing & Garments', 'Aprons', 'Artificial Jewelry', 'Asbestos Fiber', 'Baby Accessories'],
     count: '5,680+ Verified Suppliers | 3,425+ RFQs'
   }
@@ -7456,8 +7456,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
     unit: 'Kgs',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg'
     ],
@@ -7500,8 +7500,8 @@ export const MOCK_PRODUCTS: Product[] = [
     supportedIncoterms: ['EXW', 'FOB', 'CIF', 'DDP'],
     unit: 'Kgs',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.16_AM__1__878cb8ad.jpeg',
+      '/assets/uploads/WhatsApp_Image_2026-11-12_at_7.26.17_AM__1__a240ea1b.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
       '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
     ],

@@ -236,8 +236,9 @@ export const BuyerProfilePage: React.FC<Props> = ({
         {/* Banner */}
         <div className="relative h-48 sm:h-64 lg:h-72 w-full bg-slate-900 overflow-hidden">
           <SafeImage
-            src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-527eed3abbec?w=1200&auto=format&fit=crop&q=80'}
+            src={profile.bannerUrl || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1280&q=80'}
             alt={profile.companyName}
+            targetWidth={1280}
             className="w-full h-full opacity-85"
             imgClassName="object-center"
           />

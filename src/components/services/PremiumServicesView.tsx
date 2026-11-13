@@ -8,6 +8,7 @@ import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PlatformOfferAnnouncement } from '../../types/platformOfferTypes';
 import { useAuth } from '../../context/AuthContext';
 import { downloadPlanPdfBrochure } from '../../utils/planPdfGenerator';
+import { optimizeImageUrl } from '../../services/productImageManagerService';
 import { 
   Crown, 
   ShieldCheck, 
@@ -40,7 +41,7 @@ const BUYER_TESTIMONIALS = [
     role: "Head of Global Sourcing",
     company: "TechTronics Inc.",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
+    image: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=160&q=75"
   },
   {
     id: 2,
@@ -49,7 +50,7 @@ const BUYER_TESTIMONIALS = [
     role: "Procurement Director",
     company: "Global Retail Partners",
     rating: 5,
-    image: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
+    image: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg"
   },
   {
     id: 3,
@@ -58,7 +59,7 @@ const BUYER_TESTIMONIALS = [
     role: "Chief Supply Chain Officer",
     company: "Vostok Sourcing",
     rating: 5,
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150"
+    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=160&q=75"
   }
 ];
 
@@ -900,9 +901,13 @@ export const PremiumServicesView: React.FC<Props> = ({
                 </p>
                 <div className="flex items-center gap-4">
                   <img 
-                    src={BUYER_TESTIMONIALS[testimonialIndex].image} 
+                    src={optimizeImageUrl(BUYER_TESTIMONIALS[testimonialIndex].image, { width: 160, quality: 75, isThumbnail: true })} 
                     alt={BUYER_TESTIMONIALS[testimonialIndex].author}
-                    className="w-14 h-14 rounded-full border-2 border-white/20 object-cover"
+                    width={56}
+                    height={56}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-14 h-14 rounded-full border-2 border-white/20 object-cover bg-slate-800 shrink-0"
                   />
                   <div>
                     <h4 className="text-white font-bold text-base">{BUYER_TESTIMONIALS[testimonialIndex].author}</h4>

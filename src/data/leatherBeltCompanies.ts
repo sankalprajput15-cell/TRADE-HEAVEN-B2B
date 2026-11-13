@@ -1,10 +1,10 @@
 import { CompanyProfile } from '../types';
 
 const REAL_LEATHER_BELT_IMAGES = [
-  '/assets/aistudio/leather_belt_trade_heaven_2_1f3c8230.jpeg',
-  '/assets/aistudio/leather_belt_3_trade_heaven_6962019f.jpeg',
-  '/assets/aistudio/leather_belt_trade_heaven__3cd8dde8.jpeg',
-  '/assets/aistudio/leather_belt__6cbe88c9.jpeg'
+  '/assets/uploads/leather_belt_trade_heaven_2_1f3c8230.jpeg',
+  '/assets/uploads/leather_belt_3_trade_heaven_6962019f.jpeg',
+  '/assets/uploads/leather_belt_trade_heaven__3cd8dde8.jpeg',
+  '/assets/uploads/leather_belt__6cbe88c9.jpeg'
 ];
 
 export const GLOBAL_LEATHER_BELT_COMPANIES: CompanyProfile[] = [

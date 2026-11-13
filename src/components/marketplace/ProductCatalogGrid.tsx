@@ -86,12 +86,6 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
   isAdmin = false,
   onEditProductImage
 }) => {
-  React.useEffect(() => {
-    console.log(`[PRODUCT_CATALOG_RENDER_EFFECT] Product ID: ${product.id} | Assigned Image URL: ${product.images?.[0] || 'NONE'}`);
-  }, [product.id, product.images]);
-
-  console.log(`[DEBUG_CATALOG_MAPPING] Product ID: ${product.id} | Title: ${product.title} | Image URL: ${product.images?.[0]}`);
-
   const isAgriOrVanilla =
     product.title?.toLowerCase().includes('vanilla') ||
     product.category?.toLowerCase().includes('spices') ||
@@ -111,14 +105,11 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
 
   return (
     <div
-      onClick={() => {
-        console.log('[PRODUCT_CARD_CONTAINER_CLICK] Clicked product ID:', product.id);
-      }}
       className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between group shadow-2xs min-w-0 w-full cursor-pointer"
     >
       <div className="min-w-0">
         {/* Image Thumbnail */}
-        <div 
+        <div
           onClick={() => {
             const url = new URL(window.location.href);
             url.searchParams.set('product', product.id);
@@ -127,22 +118,17 @@ const ProductCardItem: React.FC<ProductCardItemProps> = ({
           }}
           className="relative h-40 sm:h-44 md:h-48 w-full bg-slate-100 overflow-hidden cursor-pointer"
         >
-          {(() => {
-            const rawImg = product.images?.[0] || '';
-            return (
-              <SafeImage
-                src={rawImg}
-                alt={product.title}
-                productTitle={product.title}
-                supplierName={product.supplierName}
-                category={product.category}
-                productId={product.id}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            );
-          })()}
+          <SafeImage
+            src={product.images?.[0] || ''}
+            alt={product.title}
+            productTitle={product.title}
+            supplierName={product.supplierName}
+            category={product.category}
+            productId={product.id}
+            targetWidth={480}
+            className="w-full h-full"
+            imgClassName="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
           <div className="absolute top-2.5 left-2.5">
             {getTierBadge(product.supplierTier)}
           </div>

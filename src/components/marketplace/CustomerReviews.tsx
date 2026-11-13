@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { optimizeImageUrl } from '../../services/productImageManagerService';
 
 const GOOGLE_PROFILE_LINK = "https://share.google/qxbpaPySH7JnLryA5";
 
@@ -6,193 +7,193 @@ const reviewsDataset = [
   {
     name: "M. Preeti Rapheal",
     text: "M. Preeti is the Relationship Manager for our account. We had a conversation for more than an hour today, during which she optimized our entire export catalog. Trade Heaven's team is dedicated and extremely helpful.",
-    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-b8d87734a5a2?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Aravind AK",
     text: "We recently upgraded our company profile to the Gold Plan on Trade Heaven, and the experience has been phenomenal. The RFQ matching system delivers genuine wholesale buyer leads consistently.",
-    imageUrl: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     region: "IN"
   },
   {
     name: "RIFQI IHZA MAHENDRA",
     text: "Very great platform for direct cross-border trade. Escrow protection and verified exporter seals make closing overseas bulk deals straightforward and worry-free.",
-    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-0a1dd7228f2d?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "William FamazeHK",
     text: "Excellent B2B platform with prompt professional support. Connected with verified European agricultural buyers within our first two weeks on Trade Heaven.",
-    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80-af0119f7cbe7?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Kamaljeet Singh",
     text: "It is always nice working with Aarti; she is always finding solutions to any logistics query. Looks like she is a real asset to the Trade Heaven platform! Highly recommended.",
-    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80-e824c7853b0e?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Sarah Jenkins",
     text: "Outstanding sourcing network. We procured two 40ft containers of premium textiles directly from certified Indian manufacturers at unbeatable factory prices.",
-    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80-15a19d654956?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "David Chen",
     text: "Trade Heaven has simplified our international supply chain. The verified seller directory and fast RFQ turnaround time save our procurement team days of manual vetting.",
-    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80-cad84cf45f1d?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "Tariq Al-Mansoor",
     text: "As a GCC importer, authenticity is everything. The Trade Heaven assurance system gives us complete transparency on product grades, lab certificates, and dispatch timelines.",
-    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-00dcc994a43e?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Elena Rostova",
     text: "Upgraded our supplier subscription last month. The dedicated account assistance and high search visibility have significantly increased our export order volume.",
-    imageUrl: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     region: "OTHER"
   },
   {
     name: "Carlos Mendoza",
     text: "Best B2B trade marketplace for industrial tools and agro-machinery. Fast messaging, verified buyer credentials, and clean user interface throughout the entire lifecycle.",
-    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-f2b08422138a?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Vikram Malhotra",
     text: "Trade Heaven provides exceptional value for Indian exporters aiming for global markets. Their lead filtering filters out spam so we only speak to genuine buyers ready to transact.",
-    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80-3a6694fb2f61?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Liam O'Connor",
     text: "Seamless cross-border transaction experience. Customer support is always on standby to assist with trade documentation, letters of credit, and billing queries.",
-    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80-ecfd6d936c79?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Priya Sharma",
     text: "The RFQ matching system on Trade Heaven is unparalleled. Within 48 hours of posting our requirements, we received quotes from three highly-rated manufacturers.",
-    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80-2c110a25bd8c?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Ahmed Hassan",
     text: "Very reliable marketplace. We have been sourcing electronics through Trade Heaven for a year now and have never faced any issues with seller verification.",
-    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80-5a69c17a67c6?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Maria Gonzalez",
     text: "Trade Heaven is a lifesaver for small businesses looking to import globally. Their interface is user-friendly and the escrow service is very reassuring.",
-    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-1c28c88b4f3e?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Kenji Tanaka",
     text: "Outstanding selection of verified suppliers. We found a great partner for our automotive parts division in Europe thanks to Trade Heaven's extensive database.",
-    imageUrl: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     region: "OTHER"
   },
   {
     name: "Isabella Rossi",
     text: "I highly recommend Trade Heaven for anyone in the wholesale fashion industry. Sourcing premium fabrics has never been this efficient and secure.",
-    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-53994a69daeb?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "John Smith",
     text: "The account managers are incredibly proactive. They helped us set up our exporter profile and we started receiving quality inquiries almost immediately.",
-    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80-0b93528c311a?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "Ayesha Khan",
     text: "Trade Heaven's verified buyer seal is a game-changer. It builds trust instantly, which is crucial for closing large international deals.",
-    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80-e58b31de215f?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Robert Mueller",
     text: "The logistics integration on Trade Heaven makes tracking shipments a breeze. Everything from procurement to delivery is handled on one platform.",
-    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80-700350fe46c7?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "Mei Ling",
     text: "Excellent platform for expanding our market reach. Trade Heaven's global exposure has opened up new opportunities for our manufacturing business.",
-    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80-b6b5b0db2604?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Oliver Brown",
     text: "The customer service is top-notch. Any issues with customs or documentation are resolved quickly with the help of the Trade Heaven support team.",
-    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-472988babdf9?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "Fatima Ali",
     text: "We use Trade Heaven for all our wholesale medical supplies. The supplier verification process gives us the confidence we need for critical imports.",
-    imageUrl: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     region: "OTHER"
   },
   {
     name: "Dmitry Ivanov",
     text: "Trade Heaven has the best RFQ system I've used. It's easy to specify requirements and the quotes we receive are always competitive.",
-    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-ab3db95bfbce?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Chloe Martin",
     text: "The platform's interface is very intuitive. Even for a newcomer to global trade, Trade Heaven makes the process straightforward and manageable.",
-    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80-e6953c6e8e04?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "Aliya Rahman",
     text: "I appreciate the transparency Trade Heaven offers. The ability to see supplier credentials and track records helps in making informed decisions.",
-    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80-f35b0c801ef1?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Thomas Wilson",
     text: "A very robust B2B marketplace. We've successfully sourced industrial machinery through Trade Heaven without any hiccups. Highly recommended.",
-    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80-e29b44bbfde1?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=160&q=75",
     region: "US"
   },
   {
     name: "Ananya Patel",
     text: "Trade Heaven's global trade corridors feature is brilliant. It simplifies understanding logistics and helps us plan our supply chain better.",
-    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&auto=format&fit=crop&q=80-58f03707f082?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?auto=format&fit=crop&w=160&q=75",
     region: "IN"
   },
   {
     name: "Michael Chang",
     text: "The VIP supplier plan was a great investment. Our product visibility skyrocketed and we are now connecting with buyers we couldn't reach before.",
-    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80-4c6b10ec85aa?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Sofia Costa",
     text: "Secure and reliable. The escrow service ensures that both buyers and sellers are protected, which is essential in international trade.",
-    imageUrl: "/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
+    imageUrl: "/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg",
     region: "OTHER"
   },
   {
     name: "Hassan Mahmoud",
     text: "Trade Heaven has transformed how we do business. The direct access to verified manufacturers means better prices and higher quality products for our clients.",
-    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80-193c0d76b5b6?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=160&q=75",
     region: "OTHER"
   },
   {
     name: "Emma Davis",
     text: "The dedicated account managers at Trade Heaven are phenomenal. They truly understand our business needs and constantly help us optimize our sourcing strategy.",
-    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80-c348350df52b?w=100&h=100&fit=crop&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=160&q=75",
     region: "US"
   }
 ];
@@ -379,12 +380,25 @@ export const CustomerReviews: React.FC = () => {
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
                   {/* User Initial Avatar or Profile Image */}
                   {review.imageUrl && review.imageUrl.trim() ? (
-                    <img src={review.imageUrl.trim()} alt={review.name} className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm" />
-                  ) : (
-                    <div className={`w-9 h-9 rounded-full ${avatarBg} text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-inner`}>
-                      {initial}
-                    </div>
-                  )}
+                    <img
+                      src={optimizeImageUrl(review.imageUrl.trim(), { width: 160, quality: 75, isThumbnail: true })}
+                      alt={review.name}
+                      width={36}
+                      height={36}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const next = target.nextElementSibling as HTMLElement | null;
+                        if (next) next.classList.remove('hidden');
+                      }}
+                      className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm bg-slate-100"
+                    />
+                  ) : null}
+                  <div className={`w-9 h-9 rounded-full ${avatarBg} text-white flex items-center justify-center text-sm font-bold shrink-0 shadow-inner ${review.imageUrl && review.imageUrl.trim() ? 'hidden' : ''}`}>
+                    {initial}
+                  </div>
 
                   {/* User Name + Verified Badge + Dynamic Timestamp */}
                   <div className="min-w-0 flex-1">

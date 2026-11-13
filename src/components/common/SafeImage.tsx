@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Factory, User, Building2, Package, ShieldCheck, Cpu, Flame, Wheat, Scissors, Upload, Image as ImageIcon, X, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
+import { User, Building2, Package, Upload, X, CheckCircle2, Sparkles } from 'lucide-react';
 import { getAutoAltText } from '../../utils/imageSeo';
 import {
   productImageManagerService,
   PRODUCT_IMAGE_SAVED_EVENT,
-  PRODUCT_IMAGE_STORAGE_SAVED_EVENT,
-  normalizeProductAssetUrl
+  normalizeProductAssetUrl,
+  optimizeImageUrl
 } from '../../services/productImageManagerService';
 import regeneratedSupplierCoalImg from '../../assets/images/regenerated_image_1794231796775.jpg';
 
@@ -24,16 +24,17 @@ interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   imageIndex?: number;
   totalImages?: number;
   isThumbnail?: boolean;
+  priority?: boolean;
+  targetWidth?: number;
   type?: 'product' | 'logo' | 'avatar' | 'category' | 'rfq';
   disableLiveUpload?: boolean;
 }
 
-// 100% verified, highly accessible cargo and oil ships port image
 const EVENING_TANKER_PORT_IMAGE = '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
 
 const FALLBACK_SEEDS: string[] = [
   EVENING_TANKER_PORT_IMAGE,
-  'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
+  'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75'
 ];
 
 const CATEGORY_POOLS: Record<string, string[]> = {
@@ -50,139 +51,137 @@ const CATEGORY_POOLS: Record<string, string[]> = {
     '/assets/uploads/kristy-an-ahfp3XOUnFQ-unsplash_c10d537c.jpg'
   ],
   AVOCADO: [
-    'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1601039641847-7857b994d704?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=480&auto=format&fit=crop&q=75'
   ],
   BROCCOLI: [
-    'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=480&auto=format&fit=crop&q=75'
   ],
   BAMBOO: [
-    'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1516214104703-d870798883c5?w=480&auto=format&fit=crop&q=75'
   ],
   CASHEW: [
-    'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1508747703725-719777637510?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1508747703725-719777637510?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=480&auto=format&fit=crop&q=75'
   ],
   JAM: [
-    'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=480&auto=format&fit=crop&q=75'
   ],
   GOLD: [
-    'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1618042164219-62c820f10723?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1589758438368-0ad531db3366?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1624365169364-0640dd10e180?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1618042164219-62c820f10723?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1589758438368-0ad531db3366?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1624365169364-0640dd10e180?w=480&auto=format&fit=crop&q=75'
   ],
   COAL: [
     regeneratedSupplierCoalImg,
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=480&auto=format&fit=crop&q=75'
   ],
   FUEL_PETROLEUM: [
     '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
     '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg',
-    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75'
   ],
   SEAFOOD: [
-    'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=480&auto=format&fit=crop&q=75'
   ],
   CHEMICALS: [
-    'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1611854779393-1b2da9d400fe?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?w=480&auto=format&fit=crop&q=75'
   ],
   AGRICULTURE: [
-    'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=480&auto=format&fit=crop&q=75'
   ],
   MACHINERY: [
     '/assets/uploads/image002_50ab7837.png',
     '/assets/uploads/image003_6c1f0619.jpg',
     '/assets/uploads/image004_fa37a57a.png',
     '/assets/uploads/image005_20fe3db0.png',
-    'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=480&auto=format&fit=crop&q=75'
   ],
   TEXTILES: [
-    'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=480&auto=format&fit=crop&q=75'
   ],
   HOTEL: [
-    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=480&auto=format&fit=crop&q=75'
   ],
   CONSTRUCTION: [
-    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1535813547-99c456a41d4a?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1567789884554-0b844b597180?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=480&auto=format&fit=crop&q=75'
   ],
   MEDICAL: [
-    'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=480&auto=format&fit=crop&q=75'
   ],
   ELECTRONICS: [
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=480&auto=format&fit=crop&q=75'
   ],
   AUTOMOTIVE: [
-    'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=480&auto=format&fit=crop&q=75'
   ],
   RENEWABLE: [
-    'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=480&auto=format&fit=crop&q=75'
   ],
   INDUSTRIAL: [
-    'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80'
+    'https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=480&auto=format&fit=crop&q=75',
+    'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=480&auto=format&fit=crop&q=75'
   ]
 };
 
 const getCategoryPool = (categoryName?: string, titleName?: string): string[] => {
   const nameToSearch = `${categoryName || ''} ${titleName || ''}`.toUpperCase();
-  
+
   if (nameToSearch.includes('JADE') || nameToSearch.includes('TURQUOISE') || nameToSearch.includes('CABOCHON') || nameToSearch.includes('GEMSTONE') || nameToSearch.includes('NEPHRITE')) {
     return CATEGORY_POOLS.JADE_GEMSTONE;
   }
   if (nameToSearch.includes('VANILLA') || nameToSearch.includes('BOURBON') || nameToSearch.includes('PLANIFOLIA')) {
     return CATEGORY_POOLS.VANILLA;
   }
-  if (nameToSearch.includes('AVOCADO')) {
-    return CATEGORY_POOLS.AVOCADO;
-  }
+  if (nameToSearch.includes('AVOCADO')) return CATEGORY_POOLS.AVOCADO;
   if (nameToSearch.includes('BROCCOLI') || nameToSearch.includes('CAULIFLOWER') || nameToSearch.includes('VEGETABLE')) {
     return CATEGORY_POOLS.BROCCOLI;
   }
@@ -243,19 +242,13 @@ const getCategoryPool = (categoryName?: string, titleName?: string): string[] =>
   return FALLBACK_SEEDS;
 };
 
-// Automatic image optimization utility (converts Unsplash images to auto WebP/AVIF format and responsive widths)
-export const optimizeUnsplashUrl = (url: string, options: { width?: number; quality?: number; isThumbnail?: boolean } = {}) => {
-  if (!url || typeof url !== 'string') return url;
-  if (!url.includes('images.unsplash.com')) return url;
-
-  const targetWidth = options.width || (options.isThumbnail ? 320 : 800);
-  const targetQuality = options.quality || 70;
-  const cleanBase = url.split('?')[0];
-
-  return `${cleanBase}?auto=format&fit=crop&w=${targetWidth}&q=${targetQuality}`;
+export const optimizeUnsplashUrl = (
+  url: string,
+  options: { width?: number; quality?: number; isThumbnail?: boolean } = {}
+) => {
+  return optimizeImageUrl(url, options);
 };
 
-// Deterministic string hashing
 const getDeterministicHash = (str: string): number => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -264,6 +257,10 @@ const getDeterministicHash = (str: string): number => {
   }
   return Math.abs(hash);
 };
+
+// Module-level shared status caches (prevents duplicate fade flashes & broken URL retries)
+const LOADED_IMAGE_URLS = new Set<string>();
+const FAILED_IMAGE_URLS = new Set<string>();
 
 function checkIsAdminLiveEditActive(): boolean {
   if (typeof window === 'undefined') return false;
@@ -291,6 +288,43 @@ function checkIsAdminLiveEditActive(): boolean {
   }
 }
 
+// Shared singleton listener hub so 50+ cards only register ONE set of window listeners
+const overrideSubscribers = new Set<() => void>();
+const liveModeSubscribers = new Set<(active: boolean) => void>();
+let cachedLiveMode = typeof window !== 'undefined' ? checkIsAdminLiveEditActive() : false;
+let hubInitialized = false;
+
+function initSafeImageGlobalHub() {
+  if (hubInitialized || typeof window === 'undefined') return;
+  hubInitialized = true;
+
+  if (!productImageManagerService.isHydrated()) {
+    productImageManagerService.ensureHydrated().then(() => {
+      overrideSubscribers.forEach(cb => cb());
+    }).catch(() => {});
+  }
+
+  const notifyOverrides = () => overrideSubscribers.forEach(cb => cb());
+  const notifyLiveMode = () => {
+    cachedLiveMode = checkIsAdminLiveEditActive();
+    liveModeSubscribers.forEach(cb => cb(cachedLiveMode));
+  };
+
+  window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, notifyOverrides);
+  window.addEventListener('tradeheaven_product_images_updated', notifyOverrides);
+  window.addEventListener('storage', notifyOverrides);
+  window.addEventListener('tradeheaven_live_edit_mode_changed', notifyLiveMode);
+  window.addEventListener('tradeheaven_auth_changed', notifyLiveMode);
+
+  // Automatic 60-second self-healing sweep for transient image failures (single global timer)
+  window.setInterval(() => {
+    if (FAILED_IMAGE_URLS.size > 0) {
+      FAILED_IMAGE_URLS.clear();
+      notifyOverrides();
+    }
+  }, 60 * 1000);
+}
+
 export const SafeImage: React.FC<SafeImageProps> = ({
   src,
   alt,
@@ -305,16 +339,25 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   imageIndex,
   totalImages,
   isThumbnail,
+  priority = false,
+  targetWidth,
   type = 'product',
   disableLiveUpload = false,
+  loading: callerLoading,
+  decoding: callerDecoding,
+  fetchPriority: callerFetchPriority,
+  onLoad: callerOnLoad,
+  onError: callerOnError,
+  style: callerStyle,
   ...props
 }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const [hasIntersected, setHasIntersected] = useState<boolean>(true);
   const [attemptIndex, setAttemptIndex] = useState<number>(0);
   const [hasError, setHasError] = useState<boolean>(false);
-  const [isLiveUploadActive, setIsLiveUploadActive] = useState<boolean>(() => checkIsAdminLiveEditActive());
+  const [isLiveUploadActive, setIsLiveUploadActive] = useState<boolean>(() => {
+    initSafeImageGlobalHub();
+    return cachedLiveMode;
+  });
   const [showLiveUploadModal, setShowLiveUploadModal] = useState<boolean>(false);
   const [isUploadingFile, setIsUploadingFile] = useState<boolean>(false);
   const [beforeImageUrl, setBeforeImageUrl] = useState<string>('');
@@ -322,7 +365,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const [customUrlInput, setCustomUrlInput] = useState<string>('');
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string>('');
 
-  // Automatically compute descriptive, WCAG and SEO-optimized alt text
   const resolvedAlt = useMemo(() => {
     return getAutoAltText({
       alt,
@@ -336,7 +378,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     });
   }, [alt, productTitle, props.title, category, supplierName, type, imageIndex, totalImages, isThumbnail]);
 
-  // 1. Detect if this is an avatar or logo
   const isLogoOrAvatar = useMemo(() => {
     if (type === 'logo' || type === 'avatar') return true;
     const lowerSrc = (src || '').toLowerCase();
@@ -365,10 +406,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   );
 
   useEffect(() => {
-    let isMounted = true;
+    initSafeImageGlobalHub();
 
-    const checkAndRefreshIfChanged = () => {
-      if (!isMounted) return;
+    const checkRefresh = () => {
       const nextEffective = productImageManagerService.resolveImageSrc({
         src,
         productId,
@@ -384,34 +424,23 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     };
 
-    if (!productImageManagerService.isHydrated()) {
-      productImageManagerService.ensureHydrated().then(() => {
-        checkAndRefreshIfChanged();
-      });
-    }
+    const handleLive = (active: boolean) => setIsLiveUploadActive(active);
 
-    const handleLiveModeUpdate = () => {
-      if (isMounted) {
-        setIsLiveUploadActive(checkIsAdminLiveEditActive());
-      }
-    };
-
-    window.addEventListener(PRODUCT_IMAGE_SAVED_EVENT, checkAndRefreshIfChanged);
-    window.addEventListener('tradeheaven_product_images_updated', checkAndRefreshIfChanged);
-    window.addEventListener('storage', checkAndRefreshIfChanged);
-    window.addEventListener('tradeheaven_live_edit_mode_changed', handleLiveModeUpdate);
-    window.addEventListener('tradeheaven_auth_changed', handleLiveModeUpdate);
+    overrideSubscribers.add(checkRefresh);
+    liveModeSubscribers.add(handleLive);
     return () => {
-      isMounted = false;
-      window.removeEventListener(PRODUCT_IMAGE_SAVED_EVENT, checkAndRefreshIfChanged);
-      window.removeEventListener('tradeheaven_product_images_updated', checkAndRefreshIfChanged);
-      window.removeEventListener('storage', checkAndRefreshIfChanged);
-      window.removeEventListener('tradeheaven_live_edit_mode_changed', handleLiveModeUpdate);
-      window.removeEventListener('tradeheaven_auth_changed', handleLiveModeUpdate);
+      overrideSubscribers.delete(checkRefresh);
+      liveModeSubscribers.delete(handleLive);
     };
   }, [src, productId, productTitle, category, imageIndex, isLogoOrAvatar]);
 
-  // 2. Build prioritized candidate URLs list — ALWAYS respect effectiveSrc first!
+  const optimalWidth = useMemo(() => {
+    if (targetWidth && targetWidth > 0) return targetWidth;
+    if (isThumbnail || type === 'avatar' || type === 'logo' || type === 'category') return 320;
+    if (priority) return 960;
+    return 480;
+  }, [targetWidth, isThumbnail, type, priority]);
+
   const candidates = useMemo(() => {
     const list: string[] = [];
 
@@ -424,73 +453,46 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     });
 
     if (effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()) {
-      list.push(effectiveSrc.trim());
+      list.push(optimizeImageUrl(effectiveSrc.trim(), { width: optimalWidth, isThumbnail }));
     }
 
-    if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim() && !list.includes(fallbackSrc.trim())) {
-      list.push(normalizeProductAssetUrl(fallbackSrc.trim()));
+    if (fallbackSrc && typeof fallbackSrc === 'string' && fallbackSrc.trim()) {
+      const optFb = optimizeImageUrl(fallbackSrc.trim(), { width: optimalWidth, isThumbnail });
+      if (!list.includes(optFb)) list.push(optFb);
     }
 
     if (isLogoOrAvatar) {
       const avatarFallbacks = [
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=72',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=320&q=72',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=320&q=72'
       ];
       for (const fb of avatarFallbacks) {
-        if (!list.includes(fb)) {
-          list.push(fb);
-        }
+        if (!list.includes(fb)) list.push(fb);
       }
-      return list;
-    }
+    } else {
+      const pool = getCategoryPool(category, productTitle || alt || resolvedAlt);
+      const seedString = `${productId || ''}-${category || ''}-${productTitle || alt || 'industrial-product'}`;
+      const hash = getDeterministicHash(seedString);
+      const primaryIndex = hash % pool.length;
 
-    // Retrieve high-quality category pool
-    const pool = getCategoryPool(category, productTitle || alt || resolvedAlt);
-    const seedString = `${productId || ''}-${category || ''}-${productTitle || alt || 'industrial-product'}`;
-    const hash = getDeterministicHash(seedString);
-
-    const primaryIndex = hash % pool.length;
-    const primaryImageUrl = pool[primaryIndex];
-    if (!list.includes(primaryImageUrl)) {
-      list.push(primaryImageUrl);
-    }
-
-    // Add remaining pool items as backup candidates
-    for (let i = 1; i < pool.length; i++) {
-      const backupIndex = (primaryIndex + i) % pool.length;
-      const backupUrl = pool[backupIndex];
-      if (!list.includes(backupUrl)) {
-        list.push(backupUrl);
+      for (let i = 0; i < pool.length; i++) {
+        const poolUrl = optimizeImageUrl(pool[(primaryIndex + i) % pool.length], { width: optimalWidth, isThumbnail });
+        if (!list.includes(poolUrl)) list.push(poolUrl);
       }
     }
 
-    return list.length > 0 ? list : pool;
-  }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion, resolvedAlt]);
+    // Filter out globally known dead URLs unless ALL failed
+    const healthy = list.filter(u => !FAILED_IMAGE_URLS.has(u));
+    return healthy.length > 0 ? healthy : list;
+  }, [src, fallbackSrc, alt, category, productId, productTitle, imageIndex, isLogoOrAvatar, overrideVersion, resolvedAlt, optimalWidth, isThumbnail]);
 
-  const primaryCandidate = candidates[0] || FALLBACK_SEEDS[0];
+  const primaryCandidate = candidates[0] || optimizeImageUrl(FALLBACK_SEEDS[0], { width: optimalWidth, isThumbnail });
   const lastCandidateRef = useRef<string>(primaryCandidate);
   const effectiveAttemptIndex = lastCandidateRef.current !== primaryCandidate ? 0 : attemptIndex;
+  const currentCandidate = candidates[effectiveAttemptIndex] || primaryCandidate;
 
-  const currentCandidate = useMemo(() => {
-    const raw = candidates[effectiveAttemptIndex] || FALLBACK_SEEDS[0];
-    if (!raw) return FALLBACK_SEEDS[0];
-    if (raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
-    if (raw.includes('images.unsplash.com')) {
-      return optimizeUnsplashUrl(raw, {
-        width: isThumbnail ? 320 : 800,
-        quality: 70,
-        isThumbnail
-      });
-    }
-    // For local assets, append automated width hints so server sharp optimizer serves compressed WebP instantly
-    if (raw.startsWith('/assets/uploads/') || raw.startsWith('/assets/tradeheaven/')) {
-      const sep = raw.includes('?') ? '&' : '?';
-      const w = isThumbnail ? 360 : 1200;
-      return `${raw}${sep}w=${w}`;
-    }
-    return raw;
-  }, [candidates, effectiveAttemptIndex, isThumbnail]);
+  const [isLoaded, setIsLoaded] = useState<boolean>(() => LOADED_IMAGE_URLS.has(currentCandidate));
 
   useEffect(() => {
     if (lastCandidateRef.current !== primaryCandidate) {
@@ -500,16 +502,35 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
   }, [primaryCandidate]);
 
-  const handleError = () => {
+  useEffect(() => {
+    if (LOADED_IMAGE_URLS.has(currentCandidate)) {
+      setIsLoaded(true);
+      return;
+    }
+    const imgEl = imgRef.current;
+    if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+      LOADED_IMAGE_URLS.add(currentCandidate);
+      setIsLoaded(true);
+    } else {
+      setIsLoaded(false);
+    }
+  }, [currentCandidate]);
+
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    FAILED_IMAGE_URLS.add(currentCandidate);
     if (effectiveAttemptIndex < candidates.length - 1) {
       setAttemptIndex(effectiveAttemptIndex + 1);
     } else {
       setHasError(true);
     }
+    callerOnError?.(e);
   };
 
-  const handleLoad = () => {
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    LOADED_IMAGE_URLS.add(currentCandidate);
     setHasError(false);
+    setIsLoaded(true);
+    callerOnLoad?.(e);
   };
 
   const handleOpenLiveUploader = (e: React.MouseEvent) => {
@@ -578,45 +599,46 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   };
 
   const showLiveButton = isLiveUploadActive && !disableLiveUpload && !isThumbnail && !isLogoOrAvatar;
+  const effectiveLoading = callerLoading || (priority ? 'eager' : 'lazy');
+  const effectiveDecoding = callerDecoding || (priority ? 'sync' : 'async');
+  const effectiveFetchPriority = callerFetchPriority || (priority ? 'high' : undefined);
 
   return (
-    <div ref={containerRef} className={`relative overflow-hidden bg-slate-100 flex items-center justify-center ${className}`}>
-      {hasIntersected && (
-        <>
-          {hasError ? (
-            isLogoOrAvatar ? (
-              <div className="w-full h-full min-w-full min-h-full flex items-center justify-center bg-blue-600 text-white rounded-full select-none">
-                <User className="w-3/5 h-3/5 text-white" />
-              </div>
+    <div
+      className={`relative overflow-hidden flex items-center justify-center ${isLoaded ? 'bg-transparent' : 'bg-slate-100/80'} ${className}`}
+    >
+      {hasError ? (
+        isLogoOrAvatar ? (
+          <div className="w-full h-full min-w-full min-h-full flex items-center justify-center bg-slate-200 text-slate-500 rounded-full select-none">
+            <User className="w-1/2 h-1/2" />
+          </div>
+        ) : (
+          <div className="w-full h-full min-h-[44px] flex items-center justify-center bg-slate-100 text-slate-400 select-none">
+            {type === 'category' ? (
+              <Building2 className="w-5 h-5" />
             ) : (
-              <div className="w-full h-full min-h-[44px] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950 p-2 text-white text-center select-none">
-                <Factory className="w-4 h-4 text-amber-400 shrink-0 mb-0.5" />
-                <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
-                  {resolvedAlt || alt || 'Verified Industrial Export'}
-                </span>
-                <span className="text-[8px] text-amber-400/90 font-mono uppercase tracking-wider">
-                  Audited Exporter
-                </span>
-              </div>
-            )
-          ) : (
-            <img
-              ref={imgRef}
-              src={currentCandidate}
-              alt={resolvedAlt || alt || (isLogoOrAvatar ? 'User Avatar' : 'Verified B2B Wholesale Product')}
-              referrerPolicy="no-referrer"
-              loading={props.loading || (isThumbnail ? 'eager' : 'lazy')}
-              decoding={props.decoding || 'async'}
-              onLoad={handleLoad}
-              onError={handleError}
-              className={`w-full h-full object-cover ${imgClassName}`}
-              {...props}
-            />
-          )}
-        </>
+              <Package className="w-6 h-6" />
+            )}
+          </div>
+        )
+      ) : (
+        <img
+          ref={imgRef}
+          src={currentCandidate}
+          alt={resolvedAlt || alt || (isLogoOrAvatar ? 'User Avatar' : 'Verified B2B Wholesale Product')}
+          referrerPolicy="no-referrer"
+          loading={effectiveLoading}
+          decoding={effectiveDecoding}
+          {...(effectiveFetchPriority ? { fetchPriority: effectiveFetchPriority } : {})}
+          onLoad={handleLoad}
+          onError={handleError}
+          style={callerStyle}
+          className={`w-full h-full object-cover transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'} ${imgClassName}`}
+          {...props}
+        />
       )}
 
-      {/* Real-Time Live Edit & Upload Overlay Button */}
+      {/* Real-Time Live Edit & Upload Overlay Button (Admin Live Edit Only) */}
       {showLiveButton && (
         <button
           type="button"
@@ -644,7 +666,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
               className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl text-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800">
                 <div className="min-w-0 pr-3">
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
@@ -668,7 +689,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
               </div>
 
               <div className="p-5 space-y-5 max-h-[82vh] overflow-y-auto">
-                {/* BEFORE & AFTER SIDE-BY-SIDE PREVIEW */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -715,7 +735,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
                   </div>
                 </div>
 
-                {/* Upload Dropzone */}
                 <label className="border-2 border-dashed border-emerald-400 hover:border-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all">
                   <Upload className="w-7 h-7 text-emerald-600 mb-1.5" />
                   <span className="text-xs sm:text-sm font-black text-slate-900">
@@ -744,7 +763,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
                   </div>
                 )}
 
-                {/* Direct URL or Media Library Quick Picker */}
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-slate-600 uppercase block">
                     Or Paste Image URL / Asset Path &amp; Apply Immediately
@@ -768,7 +786,6 @@ export const SafeImage: React.FC<SafeImageProps> = ({
                   </div>
                 </div>
 
-                {/* Recent Uploaded Media Library */}
                 <div className="space-y-2">
                   <label className="text-[11px] font-bold text-slate-600 uppercase block">
                     Or Click Any Uploaded Image from Server Media Library
@@ -784,14 +801,13 @@ export const SafeImage: React.FC<SafeImageProps> = ({
                         }`}
                         title={item.name}
                       >
-                        <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                        <img src={optimizeImageUrl(item.url, { width: 160, isThumbnail: true })} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
                 <span className="text-[11px] text-slate-500 font-medium">
                   Changes are saved to server disk &amp; visible in Incognito immediately.
@@ -811,4 +827,3 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     </div>
   );
 };
-
