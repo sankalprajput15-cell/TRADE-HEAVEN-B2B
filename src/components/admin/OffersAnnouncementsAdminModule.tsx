@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ArrowRight
 } from 'lucide-react';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import {
   PlatformOfferAnnouncement,
   PlatformCampaignType,
@@ -627,10 +628,7 @@ export const OffersAnnouncementsAdminModule: React.FC<OffersAnnouncementsAdminMo
           </div>
 
           {isLoading ? (
-            <div className="p-8 space-y-3">
-              <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
-              <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
-            </div>
+            <TradeHeavenDataLoader />
           ) : filteredItems.length === 0 ? (
             <div className="p-10 text-center space-y-3">
               <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mx-auto">

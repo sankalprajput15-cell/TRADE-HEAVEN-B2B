@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser, Currency } from '../../types';
 import { ClientAdminView } from '../services/ClientAdminView';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { SiteContentCmsEditor } from '../cms/SiteContentCmsEditor';
 import { BulkEntityCrmModule } from './BulkEntityCrmModule';
 import { PlanPricingAdminModule } from './PlanPricingAdminModule';
@@ -1182,9 +1183,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {liveUserSessions.length === 0 && (
                       <tr>
                         <td colSpan={6} className="p-6 text-center text-slate-500 font-medium">
-                          {isLoadingLiveUsers
-                            ? 'Checking live authenticated sessions...'
-                            : 'No other active sessions detected in the last 15 minutes. Authenticated users appear automatically as soon as they sign in or browse.'}
+                          {isLoadingLiveUsers ? (
+                            <TradeHeavenDataLoader />
+                          ) : (
+                            'No other active sessions detected in the last 15 minutes. Authenticated users appear automatically as soon as they sign in or browse.'
+                          )}
                         </td>
                       </tr>
                     )}

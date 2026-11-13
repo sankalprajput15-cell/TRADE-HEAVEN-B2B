@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
 import { UserDeletionLogModule } from './UserDeletionLogModule';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { api, getPermanentlyDeletedUsers } from '../../services/apiService';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthUser } from '../../types';
@@ -725,10 +726,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       {/* Table Content */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {loading && suppliers.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <RefreshCw className="w-8 h-8 mx-auto animate-spin text-blue-600 mb-3" />
-            <p className="text-sm font-semibold">Loading registered company profiles from database...</p>
-          </div>
+          <TradeHeavenDataLoader />
         ) : sortedSuppliers.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700 border-collapse">

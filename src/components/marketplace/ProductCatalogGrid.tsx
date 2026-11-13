@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product, Currency } from '../../types';
 import { SafeImage } from '../common/SafeImage';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { useAuth } from '../../context/AuthContext';
 import { MessageCircle, Building, Lock, ShieldCheck, Award, Image as ImageIcon, Share2 } from 'lucide-react';
 
@@ -303,10 +304,8 @@ export const ProductCatalogGrid: React.FC<Props> = ({
 
   if (isLoading) {
     return (
-      <div id="product-grid-loading-skeletons" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 min-w-0 w-full">
-        {Array.from({ length: skeletonCount }).map((_, idx) => (
-          <ProductCardSkeleton key={`product-skeleton-${idx}`} />
-        ))}
+      <div id="product-grid-loading-skeletons" className="w-full">
+        <TradeHeavenDataLoader />
       </div>
     );
   }

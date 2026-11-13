@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { bigrockApi, DbFaq } from '../../services/bigrockApi';
+import { TradeHeavenDataLoader } from './TradeHeavenDataLoader';
 import { 
   HelpCircle, 
   ChevronDown, 
@@ -109,14 +110,7 @@ export const DynamicFaqSection: React.FC<Props> = ({ onOpenContactModal, classNa
 
       {/* Accordion List */}
       {isLoading ? (
-        <div className="space-y-2.5">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="p-4 bg-slate-50/60 border border-slate-100 rounded-xl animate-pulse flex flex-col gap-2">
-              <div className="h-4 bg-slate-200 rounded w-1/3"></div>
-              <div className="h-3 bg-slate-100 rounded w-2/3"></div>
-            </div>
-          ))}
-        </div>
+        <TradeHeavenDataLoader />
       ) : filteredFaqs.length === 0 ? (
         <div className="p-8 text-center bg-slate-50/60 rounded-xl border border-slate-100 space-y-2">
           <p className="text-xs text-slate-500">No matching questions found.</p>

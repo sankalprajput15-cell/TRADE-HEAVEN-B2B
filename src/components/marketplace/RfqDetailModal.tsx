@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { PremiumContactGate } from '../common/PremiumContactGate';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { 
   X, 
@@ -564,7 +565,7 @@ export const RfqDetailModal: React.FC<Props> = ({
               </div>
 
               {isLoadingQuotes ? (
-                <div className="p-8 text-center text-slate-500">Loading incoming factory bids...</div>
+                <TradeHeavenDataLoader />
               ) : quotes.length === 0 ? (
                 <div className="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-8 text-center space-y-3">
                   <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">

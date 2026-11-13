@@ -21,6 +21,7 @@ import {
   CheckCheck,
   X
 } from 'lucide-react';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import type {
   CompanyEmailHistoryEntry,
   EmailDispatchType,
@@ -881,10 +882,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
       {/* Email History List */}
       <div className="divide-y divide-slate-100 max-h-[520px] overflow-y-auto">
         {loading && entries.length === 0 ? (
-          <div className="py-12 text-center text-slate-400">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
-            <p className="text-xs font-bold">Loading email history for {companyName}...</p>
-          </div>
+          <TradeHeavenDataLoader />
         ) : filteredEntries.length > 0 ? (
           filteredEntries.map((item) => {
             const catMeta = CATEGORY_LABELS[item.category] || CATEGORY_LABELS.CUSTOM_ADMIN;

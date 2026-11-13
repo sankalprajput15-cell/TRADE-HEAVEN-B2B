@@ -793,14 +793,18 @@ export const Header: React.FC<Props> = ({
                   type="button"
                   onClick={() => {
                     setUserMenuOpen(false);
-                    onOpenAuthModal();
+                    if (onOpenRegisterFree) {
+                      onOpenRegisterFree();
+                    } else {
+                      onOpenAuthModal();
+                    }
                   }}
-                  className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-[11px] sm:text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                  title="Sign In with Corporate Email & OTP"
-                  data-testid="header-signin-button"
+                  className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 font-semibold text-[11px] sm:text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  title="Register New Corporate Account"
+                  data-testid="header-register-button"
                 >
-                  <LogIn className="w-3.5 h-3.5 shrink-0" />
-                  <span>Sign In</span>
+                  <UserPlus className="w-3.5 h-3.5 shrink-0" />
+                  <span>Register</span>
                 </button>
 
                 <button

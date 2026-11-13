@@ -458,37 +458,52 @@
       }
       #initial-loading-container {
         margin: 0;
-        padding: 16px 24px;
+        padding: 24px;
         width: 100%;
-        min-height: 64px;
+        min-height: 100vh;
         overflow: hidden;
         display: flex;
-        flex-direction: row;
         align-items: center;
-        justify-content: space-between;
-        background-color: #ffffff;
-        border-bottom: 1px solid #e2e8f0;
+        justify-content: center;
+        background-color: #f8fafc;
         box-sizing: border-box;
       }
+      @keyframes initialThLogoGlow {
+        0%, 100% {
+          transform: scale(0.98);
+          box-shadow: 0 0 22px 4px rgba(37, 99, 235, 0.28), 0 0 48px 12px rgba(56, 189, 248, 0.18);
+        }
+        50% {
+          transform: scale(1.04);
+          box-shadow: 0 0 36px 10px rgba(37, 99, 235, 0.52), 0 0 72px 24px rgba(56, 189, 248, 0.32);
+        }
+      }
+      #initial-loading-logo-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       #initial-loading-logo-box {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        min-height: 40px;
-        max-width: 40px;
-        max-height: 40px;
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+        min-height: 80px;
+        max-width: 80px;
+        max-height: 80px;
         aspect-ratio: 1 / 1;
         flex-shrink: 0;
         box-sizing: border-box;
         margin: 0;
-        padding: 4px;
+        padding: 8px;
         background-color: #ffffff;
         border: 2px solid #0f172a;
-        border-radius: 10px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        animation: initialThLogoGlow 2s ease-in-out infinite;
       }
       #initial-loading-svg {
         width: 100%;
@@ -500,43 +515,21 @@
         flex-shrink: 0;
         pointer-events: none;
       }
-      #initial-loading-title {
-        margin: 0;
-        padding: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 16px;
-        line-height: 1.25;
-        font-weight: 900;
-        color: #0f172a;
-        letter-spacing: -0.02em;
-      }
-      #initial-loading-subtitle {
-        margin: 0;
-        padding: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 12px;
-        line-height: 1.4;
-        color: #475569;
-      }
     </style>
   </head>
   <body class="overflow-x-hidden max-w-full bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
     <div id="google_translate_element"></div>
     <div id="root">
-      <div id="initial-loading-container">
-        <div style="display:flex;align-items:center;gap:12px;">
+      <div id="initial-loading-container" role="status" aria-label="Loading">
+        <div id="initial-loading-logo-wrap">
           <div id="initial-loading-logo-box">
-            <svg id="initial-loading-svg" viewBox="0 0 512 512" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+            <svg id="initial-loading-svg" viewBox="0 0 512 512" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <rect width="512" height="512" fill="#FFFFFF" />
               <g fill="#000000">
                 <path d="M 66 136 H 246 V 186 H 181 V 376 H 131 V 186 H 66 Z" />
                 <path d="M 266 136 H 316 V 231 H 396 V 136 H 446 V 376 H 396 V 281 H 316 V 376 H 266 Z" />
               </g>
             </svg>
-          </div>
-          <div>
-            <div id="initial-loading-title">Trade Heaven</div>
-            <div id="initial-loading-subtitle">Global B2B Wholesale Marketplace</div>
           </div>
         </div>
       </div>

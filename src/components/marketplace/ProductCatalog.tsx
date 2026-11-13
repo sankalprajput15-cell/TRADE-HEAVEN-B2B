@@ -33,7 +33,8 @@ import {
   Lock,
   X
 } from 'lucide-react';
-import { ProductCatalogGrid, ProductListSkeleton } from './ProductCatalogGrid';
+import { ProductCatalogGrid } from './ProductCatalogGrid';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { PaginationControls } from '../common/PaginationControls';
 
 interface Props {
@@ -929,26 +930,8 @@ export const ProductCatalog: React.FC<Props> = ({
           )}
 
           {isLoading || (products.length === 0 && !isUsingCache) ? (
-            <div id="product-catalog-loading-skeletons" className="space-y-4">
-              {viewMode === 'GRID' ? (
-                <ProductCatalogGrid
-                  isLoading={true}
-                  skeletonCount={itemsPerPage}
-                  products={[]}
-                  selectedCurrency={selectedCurrency}
-                  onSelectProduct={onSelectProduct}
-                  onOpenStorefront={onOpenStorefront}
-                  onContactSupplier={onContactSupplier}
-                  formatPrice={formatPrice}
-                  getTierBadge={getTierBadge}
-                />
-              ) : (
-                <div className="space-y-2.5 sm:space-y-3">
-                  {Array.from({ length: Math.min(itemsPerPage, 8) }).map((_, i) => (
-                    <ProductListSkeleton key={`list-skeleton-${i}`} />
-                  ))}
-                </div>
-              )}
+            <div id="product-catalog-loading-skeletons" className="w-full">
+              <TradeHeavenDataLoader />
             </div>
           ) : filtered.length === 0 ? (
             <>

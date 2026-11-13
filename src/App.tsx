@@ -528,7 +528,14 @@ const MainApp: React.FC = () => {
   }, []);
   const [rfqs, setRfqs] = useState<RfqRequirement[]>(MOCK_RFQS);
   const [selectedRfqId, setSelectedRfqId] = useState<string | null>(MOCK_RFQS[0]?.id || null);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState<boolean>(true);
+  const [showLoaderDemo, setShowLoaderDemo] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('demo') === 'loader' || params.get('loader_demo') === '1';
+    }
+    return false;
+  });
 
   // Static category and country lists available immediately in memory without JSON serialization overhead
   const [prefetchedCategories] = useState<any[]>(CATEGORIES_TREE || []);
@@ -1165,9 +1172,18 @@ const MainApp: React.FC = () => {
       }
     });
 
+    const loadingFailsafeTimer = window.setTimeout(() => {
+      if (isMounted) {
+        setIsLoadingInitialData(false);
+        setIsAppInitialized(true);
+      }
+    }, 3500);
+
     // Run background fetch immediately without delay and mark initialization complete once settled
     Promise.allSettled([initializeData(), hydrationPromise]).finally(() => {
+      window.clearTimeout(loadingFailsafeTimer);
       if (isMounted) {
+        setIsLoadingInitialData(false);
         setIsAppInitialized(true);
       }
     });
@@ -3254,6 +3270,30 @@ const MainApp: React.FC = () => {
 
         {/* Floating SMTP Test Sandbox Widget (Publicly Accessible) - REMOVED */}
       </React.Suspense>
+
+      {showLoaderDemo && (
+        <div
+          id="central-glowing-logo-demo-overlay"
+          className="fixed inset-0 z-[9999] bg-slate-50 flex flex-col items-center justify-center"
+        >
+          <TradeHeavenDataLoader size="fullscreen" />
+          <button
+            type="button"
+            onClick={() => {
+              setShowLoaderDemo(false);
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('demo');
+                url.searchParams.delete('loader_demo');
+                window.history.replaceState({}, '', url);
+              }
+            }}
+            className="fixed top-5 right-5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
+          >
+            Exit Demo
+          </button>
+        </div>
+      )}
     </div>
   );
 };

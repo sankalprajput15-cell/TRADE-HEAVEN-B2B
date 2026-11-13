@@ -6,6 +6,7 @@ import {
   LedgerEntryRecord
 } from '../../services/tradeHeavenMediatorEngine';
 import { useAuth } from '../../context/AuthContext';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import {
   Wallet,
   CreditCard,
@@ -553,9 +554,8 @@ When initiating this transfer, please add the following remark: ${OFFICIAL_SWIFT
 
   if (loading && !state) {
     return (
-      <div className="bg-white border border-slate-200 rounded-3xl p-8 flex items-center justify-center gap-3 text-slate-600 shadow-sm">
-        <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
-        <span className="text-sm font-bold">Connecting to Trade Heaven Wallet &amp; Payment Gateway Engine...</span>
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+        <TradeHeavenDataLoader />
       </div>
     );
   }

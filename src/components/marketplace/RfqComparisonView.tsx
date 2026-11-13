@@ -4,6 +4,7 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { EmptyState } from '../EmptyState';
+import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
 import { 
   FileText, 
@@ -289,38 +290,10 @@ export const RfqComparisonView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Main Layout: RFQ Selector Left + Quotes Comparison Right or Loading Skeletons */}
+      {/* Main Layout: RFQ Selector Left + Quotes Comparison Right or Central Glowing Loader */}
       {isLoading ? (
-        <div id="rfq-hub-loading-skeletons" className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Panel Skeletons */}
-          <div className="lg:col-span-4 space-y-3">
-            <div className="h-9 w-full bg-slate-100 rounded-xl animate-pulse" />
-            <div className="flex items-center justify-between px-2">
-              <div className="h-3 w-36 bg-slate-200 rounded animate-pulse" />
-              <div className="h-3 w-20 bg-slate-200 rounded animate-pulse" />
-            </div>
-            <div className="space-y-2.5">
-              {[1, 2, 3, 4].map(i => (
-                <RfqCardSkeleton key={`rfq-card-skeleton-${i}`} />
-              ))}
-            </div>
-          </div>
-
-          {/* Right Panel Skeletons */}
-          <div className="lg:col-span-8 space-y-6">
-            <RfqDetailHeaderSkeleton />
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="h-4 w-48 bg-slate-200 rounded animate-pulse" />
-                <div className="h-3 w-36 bg-slate-200 rounded animate-pulse" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2, 3, 4].map(i => (
-                  <QuoteCardSkeleton key={`quote-skeleton-${i}`} />
-                ))}
-              </div>
-            </div>
-          </div>
+        <div id="rfq-hub-loading-skeletons" className="w-full">
+          <TradeHeavenDataLoader />
         </div>
       ) : rfqs.length === 0 ? (
         <EmptyState
@@ -609,11 +582,7 @@ export const RfqComparisonView: React.FC<Props> = ({
 
                 {/* Quotes Cards Grid */}
                 {isLoadingQuotes ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[1, 2].map(i => (
-                      <QuoteCardSkeleton key={`quote-loading-skeleton-${i}`} />
-                    ))}
-                  </div>
+                  <TradeHeavenDataLoader />
                 ) : quotes.length === 0 ? (
                   <div className="bg-white border border-dashed border-slate-300 rounded-3xl p-8 text-center space-y-3">
                     <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
