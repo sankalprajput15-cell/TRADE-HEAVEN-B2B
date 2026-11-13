@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DetailedBuyerProfile, Currency, AuthUser } from '../../types';
-import { CURRENCY_RATES } from '../../data/mockData';
+import { CURRENCY_RATES, MOCK_BUYER_PROFILES } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
@@ -57,19 +57,25 @@ export const BuyersDirectoryView: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTier, setSelectedTier] = useState('ALL');
   const [selectedCountry, setSelectedCountry] = useState('ALL');
-  const [buyers, setBuyers] = useState<DetailedBuyerProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [buyers, setBuyers] = useState<DetailedBuyerProfile[]>(() => MOCK_BUYER_PROFILES || []);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   useEffect(() => {
-    setIsLoading(true);
-    api.getBuyers(currentUser).then(data => {
-      setBuyers(data);
-      setIsLoading(false);
-    });
+    let isMounted = true;
+    api.getBuyers(currentUser)
+      .then(data => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setBuyers(data);
+        }
+      })
+      .catch(err => {
+        console.warn('[BuyersDirectoryView] Error fetching buyers:', err);
+      });
+    return () => { isMounted = false; };
   }, [currentUser]);
 
   const handleLoadRandomBuyers = () => {

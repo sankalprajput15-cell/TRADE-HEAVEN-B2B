@@ -151,17 +151,14 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       }
     } catch {}
 
-    // 2. Check registered users store
+    // 2. Check active verified session store
     try {
-      const rawUsers = localStorage.getItem('th_registered_users_store');
-      if (rawUsers) {
-        const parsed = JSON.parse(rawUsers);
-        const sid = String(currentUser?.id || '').trim();
-        const semail = String(currentUser?.email || '').toLowerCase().trim();
-        const userRec = parsed[sid] || Object.values(parsed).find((u: any) => u?.email && String(u.email).toLowerCase().trim() === semail) as any;
-        if (userRec) {
-          tierStr = userRec.tier || tierStr;
-          memStatus = userRec.membershipStatus || memStatus;
+      const sessionRaw = localStorage.getItem('th_verified_otp_session_v5_strict_admin');
+      if (sessionRaw) {
+        const parsed = JSON.parse(sessionRaw);
+        if (parsed && (parsed.tier || parsed.membershipStatus)) {
+          tierStr = parsed.tier || tierStr;
+          memStatus = parsed.membershipStatus || memStatus;
         }
       }
     } catch {}

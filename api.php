@@ -1156,7 +1156,8 @@ switch ($action) {
     case 'listings':
     case 'create_listing':
     case 'update_listing':
-        if ($method === 'GET' && $action !== 'create_listing' && $action !== 'update_listing') {
+    case 'submit_listing':
+        if ($method === 'GET' && $action !== 'create_listing' && $action !== 'update_listing' && $action !== 'submit_listing') {
             $rows = [];
             if ($db_connected && $pdo) {
                 try {

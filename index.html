@@ -412,6 +412,24 @@
           window.attachEvent('onload', loadScript);
         }
       })();
+
+      // Global safety net for dynamic import failures in Chrome (e.g. after new FTP build deployments)
+      window.addEventListener('error', function(e) {
+        var msg = (e && e.message ? e.message : '').toLowerCase();
+        if (
+          msg.indexOf('failed to fetch dynamically imported module') !== -1 ||
+          msg.indexOf('error loading dynamically imported module') !== -1 ||
+          msg.indexOf('importing a module script failed') !== -1
+        ) {
+          try {
+            var last = Number(sessionStorage.getItem('th_chunk_err_reload') || 0);
+            if (Date.now() - last > 25000) {
+              sessionStorage.setItem('th_chunk_err_reload', String(Date.now()));
+              window.location.reload();
+            }
+          } catch(err) {}
+        }
+      });
     </script>
 
     <!-- Initial Load CSS: Zero margin/padding/overflow reset & zero-CLS SVG scaling -->

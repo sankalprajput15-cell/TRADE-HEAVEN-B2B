@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RfqRequirement, Currency, AuthUser, ActiveView } from '../../types';
-import { CURRENCY_RATES } from '../../data/mockData';
+import { CURRENCY_RATES, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { SafeImage } from '../common/SafeImage';
@@ -106,8 +106,8 @@ export const BuyLeadsView: React.FC<Props> = ({
   const [maxBudget, setMaxBudget] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'bids' | 'volume' | 'price-high' | 'price-low'>('newest');
   const [urgentOnly, setUrgentOnly] = useState(false);
-  const [rfqs, setRfqs] = useState<RfqRequirement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [rfqs, setRfqs] = useState<RfqRequirement[]>(() => MOCK_RFQS || []);
+  const [isLoading, setIsLoading] = useState(false);
   const [pitchRfq, setPitchRfq] = useState<RfqRequirement | null>(null);
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
   const [leadAccessModalRfq, setLeadAccessModalRfq] = useState<RfqRequirement | null>(null);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CompanyProfile, Currency, AuthUser } from '../../types';
-import { CURRENCY_RATES } from '../../data/mockData';
+import { CURRENCY_RATES, MOCK_COMPANIES } from '../../data/mockData';
 import { ALL_COUNTRY_ITEMS } from '../../data/countriesData';
 import { api } from '../../services/apiService';
 import { securityService } from '../../services/securityService';
@@ -88,8 +88,8 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [selectedTier, setSelectedTier] = useState('ALL');
-  const [companies, setCompanies] = useState<CompanyProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [companies, setCompanies] = useState<CompanyProfile[]>(() => MOCK_COMPANIES || []);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [savedSupplierIds, setSavedSupplierIds] = useState<string[]>(() => {
@@ -110,11 +110,17 @@ export const SuppliersDirectoryView: React.FC<Props> = ({
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   useEffect(() => {
-    setIsLoading(true);
-    api.getSuppliers(currentUser).then(data => {
-      setCompanies(data);
-      setIsLoading(false);
-    });
+    let isMounted = true;
+    api.getSuppliers(currentUser)
+      .then(data => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setCompanies(data);
+        }
+      })
+      .catch(err => {
+        console.warn('[SuppliersDirectoryView] Error fetching suppliers:', err);
+      });
+    return () => { isMounted = false; };
   }, [currentUser]);
 
   const handleToggleBookmarkSupplier = (companyId: string) => {

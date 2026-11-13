@@ -25,6 +25,18 @@ try {
   // Ignore storage restrictions in sandboxed third-party iframes
 }
 
+// Automatically recover from stale chunk mismatches after new production deployments in Chrome
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    const lastReload = Number(sessionStorage.getItem('th_vite_chunk_reload_stamp') || 0);
+    if (Date.now() - lastReload > 25000) {
+      sessionStorage.setItem('th_vite_chunk_reload_stamp', String(Date.now()));
+      window.location.reload();
+    }
+  });
+}
+
 const rootEl = document.getElementById('root');
 if (rootEl) {
   createRoot(rootEl).render(

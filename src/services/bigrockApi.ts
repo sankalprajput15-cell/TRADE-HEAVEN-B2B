@@ -754,7 +754,7 @@ export const bigrockApi = {
       const richListing = { ...listing };
       if (!richListing.owner_email || !richListing.owner_id) {
         try {
-          const userStr = localStorage.getItem('th_session_user');
+          const userStr = localStorage.getItem('th_verified_otp_session_v5_strict_admin') || localStorage.getItem('th_session_user');
           if (userStr) {
             const user = JSON.parse(userStr);
             if (user && user.email) {

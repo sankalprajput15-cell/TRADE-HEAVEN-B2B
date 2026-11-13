@@ -35,12 +35,48 @@ import { CustomerReviews } from './components/marketplace/CustomerReviews';
 import { TradeHeavenLiveChatWidget } from './components/common/TradeHeavenLiveChatWidget';
 import { ProductCatalog } from './components/marketplace/ProductCatalog';
 
-// Helper for retryable lazy loaded views
+// Core High-Traffic Directory Views (Imported directly to prevent dynamic chunk fetch errors in Chrome after deployments)
+import { SuppliersDirectoryView } from './components/services/SuppliersDirectoryView';
+import { BuyLeadsView } from './components/services/BuyLeadsView';
+import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
+import { PremiumServicesView } from './components/services/PremiumServicesView';
+import { BuyerSupplierDashboard } from './components/marketplace/BuyerSupplierDashboard';
+import { VerifiedSupplierDedicatedDashboard } from './components/vendor/VerifiedSupplierDedicatedDashboard';
+
+// Helper for retryable lazy loaded views with automatic cache-busting reload and resilient fallback recovery
 function lazyWithRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default?: T; [key: string]: any }>,
   namedExport?: string
 ) {
   return React.lazy(async () => {
+    const ChunkRecoveryView: React.FC<any> = () => (
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 text-center max-w-xl mx-auto my-8 shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Updating Marketplace Section</h3>
+        <p className="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
+          A fresh version of this section is ready. If it didn't reload automatically, click below to refresh.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+          >
+            Refresh Page
+          </button>
+          <button
+            type="button"
+            onClick={() => { window.location.href = '/'; }}
+            className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+          >
+            Go to Homepage
+          </button>
+        </div>
+      </div>
+    );
+
     const resolveExport = (module: any): { default: T } => {
       if (module && 'default' in module && module.default) {
         return { default: module.default as T };
@@ -52,45 +88,49 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
       if (firstKey && module[firstKey]) {
         return { default: module[firstKey] as T };
       }
-      const EmptyFallback: React.FC<any> = () => null;
-      return { default: EmptyFallback as unknown as T };
+      return { default: ChunkRecoveryView as unknown as T };
     };
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         if (attempt > 0) {
-          await new Promise(res => setTimeout(res, 400 * attempt));
+          await new Promise(res => setTimeout(res, 350 * attempt));
         }
         const module = await componentImport();
         return resolveExport(module);
       } catch (err) {
         if (attempt === 2) {
-          console.warn('[lazyWithRetry] Fallback activated after retries for:', namedExport || 'module', err);
+          console.warn('[lazyWithRetry] Module load failed after retries for:', namedExport || 'module', err);
         }
       }
     }
 
-    const FallbackView: React.FC<any> = () => null;
-    return { default: FallbackView as unknown as T };
+    // Trigger loop-guarded automatic reload for Chrome post-deploy chunk mismatch
+    if (typeof window !== 'undefined') {
+      try {
+        const lastReload = Number(sessionStorage.getItem('th_chunk_reload_lock') || 0);
+        if (Date.now() - lastReload > 25000) {
+          sessionStorage.setItem('th_chunk_reload_lock', String(Date.now()));
+          window.location.reload();
+        }
+      } catch {}
+    }
+
+    return { default: ChunkRecoveryView as unknown as T };
   });
 }
 
 // Views
 const RfqComparisonView = lazyWithRetry(() => import('./components/marketplace/RfqComparisonView'), 'RfqComparisonView');
 const TradeNegotiationChat = lazyWithRetry(() => import('./components/marketplace/TradeNegotiationChat'), 'TradeNegotiationChat');
-const BuyerSupplierDashboard = lazyWithRetry(() => import('./components/marketplace/BuyerSupplierDashboard'), 'BuyerSupplierDashboard');
 const IncotermsCalculator = lazyWithRetry(() => import('./components/tools/IncotermsCalculator'), 'IncotermsCalculator');
-const PremiumServicesView = lazyWithRetry(() => import('./components/services/PremiumServicesView'), 'PremiumServicesView');
 const PostSellOfferView = lazyWithRetry(() => import('./components/services/PostSellOfferView'), 'PostSellOfferView');
-const BuyLeadsView = lazyWithRetry(() => import('./components/services/BuyLeadsView'), 'BuyLeadsView');
-const SuppliersDirectoryView = lazyWithRetry(() => import('./components/services/SuppliersDirectoryView'), 'SuppliersDirectoryView');
 
 const RefundPolicyView = lazyWithRetry(() => import('./components/services/RefundPolicyView'), 'RefundPolicyView');
 const ProductListingPolicyView = lazyWithRetry(() => import('./components/services/ProductListingPolicyView'), 'ProductListingPolicyView');
 const PrivacyPolicyView = lazyWithRetry(() => import('./components/services/PrivacyPolicyView'), 'PrivacyPolicyView');
 const TermsOfUseView = lazyWithRetry(() => import('./components/services/TermsOfUseView'), 'TermsOfUseView');
 
-const BuyersDirectoryView = lazyWithRetry(() => import('./components/services/BuyersDirectoryView'), 'BuyersDirectoryView');
 const AdminDashboard = lazyWithRetry(() => import('./components/admin/AdminDashboard'), 'AdminDashboard');
 const MailDeliveryHistoryPage = lazyWithRetry(() => import('./components/admin/MailDeliveryHistoryPage'), 'MailDeliveryHistoryPage');
 const ClientAdminView = lazyWithRetry(() => import('./components/services/ClientAdminView'), 'ClientAdminView');
@@ -112,7 +152,6 @@ const SupplierBankWithdrawalLandingPage = lazyWithRetry(() => import('./componen
 const DirectSiteTransferGuidePage = lazyWithRetry(() => import('./components/marketplace/DirectSiteTransferGuidePage'), 'DirectSiteTransferGuidePage');
 import { TradeAssuranceCertificateView } from './components/services/TradeAssuranceCertificateView';
 import { B2BTrustCertificatePage } from './components/services/B2BTrustCertificatePage';
-const VerifiedSupplierDedicatedDashboard = lazyWithRetry(() => import('./components/vendor/VerifiedSupplierDedicatedDashboard'), 'VerifiedSupplierDedicatedDashboard');
 
 // Core Interactive Modals - Lazy loaded on-demand to keep initial load lightweight
 const ProductDetailModal = lazyWithRetry(() => import('./components/marketplace/ProductDetailModal'), 'ProductDetailModal');
@@ -1069,7 +1108,7 @@ const MainApp: React.FC = () => {
     try {
       const prods = await api.getProducts();
       if (Array.isArray(prods) && prods.length > 0) {
-        setProducts(prev => (prev.length === prods.length ? prev : prods));
+        setProducts(prods);
       }
     } catch (err) {}
   };
