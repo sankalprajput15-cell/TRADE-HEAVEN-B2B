@@ -841,7 +841,13 @@ if (empty($raw_action) && !empty($route_param)) {
     } elseif (strpos($clean_route, 'stats') !== false) {
         $raw_action = 'stats';
     } elseif (strpos($clean_route, 'products') !== false) {
-        $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_listing' : 'get_listings';
+        if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+            $raw_action = 'delete_listing';
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+            $raw_action = 'submit_listing';
+        } else {
+            $raw_action = 'get_listings';
+        }
     } elseif (strpos($clean_route, 'rfqs') !== false) {
         $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_rfq' : 'get_rfqs';
     } elseif (strpos($clean_route, 'auth/me') !== false || $clean_route === 'me') {
@@ -883,7 +889,13 @@ if (empty($raw_action)) {
         } elseif (strpos($sub, 'site-content') !== false) {
             $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
         } elseif (strpos($sub, 'products') !== false) {
-            $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_listing' : 'get_listings';
+            if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+                $raw_action = 'delete_listing';
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+                $raw_action = 'submit_listing';
+            } else {
+                $raw_action = 'get_listings';
+            }
         } elseif (strpos($sub, 'homepage-config') !== false) {
             $raw_action = 'homepage_config';
         } elseif (strpos($sub, 'commodity-indices') !== false) {
@@ -982,20 +994,32 @@ switch ($action) {
     case 'custom_catalog':
     case 'get_custom_catalog':
         $cat_file = __DIR__ . '/custom_catalog.json';
+        $del_file = __DIR__ . '/deleted_products.json';
+        $deleted_ids = [];
+        if (file_exists($del_file)) {
+            $d = json_decode((string)file_get_contents($del_file), true);
+            if (is_array($d)) $deleted_ids = array_map('strval', $d);
+        }
         $companies = [];
         $products = [];
         if (file_exists($cat_file)) {
             $cat_data = json_decode((string)file_get_contents($cat_file), true);
             if (is_array($cat_data)) {
                 $companies = $cat_data['companies'] ?? [];
-                $products = $cat_data['products'] ?? [];
+                $raw_products = $cat_data['products'] ?? [];
+                $products = array_values(array_filter($raw_products, function ($p) use ($deleted_ids) {
+                    $pid = strval($p['id'] ?? '');
+                    return !empty($pid) && !in_array($pid, $deleted_ids, true);
+                }));
             }
         }
+        header("Cache-Control: no-store, no-cache, must-revalidate");
         echo json_encode([
             "status" => "success",
             "success" => true,
             "companies" => $companies,
-            "products" => $products
+            "products" => $products,
+            "deletedIds" => $deleted_ids
         ]);
         exit;
 
@@ -1394,19 +1418,29 @@ switch ($action) {
     case 'update_listing':
     case 'submit_listing':
         if ($method === 'GET' && $action !== 'create_listing' && $action !== 'update_listing' && $action !== 'submit_listing') {
+            $del_file = __DIR__ . '/deleted_products.json';
+            $deleted_ids = [];
+            if (file_exists($del_file)) {
+                $d = json_decode((string)file_get_contents($del_file), true);
+                if (is_array($d)) $deleted_ids = array_map('strval', $d);
+            }
             $rows = [];
             if ($db_connected && $pdo) {
                 try {
                     $stmt = $pdo->query("SELECT * FROM listings ORDER BY id DESC LIMIT 100");
                     $raw = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     if (!empty($raw)) {
-                        $rows = $raw;
+                        $rows = array_values(array_filter($raw, function ($r) use ($deleted_ids) {
+                            $rid = strval($r['id'] ?? '');
+                            return !in_array($rid, $deleted_ids, true) && !in_array('prod-db-' . $rid, $deleted_ids, true);
+                        }));
                     }
                 } catch (Exception $e) {
                     $rows = [];
                 }
             }
-            echo json_encode(["status" => "success", "data" => $rows]);
+            header("Cache-Control: no-store, no-cache, must-revalidate");
+            echo json_encode(["status" => "success", "success" => true, "data" => $rows, "deletedIds" => $deleted_ids]);
         } else {
             $title = $input['title'] ?? 'Product Listing';
             $category = $input['category'] ?? 'General';
@@ -1490,6 +1524,60 @@ switch ($action) {
                 ]
             ]);
         }
+        break;
+
+    case 'delete_listing':
+    case 'delete_product':
+        $del_raw_id = trim(strval($input['id'] ?? $input['listing_id'] ?? $input['productId'] ?? $_GET['id'] ?? ''));
+        if (empty($del_raw_id)) {
+            $uri_path_del = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+            $parts_del = explode('/', trim((string)$uri_path_del, '/'));
+            $last_seg = end($parts_del);
+            if ($last_seg && $last_seg !== 'products' && $last_seg !== 'api.php') {
+                $del_raw_id = urldecode($last_seg);
+            }
+        }
+        $numeric_del_id = (strpos($del_raw_id, 'prod-db-') === 0) ? substr($del_raw_id, 8) : $del_raw_id;
+        $ids_to_delete = array_values(array_unique(array_filter([$del_raw_id, $numeric_del_id, 'prod-db-' . $numeric_del_id])));
+
+        if ($db_connected && $pdo && is_numeric($numeric_del_id)) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM listings WHERE id = ?");
+                $stmt->execute([intval($numeric_del_id)]);
+            } catch (Exception $e) {}
+        }
+
+        $del_file = __DIR__ . '/deleted_products.json';
+        $deleted_ids = [];
+        if (file_exists($del_file)) {
+            $d = json_decode((string)file_get_contents($del_file), true);
+            if (is_array($d)) $deleted_ids = array_map('strval', $d);
+        }
+        foreach ($ids_to_delete as $did) {
+            if (!in_array($did, $deleted_ids, true)) {
+                $deleted_ids[] = $did;
+            }
+        }
+        @file_put_contents($del_file, json_encode(array_values($deleted_ids), JSON_PRETTY_PRINT));
+
+        $cat_file = __DIR__ . '/custom_catalog.json';
+        if (file_exists($cat_file)) {
+            $cat_data = json_decode((string)file_get_contents($cat_file), true);
+            if (is_array($cat_data) && isset($cat_data['products']) && is_array($cat_data['products'])) {
+                $cat_data['products'] = array_values(array_filter($cat_data['products'], function ($p) use ($ids_to_delete) {
+                    return !in_array(strval($p['id'] ?? ''), $ids_to_delete, true);
+                }));
+                @file_put_contents($cat_file, json_encode($cat_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            }
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "deletedId" => $del_raw_id,
+            "deletedIds" => $deleted_ids,
+            "message" => "Listing/Product deleted permanently."
+        ]);
         break;
 
     // -------------------------------------------------------------

@@ -6014,10 +6014,15 @@ app.get('/api.php', (req, res) => {
   }
 
   if (action === 'get_listings' || action === 'listings') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const activeListings = serverListingsStore.filter(
+      l => !serverDeletedProductIds.has(String(l.id)) && !serverDeletedProductIds.has(`prod-db-${l.id}`)
+    );
     return res.json({
       success: true,
       status: 'success',
-      data: serverListingsStore
+      data: activeListings,
+      deletedIds: Array.from(serverDeletedProductIds)
     });
   }
 
@@ -6898,17 +6903,40 @@ app.post('/api.php', async (req, res) => {
   }
 
   if (action === 'delete_listing') {
-    const delId = Number(input.id);
-    const targetListing = serverListingsStore.find(l => l.id === delId);
-    serverListingsStore = serverListingsStore.filter(l => l.id !== delId);
+    const rawDelId = String(input.id || input.listing_id || input.productId || '').trim();
+    const numericId = rawDelId.startsWith('prod-db-') ? rawDelId.replace('prod-db-', '') : rawDelId;
+    const targetListing = serverListingsStore.find(
+      l => String(l.id) === rawDelId || String(l.id) === numericId || `prod-db-${l.id}` === rawDelId
+    );
+    serverListingsStore = serverListingsStore.filter(
+      l => String(l.id) !== rawDelId && String(l.id) !== numericId && `prod-db-${l.id}` !== rawDelId
+    );
+    const idsToMarkDeleted = new Set<string>([rawDelId, numericId, `prod-db-${numericId}`].filter(Boolean));
+    idsToMarkDeleted.forEach(delId => {
+      serverDeletedProductIds.add(delId);
+    });
+    serverProductsStore = serverProductsStore.filter(p => !idsToMarkDeleted.has(String(p.id)));
+    saveServerProductsToDisk();
+    saveServerDeletedProductsToDisk();
 
-    sendActivityAlert('LISTING_DELETED', targetListing?.owner_email || 'Verified User', `A product listing was removed from the database: "${targetListing?.title || delId}"`, {
-      listingId: delId,
+    const catalogStore = loadCustomCatalogFromDisk();
+    const prevCatalogCount = catalogStore.products.length;
+    catalogStore.products = catalogStore.products.filter(p => !idsToMarkDeleted.has(String(p.id)));
+    if (catalogStore.products.length !== prevCatalogCount) {
+      saveCustomCatalogToDisk(catalogStore);
+    }
+
+    sendActivityAlert('LISTING_DELETED', targetListing?.owner_email || 'Verified User', `A product listing was removed from the database: "${targetListing?.title || rawDelId}"`, {
+      listingId: rawDelId,
       listingTitle: targetListing?.title || 'Unknown',
       category: targetListing?.category || 'Unknown'
     });
 
-    return res.json({ success: true });
+    return res.json({
+      success: true,
+      deletedId: rawDelId,
+      deletedIds: Array.from(serverDeletedProductIds)
+    });
   }
 
   if (action === 'create_faq') {
@@ -7469,8 +7497,9 @@ function saveServerDeletedProductsToDisk() {
 }
 
 app.get('/api/v1/products', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const { category, country, keyword, tier } = req.query;
-  let list = serverProductsStore.filter(p => !serverDeletedProductIds.has(p.id));
+  let list = serverProductsStore.filter(p => !serverDeletedProductIds.has(String(p.id)));
 
   if (category && category !== 'ALL') {
     list = list.filter(p => p.category === category);
@@ -7490,7 +7519,12 @@ app.get('/api/v1/products', (req, res) => {
     list = list.filter(p => p.supplierTier === tier);
   }
 
-  res.json({ success: true, count: list.length, data: list });
+  res.json({
+    success: true,
+    count: list.length,
+    data: list,
+    deletedIds: Array.from(serverDeletedProductIds)
+  });
 });
 
 app.post('/api/v1/products', (req, res) => {
@@ -7500,6 +7534,10 @@ app.post('/api/v1/products', (req, res) => {
     ...productData,
     createdDate: productData.createdDate || new Date().toISOString().split('T')[0]
   };
+  if (serverDeletedProductIds.has(newProduct.id)) {
+    serverDeletedProductIds.delete(newProduct.id);
+    saveServerDeletedProductsToDisk();
+  }
   const existingIdx = serverProductsStore.findIndex(p => p.id === newProduct.id);
   if (existingIdx !== -1) {
     serverProductsStore[existingIdx] = { ...serverProductsStore[existingIdx], ...newProduct };
@@ -7561,24 +7599,54 @@ app.put('/api/v1/products/:id', (req, res) => {
 });
 
 app.delete('/api/v1/products/:id', (req, res) => {
-  const { id } = req.params;
-  const targetProduct = serverProductsStore.find(p => p.id === id);
-  serverProductsStore = serverProductsStore.filter(p => p.id !== id);
-  serverDeletedProductIds.add(id);
+  const rawId = decodeURIComponent(String(req.params.id || '')).trim();
+  const dbListingId = rawId.startsWith('prod-db-') ? rawId.replace('prod-db-', '') : rawId;
+  const idsToRemove = new Set<string>([rawId, dbListingId, `prod-db-${dbListingId}`].filter(Boolean));
+
+  const targetProduct =
+    serverProductsStore.find(p => idsToRemove.has(String(p.id))) ||
+    serverListingsStore.find(l => idsToRemove.has(String(l.id)) || idsToRemove.has(`prod-db-${l.id}`));
+
+  serverProductsStore = serverProductsStore.filter(p => !idsToRemove.has(String(p.id)));
+  serverListingsStore = serverListingsStore.filter(
+    l => !idsToRemove.has(String(l.id)) && !idsToRemove.has(`prod-db-${l.id}`)
+  );
+  idsToRemove.forEach(delId => {
+    serverDeletedProductIds.add(delId);
+  });
   saveServerProductsToDisk();
   saveServerDeletedProductsToDisk();
 
-  if (serverProductImageState.overrides && serverProductImageState.overrides[id]) {
-    delete serverProductImageState.overrides[id];
+  const catalogStore = loadCustomCatalogFromDisk();
+  const prevCatalogCount = catalogStore.products.length;
+  catalogStore.products = catalogStore.products.filter(p => !idsToRemove.has(String(p.id)));
+  if (catalogStore.products.length !== prevCatalogCount) {
+    saveCustomCatalogToDisk(catalogStore);
+  }
+
+  let imageOverrideRemoved = false;
+  idsToRemove.forEach(delId => {
+    if (serverProductImageState.overrides && serverProductImageState.overrides[delId]) {
+      delete serverProductImageState.overrides[delId];
+      imageOverrideRemoved = true;
+    }
+  });
+  if (imageOverrideRemoved) {
     saveServerProductImageState();
   }
 
-  sendActivityAlert('CATALOG_PRODUCT_DELETED', targetProduct?.supplierEmail || 'Merchant Profile', `A catalog product was deleted from site: "${targetProduct?.title || id}"`, {
-    productId: id,
+  sendActivityAlert('CATALOG_PRODUCT_DELETED', targetProduct?.supplierEmail || targetProduct?.owner_email || 'Merchant Profile', `A catalog product was deleted from site: "${targetProduct?.title || rawId}"`, {
+    productId: rawId,
     title: targetProduct?.title || 'Unknown'
   });
 
-  res.json({ success: true, message: 'Product completely deleted from site' });
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.json({
+    success: true,
+    deletedId: rawId,
+    deletedIds: Array.from(serverDeletedProductIds),
+    message: 'Product completely deleted from site'
+  });
 });
 
 // -------------------------------------------------------------
@@ -10728,11 +10796,16 @@ function saveCustomCatalogToDisk(store: CustomCatalogStore) {
 }
 
 app.get('/api/v1/public/custom-catalog', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const store = loadCustomCatalogFromDisk();
+  const visibleProducts = (store.products || []).filter(
+    (p: any) => p && !serverDeletedProductIds.has(String(p.id))
+  );
   return res.json({
     success: true,
     companies: store.companies,
-    products: store.products
+    products: visibleProducts,
+    deletedIds: Array.from(serverDeletedProductIds)
   });
 });
 

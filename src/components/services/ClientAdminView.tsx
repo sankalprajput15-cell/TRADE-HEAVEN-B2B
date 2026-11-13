@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Currency, PaymentTerms, AuthUser, UserRole, MembershipStatus, AccountStatus, SecurityAuditLog } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
-import { api, getPermanentlyDeletedUsers, getUserDeletionLogs } from '../../services/apiService';
+import { api, getPermanentlyDeletedUsers, getUserDeletionLogs, getDeletedProductIdsSet } from '../../services/apiService';
 import { UserDeletionLogModule } from '../admin/UserDeletionLogModule';
 import { useAuth, isStrictVerifiedRootAdmin } from '../../context/AuthContext';
 import { securityService } from '../../services/securityService';
@@ -168,6 +168,9 @@ export const ClientAdminView: React.FC<Props> = ({
   // 3. Listings State (Secure Database)
   const [listings, setListings] = useState<DbListing[]>([]);
   const [showAddListingModal, setShowAddListingModal] = useState(false);
+  const [listingPendingDelete, setListingPendingDelete] = useState<DbListing | null>(null);
+  const [isDeletingListing, setIsDeletingListing] = useState(false);
+  const [faqPendingDelete, setFaqPendingDelete] = useState<DbFaq | null>(null);
   const [newListingTitle, setNewListingTitle] = useState('');
   const [newListingDesc, setNewListingDesc] = useState('');
   const [newListingCategory, setNewListingCategory] = useState('Industrial Machinery');
@@ -311,7 +314,12 @@ export const ClientAdminView: React.FC<Props> = ({
       setInquiries(inquiriesData);
       setUsersList(mergedUsers);
       setDbUsers(dbUsersData);
-      setListings(listingsData);
+      const deletedSet = getDeletedProductIdsSet();
+      setListings(
+        (listingsData || []).filter(
+          l => !deletedSet.has(String(l.id)) && !deletedSet.has(`prod-db-${l.id}`)
+        )
+      );
       setFaqs(faqsData);
       setSiteSettings(settingsData);
       
@@ -431,18 +439,46 @@ export const ClientAdminView: React.FC<Props> = ({
     }
   };
 
-  // DELETE LISTING
+  // DELETE LISTING (In-App Confirmation so Chrome/iframe never blocks window.confirm)
   const handleDeleteListing = async (id?: string | number) => {
     if (!id) return;
-    if (!confirm('Are you sure you want to delete this listing?')) return;
+    const target = listings.find(l => String(l.id) === String(id)) || {
+      id,
+      title: `Listing #${id}`,
+      description: '',
+      category: 'General',
+      price: '0',
+      image_url: ''
+    };
+    setListingPendingDelete(target);
+  };
 
-    setListings(prev => prev.filter(l => l.id !== id));
-    const res = await bigrockApi.deleteListing(id);
-    if (res.success) {
-      showToast('success', 'Listing deleted from Secure database.');
-    } else {
-      showToast('error', 'Failed to delete: ' + res.error);
+  const handleConfirmDeleteListing = async () => {
+    if (!listingPendingDelete?.id) return;
+    const id = listingPendingDelete.id;
+    const title = listingPendingDelete.title || `Listing #${id}`;
+    setIsDeletingListing(true);
+    setListings(prev => prev.filter(l => String(l.id) !== String(id)));
+    try {
+      const [brRes] = await Promise.all([
+        bigrockApi.deleteListing(id),
+        api.deleteProduct(`prod-db-${id}`)
+      ]);
+      if (String(id) && !String(id).startsWith('prod-db-')) {
+        await api.deleteProduct(String(id));
+      }
+      setListingPendingDelete(null);
+      if (brRes.success) {
+        showToast('success', `Deleted "${title}" from marketplace and database.`);
+      } else {
+        showToast('error', 'Failed to delete: ' + brRes.error);
+        loadAllData();
+      }
+    } catch (err: any) {
+      showToast('error', 'Failed to delete listing: ' + (err?.message || 'Unexpected error'));
       loadAllData();
+    } finally {
+      setIsDeletingListing(false);
     }
   };
 
@@ -471,12 +507,23 @@ export const ClientAdminView: React.FC<Props> = ({
     }
   };
 
-  // DELETE FAQ
+  // DELETE FAQ (In-App Confirmation)
   const handleDeleteFaq = async (id?: string | number) => {
     if (!id) return;
-    if (!confirm('Are you sure you want to delete this FAQ?')) return;
+    const target = faqs.find(f => String(f.id) === String(id)) || {
+      id,
+      question: `FAQ #${id}`,
+      answer: '',
+      category: 'General'
+    };
+    setFaqPendingDelete(target);
+  };
 
-    setFaqs(prev => prev.filter(f => f.id !== id));
+  const handleConfirmDeleteFaq = async () => {
+    if (!faqPendingDelete?.id) return;
+    const id = faqPendingDelete.id;
+    setFaqPendingDelete(null);
+    setFaqs(prev => prev.filter(f => String(f.id) !== String(id)));
     const res = await bigrockApi.deleteFaq(id);
     if (res.success) {
       showToast('success', 'FAQ deleted.');
@@ -2510,6 +2557,98 @@ export const ClientAdminView: React.FC<Props> = ({
       {/* ========================================================================= */}
       {activeTab === 'USER_DELETION_LOG' && (
         <UserDeletionLogModule currentUser={effectiveAdminUser} />
+      )}
+
+      {/* IN-APP DELETE LISTING CONFIRMATION MODAL */}
+      {listingPendingDelete && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={e => {
+            if (e.target === e.currentTarget && !isDeletingListing) setListingPendingDelete(null);
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-600 block">
+                    Permanent Listing Removal
+                  </span>
+                  <h3 className="text-base font-black text-slate-900">
+                    Delete Product Listing?
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isDeletingListing}
+                onClick={() => setListingPendingDelete(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Are you sure you want to delete <strong className="text-slate-900">"{listingPendingDelete.title}"</strong> (ID: {listingPendingDelete.id})? It will be permanently removed from the database, catalog, and marketplace search.
+            </p>
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isDeletingListing}
+                onClick={() => setListingPendingDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingListing}
+                onClick={() => void handleConfirmDeleteListing()}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingListing ? 'Deleting...' : 'Confirm & Delete Listing'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* IN-APP DELETE FAQ CONFIRMATION MODAL */}
+      {faqPendingDelete && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={e => {
+            if (e.target === e.currentTarget) setFaqPendingDelete(null);
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-black text-slate-900">Delete FAQ Item?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Are you sure you want to delete <strong className="text-slate-900">"{faqPendingDelete.question}"</strong>?
+            </p>
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setFaqPendingDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmDeleteFaq()}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete FAQ</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

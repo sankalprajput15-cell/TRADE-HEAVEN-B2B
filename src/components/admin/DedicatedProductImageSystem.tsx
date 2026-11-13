@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Product } from '../../types';
 import { MOCK_PRODUCTS } from '../../data/mockData';
-import { api } from '../../services/apiService';
+import { api, getDeletedProductIdsSet } from '../../services/apiService';
 import {
   productImageManagerService,
   OutputImageFormat,
@@ -193,12 +193,17 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const refreshState = async () => {
     const st = productImageManagerService.getState();
     setSystemState({ ...st });
+    const deletedSet = getDeletedProductIdsSet();
+    const filterDeleted = (list: Product[]) =>
+      list.filter(
+        p => p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))
+      );
     try {
       const fetched = await api.getProducts();
-      const base = fetched && fetched.length > 0 ? fetched : MOCK_PRODUCTS;
-      setAllProducts(productImageManagerService.applyOverridesToProductList(base));
+      const base = Array.isArray(fetched) ? fetched : filterDeleted(MOCK_PRODUCTS);
+      setAllProducts(productImageManagerService.applyOverridesToProductList(filterDeleted(base)));
     } catch {
-      setAllProducts(productImageManagerService.applyOverridesToProductList(MOCK_PRODUCTS));
+      setAllProducts(productImageManagerService.applyOverridesToProductList(filterDeleted(MOCK_PRODUCTS)));
     }
     if (onProductsUpdated) onProductsUpdated();
   };
@@ -524,15 +529,15 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       }));
 
     setIsUploading(true);
+    // Optimistically remove from visible grid/table immediately
+    setAllProducts(prev => prev.filter(p => !idSet.has(p.id)));
+    setSelectedProductIds(prev => {
+      const next = new Set(prev);
+      idsToDelete.forEach(id => next.delete(id));
+      return next;
+    });
     try {
-      for (const id of idsToDelete) {
-        await api.deleteProduct(id);
-      }
-      setSelectedProductIds(prev => {
-        const next = new Set(prev);
-        idsToDelete.forEach(id => next.delete(id));
-        return next;
-      });
+      await Promise.all(idsToDelete.map(id => api.deleteProduct(id)));
       await refreshState();
       showToast(
         'success',
@@ -618,6 +623,14 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       const productSnapshot: Product = { ...prod };
 
       setIsUploading(true);
+      // Optimistically remove from visible grid/table immediately
+      setAllProducts(prev => prev.filter(p => p.id !== prod.id));
+      setSelectedProductIds(prev => {
+        if (!prev.has(prod.id)) return prev;
+        const next = new Set(prev);
+        next.delete(prod.id);
+        return next;
+      });
       try {
         // Completely delete the selected product item from the site
         await api.deleteProduct(prod.id);
@@ -3716,7 +3729,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
       ===================================================================== */}
       {deleteConfirmTarget && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-[120] bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={e => {
             if (e.target === e.currentTarget) setDeleteConfirmTarget(null);
           }}

@@ -13,7 +13,7 @@ import {
   PaymentCheckoutData,
   AuthUser
 } from './types';
-import { api } from './services/apiService';
+import { api, getDeletedProductIdsSet, markProductIdsDeleted } from './services/apiService';
 import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
@@ -459,12 +459,23 @@ const MainApp: React.FC = () => {
         }
       }
     } catch {}
+    const deletedSet = getDeletedProductIdsSet();
+    if (deletedSet.size > 0) {
+      baseList = baseList.filter(
+        p => p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))
+      );
+    }
     return productImageManagerService.applyOverridesToProductList(baseList);
   });
 
   useEffect(() => {
-    const mergeCustomCatalog = (companies: any[], customProducts: any[]) => {
+    const mergeCustomCatalog = (companies: any[], customProducts: any[], serverDeletedIds?: string[]) => {
       try {
+        if (Array.isArray(serverDeletedIds) && serverDeletedIds.length > 0) {
+          markProductIdsDeleted(serverDeletedIds);
+        }
+        const deletedSet = getDeletedProductIdsSet();
+
         if (Array.isArray(companies) && companies.length > 0) {
           companies.forEach(comp => {
             if (comp && comp.id) {
@@ -478,11 +489,18 @@ const MainApp: React.FC = () => {
           });
         }
         if (Array.isArray(customProducts) && customProducts.length > 0) {
+          const visibleCustomProducts = customProducts.filter(
+            cp => cp && cp.id && !deletedSet.has(String(cp.id)) && !deletedSet.has(String(cp.id).replace(/^prod-db-/, ''))
+          );
           setProducts(prev => {
             const byId = new Map<string, Product>();
-            prev.forEach(p => byId.set(p.id, p));
+            prev.forEach(p => {
+              if (p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))) {
+                byId.set(p.id, p);
+              }
+            });
             const additions: Product[] = [];
-            customProducts.forEach(cp => {
+            visibleCustomProducts.forEach(cp => {
               if (cp && cp.id) {
                 if (byId.has(cp.id)) {
                   byId.set(cp.id, { ...byId.get(cp.id)!, ...cp });
@@ -496,19 +514,27 @@ const MainApp: React.FC = () => {
               ...Array.from(byId.values())
             ]);
           });
+        } else if (deletedSet.size > 0) {
+          setProducts(prev =>
+            prev.filter(
+              p => p && !deletedSet.has(String(p.id)) && !deletedSet.has(String(p.id).replace(/^prod-db-/, ''))
+            )
+          );
         }
       } catch {}
     };
 
     const syncFromServer = async () => {
       try {
-        const res = await fetch('/api/v1/public/custom-catalog');
+        const res = await fetch(`/api/v1/public/custom-catalog?_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
         if (!res.ok) return;
         const contentType = res.headers.get('content-type') || '';
         if (contentType && !contentType.includes('application/json')) return;
         const data = await res.json().catch(() => null);
         if (data && (data.success || data.status === 'success')) {
-          mergeCustomCatalog(data.companies || [], data.products || []);
+          mergeCustomCatalog(data.companies || [], data.products || [], data.deletedIds);
         }
       } catch {}
     };
@@ -1116,7 +1142,7 @@ const MainApp: React.FC = () => {
   const fetchProducts = async () => {
     try {
       const prods = await api.getProducts();
-      if (Array.isArray(prods) && prods.length > 0) {
+      if (Array.isArray(prods)) {
         setProducts(prods);
       }
     } catch (err) {}
@@ -1199,7 +1225,12 @@ const MainApp: React.FC = () => {
         return updated || prev;
       });
     };
-    const handleProductsUpdated = () => {
+    const handleProductsUpdated = (e: Event) => {
+      const deletedId = (e as CustomEvent)?.detail?.deletedId;
+      if (deletedId) {
+        setProducts(prev => prev.filter(p => p.id !== deletedId));
+        setSelectedProduct(prev => (prev && prev.id === deletedId ? null : prev));
+      }
       fetchProducts();
     };
     window.addEventListener('tradeheaven_rfq_created', handleRfqRefresh);

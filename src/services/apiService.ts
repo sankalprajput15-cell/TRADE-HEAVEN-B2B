@@ -43,6 +43,92 @@ const fetch = async (resource: RequestInfo | URL, options: RequestInit = {}): Pr
 
 // Storage keys for reactive state persistence
 const USERS_STORAGE_KEY = 'th_registered_users_store';
+const DELETED_PRODUCT_IDS_KEY = 'trade_heaven_deleted_product_ids';
+
+function getWindowDeletedSet(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  const w = window as any;
+  if (!(w.__TRADEHEAVEN_DELETED_PRODUCT_IDS__ instanceof Set)) {
+    w.__TRADEHEAVEN_DELETED_PRODUCT_IDS__ = new Set<string>();
+  }
+  return w.__TRADEHEAVEN_DELETED_PRODUCT_IDS__ as Set<string>;
+}
+
+export function getDeletedProductIdsSet(): Set<string> {
+  const combined = new Set<string>(getWindowDeletedSet());
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(DELETED_PRODUCT_IDS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(id => {
+            if (id) combined.add(String(id));
+          });
+        }
+      }
+    }
+  } catch {}
+  return combined;
+}
+
+export function markProductIdsDeleted(ids: string[]): void {
+  const cleanIds = ids.map(id => String(id || '').trim()).filter(Boolean);
+  if (cleanIds.length === 0) return;
+
+  const winSet = getWindowDeletedSet();
+  cleanIds.forEach(id => {
+    winSet.add(id);
+    if (id.startsWith('prod-db-')) {
+      winSet.add(id.replace('prod-db-', ''));
+    }
+  });
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const merged = Array.from(getDeletedProductIdsSet());
+      localStorage.setItem(DELETED_PRODUCT_IDS_KEY, JSON.stringify(merged));
+    }
+  } catch {}
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+      if (rawCustom) {
+        const customList: Product[] = JSON.parse(rawCustom);
+        if (Array.isArray(customList)) {
+          const removeSet = new Set(cleanIds);
+          const filtered = customList.filter(p => p && !removeSet.has(String(p.id)));
+          localStorage.setItem('trade_heaven_custom_products', JSON.stringify(filtered));
+        }
+      }
+    }
+  } catch {}
+}
+
+export function unmarkProductIdDeleted(id: string): void {
+  const cleanId = String(id || '').trim();
+  if (!cleanId) return;
+  const winSet = getWindowDeletedSet();
+  winSet.delete(cleanId);
+  if (cleanId.startsWith('prod-db-')) {
+    winSet.delete(cleanId.replace('prod-db-', ''));
+  }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(DELETED_PRODUCT_IDS_KEY);
+      if (raw) {
+        const parsed: string[] = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const updated = parsed.filter(
+            d => String(d) !== cleanId && String(d) !== `prod-db-${cleanId}`
+          );
+          localStorage.setItem(DELETED_PRODUCT_IDS_KEY, JSON.stringify(updated));
+        }
+      }
+    }
+  } catch {}
+}
 const DELETED_USERS_STORAGE_KEY = 'th_permanently_deleted_users_v1';
 const USER_DELETION_LOGS_STORAGE_KEY = 'th_user_deletion_logs_v1';
 const SUPPLIERS_STORAGE_KEY = 'th_suppliers_store';
@@ -1571,24 +1657,32 @@ export const api = {
       if (params?.keyword) searchParams.append('keyword', params.keyword);
       if (params?.tier) searchParams.append('tier', params.tier);
 
-      const res = await fetch(`/api/v1/products?${searchParams.toString()}`);
+      const res = await fetch(`/api/v1/products?${searchParams.toString()}&_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.data) && data.data.length > 0) {
-          const baseMap = new Map<string, Product>();
-          baseProducts.forEach(p => baseMap.set(p.id, p));
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType || contentType.includes('application/json')) {
+          const data = await res.json();
+          if (Array.isArray(data?.deletedIds) && data.deletedIds.length > 0) {
+            markProductIdsDeleted(data.deletedIds);
+          }
+          if (Array.isArray(data?.data) && data.data.length > 0) {
+            const baseMap = new Map<string, Product>();
+            baseProducts.forEach(p => baseMap.set(p.id, p));
 
-          const newAdditions: Product[] = [];
-          (data.data as Product[]).forEach(srvProd => {
-            if (srvProd && srvProd.id) {
-              if (baseMap.has(srvProd.id)) {
-                baseMap.set(srvProd.id, { ...baseMap.get(srvProd.id)!, ...srvProd });
-              } else {
-                newAdditions.push(srvProd);
+            const newAdditions: Product[] = [];
+            (data.data as Product[]).forEach(srvProd => {
+              if (srvProd && srvProd.id) {
+                if (baseMap.has(srvProd.id)) {
+                  baseMap.set(srvProd.id, { ...baseMap.get(srvProd.id)!, ...srvProd });
+                } else {
+                  newAdditions.push(srvProd);
+                }
               }
-            }
-          });
-          baseProducts = [...newAdditions, ...Array.from(baseMap.values())];
+            });
+            baseProducts = [...newAdditions, ...Array.from(baseMap.values())];
+          }
         }
       }
     } catch {}
@@ -1619,6 +1713,14 @@ export const api = {
       }
     } catch {}
 
+    // Exclude permanently deleted products across the entire site BEFORE filtering
+    const deletedIds = getDeletedProductIdsSet();
+    if (deletedIds.size > 0) {
+      baseProducts = baseProducts.filter(
+        p => p && !deletedIds.has(String(p.id)) && !deletedIds.has(String(p.id).replace(/^prod-db-/, ''))
+      );
+    }
+
     // 3. Apply filters if specified
     if (params?.category && params.category !== 'ALL') {
       baseProducts = baseProducts.filter(p => p.category === params.category);
@@ -1632,19 +1734,6 @@ export const api = {
     if (params?.tier && params.tier !== 'ALL') {
       baseProducts = baseProducts.filter(p => p.supplierTier === params.tier);
     }
-
-    // Exclude permanently deleted products across the entire site
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const rawDeleted = localStorage.getItem('trade_heaven_deleted_product_ids');
-        if (rawDeleted) {
-          const deletedIds = new Set<string>(JSON.parse(rawDeleted));
-          if (deletedIds.size > 0) {
-            baseProducts = baseProducts.filter(p => !deletedIds.has(p.id));
-          }
-        }
-      }
-    } catch {}
 
     return productImageManagerService.applyOverridesToProductList(baseProducts);
   },
@@ -1820,38 +1909,55 @@ export const api = {
   },
 
   async deleteProduct(id: string): Promise<{ success: boolean; message?: string }> {
-    try {
-      let deletedTitle = id;
-      // 1. Mark as deleted in localStorage and remove from custom products
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const rawDeleted = localStorage.getItem('trade_heaven_deleted_product_ids');
-        const deletedIds: string[] = rawDeleted ? JSON.parse(rawDeleted) : [];
-        if (!deletedIds.includes(id)) {
-          deletedIds.push(id);
-          localStorage.setItem('trade_heaven_deleted_product_ids', JSON.stringify(deletedIds));
-        }
+    const targetId = String(id || '').trim();
+    if (!targetId) {
+      return { success: false, message: 'Invalid product ID' };
+    }
 
-        const rawCustom = localStorage.getItem('trade_heaven_custom_products');
-        if (rawCustom) {
-          const customList: Product[] = JSON.parse(rawCustom);
-          const found = customList.find(p => p.id === id);
-          if (found) deletedTitle = found.title || id;
-          const filtered = customList.filter(p => p.id !== id);
-          localStorage.setItem('trade_heaven_custom_products', JSON.stringify(filtered));
+    try {
+      let deletedTitle = targetId;
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+          if (rawCustom) {
+            const customList: Product[] = JSON.parse(rawCustom);
+            const found = Array.isArray(customList) ? customList.find(p => p.id === targetId) : undefined;
+            if (found?.title) deletedTitle = found.title;
+          }
         }
-      }
+      } catch {}
+
+      // 1. Mark as deleted in memory + localStorage safely (never let Chrome QuotaExceeded block deletion!)
+      markProductIdsDeleted([
+        targetId,
+        ...(targetId.startsWith('prod-db-') ? [targetId.replace('prod-db-', '')] : [])
+      ]);
 
       // 2. Clear image overrides
       try {
-        await productImageManagerService.resetProductImage(id);
+        await productImageManagerService.resetProductImage(targetId);
       } catch {}
 
-      // 3. Delete from backend server
-      fetch(`/api/v1/products/${id}`, { method: 'DELETE' }).catch(() => {});
+      // 3. Await deletion on backend Express + PHP database endpoints so immediate refresh gets updated data
+      const rawListingId = targetId.startsWith('prod-db-') ? targetId.replace('prod-db-', '') : targetId;
+      await Promise.allSettled([
+        fetch(`/api/v1/products/${encodeURIComponent(targetId)}?_t=${Date.now()}`, {
+          method: 'DELETE',
+          cache: 'no-store'
+        }).then(async r => {
+          if (r.ok) {
+            const json = await r.json().catch(() => null);
+            if (Array.isArray(json?.deletedIds)) {
+              markProductIdsDeleted(json.deletedIds);
+            }
+          }
+        }),
+        bigrockApi.deleteListing(rawListingId)
+      ]);
 
-      // 4. Dispatch event so every page/catalog updates immediately
+      // 4. Dispatch event so every page/catalog updates immediately AFTER backend completes
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('tradeheaven_products_updated'));
+        window.dispatchEvent(new CustomEvent('tradeheaven_products_updated', { detail: { deletedId: targetId } }));
         window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
           detail: {
             type: 'DELETE',
@@ -1864,30 +1970,25 @@ export const api = {
 
       return { success: true, message: 'Product completely deleted from site!' };
     } catch (e: any) {
-      return { success: false, message: e.message || 'Failed to delete product from site' };
+      return { success: false, message: e?.message || 'Failed to delete product from site' };
     }
   },
 
   async restoreProduct(id: string, productSnapshot?: Product): Promise<{ success: boolean }> {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const rawDeleted = localStorage.getItem('trade_heaven_deleted_product_ids');
-        if (rawDeleted) {
-          const deletedIds: string[] = JSON.parse(rawDeleted);
-          const updated = deletedIds.filter(delId => delId !== id);
-          localStorage.setItem('trade_heaven_deleted_product_ids', JSON.stringify(updated));
-        }
-        if (productSnapshot) {
-          const rawCustom = localStorage.getItem('trade_heaven_custom_products');
-          const customList: Product[] = rawCustom ? JSON.parse(rawCustom) : [];
-          if (!customList.some(p => p.id === id)) {
-            customList.unshift(productSnapshot);
-            localStorage.setItem('trade_heaven_custom_products', JSON.stringify(customList));
-          }
-        }
-      }
+      unmarkProductIdDeleted(id);
       if (productSnapshot) {
-        fetch('/api/v1/products', {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const rawCustom = localStorage.getItem('trade_heaven_custom_products');
+            const customList: Product[] = rawCustom ? JSON.parse(rawCustom) : [];
+            if (!customList.some(p => p.id === id)) {
+              customList.unshift(productSnapshot);
+              localStorage.setItem('trade_heaven_custom_products', JSON.stringify(customList));
+            }
+          }
+        } catch {}
+        await fetch('/api/v1/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productSnapshot)

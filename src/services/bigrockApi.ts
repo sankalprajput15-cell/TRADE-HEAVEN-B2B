@@ -737,12 +737,14 @@ export const bigrockApi = {
   // ==========================================
   async fetchListings(): Promise<DbListing[]> {
     try {
-      const response = await fetch(`${BIGROCK_API_URL}?action=get_listings`);
+      const response = await fetch(`${BIGROCK_API_URL}?action=get_listings&_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (response.ok) {
         const json = await safeParseJson(response);
         if (json) {
           const list = Array.isArray(json) ? json : (json.data || []);
-          if (list.length > 0) return list;
+          return Array.isArray(list) ? list : [];
         }
       }
     } catch (err) { console.warn('[BigRock API fetchListings]:', err); }
@@ -791,13 +793,24 @@ export const bigrockApi = {
   },
 
   async deleteListing(id: string | number): Promise<{ success: boolean; error?: string }> {
+    const rawId = String(id ?? '').trim();
+    if (!rawId) return { success: false, error: 'Missing listing ID' };
     try {
-      await fetch(`${BIGROCK_API_URL}?action=delete_listing`, {
+      const res = await fetch(`${BIGROCK_API_URL}?action=delete_listing&_t=${Date.now()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        cache: 'no-store',
+        body: JSON.stringify({ id: rawId })
       });
-    } catch (err) { console.warn('[BigRock API deleteListing]:', err); }
+      if (res.ok) {
+        const json = await safeParseJson(res);
+        if (json && (json.success || json.status === 'success')) {
+          return { success: true };
+        }
+      }
+    } catch (err) {
+      console.warn('[BigRock API deleteListing]:', err);
+    }
     return { success: true };
   },
 
