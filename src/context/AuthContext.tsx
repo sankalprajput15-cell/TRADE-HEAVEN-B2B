@@ -240,12 +240,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const verifyActiveSessionWithServer = async () => {
       try {
-        const res = await fetch('/api/v1/auth/me', {
-          headers: {
-            Authorization: `Bearer ${user.token}`
-          }
-        });
-        if (!res.ok && isMounted) {
+        const result = await apiClient.verifySessionMe(user.token || '');
+        if (!result.valid && result.revoked && isMounted) {
           setUser(null);
           setIsAuthenticated(false);
           setOriginalAdminUser(null);

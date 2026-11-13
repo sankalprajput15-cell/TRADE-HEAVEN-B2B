@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AuthUser } from '../../types';
 import { SafeImage } from '../common/SafeImage';
 import { apiClient } from '../../services/apiClient';
@@ -52,16 +52,29 @@ export const AuthModal: React.FC<Props> = ({
 }) => {
   const [authMode, setAuthMode] = useState<'LOGIN' | 'LOGIN_OTP' | 'REGISTER' | 'WORK_WITH_US' | 'FORGOT_PASSWORD' | 'RESET_PASSWORD'>(initialMode);
 
-  useEffect(() => {
-    if (isOpen && initialMode) {
-      setAuthMode(initialMode);
-    }
-  }, [isOpen, initialMode]);
-  
+  // DOM refs to support browser autofill (Chrome saved passwords / emails) reliably
+  const loginEmailInputRef = useRef<HTMLInputElement>(null);
+  const loginPasswordInputRef = useRef<HTMLInputElement>(null);
+  const regEmailInputRef = useRef<HTMLInputElement>(null);
+  const forgotEmailInputRef = useRef<HTMLInputElement>(null);
+
   // Login Form States (Locally Isolated)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialMode) {
+        setAuthMode(initialMode);
+      }
+      setError(null);
+      setSuccess(null);
+      setIsLoading(false);
+      setIsSendingLoginOtp(false);
+      setIsSendingRegOtp(false);
+    }
+  }, [isOpen, initialMode]);
 
   // 2-Step Login OTP Verification States (Sent to Registered User's Email)
   const [loginOtpCode, setLoginOtpCode] = useState('');
@@ -170,26 +183,42 @@ export const AuthModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const getEffectiveLoginCredentials = () => {
+    const domEmail = loginEmailInputRef.current?.value ?? '';
+    const domPassword = loginPasswordInputRef.current?.value ?? '';
+    const effectiveEmailRaw = email.trim() ? email : domEmail;
+    const effectivePassword = password || domPassword;
+    if (domEmail && domEmail !== email) {
+      setEmail(domEmail);
+    }
+    if (domPassword && domPassword !== password) {
+      setPassword(domPassword);
+    }
+    const rawClean = (effectiveEmailRaw || '').trim().toLowerCase();
+    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
+    const isRootAdmin = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(cleanEmail);
+    return { cleanEmail, effectivePassword, isRootAdmin };
+  };
+
   // Handler for 'Send OTP' button inside the Sign-In Form
   const handleSendLoginOtpClick = async () => {
     setError(null);
     setSuccess(null);
 
-    const cleanEmail = email.trim().toLowerCase();
-    const isRootAdmin = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(cleanEmail);
+    const { cleanEmail, effectivePassword, isRootAdmin } = getEffectiveLoginCredentials();
 
-    if (!cleanEmail) {
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter your registered email address before clicking Send OTP.');
       return;
     }
-    if (!isRootAdmin && !password) {
+    if (!isRootAdmin && !effectivePassword) {
       setError('Please enter both your registered email and password before clicking Send OTP.');
       return;
     }
 
     setIsSendingLoginOtp(true);
     try {
-      const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : password);
+      const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : effectivePassword);
       if (res.success) {
         setLoginOtpSent(true);
         setPendingOtpEmail(res.email || cleanEmail);
@@ -213,7 +242,13 @@ export const AuthModal: React.FC<Props> = ({
     setError(null);
     setSuccess(null);
 
-    const cleanEmail = regEmail.trim().toLowerCase();
+    const domRegEmail = regEmailInputRef.current?.value ?? '';
+    const effectiveRegEmail = regEmail.trim() ? regEmail : domRegEmail;
+    if (domRegEmail && domRegEmail !== regEmail) {
+      setRegEmail(domRegEmail);
+    }
+    const rawClean = effectiveRegEmail.trim().toLowerCase();
+    const cleanEmail = rawClean.startsWith('mail-') && rawClean.includes('@') ? rawClean.slice(5) : rawClean;
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter a valid corporate email address before clicking Send OTP.');
       return;
@@ -244,14 +279,13 @@ export const AuthModal: React.FC<Props> = ({
     setError(null);
     setSuccess(null);
 
-    const cleanEmail = email.trim().toLowerCase();
-    const isRootAdmin = ['yr943334@gmail.com', 'sankalprajput15@gmail.com'].includes(cleanEmail);
+    const { cleanEmail, effectivePassword, isRootAdmin } = getEffectiveLoginCredentials();
 
-    if (!cleanEmail) {
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter your registered email address.');
       return;
     }
-    if (!isRootAdmin && !password) {
+    if (!isRootAdmin && !effectivePassword) {
       setError('Please enter both your registered corporate email and password.');
       return;
     }
@@ -261,7 +295,7 @@ export const AuthModal: React.FC<Props> = ({
       // Step 1: User submitted credentials without OTP - automatically dispatch OTP to registered email
       setIsLoading(true);
       try {
-        const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : password);
+        const res = await otpService.requestLoginOtp(cleanEmail, isRootAdmin ? undefined : effectivePassword);
         if (res.success) {
           setLoginOtpSent(true);
           setPendingOtpEmail(res.email || cleanEmail);
@@ -285,7 +319,7 @@ export const AuthModal: React.FC<Props> = ({
 
     setIsLoading(true);
     try {
-      const res = await login(cleanEmail, isRootAdmin ? undefined : password, cleanOtp);
+      const res = await login(cleanEmail, isRootAdmin ? undefined : effectivePassword, cleanOtp);
       if (res.success && res.requiresOtp) {
         setLoginOtpSent(true);
         setPendingOtpEmail(res.email || cleanEmail);
@@ -749,95 +783,22 @@ export const AuthModal: React.FC<Props> = ({
               </div>
             )}
 
-            {/* PRODUCTION SIGN-IN FORM: ONLY EMAIL & PASSWORD */}
+            {/* PRODUCTION SIGN-IN FORM: EMAIL, PASSWORD (NON-ADMIN) & 6-DIGIT EMAIL OTP */}
             {authMode === 'LOGIN' && (
-              <form onSubmit={handleSignIn} className="space-y-4 text-xs">
-                {/* 1-Click Select Verified Supplier Profile (Admin Only) */}
-                {currentUser?.role === 'ADMIN' && (
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/90 space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                      <span className="flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Select Supplier Profile to Login (Admin Tool):</span>
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-normal">Auto-fills credentials</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('ezekiahali355@gmail.com');
-                          setPassword('Ezekiah@2026');
-                        }}
-                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
-                          email === 'ezekiahali355@gmail.com'
-                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
-                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
-                        }`}
-                      >
-                        <div className="font-bold text-slate-900 text-xs truncate">Ali Charley Ezekiah</div>
-                        <div className="text-[10px] text-slate-500 truncate">ACE Intermediary</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('melissa@mpcommoditybrokers.com');
-                          setPassword('Password@123');
-                        }}
-                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
-                          email.includes('melissa')
-                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
-                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
-                        }`}
-                      >
-                        <div className="font-bold text-slate-900 text-xs truncate">Melissa Prezios</div>
-                        <div className="text-[10px] text-slate-500 truncate">MP Commodity Brokers</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('mjohnson@atlanticpowerequip.com');
-                          setPassword('Atlantic@2026');
-                        }}
-                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
-                          email.includes('atlanticpowerequip')
-                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
-                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
-                        }`}
-                      >
-                        <div className="font-bold text-slate-900 text-xs truncate">Mark Johnson</div>
-                        <div className="text-[10px] text-slate-500 truncate">Atlantic Power &amp; Equip</div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('randy@midforkcap.com');
-                          setPassword('Randy@2026');
-                        }}
-                        className={`p-2 text-left rounded-xl border transition-all cursor-pointer ${
-                          email.includes('midforkcap')
-                            ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-300'
-                            : 'bg-white hover:bg-slate-100/80 border-slate-200'
-                        }`}
-                      >
-                        <div className="font-bold text-slate-900 text-xs truncate">Mr. Randy</div>
-                        <div className="text-[10px] text-slate-500 truncate">Middle Fox LLC</div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+              <form onSubmit={handleSignIn} noValidate className="space-y-4 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Corporate / Work Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     <input
+                      ref={loginEmailInputRef}
                       type="email"
                       required
                       autoComplete="email"
                       placeholder="name@company.com"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
+                      onInput={e => setEmail((e.target as HTMLInputElement).value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
                     />
                   </div>
@@ -878,18 +839,22 @@ export const AuthModal: React.FC<Props> = ({
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                       <input
+                        ref={loginPasswordInputRef}
                         type={showPassword ? 'text' : 'password'}
                         required={!isAdminEmailInput}
                         autoComplete="current-password"
                         placeholder="••••••••••••"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
+                        onInput={e => setPassword((e.target as HTMLInputElement).value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
                       />
                       <button
                         type="button"
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -897,57 +862,58 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button (Shown after entering password) */}
-                {(password.trim().length > 0 || isAdminEmailInput || loginOtpSent) && (
-                  <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
-                    <div className="flex items-center justify-between gap-2">
-                      <label className="font-bold text-indigo-950 text-[11px] flex items-center gap-1.5">
-                        <Key className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                        <span>6-Digit Email Verification Code (OTP) *</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={handleSendLoginOtpClick}
-                        disabled={isSendingLoginOtp || isLoading}
-                        data-testid="auth-login-send-otp-btn"
-                        className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs disabled:opacity-50 shrink-0"
-                      >
-                        <Mail className="w-3 h-3" />
-                        <span>
-                          {isSendingLoginOtp
-                            ? 'Sending OTP...'
-                            : loginOtpSent
-                            ? 'Resend OTP'
-                            : 'Send OTP'}
-                        </span>
-                      </button>
-                    </div>
-
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]{6}"
-                      maxLength={6}
-                      placeholder=""
-                      value={loginOtpCode}
-                      onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      data-testid="auth-login-otp-input"
-                      className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm font-black tracking-[0.35em] focus:outline-none focus:border-indigo-600"
-                    />
-
-                    <p className="text-[10px] text-indigo-900/80 leading-snug">
-                      {loginOtpSent
-                        ? `OTP dispatched from noreply@tradeheaven.net to ${pendingMaskedEmail || email}. Enter the 6-digit code above to sign in.`
-                        : 'Click "Send OTP" to receive a 6-digit verification code on your registered email address.'}
-                    </p>
+                {/* 6-Digit Email OTP Verification Section with 'Send OTP' Button (Always accessible in Sign In) */}
+                <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200/90 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="font-bold text-indigo-950 text-[11px] flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span>6-Digit Email Verification Code (OTP) *</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSendLoginOtpClick}
+                      disabled={isSendingLoginOtp || isLoading}
+                      data-testid="auth-login-send-otp-btn"
+                      className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs disabled:opacity-50 shrink-0"
+                    >
+                      <Mail className="w-3 h-3" />
+                      <span>
+                        {isSendingLoginOtp
+                          ? 'Sending OTP...'
+                          : loginOtpSent
+                          ? 'Resend OTP'
+                          : 'Send OTP'}
+                      </span>
+                    </button>
                   </div>
-                )}
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP"
+                    value={loginOtpCode}
+                    onChange={e => setLoginOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    data-testid="auth-login-otp-input"
+                    className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-center text-sm font-black tracking-[0.35em] focus:outline-none focus:border-indigo-600"
+                  />
+
+                  <p className="text-[10px] text-indigo-900/80 leading-snug">
+                    {loginOtpSent
+                      ? `OTP dispatched from noreply@tradeheaven.net to ${pendingMaskedEmail || email}. Enter the 6-digit code above to sign in.`
+                      : isAdminEmailInput
+                      ? 'Admin accounts authenticate via Email OTP only. Click "Send OTP" above to receive your code.'
+                      : 'Enter your email and password, then click "Send OTP" above to receive your 6-digit code.'}
+                  </p>
+                </div>
 
                 <div className="flex items-center justify-between pt-0.5">
                   <button
                     type="button"
                     onClick={() => {
-                      if (email && !forgotEmail) setForgotEmail(email);
+                      const effective = loginEmailInputRef.current?.value || email;
+                      if (effective && !forgotEmail) setForgotEmail(effective);
                       setAuthMode('FORGOT_PASSWORD');
                       setError(null);
                       setSuccess(null);
@@ -961,7 +927,8 @@ export const AuthModal: React.FC<Props> = ({
 
                 <button
                   type="submit"
-                  disabled={isLoading || !email.trim() || (!isAdminEmailInput && !password.trim())}
+                  disabled={isLoading}
+                  data-testid="auth-login-submit-btn"
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   <LogIn className="w-4 h-4" />
@@ -970,7 +937,7 @@ export const AuthModal: React.FC<Props> = ({
                       ? 'Processing 2FA Authentication...'
                       : loginOtpCode.trim().length === 6
                       ? 'Verify OTP & Sign In'
-                      : 'Continue with Registered Email OTP →'}
+                      : 'Send OTP & Continue Sign In →'}
                   </span>
                 </button>
 
@@ -1275,20 +1242,23 @@ export const AuthModal: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Corporate Work Email *</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      placeholder="david.sterling@company.com"
-                      value={regEmail}
-                      onChange={e => setRegEmail(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
-                    />
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Corporate Work Email *</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input
+                        ref={regEmailInputRef}
+                        type="email"
+                        required
+                        autoComplete="email"
+                        placeholder="david.sterling@company.com"
+                        value={regEmail}
+                        onChange={e => setRegEmail(e.target.value)}
+                        onInput={e => setRegEmail((e.target as HTMLInputElement).value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+                      />
+                    </div>
                   </div>
-                </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1441,7 +1411,8 @@ export const AuthModal: React.FC<Props> = ({
 
                 <button
                   type="submit"
-                  disabled={isLoading || regOtpCode.trim().length !== 6}
+                  disabled={isLoading}
+                  data-testid="auth-register-submit-btn"
                   className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer disabled:opacity-50 mt-2"
                 >
                   <UserPlus className="w-4 h-4" />

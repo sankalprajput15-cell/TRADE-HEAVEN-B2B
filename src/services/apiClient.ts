@@ -102,6 +102,43 @@ async function safeParseJson<T = any>(response: Response): Promise<T | null> {
   }
 }
 
+function isPhpGatewayDefaultBanner(json: any): boolean {
+  return Boolean(json && typeof json === 'object' && json.service === 'Trade4Deals MySQL PDO API Gateway');
+}
+
+async function postAuthEndpoint(
+  expressPath: string,
+  phpAction: string,
+  payload: Record<string, any>
+): Promise<{ res: Response; json: any | null }> {
+  const reqInit: RequestInit = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  };
+
+  let res = await fetch(expressPath, reqInit);
+  let json = await safeParseJson(res);
+
+  if (!json || res.status === 404 || res.status === 405) {
+    try {
+      const phpRes = await fetch(`${API_BASE}?action=${encodeURIComponent(phpAction)}`, reqInit);
+      const phpJson = await safeParseJson(phpRes);
+      if (phpJson && !isPhpGatewayDefaultBanner(phpJson)) {
+        res = phpRes;
+        json = phpJson;
+      }
+    } catch {
+      // Preserve initial response if PHP fallback is unavailable
+    }
+  }
+
+  return { res, json };
+}
+
 export const apiClient = {
   /**
    * Fetch live CMS Site Content from the backend API.
@@ -314,6 +351,41 @@ export const apiClient = {
   },
 
   /**
+   * Verify active Bearer session token against backend (/api/v1/auth/me with api.php?action=auth_me fallback)
+   */
+  async verifySessionMe(token: string): Promise<{ valid: boolean; revoked?: boolean }> {
+    if (!token) return { valid: false, revoked: true };
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json'
+    };
+    try {
+      let res = await fetch('/api/v1/auth/me', { headers, cache: 'no-cache' });
+      let json = await safeParseJson(res);
+      if (!json || res.status === 404 || res.status === 405) {
+        const phpRes = await fetch(`${API_BASE}?action=auth_me`, { headers, cache: 'no-cache' });
+        const phpJson = await safeParseJson(phpRes);
+        if (phpJson && !isPhpGatewayDefaultBanner(phpJson)) {
+          res = phpRes;
+          json = phpJson;
+        }
+      }
+      if (!json || isPhpGatewayDefaultBanner(json)) {
+        return { valid: true };
+      }
+      if (res.ok && (json.success || json.status === 'success')) {
+        return { valid: true };
+      }
+      if (res.status === 401 || res.status === 403 || json.revoked === true) {
+        return { valid: false, revoked: true };
+      }
+      return { valid: true };
+    } catch {
+      return { valid: true };
+    }
+  },
+
+  /**
    * Generate and send a 6-digit OTP verification code to the user's email via SMTP for Login or Registration
    */
   async sendAuthOtp(payload: {
@@ -340,22 +412,15 @@ export const apiClient = {
         };
       }
 
-      const res = await fetch('/api/v1/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: cleanEmail,
-          password: payload.password,
-          name: payload.name,
-          mode: payload.mode,
-          accountType: payload.accountType
-        })
+      const { res, json } = await postAuthEndpoint('/api/v1/auth/send-otp', 'send_otp', {
+        email: cleanEmail,
+        password: payload.password,
+        name: payload.name,
+        mode: payload.mode,
+        accountType: payload.accountType
       });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok && json.success) {
+
+      if (res.ok && json && (json.success === true || json.otp_dispatched === true)) {
         return {
           success: true,
           email: json.email || cleanEmail,
@@ -369,7 +434,7 @@ export const apiClient = {
       }
       return {
         success: false,
-        message: json?.message || 'Unable to send OTP. Please check your credentials and try again.'
+        message: json?.message || 'Unable to dispatch OTP from the authentication server. Please verify your email and credentials and try again.'
       };
     } catch (e: any) {
       return {
@@ -398,11 +463,11 @@ export const apiClient = {
           reason: reason || 'Global administrator sign-out due to secret key exposure'
         })
       });
-      const json = await res.json().catch(() => ({}));
+      const json = await safeParseJson(res);
       return {
-        success: Boolean(res.ok && json.success),
-        adminRevocationEpoch: json.adminRevocationEpoch,
-        message: json.message || 'All administrator sessions worldwide have been revoked.'
+        success: Boolean(res.ok && json?.success),
+        adminRevocationEpoch: json?.adminRevocationEpoch,
+        message: json?.message || 'All administrator sessions worldwide have been revoked.'
       };
     } catch {
       return {
@@ -450,21 +515,13 @@ export const apiClient = {
         };
       }
 
-      const authRes = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          email: cleanEmail,
-          password: isRootAdminEmail ? undefined : password,
-          otp: otp ? otp.trim() : undefined
-        })
+      const { res: authRes, json: authJson } = await postAuthEndpoint('/api/v1/auth/login', 'login', {
+        email: cleanEmail,
+        password: isRootAdminEmail ? undefined : password,
+        otp: otp ? otp.trim() : undefined
       });
-      const authJson = await authRes.json().catch(() => ({}));
 
-      if (authRes.ok && authJson.success) {
+      if (authRes.ok && authJson && (authJson.success === true || authJson.requiresOtp || authJson.user)) {
         if (authJson.requiresOtp) {
           return {
             success: true,
@@ -533,17 +590,12 @@ export const apiClient = {
         };
       }
 
-      const res = await fetch('/api/v1/auth/verify-login-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ email: cleanEmail, otp: cleanOtp })
+      const { res, json } = await postAuthEndpoint('/api/v1/auth/verify-login-otp', 'verify_login_otp', {
+        email: cleanEmail,
+        otp: cleanOtp
       });
-      const json = await res.json().catch(() => ({}));
 
-      if (res.ok && json.success && json.user) {
+      if (res.ok && json && json.success === true && json.user) {
         return {
           success: true,
           token: json.token || json.user.token,
@@ -577,16 +629,10 @@ export const apiClient = {
   }> {
     try {
       const cleanEmail = (email || '').trim().toLowerCase();
-      const res = await fetch('/api/v1/auth/resend-login-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ email: cleanEmail })
+      const { res, json } = await postAuthEndpoint('/api/v1/auth/resend-login-otp', 'resend_login_otp', {
+        email: cleanEmail
       });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok && json.success) {
+      if (res.ok && json && json.success === true) {
         return {
           success: true,
           maskedEmail: json.maskedEmail,
@@ -669,17 +715,8 @@ export const apiClient = {
         accountType: resolvedRole === 'supplier' ? 'SUPPLIER' : 'BUYER'
       };
 
-      const res = await fetch(`${API_BASE}?action=register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestPayload)
-      });
-
-      const json = await res.json().catch(() => ({}));
-      const isSuccess = res.ok && (json.status === 'success' || json.success === true);
+      const { res, json } = await postAuthEndpoint('/api/v1/auth/register', 'register', requestPayload);
+      const isSuccess = Boolean(res.ok && json && (json.status === 'success' || json.success === true));
 
       if (isSuccess && (json.user || json.data)) {
         const rawUser = json.user || json.data;

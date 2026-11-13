@@ -1506,7 +1506,8 @@ async function issueAndDispatchRegistrationOtp(
     recipientName: (name || '').trim() || cleanEmail.split('@')[0],
     otpCode,
     expiryMinutes: 10,
-    role
+    role,
+    isRegistration: true
   });
 
   return {
@@ -5772,7 +5773,43 @@ app.get('/api.php', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
   res.type('application/json');
-  const action = String(req.query.action || '');
+  const action = String(req.query.action || '').replace(/-/g, '_').toLowerCase();
+
+  if (action === 'auth_me' || action === 'me') {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, revoked: true, message: 'Unauthenticated' });
+    }
+    const token = authHeader.split(' ')[1];
+    const payload = verifyServerJwt(token);
+    if (!payload) {
+      return res.status(401).json({
+        success: false,
+        revoked: true,
+        adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
+        message: 'Session expired or invalid. Please sign in again via Email OTP.'
+      });
+    }
+    return res.json({
+      success: true,
+      adminRevocationEpoch: GLOBAL_ADMIN_REVOCATION_EPOCH,
+      user: {
+        id: payload.uid,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role,
+        isPremium: payload.isPremium,
+        membershipStatus: payload.membershipStatus,
+        status: payload.status,
+        isVerified: payload.isVerified,
+        isVerifiedAdmin: payload.role === 'ADMIN',
+        otpVerified: true,
+        tier: payload.tier,
+        companyName: payload.companyName,
+        token
+      }
+    });
+  }
 
   if (action === 'get_rfqs' || action === 'rfqs') {
     const standardized = serverRfqsStore.map(r => ({
@@ -6070,8 +6107,175 @@ app.post('/api.php', async (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
   res.type('application/json');
-  const action = String(req.query.action || req.body?.action || '');
+  const action = String(req.query.action || req.body?.action || '').replace(/-/g, '_').toLowerCase();
   const input = req.body || {};
+
+  // Send OTP (Login or Registration) via /api.php?action=send_otp
+  if (action === 'send_otp') {
+    const { email, password, name, mode = 'LOGIN', accountType } = input;
+    const cleanEmail = normalizeRecipientEmail(String(email || ''));
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return res.status(400).json({
+        status: 'error',
+        success: false,
+        message: 'Please enter a valid corporate email address before clicking Send OTP.'
+      });
+    }
+
+    const normalizedMode = String(mode || 'LOGIN').toUpperCase();
+    if (normalizedMode === 'REGISTER') {
+      if (AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) {
+        return res.status(403).json({
+          status: 'error',
+          success: false,
+          message: 'This email is reserved for system administration. Please sign in using the Login tab via Email OTP.'
+        });
+      }
+      if (serverUsersStore.some(u => normalizeRecipientEmail(u.email) === cleanEmail)) {
+        return res.status(409).json({
+          status: 'error',
+          success: false,
+          message: 'An account with this email address is already registered. Please switch to Sign In.'
+        });
+      }
+      const dispatchInfo = await issueAndDispatchRegistrationOtp(
+        cleanEmail,
+        name,
+        accountType === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER'
+      );
+      const maskedEmail = maskRegisteredEmail(cleanEmail);
+      return res.json({
+        status: 'success',
+        success: true,
+        otp_dispatched: true,
+        mode: 'REGISTER',
+        email: cleanEmail,
+        maskedEmail,
+        emailSent: dispatchInfo.emailSent,
+        message: `A 6-digit verification code has been sent to ${maskedEmail} via noreply@tradeheaven.net. Enter it below to complete registration.`
+      });
+    }
+
+    const matchedUser = findRegisteredUserForAuth(cleanEmail);
+    if (!matchedUser) {
+      return res.status(401).json({
+        status: 'error',
+        success: false,
+        message: 'No registered account found for this email address. Only registered users can receive a login OTP.'
+      });
+    }
+    const isRootAdmin = AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN';
+    if (!isRootAdmin && (!password || !verifyRegisteredUserPassword(matchedUser, String(password)))) {
+      return res.status(401).json({
+        status: 'error',
+        success: false,
+        message: 'Please enter your valid registered account password before clicking Send OTP.'
+      });
+    }
+    const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
+    const maskedEmail = maskRegisteredEmail(matchedUser.email);
+    return res.json({
+      status: 'success',
+      success: true,
+      otp_dispatched: true,
+      mode: 'LOGIN',
+      requiresOtp: true,
+      email: matchedUser.email,
+      maskedEmail,
+      role: matchedUser.role,
+      emailSent: dispatchInfo.emailSent,
+      message: isRootAdmin
+        ? `Admin OTP-Only Security: A 6-digit verification code has been sent to your registered admin email (${maskedEmail}).`
+        : `A 6-digit verification code has been sent to your registered email (${maskedEmail}) via noreply@tradeheaven.net.`
+    });
+  }
+
+  // Verify Login OTP via /api.php?action=verify_login_otp
+  if (action === 'verify_login_otp') {
+    const cleanEmail = normalizeRecipientEmail(String(input.email || ''));
+    const cleanOtp = String(input.otp || input.code || '').trim();
+    if (!cleanEmail || !cleanOtp) {
+      return res.status(400).json({ status: 'error', success: false, message: 'Both registered email and 6-digit OTP code are required.' });
+    }
+    const matchedUser = findRegisteredUserForAuth(cleanEmail);
+    if (!matchedUser || !matchedUser.login_otp_code || !matchedUser.login_otp_expiry) {
+      return res.status(401).json({ status: 'error', success: false, message: 'No active OTP session found or code expired. Please request a new OTP.' });
+    }
+    matchedUser.login_otp_attempts = (matchedUser.login_otp_attempts || 0) + 1;
+    if (matchedUser.login_otp_attempts > 5) {
+      matchedUser.login_otp_code = null;
+      matchedUser.login_otp_expiry = null;
+      saveServerUsersToDisk();
+      return res.status(429).json({ status: 'error', success: false, message: 'Too many failed OTP attempts. Please sign in again to request a new OTP.' });
+    }
+    if (Date.now() > matchedUser.login_otp_expiry) {
+      matchedUser.login_otp_code = null;
+      matchedUser.login_otp_expiry = null;
+      saveServerUsersToDisk();
+      return res.status(401).json({ status: 'error', success: false, message: 'Your 6-digit OTP has expired. Please click Resend OTP to receive a fresh code.' });
+    }
+    if (matchedUser.login_otp_code !== cleanOtp) {
+      saveServerUsersToDisk();
+      return res.status(401).json({ status: 'error', success: false, message: `Invalid 6-digit OTP verification code (${5 - matchedUser.login_otp_attempts} attempts remaining).` });
+    }
+    matchedUser.login_otp_code = null;
+    matchedUser.login_otp_expiry = null;
+    matchedUser.login_otp_attempts = 0;
+    saveServerUsersToDisk();
+
+    const isAdmin = AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN';
+    const resolvedRole = isAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
+    const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
+    sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+    return res.json({
+      status: 'success',
+      success: true,
+      token,
+      user: {
+        id: matchedUser.id,
+        email: matchedUser.email,
+        name: matchedUser.name,
+        role: resolvedRole,
+        isPremium: isAdmin ? true : matchedUser.isPremium,
+        membershipStatus: isAdmin ? 'paid' : matchedUser.membershipStatus,
+        status: matchedUser.status,
+        isVerified: true,
+        isVerifiedAdmin: isAdmin,
+        otpVerified: true,
+        tier: isAdmin ? 'VIP' : matchedUser.tier,
+        companyName: matchedUser.companyName,
+        country: matchedUser.country,
+        avatarUrl: matchedUser.avatarUrl,
+        token
+      },
+      message: isAdmin
+        ? 'Administrator 2FA OTP verified. Welcome to the Control Center.'
+        : `2FA OTP verified. Welcome back, ${matchedUser.name}!`
+    });
+  }
+
+  // Resend Login OTP via /api.php?action=resend_login_otp
+  if (action === 'resend_login_otp') {
+    const cleanEmail = normalizeRecipientEmail(String(input.email || ''));
+    if (!cleanEmail) {
+      return res.status(400).json({ status: 'error', success: false, message: 'Registered email address is required.' });
+    }
+    const matchedUser = findRegisteredUserForAuth(cleanEmail);
+    if (!matchedUser) {
+      return res.status(404).json({ status: 'error', success: false, message: 'No registered user found for this email.' });
+    }
+    const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
+    const maskedEmail = maskRegisteredEmail(matchedUser.email);
+    return res.json({
+      status: 'success',
+      success: true,
+      requiresOtp: true,
+      email: matchedUser.email,
+      maskedEmail,
+      emailSent: dispatchInfo.emailSent,
+      message: `A fresh 6-digit verification OTP has been sent to your registered email (${maskedEmail}).`
+    });
+  }
 
   // User Registration (Requires 6-Digit Email OTP Verification)
   if (action === 'register') {
@@ -6290,7 +6494,7 @@ app.post('/api.php', async (req, res) => {
 
   // User Login (Admin = OTP-Only on Admin Email; Buyers/Suppliers = Password + Email OTP)
   if (action === 'login') {
-    const { email, password } = input;
+    const { email, password, otp, code } = input;
     if (!email) {
       return res.status(400).json({ status: 'error', success: false, message: 'Registered email address is required.' });
     }
@@ -6301,6 +6505,64 @@ app.post('/api.php', async (req, res) => {
     if (!matchedUser || (!isRootAdmin && (!password || !verifyRegisteredUserPassword(matchedUser, String(password))))) {
       logServerActivity(req, 'AUTH_LOGIN', cleanEmail, 'GUEST', '/api.php?action=login', `Failed login attempt for corporate email: ${cleanEmail} via PHP gateway`, 'UNAUTHORIZED_401');
       return res.status(401).json({ status: 'error', success: false, message: 'Invalid registered email or password. Access denied.' });
+    }
+
+    const submittedOtp = String(otp || code || '').trim();
+    if (submittedOtp) {
+      if (!matchedUser.login_otp_code || !matchedUser.login_otp_expiry) {
+        return res.status(401).json({ status: 'error', success: false, message: 'No active OTP found. Please click "Send OTP" first to receive a 6-digit code on your registered email.' });
+      }
+      matchedUser.login_otp_attempts = (matchedUser.login_otp_attempts || 0) + 1;
+      if (matchedUser.login_otp_attempts > 5) {
+        matchedUser.login_otp_code = null;
+        matchedUser.login_otp_expiry = null;
+        saveServerUsersToDisk();
+        return res.status(429).json({ status: 'error', success: false, message: 'Too many failed OTP attempts. Please click "Send OTP" to request a new 6-digit code.' });
+      }
+      if (Date.now() > matchedUser.login_otp_expiry) {
+        matchedUser.login_otp_code = null;
+        matchedUser.login_otp_expiry = null;
+        saveServerUsersToDisk();
+        return res.status(401).json({ status: 'error', success: false, message: 'Your 6-digit OTP has expired. Please click "Send OTP" to receive a fresh code.' });
+      }
+      if (matchedUser.login_otp_code !== submittedOtp) {
+        saveServerUsersToDisk();
+        return res.status(401).json({ status: 'error', success: false, message: `Invalid 6-digit OTP verification code (${5 - matchedUser.login_otp_attempts} attempts remaining).` });
+      }
+
+      matchedUser.login_otp_code = null;
+      matchedUser.login_otp_expiry = null;
+      matchedUser.login_otp_attempts = 0;
+      saveServerUsersToDisk();
+
+      const resolvedRole = isRootAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
+      const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
+      sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+      return res.json({
+        status: 'success',
+        success: true,
+        token,
+        user: {
+          id: matchedUser.id,
+          email: matchedUser.email,
+          name: matchedUser.name,
+          role: resolvedRole,
+          isPremium: isRootAdmin ? true : matchedUser.isPremium,
+          membershipStatus: isRootAdmin ? 'paid' : matchedUser.membershipStatus,
+          status: matchedUser.status,
+          isVerified: true,
+          isVerifiedAdmin: isRootAdmin,
+          otpVerified: true,
+          tier: isRootAdmin ? 'VIP' : matchedUser.tier,
+          companyName: matchedUser.companyName,
+          country: matchedUser.country,
+          avatarUrl: matchedUser.avatarUrl,
+          token
+        },
+        message: isRootAdmin
+          ? 'Administrator 2FA OTP verified. Welcome to the Control Center.'
+          : `2FA OTP verified. Welcome back, ${matchedUser.name}!`
+      });
     }
 
     const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);

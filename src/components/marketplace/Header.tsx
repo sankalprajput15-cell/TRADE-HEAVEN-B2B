@@ -788,22 +788,38 @@ export const Header: React.FC<Props> = ({
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(prev => !prev)}
-                className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                title="Open Toggle Bar & Account Menu"
-                data-testid="header-account-button"
-              >
-                <Menu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="hidden sm:inline">Menu &amp; Account</span>
-                <span className="sm:hidden">Menu</span>
-                <ChevronDown
-                  className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
-                    userMenuOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    onOpenAuthModal();
+                  }}
+                  className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-[11px] sm:text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  title="Sign In with Corporate Email & OTP"
+                  data-testid="header-signin-button"
+                >
+                  <LogIn className="w-3.5 h-3.5 shrink-0" />
+                  <span>Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(prev => !prev)}
+                  className="h-8 sm:h-9 px-2 sm:px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  title="Open Toggle Bar & Account Menu"
+                  data-testid="header-account-button"
+                >
+                  <Menu className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="hidden sm:inline">Menu &amp; Account</span>
+                  <span className="sm:hidden">Menu</span>
+                  <ChevronDown
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
+                      userMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
             )}
 
             {/* Account & Navigation Toggle Menu Dropdown */}
@@ -899,66 +915,64 @@ export const Header: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* All Marketplace & Directory Options (Visible only after login) */}
-                {currentUser && (
-                  <div className="pt-1 pb-1">
-                    <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
-                      Toggle Menu · Marketplace &amp; Directories
-                    </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {visibleMenuOptions.map(item => {
-                        const Icon = item.icon;
-                        const isActive = item.activeMatch.includes(activeView);
-                        return (
-                          <button
-                            key={item.view}
-                            type="button"
-                            onClick={() => {
-                              if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
-                                handleOpenFundsTopUp();
-                              } else if (item.label.includes('Dashboard')) {
-                                handleNavClick('DASHBOARD');
-                              } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
-                                setUserMenuOpen(false);
-                                onOpenOnboardModal();
-                              } else {
-                                handleNavClick(item.view);
-                              }
-                            }}
-                            className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                              isActive
-                                ? 'bg-blue-50 text-blue-600 font-semibold'
-                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                            }`}
-                          >
-                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          if (onOpenContactModal) {
-                            onOpenContactModal();
-                          } else {
-                            handleNavClick('CONTACT_US');
-                          }
-                        }}
-                        className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                          activeView === 'CONTACT_US'
-                            ? 'bg-blue-50 text-blue-600 font-semibold'
-                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
-                        }`}
-                      >
-                        <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span className="truncate">Contact Desk</span>
-                      </button>
-                    </div>
+                {/* All Marketplace & Directory Options */}
+                <div className="pt-1 pb-1">
+                  <div className="text-[11px] font-semibold text-slate-400 px-2 mb-1.5">
+                    Toggle Menu · Marketplace &amp; Directories
                   </div>
-                )}
+                  <div className="grid grid-cols-2 gap-1">
+                    {visibleMenuOptions.map(item => {
+                      const Icon = item.icon;
+                      const isActive = item.activeMatch.includes(activeView);
+                      return (
+                        <button
+                          key={item.view}
+                          type="button"
+                          onClick={() => {
+                            if (item.view === 'MEDIATOR_ENGINE' || item.label.includes('Top-Up')) {
+                              handleOpenFundsTopUp();
+                            } else if (item.label.includes('Dashboard')) {
+                              handleNavClick('DASHBOARD');
+                            } else if (item.view === 'ONBOARD_WITH_US' && onOpenOnboardModal) {
+                              setUserMenuOpen(false);
+                              onOpenOnboardModal();
+                            } else {
+                              handleNavClick(item.view);
+                            }
+                          }}
+                          className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-600 font-semibold'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                          }`}
+                        >
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        if (onOpenContactModal) {
+                          onOpenContactModal();
+                        } else {
+                          handleNavClick('CONTACT_US');
+                        }
+                      }}
+                      className={`px-2.5 py-2 rounded-lg text-left text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                        activeView === 'CONTACT_US'
+                          ? 'bg-blue-50 text-blue-600 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950'
+                      }`}
+                    >
+                      <Headphones className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">Contact Desk</span>
+                    </button>
+                  </div>
+                </div>
 
                 {/* Quick Utilities: Language, Currency & Share Page */}
                 <div className="border-t border-slate-100 mt-2 pt-2.5 px-2 flex items-center justify-between gap-2">

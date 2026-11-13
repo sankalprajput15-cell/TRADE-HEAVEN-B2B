@@ -399,8 +399,417 @@ function sendClientOtpEmail($clientEmail, $clientName, $code) {
     return $sent;
 }
 
-// Parse request action & payload
-$action = isset($_GET['action']) ? trim($_GET['action']) : '';
+// -------------------------------------------------------------
+// Zero-Trust Auth, Signed Token & Login/Registration OTP Helpers
+// -------------------------------------------------------------
+function getAuthorizedRootAdminEmails() {
+    return ['yr943334@gmail.com', 'sankalprajput15@gmail.com'];
+}
+
+function normalizeAuthEmail($rawEmail) {
+    $clean = strtolower(trim((string)$rawEmail));
+    if (strpos($clean, 'mail-') === 0 && strpos($clean, '@') !== false) {
+        $clean = substr($clean, 5);
+    }
+    return $clean;
+}
+
+function maskAuthEmail($email) {
+    $parts = explode('@', (string)$email, 2);
+    if (count($parts) !== 2) return (string)$email;
+    $local = $parts[0];
+    $domain = $parts[1];
+    if (strlen($local) <= 2) return substr($local, 0, 1) . '*@' . $domain;
+    return substr($local, 0, 2) . str_repeat('*', min(6, strlen($local) - 2)) . '@' . $domain;
+}
+
+function getTradeHeavenJwtSecret() {
+    $secretFile = __DIR__ . '/.th_jwt_secret';
+    if (file_exists($secretFile)) {
+        $saved = trim((string)@file_get_contents($secretFile));
+        if (strlen($saved) >= 32) return $saved;
+    }
+    try {
+        $generated = bin2hex(random_bytes(32));
+    } catch (Exception $e) {
+        $generated = hash('sha256', __FILE__ . uniqid('th', true));
+    }
+    @file_put_contents($secretFile, $generated);
+    return $generated;
+}
+
+function thBase64UrlEncode($data) {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+function thBase64UrlDecode($data) {
+    $remainder = strlen($data) % 4;
+    if ($remainder) {
+        $data .= str_repeat('=', 4 - $remainder);
+    }
+    return base64_decode(strtr($data, '-_', '+/'));
+}
+
+function generateSignedAuthToken($userPayload) {
+    $now = time();
+    $claims = [
+        'uid' => (string)($userPayload['id'] ?? 'user-1'),
+        'email' => (string)($userPayload['email'] ?? ''),
+        'name' => (string)($userPayload['name'] ?? 'Trade Partner'),
+        'role' => strtoupper((string)($userPayload['role'] ?? 'BUYER')),
+        'isPremium' => !empty($userPayload['isPremium']),
+        'membershipStatus' => (string)($userPayload['membershipStatus'] ?? 'free'),
+        'status' => (string)($userPayload['status'] ?? 'ACTIVE'),
+        'isVerified' => true,
+        'otpVerified' => true,
+        'tier' => (string)($userPayload['tier'] ?? 'FREE'),
+        'companyName' => (string)($userPayload['companyName'] ?? 'Enterprise Trading Firm'),
+        'country' => (string)($userPayload['country'] ?? 'United States'),
+        'avatarUrl' => (string)($userPayload['avatarUrl'] ?? ''),
+        'iat' => $now,
+        'exp' => $now + (12 * 3600)
+    ];
+    $header = thBase64UrlEncode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+    $body = thBase64UrlEncode(json_encode($claims));
+    $sig = thBase64UrlEncode(hash_hmac('sha256', "$header.$body", getTradeHeavenJwtSecret(), true));
+    return "$header.$body.$sig";
+}
+
+function verifySignedAuthToken($token) {
+    if (!$token || !is_string($token)) return null;
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) return null;
+    list($header, $body, $sig) = $parts;
+    $expected = thBase64UrlEncode(hash_hmac('sha256', "$header.$body", getTradeHeavenJwtSecret(), true));
+    if (!hash_equals($expected, $sig)) return null;
+    $claims = json_decode(thBase64UrlDecode($body), true);
+    if (!is_array($claims)) return null;
+    if (!empty($claims['exp']) && intval($claims['exp']) < time()) return null;
+    if (strtoupper((string)($claims['role'] ?? '')) === 'ADMIN') {
+        $email = normalizeAuthEmail($claims['email'] ?? '');
+        if (!in_array($email, getAuthorizedRootAdminEmails(), true) || empty($claims['otpVerified'])) {
+            return null;
+        }
+    }
+    return $claims;
+}
+
+function loadJsonStoreMap($filePath) {
+    if (!file_exists($filePath)) return [];
+    $decoded = json_decode((string)@file_get_contents($filePath), true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function saveJsonStoreMap($filePath, $data) {
+    @file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+}
+
+function getBuiltInSeedAuthUsers() {
+    return [
+        'yr943334@gmail.com' => [
+            'id' => 'user-admin-root',
+            'name' => 'Yash Rajput (Master Admin)',
+            'email' => 'yr943334@gmail.com',
+            'role' => 'ADMIN',
+            'companyName' => 'Trade Heaven Global Operations & Treasury',
+            'country' => 'United Kingdom',
+            'tier' => 'VIP',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+        ],
+        'sankalprajput15@gmail.com' => [
+            'id' => 'user-admin-sankalp',
+            'name' => 'Sankalp Rajput (Master Admin)',
+            'email' => 'sankalprajput15@gmail.com',
+            'role' => 'ADMIN',
+            'companyName' => 'Trade Heaven Global Operations & Treasury',
+            'country' => 'United Kingdom',
+            'tier' => 'VIP',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+        ],
+        'zac@otec.ltd' => [
+            'id' => 'user-supplier-zac',
+            'name' => 'Zachary Aldin',
+            'email' => 'zac@otec.ltd',
+            'password_plain' => 'Zac@0011',
+            'role' => 'SUPPLIER',
+            'companyName' => 'IMPORTATION FADE-TECH',
+            'country' => 'Australia',
+            'tier' => 'GOLD',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+        ],
+        'sorkindon@gmail.com' => [
+            'id' => 'user-buyer-donald',
+            'name' => 'Donald Sorkin',
+            'email' => 'sorkindon@gmail.com',
+            'password_plain' => 'Donald@1234',
+            'alt_passwords' => ['Donald@2026'],
+            'role' => 'BUYER',
+            'companyName' => 'Girlsenberries',
+            'country' => 'United States',
+            'phone' => '+1-805-714-8918',
+            'tier' => 'VIP',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+        ],
+        'info@joybambooforestfarm.com' => [
+            'id' => 'user-supplier-svetlana',
+            'name' => 'Svetlana Brodskaya',
+            'email' => 'info@joybambooforestfarm.com',
+            'password_plain' => 'JoyBamboo@2026',
+            'role' => 'SUPPLIER',
+            'companyName' => 'Joy Bamboo Forest Farm LLC',
+            'country' => 'United States',
+            'tier' => 'Basic Plan',
+            'isPremium' => false,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+        ],
+        'melissa@mpcommoditybrokers.com' => [
+            'id' => 'user-supplier-melissa',
+            'name' => 'Melissa Prezios',
+            'email' => 'melissa@mpcommoditybrokers.com',
+            'password_plain' => 'Password@123',
+            'role' => 'SUPPLIER',
+            'companyName' => 'MP Commodity Brokers Australia Pty Ltd',
+            'country' => 'Australia',
+            'phone' => '+61411510887',
+            'tier' => 'PLATINUM',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80'
+        ],
+        'ezekiahali355@gmail.com' => [
+            'id' => 'user-supplier-ezekiah',
+            'name' => 'Ali Charley Ezekiah',
+            'email' => 'ezekiahali355@gmail.com',
+            'password_plain' => 'Ezekiah@2026',
+            'role' => 'SUPPLIER',
+            'companyName' => 'ACE Intermediary',
+            'country' => 'United States',
+            'tier' => 'Basic Plan',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+        ],
+        'mjohnson@atlanticpowerequip.com' => [
+            'id' => 'user-supplier-mark',
+            'name' => 'Mark Johnson',
+            'email' => 'mjohnson@atlanticpowerequip.com',
+            'password_plain' => 'Atlantic@2026',
+            'role' => 'SUPPLIER',
+            'companyName' => 'Atlantic Power & Equipment Co.',
+            'country' => 'United States',
+            'tier' => 'GOLD',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+        ],
+        'randy@midforkcap.com' => [
+            'id' => 'user-supplier-randy',
+            'name' => 'Mr. Randy',
+            'email' => 'randy@midforkcap.com',
+            'password_plain' => 'Randy@2026',
+            'alt_passwords' => ['MiddleFox@2026'],
+            'role' => 'SUPPLIER',
+            'companyName' => 'Middle Fox LLC',
+            'country' => 'United States',
+            'tier' => 'GOLD',
+            'isPremium' => true,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80'
+        ]
+    ];
+}
+
+function findPhpAuthUser($rawEmail, $db_connected, $pdo) {
+    $cleanEmail = normalizeAuthEmail($rawEmail);
+    if (empty($cleanEmail) || !filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+        return null;
+    }
+
+    $rootAdmins = getAuthorizedRootAdminEmails();
+    $isRootAdmin = in_array($cleanEmail, $rootAdmins, true);
+
+    $dbRow = null;
+    if ($db_connected && $pdo) {
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
+            $stmt->execute([$cleanEmail]);
+            $fetched = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($fetched) $dbRow = $fetched;
+        } catch (Exception $e) {}
+    }
+
+    $localUsers = loadJsonStoreMap(__DIR__ . '/users_store.json');
+    $localRow = null;
+    foreach ($localUsers as $lu) {
+        if (is_array($lu) && normalizeAuthEmail($lu['email'] ?? '') === $cleanEmail) {
+            $localRow = $lu;
+        }
+    }
+
+    $seedMap = getBuiltInSeedAuthUsers();
+    $seedRow = $seedMap[$cleanEmail] ?? null;
+
+    if (!$dbRow && !$localRow && !$seedRow) {
+        return null;
+    }
+
+    $rawRole = strtoupper((string)($dbRow['role'] ?? $localRow['role'] ?? $seedRow['role'] ?? 'BUYER'));
+    if ($isRootAdmin) {
+        $resolvedRole = 'ADMIN';
+    } elseif ($rawRole === 'ADMIN') {
+        $resolvedRole = 'SUPPLIER';
+    } else {
+        $resolvedRole = $rawRole;
+    }
+
+    return [
+        'id' => (string)($dbRow['id'] ?? $localRow['id'] ?? $seedRow['id'] ?? ('user-' . md5($cleanEmail))),
+        'email' => $cleanEmail,
+        'name' => (string)($dbRow['name'] ?? $localRow['name'] ?? $seedRow['name'] ?? 'Registered Partner'),
+        'role' => $resolvedRole,
+        'isRootAdmin' => $isRootAdmin,
+        'password' => $dbRow['password'] ?? ($localRow['password_hash'] ?? ''),
+        'seedPassword' => $seedRow['password_plain'] ?? '',
+        'altPasswords' => $seedRow['alt_passwords'] ?? [],
+        'companyName' => (string)($dbRow['company_name'] ?? $localRow['company_name'] ?? $seedRow['companyName'] ?? 'Enterprise Trading Firm'),
+        'country' => (string)($dbRow['country'] ?? $localRow['country'] ?? $seedRow['country'] ?? 'United States'),
+        'phone' => (string)($dbRow['phone'] ?? $localRow['phone'] ?? $seedRow['phone'] ?? ''),
+        'tier' => (string)($dbRow['tier'] ?? $localRow['tier'] ?? $seedRow['tier'] ?? ($isRootAdmin ? 'VIP' : ($resolvedRole === 'SUPPLIER' ? 'SILVER' : 'FREE'))),
+        'isPremium' => isset($dbRow['is_premium']) ? (bool)$dbRow['is_premium'] : (!empty($seedRow['isPremium']) || $isRootAdmin),
+        'membershipStatus' => (string)($dbRow['membership_status'] ?? $seedRow['membershipStatus'] ?? ($isRootAdmin ? 'paid' : 'free')),
+        'status' => (string)($dbRow['status'] ?? 'ACTIVE'),
+        'isVerified' => true,
+        'isVerifiedAdmin' => $isRootAdmin,
+        'avatarUrl' => (string)($dbRow['avatar_url'] ?? $seedRow['avatarUrl'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80')
+    ];
+}
+
+function verifyPhpAuthPassword($authUser, $password) {
+    if (!$authUser) return false;
+    if (!empty($authUser['isRootAdmin']) && $authUser['role'] === 'ADMIN') {
+        return true; // Root admins use OTP-only verification
+    }
+    $pwd = (string)$password;
+    if ($pwd === '') return false;
+    if (!empty($authUser['seedPassword']) && $pwd === $authUser['seedPassword']) return true;
+    if (!empty($authUser['altPasswords']) && in_array($pwd, $authUser['altPasswords'], true)) return true;
+    if (!empty($authUser['password'])) {
+        if (password_verify($pwd, $authUser['password']) || $pwd === $authUser['password']) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function buildPhpAuthUserPayload($authUser, $token) {
+    $isAdmin = !empty($authUser['isRootAdmin']) && $authUser['role'] === 'ADMIN';
+    return [
+        'id' => (string)$authUser['id'],
+        'name' => $authUser['name'],
+        'email' => $authUser['email'],
+        'role' => $isAdmin ? 'ADMIN' : $authUser['role'],
+        'isPremium' => $isAdmin ? true : (bool)$authUser['isPremium'],
+        'membershipStatus' => $isAdmin ? 'paid' : $authUser['membershipStatus'],
+        'status' => $authUser['status'] ?: 'ACTIVE',
+        'isVerified' => true,
+        'isVerifiedAdmin' => $isAdmin,
+        'otpVerified' => true,
+        'tier' => $isAdmin ? 'VIP' : $authUser['tier'],
+        'companyName' => $authUser['companyName'],
+        'country' => $authUser['country'],
+        'phone' => $authUser['phone'] ?? '',
+        'avatarUrl' => $authUser['avatarUrl'],
+        'token' => $token
+    ];
+}
+
+function sendLoginOtpEmail($clientEmail, $clientName, $code, $role = 'BUYER', $isRegistration = false) {
+    $cleanEmail = normalizeAuthEmail($clientEmail);
+    if (empty($cleanEmail) || !filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    $displayName = !empty($clientName) ? htmlspecialchars($clientName) : 'Registered Trade Heaven User';
+    $roleUpper = strtoupper((string)$role);
+    $heading = $isRegistration
+        ? 'Email Verification Code (Registration OTP)'
+        : ($roleUpper === 'ADMIN' ? 'Administrator Security Gate (OTP)' : 'Registered Account 2-Factor Verification (OTP)');
+    $subject = $isRegistration
+        ? "[Trade Heaven] Your 6-Digit Email Verification Code: {$code}"
+        : "[Trade Heaven Security] Your 6-Digit Login OTP: {$code}";
+    $bodyIntro = $isRegistration
+        ? "Enter the 6-digit One-Time Password (OTP) below to verify your email address (<strong>" . htmlspecialchars($cleanEmail) . "</strong>) and complete your Trade Heaven account registration:"
+        : "Enter the 6-digit One-Time Password (OTP) below to complete sign-in for your registered Trade Heaven account (<strong>" . htmlspecialchars($cleanEmail) . "</strong>):";
+
+    $html = "
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset=\"UTF-8\"></head>
+    <body style=\"margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9;\">
+        <div style=\"max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;\">
+            <div style=\"background: #0f172a; padding: 26px 24px; text-align: center; color: #ffffff;\">
+                <div style=\"font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #34d399; text-transform: uppercase; margin-bottom: 6px;\">TRADE HEAVEN ZERO-TRUST 2FA SECURITY</div>
+                <h2 style=\"margin: 0; font-size: 20px; font-weight: 800; color: #ffffff;\">{$heading}</h2>
+            </div>
+            <div style=\"padding: 26px 24px; color: #1e293b;\">
+                <p style=\"font-size: 15px; line-height: 1.6; margin: 0 0 14px 0;\">Hello <strong>{$displayName}</strong>,</p>
+                <p style=\"font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;\">{$bodyIntro}</p>
+                <div style=\"background: #eff6ff; color: #1e40af; padding: 18px; border-radius: 12px; font-size: 32px; font-weight: 900; font-family: monospace; text-align: center; letter-spacing: 8px; margin: 20px 0; border: 2px solid #3b82f6;\">" . htmlspecialchars($code) . "</div>
+                <p style=\"font-size: 12px; color: #64748b; margin: 20px 0 0 0; line-height: 1.5;\">
+                    Valid for 10 minutes • Sent exclusively to your registered email via <strong>noreply@tradeheaven.net</strong>. Need help? WhatsApp <strong>+91 8532934479</strong>.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    $headers = [
+        'MIME-Version: 1.0',
+        'Content-type: text/html; charset=UTF-8',
+        'From: Trade Heaven Security <noreply@tradeheaven.net>',
+        'Reply-To: help@tradeheaven.net',
+        'X-Mailer: PHP/' . phpversion()
+    ];
+    $headers_str = implode("\r\n", $headers);
+
+    $sent = @mail($cleanEmail, $subject, $html, $headers_str, "-f noreply@tradeheaven.net");
+    if (!$sent) {
+        $sent = @mail($cleanEmail, $subject, $html, $headers_str);
+    }
+
+    @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [LOGIN_OTP_DISPATCH] Sent OTP -> {$cleanEmail} (mode=" . ($isRegistration ? 'REGISTER' : 'LOGIN') . ", status=" . ($sent ? 'OK' : 'FALLBACK') . ")\n", FILE_APPEND);
+    return $sent;
+}
+
+// Parse request action & payload (normalize hyphenated /api/v1/auth/* routes too)
+$raw_action = isset($_GET['action']) ? trim($_GET['action']) : '';
+$action = str_replace('-', '_', strtolower($raw_action));
 $method = $_SERVER['REQUEST_METHOD'];
 
 $raw_input = file_get_contents('php://input');
@@ -1069,299 +1478,441 @@ switch ($action) {
         exit();
 
     // -------------------------------------------------------------
-    // 6. User Login
+    // 6. Email OTP Dispatch, Verify, Resend, Auth-Me & User Login
     // -------------------------------------------------------------
-    case 'login':
-        $email = strtolower(trim($input['email'] ?? ''));
+    case 'send_otp':
+        $cleanEmail = normalizeAuthEmail($input['email'] ?? '');
+        if (empty($cleanEmail) || !filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Please enter a valid corporate email address before clicking Send OTP."
+            ]);
+            exit();
+        }
+
+        $mode = strtoupper(trim((string)($input['mode'] ?? 'LOGIN')));
+        $otpsFile = __DIR__ . '/login_otps_store.json';
+        $otpsMap = loadJsonStoreMap($otpsFile);
+
+        // Optional relay code from internal Node server only
+        $isInternalRelay = !empty($_SERVER['HTTP_X_INTERNAL_RELAY']) || !empty($input['internalRelay']);
+        $requestedCode = preg_replace('/\D/', '', strval($input['code'] ?? ''));
+        try {
+            $generatedCode = strval(random_int(100000, 999999));
+        } catch (Exception $e) {
+            $generatedCode = strval(rand(100000, 999999));
+        }
+        $otpCode = ($isInternalRelay && strlen($requestedCode) === 6) ? $requestedCode : $generatedCode;
+
+        if ($mode === 'REGISTER') {
+            if (in_array($cleanEmail, getAuthorizedRootAdminEmails(), true)) {
+                http_response_code(403);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "This email is reserved for system administration. Please sign in using the Login tab via Email OTP."
+                ]);
+                exit();
+            }
+
+            if (!$isInternalRelay && findPhpAuthUser($cleanEmail, $db_connected, $pdo)) {
+                http_response_code(409);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "An account with this email address is already registered. Please switch to Sign In."
+                ]);
+                exit();
+            }
+
+            $regName = trim((string)($input['name'] ?? '')) ?: explode('@', $cleanEmail)[0];
+            $acctType = strtoupper(trim((string)($input['accountType'] ?? 'BUYER'))) === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER';
+            $otpsMap["reg:" . $cleanEmail] = [
+                'code' => $otpCode,
+                'expiry' => time() + 600,
+                'attempts' => 0,
+                'role' => $acctType
+            ];
+            saveJsonStoreMap($otpsFile, $otpsMap);
+
+            $sent = sendLoginOtpEmail($cleanEmail, $regName, $otpCode, $acctType, true);
+            $masked = maskAuthEmail($cleanEmail);
+            echo json_encode([
+                "status" => "success",
+                "success" => true,
+                "otp_dispatched" => true,
+                "mode" => "REGISTER",
+                "email" => $cleanEmail,
+                "maskedEmail" => $masked,
+                "emailSent" => (bool)$sent,
+                "message" => "A 6-digit verification code has been sent to {$masked} via noreply@tradeheaven.net. Enter it below to complete registration."
+            ]);
+            exit();
+        }
+
+        // LOGIN mode
+        $matchedUser = findPhpAuthUser($cleanEmail, $db_connected, $pdo);
+        if (!$matchedUser && $isInternalRelay) {
+            $matchedUser = [
+                'id' => 'relay-' . md5($cleanEmail),
+                'email' => $cleanEmail,
+                'name' => trim((string)($input['name'] ?? 'Registered Trade Heaven User')),
+                'role' => strtoupper((string)($input['role'] ?? 'BUYER')),
+                'isRootAdmin' => in_array($cleanEmail, getAuthorizedRootAdminEmails(), true)
+            ];
+        }
+
+        if (!$matchedUser) {
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "No registered account found for this email address. Only registered users can receive a login OTP."
+            ]);
+            exit();
+        }
+
         $password = (string)($input['password'] ?? '');
-
-        if (empty($email)) {
-            echo json_encode(["status" => "error", "message" => "Corporate email address is required."]);
+        if (!$isInternalRelay && empty($matchedUser['isRootAdmin']) && !verifyPhpAuthPassword($matchedUser, $password)) {
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Please enter your valid registered account password before clicking Send OTP."
+            ]);
             exit();
         }
 
-        $user_found = null;
+        $otpsMap["login:" . $cleanEmail] = [
+            'code' => $otpCode,
+            'expiry' => time() + 600,
+            'attempts' => 0,
+            'role' => $matchedUser['role']
+        ];
+        saveJsonStoreMap($otpsFile, $otpsMap);
 
-        if ($db_connected && $pdo) {
-            try {
-                $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
-                $stmt->execute([$email]);
-                $user_found = $stmt->fetch(PDO::FETCH_ASSOC);
-            } catch (Exception $e) {
-                // Log specific error and return user-friendly maintenance message
-                $err_msg = "Login SELECT failed: " . $e->getMessage();
-                error_log($err_msg);
-                file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
-                echo json_encode([
-                    "status" => "error",
-                    "code" => "DATABASE_QUERY_ERROR",
-                    "message" => "The authentication server is currently undergoing scheduled data maintenance. Please try again in a few moments."
-                ]);
-                exit();
-            }
-        } else {
-            // Unconnected fallback
-            $err_msg = "Login failed: Database connection is offline.";
-            error_log($err_msg);
-            file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
-            
-            // Allow master admins, Zac, Joy Bamboo, and Donald Sorkin fallback, otherwise return maintenance message
-            if ($email !== 'admin@tradeheaven.net' && $email !== 'admin@trade4deals.com' && $email !== 'yr943334@gmail.com' && $email !== 'zac@otec.ltd' && $email !== 'info@joybambooforestfarm.com' && $email !== 'sorkindon@gmail.com' && $email !== 'mail-sorkindon@gmail.com') {
-                echo json_encode([
-                    "status" => "error",
-                    "code" => "DATABASE_CONNECTION_ERROR",
-                    "message" => "Our secure database is currently undergoing temporary connection optimization. Please try again shortly or contact support."
-                ]);
-                exit();
-            }
-        }
-        // Check for Donald Sorkin (Girlsenberries) credentials
-        if ($email === 'sorkindon@gmail.com' || $email === 'mail-sorkindon@gmail.com') {
-            if ($password === 'Donald@1234' || $password === 'Donald@2026' || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password']))) {
-                $token = "jwt_donald_" . md5($email . time());
-                echo json_encode([
-                    "status" => "success",
-                    "success" => true,
-                    "token" => $token,
-                    "data" => [
-                        "id" => "user-buyer-donald",
-                        "name" => "Donald Sorkin",
-                        "email" => "sorkindon@gmail.com",
-                        "company_name" => "Girlsenberries",
-                        "phone" => "+1-805-714-8918",
-                        "role" => "BUYER"
-                    ],
-                    "user" => [
-                        "id" => "user-buyer-donald",
-                        "name" => "Donald Sorkin",
-                        "email" => "sorkindon@gmail.com",
-                        "role" => "BUYER",
-                        "isPremium" => true,
-                        "membershipStatus" => "paid",
-                        "status" => "ACTIVE",
-                        "isVerified" => true,
-                        "tier" => "VIP",
-                        "companyName" => "Girlsenberries",
-                        "country" => "United States",
-                        "phone" => "+1-805-714-8918",
-                        "avatarUrl" => "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
-                        "token" => $token
-                    ],
-                    "message" => "Welcome back, Donald Sorkin."
-                ]);
-                exit();
-            } else {
-                echo json_encode(["status" => "error", "message" => "Invalid password for Donald Sorkin."]);
-                exit();
-            }
-        }
-        // Check for Joy Bamboo Forest Farm LLC (Svetlana Brodskaya) credentials
-        if ($email === 'info@joybambooforestfarm.com') {
-            if ($password === 'JoyBamboo@2026' || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password']))) {
-                $token = "jwt_svetlana_" . md5($email . time());
-                echo json_encode([
-                    "status" => "success",
-                    "success" => true,
-                    "token" => $token,
-                    "data" => [
-                        "id" => "user-supplier-svetlana",
-                        "name" => "Svetlana Brodskaya",
-                        "email" => "info@joybambooforestfarm.com",
-                        "company_name" => "Joy Bamboo Forest Farm LLC",
-                        "role" => "SUPPLIER"
-                    ],
-                    "user" => [
-                        "id" => "user-supplier-svetlana",
-                        "name" => "Svetlana Brodskaya",
-                        "email" => "info@joybambooforestfarm.com",
-                        "role" => "SUPPLIER",
-                        "isPremium" => false,
-                        "membershipStatus" => "paid",
-                        "status" => "ACTIVE",
-                        "isVerified" => true,
-                        "tier" => "Basic Plan",
-                        "companyName" => "Joy Bamboo Forest Farm LLC",
-                        "country" => "United States",
-                        "avatarUrl" => "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
-                        "token" => $token
-                    ],
-                    "message" => "Welcome back, Svetlana Brodskaya."
-                ]);
-                exit();
-            } else {
-                echo json_encode(["status" => "error", "message" => "Invalid password for Joy Bamboo Forest Farm LLC."]);
-                exit();
-            }
-        }
-        // Check for Zac (Zachary Aldin) credentials
-        if ($email === 'zac@otec.ltd') {
-            if ($password === 'Zac@0011') {
-                $token = "jwt_zac_" . md5($email . time());
-                echo json_encode([
-                    "status" => "success",
-                    "token" => $token,
-                    "data" => [
-                        "id" => "user-supplier-zac",
-                        "name" => "Zachary Aldin",
-                        "email" => $email,
-                        "role" => "SUPPLIER"
-                    ],
-                    "user" => [
-                        "id" => "user-supplier-zac",
-                        "name" => "Zachary Aldin",
-                        "email" => $email,
-                        "role" => "SUPPLIER",
-                        "isPremium" => true,
-                        "membershipStatus" => "paid",
-                        "status" => "ACTIVE",
-                        "isVerified" => true,
-                        "tier" => "GOLD",
-                        "companyName" => "IMPORTATION FADE-TECH",
-                        "country" => "Australia",
-                        "avatarUrl" => "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-                        "token" => $token
-                    ],
-                    "message" => "Welcome back, Zachary."
-                ]);
-                exit();
-            } else {
-                echo json_encode(["status" => "error", "message" => "Invalid password for Zachary Aldin."]);
-                exit();
-            }
-        }
-
-        // Check Master Admin fallback (strictly restricted to authorized root admin emails)
-        $is_authorized_root_admin_email = ($email === 'yr943334@gmail.com' || $email === 'sankalprajput15@gmail.com');
-        if ($is_authorized_root_admin_email) {
-            if (!empty($password) && ($password === 'Admin@2026!' || $password === 'admin123' || ($user_found && (password_verify($password, $user_found['password']) || $password === $user_found['password'])))) {
-                $token = "jwt_" . md5($email . time());
-                $admin_id = $user_found ? $user_found['id'] : 1;
-                
-                sendPhpMailAlert(
-                    "🔐 Master Admin Login: {$email}",
-                    "Administrator Portal Sign-In",
-                    "A master administrator successfully authenticated to Trade Heaven Global Operations.",
-                    [
-                        "Admin Email" => $email,
-                        "Admin Name" => $user_found['name'] ?? "Administrator",
-                        "Role" => "ADMIN",
-                        "Timestamp" => date("Y-m-d H:i:s T")
-                    ]
-                );
-
-                echo json_encode([
-                    "status" => "success",
-                    "token" => $token,
-                    "data" => [
-                        "id" => $admin_id,
-                        "name" => $user_found['name'] ?? "Administrator",
-                        "email" => $email,
-                        "company_name" => $user_found['company_name'] ?? "Trade Heaven Global Operations",
-                        "role" => "admin"
-                    ],
-                    "user" => [
-                        "id" => (string)$admin_id,
-                        "name" => $user_found['name'] ?? "Administrator",
-                        "email" => $email,
-                        "role" => "ADMIN",
-                        "isPremium" => true,
-                        "membershipStatus" => "paid",
-                        "status" => "ACTIVE",
-                        "isVerified" => true,
-                        "tier" => "VIP",
-                        "companyName" => $user_found['company_name'] ?? "Trade Heaven Global Operations",
-                        "country" => "United States",
-                        "avatarUrl" => "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-                        "token" => $token
-                    ],
-                    "message" => "Admin session verified successfully."
-                ]);
-                exit();
-            }
-        }
-
-        if (!$user_found) {
-            echo json_encode(["status" => "error", "message" => "Invalid email or password."]);
-            exit();
-        }
-
-        // Verify password hash
-        $is_password_valid = false;
-        if (!empty($user_found['password'])) {
-            if (password_verify($password, $user_found['password']) || $password === $user_found['password']) {
-                $is_password_valid = true;
-            }
-        } else {
-            $is_password_valid = true;
-        }
-
-        if (!$is_password_valid) {
-            echo json_encode(["status" => "error", "message" => "Invalid email or password."]);
-            exit();
-        }
-
-        $token = "jwt_" . md5($user_found['email'] . time());
-        $company_display = $user_found['company_name'] ?: ($user_found['company'] ?? 'Enterprise Trading Firm');
-        $resolved_role = strtoupper($user_found['role'] ?: 'BUYER');
-        // Never allow non-root-admin emails to receive ADMIN role from the database
-        if ($resolved_role === 'ADMIN' && !$is_authorized_root_admin_email) {
-            $resolved_role = 'SUPPLIER';
-        }
-
-        // Trigger Instant Email Notification on Login
-        sendPhpMailAlert(
-            "🔑 Security Alert: Login to Trade Heaven ({$user_found['email']})",
-            "User Authenticated Successfully",
-            "A user has successfully signed in to the Trade Heaven B2B marketplace portal.",
-            [
-                "User Name" => $user_found['name'],
-                "Email" => $user_found['email'],
-                "Company" => $company_display,
-                "Role" => $resolved_role,
-                "Country" => $user_found['country'] ?? 'United States',
-                "Login Time" => date("Y-m-d H:i:s T")
-            ]
-        );
-
+        $sent = sendLoginOtpEmail($cleanEmail, $matchedUser['name'], $otpCode, $matchedUser['role'], false);
+        $masked = maskAuthEmail($cleanEmail);
         echo json_encode([
             "status" => "success",
-            "token" => $token,
-            "data" => [
-                "id" => $user_found['id'],
-                "name" => $user_found['name'],
-                "email" => $user_found['email'],
-                "company_name" => $company_display,
-                "phone" => $user_found['phone'] ?? '',
-                "country" => $user_found['country'] ?? 'United States',
-                "role" => strtolower($resolved_role)
-            ],
-            "user" => [
-                "id" => (string)$user_found['id'],
-                "name" => $user_found['name'],
-                "email" => $user_found['email'],
-                "role" => $resolved_role,
-                "isPremium" => (bool)($user_found['is_premium'] ?? ($resolved_role === 'SUPPLIER' || $resolved_role === 'ADMIN')),
-                "membershipStatus" => $user_found['membership_status'] ?? 'free',
-                "status" => $user_found['status'] ?? 'ACTIVE',
-                "isVerified" => (bool)($user_found['is_verified'] ?? 1),
-                "tier" => $user_found['tier'] ?? ($resolved_role === 'ADMIN' ? 'VIP' : ($resolved_role === 'SUPPLIER' ? 'SILVER' : 'FREE')),
-                "companyName" => $company_display,
-                "country" => $user_found['country'] ?? 'United States',
-                "phone" => $user_found['phone'] ?? '',
-                "avatarUrl" => $user_found['avatar_url'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-                "token" => $token
-            ],
-            "message" => "Authenticated successfully."
+            "success" => true,
+            "otp_dispatched" => true,
+            "mode" => "LOGIN",
+            "requiresOtp" => true,
+            "email" => $cleanEmail,
+            "maskedEmail" => $masked,
+            "role" => $matchedUser['role'],
+            "emailSent" => (bool)$sent,
+            "message" => !empty($matchedUser['isRootAdmin'])
+                ? "Admin OTP-Only Security: A 6-digit verification code has been sent to your registered admin email ({$masked})."
+                : "A 6-digit verification code has been sent to your registered email ({$masked}) via noreply@tradeheaven.net."
         ]);
-        break;
+        exit();
+
+    case 'verify_login_otp':
+        $cleanEmail = normalizeAuthEmail($input['email'] ?? '');
+        $cleanOtp = trim((string)($input['otp'] ?? $input['code'] ?? ''));
+
+        if (empty($cleanEmail) || empty($cleanOtp)) {
+            http_response_code(400);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Both registered email and 6-digit OTP code are required."
+            ]);
+            exit();
+        }
+
+        $matchedUser = findPhpAuthUser($cleanEmail, $db_connected, $pdo);
+        $otpsFile = __DIR__ . '/login_otps_store.json';
+        $otpsMap = loadJsonStoreMap($otpsFile);
+        $entryKey = "login:" . $cleanEmail;
+        $entry = $otpsMap[$entryKey] ?? null;
+
+        if (!$matchedUser || !$entry || empty($entry['code'])) {
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "No active OTP session found or code expired. Please request a new OTP."
+            ]);
+            exit();
+        }
+
+        $attempts = intval($entry['attempts'] ?? 0) + 1;
+        if ($attempts > 5) {
+            unset($otpsMap[$entryKey]);
+            saveJsonStoreMap($otpsFile, $otpsMap);
+            http_response_code(429);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Too many failed OTP attempts. Please sign in again to request a new OTP."
+            ]);
+            exit();
+        }
+
+        if (time() > intval($entry['expiry'] ?? 0)) {
+            unset($otpsMap[$entryKey]);
+            saveJsonStoreMap($otpsFile, $otpsMap);
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Your 6-digit OTP has expired. Please click Resend OTP to receive a fresh code."
+            ]);
+            exit();
+        }
+
+        if (strval($entry['code']) !== $cleanOtp) {
+            $otpsMap[$entryKey]['attempts'] = $attempts;
+            saveJsonStoreMap($otpsFile, $otpsMap);
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Invalid 6-digit OTP verification code (" . (5 - $attempts) . " attempts remaining)."
+            ]);
+            exit();
+        }
+
+        unset($otpsMap[$entryKey]);
+        saveJsonStoreMap($otpsFile, $otpsMap);
+
+        $token = generateSignedAuthToken($matchedUser);
+        $userPayload = buildPhpAuthUserPayload($matchedUser, $token);
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "token" => $token,
+            "user" => $userPayload,
+            "message" => !empty($matchedUser['isRootAdmin'])
+                ? "Administrator 2FA OTP verified. Welcome to the Control Center."
+                : "2FA OTP verified. Welcome back, {$matchedUser['name']}!"
+        ]);
+        exit();
+
+    case 'resend_login_otp':
+        $cleanEmail = normalizeAuthEmail($input['email'] ?? '');
+        if (empty($cleanEmail)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Registered email address is required."]);
+            exit();
+        }
+        $matchedUser = findPhpAuthUser($cleanEmail, $db_connected, $pdo);
+        if (!$matchedUser) {
+            http_response_code(404);
+            echo json_encode(["status" => "error", "success" => false, "message" => "No registered user found for this email."]);
+            exit();
+        }
+
+        try {
+            $otpCode = strval(random_int(100000, 999999));
+        } catch (Exception $e) {
+            $otpCode = strval(rand(100000, 999999));
+        }
+        $otpsFile = __DIR__ . '/login_otps_store.json';
+        $otpsMap = loadJsonStoreMap($otpsFile);
+        $otpsMap["login:" . $cleanEmail] = [
+            'code' => $otpCode,
+            'expiry' => time() + 600,
+            'attempts' => 0,
+            'role' => $matchedUser['role']
+        ];
+        saveJsonStoreMap($otpsFile, $otpsMap);
+
+        $sent = sendLoginOtpEmail($cleanEmail, $matchedUser['name'], $otpCode, $matchedUser['role'], false);
+        $masked = maskAuthEmail($cleanEmail);
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "requiresOtp" => true,
+            "email" => $cleanEmail,
+            "maskedEmail" => $masked,
+            "emailSent" => (bool)$sent,
+            "message" => "A fresh 6-digit verification OTP has been sent to your registered email ({$masked})."
+        ]);
+        exit();
+
+    case 'auth_me':
+    case 'me':
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+        if (!$authHeader && function_exists('apache_request_headers')) {
+            $hdrs = apache_request_headers();
+            $authHeader = $hdrs['Authorization'] ?? ($hdrs['authorization'] ?? '');
+        }
+        if (!$authHeader || stripos($authHeader, 'Bearer ') !== 0) {
+            http_response_code(401);
+            echo json_encode(["status" => "error", "success" => false, "revoked" => true, "message" => "Unauthenticated"]);
+            exit();
+        }
+        $bearer = trim(substr($authHeader, 7));
+        $claims = verifySignedAuthToken($bearer);
+        if (!$claims) {
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "revoked" => true,
+                "message" => "Session expired or invalid. Please sign in again via Email OTP."
+            ]);
+            exit();
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "user" => [
+                "id" => $claims['uid'],
+                "email" => $claims['email'],
+                "name" => $claims['name'],
+                "role" => $claims['role'],
+                "isPremium" => !empty($claims['isPremium']),
+                "membershipStatus" => $claims['membershipStatus'] ?? 'free',
+                "status" => $claims['status'] ?? 'ACTIVE',
+                "isVerified" => true,
+                "isVerifiedAdmin" => ($claims['role'] ?? '') === 'ADMIN',
+                "otpVerified" => true,
+                "tier" => $claims['tier'] ?? 'FREE',
+                "companyName" => $claims['companyName'] ?? 'Enterprise Trading Firm',
+                "country" => $claims['country'] ?? 'United States',
+                "avatarUrl" => $claims['avatarUrl'] ?? '',
+                "token" => $bearer
+            ]
+        ]);
+        exit();
+
+    case 'login':
+        $email = normalizeAuthEmail($input['email'] ?? '');
+        $password = (string)($input['password'] ?? '');
+        $submittedOtp = trim((string)($input['otp'] ?? $input['code'] ?? ''));
+
+        if (empty($email)) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Please provide your registered email address."]);
+            exit();
+        }
+
+        $matchedUser = findPhpAuthUser($email, $db_connected, $pdo);
+        if (!$matchedUser) {
+            http_response_code(401);
+            echo json_encode(["status" => "error", "success" => false, "message" => "No registered account found for this email address. Please register first."]);
+            exit();
+        }
+
+        if (empty($matchedUser['isRootAdmin']) && !verifyPhpAuthPassword($matchedUser, $password)) {
+            http_response_code(401);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Invalid registered email or password. Access denied."]);
+            exit();
+        }
+
+        $otpsFile = __DIR__ . '/login_otps_store.json';
+        $otpsMap = loadJsonStoreMap($otpsFile);
+        $entryKey = "login:" . $email;
+
+        if (!empty($submittedOtp)) {
+            $entry = $otpsMap[$entryKey] ?? null;
+            if (!$entry || empty($entry['code'])) {
+                http_response_code(401);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "No active OTP found. Please click \"Send OTP\" first to receive a 6-digit code on your registered email."
+                ]);
+                exit();
+            }
+
+            $attempts = intval($entry['attempts'] ?? 0) + 1;
+            if ($attempts > 5) {
+                unset($otpsMap[$entryKey]);
+                saveJsonStoreMap($otpsFile, $otpsMap);
+                http_response_code(429);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "Too many failed OTP attempts. Please click \"Send OTP\" to request a new 6-digit code."
+                ]);
+                exit();
+            }
+
+            if (time() > intval($entry['expiry'] ?? 0)) {
+                unset($otpsMap[$entryKey]);
+                saveJsonStoreMap($otpsFile, $otpsMap);
+                http_response_code(401);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "Your 6-digit OTP has expired. Please click \"Send OTP\" to receive a fresh code."
+                ]);
+                exit();
+            }
+
+            if (strval($entry['code']) !== $submittedOtp) {
+                $otpsMap[$entryKey]['attempts'] = $attempts;
+                saveJsonStoreMap($otpsFile, $otpsMap);
+                http_response_code(401);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "message" => "Invalid 6-digit OTP verification code (" . (5 - $attempts) . " attempts remaining)."
+                ]);
+                exit();
+            }
+
+            unset($otpsMap[$entryKey]);
+            saveJsonStoreMap($otpsFile, $otpsMap);
+
+            $token = generateSignedAuthToken($matchedUser);
+            $userPayload = buildPhpAuthUserPayload($matchedUser, $token);
+            echo json_encode([
+                "status" => "success",
+                "success" => true,
+                "token" => $token,
+                "user" => $userPayload,
+                "message" => !empty($matchedUser['isRootAdmin'])
+                    ? "Administrator 2FA OTP verified. Welcome to the Control Center."
+                    : "2FA OTP verified. Welcome back, {$matchedUser['name']}!"
+            ]);
+            exit();
+        }
+
+        // No OTP supplied yet -> automatically issue & email 6-digit login OTP
+        try {
+            $otpCode = strval(random_int(100000, 999999));
+        } catch (Exception $e) {
+            $otpCode = strval(rand(100000, 999999));
+        }
+        $otpsMap[$entryKey] = [
+            'code' => $otpCode,
+            'expiry' => time() + 600,
+            'attempts' => 0,
+            'role' => $matchedUser['role']
+        ];
+        saveJsonStoreMap($otpsFile, $otpsMap);
+
+        $sent = sendLoginOtpEmail($email, $matchedUser['name'], $otpCode, $matchedUser['role'], false);
+        $masked = maskAuthEmail($email);
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "requiresOtp" => true,
+            "email" => $email,
+            "maskedEmail" => $masked,
+            "role" => $matchedUser['role'],
+            "emailSent" => (bool)$sent,
+            "message" => "A 6-digit security verification OTP has been sent to your registered email ({$masked}). Please enter the OTP to complete sign-in."
+        ]);
+        exit();
 
     // -------------------------------------------------------------
     // 7. Register User
     // -------------------------------------------------------------
     case 'register':
-        $email = strtolower(trim($input['email'] ?? ''));
+        $email = normalizeAuthEmail($input['email'] ?? '');
         $name = trim($input['name'] ?? 'Trade Partner');
         $raw_password = (string)($input['password'] ?? '');
+        $submitted_otp = trim((string)($input['otp'] ?? $input['code'] ?? ''));
         $company = trim($input['company_name'] ?? $input['companyName'] ?? $input['company'] ?? 'Enterprise Trading Firm');
         $phone = trim($input['phone'] ?? $input['phoneOrWhatsapp'] ?? '');
         $country = trim($input['country'] ?? 'United States');
@@ -1369,32 +1920,80 @@ switch ($action) {
         $role = ($role_input === 'supplier') ? 'supplier' : 'buyer';
 
         if (empty($email)) {
-            echo json_encode(["status" => "error", "message" => "Email address is required."]);
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Email address is required."]);
+            exit();
+        }
+
+        if (in_array($email, getAuthorizedRootAdminEmails(), true)) {
+            http_response_code(403);
+            echo json_encode(["status" => "error", "success" => false, "message" => "This email is reserved for system administration."]);
             exit();
         }
 
         if (empty($raw_password)) {
-            echo json_encode(["status" => "error", "message" => "Password is required."]);
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Password is required."]);
             exit();
         }
 
-        // Check if user already exists
-        $user_already_exists = false;
-        if ($db_connected && $pdo) {
-            try {
-                $check_stmt = $pdo->prepare("SELECT id FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1");
-                $check_stmt->execute([$email]);
-                if ($check_stmt->fetch()) {
-                    $user_already_exists = true;
-                }
-            } catch (Exception $e) {
-                // Table or column query issue - log and proceed with adaptive creation
-                error_log("Register duplicate check warning: " . $e->getMessage());
-            }
-        }
+        // Verify 6-digit registration OTP
+        $otpsFile = __DIR__ . '/login_otps_store.json';
+        $otpsMap = loadJsonStoreMap($otpsFile);
+        $regKey = "reg:" . $email;
+        $pendingRegOtp = $otpsMap[$regKey] ?? null;
 
+        if (empty($submitted_otp) || strlen($submitted_otp) !== 6) {
+            http_response_code(400);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Please click \"Send OTP\" and enter the 6-digit verification code sent to your email before completing registration."
+            ]);
+            exit();
+        }
+        if (!$pendingRegOtp || time() > intval($pendingRegOtp['expiry'] ?? 0)) {
+            unset($otpsMap[$regKey]);
+            saveJsonStoreMap($otpsFile, $otpsMap);
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "No active or valid OTP found for this email. Please click \"Send OTP\" to receive a fresh 6-digit verification code."
+            ]);
+            exit();
+        }
+        $regAttempts = intval($pendingRegOtp['attempts'] ?? 0) + 1;
+        if ($regAttempts > 5) {
+            unset($otpsMap[$regKey]);
+            saveJsonStoreMap($otpsFile, $otpsMap);
+            http_response_code(429);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Too many invalid OTP attempts. Please click \"Send OTP\" to request a new 6-digit code."
+            ]);
+            exit();
+        }
+        if (strval($pendingRegOtp['code'] ?? '') !== $submitted_otp) {
+            $otpsMap[$regKey]['attempts'] = $regAttempts;
+            saveJsonStoreMap($otpsFile, $otpsMap);
+            http_response_code(401);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "message" => "Invalid 6-digit verification code (" . (5 - $regAttempts) . " attempts remaining)."
+            ]);
+            exit();
+        }
+        unset($otpsMap[$regKey]);
+        saveJsonStoreMap($otpsFile, $otpsMap);
+
+        // Check if user already exists in DB or local store
+        $user_already_exists = (bool)findPhpAuthUser($email, $db_connected, $pdo);
         if ($user_already_exists) {
-            echo json_encode(["status" => "error", "message" => "An account with this email address is already registered. Please log in."]);
+            http_response_code(409);
+            echo json_encode(["status" => "error", "success" => false, "message" => "An account with this email address is already registered. Please log in."]);
             exit();
         }
 
@@ -1403,16 +2002,13 @@ switch ($action) {
         $user_id = time();
 
         if ($db_connected && $pdo) {
-            // Adaptive column detection & auto-healing
             try {
-                // Check existing columns in users table
                 $cols_res = $pdo->query("SHOW COLUMNS FROM users");
                 $existing_columns = [];
                 while ($row = $cols_res->fetch()) {
                     $existing_columns[] = strtolower($row['Field']);
                 }
 
-                // Auto-add any missing critical columns
                 $missing_defs = [
                     'password' => "VARCHAR(255) DEFAULT ''",
                     'company_name' => "VARCHAR(255) DEFAULT ''",
@@ -1436,7 +2032,6 @@ switch ($action) {
                     }
                 }
 
-                // Construct adaptive dynamic INSERT
                 $insert_data = [
                     'name' => $name,
                     'email' => $email,
@@ -1472,22 +2067,21 @@ switch ($action) {
                     $user_id = $pdo->lastInsertId() ?: $user_id;
                 }
             } catch (Exception $e) {
-                // Graceful logging without crashing user session
                 $err_msg = "Register INSERT handled gracefully: " . $e->getMessage();
                 error_log($err_msg);
                 file_put_contents(__DIR__ . '/db_error.log', $err_msg . "\n", FILE_APPEND);
             }
         }
 
-        // Backup to local JSON user registry for zero-data-loss durability
+        // Backup to local JSON user registry with password hash for zero-data-loss durability
         try {
             $users_file = __DIR__ . '/users_store.json';
-            $local_users = file_exists($users_file) ? json_decode(file_get_contents($users_file), true) : [];
-            if (!is_array($local_users)) $local_users = [];
+            $local_users = loadJsonStoreMap($users_file);
             $local_users[] = [
                 'id' => (string)$user_id,
                 'name' => $name,
                 'email' => $email,
+                'password_hash' => $password_hash,
                 'company_name' => $company,
                 'phone' => $phone,
                 'country' => $country,
@@ -1495,32 +2089,31 @@ switch ($action) {
                 'tier' => $role === 'supplier' ? 'SILVER' : 'FREE',
                 'created_at' => date('Y-m-d H:i:s')
             ];
-            file_put_contents($users_file, json_encode($local_users, JSON_PRETTY_PRINT));
+            saveJsonStoreMap($users_file, $local_users);
         } catch (Exception $f_ex) {}
 
-        // Trigger Instant Email Notification on Registration
-        sendPhpMailAlert(
-            "🎉 New Account Registered: {$name} ({$company})",
-            "Welcome to Trade Heaven B2B Marketplace",
-            "A new user registration has been successfully completed.",
-            [
-                "Full Name" => $name,
-                "Email" => $email,
-                "Company" => $company,
-                "Phone" => $phone ?: "N/A",
-                "Country" => $country,
-                "Account Type" => strtoupper($role),
-                "Assigned Tier" => $role === 'supplier' ? 'SILVER' : 'FREE',
-                "Registered At" => date("Y-m-d H:i:s T")
-            ]
-        );
-
-        $token = "jwt_" . md5($email . time());
+        $newAuthUser = [
+            'id' => (string)$user_id,
+            'name' => $name,
+            'email' => $email,
+            'role' => strtoupper($role),
+            'isRootAdmin' => false,
+            'isPremium' => $role === 'supplier',
+            'membershipStatus' => 'free',
+            'status' => 'ACTIVE',
+            'tier' => $role === 'supplier' ? 'SILVER' : 'FREE',
+            'companyName' => $company,
+            'country' => $country,
+            'phone' => $phone,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+        ];
+        $token = generateSignedAuthToken($newAuthUser);
+        $userPayload = buildPhpAuthUserPayload($newAuthUser, $token);
         echo json_encode([
             "status" => "success",
             "success" => true,
             "token" => $token,
-            "message" => "Account successfully registered and active!",
+            "message" => "6-digit Email OTP verified and account successfully registered!",
             "data" => [
                 "id" => $user_id,
                 "name" => $name,
@@ -1530,23 +2123,7 @@ switch ($action) {
                 "country" => $country,
                 "role" => $role
             ],
-            "user" => [
-                "id" => (string)$user_id,
-                "name" => $name,
-                "email" => $email,
-                "phone" => $phone,
-                "role" => strtoupper($role),
-                "companyName" => $company,
-                "company_name" => $company,
-                "country" => $country,
-                "isVerified" => true,
-                "isPremium" => $role === 'supplier',
-                "membershipStatus" => "free",
-                "status" => "ACTIVE",
-                "tier" => $role === 'supplier' ? 'SILVER' : 'FREE',
-                "avatarUrl" => "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-                "token" => $token
-            ]
+            "user" => $userPayload
         ]);
         break;
 

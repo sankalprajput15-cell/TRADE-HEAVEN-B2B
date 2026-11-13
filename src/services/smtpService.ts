@@ -8,6 +8,7 @@ export interface OtpEmailPayload {
   recipientName?: string;
   otpCode: string;
   expiryMinutes?: number;
+  isRegistration?: boolean;
 }
 
 export interface SmtpDispatchResult {
@@ -4193,8 +4194,59 @@ export class AutomatedSmtpService {
   private async relayViaBigRockMta(
     cleanEmail: string,
     displayName: string,
-    otpCode: string
+    otpCode: string,
+    purpose: 'LOGIN_OTP' | 'REGISTER_OTP' | 'RESET_PASSWORD' = 'RESET_PASSWORD',
+    role: string = 'BUYER'
   ): Promise<SmtpDispatchResult | null> {
+    if (purpose === 'LOGIN_OTP' || purpose === 'REGISTER_OTP') {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 7000);
+
+        const response = await fetch(`${this.remoteMtaGatewayUrl}?action=send_otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Internal-Relay': '1'
+          },
+          body: JSON.stringify({
+            email: cleanEmail,
+            name: displayName,
+            code: otpCode,
+            mode: purpose === 'REGISTER_OTP' ? 'REGISTER' : 'LOGIN',
+            role,
+            internalRelay: true
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          const data: any = await response.json().catch(() => null);
+          if (data && data.otp_dispatched === true && (data.success || data.status === 'success')) {
+            console.log(
+              `[AutomatedSmtpService] BigRock MTA dispatched ${purpose} OTP for ${cleanEmail}`
+            );
+            return {
+              success: true,
+              sender: this.senderAddress,
+              recipient: cleanEmail,
+              mode: 'BIGROCK_MTA_RELAY',
+              dispatchedCode: otpCode,
+              messageId: `bigrock-mta-otp-${Date.now()}@tradeheaven.net`
+            };
+          }
+        }
+      } catch (err: any) {
+        console.warn(
+          `[AutomatedSmtpService] BigRock send_otp relay warning for ${cleanEmail}:`,
+          err?.message || err
+        );
+      }
+    }
+
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10000);
@@ -4362,7 +4414,13 @@ export class AutomatedSmtpService {
       }
     }
 
-    const relayResult = await this.relayViaBigRockMta(cleanEmail, displayName, finalOtpCode);
+    const relayResult = await this.relayViaBigRockMta(
+      cleanEmail,
+      displayName,
+      finalOtpCode,
+      payload.isRegistration ? 'REGISTER_OTP' : 'LOGIN_OTP',
+      payload.role || 'BUYER'
+    );
     if (relayResult && relayResult.success) {
       return relayResult;
     }
