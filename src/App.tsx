@@ -1289,15 +1289,21 @@ const MainApp: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${currentUser.token}`
         },
-        body: JSON.stringify({ currentView: activeView })
+        body: JSON.stringify({
+          currentView: activeView,
+          lastAction: `Navigated to ${activeView}`,
+          isPassivePing: false
+        })
       }).catch(() => {});
     }
   }, [activeView, currentUser, isAdmin]);
 
-  // Keep live user presence active every 45s while authenticated & viewing any page
+  // Keep live user presence active every 45s and capture portal user interactions (throttled to 15s)
   useEffect(() => {
     if (!currentUser?.token) return;
-    const sendHeartbeat = () => {
+    let lastInteractionPingMs = 0;
+
+    const sendHeartbeat = (options?: { isPassivePing?: boolean; lastAction?: string }) => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       fetch('/api/v1/auth/heartbeat', {
         method: 'POST',
@@ -1305,17 +1311,47 @@ const MainApp: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${currentUser.token}`
         },
-        body: JSON.stringify({ currentView: activeView })
+        body: JSON.stringify({
+          currentView: activeView,
+          ...(options?.lastAction ? { lastAction: options.lastAction } : {}),
+          isPassivePing: Boolean(options?.isPassivePing)
+        })
       }).catch(() => {});
     };
-    const intervalId = window.setInterval(sendHeartbeat, 45000);
+
+    const intervalId = window.setInterval(() => sendHeartbeat({ isPassivePing: true }), 45000);
+
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') sendHeartbeat();
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat({ isPassivePing: true });
+      }
     };
+
+    const handleUserAction = (e: Event) => {
+      const now = Date.now();
+      if (now - lastInteractionPingMs < 15000) return;
+      const target = e.target as HTMLElement | null;
+      const btnOrLink = target?.closest('button, a, input, select');
+      if (!btnOrLink) return;
+      lastInteractionPingMs = now;
+      const rawLabel = (
+        btnOrLink.getAttribute('aria-label') ||
+        btnOrLink.textContent ||
+        ''
+      )
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 48);
+      const actionLabel = rawLabel ? `Interacted: ${rawLabel}` : `Active on ${activeView}`;
+      sendHeartbeat({ isPassivePing: false, lastAction: actionLabel });
+    };
+
     document.addEventListener('visibilitychange', handleVisibility);
+    document.addEventListener('click', handleUserAction, { capture: true, passive: true });
     return () => {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibility);
+      document.removeEventListener('click', handleUserAction, { capture: true });
     };
   }, [activeView, currentUser]);
 

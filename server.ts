@@ -763,6 +763,18 @@ function logServerActivity(
     details
   });
 
+  // Automatically update last-action timestamp if this actor has an active platform session
+  if (status === 'SUCCESS' && action !== 'AUTH_LOGOUT' && actorEmail) {
+    const cleanActor = normalizeRecipientEmail(actorEmail);
+    const activeSess = activePlatformSessions.get(cleanActor);
+    if (activeSess) {
+      const nowMs = Date.now();
+      activeSess.lastActiveAt = nowMs;
+      activeSess.lastActionAt = nowMs;
+      activeSess.lastAction = action.replace(/_/g, ' ');
+    }
+  }
+
   return logEntry;
 }
 
@@ -1419,10 +1431,12 @@ interface ActivePlatformSession {
   companyName: string;
   country: string;
   currentView: string;
+  lastAction: string;
   userAgent: string;
   ipAddress: string;
   loggedInAt: number;
   lastActiveAt: number;
+  lastActionAt: number;
 }
 
 const activePlatformSessions = new Map<string, ActivePlatformSession>();
@@ -1439,7 +1453,9 @@ function touchActivePlatformSession(
     companyName?: string;
     country?: string;
   },
-  currentView?: string
+  currentView?: string,
+  actionLabel?: string,
+  isPassivePing: boolean = false
 ) {
   const cleanEmail = normalizeRecipientEmail(String(u.email || ''));
   if (!cleanEmail) return;
@@ -1450,6 +1466,16 @@ function touchActivePlatformSession(
     ? String((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '').trim()
     : existing?.ipAddress || '';
   const storedUser = serverUsersStore.find(su => normalizeRecipientEmail(su.email) === cleanEmail);
+  const resolvedView = String(currentView || existing?.currentView || 'HOMEPAGE');
+  const resolvedAction = actionLabel
+    ? actionLabel
+    : !isPassivePing && currentView && currentView !== existing?.currentView
+      ? `Navigated to ${resolvedView}`
+      : existing?.lastAction || 'Signed in to portal';
+  const resolvedActionAt =
+    actionLabel || (!isPassivePing && (!existing || (currentView && currentView !== existing.currentView)))
+      ? now
+      : existing?.lastActionAt || now;
 
   activePlatformSessions.set(cleanEmail, {
     userId: String(u.id || u.uid || existing?.userId || cleanEmail),
@@ -1459,11 +1485,13 @@ function touchActivePlatformSession(
     tier: String(u.tier || storedUser?.tier || existing?.tier || 'FREE'),
     companyName: String(u.companyName || storedUser?.companyName || existing?.companyName || 'Global Trade Member'),
     country: String(u.country || storedUser?.country || existing?.country || 'Global'),
-    currentView: String(currentView || existing?.currentView || 'HOMEPAGE'),
+    currentView: resolvedView,
+    lastAction: resolvedAction,
     userAgent: ua,
     ipAddress: ip,
     loggedInAt: existing?.loggedInAt || now,
-    lastActiveAt: now
+    lastActiveAt: now,
+    lastActionAt: resolvedActionAt
   });
 }
 
@@ -6324,7 +6352,9 @@ app.post('/api/v1/auth/heartbeat', (req, res) => {
     return res.status(401).json({ success: false, revoked: true, message: 'Session invalid' });
   }
   const currentView = typeof req.body?.currentView === 'string' ? req.body.currentView : undefined;
-  touchActivePlatformSession(req, payload, currentView);
+  const lastAction = typeof req.body?.lastAction === 'string' ? req.body.lastAction.slice(0, 120) : undefined;
+  const isPassivePing = Boolean(req.body?.isPassivePing);
+  touchActivePlatformSession(req, payload, currentView, lastAction, isPassivePing);
   return res.json({ success: true, serverTime: Date.now() });
 });
 
@@ -6413,11 +6443,15 @@ app.get('/api/v1/admin/active-users', (req, res) => {
 
   const activeSessions = Array.from(activePlatformSessions.values())
     .filter(s => now - s.lastActiveAt <= ACTIVE_SESSION_WINDOW_MS)
-    .sort((a, b) => b.lastActiveAt - a.lastActiveAt)
+    .sort((a, b) => b.lastActionAt - a.lastActionAt || b.lastActiveAt - a.lastActiveAt)
     .map(s => ({
       ...s,
+      username: s.name,
       isOnlineNow: now - s.lastActiveAt <= ONLINE_WINDOW_MS,
-      secondsAgo: Math.max(0, Math.floor((now - s.lastActiveAt) / 1000))
+      secondsAgo: Math.max(0, Math.floor((now - s.lastActiveAt) / 1000)),
+      lastActionSecondsAgo: Math.max(0, Math.floor((now - (s.lastActionAt || s.lastActiveAt)) / 1000)),
+      lastActionIso: new Date(s.lastActionAt || s.lastActiveAt).toISOString(),
+      loggedInAtIso: new Date(s.loggedInAt).toISOString()
     }));
 
   return res.json({
