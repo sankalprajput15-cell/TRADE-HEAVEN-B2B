@@ -50,7 +50,8 @@ import {
   Plane,
   Loader2,
   TrendingUp,
-  Crown
+  Crown,
+  Phone
 } from 'lucide-react';
 import { CATEGORIES_TREE, MOCK_RFQS } from '../../data/mockData';
 import { getAllSuppliersWithUsers } from '../../services/apiService';
@@ -1388,39 +1389,43 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
                             <span aria-hidden="true">·</span>
                             <span>{rfq.preferredIncoterm} ({rfq.paymentTerms || 'LC / TT'})</span>
                           </div>
-                          {/* Buyer Contact Line: Unblurred for Paid, Blurred + Lock for Free/Guest */}
+                          {/* Buyer Contact Line: Unblurred for Paid, Blurred + Contact Buyer Button for Free/Guest */}
                           <div className="flex items-center gap-2 pt-0.5 text-[10px]">
                             <span className="text-slate-400 font-semibold shrink-0">Buyer:</span>
                             <span
+                              onMouseDown={
+                                !canViewBuyerContact
+                                  ? (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      triggerRegistrationModal();
+                                    }
+                                  : undefined
+                              }
                               style={
                                 canViewBuyerContact
                                   ? undefined
-                                  : { filter: 'blur(5px)', userSelect: 'none', pointerEvents: 'none' }
+                                  : { filter: 'blur(5px)', userSelect: 'none' }
                               }
-                              className="font-semibold text-slate-700 truncate"
+                              className="font-semibold text-slate-700 truncate cursor-pointer"
                             >
                               {canViewBuyerContact
                                 ? `${rfq.buyerName || 'Procurement Director'} · ${rfq.buyerCompany} · ${rfq.buyerPhone || '+971 50 482 9130'}`
                                 : 'Tariq Al-Maktoum · Al-Maktoum Commodities LLC · +971 50 482 9130'}
                             </span>
-                            {!canViewBuyerContact && (
-                              <button
-                                type="button"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (onOpenUpgradeModal) {
-                                    onOpenUpgradeModal(rfq);
-                                  } else if (onNavigateToBuyLeads) {
-                                    onNavigateToBuyLeads(trimmed);
-                                  }
-                                }}
-                                className="px-2 py-0.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[9px] inline-flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer"
-                              >
-                                <Lock className="w-2.5 h-2.5" />
-                                <span>Unlock Buyer Contact</span>
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                triggerRegistrationModal();
+                              }}
+                              className="px-2.5 py-0.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] inline-flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer transition-colors"
+                              title="Contact Buyer"
+                            >
+                              <Phone className="w-2.5 h-2.5" />
+                              <span>Contact Buyer</span>
+                            </button>
                           </div>
                         </div>
                       </div>
