@@ -876,6 +876,8 @@ export interface MultiChatMessage {
   mediaSize: number;
   isRead: boolean;
   readAt?: string;
+  emailAlertSent?: boolean;
+  emailAlertSentAt?: string;
   createdAt: string;
 }
 

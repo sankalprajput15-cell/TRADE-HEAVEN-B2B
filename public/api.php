@@ -313,8 +313,12 @@ if ($db_connected) {
                 media_name VARCHAR(255) DEFAULT '',
                 media_size BIGINT DEFAULT 0,
                 is_read TINYINT(1) DEFAULT 0,
+                read_at TIMESTAMP NULL DEFAULT NULL,
+                email_alert_sent TINYINT(1) NOT NULL DEFAULT 0,
+                email_alert_sent_at TIMESTAMP NULL DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_chat_conv (conversation_id)
+                INDEX idx_chat_conv (conversation_id),
+                INDEX idx_chat_unseen_alert (is_read, email_alert_sent, created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             @file_put_contents($chat_marker_file, '1');
@@ -338,6 +342,24 @@ if ($db_connected) {
             @file_put_contents($chat_v2_marker, '1');
         } catch (Exception $e) {
             @file_put_contents(__DIR__ . '/db_error.log', "Chat v2 migration warning: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    // Ensure chat_messages has email_alert_sent & email_alert_sent_at columns for 1-minute unseen deal alerts
+    $chat_v3_marker = __DIR__ . '/.db_chat_schema_v3';
+    if ($db_connected && $pdo && !file_exists($chat_v3_marker)) {
+        try {
+            $alertCol = $pdo->query("SHOW COLUMNS FROM chat_messages LIKE 'email_alert_sent'")->fetch();
+            if (!$alertCol) {
+                $pdo->exec("ALTER TABLE chat_messages ADD COLUMN email_alert_sent TINYINT(1) NOT NULL DEFAULT 0 AFTER read_at");
+            }
+            $alertAtCol = $pdo->query("SHOW COLUMNS FROM chat_messages LIKE 'email_alert_sent_at'")->fetch();
+            if (!$alertAtCol) {
+                $pdo->exec("ALTER TABLE chat_messages ADD COLUMN email_alert_sent_at TIMESTAMP NULL DEFAULT NULL AFTER email_alert_sent");
+            }
+            @file_put_contents($chat_v3_marker, '1');
+        } catch (Exception $e) {
+            @file_put_contents(__DIR__ . '/db_error.log', "Chat v3 migration warning: " . $e->getMessage() . "\n", FILE_APPEND);
         }
     }
 }
@@ -3625,6 +3647,8 @@ switch ($action) {
                         'mediaSize' => intval($r['media_size'] ?? 0),
                         'isRead' => !empty($r['is_read']),
                         'readAt' => !empty($r['read_at']) ? (string)$r['read_at'] : null,
+                        'emailAlertSent' => !empty($r['email_alert_sent']),
+                        'emailAlertSentAt' => !empty($r['email_alert_sent_at']) ? (string)$r['email_alert_sent_at'] : null,
                         'createdAt' => (string)($r['created_at'] ?? gmdate('c'))
                     ];
                 }
@@ -3686,7 +3710,7 @@ switch ($action) {
 
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->prepare("INSERT INTO chat_messages (id, conversation_id, sender_role, message_text, media_type, media_url, media_name, media_size, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)");
+                $stmt = $pdo->prepare("INSERT INTO chat_messages (id, conversation_id, sender_role, message_text, media_type, media_url, media_name, media_size, is_read, email_alert_sent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
                 $stmt->execute([$msg_id, $conv_id, $sender_role, $message_text, $media_type, $media_url, $media_name, $media_size, $now]);
                 $upd = $pdo->prepare("UPDATE chat_conversations SET last_message = ?, updated_at = ? WHERE id = ?");
                 $upd->execute([$preview, $now, $conv_id]);
@@ -3706,7 +3730,202 @@ switch ($action) {
                 'mediaName' => $media_name,
                 'mediaSize' => $media_size,
                 'isRead' => false,
+                'emailAlertSent' => false,
                 'createdAt' => gmdate('c')
+            ]
+        ]);
+        break;
+
+    case 'process_unseen_alerts':
+        $min_age_seconds = max(1, intval($input['minAgeSeconds'] ?? $_GET['min_age_seconds'] ?? 60));
+        $processed_count = 0;
+        $alerts_sent = 0;
+        $supplier_alerts = 0;
+        $admin_alerts = 0;
+        $alert_details = [];
+
+        if ($db_connected && $pdo) {
+            try {
+                $sql = "SELECT m.*, c.identity_id, c.supplier_id, c.supplier_name, c.supplier_email, c.supplier_company, c.supplier_country,
+                               c.show_phone, c.show_email, c.show_company,
+                               i.buyer_name, i.company_name AS i_company_name, i.country AS i_country, i.city AS i_city,
+                               i.phone AS i_phone, i.email AS i_email, i.product_interest AS i_product_interest, i.address AS i_address
+                        FROM chat_messages m
+                        INNER JOIN chat_conversations c ON m.conversation_id = c.id
+                        LEFT JOIN admin_buyer_identities i ON c.identity_id = i.id
+                        WHERE m.is_read = 0 AND m.email_alert_sent = 0
+                          AND m.created_at <= DATE_SUB(NOW(), INTERVAL ? SECOND)
+                        ORDER BY m.created_at ASC";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$min_age_seconds]);
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // Group unread messages by conversation + sender_role so we send one HTML alert email per unread thread
+                $groups = [];
+                foreach ($rows as $row) {
+                    $gkey = $row['conversation_id'] . '::' . $row['sender_role'];
+                    if (!isset($groups[$gkey])) {
+                        $groups[$gkey] = ['meta' => $row, 'messages' => []];
+                    }
+                    $groups[$gkey]['messages'][] = $row;
+                }
+
+                $base_portal_url = 'https://tradeheaven.net';
+                $headers_str = implode("\r\n", [
+                    'MIME-Version: 1.0',
+                    'Content-type: text/html; charset=UTF-8',
+                    'From: Trade Heaven Deal Desk <noreply@tradeheaven.net>',
+                    'Reply-To: help@tradeheaven.net',
+                    'X-Mailer: PHP/' . phpversion()
+                ]);
+
+                foreach ($groups as $grp) {
+                    $meta = $grp['meta'];
+                    $msgs = $grp['messages'];
+                    $msg_ids = array_map(fn($x) => $x['id'], $msgs);
+                    $conv_id = (string)$meta['conversation_id'];
+                    $sender_role = (string)$meta['sender_role'];
+
+                    $buyer_name = (string)($meta['buyer_name'] ?? 'International Buyer');
+                    $buyer_country = (string)($meta['i_country'] ?? 'Global');
+                    $buyer_city = (string)($meta['i_city'] ?? '');
+                    $buyer_interest = (string)($meta['i_product_interest'] ?? '');
+                    $show_phone = !empty($meta['show_phone']);
+                    $show_email = !empty($meta['show_email']);
+                    $show_company = !empty($meta['show_company']);
+
+                    $raw_phone = (string)($meta['i_phone'] ?? '');
+                    $raw_email = (string)($meta['i_email'] ?? '');
+                    $raw_company = (string)($meta['i_company_name'] ?? '');
+                    $raw_address = (string)($meta['i_address'] ?? '');
+
+                    $masked_phone = strlen(preg_replace('/\D+/', '', $raw_phone)) >= 4
+                        ? substr($raw_phone, 0, 2) . ' •••-•••-' . substr(preg_replace('/\D+/', '', $raw_phone), -4) . ' [Protected by Trade Heaven]'
+                        : '+•• •••-•••-•••• [Protected by Trade Heaven]';
+                    $ep = explode('@', $raw_email);
+                    $masked_email = (strlen($ep[0] ?? '') > 0 ? substr($ep[0], 0, 1) : 'b') . '••••@••••.' . (strpos($ep[1] ?? '', '.') !== false ? substr(strrchr($ep[1], '.'), 1) : 'com');
+                    $masked_company = 'Verified Importer • ' . $buyer_country . ' [Protected by Trade Heaven]';
+
+                    $safe_phone = $show_phone ? $raw_phone : $masked_phone;
+                    $safe_email = $show_email ? $raw_email : $masked_email;
+                    $safe_company = $show_company ? $raw_company : $masked_company;
+                    $safe_address = $show_company ? $raw_address : ($buyer_city ? "{$buyer_city}, {$buyer_country} [Protected]" : "{$buyer_country} [Protected]");
+
+                    $snippets = '';
+                    foreach (array_slice($msgs, -3) as $um) {
+                        $txt = trim((string)($um['message_text'] ?? ''));
+                        if ($txt === '' && !empty($um['media_name'])) {
+                            $txt = '[' . strtoupper((string)($um['media_type'] ?? 'FILE')) . ': ' . $um['media_name'] . ']';
+                        }
+                        $snippets .= '<li style="margin-bottom:6px;color:#0f172a;">' . htmlspecialchars($txt) . '</li>';
+                    }
+
+                    if ($sender_role === 'buyer_identity') {
+                        // Buyer sent -> Supplier hasn't read within 60s
+                        $target_email = trim(strtolower((string)($meta['supplier_email'] ?? '')));
+                        if ($target_email === '' && !empty($meta['supplier_id'])) {
+                            try {
+                                $uStmt = $pdo->prepare("SELECT email FROM users WHERE id = ? LIMIT 1");
+                                $uStmt->execute([$meta['supplier_id']]);
+                                $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+                                if (!empty($uRow['email'])) $target_email = trim(strtolower((string)$uRow['email']));
+                            } catch (Exception $e) {}
+                        }
+                        if ($target_email !== '' && filter_var($target_email, FILTER_VALIDATE_EMAIL)) {
+                            $subject = "Urgent Deal Update: Unread message from {$buyer_name} ({$buyer_country}) on Trade Heaven";
+                            $reply_link = $base_portal_url . '/?view=SUPPLIER_MESSAGES';
+                            $html_body = "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;\">
+                              <div style=\"max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;\">
+                                <div style=\"background:#0f172a;padding:20px 24px;color:#ffffff;\">
+                                  <h2 style=\"margin:0;font-size:18px;color:#38bdf8;\">Urgent Export Deal Update Pending Reply</h2>
+                                  <p style=\"margin:6px 0 0;font-size:13px;color:#cbd5e1;\">You have " . count($msgs) . " unread message(s) from {$buyer_name} ({$buyer_country})</p>
+                                </div>
+                                <div style=\"padding:24px;\">
+                                  <p style=\"margin:0 0 14px;font-size:14px;color:#334155;\"><strong>Action Required:</strong> An international buyer sent an inquiry over 1 minute ago and is awaiting your response on Trade Heaven.</p>
+                                  <table style=\"width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;\">
+                                    <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;width:140px;\">Buyer Name:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($buyer_name) . "</td></tr>
+                                    <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Company:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($safe_company) . "</td></tr>
+                                    <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Location:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($safe_address) . "</td></tr>
+                                    <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Phone:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($safe_phone) . "</td></tr>
+                                    <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Email:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($safe_email) . "</td></tr>
+                                    " . ($buyer_interest !== '' ? "<tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Product Interest:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($buyer_interest) . "</td></tr>" : "") . "
+                                  </table>
+                                  <div style=\"background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;\">
+                                    <p style=\"margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;\">Unread Message Preview:</p>
+                                    <ul style=\"margin:0;padding-left:18px;font-size:13px;\">{$snippets}</ul>
+                                  </div>
+                                  <a href=\"{$reply_link}\" style=\"display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;\">Reply to Buyer Now &rarr;</a>
+                                </div>
+                              </div>
+                            </body></html>";
+                            $ok = @mail($target_email, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+                            if (!$ok) @mail($target_email, $subject, $html_body, $headers_str);
+                            @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_SUPPLIER_ALERT] {$subject} -> {$target_email}\n", FILE_APPEND);
+                            $alerts_sent++;
+                            $supplier_alerts++;
+                            $alert_details[] = ['conversationId' => $conv_id, 'targetRole' => 'supplier', 'recipient' => $target_email, 'subject' => $subject, 'messageCount' => count($msgs)];
+                        }
+                    } else {
+                        // Supplier sent -> Admin hasn't read within 60s
+                        $sup_company = (string)($meta['supplier_company'] ?: $meta['supplier_name'] ?: 'Verified Supplier');
+                        $admin_recipients = ['sankalprajput15@gmail.com', 'solutionthe87@gmail.com', 'yr943334@gmail.com'];
+                        $env_r = getenv('ALERT_EMAIL');
+                        if (!empty($env_r)) {
+                            foreach (explode(',', $env_r) as $er) {
+                                $er = trim(strtolower($er));
+                                if ($er && filter_var($er, FILTER_VALIDATE_EMAIL) && !in_array($er, $admin_recipients, true)) {
+                                    $admin_recipients[] = $er;
+                                }
+                            }
+                        }
+                        $subject = "Urgent Supplier Reply: Unread message from {$sup_company} to {$buyer_name} on Trade Heaven";
+                        $admin_link = $base_portal_url . '/?view=CLIENT_ADMIN&tab=BUYER_CHAT_DESK';
+                        $html_body = "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;\">
+                          <div style=\"max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;\">
+                            <div style=\"background:#0f172a;padding:20px 24px;color:#ffffff;\">
+                              <h2 style=\"margin:0;font-size:18px;color:#f59e0b;\">Admin Alert: Unread Supplier Reply (&gt;1 Min)</h2>
+                              <p style=\"margin:6px 0 0;font-size:13px;color:#cbd5e1;\">{$sup_company} replied to buyer persona {$buyer_name}</p>
+                            </div>
+                            <div style=\"padding:24px;\">
+                              <p style=\"margin:0 0 14px;font-size:14px;color:#334155;\">A supplier sent " . count($msgs) . " message(s) that remain unread in the Admin Multi-Identity Chat Desk after 60 seconds.</p>
+                              <div style=\"background:#fffbeb;border-left:4px solid #f59e0b;padding:12px 16px;margin-bottom:20px;\">
+                                <p style=\"margin:0 0 6px;font-size:12px;font-weight:bold;color:#92400e;\">Supplier Message Preview:</p>
+                                <ul style=\"margin:0;padding-left:18px;font-size:13px;\">{$snippets}</ul>
+                              </div>
+                              <a href=\"{$admin_link}\" style=\"display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;\">Open Admin Chat Desk &rarr;</a>
+                            </div>
+                          </div>
+                        </body></html>";
+                        foreach ($admin_recipients as $ar) {
+                            $ok = @mail($ar, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+                            if (!$ok) @mail($ar, $subject, $html_body, $headers_str);
+                        }
+                        @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_ADMIN_ALERT] {$subject} -> " . implode(', ', $admin_recipients) . "\n", FILE_APPEND);
+                        $alerts_sent++;
+                        $admin_alerts++;
+                        $alert_details[] = ['conversationId' => $conv_id, 'targetRole' => 'admin', 'recipient' => implode(', ', $admin_recipients), 'subject' => $subject, 'messageCount' => count($msgs)];
+                    }
+
+                    // Mark all messages in group as email_alert_sent = 1
+                    $placeholders = implode(',', array_fill(0, count($msg_ids), '?'));
+                    $updAlert = $pdo->prepare("UPDATE chat_messages SET email_alert_sent = 1, email_alert_sent_at = NOW() WHERE id IN ({$placeholders})");
+                    $updAlert->execute($msg_ids);
+                    $processed_count += count($msg_ids);
+                }
+            } catch (Exception $e) {
+                @file_put_contents(__DIR__ . '/db_error.log', "process_unseen_alerts error: " . $e->getMessage() . "\n", FILE_APPEND);
+            }
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                "processedCount" => $processed_count,
+                "alertsSent" => $alerts_sent,
+                "supplierAlerts" => $supplier_alerts,
+                "adminAlerts" => $admin_alerts,
+                "details" => $alert_details
             ]
         ]);
         break;

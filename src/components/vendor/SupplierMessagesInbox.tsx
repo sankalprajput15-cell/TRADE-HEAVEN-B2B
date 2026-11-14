@@ -9,11 +9,11 @@ import {
 } from '../../services/multiIdentityChatService';
 import { ChatMediaBubbleContent } from '../chat/ChatMediaBubbleContent';
 import { ChatMediaComposer } from '../chat/ChatMediaComposer';
+import { MessageReadStatus } from '../chat/MessageReadStatus';
+import { setupChatViewportReadObserver } from '../../utils/chatViewportReadObserver';
 import {
   BadgeCheck,
   Building2,
-  Check,
-  CheckCheck,
   Loader2,
   Lock,
   Mail,
@@ -82,6 +82,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   const selectedConvIdRef = useRef<string>('');
   selectedConvIdRef.current = selectedConvId;
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const supplierId = currentUser?.id || '';
   const supplierEmail = (currentUser?.email || '').trim().toLowerCase();
@@ -134,6 +135,32 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, selectedConvId]);
+
+  // Viewport Intersection & Open Thread Read Observer for Supplier
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    const convId = selectedConvId;
+    if (!container || !convId) return;
+
+    const cleanup = setupChatViewportReadObserver(
+      container,
+      convId,
+      'supplier',
+      () => {
+        setMessages(prev =>
+          prev.map(m =>
+            m.senderRole === 'buyer_identity' && !m.isRead
+              ? { ...m, isRead: true, readAt: new Date().toISOString() }
+              : m
+          )
+        );
+        setConversations(prev =>
+          prev.map(c => (c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c))
+        );
+      }
+    );
+    return cleanup;
+  }, [selectedConvId, messages.length]);
 
   // Mark incoming buyer messages as read when browser tab regains visibility/focus
   useEffect(() => {
@@ -302,9 +329,9 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       </div>
 
       {/* Main Inbox Grid */}
-      <div className="grid min-h-[600px] grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-12">
+      <div className="grid w-full min-w-0 grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[min(74vh,680px)] lg:min-h-[520px] lg:grid-cols-12">
         {/* Left Thread List */}
-        <div className="flex flex-col border-b border-slate-200 bg-slate-50/70 lg:col-span-4 lg:border-b-0 lg:border-r">
+        <div className="flex min-w-0 min-h-0 flex-col border-b border-slate-200 bg-slate-50/70 lg:col-span-4 lg:border-b-0 lg:border-r">
           <div className="border-b border-slate-200 bg-white p-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -318,7 +345,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
             </div>
           </div>
 
-          <div className="flex-1 divide-y divide-slate-200/70 overflow-y-auto max-h-[540px]">
+          <div className="flex-1 min-h-0 max-h-[260px] sm:max-h-[320px] lg:max-h-none divide-y divide-slate-200/70 overflow-y-auto overflow-x-hidden">
             {loadingThreads ? (
               <div className="flex items-center justify-center py-12 text-xs text-slate-500">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" /> Loading buyer threads...
@@ -380,15 +407,11 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                     {conv.lastMessage && (
                       <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-600">
                         {conv.lastMessageSenderRole === 'supplier' && (
-                          conv.lastMessageIsRead ? (
-                            <span title="Seen by buyer" className="shrink-0 text-emerald-600">
-                              <CheckCheck className="h-3.5 w-3.5" />
-                            </span>
-                          ) : (
-                            <span title="Unseen by buyer" className="shrink-0 text-slate-400">
-                              <Check className="h-3.5 w-3.5" />
-                            </span>
-                          )
+                          <MessageReadStatus
+                            isRead={Boolean(conv.lastMessageIsRead)}
+                            variant="compact"
+                            recipientLabel="buyer"
+                          />
                         )}
                         <p className="truncate">{conv.lastMessage}</p>
                       </div>
@@ -401,9 +424,9 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
         </div>
 
         {/* Center Active Conversation */}
-        <div className="flex flex-col lg:col-span-8">
+        <div className="flex min-w-0 min-h-0 flex-col lg:col-span-8">
           {!activeConv ? (
-            <div className="flex flex-1 flex-col items-center justify-center p-10 text-center text-slate-500">
+            <div className="flex flex-1 flex-col items-center justify-center p-6 sm:p-10 text-center text-slate-500">
               <MessagesSquare className="mb-3 h-10 w-10 text-slate-300" />
               <p className="text-sm font-bold text-slate-800">Select a Buyer Conversation</p>
               <p className="mt-1 max-w-sm text-xs text-slate-500">
@@ -413,19 +436,19 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
           ) : (
             <>
               {/* Buyer Identity Card Header (Respecting Privacy Toggles) */}
-              <div className="border-b border-slate-200 bg-white p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="flex items-start gap-3">
+              <div className="border-b border-slate-200 bg-white p-3 sm:p-4 min-w-0">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between min-w-0">
+                  <div className="flex items-start gap-3 min-w-0">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-xl">
                       {getFlag(activeConv.identity?.country)}
                     </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-extrabold text-slate-900">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <h3 className="text-sm font-extrabold text-slate-900 break-words">
                           {activeConv.identity?.buyerName || 'Verified Buyer'}
                         </h3>
                         <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                          <ShieldCheck className="h-3 w-3" /> Verified Buyer
+                          <ShieldCheck className="h-3 w-3 shrink-0" /> Verified Buyer
                         </span>
                         <span className="text-xs font-medium text-slate-500">
                           {activeConv.identity?.city ? `${activeConv.identity.city}, ` : ''}
@@ -433,7 +456,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                         </span>
                       </div>
                       {activeConv.identity?.productInterest && (
-                        <p className="mt-0.5 text-xs font-semibold text-blue-700">
+                        <p className="mt-0.5 text-xs font-semibold text-blue-700 break-words">
                           Sourcing Interest: {activeConv.identity.productInterest}
                         </p>
                       )}
@@ -442,8 +465,8 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                 </div>
 
                 {/* Buyer Contact Details Grid (Masked vs Unmasked Live) */}
-                <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:grid-cols-3">
-                  <div className="flex items-start gap-2">
+                <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 sm:p-3 sm:grid-cols-3 min-w-0">
+                  <div className="flex min-w-0 items-start gap-2">
                     <Phone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase text-slate-400">Phone / WhatsApp</p>
@@ -460,7 +483,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2">
+                  <div className="flex min-w-0 items-start gap-2">
                     <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase text-slate-400">Email Address</p>
@@ -469,7 +492,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                           {activeConv.identity?.email || 'Not listed'}
                         </p>
                       ) : (
-                        <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                        <p className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-amber-700">
                           <Lock className="h-3 w-3 shrink-0" />
                           <span className="truncate">{activeConv.identity?.email}</span>
                         </p>
@@ -477,7 +500,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2">
+                  <div className="flex min-w-0 items-start gap-2">
                     <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold uppercase text-slate-400">Company & Address</p>
@@ -504,7 +527,10 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
               </div>
 
               {/* Message Thread */}
-              <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50/40 p-4 max-h-[410px] min-h-[300px]">
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 min-h-[280px] sm:min-h-[320px] max-h-[55vh] lg:max-h-none space-y-3 overflow-y-auto overflow-x-hidden bg-slate-50/40 p-3 sm:p-4"
+              >
                 {loadingMsgs ? (
                   <div className="flex items-center justify-center py-10 text-xs text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" /> Loading messages...
@@ -517,9 +543,13 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                   messages.map(msg => {
                     const isOwn = msg.senderRole === 'supplier';
                     return (
-                      <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        key={msg.id}
+                        data-chat-message-id={msg.id}
+                        className={`flex min-w-0 ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      >
                         <div
-                          className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-xs sm:max-w-[72%] ${
+                          className={`min-w-0 max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-xs sm:max-w-[75%] overflow-hidden ${
                             isOwn
                               ? 'rounded-br-sm bg-blue-600 text-white'
                               : 'rounded-bl-sm border border-slate-200 bg-white text-slate-900'
@@ -542,28 +572,12 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                           )}
 
                           {isOwn ? (
-                            <div
-                              className="mt-1 flex items-center justify-end gap-1 text-[10px]"
-                              title={
-                                msg.isRead
-                                  ? `Seen by buyer${msg.readAt ? ` at ${formatMessageTime(msg.readAt)}` : ''}`
-                                  : 'Delivered • Unseen by buyer'
-                              }
-                            >
-                              {msg.isRead ? (
-                                <span className="inline-flex items-center gap-1 font-semibold text-emerald-200">
-                                  <CheckCheck className="h-3.5 w-3.5" />
-                                  <span>
-                                    Seen{msg.readAt ? ` • ${formatMessageTime(msg.readAt)}` : ''}
-                                  </span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-blue-200/85">
-                                  <Check className="h-3.5 w-3.5" />
-                                  <span>Unseen</span>
-                                </span>
-                              )}
-                            </div>
+                            <MessageReadStatus
+                              isRead={Boolean(msg.isRead)}
+                              readAt={msg.readAt}
+                              variant="bubble"
+                              recipientLabel="buyer"
+                            />
                           ) : (
                             <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400">
                               <span>{msg.isRead ? 'Seen' : 'Unseen'}</span>

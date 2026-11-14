@@ -32,7 +32,7 @@ export const ChatMediaBubbleContent: React.FC<ChatMediaBubbleContentProps> = ({
             <img
               src={message.mediaUrl}
               alt={message.mediaName || 'Shared trade image'}
-              className="max-h-60 w-auto max-w-[260px] sm:max-w-[300px] rounded-xl object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+              className="max-h-60 w-full max-w-[220px] sm:max-w-[300px] rounded-xl object-cover transition-transform duration-200 group-hover:scale-[1.02]"
             />
             <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] font-semibold text-white opacity-90 group-hover:opacity-100">
               <Maximize2 className="h-3 w-3" /> Zoom
@@ -98,7 +98,7 @@ export const ChatMediaBubbleContent: React.FC<ChatMediaBubbleContentProps> = ({
 
   if (message.mediaType === 'video') {
     return (
-      <div className="mb-1.5 max-w-[300px] sm:max-w-[340px]">
+      <div className="mb-1.5 w-full max-w-[240px] sm:max-w-[340px]">
         <div className="overflow-hidden rounded-xl border border-black/15 bg-slate-950">
           <video
             src={message.mediaUrl}
@@ -130,7 +130,7 @@ export const ChatMediaBubbleContent: React.FC<ChatMediaBubbleContentProps> = ({
   return (
     <>
       <div
-        className={`mb-1.5 w-full max-w-[290px] rounded-xl border p-3 ${
+        className={`mb-1.5 w-full max-w-[240px] sm:max-w-[290px] rounded-xl border p-2.5 sm:p-3 ${
           isOwnMessage
             ? 'border-white/20 bg-white/15 text-white'
             : 'border-slate-200 bg-slate-50 text-slate-800'
@@ -153,7 +153,7 @@ export const ChatMediaBubbleContent: React.FC<ChatMediaBubbleContentProps> = ({
             </p>
           </div>
         </div>
-        <div className="mt-2.5 flex items-center gap-2">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setPdfPreviewOpen(true)}

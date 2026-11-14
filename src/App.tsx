@@ -133,6 +133,7 @@ const PrivacyPolicyView = lazyWithRetry(() => import('./components/services/Priv
 const TermsOfUseView = lazyWithRetry(() => import('./components/services/TermsOfUseView'), 'TermsOfUseView');
 
 const AdminDashboard = lazyWithRetry(() => import('./components/admin/AdminDashboard'), 'AdminDashboard');
+const AdminBuyerChatDeskModule = lazyWithRetry(() => import('./components/admin/AdminBuyerChatDeskModule'), 'AdminBuyerChatDeskModule');
 const MailDeliveryHistoryPage = lazyWithRetry(() => import('./components/admin/MailDeliveryHistoryPage'), 'MailDeliveryHistoryPage');
 const ClientAdminView = lazyWithRetry(() => import('./components/services/ClientAdminView'), 'ClientAdminView');
 const PlanPricingAdminModule = lazyWithRetry(() => import('./components/admin/PlanPricingAdminModule'), 'PlanPricingAdminModule');
@@ -2620,7 +2621,11 @@ const MainApp: React.FC = () => {
               case 'SUPPLIER_MESSAGES':
                 return (
                   <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6">
-                    <SupplierMessagesInbox currentUser={currentUser} />
+                    {isAdmin ? (
+                      <AdminBuyerChatDeskModule />
+                    ) : (
+                      <SupplierMessagesInbox currentUser={currentUser} />
+                    )}
                   </div>
                 );
 

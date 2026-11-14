@@ -571,6 +571,7 @@ export const Header: React.FC<Props> = ({
     icon: React.ComponentType<{ className?: string }>;
     activeMatch: ActiveView[];
     authOnly?: boolean;
+    adminOnly?: boolean;
   }[] = [
     { label: 'Home', view: 'HOMEPAGE', icon: Home, activeMatch: ['HOMEPAGE', 'MARKETPLACE_HOME', 'LANDING_PAGE'] },
     { label: 'Trust Certificate', view: 'B2B_TRUST_CERTIFICATE', icon: ShieldCheck, activeMatch: ['B2B_TRUST_CERTIFICATE'] },
@@ -590,7 +591,7 @@ export const Header: React.FC<Props> = ({
     { label: 'News & Insights', view: 'INSIGHTS', icon: BookOpen, activeMatch: ['INSIGHTS'] },
     { label: 'Trust & Safety', view: 'TRUST_SAFETY', icon: ShieldCheck, activeMatch: ['TRUST_SAFETY'] },
     { label: 'Services & Plans', view: 'PREMIUM_SERVICES', icon: Briefcase, activeMatch: ['PREMIUM_SERVICES', 'PREMIUM_MEMBERSHIP'] },
-    { label: 'Messages / Buyer Inquiries', view: 'SUPPLIER_MESSAGES', icon: MessageSquare, activeMatch: ['SUPPLIER_MESSAGES'], authOnly: true },
+    { label: 'Messages / Buyer Inquiries', view: 'SUPPLIER_MESSAGES', icon: MessageSquare, activeMatch: ['SUPPLIER_MESSAGES'], adminOnly: true },
     { label: 'Negotiation Room', view: 'NEGOTIATION_ROOM', icon: MessageSquare, activeMatch: ['NEGOTIATION_ROOM'] },
     { label: 'Post Sell Offer', view: 'POST_SELL_OFFER', icon: PackagePlus, activeMatch: ['POST_SELL_OFFER'] },
     { label: 'About Us', view: 'ABOUT_US', icon: Info, activeMatch: ['ABOUT_US'] },
@@ -599,6 +600,7 @@ export const Header: React.FC<Props> = ({
 
   const visibleMenuOptions = accountMenuOptions.filter(item => {
     if (item.view === 'PRODUCT_IMAGE_ADMIN' && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin) return false;
     if (item.authOnly && !currentUser) return false;
     return true;
   });

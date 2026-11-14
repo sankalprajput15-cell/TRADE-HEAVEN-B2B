@@ -155,7 +155,7 @@ export const ChatMediaComposer: React.FC<ChatMediaComposerProps> = ({
       )}
 
       {attachment && !uploading && (
-        <div className="mb-2 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2">
+        <div className="mb-2 flex min-w-0 items-center justify-between gap-2 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2">
           <div className="flex items-center gap-2.5 min-w-0">
             {attachment.mediaType === 'image' && (
               <img
@@ -233,7 +233,7 @@ export const ChatMediaComposer: React.FC<ChatMediaComposerProps> = ({
       </div>
 
       {/* Textarea + Send */}
-      <div className="flex items-end gap-2">
+      <div className="flex min-w-0 items-end gap-2">
         <textarea
           rows={2}
           disabled={disabled}
@@ -246,12 +246,12 @@ export const ChatMediaComposer: React.FC<ChatMediaComposerProps> = ({
             }
           }}
           placeholder={placeholder}
-          className="flex-1 resize-none rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none disabled:opacity-60"
+          className="min-w-0 w-full flex-1 resize-none rounded-xl border border-slate-300 bg-slate-50/60 px-3 sm:px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={disabled || sending || uploading || (!text.trim() && !attachment)}
-          className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           <span>Send</span>

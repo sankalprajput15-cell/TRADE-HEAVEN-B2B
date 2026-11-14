@@ -181,6 +181,24 @@ export async function markChatMessagesRead(
   return json.data;
 }
 
+export async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
+  processedCount: number;
+  alertsSent: number;
+  supplierAlerts: number;
+  adminAlerts: number;
+  messageIds?: string[];
+  details: Array<{
+    conversationId: string;
+    targetRole: 'supplier' | 'admin';
+    recipient: string;
+    subject: string;
+    messageCount: number;
+  }>;
+}> {
+  const json = await postChatAction<{ data: any }>('process_unseen_alerts', { minAgeSeconds });
+  return json.data;
+}
+
 export async function sendChatMessage(payload: {
   conversationId: string;
   senderRole: ChatMessageSenderRole;
@@ -255,6 +273,7 @@ export interface ChatSocketEvent {
     | 'chat:identity_updated'
     | 'chat:identity_deleted'
     | 'chat:messages_read'
+    | 'chat:alerts_processed'
     | string;
   payload?: any;
   timestamp?: string;

@@ -7077,6 +7077,8 @@ interface ServerChatMessageRecord {
   mediaSize: number;
   isRead: boolean;
   readAt?: string;
+  emailAlertSent?: boolean;
+  emailAlertSentAt?: string;
   createdAt: string;
 }
 
@@ -7342,6 +7344,290 @@ function markConversationMessagesRead(
   };
 }
 
+function escapeChatHtml(val: string): string {
+  return String(val || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+let isProcessingUnseenChatAlerts = false;
+
+async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
+  processedCount: number;
+  alertsSent: number;
+  supplierAlerts: number;
+  adminAlerts: number;
+  messageIds: string[];
+  details: Array<{
+    conversationId: string;
+    targetRole: 'supplier' | 'admin';
+    recipient: string;
+    subject: string;
+    messageCount: number;
+  }>;
+}> {
+  if (isProcessingUnseenChatAlerts) {
+    return {
+      processedCount: 0,
+      alertsSent: 0,
+      supplierAlerts: 0,
+      adminAlerts: 0,
+      messageIds: [],
+      details: []
+    };
+  }
+
+  isProcessingUnseenChatAlerts = true;
+  try {
+    const thresholdMs = Math.max(1, Number(minAgeSeconds) || 60) * 1000;
+    const nowMs = Date.now();
+    const nowIso = new Date(nowMs).toISOString();
+
+    const dueMessages = serverChatMessagesStore.filter(m => {
+      if (m.isRead || m.emailAlertSent) return false;
+      const createdMs = new Date(m.createdAt).getTime();
+      if (!Number.isFinite(createdMs)) return false;
+      return nowMs - createdMs >= thresholdMs;
+    });
+
+    if (dueMessages.length === 0) {
+      return {
+        processedCount: 0,
+        alertsSent: 0,
+        supplierAlerts: 0,
+        adminAlerts: 0,
+        messageIds: [],
+        details: []
+      };
+    }
+
+    const groups = new Map<string, ServerChatMessageRecord[]>();
+    for (const msg of dueMessages) {
+      const key = `${msg.conversationId}::${msg.senderRole}`;
+      const list = groups.get(key) || [];
+      list.push(msg);
+      groups.set(key, list);
+    }
+
+    const basePortalUrl = (process.env.PUBLIC_PORTAL_URL || 'https://tradeheaven.net').replace(/\/+$/, '');
+    const fromAddress = 'Trade Heaven Deal Desk <noreply@tradeheaven.net>';
+
+    let processedCount = 0;
+    let alertsSent = 0;
+    let supplierAlerts = 0;
+    let adminAlerts = 0;
+    const allMarkedIds: string[] = [];
+    const details: Array<{
+      conversationId: string;
+      targetRole: 'supplier' | 'admin';
+      recipient: string;
+      subject: string;
+      messageCount: number;
+    }> = [];
+
+    for (const [, msgs] of groups.entries()) {
+      msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      const first = msgs[0];
+      const conv = serverChatConversationsStore.find(c => c.id === first.conversationId);
+      if (!conv) {
+        for (const m of msgs) {
+          m.emailAlertSent = true;
+          m.emailAlertSentAt = nowIso;
+          allMarkedIds.push(m.id);
+          processedCount += 1;
+        }
+        continue;
+      }
+
+      const identity = serverBuyerIdentitiesStore.find(i => i.id === conv.identityId);
+      const buyerName = identity?.buyerName || 'International Buyer';
+      const buyerCountry = identity?.country || 'Global';
+      const buyerCity = identity?.city || '';
+      const buyerInterest = identity?.productInterest || '';
+
+      const rawPhone = identity?.phone || '';
+      const rawEmail = identity?.email || '';
+      const rawCompany = identity?.companyName || '';
+      const rawAddress = identity?.address || '';
+
+      const safePhone = conv.showPhone ? rawPhone : maskChatPhone(rawPhone);
+      const safeEmail = conv.showEmail ? rawEmail : maskChatEmail(rawEmail);
+      const safeCompany = conv.showCompany ? rawCompany : maskChatCompany(buyerCountry);
+      const safeAddress = conv.showCompany
+        ? rawAddress
+        : buyerCity
+          ? `${buyerCity}, ${buyerCountry} [Protected]`
+          : `${buyerCountry} [Protected]`;
+
+      const snippetsHtml = msgs
+        .slice(-3)
+        .map(m => {
+          const preview =
+            (m.messageText || '').trim() ||
+            `[${String(m.mediaType || 'file').toUpperCase()}: ${m.mediaName || 'Attachment'}]`;
+          return `<li style="margin-bottom:6px;color:#0f172a;">${escapeChatHtml(preview)}</li>`;
+        })
+        .join('');
+      const snippetsText = msgs
+        .slice(-3)
+        .map(m => {
+          const preview =
+            (m.messageText || '').trim() ||
+            `[${String(m.mediaType || 'file').toUpperCase()}: ${m.mediaName || 'Attachment'}]`;
+          return `- ${preview}`;
+        })
+        .join('\n');
+
+      // Mark before async enqueue inside mutex so overlapping timers never double-send
+      for (const m of msgs) {
+        m.emailAlertSent = true;
+        m.emailAlertSentAt = nowIso;
+        allMarkedIds.push(m.id);
+        processedCount += 1;
+      }
+
+      if (first.senderRole === 'buyer_identity') {
+        let targetEmail = String(conv.supplierEmail || '').trim().toLowerCase();
+        if (!targetEmail && conv.supplierId) {
+          const matchedUser = serverUsersStore.find(u => u.id === conv.supplierId);
+          if (matchedUser?.email) {
+            targetEmail = String(matchedUser.email).trim().toLowerCase();
+          }
+        }
+        if (targetEmail && targetEmail.includes('@')) {
+          const subject = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven`;
+          const replyLink = `${basePortalUrl}/?view=SUPPLIER_MESSAGES`;
+          const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;">
+            <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+              <div style="background:#0f172a;padding:20px 24px;color:#ffffff;">
+                <h2 style="margin:0;font-size:18px;color:#38bdf8;">Urgent Export Deal Update Pending Reply</h2>
+                <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">You have ${msgs.length} unread message(s) from ${escapeChatHtml(buyerName)} (${escapeChatHtml(buyerCountry)})</p>
+              </div>
+              <div style="padding:24px;">
+                <p style="margin:0 0 14px;font-size:14px;color:#334155;"><strong>Action Required:</strong> An international buyer sent a message over 1 minute ago and is awaiting your response on Trade Heaven.</p>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;">
+                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;width:140px;">Buyer Name:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerName)}</td></tr>
+                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Company:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeCompany)}</td></tr>
+                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Location:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeAddress)}</td></tr>
+                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Phone:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safePhone)}</td></tr>
+                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Email:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeEmail)}</td></tr>
+                  ${buyerInterest ? `<tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Product Interest:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerInterest)}</td></tr>` : ''}
+                </table>
+                <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;">
+                  <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Unread Message Preview:</p>
+                  <ul style="margin:0;padding-left:18px;font-size:13px;">${snippetsHtml}</ul>
+                </div>
+                <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Reply to Buyer Now &rarr;</a>
+              </div>
+            </div>
+          </body></html>`;
+          const text = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven\n\nBuyer: ${buyerName}\nCompany: ${safeCompany}\nLocation: ${safeAddress}\nPhone: ${safePhone}\nEmail: ${safeEmail}\n\nUnread Messages:\n${snippetsText}\n\nReply now: ${replyLink}`;
+
+          await serverDeliveryQueueManager
+            .enqueueSingle(targetEmail, {
+              from: fromAddress,
+              replyTo: 'help@tradeheaven.net',
+              subject,
+              text,
+              html,
+              dispatchType: 'AUTOMATED',
+              category: 'SYSTEM_ALERT',
+              recipientName: conv.supplierName || conv.supplierCompany || 'Supplier',
+              companyName: conv.supplierCompany || 'Trade Heaven Supplier',
+              skipLegacyInquiryRelay: true
+            })
+            .catch(err => console.warn('[Chat Unseen Alert] Supplier email dispatch error:', err?.message || err));
+
+          alertsSent += 1;
+          supplierAlerts += 1;
+          details.push({
+            conversationId: conv.id,
+            targetRole: 'supplier',
+            recipient: targetEmail,
+            subject,
+            messageCount: msgs.length
+          });
+        }
+      } else {
+        const supCompany = conv.supplierCompany || conv.supplierName || 'Verified Supplier';
+        const adminRecipients = getAlertRecipients();
+        const subject = `Urgent Supplier Reply: Unread message from ${supCompany} to ${buyerName} on Trade Heaven`;
+        const adminLink = `${basePortalUrl}/?view=CLIENT_ADMIN&tab=BUYER_CHAT_DESK`;
+        const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;">
+          <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+            <div style="background:#0f172a;padding:20px 24px;color:#ffffff;">
+              <h2 style="margin:0;font-size:18px;color:#f59e0b;">Admin Alert: Unread Supplier Reply (&gt;1 Min)</h2>
+              <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">${escapeChatHtml(supCompany)} replied to buyer persona ${escapeChatHtml(buyerName)}</p>
+            </div>
+            <div style="padding:24px;">
+              <p style="margin:0 0 14px;font-size:14px;color:#334155;">A supplier sent ${msgs.length} message(s) that remain unread in the Admin Multi-Identity Chat Desk after 60 seconds.</p>
+              <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:12px 16px;margin-bottom:20px;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#92400e;">Supplier Message Preview:</p>
+                <ul style="margin:0;padding-left:18px;font-size:13px;">${snippetsHtml}</ul>
+              </div>
+              <a href="${adminLink}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Open Admin Chat Desk &rarr;</a>
+            </div>
+          </div>
+        </body></html>`;
+        const text = `Urgent Supplier Reply: Unread message from ${supCompany} to ${buyerName} on Trade Heaven\n\nMessages:\n${snippetsText}\n\nOpen Admin Chat Desk: ${adminLink}`;
+
+        for (const adminEmail of adminRecipients) {
+          await serverDeliveryQueueManager
+            .enqueueSingle(adminEmail, {
+              from: fromAddress,
+              replyTo: 'help@tradeheaven.net',
+              subject,
+              text,
+              html,
+              dispatchType: 'AUTOMATED',
+              category: 'SYSTEM_ALERT',
+              recipientName: 'Trade Heaven Admin',
+              companyName: 'Trade Heaven Operations',
+              skipLegacyInquiryRelay: true
+            })
+            .catch(err => console.warn('[Chat Unseen Alert] Admin email dispatch error:', err?.message || err));
+        }
+
+        alertsSent += 1;
+        adminAlerts += 1;
+        details.push({
+          conversationId: conv.id,
+          targetRole: 'admin',
+          recipient: adminRecipients.join(', '),
+          subject,
+          messageCount: msgs.length
+        });
+      }
+    }
+
+    if (processedCount > 0) {
+      persistChatSystemStore();
+      broadcastChatEvent('chat:alerts_processed', {
+        processedCount,
+        alertsSent,
+        supplierAlerts,
+        adminAlerts,
+        messageIds: allMarkedIds,
+        emailAlertSentAt: nowIso
+      });
+    }
+
+    return {
+      processedCount,
+      alertsSent,
+      supplierAlerts,
+      adminAlerts,
+      messageIds: allMarkedIds,
+      details
+    };
+  } finally {
+    isProcessingUnseenChatAlerts = false;
+  }
+}
+
 // BigRock PHP API Gateway (/api.php)
 app.options('/api.php', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -7350,7 +7636,7 @@ app.options('/api.php', (req, res) => {
   res.sendStatus(200);
 });
 
-app.get('/api.php', (req, res) => {
+app.get('/api.php', async (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
   res.type('application/json');
@@ -7539,6 +7825,12 @@ app.get('/api.php', (req, res) => {
       .filter(m => m.conversationId === convId)
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return res.json({ status: 'success', success: true, data: msgs });
+  }
+
+  if (action === 'process_unseen_alerts') {
+    const minAge = Number(req.query.min_age_seconds || req.query.minAgeSeconds || 60) || 60;
+    const summary = await processUnseenChatAlerts(minAge);
+    return res.json({ status: 'success', success: true, data: summary });
   }
 
   res.json({
@@ -8880,6 +9172,12 @@ app.post('/api.php', async (req, res) => {
     return res.json({ status: 'success', success: true, data: result });
   }
 
+  if (action === 'process_unseen_alerts') {
+    const minAge = Number(input.minAgeSeconds || req.query.min_age_seconds || 60) || 60;
+    const summary = await processUnseenChatAlerts(minAge);
+    return res.json({ status: 'success', success: true, data: summary });
+  }
+
   if (action === 'send_chat_message') {
     const convId = String(input.conversationId || input.conversation_id || '').trim();
     const senderRole: 'buyer_identity' | 'supplier' =
@@ -8907,6 +9205,7 @@ app.post('/api.php', async (req, res) => {
       mediaName,
       mediaSize,
       isRead: false,
+      emailAlertSent: false,
       createdAt: new Date().toISOString()
     };
     serverChatMessagesStore.push(msg);
@@ -9019,6 +9318,18 @@ app.post('/api/v1/chat/upload-media', (req, res) => {
       mimeType: uploadedFile.mimetype
     });
   });
+});
+
+app.get('/api/v1/chat/process-unseen-alerts', async (req, res) => {
+  const minAge = Number(req.query.min_age_seconds || req.query.minAgeSeconds || 60) || 60;
+  const summary = await processUnseenChatAlerts(minAge);
+  return res.json({ status: 'success', success: true, data: summary });
+});
+
+app.post('/api/v1/chat/process-unseen-alerts', async (req, res) => {
+  const minAge = Number((req.body && req.body.minAgeSeconds) || req.query.min_age_seconds || 60) || 60;
+  const summary = await processUnseenChatAlerts(minAge);
+  return res.json({ status: 'success', success: true, data: summary });
 });
 
 // Dedicated Admin Users CRUD endpoints (/api/admin/users, /api/admin/users/create, /api/admin/users/delete, /api/admin/user-deletion-logs)
@@ -14063,6 +14374,9 @@ async function startServer() {
     setTimeout(() => {
       executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
     }, 1500);
+    setInterval(() => {
+      void processUnseenChatAlerts(60);
+    }, 30000);
   });
 
   // Real-time WebSocket server for Multi-Identity Admin Buyer Chat (/ws/chat)

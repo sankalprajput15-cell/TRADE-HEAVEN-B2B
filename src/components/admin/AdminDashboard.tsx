@@ -1152,7 +1152,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         )}
 
         {activeTab === 'BUYER_CHAT_DESK' && (
-          <div className="space-y-4" data-testid="admin-buyer-chat-desk-section">
+          <div className="w-full max-w-full min-w-0 space-y-4" data-testid="admin-buyer-chat-desk-section">
             <AdminBuyerChatDeskModule />
           </div>
         )}
