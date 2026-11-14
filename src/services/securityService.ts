@@ -480,6 +480,7 @@ class SecurityService {
       buyerCompany: isPaid ? `Verified Paid Importer (${rfq.buyerCountry || 'Global'})` : rfq.buyerCompany,
       buyerEmail: rfq.buyerEmail ? this.maskEmailAddress(rfq.buyerEmail) : undefined,
       buyerPhone: rfq.buyerPhone ? this.maskPhoneNumber(rfq.buyerPhone) : undefined,
+      buyerAddress: rfq.buyerAddress ? `${rfq.buyerCountry || 'Verified Hub'} [Protected Address]` : undefined,
       detailedDescription: redactSensitiveContactText(rfq.detailedDescription, false),
       detailedRequirements: redactSensitiveContactText(rfq.detailedRequirements, false),
       isContactMasked: true

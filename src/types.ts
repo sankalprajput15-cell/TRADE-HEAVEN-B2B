@@ -297,6 +297,27 @@ export interface RfqRequirement {
   matchedSupplierCount?: number;
   viewsCount?: number;
   spamScore?: number; // 0 to 100 (low is good)
+  orderFrequency?: string;
+  buyerAddress?: string;
+  postedLabel?: string;
+  source?: 'user' | 'auto_generated';
+  syncTag?: string;
+  sync_tag?: string;
+  searchKeyword?: string;
+  marketInsight?: string;
+  marketDemandVerified?: boolean;
+  estimatedOrderValueUsd?: number;
+}
+
+export interface MarketDemandInsight {
+  keyword: string;
+  summary: string;
+  topImportingCountries?: string[];
+  typicalPriceRange?: string;
+  packagingStandards?: string;
+  sources?: Array<{ title: string; uri: string }>;
+  generatedAt: string;
+  fromCache?: boolean;
 }
 
 export type RFQ = RfqRequirement;

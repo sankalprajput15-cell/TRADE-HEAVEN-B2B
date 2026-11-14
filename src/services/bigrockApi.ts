@@ -63,10 +63,12 @@ export interface BigRockRfqPayload {
   buyer_phone?: string;
   buyer_company?: string;
   buyer_country?: string;
+  buyer_address?: string;
   category?: string;
   quantity?: number;
   target_quantity?: number;
   quantity_unit?: string;
+  order_frequency?: string;
   target_price?: number;
   target_price_usd?: number;
   incoterm?: string;
@@ -77,6 +79,11 @@ export interface BigRockRfqPayload {
   requirements?: string;
   detailed_requirements?: string;
   status?: string;
+  source?: string;
+  sync_tag?: string;
+  search_keyword?: string;
+  market_insight?: string;
+  posted_label?: string;
 }
 
 export interface DbInquiry {
@@ -232,34 +239,47 @@ export function mapInquiryToRfq(raw: any, index: number = 0): RfqRequirement {
 
   const idStr = String(raw.id || `live-${index + 101}`);
   const formattedId = idStr.startsWith('rfq-') ? idStr : `rfq-${idStr}`;
+  const isAuto = raw.source === 'auto_generated' || raw.syncTag === 'market_sync' || raw.sync_tag === 'market_sync' || raw.marketDemandVerified === true;
+  const qtyNum = Number(targetQuantity) || 1;
+  const priceNum = Number(targetPriceUsd) || 0;
 
   return {
     id: formattedId,
     ownerUid: raw.buyer_email || raw.email || 'user-buyer-001',
-    buyerName: raw.buyer_name || raw.name || 'International Trade Buyer',
-    buyerCompany: raw.buyer_company || raw.company_name || raw.company || raw.name || 'Verified Sourcing Enterprise',
-    buyerEmail: raw.buyer_email || raw.email || 'support@tradeheaven.net',
-    buyerPhone: raw.buyer_phone || raw.phone || '+1 (800) 555-0199',
-    buyerCountry: raw.buyer_country || raw.country || 'United States',
+    buyerName: raw.buyerName || raw.buyer_name || raw.name || 'International Trade Buyer',
+    buyerCompany: raw.buyerCompany || raw.buyer_company || raw.company_name || raw.company || raw.name || 'Verified Sourcing Enterprise',
+    buyerEmail: raw.buyerEmail || raw.buyer_email || raw.email || 'support@tradeheaven.net',
+    buyerPhone: raw.buyerPhone || raw.buyer_phone || raw.phone || '+1 (800) 555-0199',
+    buyerAddress: raw.buyerAddress || raw.buyer_address || '',
+    buyerCountry: raw.buyerCountry || raw.buyer_country || raw.country || 'United States',
     buyerVerified: true,
-    productName: raw.product_name || raw.title || raw.subject || 'Wholesale Sourcing Tender',
+    productName: raw.productName || raw.product_name || raw.title || raw.subject || 'Wholesale Sourcing Tender',
     category: raw.category || t.cat,
-    targetQuantity: Number(targetQuantity),
-    quantityUnit: raw.quantity_unit || t.unit,
-    targetPriceUsd: Number(targetPriceUsd),
+    targetQuantity: qtyNum,
+    quantityUnit: raw.quantityUnit || raw.unit || raw.quantity_unit || t.unit,
+    orderFrequency: raw.orderFrequency || raw.order_frequency || 'Monthly',
+    targetPriceUsd: priceNum,
+    estimatedOrderValueUsd: Number(raw.estimatedOrderValueUsd || 0) || (qtyNum > 0 && priceNum > 0 ? Math.round(qtyNum * priceNum * 100) / 100 : 0),
     targetDeliveryDate: raw.targetDeliveryDate || '2026-10-31',
     preferredIncoterm,
-    destinationPort,
-    paymentTerms: raw.payment_terms || 'Trade Protection Certificate (Swiss Vault)',
-    detailedRequirements: raw.requirements || raw.detailed_requirements || raw.message || `Procurement inquiry for ${raw.product_name || raw.subject || 'wholesale products'}. Factory compliance audit and commercial invoice required.`,
-    detailedDescription: raw.requirements || raw.detailed_requirements || raw.message || 'Commercial quotation requested for volume container delivery.',
-    urgency: 'STANDARD',
-    quotesCount: Math.floor(Math.random() * 4) + 1,
-    postedDate: raw.created_at ? String(raw.created_at).split('T')[0].split(' ')[0] : new Date().toISOString().split('T')[0],
-    expiryDate: '2026-12-31',
+    destinationPort: raw.destinationPort || destinationPort,
+    paymentTerms: raw.paymentTerms || raw.payment_terms || 'Trade Protection Certificate (Swiss Vault)',
+    detailedRequirements: raw.detailedRequirements || raw.specifications || raw.requirements || raw.detailed_requirements || raw.message || `Procurement inquiry for ${raw.product_name || raw.subject || 'wholesale products'}. Factory compliance audit and commercial invoice required.`,
+    detailedDescription: raw.detailedDescription || raw.specifications || raw.requirements || raw.detailed_requirements || raw.message || 'Commercial quotation requested for volume container delivery.',
+    urgency: (raw.urgency || 'STANDARD') as any,
+    quotesCount: typeof raw.quotesCount === 'number' ? raw.quotesCount : (Math.floor(Math.random() * 4) + 1),
+    postedDate: raw.postedDate || (raw.created_at ? String(raw.created_at).split('T')[0].split(' ')[0] : new Date().toISOString().split('T')[0]),
+    postedLabel: raw.postedLabel || raw.posted_label || (isAuto ? 'Just now' : undefined),
+    expiryDate: raw.expiryDate || '2026-12-31',
     status: (raw.status === 'resolved' ? 'AWARDED' : (raw.status || 'OPEN')) as any,
     matchedSupplierCount: 6,
-    spamScore: 1.0
+    spamScore: 1.0,
+    source: isAuto ? 'auto_generated' : 'user',
+    syncTag: raw.syncTag || raw.sync_tag || (isAuto ? 'market_sync' : undefined),
+    sync_tag: raw.sync_tag || raw.syncTag || (isAuto ? 'market_sync' : undefined),
+    searchKeyword: raw.searchKeyword || raw.search_keyword || '',
+    marketInsight: raw.marketInsight || raw.market_insight || '',
+    marketDemandVerified: isAuto
   };
 }
 
@@ -652,10 +672,12 @@ export const bigrockApi = {
       buyer_phone: payload.buyer_phone || payload.phone || '',
       buyer_company: payload.buyer_company || payload.name || 'Enterprise Buyer Ltd',
       buyer_country: payload.buyer_country || 'United States',
+      buyer_address: payload.buyer_address || '',
       product_name: payload.product_name || payload.subject || 'Wholesale Commodity',
       category: payload.category || 'Industrial Machinery & CNC',
       quantity: Number(payload.quantity || payload.target_quantity) || 1000,
       quantity_unit: payload.quantity_unit || 'Pieces',
+      order_frequency: payload.order_frequency || 'Monthly',
       target_price: Number(payload.target_price || payload.target_price_usd) || 0.00,
       incoterm: payload.incoterm || payload.incoterms || payload.preferred_incoterm || 'FOB',
       incoterms: payload.incoterms || payload.incoterm || payload.preferred_incoterm || 'FOB',
@@ -663,6 +685,11 @@ export const bigrockApi = {
       payment_terms: payload.payment_terms || 'Trade Protection Certificate (Swiss Vault)',
       requirements: payload.requirements || payload.detailed_requirements || payload.message || 'Standard export quality specification required.',
       status: payload.status || 'OPEN',
+      source: payload.source || 'user',
+      sync_tag: payload.sync_tag || (payload.source === 'auto_generated' ? 'market_sync' : ''),
+      search_keyword: payload.search_keyword || '',
+      market_insight: payload.market_insight || '',
+      posted_label: payload.posted_label || '',
       name: payload.name || payload.buyer_name || 'Procurement Officer',
       email: payload.email || payload.buyer_email || 'buyer@tradeheaven.net',
       phone: payload.phone || payload.buyer_phone || '',

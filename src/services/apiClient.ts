@@ -33,6 +33,15 @@ export interface RawRFQPayload {
   buyer_email?: string;
   buyer_company?: string;
   buyer_phone?: string;
+  buyer_address?: string;
+  order_frequency?: string;
+  payment_terms?: string;
+  source?: 'user' | 'auto_generated';
+  sync_tag?: string;
+  search_keyword?: string;
+  market_insight?: string;
+  posted_label?: string;
+  id?: string;
   // Alternative aliases for maximum cross-compatibility
   product_name?: string;
   quantity_unit?: string;
@@ -223,19 +232,28 @@ export const apiClient = {
     try {
       // Normalize payload with both schema standards
       const normalizedPayload = {
+        id: payload.id,
         title: payload.title || payload.product_name || 'Wholesale Product',
         category: payload.category || 'Industrial Machinery & CNC',
         quantity: String(payload.quantity || '1000'),
         unit: payload.unit || payload.quantity_unit || 'Pieces',
+        order_frequency: payload.order_frequency || 'Monthly',
         targetPrice: String(payload.targetPrice ?? payload.target_price ?? '0'),
         incoterms: payload.incoterms || payload.incoterm || 'FOB',
         destinationPort: payload.destinationPort || payload.destination_port || 'Port of Hamburg',
+        payment_terms: payload.payment_terms || '',
         specifications: payload.specifications || payload.requirements || 'Standard export specifications.',
         buyer_name: payload.buyer_name || 'Procurement Officer',
         buyer_country: payload.buyer_country || 'United States',
         buyer_email: payload.buyer_email || 'buyer@tradeheaven.net',
         buyer_company: payload.buyer_company || payload.buyer_name || 'Enterprise Trading Firm',
-        buyer_phone: payload.buyer_phone || ''
+        buyer_phone: payload.buyer_phone || '',
+        buyer_address: payload.buyer_address || '',
+        source: payload.source || 'user',
+        sync_tag: payload.sync_tag || (payload.source === 'auto_generated' ? 'market_sync' : ''),
+        search_keyword: payload.search_keyword || '',
+        market_insight: payload.market_insight || '',
+        posted_label: payload.posted_label || ''
       };
 
       const res = await fetch(`${API_BASE}?action=submit_rfq`, {
@@ -268,6 +286,76 @@ export const apiClient = {
     } catch (e: any) {
       console.warn('[apiClient] submitRfq fallback:', e);
       return { success: true, message: 'RFQ recorded successfully.' };
+    }
+  },
+
+  /**
+   * Fetch cached Live Market Demand Insight for a searched product keyword
+   */
+  async getMarketInsight(keyword: string): Promise<any | null> {
+    const q = String(keyword || '').trim();
+    if (!q || q.length < 2) return null;
+    try {
+      const res = await fetch(`/api/v1/rfqs/market-insights?keyword=${encodeURIComponent(q)}`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-cache'
+      });
+      if (!res.ok) return null;
+      const json = await safeParseJson(res);
+      return json?.insight || null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Live Google Demand Fetch & Auto-RFQ Generation (when < 3 DB RFQs exist for a keyword)
+   */
+  async discoverMarketDemandRfqs(keyword: string): Promise<{
+    success: boolean;
+    fromCache?: boolean;
+    rfqs: RFQ[];
+    newlyGeneratedRfqs?: RFQ[];
+    insight?: any | null;
+    message?: string;
+  }> {
+    const q = String(keyword || '').trim();
+    if (!q || q.length < 2) {
+      return { success: false, rfqs: [], insight: null, message: 'Keyword too short' };
+    }
+    try {
+      const res = await fetch('/api/v1/rfqs/discover-market-demand', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ keyword: q })
+      });
+      if (!res.ok) {
+        return { success: false, rfqs: [], insight: null, message: `HTTP ${res.status}` };
+      }
+      const json = await safeParseJson(res);
+      if (!json) {
+        return { success: false, rfqs: [], insight: null, message: 'Invalid response from market scan' };
+      }
+      return {
+        success: Boolean(json.success),
+        fromCache: Boolean(json.fromCache),
+        rfqs: Array.isArray(json.rfqs) ? json.rfqs : [],
+        newlyGeneratedRfqs: Array.isArray(json.newlyGeneratedRfqs) ? json.newlyGeneratedRfqs : [],
+        insight: json.insight || null,
+        message: json.message
+      };
+    } catch (e: any) {
+      console.warn('[apiClient] discoverMarketDemandRfqs error:', e);
+      return {
+        success: false,
+        rfqs: [],
+        insight: null,
+        message: e?.message || 'Market demand scan timed out. Showing existing RFQs.'
+      };
     }
   },
 

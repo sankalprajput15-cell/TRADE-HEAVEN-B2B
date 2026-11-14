@@ -83,8 +83,37 @@ if ($db_connected) {
             buyer_country VARCHAR(100),
             buyer_email VARCHAR(255) DEFAULT '',
             buyer_company VARCHAR(255) DEFAULT '',
+            buyer_phone VARCHAR(100) DEFAULT '',
+            buyer_address TEXT,
+            payment_terms VARCHAR(255) DEFAULT '',
+            order_frequency VARCHAR(100) DEFAULT 'Monthly',
+            source VARCHAR(50) DEFAULT 'user',
+            sync_tag VARCHAR(50) DEFAULT '',
+            search_keyword VARCHAR(255) DEFAULT '',
+            market_insight TEXT,
+            posted_label VARCHAR(100) DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // Self-healing column migrations for pre-existing rfqs tables
+        $rfq_extra_columns = [
+            "buyer_phone VARCHAR(100) DEFAULT ''",
+            "buyer_address TEXT",
+            "payment_terms VARCHAR(255) DEFAULT ''",
+            "order_frequency VARCHAR(100) DEFAULT 'Monthly'",
+            "source VARCHAR(50) DEFAULT 'user'",
+            "sync_tag VARCHAR(50) DEFAULT ''",
+            "search_keyword VARCHAR(255) DEFAULT ''",
+            "market_insight TEXT",
+            "posted_label VARCHAR(100) DEFAULT ''"
+        ];
+        foreach ($rfq_extra_columns as $col_def) {
+            try {
+                $pdo->exec("ALTER TABLE rfqs ADD COLUMN $col_def");
+            } catch (Exception $e) {
+                // Column already exists
+            }
+        }
 
         // -------------------------------------------------------------
         // Table Auto-Creation: users table with Self-Healing Logic
@@ -1244,14 +1273,15 @@ switch ($action) {
         $rows = [];
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->query("SELECT * FROM rfqs ORDER BY id DESC");
+                $stmt = $pdo->query("SELECT * FROM rfqs ORDER BY CASE WHEN source = 'auto_generated' OR sync_tag = 'market_sync' THEN 1 ELSE 0 END ASC, id DESC");
                 $db_rfqs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 if (!empty($db_rfqs)) {
                     foreach ($db_rfqs as $r) {
                         $targetQty = is_numeric($r['quantity']) ? intval($r['quantity']) : 1;
                         $targetPriceNum = is_numeric($r['targetPrice']) ? floatval($r['targetPrice']) : (is_numeric($r['target_price'] ?? null) ? floatval($r['target_price']) : 0.0);
-                        
+                        $isAuto = (($r['source'] ?? '') === 'auto_generated' || ($r['sync_tag'] ?? '') === 'market_sync');
+
                         $rows[] = [
                             "id" => "rfq-" . $r['id'],
                             "raw_id" => intval($r['id']),
@@ -1262,8 +1292,11 @@ switch ($action) {
                             "targetQuantity" => $targetQty,
                             "unit" => $r['unit'] ?: 'Pieces',
                             "quantityUnit" => $r['unit'] ?: 'Pieces',
+                            "orderFrequency" => $r['order_frequency'] ?? 'Monthly',
+                            "order_frequency" => $r['order_frequency'] ?? 'Monthly',
                             "targetPrice" => (string)($r['targetPrice'] ?? '0'),
                             "targetPriceUsd" => $targetPriceNum,
+                            "estimatedOrderValueUsd" => ($targetQty > 0 && $targetPriceNum > 0) ? round($targetQty * $targetPriceNum, 2) : 0,
                             "incoterms" => $r['incoterms'] ?: 'FOB',
                             "preferredIncoterm" => $r['incoterms'] ?: 'FOB',
                             "destinationPort" => $r['destinationPort'] ?: ($r['destination_port'] ?? 'Port of Hamburg'),
@@ -1276,16 +1309,27 @@ switch ($action) {
                             "buyerCountry" => $r['buyer_country'] ?: 'United States',
                             "buyer_email" => $r['buyer_email'] ?? '',
                             "buyerEmail" => $r['buyer_email'] ?? '',
+                            "buyer_phone" => $r['buyer_phone'] ?? '',
+                            "buyerPhone" => $r['buyer_phone'] ?? '',
+                            "buyer_address" => $r['buyer_address'] ?? '',
+                            "buyerAddress" => $r['buyer_address'] ?? '',
                             "buyer_company" => $r['buyer_company'] ?? $r['buyer_name'],
                             "buyerCompany" => $r['buyer_company'] ?? $r['buyer_name'],
                             "buyerVerified" => true,
                             "targetDeliveryDate" => date("Y-m-d", strtotime("+45 days")),
-                            "paymentTerms" => "Trade Assurance Escrow (Swiss Vault)",
+                            "paymentTerms" => !empty($r['payment_terms']) ? $r['payment_terms'] : "Trade Assurance Escrow (Swiss Vault)",
                             "urgency" => "STANDARD",
                             "quotesCount" => 0,
                             "postedDate" => isset($r['created_at']) ? substr($r['created_at'], 0, 10) : date("Y-m-d"),
+                            "postedLabel" => $r['posted_label'] ?? ($isAuto ? 'Just now' : null),
                             "expiryDate" => date("Y-m-d", strtotime("+60 days")),
                             "status" => "OPEN",
+                            "source" => $isAuto ? "auto_generated" : "user",
+                            "syncTag" => $r['sync_tag'] ?? ($isAuto ? "market_sync" : ""),
+                            "sync_tag" => $r['sync_tag'] ?? ($isAuto ? "market_sync" : ""),
+                            "searchKeyword" => $r['search_keyword'] ?? "",
+                            "marketInsight" => $r['market_insight'] ?? "",
+                            "marketDemandVerified" => $isAuto,
                             "created_at" => $r['created_at'] ?? date("Y-m-d H:i:s")
                         ];
                     }
@@ -1303,54 +1347,88 @@ switch ($action) {
     // -------------------------------------------------------------
     case 'submit_rfq':
     case 'create_rfq':
-        $title = trim($input['title'] ?? $input['product_name'] ?? 'Wholesale Product');
+        $title = trim($input['title'] ?? $input['productName'] ?? $input['product_name'] ?? 'Wholesale Product');
         $category = trim($input['category'] ?? 'Industrial Machinery & CNC');
-        $quantity = (string)($input['quantity'] ?? $input['target_quantity'] ?? '1000');
-        $unit = trim($input['unit'] ?? $input['quantity_unit'] ?? 'Pieces');
-        $targetPrice = (string)($input['targetPrice'] ?? $input['target_price'] ?? $input['target_price_usd'] ?? '0');
-        $incoterms = trim($input['incoterms'] ?? $input['incoterm'] ?? $input['preferred_incoterm'] ?? 'FOB');
+        $quantity = (string)($input['quantity'] ?? $input['target_quantity'] ?? $input['targetQuantity'] ?? '1000');
+        $unit = trim($input['unit'] ?? $input['quantity_unit'] ?? $input['quantityUnit'] ?? 'Pieces');
+        $order_frequency = trim($input['order_frequency'] ?? $input['orderFrequency'] ?? 'Monthly');
+        $targetPrice = (string)($input['targetPrice'] ?? $input['target_price'] ?? $input['target_price_usd'] ?? $input['targetPriceUsd'] ?? '0');
+        $incoterms = trim($input['incoterms'] ?? $input['incoterm'] ?? $input['preferred_incoterm'] ?? $input['preferredIncoterm'] ?? 'FOB');
         $destinationPort = trim($input['destinationPort'] ?? $input['destination_port'] ?? 'Port of Hamburg');
-        $specifications = trim($input['specifications'] ?? $input['requirements'] ?? $input['detailed_requirements'] ?? $input['message'] ?? 'Standard export specifications.');
-        $buyer_name = trim($input['buyer_name'] ?? $input['name'] ?? 'Procurement Officer');
-        $buyer_country = trim($input['buyer_country'] ?? $input['country'] ?? 'United States');
-        $buyer_email = trim($input['buyer_email'] ?? $input['email'] ?? 'buyer@tradeheaven.net');
-        $buyer_company = trim($input['buyer_company'] ?? $input['company'] ?? $buyer_name);
+        $payment_terms = trim($input['payment_terms'] ?? $input['paymentTerms'] ?? 'Trade Assurance Escrow (Swiss Vault)');
+        $specifications = trim($input['specifications'] ?? $input['requirements'] ?? $input['detailed_requirements'] ?? $input['detailedRequirements'] ?? $input['message'] ?? 'Standard export specifications.');
+        $buyer_name = trim($input['buyer_name'] ?? $input['buyerName'] ?? $input['name'] ?? 'Procurement Officer');
+        $buyer_country = trim($input['buyer_country'] ?? $input['buyerCountry'] ?? $input['country'] ?? 'United States');
+        $buyer_email = trim($input['buyer_email'] ?? $input['buyerEmail'] ?? $input['email'] ?? 'buyer@tradeheaven.net');
+        $buyer_phone = trim($input['buyer_phone'] ?? $input['buyerPhone'] ?? $input['phone'] ?? '');
+        $buyer_address = trim($input['buyer_address'] ?? $input['buyerAddress'] ?? '');
+        $buyer_company = trim($input['buyer_company'] ?? $input['buyerCompany'] ?? $input['company'] ?? $buyer_name);
+        $source = (($input['source'] ?? '') === 'auto_generated' || ($input['sync_tag'] ?? '') === 'market_sync' || ($input['syncTag'] ?? '') === 'market_sync') ? 'auto_generated' : 'user';
+        $sync_tag = trim($input['sync_tag'] ?? $input['syncTag'] ?? ($source === 'auto_generated' ? 'market_sync' : ''));
+        $search_keyword = trim($input['search_keyword'] ?? $input['searchKeyword'] ?? '');
+        $market_insight = trim($input['market_insight'] ?? $input['marketInsight'] ?? '');
+        $posted_label = trim($input['posted_label'] ?? $input['postedLabel'] ?? ($source === 'auto_generated' ? 'Just now' : ''));
 
         $inserted_id = time();
         $inserted_row = null;
 
         if ($db_connected && $pdo) {
             try {
-                $stmt = $pdo->prepare("INSERT INTO rfqs (
-                    title, category, quantity, unit, targetPrice, incoterms, destinationPort,
-                    specifications, buyer_name, buyer_country, buyer_email, buyer_company
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                // Deduplicate auto_generated market_sync RFQs
+                $dbRow = null;
+                if ($source === 'auto_generated') {
+                    $dupStmt = $pdo->prepare("SELECT * FROM rfqs WHERE title = ? AND buyer_email = ? AND source = 'auto_generated' LIMIT 1");
+                    $dupStmt->execute([$title, $buyer_email]);
+                    $dbRow = $dupStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($dbRow) {
+                        $inserted_id = (int)$dbRow['id'];
+                    }
+                }
 
-                $stmt->execute([
-                    $title,
-                    $category,
-                    $quantity,
-                    $unit,
-                    $targetPrice,
-                    $incoterms,
-                    $destinationPort,
-                    $specifications,
-                    $buyer_name,
-                    $buyer_country,
-                    $buyer_email,
-                    $buyer_company
-                ]);
+                if (!$dbRow) {
+                    $stmt = $pdo->prepare("INSERT INTO rfqs (
+                        title, category, quantity, unit, targetPrice, incoterms, destinationPort,
+                        specifications, buyer_name, buyer_country, buyer_email, buyer_company,
+                        buyer_phone, buyer_address, payment_terms, order_frequency, source, sync_tag,
+                        search_keyword, market_insight, posted_label
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-                $inserted_id = (int)$pdo->lastInsertId();
+                    $stmt->execute([
+                        $title,
+                        $category,
+                        $quantity,
+                        $unit,
+                        $targetPrice,
+                        $incoterms,
+                        $destinationPort,
+                        $specifications,
+                        $buyer_name,
+                        $buyer_country,
+                        $buyer_email,
+                        $buyer_company,
+                        $buyer_phone,
+                        $buyer_address,
+                        $payment_terms,
+                        $order_frequency,
+                        $source,
+                        $sync_tag,
+                        $search_keyword,
+                        $market_insight,
+                        $posted_label
+                    ]);
 
-                // Query back the newly created row
-                $fetchStmt = $pdo->prepare("SELECT * FROM rfqs WHERE id = ?");
-                $fetchStmt->execute([$inserted_id]);
-                $dbRow = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+                    $inserted_id = (int)$pdo->lastInsertId();
+
+                    // Query back the newly created row
+                    $fetchStmt = $pdo->prepare("SELECT * FROM rfqs WHERE id = ?");
+                    $fetchStmt->execute([$inserted_id]);
+                    $dbRow = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+                }
 
                 if ($dbRow) {
                     $targetQty = is_numeric($dbRow['quantity']) ? intval($dbRow['quantity']) : 1;
                     $targetPriceNum = is_numeric($dbRow['targetPrice']) ? floatval($dbRow['targetPrice']) : 0.0;
+                    $isAuto = (($dbRow['source'] ?? $source) === 'auto_generated' || ($dbRow['sync_tag'] ?? $sync_tag) === 'market_sync');
 
                     $inserted_row = [
                         "id" => "rfq-" . $dbRow['id'],
@@ -1362,8 +1440,10 @@ switch ($action) {
                         "targetQuantity" => $targetQty,
                         "unit" => $dbRow['unit'] ?: $unit,
                         "quantityUnit" => $dbRow['unit'] ?: $unit,
+                        "orderFrequency" => $dbRow['order_frequency'] ?? $order_frequency,
                         "targetPrice" => (string)$dbRow['targetPrice'],
                         "targetPriceUsd" => $targetPriceNum,
+                        "estimatedOrderValueUsd" => ($targetQty > 0 && $targetPriceNum > 0) ? round($targetQty * $targetPriceNum, 2) : 0,
                         "incoterms" => $dbRow['incoterms'] ?: $incoterms,
                         "preferredIncoterm" => $dbRow['incoterms'] ?: $incoterms,
                         "destinationPort" => $dbRow['destinationPort'] ?: $destinationPort,
@@ -1376,16 +1456,27 @@ switch ($action) {
                         "buyerCountry" => $dbRow['buyer_country'],
                         "buyer_email" => $dbRow['buyer_email'] ?? $buyer_email,
                         "buyerEmail" => $dbRow['buyer_email'] ?? $buyer_email,
+                        "buyer_phone" => $dbRow['buyer_phone'] ?? $buyer_phone,
+                        "buyerPhone" => $dbRow['buyer_phone'] ?? $buyer_phone,
+                        "buyer_address" => $dbRow['buyer_address'] ?? $buyer_address,
+                        "buyerAddress" => $dbRow['buyer_address'] ?? $buyer_address,
                         "buyer_company" => $dbRow['buyer_company'] ?? $buyer_company,
                         "buyerCompany" => $dbRow['buyer_company'] ?? $buyer_company,
                         "buyerVerified" => true,
                         "targetDeliveryDate" => date("Y-m-d", strtotime("+45 days")),
-                        "paymentTerms" => "Trade Assurance Escrow (Swiss Vault)",
+                        "paymentTerms" => !empty($dbRow['payment_terms']) ? $dbRow['payment_terms'] : $payment_terms,
                         "urgency" => "STANDARD",
                         "quotesCount" => 0,
                         "postedDate" => date("Y-m-d"),
+                        "postedLabel" => $dbRow['posted_label'] ?? $posted_label,
                         "expiryDate" => date("Y-m-d", strtotime("+60 days")),
                         "status" => "OPEN",
+                        "source" => $isAuto ? "auto_generated" : "user",
+                        "syncTag" => $dbRow['sync_tag'] ?? $sync_tag,
+                        "sync_tag" => $dbRow['sync_tag'] ?? $sync_tag,
+                        "searchKeyword" => $dbRow['search_keyword'] ?? $search_keyword,
+                        "marketInsight" => $dbRow['market_insight'] ?? $market_insight,
+                        "marketDemandVerified" => $isAuto,
                         "created_at" => $dbRow['created_at'] ?? date("Y-m-d H:i:s")
                     ];
                 }
@@ -1396,6 +1487,9 @@ switch ($action) {
 
         // Fallback representation if database fetch was unassisted
         if (!$inserted_row) {
+            $targetQtyFallback = is_numeric($quantity) ? intval($quantity) : 1;
+            $targetPriceFallback = is_numeric($targetPrice) ? floatval($targetPrice) : 0.0;
+            $isAutoFallback = ($source === 'auto_generated' || $sync_tag === 'market_sync');
             $inserted_row = [
                 "id" => "rfq-" . $inserted_id,
                 "raw_id" => intval($inserted_id),
@@ -1403,11 +1497,13 @@ switch ($action) {
                 "productName" => $title,
                 "category" => $category,
                 "quantity" => (string)$quantity,
-                "targetQuantity" => intval($quantity),
+                "targetQuantity" => $targetQtyFallback,
                 "unit" => $unit,
                 "quantityUnit" => $unit,
+                "orderFrequency" => $order_frequency,
                 "targetPrice" => (string)$targetPrice,
-                "targetPriceUsd" => floatval($targetPrice),
+                "targetPriceUsd" => $targetPriceFallback,
+                "estimatedOrderValueUsd" => ($targetQtyFallback > 0 && $targetPriceFallback > 0) ? round($targetQtyFallback * $targetPriceFallback, 2) : 0,
                 "incoterms" => $incoterms,
                 "preferredIncoterm" => $incoterms,
                 "destinationPort" => $destinationPort,
@@ -1420,16 +1516,27 @@ switch ($action) {
                 "buyerCountry" => $buyer_country,
                 "buyer_email" => $buyer_email,
                 "buyerEmail" => $buyer_email,
+                "buyer_phone" => $buyer_phone,
+                "buyerPhone" => $buyer_phone,
+                "buyer_address" => $buyer_address,
+                "buyerAddress" => $buyer_address,
                 "buyer_company" => $buyer_company,
                 "buyerCompany" => $buyer_company,
                 "buyerVerified" => true,
                 "targetDeliveryDate" => date("Y-m-d", strtotime("+45 days")),
-                "paymentTerms" => "Trade Assurance Escrow (Swiss Vault)",
+                "paymentTerms" => $payment_terms,
                 "urgency" => "STANDARD",
                 "quotesCount" => 0,
                 "postedDate" => date("Y-m-d"),
+                "postedLabel" => $posted_label,
                 "expiryDate" => date("Y-m-d", strtotime("+60 days")),
                 "status" => "OPEN",
+                "source" => $isAutoFallback ? "auto_generated" : "user",
+                "syncTag" => $sync_tag,
+                "sync_tag" => $sync_tag,
+                "searchKeyword" => $search_keyword,
+                "marketInsight" => $market_insight,
+                "marketDemandVerified" => $isAutoFallback,
                 "created_at" => date("Y-m-d H:i:s")
             ];
         }

@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Currency, UserRole, ActiveView, AuthUser, Product } from '../../types';
+import { Currency, UserRole, ActiveView, AuthUser, Product, RfqRequirement, MarketDemandInsight } from '../../types';
 import { useAuth, isStrictVerifiedRootAdmin } from '../../context/AuthContext';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { productImageManagerService } from '../../services/productImageManagerService';
+import {
+  checkAndDiscoverRfqsForKeyword,
+  matchesRfqKeywordClient,
+  mergeRfqLists,
+  sortRfqsRealFirst
+} from '../../services/rfqMarketDemandService';
 import { MOCK_PRODUCTS } from '../../data/mockData';
 import { TradeHeavenLogo } from '../common/TradeHeavenLogo';
 import { NotificationBell } from './NotificationBell';
@@ -13,7 +19,8 @@ import {
   SearchAutoSuggestDropdown,
   useSearchAutoSuggest,
   CategorySuggestion,
-  SupplierSuggestion
+  SupplierSuggestion,
+  QuickFilterMode
 } from '../common/SearchAutoSuggestDropdown';
 import {
   Mail,
@@ -77,10 +84,14 @@ interface Props {
   onLogout?: () => void;
   unreadMessagesCount?: number;
   products?: Product[];
+  rfqs?: RfqRequirement[];
   onSelectProduct?: (product: Product) => void;
+  onSelectRfq?: (rfq: RfqRequirement) => void;
   onOpenStorefront?: (companyId: string) => void;
   onNavigateToCategory?: (category: string, subcategory?: string) => void;
-  onNavigateToSearch?: (query: string) => void;
+  onNavigateToSearch?: (query: string, targetView?: ActiveView) => void;
+  onOpenUpgradeModal?: (rfq?: RfqRequirement) => void;
+  onRfqsUpdated?: (rfqs: RfqRequirement[]) => void;
 }
 
 const CURRENCY_OPTIONS: { code: Currency; symbol: string }[] = [
@@ -110,10 +121,14 @@ export const Header: React.FC<Props> = ({
   onOpenContactModal,
   onLogout,
   products = [],
+  rfqs = [],
   onSelectProduct,
+  onSelectRfq,
   onOpenStorefront,
   onNavigateToCategory,
-  onNavigateToSearch
+  onNavigateToSearch,
+  onOpenUpgradeModal,
+  onRfqsUpdated
 }) => {
   const { setCurrentUser, logout, login } = useAuth();
   const { isLiveEditMode, setIsLiveEditMode, toggleLiveEditMode, publishChangesToServer, updatePageContent } = useSiteContent();
@@ -121,6 +136,17 @@ export const Header: React.FC<Props> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [activeSuggestIndex, setActiveSuggestIndex] = useState(-1);
+  const [dropdownQuickFilter, setDropdownQuickFilter] = useState<QuickFilterMode>('ALL');
+  const [liveRfqs, setLiveRfqs] = useState<RfqRequirement[]>(() => sortRfqsRealFirst(rfqs));
+  const [isScanningRfqs, setIsScanningRfqs] = useState(false);
+  const [headerMarketInsight, setHeaderMarketInsight] = useState<MarketDemandInsight | null>(null);
+  const lastDiscoveredHeaderKeywordRef = useRef<string>('');
+
+  useEffect(() => {
+    if (Array.isArray(rfqs) && rfqs.length > 0) {
+      setLiveRfqs(prev => mergeRfqLists(rfqs, prev));
+    }
+  }, [rfqs]);
 
   // Top Admin Bar Real-Time Quick Upload & Sync State
   const [showAdminQuickUploadModal, setShowAdminQuickUploadModal] = useState(false);
@@ -298,20 +324,99 @@ export const Header: React.FC<Props> = ({
     }
   };
 
+  const autoSuggestions = useSearchAutoSuggest(searchTerm, products, 5, 5, 3, liveRfqs, 6);
+
+  // Live Self-Populating RFQ Demand Check on Header Global Search (`input#header-global-search-input`)
+  useEffect(() => {
+    const trimmed = searchTerm.trim();
+    if (trimmed.length < 2) {
+      setIsScanningRfqs(false);
+      setHeaderMarketInsight(null);
+      return;
+    }
+
+    const normalizedKey = trimmed.toLowerCase();
+    const localMatching = liveRfqs.filter(r => matchesRfqKeywordClient(r, trimmed));
+    if (localMatching.length >= 3) {
+      setIsScanningRfqs(false);
+      return;
+    }
+
+    if (lastDiscoveredHeaderKeywordRef.current === normalizedKey) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setIsScanningRfqs(true);
+      try {
+        const result = await checkAndDiscoverRfqsForKeyword({
+          keyword: trimmed,
+          currentRfqs: liveRfqs,
+          currentUser: currentUser || undefined
+        });
+        if (cancelled) return;
+        lastDiscoveredHeaderKeywordRef.current = normalizedKey;
+        if (result.rfqs.length > 0) {
+          setLiveRfqs(prev => {
+            const merged = mergeRfqLists(result.rfqs, prev);
+            if (onRfqsUpdated) {
+              onRfqsUpdated(merged);
+            }
+            return merged;
+          });
+        }
+        if (result.insight) {
+          setHeaderMarketInsight(result.insight);
+        }
+      } catch {
+        // Handled gracefully
+      } finally {
+        if (!cancelled) {
+          setIsScanningRfqs(false);
+        }
+      }
+    }, 320);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchTerm, liveRfqs, onRfqsUpdated]);
+
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmed = searchTerm.trim();
     setSearchFocused(false);
     setUserMenuOpen(false);
     setActiveSuggestIndex(-1);
+
+    const hasCatalogMatches =
+      autoSuggestions.products.length > 0 ||
+      autoSuggestions.categories.length > 0 ||
+      autoSuggestions.suppliers.length > 0;
+
+    const shouldRouteToBuyLeads =
+      activeView === 'BUY_LEADS' ||
+      activeView === 'RFQ_HUB' ||
+      dropdownQuickFilter === 'RFQ_LEADS' ||
+      (Boolean(trimmed) && !hasCatalogMatches);
+
+    if (shouldRouteToBuyLeads) {
+      if (onNavigateToSearch) {
+        onNavigateToSearch(trimmed, activeView === 'RFQ_HUB' ? 'RFQ_HUB' : 'BUY_LEADS');
+      } else {
+        handleNavClick('BUY_LEADS', { search: trimmed });
+      }
+      return;
+    }
+
     if (onNavigateToSearch) {
-      onNavigateToSearch(trimmed);
+      onNavigateToSearch(trimmed, 'PRODUCT_DIRECTORY');
     } else {
       handleNavClick('PRODUCT_DIRECTORY', { search: trimmed });
     }
   };
-
-  const autoSuggestions = useSearchAutoSuggest(searchTerm, products, 5, 5, 3);
 
   const handleSelectSuggestedCategory = (cat: CategorySuggestion) => {
     setSearchFocused(false);
@@ -354,6 +459,20 @@ export const Header: React.FC<Props> = ({
     }
   };
 
+  const handleSelectSuggestedRfq = (rfq: RfqRequirement) => {
+    setSearchFocused(false);
+    setActiveSuggestIndex(-1);
+    const query = rfq.searchKeyword || rfq.productName || searchTerm.trim();
+    if (onNavigateToSearch) {
+      onNavigateToSearch(query, 'BUY_LEADS');
+    } else {
+      handleNavClick('BUY_LEADS', { search: query, rfqId: rfq.id });
+    }
+    if (onSelectRfq) {
+      onSelectRfq(rfq);
+    }
+  };
+
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       setSearchFocused(false);
@@ -363,7 +482,8 @@ export const Header: React.FC<Props> = ({
     const totalItems =
       autoSuggestions.categories.length +
       autoSuggestions.suppliers.length +
-      autoSuggestions.products.length;
+      autoSuggestions.products.length +
+      autoSuggestions.rfqs.length;
 
     if (!totalItems) return;
 
@@ -379,14 +499,20 @@ export const Header: React.FC<Props> = ({
       e.preventDefault();
       const catLen = autoSuggestions.categories.length;
       const suppLen = autoSuggestions.suppliers.length;
+      const prodLen = autoSuggestions.products.length;
       if (activeSuggestIndex < catLen) {
         handleSelectSuggestedCategory(autoSuggestions.categories[activeSuggestIndex]);
       } else if (activeSuggestIndex < catLen + suppLen) {
         handleSelectSuggestedSupplier(autoSuggestions.suppliers[activeSuggestIndex - catLen]);
-      } else {
+      } else if (activeSuggestIndex < catLen + suppLen + prodLen) {
         const prodIdx = activeSuggestIndex - catLen - suppLen;
         if (autoSuggestions.products[prodIdx]) {
           handleSelectSuggestedProduct(autoSuggestions.products[prodIdx]);
+        }
+      } else {
+        const rfqIdx = activeSuggestIndex - catLen - suppLen - prodLen;
+        if (autoSuggestions.rfqs[rfqIdx]) {
+          handleSelectSuggestedRfq(autoSuggestions.rfqs[rfqIdx]);
         }
       }
     }
@@ -652,11 +778,31 @@ export const Header: React.FC<Props> = ({
               query={searchTerm}
               suggestions={autoSuggestions}
               activeIndex={activeSuggestIndex}
+              quickFilter={dropdownQuickFilter}
+              onQuickFilterChange={setDropdownQuickFilter}
               onSelectCategory={handleSelectSuggestedCategory}
               onSelectSupplier={handleSelectSuggestedSupplier}
               onSelectProduct={handleSelectSuggestedProduct}
+              onSelectRfq={handleSelectSuggestedRfq}
               onViewAllResults={() => handleSearchSubmit()}
-              className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:right-0 sm:mt-1.5 w-full sm:min-w-[380px] lg:min-w-full z-50 shadow-2xl"
+              onNavigateToBuyLeads={(q) => {
+                setSearchFocused(false);
+                setActiveSuggestIndex(-1);
+                if (onNavigateToSearch) {
+                  onNavigateToSearch(q, 'BUY_LEADS');
+                } else {
+                  handleNavClick('BUY_LEADS', { search: q });
+                }
+              }}
+              onOpenUpgradeModal={(rfq) => {
+                setSearchFocused(false);
+                if (onOpenUpgradeModal) {
+                  onOpenUpgradeModal(rfq);
+                }
+              }}
+              isScanningRfqs={isScanningRfqs}
+              marketInsight={headerMarketInsight}
+              className="fixed inset-x-2.5 top-14 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 sm:right-0 sm:mt-1.5 w-full sm:min-w-[420px] lg:min-w-full z-50 shadow-2xl"
             />
           )}
         </div>

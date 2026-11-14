@@ -163,6 +163,8 @@ const AuthModal = lazyWithRetry(() => import('./components/modals/AuthModal'), '
 const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/PaymentCheckoutModal'), 'PaymentCheckoutModal');
 const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
 const CustomShareModal = lazyWithRetry(() => import('./components/modals/CustomShareModal'), 'CustomShareModal');
+const MembershipUpgradeModal = lazyWithRetry(() => import('./components/modals/MembershipUpgradeModal'), 'MembershipUpgradeModal');
+import { sortRfqsRealFirst } from './services/rfqMarketDemandService';
 import { 
   CustomLinkTarget, 
   resolveSupplierId, 
@@ -630,6 +632,14 @@ const MainApp: React.FC = () => {
     }
     return false;
   });
+
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeModalRfq, setUpgradeModalRfq] = useState<RfqRequirement | null>(null);
+
+  const handleOpenMembershipUpgradeModal = (rfq?: RfqRequirement) => {
+    setUpgradeModalRfq(rfq || null);
+    setIsUpgradeModalOpen(true);
+  };
 
   const [catalogCategory, setCatalogCategory] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -1131,7 +1141,7 @@ const MainApp: React.FC = () => {
       const mockIds = new Set(MOCK_RFQS.map(r => r.id));
       const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs.filter(r => !mockIds.has(r.id)) : [];
       if (extraLoaded.length > 0) {
-        const mergedRfqs = [...MOCK_RFQS, ...extraLoaded];
+        const mergedRfqs = sortRfqsRealFirst([...MOCK_RFQS, ...extraLoaded]);
         setRfqs(mergedRfqs as any);
         setSelectedRfqId(prev => (prev && mergedRfqs.some(r => r.id === prev)) ? prev : mergedRfqs[0].id);
       }
@@ -1298,62 +1308,106 @@ const MainApp: React.FC = () => {
     }
   }, [activeView, currentUser, isAdmin]);
 
-  // Keep live user presence active every 45s and capture portal user interactions (throttled to 15s)
+  // Keep live user presence active every 45s, capture real portal actions, and auto-expire after 30m of inactivity
   useEffect(() => {
     if (!currentUser?.token) return;
+    const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
     let lastInteractionPingMs = 0;
+    let lastClientActivityMs = Date.now();
+    let hasExpiredLocally = false;
 
-    const sendHeartbeat = (options?: { isPassivePing?: boolean; lastAction?: string }) => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      fetch('/api/v1/auth/heartbeat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${currentUser.token}`
-        },
-        body: JSON.stringify({
-          currentView: activeView,
-          ...(options?.lastAction ? { lastAction: options.lastAction } : {}),
-          isPassivePing: Boolean(options?.isPassivePing)
-        })
-      }).catch(() => {});
+    const triggerInactivityLogout = () => {
+      if (hasExpiredLocally) return;
+      hasExpiredLocally = true;
+      logout();
     };
 
-    const intervalId = window.setInterval(() => sendHeartbeat({ isPassivePing: true }), 45000);
+    const sendHeartbeat = async (options?: { isPassivePing?: boolean; lastAction?: string }) => {
+      if (hasExpiredLocally) return;
+      if (Date.now() - lastClientActivityMs >= INACTIVITY_LIMIT_MS) {
+        triggerInactivityLogout();
+        return;
+      }
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      try {
+        const res = await fetch('/api/v1/auth/heartbeat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${currentUser.token}`
+          },
+          body: JSON.stringify({
+            currentView: activeView,
+            ...(options?.lastAction ? { lastAction: options.lastAction } : {}),
+            isPassivePing: Boolean(options?.isPassivePing)
+          })
+        });
+        if (res.status === 401) {
+          const data = await res.json().catch(() => null);
+          if (data?.expired || data?.revoked) {
+            triggerInactivityLogout();
+          }
+        }
+      } catch {
+        // Ignore transient offline network states
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (Date.now() - lastClientActivityMs >= INACTIVITY_LIMIT_MS) {
+        triggerInactivityLogout();
+      } else {
+        void sendHeartbeat({ isPassivePing: true });
+      }
+    }, 30000);
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        sendHeartbeat({ isPassivePing: true });
+        if (Date.now() - lastClientActivityMs >= INACTIVITY_LIMIT_MS) {
+          triggerInactivityLogout();
+        } else {
+          void sendHeartbeat({ isPassivePing: true });
+        }
       }
     };
 
     const handleUserAction = (e: Event) => {
       const now = Date.now();
+      lastClientActivityMs = now;
       if (now - lastInteractionPingMs < 15000) return;
-      const target = e.target as HTMLElement | null;
-      const btnOrLink = target?.closest('button, a, input, select');
-      if (!btnOrLink) return;
+
+      let actionLabel = `Active on ${activeView}`;
+      if (e.type === 'click') {
+        const target = e.target as HTMLElement | null;
+        const btnOrLink = target?.closest('button, a, input, select');
+        if (!btnOrLink) return;
+        const rawLabel = (
+          btnOrLink.getAttribute('aria-label') ||
+          btnOrLink.textContent ||
+          ''
+        )
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 48);
+        if (rawLabel) actionLabel = `Interacted: ${rawLabel}`;
+      } else if (e.type === 'keydown') {
+        actionLabel = `Typing on ${activeView}`;
+      }
+
       lastInteractionPingMs = now;
-      const rawLabel = (
-        btnOrLink.getAttribute('aria-label') ||
-        btnOrLink.textContent ||
-        ''
-      )
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 48);
-      const actionLabel = rawLabel ? `Interacted: ${rawLabel}` : `Active on ${activeView}`;
-      sendHeartbeat({ isPassivePing: false, lastAction: actionLabel });
+      void sendHeartbeat({ isPassivePing: false, lastAction: actionLabel });
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
     document.addEventListener('click', handleUserAction, { capture: true, passive: true });
+    document.addEventListener('keydown', handleUserAction, { capture: true, passive: true });
     return () => {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibility);
       document.removeEventListener('click', handleUserAction, { capture: true });
+      document.removeEventListener('keydown', handleUserAction, { capture: true });
     };
-  }, [activeView, currentUser]);
+  }, [activeView, currentUser, logout]);
 
   // Dynamic SEO, OpenGraph & Meta Tags based on active view, selected product, and dynamic hero placeholder
   useEffect(() => {
@@ -2047,7 +2101,7 @@ const MainApp: React.FC = () => {
       setCatalogCategory(options.category);
     }
     if (options?.search !== undefined) {
-      handleDebouncedSearch(options.search, false);
+      handleDebouncedSearch(options.search, true);
     }
     if (options?.productId) {
       const prod = products.find(p => p.id === options.productId);
@@ -2332,9 +2386,18 @@ const MainApp: React.FC = () => {
         onOpenDbModal={() => setIsDbModalOpen(true)}
         onOpenCreateRfq={handleOpenCreateRfq}
         products={products}
+        rfqs={rfqs}
         onSelectProduct={(prod) => {
           handleSelectProduct(prod);
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectRfq={(rfq) => {
+          setSelectedRfqId(rfq.id);
+          setSelectedRfqForModal(rfq);
+        }}
+        onOpenUpgradeModal={handleOpenMembershipUpgradeModal}
+        onRfqsUpdated={(updatedRfqs) => {
+          setRfqs(sortRfqsRealFirst(updatedRfqs));
         }}
         onOpenStorefront={(companyId) => {
           handleOpenStorefront(companyId);
@@ -2347,11 +2410,29 @@ const MainApp: React.FC = () => {
           setActiveView('PRODUCT_DIRECTORY');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-        onNavigateToSearch={(query) => {
+        onNavigateToSearch={(query, targetView) => {
           setCatalogCategory('ALL');
           setCatalogSearch(query);
           setSelectedProduct(null);
-          setActiveView('PRODUCT_DIRECTORY');
+          const trimmed = (query || '').trim().toLowerCase();
+          const hasMatchingProducts =
+            !trimmed ||
+            products.some(
+              (p) =>
+                p.title.toLowerCase().includes(trimmed) ||
+                p.category.toLowerCase().includes(trimmed) ||
+                (p.subCategory && p.subCategory.toLowerCase().includes(trimmed)) ||
+                (p.supplierName && p.supplierName.toLowerCase().includes(trimmed))
+            );
+          if (targetView) {
+            setActiveView(targetView);
+          } else if (activeView === 'BUY_LEADS' || activeView === 'RFQ_HUB') {
+            setActiveView(activeView);
+          } else if (!hasMatchingProducts) {
+            setActiveView('BUY_LEADS');
+          } else {
+            setActiveView('PRODUCT_DIRECTORY');
+          }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
@@ -2456,7 +2537,10 @@ const MainApp: React.FC = () => {
                       setActiveView('SUPPLIERS_DIRECTORY');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onNavigateToRfqs={(cat) => {
+                    onNavigateToRfqs={(query) => {
+                      if (query !== undefined) {
+                        setCatalogSearch(query);
+                      }
                       setActiveView('BUY_LEADS');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
@@ -2522,8 +2606,9 @@ const MainApp: React.FC = () => {
                     }}
                     onOpenNegotiation={() => setActiveView('NEGOTIATION_ROOM')}
                     currentUser={currentUser}
-                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                    onOpenUpgradeModal={handleOpenMembershipUpgradeModal}
                     isLoading={isLoadingInitialData}
+                    initialSearch={catalogSearch}
                   />
                 );
 
@@ -2607,9 +2692,10 @@ const MainApp: React.FC = () => {
                     }}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     currentUser={currentUser}
-                    onOpenUpgradeModal={() => setActiveView('PREMIUM_MEMBERSHIP')}
+                    onOpenUpgradeModal={handleOpenMembershipUpgradeModal}
                     onOpenRegisterFree={handleOpenRegisterFree}
                     onNavigate={handleNavigate}
+                    initialSearch={catalogSearch}
                   />
                 );
 
@@ -3156,8 +3242,9 @@ const MainApp: React.FC = () => {
             currentUser={currentUser}
             onOpenRegisterFree={handleOpenRegisterFree}
             onOpenUpgradeModal={() => {
+              const targetRfq = selectedRfqForModal;
               setSelectedRfqForModal(null);
-              setActiveView('PREMIUM_MEMBERSHIP');
+              handleOpenMembershipUpgradeModal(targetRfq || undefined);
             }}
             onOpenBuyerProfile={(buyerId) => {
               setSelectedRfqForModal(null);
@@ -3227,6 +3314,18 @@ const MainApp: React.FC = () => {
           }}
           onLogout={() => {
             logout();
+          }}
+        />
+
+        <MembershipUpgradeModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+          rfq={upgradeModalRfq}
+          selectedCurrency={selectedCurrency}
+          onSelectPlanCheckout={handleOpenPaymentCheckout}
+          onViewAllPlans={() => {
+            setIsUpgradeModalOpen(false);
+            setActiveView('PREMIUM_MEMBERSHIP');
           }}
         />
 

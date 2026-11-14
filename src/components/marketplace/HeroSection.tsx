@@ -357,10 +357,13 @@ export const HeroSection: React.FC<Props> = ({
     e.preventDefault();
     setIsSearchPopoverOpen(false);
     setIsCategoryMenuOpen(false);
+    const trimmed = searchQuery.trim();
     const effectiveMode =
-      searchTargetMode === 'SUPPLIERS' || (searchQuery.trim() && searchResults.suppliers.length > 0 && searchResults.products.length === 0)
+      searchTargetMode === 'SUPPLIERS' || (trimmed && searchResults.suppliers.length > 0 && searchResults.products.length === 0)
         ? 'SUPPLIERS'
-        : searchTargetMode;
+        : trimmed && searchResults.products.length === 0 && searchResults.suppliers.length === 0
+          ? 'RFQS'
+          : searchTargetMode;
     onSearch(searchQuery, selectedCat === 'All Categories' ? '' : selectedCat, effectiveMode);
     if (onNavigate) {
       if (effectiveMode === 'RFQS') {
