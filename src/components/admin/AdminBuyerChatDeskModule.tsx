@@ -772,9 +772,9 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       </div>
 
       {/* Main Split Workspace: Left Thread List + Center Active Chat Window */}
-      <div className="grid w-full min-w-0 grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[min(74vh,720px)] lg:min-h-[540px] lg:grid-cols-12">
+      <div className="grid w-full max-w-full min-w-0 grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[min(74vh,720px)] lg:min-h-[540px] lg:grid-cols-12">
         {/* LEFT SIDEBAR: Multi-Thread Conversation Inbox */}
-        <div className="flex min-w-0 min-h-0 flex-col border-b border-slate-200 bg-slate-50/70 lg:col-span-4 lg:border-b-0 lg:border-r">
+        <div className="flex w-full max-w-full min-w-0 min-h-0 flex-col border-b border-slate-200 bg-slate-50/70 lg:col-span-4 lg:border-b-0 lg:border-r">
           <div className="border-b border-slate-200 bg-white p-3.5">
             <div className="mb-2.5 flex items-center justify-between">
               <h3 className="flex items-center gap-1.5 text-sm font-extrabold text-slate-900">
@@ -896,7 +896,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
         </div>
 
         {/* CENTER CHAT WINDOW */}
-        <div className="flex min-w-0 min-h-0 flex-col lg:col-span-8">
+        <div className="flex w-full max-w-full min-w-0 min-h-0 flex-col overflow-hidden lg:col-span-8">
           {!activeConversation ? (
             <div className="flex flex-1 flex-col items-center justify-center p-6 sm:p-10 text-center text-slate-500">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
@@ -912,23 +912,26 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
           ) : (
             <>
               {/* Active Chat Header + Live Privacy Controls */}
-              <div className="border-b border-slate-200 bg-white px-3 sm:px-4 py-3 sm:py-3.5 min-w-0">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between min-w-0">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 min-w-0">
-                      <span className="text-sm font-extrabold text-slate-900 break-words">
+              <div className="w-full max-w-full min-w-0 border-b border-slate-200 bg-white px-3 sm:px-4 py-3 sm:py-3.5">
+                <div className="flex w-full max-w-full min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 max-w-full flex-1">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+                      <span className="text-sm font-extrabold text-slate-900 break-words min-w-0 max-w-full">
                         {activeConversation.supplierCompany || activeConversation.supplierName}
                       </span>
                       {activeConversation.supplierCountry && (
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                        <span className="max-w-full rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 break-words">
                           {getCountryFlag(activeConversation.supplierCountry)} {activeConversation.supplierCountry}
                         </span>
                       )}
-                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">
-                        <UserCheck className="h-3 w-3 shrink-0" /> Acting as: {activeFullIdentity?.buyerName || activeConversation.identity?.buyerName}
+                      <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700 break-words">
+                        <UserCheck className="h-3 w-3 shrink-0" />
+                        <span className="min-w-0 break-words">
+                          Acting as: {activeFullIdentity?.buyerName || activeConversation.identity?.buyerName}
+                        </span>
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-slate-500 break-words">
+                    <p className="mt-0.5 text-[11px] text-slate-500 break-all sm:break-words">
                       Persona: {activeFullIdentity?.companyName || activeConversation.identity?.companyName} •{' '}
                       {activeFullIdentity?.phone || activeConversation.identity?.phone} •{' '}
                       {activeFullIdentity?.email || activeConversation.identity?.email}
@@ -936,68 +939,70 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
                   </div>
 
                   {/* Per-Chat Privacy Visibility Toggles */}
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex w-full max-w-full min-w-0 flex-wrap items-center gap-2 xl:w-auto">
                     <button
                       type="button"
                       disabled={togglingKey === 'showPhone'}
                       onClick={() => handleTogglePrivacy('showPhone')}
-                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
+                      className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
                         activeConversation.showPhone
                           ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                           : 'border-amber-200 bg-amber-50 text-amber-800'
                       }`}
                       title="Toggle Buyer Phone visibility for this supplier"
                     >
-                      <Phone className="h-3.5 w-3.5" />
-                      <span>Phone: {activeConversation.showPhone ? 'Visible' : 'Hidden'}</span>
-                      {activeConversation.showPhone ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      <Phone className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Phone: {activeConversation.showPhone ? 'Visible' : 'Hidden'}</span>
+                      {activeConversation.showPhone ? <Eye className="h-3.5 w-3.5 shrink-0" /> : <EyeOff className="h-3.5 w-3.5 shrink-0" />}
                     </button>
 
                     <button
                       type="button"
                       disabled={togglingKey === 'showEmail'}
                       onClick={() => handleTogglePrivacy('showEmail')}
-                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
+                      className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
                         activeConversation.showEmail
                           ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                           : 'border-amber-200 bg-amber-50 text-amber-800'
                       }`}
                       title="Toggle Buyer Email visibility for this supplier"
                     >
-                      <Mail className="h-3.5 w-3.5" />
-                      <span>Email: {activeConversation.showEmail ? 'Visible' : 'Hidden'}</span>
-                      {activeConversation.showEmail ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      <Mail className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Email: {activeConversation.showEmail ? 'Visible' : 'Hidden'}</span>
+                      {activeConversation.showEmail ? <Eye className="h-3.5 w-3.5 shrink-0" /> : <EyeOff className="h-3.5 w-3.5 shrink-0" />}
                     </button>
 
                     <button
                       type="button"
                       disabled={togglingKey === 'showCompany'}
                       onClick={() => handleTogglePrivacy('showCompany')}
-                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
+                      className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
                         activeConversation.showCompany
                           ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                           : 'border-amber-200 bg-amber-50 text-amber-800'
                       }`}
                       title="Toggle Buyer Company & Exact Address visibility for this supplier"
                     >
-                      <Building2 className="h-3.5 w-3.5" />
-                      <span>Company & Addr: {activeConversation.showCompany ? 'Visible' : 'Hidden'}</span>
-                      {activeConversation.showCompany ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      <Building2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Company &amp; Addr: {activeConversation.showCompany ? 'Visible' : 'Hidden'}</span>
+                      {activeConversation.showCompany ? <Eye className="h-3.5 w-3.5 shrink-0" /> : <EyeOff className="h-3.5 w-3.5 shrink-0" />}
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Privacy Status Strip */}
-              <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 bg-slate-50 px-3 sm:px-4 py-1.5 text-[11px] text-slate-600">
-                <span className="inline-flex flex-wrap items-center gap-1.5">
+              <div className="flex w-full max-w-full min-w-0 flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 bg-slate-50 px-3 sm:px-4 py-1.5 text-[11px] text-slate-600">
+                <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-1.5 break-words">
                   <Shield className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-                  Supplier view privacy: Phone is{' '}
-                  <strong>{activeConversation.showPhone ? 'UNMASKED' : 'MASKED'}</strong>, Email is{' '}
-                  <strong>{activeConversation.showEmail ? 'UNMASKED' : 'MASKED'}</strong>, Company/Address is{' '}
-                  <strong>{activeConversation.showCompany ? 'UNMASKED' : 'MASKED'}</strong>.
+                  <span>
+                    Supplier view privacy: Phone is{' '}
+                    <strong>{activeConversation.showPhone ? 'UNMASKED' : 'MASKED'}</strong>, Email is{' '}
+                    <strong>{activeConversation.showEmail ? 'UNMASKED' : 'MASKED'}</strong>, Company/Address is{' '}
+                    <strong>{activeConversation.showCompany ? 'UNMASKED' : 'MASKED'}</strong>.
+                  </span>
                 </span>
-                <span className="text-[10px] text-slate-400">Changes sync live to supplier</span>
+                <span className="shrink-0 text-[10px] text-slate-400">Changes sync live to supplier</span>
               </div>
 
               {/* Messages List */}

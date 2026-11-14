@@ -18,6 +18,7 @@ import { apiClient } from './services/apiClient';
 import { productImageManagerService } from './services/productImageManagerService';
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
 import { ALL_COUNTRY_ITEMS } from './data/countriesData';
+import { installGlobalAutoLayoutContainment, runAutoLayoutContainmentPass } from './utils/autoLayoutContainment';
 
 // Common Components
 import { Header } from './components/marketplace/Header';
@@ -387,6 +388,14 @@ const MainApp: React.FC = () => {
 
   const [activeView, setActiveView] = useState<ActiveView>(getInitialView());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  // Install global automatic layout containment observer across the entire site
+  useEffect(() => installGlobalAutoLayoutContainment(), []);
+
+  useEffect(() => {
+    const rafId = window.requestAnimationFrame(() => runAutoLayoutContainmentPass());
+    return () => window.cancelAnimationFrame(rafId);
+  }, [activeView]);
 
   // Global listener: on any unexpected error event, safely divert directly to HOMEPAGE
   // UNLESS an incoming Email Link forced a specific target view.
@@ -2330,7 +2339,7 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans pb-16 md:pb-0">
+    <div className="min-h-screen w-full max-w-full min-w-0 overflow-x-clip bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-blue-600 selection:text-white font-sans pb-16 md:pb-0">
       {/* Scroll restoration anchor */}
       <ScrollToTop activeView={activeView} />
       {/* Dynamic SEO Meta Tags Manager */}
@@ -2444,7 +2453,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* 3. MAIN CONTENT CONTAINER WITH ERROR BOUNDARY & VIEW DISPATCH */}
-      <main className="flex-1 w-full max-w-[1600px] 2xl:max-w-[1800px] mx-auto overflow-x-hidden px-3 sm:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 min-h-[calc(100vh-160px)]">
+      <main className="flex-1 w-full min-w-0 max-w-[1600px] 2xl:max-w-[1800px] mx-auto overflow-x-clip px-3 sm:px-6 lg:px-8 xl:px-10 py-3 sm:py-4 min-h-[calc(100vh-160px)]">
         {/* Shared Custom Note Banner when ?note=... is present in the URL */}
         {sharedNote && (
           <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-lg border border-blue-500/30 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
@@ -2620,7 +2629,7 @@ const MainApp: React.FC = () => {
 
               case 'SUPPLIER_MESSAGES':
                 return (
-                  <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6">
+                  <div className="w-full max-w-7xl min-w-0 mx-auto px-3 sm:px-6 py-4 sm:py-6">
                     {isAdmin ? (
                       <AdminBuyerChatDeskModule />
                     ) : (
