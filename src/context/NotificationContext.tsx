@@ -264,17 +264,98 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     [evaluateQueueHealthAndNotify, currentUser, isAuthenticated]
   );
 
-  // Poll server-side delivery queue health every 30 seconds only when authenticated as Admin
+  const lastSeenAuthEventIdRef = useRef<string | null>(
+    (() => {
+      try {
+        return localStorage.getItem('tradeheaven_last_auth_event_id');
+      } catch {
+        return null;
+      }
+    })()
+  );
+
+  const pollAdminAuthEvents = useCallback(async () => {
+    if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') {
+      return;
+    }
+    try {
+      const response = await fetch('/api/v1/admin/auth-events', {
+        headers: { Accept: 'application/json' },
+        cache: 'no-cache'
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const events: Array<{
+        id: string;
+        eventType: 'LOGIN' | 'LOGOUT';
+        email: string;
+        name: string;
+        role: string;
+        companyName?: string;
+        currentView?: string;
+        timestamp: string;
+      }> = Array.isArray(data?.events) ? data.events : [];
+      if (events.length === 0) return;
+
+      const latestId = events[0].id;
+      const lastSeenId = lastSeenAuthEventIdRef.current;
+
+      if (!lastSeenId) {
+        // Initialize baseline on first poll so historical logins do not flood toasts
+        lastSeenAuthEventIdRef.current = latestId;
+        try {
+          localStorage.setItem('tradeheaven_last_auth_event_id', latestId);
+        } catch {}
+        return;
+      }
+
+      if (lastSeenId === latestId) return;
+
+      const lastSeenIdx = events.findIndex((evt) => evt.id === lastSeenId);
+      const unseenEvents = lastSeenIdx === -1 ? events.slice(0, 5) : events.slice(0, lastSeenIdx);
+
+      lastSeenAuthEventIdRef.current = latestId;
+      try {
+        localStorage.setItem('tradeheaven_last_auth_event_id', latestId);
+      } catch {}
+
+      // Emit chronologically so the newest appears on top
+      for (const evt of [...unseenEvents].reverse()) {
+        const isLogin = evt.eventType === 'LOGIN';
+        addNotification({
+          type: 'SYSTEM',
+          title: isLogin
+            ? `🟢 User Logged In: ${evt.name || evt.email}`
+            : `🟠 User Logged Out: ${evt.name || evt.email}`,
+          message: `${evt.role} (${evt.email}${evt.companyName ? ` • ${evt.companyName}` : ''}) ${
+            isLogin ? 'signed in to' : 'signed out from'
+          } ${evt.currentView || 'HOMEPAGE'}.`,
+          linkView: 'CLIENT_ADMIN'
+        });
+      }
+    } catch {
+      // ignore transient network errors
+    }
+  }, [addNotification, currentUser, isAuthenticated]);
+
+  // Poll server-side delivery queue health (30s) and live login/logout events (10s) for authenticated Admins
   useEffect(() => {
     if (!currentUser || !isAuthenticated || currentUser.role !== 'ADMIN') {
       return;
     }
     void refreshDeliveryQueueStatus();
-    const intervalId = setInterval(() => {
+    void pollAdminAuthEvents();
+    const queueIntervalId = setInterval(() => {
       void refreshDeliveryQueueStatus();
     }, 30000);
-    return () => clearInterval(intervalId);
-  }, [refreshDeliveryQueueStatus, currentUser, isAuthenticated]);
+    const authIntervalId = setInterval(() => {
+      void pollAdminAuthEvents();
+    }, 10000);
+    return () => {
+      clearInterval(queueIntervalId);
+      clearInterval(authIntervalId);
+    };
+  }, [refreshDeliveryQueueStatus, pollAdminAuthEvents, currentUser, isAuthenticated]);
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>

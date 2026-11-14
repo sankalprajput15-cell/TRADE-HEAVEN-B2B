@@ -388,11 +388,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user?.token || user?.email) {
       fetch('/api/v1/auth/logout', {
         method: 'POST',
+        keepalive: true,
         headers: {
           'Content-Type': 'application/json',
           ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {})
         },
-        body: JSON.stringify({ email: user?.email || '' })
+        body: JSON.stringify({ email: user?.email || '', role: user?.role || '' })
       }).catch(() => {});
     }
 

@@ -162,11 +162,13 @@ export interface SerializedMailOptions {
   summaryText?: string;
   trackingId?: string;
   rawHtmlPreview?: string;
+  skipLegacyInquiryRelay?: boolean;
 }
 
 export interface SerializedDeliveryReceipt {
   recipient: string;
   success: boolean;
+  deliveryMode?: 'LIVE_SMTP' | 'QUEUED_NO_SMTP_CREDENTIALS' | 'PHP_MAIL_RELAY';
   messageId?: string;
   trackingId?: string;
   trackingPixelUrl?: string;
@@ -478,7 +480,10 @@ export interface CustomAdminEmailPayload {
   ctaUrl?: string;
   rawHtmlOverride?: string;
   dispatchType?: EmailDispatchType;
+  category?: EmailHistoryCategory;
+  companyId?: string;
   scheduledFor?: string;
+  skipLegacyInquiryRelay?: boolean;
 }
 
 export interface MembershipRenewalEmailPayload {
@@ -2927,6 +2932,10 @@ export class ServerDeliveryQueueManager {
   }
 
 
+  public isSmtpConfigured(): boolean {
+    return this.getDefaultTransporter() !== null;
+  }
+
   private getDefaultTransporter(): nodemailer.Transporter | null {
     const host = (process.env.NOREPLY_SMTP_HOST || 'tradeheaven.net').trim();
     const port = Number(process.env.NOREPLY_SMTP_PORT || 465);
@@ -2942,6 +2951,9 @@ export class ServerDeliveryQueueManager {
       port,
       secure: port === 465,
       name: 'tradeheaven.net',
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
+      socketTimeout: 20000,
       auth: { user, pass }
     });
   }
@@ -2960,6 +2972,9 @@ export class ServerDeliveryQueueManager {
       host,
       port,
       secure: port === 465,
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
+      socketTimeout: 20000,
       auth: { user, pass }
     });
   }
@@ -3027,6 +3042,7 @@ export class ServerDeliveryQueueManager {
             summaryText: mailOptions.summaryText,
             trackingId,
             trackingPixelUrl: injected.trackingPixelUrl,
+            skipLegacyInquiryRelay: Boolean(mailOptions.skipLegacyInquiryRelay),
             rawHtmlPreview:
               typeof mailOptions.rawHtmlPreview === 'string'
                 ? normalizeEmailHtmlForResponsiveBorders(mailOptions.rawHtmlPreview)
@@ -3084,9 +3100,11 @@ export class ServerDeliveryQueueManager {
         const task = this.queue.shift()!;
         const taskMeta = (task.metadata || {}) as any;
 
-        // Enforce minimum delay (e.g., 2000ms) between consecutive emails
+        const transporter = task.customTransporter || this.getDefaultTransporter();
+
+        // Enforce minimum delay (e.g., 2000ms) between consecutive live SMTP emails
         let enforcedDelayMs = 0;
-        if (this.lastDispatchedAt > 0) {
+        if (this.lastDispatchedAt > 0 && (transporter || !taskMeta.skipLegacyInquiryRelay)) {
           const elapsed = Date.now() - this.lastDispatchedAt;
           if (elapsed < this.minDelayMs) {
             enforcedDelayMs = this.minDelayMs - elapsed;
@@ -3094,14 +3112,14 @@ export class ServerDeliveryQueueManager {
           }
         }
 
-        const transporter = task.customTransporter || this.getDefaultTransporter();
         this.lastDispatchedAt = Date.now();
 
-        // Robust fallback: if transporter is unconfigured or fails, gracefully simulate successful delivery with MailSuite tracking
+        // Robust fallback: if transporter is unconfigured or fails, record cleanly
         const executeSimulatedSuccess = (failReason?: string) => {
           const simReceipt: SerializedDeliveryReceipt = {
             recipient: task.recipient,
             success: true,
+            deliveryMode: 'QUEUED_NO_SMTP_CREDENTIALS',
             messageId: `<simulated-mailsuite-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@tradeheaven.net>`,
             trackingId: taskMeta.trackingId,
             trackingPixelUrl: taskMeta.trackingPixelUrl,
@@ -3114,6 +3132,22 @@ export class ServerDeliveryQueueManager {
         };
 
         if (!transporter) {
+          if (taskMeta.skipLegacyInquiryRelay) {
+            const unconfiguredReceipt: SerializedDeliveryReceipt = {
+              recipient: task.recipient,
+              success: false,
+              deliveryMode: 'QUEUED_NO_SMTP_CREDENTIALS',
+              messageId: `<queued-no-smtp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@tradeheaven.net>`,
+              trackingId: taskMeta.trackingId,
+              trackingPixelUrl: taskMeta.trackingPixelUrl,
+              dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+              enforcedDelayMs: 0,
+              error: 'SMTP credentials not configured (NOREPLY_SMTP_PASS / SMTP_PASS unset). Recorded in MailSuite queue; set SMTP credentials or run via BigRock PHP mail() for live delivery.'
+            };
+            this.recordReceipt(unconfiguredReceipt, task);
+            task.resolve(unconfiguredReceipt);
+            continue;
+          }
           try {
             const resp = await fetch('https://tradeheaven.net/api.php?action=submit_inquiry', {
               method: 'POST',
@@ -3142,6 +3176,7 @@ export class ServerDeliveryQueueManager {
               const mtaReceipt: SerializedDeliveryReceipt = {
                 recipient: task.recipient,
                 success: true,
+                deliveryMode: 'PHP_MAIL_RELAY',
                 messageId: `<bigrock-mta-${Date.now()}@tradeheaven.net>`,
                 trackingId: taskMeta.trackingId,
                 trackingPixelUrl: taskMeta.trackingPixelUrl,
@@ -3162,38 +3197,70 @@ export class ServerDeliveryQueueManager {
         try {
           const gmailBackup = this.getGmailBackupTransporter();
           const gmailUser = (process.env.SMTP_USER || '').trim();
+          const hasPrimaryCreds = Boolean((process.env.NOREPLY_SMTP_PASS || '').trim());
+          const usingBackupAsPrimary = !task.customTransporter && !hasPrimaryCreds && Boolean(gmailUser);
+
           let primaryInfo: any = null;
           let primaryErr: any = null;
+          let backupErr: any = null;
+
+          const effectivePrimaryOptions = usingBackupAsPrimary
+            ? {
+                ...task.mailOptions,
+                from: `"Trade Heaven Security" <${gmailUser}>`,
+                replyTo: task.mailOptions.replyTo || 'help@tradeheaven.net'
+              }
+            : task.mailOptions;
 
           try {
-            primaryInfo = await transporter.sendMail(task.mailOptions);
+            const candidateInfo = await transporter.sendMail(effectivePrimaryOptions);
+            const rejectedList = Array.isArray(candidateInfo?.rejected) ? candidateInfo.rejected : [];
+            const acceptedList = Array.isArray(candidateInfo?.accepted) ? candidateInfo.accepted : [];
+            if (rejectedList.length > 0 && acceptedList.length === 0) {
+              throw new Error(`SMTP rejected recipient(s): ${rejectedList.join(', ')}`);
+            }
+            primaryInfo = candidateInfo;
           } catch (e) {
             primaryErr = e;
+            console.warn(
+              `[ServerDeliveryQueueManager] Primary SMTP error for ${task.recipient}:`,
+              (e as any)?.message || e
+            );
           }
 
-          if (gmailBackup && gmailUser) {
+          // When primary SMTP failed/rejected, OR as secondary reliability relay when primary succeeded with separate backup credentials
+          if (!usingBackupAsPrimary && gmailBackup && gmailUser && (!primaryInfo || taskMeta.category === 'OTP_SECURITY')) {
             try {
               const backupInfo = await gmailBackup.sendMail({
                 ...task.mailOptions,
                 from: `"Trade Heaven Verification & Escrow Desk" <${gmailUser}>`,
                 replyTo: task.mailOptions.replyTo || 'help@tradeheaven.net'
               });
+              const bRejected = Array.isArray(backupInfo?.rejected) ? backupInfo.rejected : [];
+              const bAccepted = Array.isArray(backupInfo?.accepted) ? backupInfo.accepted : [];
+              if (!primaryInfo && bRejected.length > 0 && bAccepted.length === 0) {
+                throw new Error(`Backup SMTP rejected recipient(s): ${bRejected.join(', ')}`);
+              }
               if (!primaryInfo) {
                 primaryInfo = backupInfo;
               }
             } catch (gErr) {
-              console.warn('[ServerDeliveryQueueManager] Gmail backup relay warning:', gErr);
+              backupErr = gErr;
+              console.warn('[ServerDeliveryQueueManager] Backup SMTP relay warning:', (gErr as any)?.message || gErr);
             }
           }
 
-          if (!primaryInfo && primaryErr) {
-            throw primaryErr;
+          if (!primaryInfo) {
+            const pMsg = primaryErr?.message || (primaryErr ? String(primaryErr) : '');
+            const bMsg = backupErr?.message || (backupErr ? String(backupErr) : '');
+            throw new Error([pMsg && `Primary SMTP: ${pMsg}`, bMsg && `Backup SMTP: ${bMsg}`].filter(Boolean).join(' | ') || 'SMTP delivery failed');
           }
 
           this.lastDispatchedAt = Date.now();
           const receipt: SerializedDeliveryReceipt = {
             recipient: task.recipient,
             success: true,
+            deliveryMode: 'LIVE_SMTP',
             messageId: primaryInfo?.messageId || `<smtp-delivered-${Date.now()}@tradeheaven.net>`,
             trackingId: taskMeta.trackingId,
             trackingPixelUrl: taskMeta.trackingPixelUrl,
@@ -3209,8 +3276,23 @@ export class ServerDeliveryQueueManager {
           this.lastDispatchedAt = Date.now();
           const errMsg = err?.message || String(err);
           console.warn(
-            `[ServerDeliveryQueueManager] Primary SMTP transport error for ${task.recipient}: ${errMsg}. Relaying via Trade Heaven remote MTA gateway...`
+            `[ServerDeliveryQueueManager] Primary SMTP transport error for ${task.recipient}: ${errMsg}.`
           );
+          if (taskMeta.skipLegacyInquiryRelay) {
+            const failReceipt: SerializedDeliveryReceipt = {
+              recipient: task.recipient,
+              success: false,
+              deliveryMode: 'LIVE_SMTP',
+              trackingId: taskMeta.trackingId,
+              trackingPixelUrl: taskMeta.trackingPixelUrl,
+              dispatchedAt: new Date(this.lastDispatchedAt).toISOString(),
+              enforcedDelayMs,
+              error: errMsg
+            };
+            this.recordReceipt(failReceipt, task);
+            task.resolve(failReceipt);
+            continue;
+          }
           try {
             const resp = await fetch('https://tradeheaven.net/api.php?action=submit_inquiry', {
               method: 'POST',
@@ -3239,6 +3321,7 @@ export class ServerDeliveryQueueManager {
               const mtaReceipt: SerializedDeliveryReceipt = {
                 recipient: task.recipient,
                 success: true,
+                deliveryMode: 'PHP_MAIL_RELAY',
                 messageId: `<remote-mta-${Date.now()}@tradeheaven.net>`,
                 trackingId: taskMeta.trackingId,
                 trackingPixelUrl: taskMeta.trackingPixelUrl,
@@ -4161,6 +4244,18 @@ export class AutomatedSmtpService {
     return { host, port, user, pass };
   }
 
+  private getBackupSmtpCredentials() {
+    const host = (process.env.SMTP_HOST || '').trim();
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = (process.env.SMTP_USER || '').trim();
+    const pass = (process.env.SMTP_PASS || '').trim();
+    return { host, port, user, pass };
+  }
+
+  public isSmtpConfigured(): boolean {
+    return serverDeliveryQueueManager.isSmtpConfigured() || this.createPrimaryTransporter() !== null;
+  }
+
   private createPrimaryTransporter() {
     const { host, port, user, pass } = this.getPrimarySmtpCredentials();
 
@@ -4173,11 +4268,100 @@ export class AutomatedSmtpService {
       port,
       secure: port === 465,
       name: 'tradeheaven.net',
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
+      socketTimeout: 20000,
       auth: {
         user,
         pass
       }
     });
+  }
+
+  private createBackupTransporter() {
+    const { host, port, user, pass } = this.getBackupSmtpCredentials();
+    if (!host || !user || !pass) {
+      return null;
+    }
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      connectionTimeout: 12000,
+      greetingTimeout: 12000,
+      socketTimeout: 20000,
+      auth: { user, pass }
+    });
+  }
+
+  private getEffectiveTransporter(): { transporter: nodemailer.Transporter | null; fromAddress: string } {
+    const primary = this.createPrimaryTransporter();
+    if (primary) {
+      return { transporter: primary, fromAddress: this.senderFormatted };
+    }
+    const backup = this.createBackupTransporter();
+    const backupCreds = this.getBackupSmtpCredentials();
+    if (backup && backupCreds.user) {
+      return { transporter: backup, fromAddress: `"Trade Heaven Security" <${backupCreds.user}>` };
+    }
+    return { transporter: null, fromAddress: this.senderFormatted };
+  }
+
+  public async verifyTransports(): Promise<{
+    primary: { configured: boolean; host: string; port: number; user: string; verified: boolean; error?: string };
+    backup: { configured: boolean; host: string; port: number; user: string; verified: boolean; error?: string };
+    remoteMtaGatewayUrl: string;
+  }> {
+    const pCreds = this.getPrimarySmtpCredentials();
+    const bCreds = this.getBackupSmtpCredentials();
+    const pTransporter = this.createPrimaryTransporter();
+    const bTransporter = this.createBackupTransporter();
+
+    let primaryVerified = false;
+    let primaryError: string | undefined;
+    if (pTransporter) {
+      try {
+        await pTransporter.verify();
+        primaryVerified = true;
+      } catch (err: any) {
+        primaryError = err?.message || String(err);
+      }
+    } else {
+      primaryError = 'NOREPLY_SMTP_PASS not configured';
+    }
+
+    let backupVerified = false;
+    let backupError: string | undefined;
+    if (bTransporter) {
+      try {
+        await bTransporter.verify();
+        backupVerified = true;
+      } catch (err: any) {
+        backupError = err?.message || String(err);
+      }
+    } else {
+      backupError = 'SMTP_HOST / SMTP_USER / SMTP_PASS not configured';
+    }
+
+    return {
+      primary: {
+        configured: Boolean(pCreds.host && pCreds.user && pCreds.pass),
+        host: pCreds.host,
+        port: pCreds.port,
+        user: pCreds.user,
+        verified: primaryVerified,
+        error: primaryError
+      },
+      backup: {
+        configured: Boolean(bCreds.host && bCreds.user && bCreds.pass),
+        host: bCreds.host,
+        port: bCreds.port,
+        user: bCreds.user,
+        verified: backupVerified,
+        error: backupError
+      },
+      remoteMtaGatewayUrl: this.remoteMtaGatewayUrl
+    };
   }
 
   public buildWhatsAppSupportUrl(email?: string): string {
@@ -4189,7 +4373,7 @@ export class AutomatedSmtpService {
   }
 
   /**
-   * Fallback relay to BigRock MTA Gateway ONLY used when primary Nodemailer SMTP is unavailable.
+   * Fallback relay to BigRock MTA Gateway ONLY used when primary/backup Nodemailer SMTP is unavailable or fails.
    */
   private async relayViaBigRockMta(
     cleanEmail: string,
@@ -4201,7 +4385,7 @@ export class AutomatedSmtpService {
     if (purpose === 'LOGIN_OTP' || purpose === 'REGISTER_OTP') {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 7000);
+        const timeout = setTimeout(() => controller.abort(), 9000);
 
         const response = await fetch(`${this.remoteMtaGatewayUrl}?action=send_otp`, {
           method: 'POST',
@@ -4223,27 +4407,42 @@ export class AutomatedSmtpService {
 
         clearTimeout(timeout);
 
-        if (response.ok) {
-          const data: any = await response.json().catch(() => null);
-          if (data && data.otp_dispatched === true && (data.success || data.status === 'success')) {
-            console.log(
-              `[AutomatedSmtpService] BigRock MTA dispatched ${purpose} OTP for ${cleanEmail}`
-            );
-            return {
-              success: true,
-              sender: this.senderAddress,
-              recipient: cleanEmail,
-              mode: 'BIGROCK_MTA_RELAY',
-              dispatchedCode: otpCode,
-              messageId: `bigrock-mta-otp-${Date.now()}@tradeheaven.net`
-            };
-          }
+        const data: any = await response.json().catch(() => null);
+        if (response.ok && data && data.otp_dispatched === true && data.emailSent !== false && (data.success || data.status === 'success')) {
+          console.log(
+            `[AutomatedSmtpService] BigRock MTA dispatched ${purpose} OTP for ${cleanEmail}`
+          );
+          return {
+            success: true,
+            sender: this.senderAddress,
+            recipient: cleanEmail,
+            mode: 'BIGROCK_MTA_RELAY',
+            dispatchedCode: otpCode,
+            messageId: `bigrock-mta-otp-${Date.now()}@tradeheaven.net`
+          };
         }
+        return {
+          success: false,
+          sender: this.senderAddress,
+          recipient: cleanEmail,
+          mode: 'BIGROCK_MTA_RELAY',
+          dispatchedCode: otpCode,
+          error: data?.message || `BigRock send_otp relay failed (HTTP ${response.status})`
+        };
       } catch (err: any) {
+        const errMsg = err?.message || String(err);
         console.warn(
           `[AutomatedSmtpService] BigRock send_otp relay warning for ${cleanEmail}:`,
-          err?.message || err
+          errMsg
         );
+        return {
+          success: false,
+          sender: this.senderAddress,
+          recipient: cleanEmail,
+          mode: 'BIGROCK_MTA_RELAY',
+          dispatchedCode: otpCode,
+          error: `BigRock send_otp relay error: ${errMsg}`
+        };
       }
     }
 
@@ -4267,15 +4466,11 @@ export class AutomatedSmtpService {
 
       clearTimeout(timeout);
 
-      if (!response.ok) {
-        return null;
-      }
-
       const data: any = await response.json().catch(() => null);
-      if (data && (data.success || data.status === 'success')) {
+      if (response.ok && data && data.emailSent !== false && (data.success || data.status === 'success')) {
         const remoteCode = String(data.verification_code || data.code || otpCode).trim();
         console.log(
-          `[AutomatedSmtpService] Fallback BigRock MTA dispatched OTP (${remoteCode}) for ${cleanEmail}`
+          `[AutomatedSmtpService] Fallback BigRock MTA dispatched password reset OTP for ${cleanEmail}`
         );
         return {
           success: true,
@@ -4286,13 +4481,29 @@ export class AutomatedSmtpService {
           messageId: `bigrock-mta-${Date.now()}@tradeheaven.net`
         };
       }
+      return {
+        success: false,
+        sender: this.senderAddress,
+        recipient: cleanEmail,
+        mode: 'BIGROCK_MTA_RELAY',
+        dispatchedCode: otpCode,
+        error: data?.message || `BigRock forgot_password relay failed (HTTP ${response.status})`
+      };
     } catch (err: any) {
+      const errMsg = err?.message || String(err);
       console.warn(
         `[AutomatedSmtpService] BigRock fallback relay warning for ${cleanEmail}:`,
-        err?.message || err
+        errMsg
       );
+      return {
+        success: false,
+        sender: this.senderAddress,
+        recipient: cleanEmail,
+        mode: 'BIGROCK_MTA_RELAY',
+        dispatchedCode: otpCode,
+        error: `BigRock forgot_password relay error: ${errMsg}`
+      };
     }
-    return null;
   }
 
   /**
@@ -4335,29 +4546,38 @@ export class AutomatedSmtpService {
   }
 
   /**
-   * Dispatches a 6-digit 2FA Login Verification OTP email to the registered user's email address
-   * to enforce strict account & admin sign-in security.
+   * Dispatches a 6-digit 2FA Login or Registration Verification OTP email to the user's email address
+   * via live SMTP (with backup transporter & BigRock MTA relay fallback; never silently simulated).
    */
   public async sendLoginVerificationOtp(payload: OtpEmailPayload & { role?: string }): Promise<SmtpDispatchResult> {
     const cleanEmail = normalizeRecipientEmail(payload.recipientEmail);
     const displayName = payload.recipientName || 'Registered Trade Heaven User';
     const expiryMinutes = payload.expiryMinutes ?? 10;
     const finalOtpCode = payload.otpCode;
-    const roleLabel = payload.role === 'ADMIN' ? 'Administrator Security Gate' : 'Registered Account 2-Factor Verification';
+    const isReg = Boolean(payload.isRegistration);
+    const roleLabel = isReg
+      ? 'New Account Email Verification (Registration OTP)'
+      : payload.role === 'ADMIN'
+      ? 'Administrator Security Gate'
+      : 'Registered Account 2-Factor Verification';
 
-    const subject = `[Trade Heaven Security] Your 6-Digit Login OTP: ${finalOtpCode}`;
+    const subject = isReg
+      ? `[Trade Heaven] Your 6-Digit Email Verification Code: ${finalOtpCode}`
+      : `[Trade Heaven Security] Your 6-Digit Login OTP: ${finalOtpCode}`;
 
     const textBody = [
-      `TRADE HEAVEN ZERO-TRUST LOGIN SECURITY`,
+      `TRADE HEAVEN ZERO-TRUST ${isReg ? 'REGISTRATION' : 'LOGIN'} SECURITY`,
       `${roleLabel}`,
       ``,
       `Hello ${displayName},`,
       ``,
-      `A sign-in attempt was initiated for your registered Trade Heaven account (${cleanEmail}).`,
-      `Your 6-Digit Login Verification OTP is: ${finalOtpCode}`,
+      isReg
+        ? `A registration verification request was initiated for ${cleanEmail}.`
+        : `A sign-in attempt was initiated for your registered Trade Heaven account (${cleanEmail}).`,
+      `Your 6-Digit Verification OTP is: ${finalOtpCode}`,
       ``,
       `This code is valid for ${expiryMinutes} minutes. Do not share this code with anyone.`,
-      `If you did not attempt to sign in, please secure your password immediately.`
+      `If you did not initiate this request, you can ignore this automated email.`
     ].join('\n');
 
     const htmlBody = `
@@ -4367,41 +4587,50 @@ export class AutomatedSmtpService {
             TRADE HEAVEN ZERO-TRUST 2FA SECURITY
           </div>
           <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; line-height: 1.3;">
-            ${roleLabel} (OTP)
+            ${roleLabel}
           </h2>
         </div>
         <div style="padding: 28px 24px; color: #1e293b;">
           <p style="font-size: 15px; line-height: 1.6; color: #0f172a; margin: 0 0 14px 0;">Hello <strong>${displayName}</strong>,</p>
           <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
-            Enter the 6-digit One-Time Password (OTP) below to complete sign-in for your registered account (<strong>${cleanEmail}</strong>):
+            ${
+              isReg
+                ? `Enter the 6-digit One-Time Password (OTP) below to verify your email address (<strong>${cleanEmail}</strong>) and complete your Trade Heaven registration:`
+                : `Enter the 6-digit One-Time Password (OTP) below to complete sign-in for your registered account (<strong>${cleanEmail}</strong>):`
+            }
           </p>
           <div style="background: #eff6ff; color: #1e40af; padding: 18px; border-radius: 12px; font-size: 32px; font-weight: 900; font-family: monospace; text-align: center; letter-spacing: 8px; margin: 20px 0; border: 2px solid #3b82f6;">
             ${finalOtpCode}
           </div>
           <p style="font-size: 12px; color: #64748b; margin: 20px 0 0 0; line-height: 1.5;">
-            Valid for ${expiryMinutes} minutes • Sent exclusively to your registered email via <strong>${this.senderAddress}</strong>. Never share this OTP with anyone.
+            Valid for ${expiryMinutes} minutes • Sent exclusively to your email via <strong>${this.senderAddress}</strong>. Never share this OTP with anyone.
           </p>
         </div>
       </div>
     `;
 
-    const transporter = this.createPrimaryTransporter();
+    let smtpFailureReason = '';
+    const { transporter, fromAddress } = this.getEffectiveTransporter();
     if (transporter) {
       const receipt = await serverDeliveryQueueManager.enqueueSingle(
         cleanEmail,
         {
-          from: this.senderFormatted,
+          from: fromAddress,
           replyTo: this.replyToAddress,
           subject,
           text: textBody,
-          html: htmlBody
+          html: htmlBody,
+          dispatchType: 'AUTOMATED',
+          category: 'OTP_SECURITY',
+          recipientName: displayName,
+          skipLegacyInquiryRelay: true
         },
         transporter
       );
 
       if (receipt.success) {
         console.log(
-          `[AutomatedSmtpService] Login 2FA OTP email delivered to registered user ${cleanEmail} (messageId=${receipt.messageId})`
+          `[AutomatedSmtpService] ${isReg ? 'Registration' : 'Login 2FA'} OTP email delivered to ${cleanEmail} (messageId=${receipt.messageId})`
         );
         return {
           success: true,
@@ -4412,25 +4641,31 @@ export class AutomatedSmtpService {
           messageId: receipt.messageId
         };
       }
+      smtpFailureReason = receipt.error || 'SMTP queue returned failure';
+      console.warn(`[AutomatedSmtpService] SMTP OTP transport failed for ${cleanEmail}: ${smtpFailureReason}`);
+    } else {
+      smtpFailureReason = 'No SMTP credentials configured (NOREPLY_SMTP_PASS / SMTP_PASS unset)';
     }
 
     const relayResult = await this.relayViaBigRockMta(
       cleanEmail,
       displayName,
       finalOtpCode,
-      payload.isRegistration ? 'REGISTER_OTP' : 'LOGIN_OTP',
+      isReg ? 'REGISTER_OTP' : 'LOGIN_OTP',
       payload.role || 'BUYER'
     );
     if (relayResult && relayResult.success) {
       return relayResult;
     }
 
+    const combinedError = [smtpFailureReason, relayResult?.error].filter(Boolean).join(' | ');
     return {
       success: false,
       sender: this.senderAddress,
       recipient: cleanEmail,
       mode: 'FALLBACK_QUEUE',
-      dispatchedCode: finalOtpCode
+      dispatchedCode: finalOtpCode,
+      error: combinedError || 'All OTP email transports failed'
     };
   }
 
@@ -4444,9 +4679,10 @@ export class AutomatedSmtpService {
     const expiryMinutes = payload.expiryMinutes ?? 60;
     const finalOtpCode = payload.otpCode;
 
-    // Prevent duplicate emails if triggered twice within 5 seconds for the same recipient
-    const recent = this.recentDispatches.get(cleanEmail);
-    if (recent && Date.now() - recent.timestamp < 5000) {
+    // Deduplicate only identical recipient+code dispatches that succeeded within 5 seconds
+    const dedupeKey = `${cleanEmail}:${finalOtpCode}`;
+    const recent = this.recentDispatches.get(dedupeKey);
+    if (recent && recent.result.success && Date.now() - recent.timestamp < 5000) {
       console.log(`[AutomatedSmtpService] Deduplicated rapid OTP request for ${cleanEmail} (reusing single email dispatch ${recent.result.dispatchedCode})`);
       return recent.result;
     }
@@ -4492,24 +4728,29 @@ export class AutomatedSmtpService {
       </div>
     `;
 
-    // Primary Path: Enqueue strictly ONE single-recipient email via ServerDeliveryQueueManager
-    const transporter = this.createPrimaryTransporter();
+    // Primary Path: Enqueue strictly ONE single-recipient email via ServerDeliveryQueueManager (never simulate or send inquiry relay)
+    let smtpFailureReason = '';
+    const { transporter, fromAddress } = this.getEffectiveTransporter();
     if (transporter) {
       const receipt = await serverDeliveryQueueManager.enqueueSingle(
         cleanEmail,
         {
-          from: this.senderFormatted,
+          from: fromAddress,
           replyTo: this.replyToAddress,
           subject,
           text: textBody,
-          html: htmlBody
+          html: htmlBody,
+          dispatchType: 'AUTOMATED',
+          category: 'OTP_SECURITY',
+          recipientName: displayName,
+          skipLegacyInquiryRelay: true
         },
         transporter
       );
 
       if (receipt.success) {
         console.log(
-          `[AutomatedSmtpService] Single OTP email (${finalOtpCode}) delivered to ${cleanEmail} via serialized queue (${this.getPrimarySmtpCredentials().host}, delay=${receipt.enforcedDelayMs}ms, messageId=${receipt.messageId})`
+          `[AutomatedSmtpService] Single OTP email delivered to ${cleanEmail} via serialized queue (delay=${receipt.enforcedDelayMs}ms, messageId=${receipt.messageId})`
         );
         const result: SmtpDispatchResult = {
           success: true,
@@ -4519,33 +4760,148 @@ export class AutomatedSmtpService {
           dispatchedCode: finalOtpCode,
           messageId: receipt.messageId
         };
-        this.recentDispatches.set(cleanEmail, { timestamp: Date.now(), result });
+        this.recentDispatches.set(dedupeKey, { timestamp: Date.now(), result });
         return result;
       } else {
+        smtpFailureReason = receipt.error || 'SMTP transport error';
         console.warn(
           `[AutomatedSmtpService] Primary serialized SMTP transport error for ${cleanEmail}, falling back to BigRock MTA:`,
-          receipt.error
+          smtpFailureReason
         );
       }
+    } else {
+      smtpFailureReason = 'No SMTP credentials configured (NOREPLY_SMTP_PASS / SMTP_PASS unset)';
     }
 
-    // Fallback Path: Only used if primary SMTP is unavailable or failed
-    const relayResult = await this.relayViaBigRockMta(cleanEmail, displayName, finalOtpCode);
+    // Fallback Path: Only used if primary/backup SMTP is unavailable or failed
+    const relayResult = await this.relayViaBigRockMta(cleanEmail, displayName, finalOtpCode, 'RESET_PASSWORD');
     if (relayResult && relayResult.success) {
-      this.recentDispatches.set(cleanEmail, { timestamp: Date.now(), result: relayResult });
+      this.recentDispatches.set(dedupeKey, { timestamp: Date.now(), result: relayResult });
       return relayResult;
     }
 
-    console.log(
-      `[AutomatedSmtpService] Automated OTP (${finalOtpCode}) queued via ${this.senderAddress} for ${cleanEmail}`
+    const combinedError = [smtpFailureReason, relayResult?.error].filter(Boolean).join(' | ');
+    console.error(
+      `[AutomatedSmtpService] Failed to deliver password reset OTP for ${cleanEmail}: ${combinedError}`
     );
     return {
       success: false,
       sender: this.senderAddress,
       recipient: cleanEmail,
       mode: 'FALLBACK_QUEUE',
-      dispatchedCode: finalOtpCode
+      dispatchedCode: finalOtpCode,
+      error: combinedError || 'All OTP email transports failed'
     };
+  }
+
+  /**
+   * Dispatches an automated security notification email to the platform Administrator
+   * whenever a user signs in (LOGIN) or signs out (LOGOUT) of Trade Heaven.
+   */
+  public async sendAdminAuthEventAlertEmail(payload: {
+    eventType: 'LOGIN' | 'LOGOUT';
+    userEmail: string;
+    userName: string;
+    userRole: string;
+    companyName?: string;
+    country?: string;
+    currentView?: string;
+    ipAddress?: string;
+    timestamp?: string;
+    adminRecipient?: string;
+  }): Promise<SmtpDispatchResult> {
+    const cleanAdmin = normalizeRecipientEmail(payload.adminRecipient || 'sankalprajput15@gmail.com');
+    const cleanActor = normalizeRecipientEmail(payload.userEmail || 'unknown@tradeheaven.net');
+    const dedupeKey = `AUTH_ALERT:${payload.eventType}:${cleanActor}`;
+    const recent = this.recentDispatches.get(dedupeKey);
+    if (recent && recent.result.success && Date.now() - recent.timestamp < 5000) {
+      return recent.result;
+    }
+
+    const isLogin = payload.eventType === 'LOGIN';
+    const actionLabel = isLogin ? 'Logged In' : 'Logged Out';
+    const badgeBg = isLogin ? '#059669' : '#d97706';
+    const displayTime = payload.timestamp || new Date().toISOString();
+    const subject = `[Trade Heaven Activity] User ${actionLabel}: ${payload.userName || cleanActor} (${payload.userRole || 'MEMBER'})`;
+
+    const textBody = [
+      `TRADE HEAVEN PORTAL SESSION ALERT`,
+      `Event: User ${actionLabel}`,
+      `User: ${payload.userName || cleanActor} <${cleanActor}>`,
+      `Role: ${payload.userRole || 'BUYER'}`,
+      `Company: ${payload.companyName || 'Global Trade Member'}`,
+      `Country: ${payload.country || 'Global'}`,
+      `Active Page: ${payload.currentView || 'HOMEPAGE'}`,
+      `IP Address: ${payload.ipAddress || 'Unknown'}`,
+      `Timestamp: ${displayTime}`,
+      ``,
+      `Open Admin Dashboard -> Overview to inspect all currently logged-in users and live activity.`
+    ].join('\n');
+
+    const htmlBody = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: #0f172a; padding: 22px 24px; color: #ffffff;">
+          <span style="display: inline-block; background: ${badgeBg}; color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; margin-bottom: 10px;">
+            USER ${actionLabel.toUpperCase()}
+          </span>
+          <h2 style="margin: 0; font-size: 20px; font-weight: 800; color: #ffffff;">
+            ${payload.userName || cleanActor} (${payload.userRole || 'MEMBER'})
+          </h2>
+        </div>
+        <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 6px 0; color: #64748b; width: 130px;">Account Email</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${cleanActor}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Role</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${payload.userRole || 'BUYER'}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Company</td><td style="padding: 6px 0; font-weight: 600; color: #0f172a;">${payload.companyName || 'Global Trade Member'}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Country</td><td style="padding: 6px 0; color: #0f172a;">${payload.country || 'Global'}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Portal Page</td><td style="padding: 6px 0; font-family: monospace; color: #1d4ed8;">${payload.currentView || 'HOMEPAGE'}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">IP Address</td><td style="padding: 6px 0; font-family: monospace; color: #334155;">${payload.ipAddress || 'Unknown'}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Timestamp</td><td style="padding: 6px 0; color: #334155;">${displayTime}</td></tr>
+          </table>
+        </div>
+      </div>
+    `;
+
+    const { transporter, fromAddress } = this.getEffectiveTransporter();
+    if (!transporter) {
+      return {
+        success: false,
+        sender: this.senderAddress,
+        recipient: cleanAdmin,
+        mode: 'FALLBACK_QUEUE',
+        error: 'No SMTP transporter configured for admin auth alert'
+      };
+    }
+
+    const receipt = await serverDeliveryQueueManager.enqueueSingle(
+      cleanAdmin,
+      {
+        from: fromAddress,
+        replyTo: this.replyToAddress,
+        subject,
+        text: textBody,
+        html: htmlBody,
+        dispatchType: 'AUTOMATED',
+        category: 'LOGIN_ALERT',
+        recipientName: 'Trade Heaven Master Admin',
+        companyName: payload.companyName || 'Trade Heaven Portal',
+        skipLegacyInquiryRelay: true
+      },
+      transporter
+    );
+
+    const result: SmtpDispatchResult = {
+      success: Boolean(receipt.success),
+      sender: this.senderAddress,
+      recipient: cleanAdmin,
+      mode: receipt.success ? 'SMTP_TLS' : 'FALLBACK_QUEUE',
+      messageId: receipt.messageId,
+      error: receipt.error
+    };
+    if (result.success) {
+      this.recentDispatches.set(dedupeKey, { timestamp: Date.now(), result });
+    }
+    return result;
   }
 
   /**
@@ -5219,7 +5575,14 @@ export class AutomatedSmtpService {
           replyTo: this.replyToAddress,
           subject,
           text: introMessage,
-          html: payload.rawHtmlOverride
+          html: payload.rawHtmlOverride,
+          dispatchType: payload.dispatchType || 'MANUAL',
+          category: payload.category,
+          companyName,
+          companyId: payload.companyId,
+          recipientName: displayName,
+          summaryText: introMessage,
+          skipLegacyInquiryRelay: payload.skipLegacyInquiryRelay
         },
         transporter || undefined
       );
@@ -5589,9 +5952,12 @@ export class AutomatedSmtpService {
         html: finalHtmlBody,
         attachments: nodemailerAttachments,
         dispatchType: payload.dispatchType || 'MANUAL',
+        category: payload.category,
         companyName,
+        companyId: payload.companyId,
         recipientName: displayName,
-        summaryText: summaryWithAttachments
+        summaryText: summaryWithAttachments,
+        skipLegacyInquiryRelay: payload.skipLegacyInquiryRelay
       },
       transporter || undefined
     );

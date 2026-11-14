@@ -87,6 +87,64 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
   const [supplierToDeletePermanently, setSupplierToDeletePermanently] = useState<RegisteredSupplier | null>(null);
   const [deletionReason, setDeletionReason] = useState('Administrative supplier compliance & directory cleanup');
   const [statusBanner, setStatusBanner] = useState<string | null>(null);
+  const [isEmailingCounterOffer, setIsEmailingCounterOffer] = useState(false);
+
+  const handleEmailListedClientsCounterOffer = async (targetOnlySelected: boolean) => {
+    setIsEmailingCounterOffer(true);
+    try {
+      const selectedEmails = targetOnlySelected
+        ? suppliers
+            .filter((s) => selectedIds.has(s.id) && s.email)
+            .map((s) => String(s.email).trim())
+        : suppliers.filter((s) => s.email).map((s) => String(s.email).trim());
+
+      const res = await fetch('/api/v1/admin/email-listed-clients-counter-offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          scope: 'REGISTERED_CLIENTS',
+          ...(targetOnlySelected && selectedEmails.length > 0 ? { recipientEmails: selectedEmails } : {})
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        let finalPayload = data;
+        if (data.inProgress) {
+          setStatusBanner(
+            `⏳ Sending Buyer Request & Counter-Offer alerts to ${data.totalTargeted} listed client(s) (${data.processedCount || 0}/${data.totalTargeted} processed)...`
+          );
+          for (let attempt = 0; attempt < 90; attempt++) {
+            await new Promise((r) => setTimeout(r, 2000));
+            const pollRes = await fetch('/api/v1/admin/counter-offer-broadcast-status', {
+              headers: { Accept: 'application/json' }
+            });
+            if (!pollRes.ok) break;
+            const pollData = await pollRes.json().catch(() => null);
+            if (!pollData) break;
+            finalPayload = pollData;
+            if (pollData.inProgress) {
+              setStatusBanner(
+                `⏳ Sending Buyer Request & Counter-Offer alerts (${pollData.processedCount || 0}/${pollData.totalTargeted} processed, ${pollData.deliveredCount || 0} delivered)...`
+              );
+            } else {
+              break;
+            }
+          }
+        }
+        setStatusBanner(
+          finalPayload.smtpConfigured
+            ? `✓ Sent Buyer Request & Counter-Offer alert via SMTP to ${finalPayload.deliveredCount}/${finalPayload.totalTargeted} listed client(s).`
+            : `ℹ️ Queued Buyer Request & Counter-Offer alert in MailSuite for ${finalPayload.totalTargeted} listed client(s) (SMTP credentials unset for external delivery).`
+        );
+      } else {
+        setStatusBanner(data?.message || 'Failed to trigger listed-clients counter-offer broadcast.');
+      }
+    } catch (err: any) {
+      setStatusBanner(err?.message || 'Network error triggering listed-clients counter-offer broadcast.');
+    } finally {
+      setIsEmailingCounterOffer(false);
+    }
+  };
 
   const handleLoginAsSupplier = (sup: RegisteredSupplier) => {
     const authUser: AuthUser = {
@@ -612,14 +670,30 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
             Inspect registered company profiles, verification statuses, and expand the <strong>Email History</strong> section on any company profile to view all automated and manual emails sent to that contact.
           </p>
         </div>
-        <button
-          onClick={fetchSuppliers}
-          disabled={loading}
-          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 shrink-0 disabled:opacity-50 cursor-pointer"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Profiles</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleEmailListedClientsCounterOffer(false)}
+            disabled={loading || isEmailingCounterOffer}
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            title="Email every listed client that buyers have made requests to buy and invite them to log in to Counter Offer"
+          >
+            <Mail className="w-4 h-4" />
+            <span>
+              {isEmailingCounterOffer
+                ? 'Sending Counter-Offer Alerts...'
+                : 'Email All Listed Clients (Counter Offer)'}
+            </span>
+          </button>
+          <button
+            onClick={fetchSuppliers}
+            disabled={loading}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 shrink-0 disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh Profiles</span>
+          </button>
+        </div>
       </div>
 
       {/* Bulk Action Bar */}
@@ -631,7 +705,16 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
             </span>
             <span className="text-xs font-bold tracking-tight">Suppliers selected for bulk action</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleEmailListedClientsCounterOffer(true)}
+              disabled={isBulkProcessing || isEmailingCounterOffer}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Email Selected (Counter Offer)</span>
+            </button>
             <button
               onClick={() => handleBulkToggleVerification(1)}
               disabled={isBulkProcessing}

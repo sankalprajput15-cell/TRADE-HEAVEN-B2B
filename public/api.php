@@ -381,11 +381,14 @@ function sendClientOtpEmail($clientEmail, $clientName, $code) {
     </body>
     </html>";
 
+    $msgId = '<otp-' . uniqid('', true) . '@tradeheaven.net>';
     $headers = [
         'MIME-Version: 1.0',
         'Content-type: text/html; charset=UTF-8',
         'From: Trade Heaven Security <noreply@tradeheaven.net>',
         'Reply-To: help@tradeheaven.net',
+        'Date: ' . date('r'),
+        'Message-ID: ' . $msgId,
         'X-Mailer: PHP/' . phpversion()
     ];
     $headers_str = implode("\r\n", $headers);
@@ -395,7 +398,7 @@ function sendClientOtpEmail($clientEmail, $clientName, $code) {
         $sent = @mail($cleanEmail, $subject, $html, $headers_str);
     }
 
-    @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [CLIENT_OTP_DISPATCH] Sent OTP {$code} from noreply@tradeheaven.net -> {$cleanEmail} (status=" . ($sent ? 'OK' : 'FALLBACK') . ")\n", FILE_APPEND);
+    @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [CLIENT_OTP_DISPATCH] Sent OTP -> {$cleanEmail} (status=" . ($sent ? 'OK' : 'FAILED') . ")\n", FILE_APPEND);
     return $sent;
 }
 
@@ -657,6 +660,53 @@ function getBuiltInSeedAuthUsers() {
             'status' => 'ACTIVE',
             'isVerified' => true,
             'avatarUrl' => '/assets/aistudio/WhatsApp_Image_2026-11-13_at_9.47.17_AM_877217c7.jpeg'
+        ],
+        'themax0098@gmail.com' => [
+            'id' => 'user-buyer-themax0098',
+            'name' => 'Max (themax0098)',
+            'email' => 'themax0098@gmail.com',
+            'password_plain' => 'TradeHeaven@2026',
+            'role' => 'BUYER',
+            'companyName' => 'Enterprise Trading Firm',
+            'country' => 'Global',
+            'tier' => 'Verified Supplier',
+            'isPremium' => false,
+            'membershipStatus' => 'paid',
+            'status' => 'ACTIVE',
+            'isVerified' => true,
+            'avatarUrl' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+        ],
+        'reverseenergypty@gmail.com' => [
+            'id' => 'user-supplier-emmanuel-reverse-energy',
+            'name' => 'Emmanuel (Bongani Mbele)',
+            'email' => 'reverseenergypty@gmail.com',
+            'password_plain' => 'ReverseEnergy@2026',
+            'role' => 'SUPPLIER',
+            'companyName' => 'Reverse Energy Pty Ltd (Bongani Mbele)',
+            'country' => 'South Africa',
+            'phone' => '+27 73 402 7794',
+            'tier' => 'Free Member',
+            'isPremium' => false,
+            'membershipStatus' => 'free',
+            'status' => 'ACTIVE',
+            'isVerified' => false,
+            'avatarUrl' => '/assets/aistudio/WhatsApp_Image_2026-11-04_at_3.59.07_PM_ed00bad4.jpeg'
+        ],
+        'larsbarnhart25@gmail.com' => [
+            'id' => 'user-supplier-lars-blackstone-jade',
+            'name' => 'Lars Barnhart',
+            'email' => 'larsbarnhart25@gmail.com',
+            'password_plain' => 'BlackstoneJade@2026',
+            'role' => 'SUPPLIER',
+            'companyName' => 'Blackstone Jade Co',
+            'country' => 'United States (1521 north 9th street apt 126 coeurdalene Idaho 83814)',
+            'phone' => '+1 208-704-0146',
+            'tier' => 'Free Member',
+            'isPremium' => false,
+            'membershipStatus' => 'free',
+            'status' => 'ACTIVE',
+            'isVerified' => false,
+            'avatarUrl' => '/assets/aistudio/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
         ]
     ];
 }
@@ -804,11 +854,14 @@ function sendLoginOtpEmail($clientEmail, $clientName, $code, $role = 'BUYER', $i
     </body>
     </html>";
 
+    $msgId = '<login-otp-' . uniqid('', true) . '@tradeheaven.net>';
     $headers = [
         'MIME-Version: 1.0',
         'Content-type: text/html; charset=UTF-8',
         'From: Trade Heaven Security <noreply@tradeheaven.net>',
         'Reply-To: help@tradeheaven.net',
+        'Date: ' . date('r'),
+        'Message-ID: ' . $msgId,
         'X-Mailer: PHP/' . phpversion()
     ];
     $headers_str = implode("\r\n", $headers);
@@ -818,7 +871,7 @@ function sendLoginOtpEmail($clientEmail, $clientName, $code, $role = 'BUYER', $i
         $sent = @mail($cleanEmail, $subject, $html, $headers_str);
     }
 
-    @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [LOGIN_OTP_DISPATCH] Sent OTP -> {$cleanEmail} (mode=" . ($isRegistration ? 'REGISTER' : 'LOGIN') . ", status=" . ($sent ? 'OK' : 'FALLBACK') . ")\n", FILE_APPEND);
+    @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [LOGIN_OTP_DISPATCH] Sent OTP -> {$cleanEmail} (mode=" . ($isRegistration ? 'REGISTER' : 'LOGIN') . ", status=" . ($sent ? 'OK' : 'FAILED') . ")\n", FILE_APPEND);
     return $sent;
 }
 
@@ -1693,33 +1746,28 @@ switch ($action) {
             @file_put_contents($tokens_file, json_encode($tokens_map, JSON_PRETTY_PRINT));
         } catch (Exception $e) {}
 
-        // 1. Automatically dispatch single OTP email directly to client from noreply@tradeheaven.net
+        // Automatically dispatch single OTP email directly to client from noreply@tradeheaven.net
         $clientMailSent = sendClientOtpEmail($email, $user_name, $code);
+        $maskedResetEmail = maskAuthEmail($email);
 
-        // 2. Notify internal admin monitoring only (do NOT send a duplicate alert email to the client)
-        sendPhpMailAlert(
-            "🔑 Your Trade Heaven Password Reset OTP: {$code}",
-            "Trade Heaven Automated Password Reset OTP Dispatched",
-            "Use the 6-digit verification code ({$code}) below to reset the Trade Heaven account password for {$email}.",
-            [
-                "Client Email" => $email,
-                "Client Name" => $user_name,
-                "Sender Address" => "noreply@tradeheaven.net",
-                "Verification Code (OTP)" => $code,
-                "Direct Mail Status" => $clientMailSent ? "Delivered via noreply@tradeheaven.net" : "Queued / Fallback Active",
-                "WhatsApp Support" => "+91 8532934479",
-                "Token Expiry" => "1 Hour"
-            ]
-        );
+        if (!$clientMailSent) {
+            http_response_code(502);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "sender" => "noreply@tradeheaven.net",
+                "emailSent" => false,
+                "message" => "Unable to deliver the 6-digit password reset OTP to {$maskedResetEmail} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479)."
+            ]);
+            exit();
+        }
 
         echo json_encode([
             "status" => "success",
             "success" => true,
             "sender" => "noreply@tradeheaven.net",
-            "emailSent" => (bool)$clientMailSent,
-            "message" => "A 6-digit verification code has been automatically sent to {$email} from noreply@tradeheaven.net.",
-            "code" => $code,
-            "verification_code" => $code
+            "emailSent" => true,
+            "message" => "A 6-digit verification code has been automatically sent to {$maskedResetEmail} from noreply@tradeheaven.net."
         ]);
         exit();
 
@@ -1879,6 +1927,20 @@ switch ($action) {
 
             $sent = sendLoginOtpEmail($cleanEmail, $regName, $otpCode, $acctType, true);
             $masked = maskAuthEmail($cleanEmail);
+            if (!$sent) {
+                http_response_code(502);
+                echo json_encode([
+                    "status" => "error",
+                    "success" => false,
+                    "otp_dispatched" => false,
+                    "mode" => "REGISTER",
+                    "email" => $cleanEmail,
+                    "maskedEmail" => $masked,
+                    "emailSent" => false,
+                    "message" => "Unable to deliver the 6-digit OTP to {$masked} right now. Please verify the email address and retry, or contact Trade Heaven on WhatsApp (+91 8532934479)."
+                ]);
+                exit();
+            }
             echo json_encode([
                 "status" => "success",
                 "success" => true,
@@ -1886,7 +1948,7 @@ switch ($action) {
                 "mode" => "REGISTER",
                 "email" => $cleanEmail,
                 "maskedEmail" => $masked,
-                "emailSent" => (bool)$sent,
+                "emailSent" => true,
                 "message" => "A 6-digit verification code has been sent to {$masked} via noreply@tradeheaven.net. Enter it below to complete registration."
             ]);
             exit();
@@ -1935,6 +1997,22 @@ switch ($action) {
 
         $sent = sendLoginOtpEmail($cleanEmail, $matchedUser['name'], $otpCode, $matchedUser['role'], false);
         $masked = maskAuthEmail($cleanEmail);
+        if (!$sent) {
+            http_response_code(502);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "otp_dispatched" => false,
+                "mode" => "LOGIN",
+                "requiresOtp" => false,
+                "email" => $cleanEmail,
+                "maskedEmail" => $masked,
+                "role" => $matchedUser['role'],
+                "emailSent" => false,
+                "message" => "Unable to deliver your 6-digit login OTP to {$masked} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479)."
+            ]);
+            exit();
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
@@ -1944,7 +2022,7 @@ switch ($action) {
             "email" => $cleanEmail,
             "maskedEmail" => $masked,
             "role" => $matchedUser['role'],
-            "emailSent" => (bool)$sent,
+            "emailSent" => true,
             "message" => !empty($matchedUser['isRootAdmin'])
                 ? "Admin OTP-Only Security: A 6-digit verification code has been sent to your registered admin email ({$masked})."
                 : "A 6-digit verification code has been sent to your registered email ({$masked}) via noreply@tradeheaven.net."
@@ -2065,13 +2143,26 @@ switch ($action) {
 
         $sent = sendLoginOtpEmail($cleanEmail, $matchedUser['name'], $otpCode, $matchedUser['role'], false);
         $masked = maskAuthEmail($cleanEmail);
+        if (!$sent) {
+            http_response_code(502);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "requiresOtp" => false,
+                "email" => $cleanEmail,
+                "maskedEmail" => $masked,
+                "emailSent" => false,
+                "message" => "Unable to resend your 6-digit verification OTP to {$masked} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479)."
+            ]);
+            exit();
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
             "requiresOtp" => true,
             "email" => $cleanEmail,
             "maskedEmail" => $masked,
-            "emailSent" => (bool)$sent,
+            "emailSent" => true,
             "message" => "A fresh 6-digit verification OTP has been sent to your registered email ({$masked})."
         ]);
         exit();
@@ -2233,6 +2324,20 @@ switch ($action) {
 
         $sent = sendLoginOtpEmail($email, $matchedUser['name'], $otpCode, $matchedUser['role'], false);
         $masked = maskAuthEmail($email);
+        if (!$sent) {
+            http_response_code(502);
+            echo json_encode([
+                "status" => "error",
+                "success" => false,
+                "requiresOtp" => false,
+                "email" => $email,
+                "maskedEmail" => $masked,
+                "role" => $matchedUser['role'],
+                "emailSent" => false,
+                "message" => "Unable to deliver the 6-digit security verification OTP to {$masked} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479)."
+            ]);
+            exit();
+        }
         echo json_encode([
             "status" => "success",
             "success" => true,
@@ -2240,7 +2345,7 @@ switch ($action) {
             "email" => $email,
             "maskedEmail" => $masked,
             "role" => $matchedUser['role'],
-            "emailSent" => (bool)$sent,
+            "emailSent" => true,
             "message" => "A 6-digit security verification OTP has been sent to your registered email ({$masked}). Please enter the OTP to complete sign-in."
         ]);
         exit();
@@ -2795,6 +2900,171 @@ switch ($action) {
             "status" => "success",
             "success" => true,
             "data" => $state
+        ]);
+        break;
+
+    case 'send_custom_email':
+        $to_email = normalizeAuthEmail($input['recipientEmail'] ?? $input['email'] ?? '');
+        $subject = trim((string)($input['subject'] ?? 'Trade Heaven Global B2B Notification'));
+        $recipient_name = trim((string)($input['decisionMakerName'] ?? $input['recipientName'] ?? 'Trade Partner'));
+        $company_name = trim((string)($input['companyName'] ?? 'Listed Partner'));
+        $intro_msg = trim((string)($input['introMessage'] ?? 'Please log in to your Trade Heaven account to review active buyer trade requests.'));
+        $cta_url = trim((string)($input['ctaUrl'] ?? $input['portalUrl'] ?? 'https://www.tradeheaven.net'));
+        $cta_text = trim((string)($input['ctaText'] ?? 'Log In to Trade Heaven Account →'));
+
+        if (empty($to_email) || !filter_var($to_email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(["status" => "error", "success" => false, "message" => "Valid recipient email is required."]);
+            break;
+        }
+
+        $html_body = isset($input['rawHtmlOverride']) && trim((string)$input['rawHtmlOverride']) !== ''
+            ? (string)$input['rawHtmlOverride']
+            : "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f8fafc;padding:24px;\"><div style=\"max-width:620px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #cbd5e1;\"><div style=\"background:#0f172a;color:#ffffff;padding:26px 22px;text-align:center;\"><h2 style=\"margin:0;font-size:20px;\">" . htmlspecialchars($subject) . "</h2><p style=\"margin:6px 0 0;color:#cbd5e1;font-size:13px;\">" . htmlspecialchars($company_name) . "</p></div><div style=\"padding:24px;color:#1e293b;\"><p>Hello <strong>" . htmlspecialchars($recipient_name) . "</strong>,</p><p style=\"line-height:1.6;\">" . nl2br(htmlspecialchars($intro_msg)) . "</p><div style=\"text-align:center;margin:24px 0;\"><a href=\"" . htmlspecialchars($cta_url) . "\" style=\"display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 26px;border-radius:8px;\">" . htmlspecialchars($cta_text) . "</a></div></div></div></body></html>";
+
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-type: text/html; charset=UTF-8',
+            'From: Trade Heaven Global B2B <noreply@tradeheaven.net>',
+            'Reply-To: help@tradeheaven.net',
+            'X-Mailer: PHP/' . phpversion()
+        ];
+        $headers_str = implode("\r\n", $headers);
+        $sent = @mail($to_email, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+        if (!$sent) {
+            $sent = @mail($to_email, $subject, $html_body, $headers_str);
+        }
+
+        echo json_encode([
+            "status" => $sent ? "success" : "error",
+            "success" => (bool)$sent,
+            "recipient" => $to_email,
+            "deliveryMode" => "PHP_MAIL_RELAY",
+            "message" => $sent ? "Custom email sent via Trade Heaven PHP mail() to {$to_email}." : "PHP mail() could not relay to {$to_email}."
+        ]);
+        break;
+
+    case 'email_listed_clients_counter_offer':
+        $custom_subject = trim((string)($input['customSubject'] ?? ''));
+        $custom_message = trim((string)($input['customMessage'] ?? ''));
+        $filter_emails = [];
+        if (!empty($input['recipientEmails']) && is_array($input['recipientEmails'])) {
+            foreach ($input['recipientEmails'] as $fe) {
+                $ne = normalizeAuthEmail($fe);
+                if ($ne !== '') $filter_emails[$ne] = true;
+            }
+        }
+
+        $admin_excludes = ['yr943334@gmail.com', 'sankalprajput15@gmail.com', 'admin@tradeheaven.net', 'solutionthe87@gmail.com'];
+        $targets_map = [];
+
+        // Gather from MySQL users table
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->query("SELECT id, name, email, company_name, country, role FROM users");
+                while ($row = $stmt->fetch()) {
+                    $em = normalizeAuthEmail($row['email'] ?? '');
+                    $rl = strtoupper((string)($row['role'] ?? 'SUPPLIER'));
+                    if ($em === '' || !filter_var($em, FILTER_VALIDATE_EMAIL) || $rl === 'ADMIN' || in_array($em, $admin_excludes, true)) {
+                        continue;
+                    }
+                    if (!empty($filter_emails) && !isset($filter_emails[$em])) continue;
+                    $targets_map[$em] = [
+                        'id' => strval($row['id'] ?? $em),
+                        'email' => $em,
+                        'name' => trim((string)($row['name'] ?? 'Listed Partner')) ?: 'Listed Partner',
+                        'companyName' => trim((string)($row['company_name'] ?? '')) ?: ($row['name'] ?? 'Listed Enterprise'),
+                        'country' => trim((string)($row['country'] ?? 'Global'))
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+
+        // Gather from registered-users.json files
+        $json_candidates = [
+            __DIR__ . '/assets/uploads/registered-users.json',
+            __DIR__ . '/public/assets/uploads/registered-users.json'
+        ];
+        foreach ($json_candidates as $jf) {
+            if (file_exists($jf)) {
+                $parsed = json_decode((string)file_get_contents($jf), true);
+                if (is_array($parsed)) {
+                    foreach ($parsed as $u) {
+                        if (!is_array($u)) continue;
+                        $em = normalizeAuthEmail($u['email'] ?? '');
+                        $rl = strtoupper((string)($u['role'] ?? 'SUPPLIER'));
+                        if ($em === '' || !filter_var($em, FILTER_VALIDATE_EMAIL) || $rl === 'ADMIN' || in_array($em, $admin_excludes, true)) {
+                            continue;
+                        }
+                        if (!empty($filter_emails) && !isset($filter_emails[$em])) continue;
+                        if (!isset($targets_map[$em])) {
+                            $targets_map[$em] = [
+                                'id' => strval($u['id'] ?? $em),
+                                'email' => $em,
+                                'name' => trim((string)($u['name'] ?? 'Listed Partner')) ?: 'Listed Partner',
+                                'companyName' => trim((string)($u['companyName'] ?? $u['company_name'] ?? '')) ?: ($u['name'] ?? 'Listed Enterprise'),
+                                'country' => trim((string)($u['country'] ?? 'Global'))
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        $delivered = 0;
+        $failed = 0;
+        $receipts = [];
+        $headers = [
+            'MIME-Version: 1.0',
+            'Content-type: text/html; charset=UTF-8',
+            'From: Trade Heaven Global B2B <noreply@tradeheaven.net>',
+            'Reply-To: help@tradeheaven.net',
+            'X-Mailer: PHP/' . phpversion()
+        ];
+        $headers_str = implode("\r\n", $headers);
+
+        foreach ($targets_map as $client) {
+            $em = $client['email'];
+            $cname = $client['companyName'];
+            $pname = $client['name'];
+            $login_url = 'https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=' . urlencode($em);
+            $subj = $custom_subject !== ''
+                ? $custom_subject
+                : "Buyers Have Made Requests to Buy — Log In to Submit Your Counter Offer ({$cname})";
+            $intro = $custom_message !== ''
+                ? $custom_message
+                : "Verified institutional buyers on Trade Heaven have made active requests to buy from {$cname}. Please log in to your Trade Heaven account now to review buyer purchase terms and submit your Counter Offer.";
+
+            $html = "<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;background:#f8fafc;padding:24px;\"><div style=\"max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #cbd5e1;\"><div style=\"background:#0f172a;color:#ffffff;padding:28px 22px;text-align:center;\"><div style=\"font-size:11px;font-weight:bold;letter-spacing:1.4px;color:#fde68a;text-transform:uppercase;margin-bottom:8px;\">TRADE HEAVEN • BUYER PURCHASE REQUESTS ACTIVE</div><h1 style=\"margin:0 0 6px;font-size:21px;\">Buyers Have Made a Request to Buy — Log In to Counter Offer</h1><p style=\"margin:0;font-size:13px;color:#cbd5e1;\">" . htmlspecialchars($cname) . " • Attn: " . htmlspecialchars($pname) . "</p></div><div style=\"padding:26px 24px;color:#1e293b;\"><p>Hello <strong>" . htmlspecialchars($pname) . "</strong>,</p><p style=\"line-height:1.6;\">" . nl2br(htmlspecialchars($intro)) . "</p><div style=\"background:#fffbeb;border:1px solid #fcd34d;border-left:4px solid #d97706;border-radius:10px;padding:14px;margin:18px 0;\"><div style=\"font-size:12px;color:#78350f;\"><strong>Listed Company:</strong> " . htmlspecialchars($cname) . "<br/><strong>Account Login ID:</strong> " . htmlspecialchars($em) . "<br/><strong>Action Required:</strong> Log in &amp; submit your Counter Offer</div></div><div style=\"text-align:center;margin:24px 0;\"><a href=\"" . htmlspecialchars($login_url) . "\" style=\"display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:13px 28px;border-radius:9px;\">Log In to Trade Heaven Account &amp; Counter Offer &rarr;</a></div></div></div></body></html>";
+
+            $ok = @mail($em, $subj, $html, $headers_str, "-f noreply@tradeheaven.net");
+            if (!$ok) {
+                $ok = @mail($em, $subj, $html, $headers_str);
+            }
+            if ($ok) {
+                $delivered++;
+            } else {
+                $failed++;
+            }
+            $receipts[] = [
+                'id' => $client['id'],
+                'email' => $em,
+                'name' => $pname,
+                'companyName' => $cname,
+                'status' => $ok ? 'DELIVERED_PHP_MAIL' : 'FAILED',
+                'dispatchedAt' => gmdate('Y-m-d\TH:i:s\Z')
+            ];
+            @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [COUNTER_OFFER_BROADCAST] noreply@tradeheaven.net -> {$em} ({$cname}) status=" . ($ok ? 'OK' : 'FAIL') . "\n", FILE_APPEND);
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "deliveryMode" => "PHP_MAIL_RELAY",
+            "totalTargeted" => count($targets_map),
+            "deliveredCount" => $delivered,
+            "failedCount" => $failed,
+            "recipients" => $receipts,
+            "message" => "Processed {$delivered}/" . count($targets_map) . " counter-offer alert email(s) via Trade Heaven PHP mail()."
         ]);
         break;
 

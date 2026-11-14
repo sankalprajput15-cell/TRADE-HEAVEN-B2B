@@ -69,6 +69,32 @@ const PRESET_TEMPLATES: Array<{
   data: CustomAdminEmailPayload;
 }> = [
   {
+    id: 'BUYER_REQUEST_COUNTER_OFFER_LISTED_CLIENT',
+    name: '🔔 Listed Clients Alert — Buyers Made Request to Buy (Log In to Counter Offer)',
+    description: 'Notifies listed Trade Heaven clients that buyers have made purchase requests and invites them to log in to submit a Counter Offer.',
+    data: {
+      recipientName: '{{decisionMakerName}}',
+      decisionMakerName: '{{decisionMakerName}}',
+      recipientEmail: '{{email}}',
+      companyName: '{{companyName}}',
+      portalUrl: 'https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD',
+      subject: '🔔 Buyers Have Made Requests to Buy — Log In to Submit Your Counter Offer ({{companyName}})',
+      badgeLabel: 'TRADE HEAVEN • BUYER PURCHASE REQUESTS ACTIVE',
+      headline: 'Buyers Have Made a Request to Buy — Log In to Counter Offer',
+      subheadline: 'Active Buyer Purchase Requests Waiting in Your Trade Heaven Account',
+      introMessage: 'Verified institutional buyers on Trade Heaven have made active requests to buy from your listed catalog. Please log in to your Trade Heaven account now to review buyer purchase terms, quantities, and submit your official Counter Offer.',
+      includeCredentialsBox: false,
+      includeLoginGuide: true,
+      includeEscrowBadge: true,
+      isMembershipRenewal: false,
+      inquiriesTitle: 'Active Buyer Purchase Requests Ready for Counter Offer',
+      customClosingNote: 'Log in promptly to review buyer targets and issue your official Proforma Invoice / Counter Offer under Trade Heaven Escrow protection.',
+      ctaText: 'Log In to Trade Heaven Account & Counter Offer →',
+      ctaUrl: 'https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD',
+      inquiries: []
+    }
+  },
+  {
     id: 'MARK_JOHNSON_15_BUYERS_GENERATORS_CRANES',
     name: '⚡🏗️ Mark Johnson (mjohnson@atlanticpowerequip.com • Atlantic Power & Equipment Co.) — 10 Buyers Inquired for Generators & 5 for Cranes',
     description: 'Official Notification to Mark Johnson (Shore Technical Equipment Inc. / Atlantic Power & Equipment Co., Marmora NJ): 10 Buyers Visited Profile & Inquired to Buy Generators + 5 Buyers Inquired for Cranes',
@@ -801,9 +827,172 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
     }
   };
 
+  // Listed Clients Counter-Offer Broadcast State
+  const [listedClientsSummary, setListedClientsSummary] = useState<{
+    smtpConfigured: boolean;
+    deliveryMode: string;
+    registeredClientsCount: number;
+    directoryClientsCount: number;
+    registeredClients: Array<{
+      id: string;
+      name: string;
+      companyName: string;
+      email: string;
+      country: string;
+      productFocus: string;
+    }>;
+  } | null>(null);
+  const [broadcastScope, setBroadcastScope] = useState<'REGISTERED_CLIENTS' | 'ALL_LISTED_CLIENTS'>('REGISTERED_CLIENTS');
+  const [customBroadcastSubject, setCustomBroadcastSubject] = useState('');
+  const [customBroadcastMessage, setCustomBroadcastMessage] = useState('');
+  const [isBroadcastingCounterOffer, setIsBroadcastingCounterOffer] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<{
+    success: boolean;
+    inProgress?: boolean;
+    smtpConfigured: boolean;
+    deliveryMode: string;
+    totalTargeted: number;
+    processedCount: number;
+    deliveredCount: number;
+    queuedAwaitingSmtpCount: number;
+    failedCount: number;
+    message: string;
+    recipients?: Array<{
+      email: string;
+      name: string;
+      companyName: string;
+      status: string;
+      error?: string;
+    }>;
+  } | null>(null);
+
+  const fetchListedClientsSummary = async () => {
+    try {
+      const res = await fetch('/api/v1/admin/listed-clients-summary', {
+        headers: { Accept: 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.success) {
+          setListedClientsSummary({
+            smtpConfigured: Boolean(data.smtpConfigured),
+            deliveryMode: String(data.deliveryMode || 'QUEUED_NO_SMTP_CREDENTIALS'),
+            registeredClientsCount: Number(data.registeredClientsCount || 0),
+            directoryClientsCount: Number(data.directoryClientsCount || 0),
+            registeredClients: Array.isArray(data.registeredClients) ? data.registeredClients : []
+          });
+        }
+      }
+    } catch {
+      // ignore offline summary fetch error
+    }
+  };
+
   useEffect(() => {
     fetchMailSuiteTelemetry();
+    fetchListedClientsSummary();
   }, []);
+
+  const handleBroadcastCounterOfferToListedClients = async () => {
+    setIsBroadcastingCounterOffer(true);
+    setBroadcastResult(null);
+    try {
+      const res = await fetch('/api/v1/admin/email-listed-clients-counter-offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          scope: broadcastScope,
+          customSubject: customBroadcastSubject.trim() || undefined,
+          customMessage: customBroadcastMessage.trim() || undefined
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBroadcastResult({
+          success: false,
+          smtpConfigured: Boolean(data?.smtpConfigured),
+          deliveryMode: data?.deliveryMode || 'UNKNOWN',
+          totalTargeted: 0,
+          processedCount: 0,
+          deliveredCount: 0,
+          queuedAwaitingSmtpCount: 0,
+          failedCount: 0,
+          message: data?.message || 'Failed to launch listed-clients counter-offer broadcast.'
+        });
+        return;
+      }
+
+      const applyBroadcastData = (payload: any) => {
+        setBroadcastResult({
+          success: Boolean(payload?.success),
+          inProgress: Boolean(payload?.inProgress),
+          smtpConfigured: Boolean(payload?.smtpConfigured),
+          deliveryMode: String(payload?.deliveryMode || 'QUEUED_NO_SMTP_CREDENTIALS'),
+          totalTargeted: Number(payload?.totalTargeted || 0),
+          processedCount: Number(payload?.processedCount || 0),
+          deliveredCount: Number(payload?.deliveredCount || 0),
+          queuedAwaitingSmtpCount: Number(payload?.queuedAwaitingSmtpCount || 0),
+          failedCount: Number(payload?.failedCount || 0),
+          message: String(payload?.message || ''),
+          recipients: Array.isArray(payload?.recipients) ? payload.recipients : []
+        });
+      };
+
+      let finalData = data;
+      applyBroadcastData(finalData);
+
+      // Poll if background live SMTP batch (>2 recipients)
+      if (finalData?.inProgress) {
+        for (let attempt = 0; attempt < 90; attempt++) {
+          await new Promise(r => setTimeout(r, 2000));
+          const pollRes = await fetch('/api/v1/admin/counter-offer-broadcast-status', {
+            headers: { Accept: 'application/json' }
+          });
+          if (!pollRes.ok) break;
+          const pollData = await pollRes.json().catch(() => null);
+          if (!pollData) break;
+          finalData = pollData;
+          applyBroadcastData(pollData);
+          if (!pollData.inProgress) break;
+        }
+      }
+
+      if (Array.isArray(finalData?.recipients) && finalData.recipients.length > 0) {
+        const nowIso = new Date().toISOString();
+        const mappedHistory: DispatchedHistoryItem[] = finalData.recipients.slice(0, 25).map((r: any, idx: number) => ({
+          id: `hist-co-${Date.now()}-${idx}`,
+          recipientEmail: r.email,
+          recipientName: r.name,
+          companyName: r.companyName,
+          subject: customBroadcastSubject.trim() || `🔔 Buyers Have Made Requests to Buy — Log In to Submit Your Counter Offer (${r.companyName})`,
+          templatePreset: 'BUYER_REQUEST_COUNTER_OFFER_LISTED_CLIENT',
+          messageId: r.messageId,
+          trackingId: r.trackingId,
+          dispatchedAt: r.dispatchedAt || nowIso,
+          success: r.status === 'DELIVERED_SMTP',
+          error: r.error
+        }));
+        setHistory(prev => [...mappedHistory, ...prev]);
+      }
+
+      await fetchMailSuiteTelemetry();
+      await fetchListedClientsSummary();
+    } catch (err: any) {
+      setBroadcastResult({
+        success: false,
+        smtpConfigured: Boolean(listedClientsSummary?.smtpConfigured),
+        deliveryMode: listedClientsSummary?.deliveryMode || 'UNKNOWN',
+        totalTargeted: 0,
+        processedCount: 0,
+        deliveredCount: 0,
+        queuedAwaitingSmtpCount: 0,
+        failedCount: 0,
+        message: err?.message || 'Network error while emailing listed clients.'
+      });
+    } finally {
+      setIsBroadcastingCounterOffer(false);
+    }
+  };
 
   const handleSimulateMailSuiteEvent = async (trackingId: string, eventType: 'OPEN' | 'CLICK', targetUrl?: string) => {
     const key = `${trackingId}-${eventType}`;
@@ -999,11 +1188,17 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
 
   const handleSendEmail = async () => {
     if (!formData.recipientEmail || !formData.recipientEmail.includes('@')) {
-      alert('Please provide a valid recipient email address.');
+      setSendResult({
+        success: false,
+        message: 'Please provide a valid recipient email address.'
+      });
       return;
     }
     if (!formData.subject) {
-      alert('Please provide an email subject line.');
+      setSendResult({
+        success: false,
+        message: 'Please provide an email subject line.'
+      });
       return;
     }
 
@@ -1220,6 +1415,143 @@ export const CustomEmailDispatcherAdminModule: React.FC<CustomEmailDispatcherPro
 
   return (
     <div id="custom-email-dispatcher-admin" className="space-y-6">
+
+      {/* LISTED CLIENTS COUNTER-OFFER BROADCAST CARD */}
+      <div className="bg-white rounded-2xl border-2 border-blue-200 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600 text-white">
+                BULK BUYER-REQUEST ALERT
+              </span>
+              {listedClientsSummary ? (
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                    listedClientsSummary.smtpConfigured
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                  }`}
+                >
+                  {listedClientsSummary.smtpConfigured
+                    ? 'SMTP Live (TLS Configured)'
+                    : 'SMTP Credentials Unset (Queues in MailSuite / Use BigRock PHP)'}
+                </span>
+              ) : null}
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              Email Every Listed Client: Buyers Made Requests to Buy — Log In to Counter Offer
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
+              Notifies every listed client on Trade Heaven that buyers have made requests to buy and directs them to log in to their Trade Heaven account (`?view=SUPPLIER_DASHBOARD`) to submit a Counter Offer.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            disabled={isBroadcastingCounterOffer}
+            onClick={handleBroadcastCounterOfferToListedClients}
+            className="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            {isBroadcastingCounterOffer ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Dispatching to Listed Clients...</span>
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                <span>
+                  Email Every Listed Client (
+                  {broadcastScope === 'ALL_LISTED_CLIENTS'
+                    ? listedClientsSummary?.directoryClientsCount ?? '...'
+                    : listedClientsSummary?.registeredClientsCount ?? '...'}
+                  )
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1">Target Listed Client Scope</label>
+            <select
+              value={broadcastScope}
+              onChange={e => setBroadcastScope(e.target.value as any)}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800"
+            >
+              <option value="REGISTERED_CLIENTS">
+                Registered &amp; Onboarded Listed Clients ({listedClientsSummary?.registeredClientsCount ?? '...'})
+              </option>
+              <option value="ALL_LISTED_CLIENTS">
+                All Directory Listed Companies ({listedClientsSummary?.directoryClientsCount ?? '...'})
+              </option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1">Optional Subject Override</label>
+            <input
+              type="text"
+              value={customBroadcastSubject}
+              onChange={e => setCustomBroadcastSubject(e.target.value)}
+              placeholder="Default: Buyers Have Made Requests to Buy — Log In to Counter Offer"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1">Optional Custom Message Note</label>
+            <input
+              type="text"
+              value={customBroadcastMessage}
+              onChange={e => setCustomBroadcastMessage(e.target.value)}
+              placeholder="Optional custom note inside every client email..."
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-hidden"
+            />
+          </div>
+        </div>
+
+        {broadcastResult && (
+          <div
+            className={`p-3.5 rounded-xl border text-xs space-y-2 ${
+              broadcastResult.deliveredCount > 0
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                : broadcastResult.queuedAwaitingSmtpCount > 0
+                ? 'bg-amber-50 border-amber-200 text-amber-950'
+                : 'bg-rose-50 border-rose-200 text-rose-950'
+            }`}
+          >
+            <div className="font-black">{broadcastResult.message}</div>
+            <div className="flex flex-wrap gap-3 text-[11px] font-bold">
+              <span>Targeted: {broadcastResult.totalTargeted}</span>
+              <span>Delivered (Live SMTP): {broadcastResult.deliveredCount}</span>
+              <span>Queued (Awaiting SMTP Credentials): {broadcastResult.queuedAwaitingSmtpCount}</span>
+              <span>Failed: {broadcastResult.failedCount}</span>
+            </div>
+            {broadcastResult.recipients && broadcastResult.recipients.length > 0 && (
+              <div className="max-h-40 overflow-y-auto bg-white/80 rounded-lg border border-slate-200 p-2 space-y-1 text-[11px]">
+                {broadcastResult.recipients.map((r, idx) => (
+                  <div key={`${r.email}-${idx}`} className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium text-slate-800">
+                      {r.companyName} ({r.email})
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded font-bold shrink-0 ${
+                        r.status === 'DELIVERED_SMTP'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : r.status === 'QUEUED_NO_SMTP'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       {/* ZAC ($400 PAID BASIC PLAN) DEMO MAIL ON ADMIN FIRST + LIVE DISPATCH WORKFLOW BANNER */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border-2 border-amber-400/70 p-5 text-white shadow-lg">

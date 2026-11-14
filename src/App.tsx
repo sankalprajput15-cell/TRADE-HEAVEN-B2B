@@ -1294,6 +1294,31 @@ const MainApp: React.FC = () => {
     }
   }, [activeView, currentUser, isAdmin]);
 
+  // Keep live user presence active every 45s while authenticated & viewing any page
+  useEffect(() => {
+    if (!currentUser?.token) return;
+    const sendHeartbeat = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      fetch('/api/v1/auth/heartbeat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentUser.token}`
+        },
+        body: JSON.stringify({ currentView: activeView })
+      }).catch(() => {});
+    };
+    const intervalId = window.setInterval(sendHeartbeat, 45000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') sendHeartbeat();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [activeView, currentUser]);
+
   // Dynamic SEO, OpenGraph & Meta Tags based on active view, selected product, and dynamic hero placeholder
   useEffect(() => {
     // Check if target product is specified via selectedProduct state or URL query

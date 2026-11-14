@@ -420,13 +420,13 @@ export const apiClient = {
         accountType: payload.accountType
       });
 
-      if (res.ok && json && (json.success === true || json.otp_dispatched === true)) {
+      if (res.ok && json && (json.success === true || json.otp_dispatched === true) && json.emailSent !== false) {
         return {
           success: true,
           email: json.email || cleanEmail,
           maskedEmail: json.maskedEmail || cleanEmail,
           role: json.role,
-          emailSent: json.emailSent,
+          emailSent: json.emailSent !== false,
           message:
             json.message ||
             `A 6-digit verification code has been sent to ${json.maskedEmail || cleanEmail} via noreply@tradeheaven.net.`
@@ -434,6 +434,7 @@ export const apiClient = {
       }
       return {
         success: false,
+        emailSent: json?.emailSent,
         message: json?.message || 'Unable to dispatch OTP from the authentication server. Please verify your email and credentials and try again.'
       };
     } catch (e: any) {
@@ -522,7 +523,7 @@ export const apiClient = {
       });
 
       if (authRes.ok && authJson && (authJson.success === true || authJson.requiresOtp || authJson.user)) {
-        if (authJson.requiresOtp) {
+        if (authJson.requiresOtp && authJson.emailSent !== false) {
           return {
             success: true,
             requiresOtp: true,
@@ -632,7 +633,7 @@ export const apiClient = {
       const { res, json } = await postAuthEndpoint('/api/v1/auth/resend-login-otp', 'resend_login_otp', {
         email: cleanEmail
       });
-      if (res.ok && json && json.success === true) {
+      if (res.ok && json && json.success === true && json.emailSent !== false) {
         return {
           success: true,
           maskedEmail: json.maskedEmail,
@@ -780,16 +781,31 @@ export const apiClient = {
     }
 
     try {
-      const res = await fetch(`${API_BASE}?action=forgot_password`, {
+      const reqInit: RequestInit = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({ email: cleanEmail })
-      });
-      const json = await res.json().catch(() => ({}));
-      if (res.ok && (json.success || json.status === 'success')) {
+      };
+      let res = await fetch(`${API_BASE}?action=forgot_password`, reqInit);
+      let json = await safeParseJson(res);
+
+      if (!json || res.status === 404 || res.status === 405) {
+        try {
+          const fallbackRes = await fetch('/api/auth/forgot-password', reqInit);
+          const fallbackJson = await safeParseJson(fallbackRes);
+          if (fallbackJson) {
+            res = fallbackRes;
+            json = fallbackJson;
+          }
+        } catch {
+          // Keep initial response
+        }
+      }
+
+      if (res.ok && json && (json.success || json.status === 'success') && json.emailSent !== false) {
         return {
           success: true,
           sender: json.sender || 'noreply@tradeheaven.net',
@@ -801,7 +817,8 @@ export const apiClient = {
       }
       return {
         success: false,
-        message: json?.message || 'Could not send OTP. Ensure this email is registered on Trade Heaven.'
+        emailSent: json?.emailSent,
+        message: json?.message || 'Could not send OTP. Ensure this email is registered on Trade Heaven and try again.'
       };
     } catch (e: any) {
       return {

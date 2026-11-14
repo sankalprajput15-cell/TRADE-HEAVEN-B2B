@@ -22,6 +22,7 @@ import {
   serverDeliveryQueueManager,
   setDynamicPublicTrackingBaseUrl
 } from './src/services/smtpService';
+import { MOCK_COMPANIES } from './src/data/mockData';
 
 dotenv.config();
 
@@ -1466,6 +1467,97 @@ function touchActivePlatformSession(
   });
 }
 
+interface PlatformAuthEvent {
+  id: string;
+  eventType: 'LOGIN' | 'LOGOUT';
+  email: string;
+  name: string;
+  role: string;
+  companyName: string;
+  country: string;
+  currentView: string;
+  ipAddress: string;
+  timestamp: string;
+  createdAtMs: number;
+  emailAlertQueued: boolean;
+}
+
+const recentAuthEventsStore: PlatformAuthEvent[] = [];
+const authAlertEmailConfig = {
+  enabled: true,
+  recipientEmail: 'sankalprajput15@gmail.com'
+};
+
+function recordPlatformAuthEvent(
+  req: express.Request | null,
+  eventType: 'LOGIN' | 'LOGOUT',
+  u: {
+    email?: string;
+    name?: string;
+    role?: string;
+    companyName?: string;
+    country?: string;
+  },
+  currentView?: string
+): PlatformAuthEvent | null {
+  const cleanEmail = normalizeRecipientEmail(String(u.email || ''));
+  if (!cleanEmail) return null;
+  const now = Date.now();
+  const timestamp = new Date(now).toISOString();
+  const storedUser = serverUsersStore.find(su => normalizeRecipientEmail(su.email) === cleanEmail);
+  const ip = req
+    ? String((req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip || '127.0.0.1').trim()
+    : '127.0.0.1';
+  const resolvedName = String(u.name || storedUser?.name || cleanEmail);
+  const resolvedRole = String(u.role || storedUser?.role || 'BUYER');
+  const resolvedCompany = String(u.companyName || storedUser?.companyName || 'Global Trade Member');
+  const resolvedCountry = String(u.country || storedUser?.country || 'Global');
+  const resolvedView = String(currentView || (resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE'));
+  const suppressEmail = req?.headers?.['x-suppress-auth-email'] === '1';
+  const shouldSendEmail = Boolean(authAlertEmailConfig.enabled && !suppressEmail);
+
+  const eventRecord: PlatformAuthEvent = {
+    id: `auth-evt-${eventType.toLowerCase()}-${now}-${Math.random().toString(36).slice(2, 7)}`,
+    eventType,
+    email: cleanEmail,
+    name: resolvedName,
+    role: resolvedRole,
+    companyName: resolvedCompany,
+    country: resolvedCountry,
+    currentView: resolvedView,
+    ipAddress: ip,
+    timestamp,
+    createdAtMs: now,
+    emailAlertQueued: shouldSendEmail
+  };
+
+  recentAuthEventsStore.unshift(eventRecord);
+  if (recentAuthEventsStore.length > 200) {
+    recentAuthEventsStore.length = 200;
+  }
+
+  if (shouldSendEmail) {
+    void automatedSmtpService
+      .sendAdminAuthEventAlertEmail({
+        eventType,
+        userEmail: cleanEmail,
+        userName: resolvedName,
+        userRole: resolvedRole,
+        companyName: resolvedCompany,
+        country: resolvedCountry,
+        currentView: resolvedView,
+        ipAddress: ip,
+        timestamp,
+        adminRecipient: authAlertEmailConfig.recipientEmail
+      })
+      .catch((err) => {
+        console.warn(`[AuthEventAlert] Failed to dispatch ${eventType} admin email alert:`, err?.message || err);
+      });
+  }
+
+  return eventRecord;
+}
+
 // GET /api/v1/auth/session-epoch - Check active global revocation epoch
 app.get('/api/v1/auth/session-epoch', (_req, res) => {
   return res.json({
@@ -1542,7 +1634,9 @@ function verifyRegisteredUserPassword(user: ServerUserRecord, password?: string)
   return Boolean(user.passwordHash && user.passwordHash === password) || isRandyValidPass;
 }
 
-async function issueAndDispatchLoginOtp(user: ServerUserRecord): Promise<{ emailSent: boolean; deliveryMode: string }> {
+async function issueAndDispatchLoginOtp(
+  user: ServerUserRecord
+): Promise<{ emailSent: boolean; deliveryMode: string; messageId?: string; error?: string }> {
   const otpCode = crypto.randomInt(100000, 999999).toString();
   user.login_otp_code = otpCode;
   user.login_otp_expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -1557,9 +1651,16 @@ async function issueAndDispatchLoginOtp(user: ServerUserRecord): Promise<{ email
     role: user.role
   });
 
+  if (dispatchResult.dispatchedCode && dispatchResult.dispatchedCode !== user.login_otp_code) {
+    user.login_otp_code = dispatchResult.dispatchedCode;
+    saveServerUsersToDisk();
+  }
+
   return {
     emailSent: dispatchResult.success,
-    deliveryMode: dispatchResult.mode
+    deliveryMode: dispatchResult.mode,
+    messageId: dispatchResult.messageId,
+    error: dispatchResult.error
   };
 }
 
@@ -1570,7 +1671,7 @@ async function issueAndDispatchRegistrationOtp(
   email: string,
   name?: string,
   role: string = 'BUYER'
-): Promise<{ emailSent: boolean; deliveryMode: string }> {
+): Promise<{ emailSent: boolean; deliveryMode: string; messageId?: string; error?: string }> {
   const cleanEmail = normalizeRecipientEmail(email);
   const otpCode = crypto.randomInt(100000, 999999).toString();
   pendingRegistrationOtps.set(cleanEmail, {
@@ -1588,9 +1689,18 @@ async function issueAndDispatchRegistrationOtp(
     isRegistration: true
   });
 
+  if (dispatchResult.dispatchedCode && dispatchResult.dispatchedCode !== otpCode) {
+    const entry = pendingRegistrationOtps.get(cleanEmail);
+    if (entry) {
+      entry.code = dispatchResult.dispatchedCode;
+    }
+  }
+
   return {
     emailSent: dispatchResult.success,
-    deliveryMode: dispatchResult.mode
+    deliveryMode: dispatchResult.mode,
+    messageId: dispatchResult.messageId,
+    error: dispatchResult.error
   };
 }
 
@@ -1633,20 +1743,37 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
 
     logServerActivity(
       req,
-      'REGISTRATION_OTP_DISPATCHED',
+      dispatchInfo.emailSent ? 'REGISTRATION_OTP_DISPATCHED' : 'REGISTRATION_OTP_FAILED',
       cleanEmail,
       'GUEST',
       '/api/v1/auth/send-otp',
-      `6-digit registration verification OTP dispatched to ${cleanEmail} via ${dispatchInfo.deliveryMode}.`,
-      'SUCCESS'
+      dispatchInfo.emailSent
+        ? `6-digit registration verification OTP dispatched to ${cleanEmail} via ${dispatchInfo.deliveryMode} (messageId=${dispatchInfo.messageId || 'n/a'}).`
+        : `Registration OTP email delivery failed for ${cleanEmail}: ${dispatchInfo.error || 'SMTP transport failure'}`,
+      dispatchInfo.emailSent ? 'SUCCESS' : 'FAILED'
     );
+
+    if (!dispatchInfo.emailSent) {
+      return res.status(502).json({
+        success: false,
+        mode: 'REGISTER',
+        email: cleanEmail,
+        maskedEmail,
+        emailSent: false,
+        deliveryMode: dispatchInfo.deliveryMode,
+        error: dispatchInfo.error,
+        message: `Unable to deliver the 6-digit OTP to ${maskedEmail} right now. Please verify your email address is valid and try again, or contact Trade Heaven support on WhatsApp (+91 8532934479).`
+      });
+    }
 
     return res.json({
       success: true,
       mode: 'REGISTER',
       email: cleanEmail,
       maskedEmail,
-      emailSent: dispatchInfo.emailSent,
+      emailSent: true,
+      deliveryMode: dispatchInfo.deliveryMode,
+      messageId: dispatchInfo.messageId,
       message: `A 6-digit verification code has been sent to ${maskedEmail} via noreply@tradeheaven.net. Enter it below to complete registration.`
     });
   }
@@ -1676,14 +1803,31 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
 
   logServerActivity(
     req,
-    'LOGIN_OTP_DISPATCHED',
+    dispatchInfo.emailSent ? 'LOGIN_OTP_DISPATCHED' : 'LOGIN_OTP_FAILED',
     matchedUser.email,
     matchedUser.role,
     '/api/v1/auth/send-otp',
-    `6-digit login verification OTP dispatched to registered user ${matchedUser.email} (${matchedUser.role}) via ${dispatchInfo.deliveryMode}.`,
-    'SUCCESS',
+    dispatchInfo.emailSent
+      ? `6-digit login verification OTP dispatched to registered user ${matchedUser.email} (${matchedUser.role}) via ${dispatchInfo.deliveryMode} (messageId=${dispatchInfo.messageId || 'n/a'}).`
+      : `Login OTP email delivery failed for ${matchedUser.email}: ${dispatchInfo.error || 'SMTP transport failure'}`,
+    dispatchInfo.emailSent ? 'SUCCESS' : 'FAILED',
     matchedUser.id
   );
+
+  if (!dispatchInfo.emailSent) {
+    return res.status(502).json({
+      success: false,
+      mode: 'LOGIN',
+      requiresOtp: false,
+      email: matchedUser.email,
+      maskedEmail,
+      role: matchedUser.role,
+      emailSent: false,
+      deliveryMode: dispatchInfo.deliveryMode,
+      error: dispatchInfo.error,
+      message: `Unable to deliver your 6-digit login OTP to ${maskedEmail} right now. Please retry in a moment or contact Trade Heaven on WhatsApp (+91 8532934479).`
+    });
+  }
 
   return res.json({
     success: true,
@@ -1692,7 +1836,9 @@ app.post('/api/v1/auth/send-otp', async (req, res) => {
     email: matchedUser.email,
     maskedEmail,
     role: matchedUser.role,
-    emailSent: dispatchInfo.emailSent,
+    emailSent: true,
+    deliveryMode: dispatchInfo.deliveryMode,
+    messageId: dispatchInfo.messageId,
     message: isRootAdmin
       ? `Admin OTP-Only Security: A 6-digit verification code has been sent to your registered admin email (${maskedEmail}).`
       : `A 6-digit verification code has been sent to your registered email (${maskedEmail}) via noreply@tradeheaven.net.`
@@ -1783,7 +1929,9 @@ app.post('/api/v1/auth/login', async (req, res) => {
     const resolvedRole = isAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
     const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
 
+    touchActivePlatformSession(req, { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
     sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+    recordPlatformAuthEvent(req, 'LOGIN', { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
     logServerActivity(
       req,
       'SECURITY_LOGIN_EVENT',
@@ -1827,14 +1975,30 @@ app.post('/api/v1/auth/login', async (req, res) => {
 
   logServerActivity(
     req,
-    'LOGIN_OTP_DISPATCHED',
+    dispatchInfo.emailSent ? 'LOGIN_OTP_DISPATCHED' : 'LOGIN_OTP_FAILED',
     matchedUser.email,
     matchedUser.role,
     '/api/v1/auth/login',
-    `Step 1 password verified for ${matchedUser.email} (${matchedUser.role}). 6-digit 2FA OTP dispatched to registered email via ${dispatchInfo.deliveryMode}.`,
-    'SUCCESS',
+    dispatchInfo.emailSent
+      ? `Step 1 password verified for ${matchedUser.email} (${matchedUser.role}). 6-digit 2FA OTP dispatched to registered email via ${dispatchInfo.deliveryMode}.`
+      : `Step 1 password verified for ${matchedUser.email}, but OTP email delivery failed: ${dispatchInfo.error || 'SMTP failure'}.`,
+    dispatchInfo.emailSent ? 'SUCCESS' : 'FAILED',
     matchedUser.id
   );
+
+  if (!dispatchInfo.emailSent) {
+    return res.status(502).json({
+      success: false,
+      requiresOtp: false,
+      email: matchedUser.email,
+      maskedEmail,
+      role: matchedUser.role,
+      emailSent: false,
+      deliveryMode: dispatchInfo.deliveryMode,
+      error: dispatchInfo.error,
+      message: `Unable to deliver the 6-digit security verification OTP to ${maskedEmail} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+    });
+  }
 
   return res.json({
     success: true,
@@ -1842,7 +2006,9 @@ app.post('/api/v1/auth/login', async (req, res) => {
     email: matchedUser.email,
     maskedEmail,
     role: matchedUser.role,
-    emailSent: dispatchInfo.emailSent,
+    emailSent: true,
+    deliveryMode: dispatchInfo.deliveryMode,
+    messageId: dispatchInfo.messageId,
     message: `A 6-digit security verification OTP has been sent to your registered email (${maskedEmail}). Please enter the OTP to complete sign-in.`
   });
 });
@@ -1914,6 +2080,7 @@ app.post('/api/v1/auth/verify-login-otp', (req, res) => {
   touchActivePlatformSession(req, { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
 
   sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+  recordPlatformAuthEvent(req, 'LOGIN', { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
   logServerActivity(
     req,
     'SECURITY_LOGIN_EVENT',
@@ -1967,12 +2134,27 @@ app.post('/api/v1/auth/resend-login-otp', async (req, res) => {
   const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
   const maskedEmail = maskRegisteredEmail(matchedUser.email);
 
+  if (!dispatchInfo.emailSent) {
+    return res.status(502).json({
+      success: false,
+      requiresOtp: false,
+      email: matchedUser.email,
+      maskedEmail,
+      emailSent: false,
+      deliveryMode: dispatchInfo.deliveryMode,
+      error: dispatchInfo.error,
+      message: `Unable to resend your 6-digit verification OTP to ${maskedEmail} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+    });
+  }
+
   return res.json({
     success: true,
     requiresOtp: true,
     email: matchedUser.email,
     maskedEmail,
-    emailSent: dispatchInfo.emailSent,
+    emailSent: true,
+    deliveryMode: dispatchInfo.deliveryMode,
+    messageId: dispatchInfo.messageId,
     message: `A fresh 6-digit verification OTP has been sent to your registered email (${maskedEmail}).`
   });
 });
@@ -1983,6 +2165,46 @@ app.get('/api/v1/auth/email-queue-status', (_req, res) => {
     success: true,
     queue: serverDeliveryQueueManager.getQueueStatus()
   });
+});
+
+// GET /api/v1/auth/otp-diagnostics - Live SMTP handshake & OTP delivery verification telemetry
+app.get('/api/v1/auth/otp-diagnostics', async (_req, res) => {
+  try {
+    const transports = await automatedSmtpService.verifyTransports();
+    const queue = serverDeliveryQueueManager.getQueueStatus();
+    const historyEntries = serverDeliveryQueueManager.getEmailHistory();
+    const recentOtps = historyEntries
+      .filter((h) => h.category === 'OTP_SECURITY' || String(h.subject || '').toLowerCase().includes('otp') || String(h.subject || '').toLowerCase().includes('reset'))
+      .slice(0, 15)
+      .map((h) => ({
+        id: h.id,
+        recipient: h.recipient,
+        subject: h.subject,
+        success: h.success,
+        messageId: h.messageId,
+        error: h.error,
+        dispatchedAt: h.dispatchedAt,
+        mailSuiteStatus: h.mailSuiteStatus
+      }));
+
+    return res.json({
+      success: true,
+      smtpReady: Boolean(transports.primary.verified || transports.backup.verified),
+      transports,
+      queueHealth: {
+        consecutiveFailures: queue.consecutiveFailures,
+        isFlagged: queue.isFlagged,
+        lastFailureReason: queue.lastFailureReason,
+        lastDispatchedAt: queue.lastDispatchedAt
+      },
+      recentOtpDeliveries: recentOtps
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: err?.message || String(err)
+    });
+  }
 });
 
 // POST /api/v1/auth/email-queue-reset-alert - Reset consecutive failure count and clear flagged status
@@ -2649,6 +2871,473 @@ app.post('/api/v1/admin/send-custom-email', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: `Failed to dispatch custom admin email: ${err?.message || err}`
+    });
+  }
+});
+
+interface ListedClientBroadcastTarget {
+  id: string;
+  name: string;
+  companyName: string;
+  email: string;
+  country: string;
+  role: string;
+  tier: string;
+  productFocus: string;
+  source: 'REGISTERED_USER' | 'CATALOG_COMPANY' | 'DIRECTORY_COMPANY';
+  portalLoginUrl: string;
+}
+
+interface CounterOfferBroadcastRecipientStatus {
+  id: string;
+  email: string;
+  name: string;
+  companyName: string;
+  country: string;
+  source: string;
+  status: 'DELIVERED_SMTP' | 'QUEUED_NO_SMTP' | 'FAILED';
+  deliveryMode: 'LIVE_SMTP' | 'QUEUED_NO_SMTP_CREDENTIALS';
+  messageId?: string;
+  trackingId?: string;
+  dispatchedAt: string;
+  error?: string;
+}
+
+interface CounterOfferBroadcastState {
+  inProgress: boolean;
+  jobId: string | null;
+  scope: 'REGISTERED_CLIENTS' | 'ALL_LISTED_CLIENTS';
+  smtpConfigured: boolean;
+  deliveryMode: 'LIVE_SMTP' | 'QUEUED_NO_SMTP_CREDENTIALS';
+  startedAt: string | null;
+  completedAt: string | null;
+  totalTargeted: number;
+  processedCount: number;
+  deliveredCount: number;
+  queuedAwaitingSmtpCount: number;
+  failedCount: number;
+  customSubject: string;
+  message: string;
+  recipients: CounterOfferBroadcastRecipientStatus[];
+}
+
+const ADMIN_BROADCAST_EXCLUDE_EMAILS = new Set([
+  'yr943334@gmail.com',
+  'sankalprajput15@gmail.com',
+  'admin@tradeheaven.net',
+  'solutionthe87@gmail.com'
+]);
+
+function isValidClientEmail(raw: string): boolean {
+  const clean = normalizeRecipientEmail(raw || '');
+  if (!clean || clean.includes('*') || clean.includes(' ')) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean);
+}
+
+function collectListedClientsForBroadcast(
+  scope: 'REGISTERED_CLIENTS' | 'ALL_LISTED_CLIENTS' = 'REGISTERED_CLIENTS',
+  filterEmails?: string[]
+): ListedClientBroadcastTarget[] {
+  const catalogStore = loadCustomCatalogFromDisk();
+  const seenEmails = new Set<string>();
+  const targets: ListedClientBroadcastTarget[] = [];
+
+  const filterSet =
+    Array.isArray(filterEmails) && filterEmails.length > 0
+      ? new Set(filterEmails.map(e => normalizeRecipientEmail(String(e || ''))).filter(Boolean))
+      : null;
+
+  const pushTarget = (candidate: Omit<ListedClientBroadcastTarget, 'portalLoginUrl'>) => {
+    const cleanEmail = normalizeRecipientEmail(candidate.email || '');
+    if (!isValidClientEmail(cleanEmail)) return;
+    if (ADMIN_BROADCAST_EXCLUDE_EMAILS.has(cleanEmail)) return;
+    if (serverDeletedUsersRegistry.emails.has(cleanEmail) || serverDeletedUsersRegistry.ids.has(candidate.id)) return;
+    if (seenEmails.has(cleanEmail)) return;
+    if (filterSet && !filterSet.has(cleanEmail)) return;
+
+    seenEmails.add(cleanEmail);
+    targets.push({
+      ...candidate,
+      email: cleanEmail,
+      portalLoginUrl: `https://www.tradeheaven.net/?view=SUPPLIER_DASHBOARD&email=${encodeURIComponent(cleanEmail)}`
+    });
+  };
+
+  // 1. Registered & Onboarded Listed Users (excluding ADMIN role)
+  for (const u of serverUsersStore) {
+    if (!u || !u.email) continue;
+    if (String(u.role || '').toUpperCase() === 'ADMIN') continue;
+    const matchedProduct = catalogStore.products.find(
+      p => p.supplierId === u.id || (p.supplierName && u.companyName && p.supplierName.toLowerCase() === u.companyName.toLowerCase())
+    );
+    pushTarget({
+      id: u.id,
+      name: u.name || u.companyName || 'Listed Partner',
+      companyName: u.companyName || u.name || 'Listed Trade Partner',
+      email: u.email,
+      country: u.country || 'Global',
+      role: u.role || 'SUPPLIER',
+      tier: u.tier || 'Listed Client',
+      productFocus: matchedProduct?.title || u.tier || 'Listed Wholesale Catalog & Supply',
+      source: 'REGISTERED_USER'
+    });
+  }
+
+  // 2. Custom Onboarded Companies from custom-catalog-store.json
+  for (const comp of catalogStore.companies || []) {
+    if (!comp || !comp.contactEmail) continue;
+    const matchedProduct = (catalogStore.products || []).find(p => p.supplierId === comp.id);
+    pushTarget({
+      id: comp.id || `comp-${comp.contactEmail}`,
+      name: comp.contactPerson || comp.name || 'Trade Partner',
+      companyName: comp.name || 'Listed Enterprise',
+      email: comp.contactEmail,
+      country: comp.country || 'Global',
+      role: 'SUPPLIER',
+      tier: comp.tier || 'Listed Supplier',
+      productFocus:
+        matchedProduct?.title ||
+        (Array.isArray(comp.mainProducts) && comp.mainProducts.length > 0
+          ? comp.mainProducts.join(', ')
+          : 'Listed B2B Products'),
+      source: 'CATALOG_COMPANY'
+    });
+  }
+
+  // 3. Full Directory Listed Companies (when requested or filterEmails targets them)
+  if (scope === 'ALL_LISTED_CLIENTS' || filterSet) {
+    for (const comp of MOCK_COMPANIES || []) {
+      if (!comp || !comp.contactEmail) continue;
+      const compAny = comp as any;
+      pushTarget({
+        id: comp.id || `dir-${comp.contactEmail}`,
+        name: comp.contactPerson || comp.companyName || compAny.name || 'Trade Manager',
+        companyName: comp.companyName || compAny.name || 'Listed Supplier',
+        email: comp.contactEmail,
+        country: comp.country || 'Global',
+        role: 'SUPPLIER',
+        tier: String(comp.tier || 'Listed Company'),
+        productFocus:
+          Array.isArray(compAny.mainProducts) && compAny.mainProducts.length > 0
+            ? compAny.mainProducts.slice(0, 3).join(', ')
+            : compAny.category || comp.businessType || 'Industrial & Wholesale Trade',
+        source: 'DIRECTORY_COMPANY'
+      });
+    }
+  }
+
+  return targets;
+}
+
+function buildBuyerCounterOfferEmailContent(
+  client: ListedClientBroadcastTarget,
+  options: { customSubject?: string; customMessage?: string }
+) {
+  const esc = (s: string) =>
+    String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  const subject =
+    (options.customSubject || '').trim() ||
+    `🔔 Buyers Have Made Requests to Buy — Log In to Submit Your Counter Offer (${client.companyName})`;
+
+  const customNote = (options.customMessage || '').trim();
+  const introText =
+    customNote ||
+    `Verified institutional buyers on Trade Heaven have made active requests to buy from ${client.companyName}. Please log in to your Trade Heaven account now to inspect the buyer purchase terms, review price targets, and submit your official Counter Offer.`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);">
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #0f172a 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <div style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #fde68a; text-transform: uppercase; background: rgba(253, 230, 138, 0.14); border: 1px solid rgba(253, 230, 138, 0.35); padding: 4px 12px; border-radius: 9999px; margin-bottom: 12px;">
+          TRADE HEAVEN • BUYER PURCHASE REQUESTS ACTIVE
+        </div>
+        <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 900; line-height: 1.3; color: #ffffff;">
+          Buyers Have Made a Request to Buy — Log In to Counter Offer
+        </h1>
+        <p style="margin: 0; font-size: 13px; color: #cbd5e1;">
+          ${esc(client.companyName)} • Attn: ${esc(client.name)}
+        </p>
+      </div>
+
+      <div style="padding: 28px 24px; color: #1e293b;">
+        <p style="font-size: 15px; margin: 0 0 14px 0; color: #0f172a;">
+          Hello <strong>${esc(client.name)}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.65; margin: 0 0 20px 0; color: #334155; white-space: pre-line;">
+          ${esc(introText)}
+        </p>
+
+        <div style="background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #d97706; border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;">
+          <div style="font-size: 11px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">
+            LISTED CLIENT ACCOUNT &amp; ACTIVE REQUEST SUMMARY
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 4px 0; color: #78350f; width: 135px; font-weight: 600;">Listed Company:</td>
+              <td style="padding: 4px 0; color: #0f172a; font-weight: 800;">${esc(client.companyName)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; color: #78350f; font-weight: 600;">Account Login ID:</td>
+              <td style="padding: 4px 0; font-family: monospace; color: #1d4ed8; font-weight: 700;">${esc(client.email)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; color: #78350f; font-weight: 600;">Listed Focus:</td>
+              <td style="padding: 4px 0; color: #0f172a; font-weight: 600;">${esc(client.productFocus)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; color: #78350f; font-weight: 600;">Next Action:</td>
+              <td style="padding: 4px 0; color: #b45309; font-weight: 800;">Log in &amp; submit your Counter Offer / Proforma Terms</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 24px;">
+          <div style="font-size: 11px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">
+            HOW TO SUBMIT YOUR COUNTER OFFER IN 3 STEPS
+          </div>
+          <ol style="margin: 0; padding-left: 18px; font-size: 13px; color: #334155; line-height: 1.7;">
+            <li>Open your Trade Heaven account via <a href="${esc(client.portalLoginUrl)}" style="color: #2563eb; font-weight: 700;">${esc(client.portalLoginUrl)}</a>.</li>
+            <li>Sign in using your registered email <strong>${esc(client.email)}</strong>.</li>
+            <li>Open <strong>Inquiries &amp; Buy Requests</strong>, review buyer offers, and click <strong>Accept or Counter Offer</strong>.</li>
+          </ol>
+        </div>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${esc(client.portalLoginUrl)}" style="display: inline-block; background: #0f172a; color: #ffffff; font-weight: 800; font-size: 14px; text-decoration: none; padding: 14px 32px; border-radius: 10px;">
+            Log In to Trade Heaven Account &amp; Counter Offer &rarr;
+          </a>
+        </div>
+
+        <div style="background: #f1f5f9; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #475569; line-height: 1.5;">
+          <strong style="color: #0f172a;">Trade Heaven Escrow &amp; Verification:</strong> Respond promptly to lock in buyer priority under verified L/C or Escrow settlement terms.
+        </div>
+      </div>
+    </div>
+  `;
+
+  return { subject, introText, html };
+}
+
+let counterOfferBroadcastState: CounterOfferBroadcastState = {
+  inProgress: false,
+  jobId: null,
+  scope: 'REGISTERED_CLIENTS',
+  smtpConfigured: false,
+  deliveryMode: 'QUEUED_NO_SMTP_CREDENTIALS',
+  startedAt: null,
+  completedAt: null,
+  totalTargeted: 0,
+  processedCount: 0,
+  deliveredCount: 0,
+  queuedAwaitingSmtpCount: 0,
+  failedCount: 0,
+  customSubject: '',
+  message: 'No counter-offer broadcast run yet.',
+  recipients: []
+};
+
+async function runCounterOfferBroadcastBatch(
+  targets: ListedClientBroadcastTarget[],
+  options: {
+    jobId: string;
+    scope: 'REGISTERED_CLIENTS' | 'ALL_LISTED_CLIENTS';
+    customSubject?: string;
+    customMessage?: string;
+    smtpConfigured: boolean;
+  }
+) {
+  for (const client of targets) {
+    const { subject, introText, html } = buildBuyerCounterOfferEmailContent(client, options);
+    try {
+      const receipt = await automatedSmtpService.sendCustomAdminEmail({
+        recipientEmail: client.email,
+        recipientName: client.name,
+        decisionMakerName: client.name,
+        companyName: client.companyName,
+        companyId: client.id,
+        portalUrl: client.portalLoginUrl,
+        ctaUrl: client.portalLoginUrl,
+        subject,
+        introMessage: introText,
+        rawHtmlOverride: html,
+        dispatchType: 'AUTOMATED',
+        category: 'BUYER_INQUIRY',
+        skipLegacyInquiryRelay: true
+      });
+
+      const isLiveDelivered = receipt.success && receipt.deliveryMode === 'LIVE_SMTP';
+      const isQueuedNoSmtp = !options.smtpConfigured || receipt.deliveryMode === 'QUEUED_NO_SMTP_CREDENTIALS';
+
+      counterOfferBroadcastState.processedCount += 1;
+      if (isLiveDelivered) {
+        counterOfferBroadcastState.deliveredCount += 1;
+      } else if (isQueuedNoSmtp) {
+        counterOfferBroadcastState.queuedAwaitingSmtpCount += 1;
+      } else if (receipt.success) {
+        counterOfferBroadcastState.deliveredCount += 1;
+      } else {
+        counterOfferBroadcastState.failedCount += 1;
+      }
+
+      counterOfferBroadcastState.recipients.push({
+        id: client.id,
+        email: client.email,
+        name: client.name,
+        companyName: client.companyName,
+        country: client.country,
+        source: client.source,
+        status: isLiveDelivered
+          ? 'DELIVERED_SMTP'
+          : isQueuedNoSmtp
+          ? 'QUEUED_NO_SMTP'
+          : 'FAILED',
+        deliveryMode: options.smtpConfigured ? 'LIVE_SMTP' : 'QUEUED_NO_SMTP_CREDENTIALS',
+        messageId: receipt.messageId,
+        trackingId: receipt.trackingId,
+        dispatchedAt: receipt.dispatchedAt,
+        error: receipt.error
+      });
+    } catch (err: any) {
+      counterOfferBroadcastState.processedCount += 1;
+      counterOfferBroadcastState.failedCount += 1;
+      counterOfferBroadcastState.recipients.push({
+        id: client.id,
+        email: client.email,
+        name: client.name,
+        companyName: client.companyName,
+        country: client.country,
+        source: client.source,
+        status: 'FAILED',
+        deliveryMode: options.smtpConfigured ? 'LIVE_SMTP' : 'QUEUED_NO_SMTP_CREDENTIALS',
+        dispatchedAt: new Date().toISOString(),
+        error: err?.message || String(err)
+      });
+    }
+  }
+
+  counterOfferBroadcastState.inProgress = false;
+  counterOfferBroadcastState.completedAt = new Date().toISOString();
+  counterOfferBroadcastState.message = options.smtpConfigured
+    ? `Live SMTP dispatch finished: ${counterOfferBroadcastState.deliveredCount}/${counterOfferBroadcastState.totalTargeted} delivered, ${counterOfferBroadcastState.failedCount} failed.`
+    : `Prepared & recorded personalized Buyer Request Counter-Offer emails for ${counterOfferBroadcastState.totalTargeted} listed client(s) in MailSuite queue. External SMTP delivery is awaiting NOREPLY_SMTP_PASS / SMTP_PASS credentials (or run via BigRock api.php).`;
+}
+
+// GET /api/v1/admin/listed-clients-summary - Returns active listed client counts & targets for counter-offer alerts
+app.get('/api/v1/admin/listed-clients-summary', (_req, res) => {
+  const registeredClients = collectListedClientsForBroadcast('REGISTERED_CLIENTS');
+  const allDirectoryClients = collectListedClientsForBroadcast('ALL_LISTED_CLIENTS');
+  const smtpConfigured = automatedSmtpService.isSmtpConfigured();
+
+  return res.json({
+    success: true,
+    smtpConfigured,
+    deliveryMode: smtpConfigured ? 'LIVE_SMTP' : 'QUEUED_NO_SMTP_CREDENTIALS',
+    registeredClientsCount: registeredClients.length,
+    directoryClientsCount: allDirectoryClients.length,
+    registeredClients,
+    directoryClientsPreview: allDirectoryClients.slice(0, 50)
+  });
+});
+
+// GET /api/v1/admin/counter-offer-broadcast-status - Poll batch counter-offer broadcast progress
+app.get('/api/v1/admin/counter-offer-broadcast-status', (_req, res) => {
+  const smtpConfigured = automatedSmtpService.isSmtpConfigured();
+  return res.json({
+    success: true,
+    ...counterOfferBroadcastState,
+    smtpConfigured
+  });
+});
+
+// POST /api/v1/admin/email-listed-clients-counter-offer - Emails every listed client to log in and counter offer
+app.post('/api/v1/admin/email-listed-clients-counter-offer', async (req, res) => {
+  try {
+    if (counterOfferBroadcastState.inProgress) {
+      return res.status(409).json({
+        success: false,
+        message: 'A listed-client counter-offer broadcast is currently in progress.',
+        ...counterOfferBroadcastState
+      });
+    }
+
+    const body = req.body || {};
+    const scope: 'REGISTERED_CLIENTS' | 'ALL_LISTED_CLIENTS' =
+      body.scope === 'ALL_LISTED_CLIENTS' ? 'ALL_LISTED_CLIENTS' : 'REGISTERED_CLIENTS';
+    const recipientEmails = Array.isArray(body.recipientEmails) ? body.recipientEmails : undefined;
+    const customSubject = typeof body.customSubject === 'string' ? body.customSubject.trim() : '';
+    const customMessage = typeof body.customMessage === 'string' ? body.customMessage.trim() : '';
+
+    const targets = collectListedClientsForBroadcast(scope, recipientEmails);
+    if (targets.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No eligible listed client email addresses were found for this broadcast.'
+      });
+    }
+
+    const smtpConfigured = automatedSmtpService.isSmtpConfigured();
+    const deliveryMode = smtpConfigured ? 'LIVE_SMTP' : 'QUEUED_NO_SMTP_CREDENTIALS';
+    const jobId = `co-broadcast-${Date.now()}`;
+
+    counterOfferBroadcastState = {
+      inProgress: true,
+      jobId,
+      scope,
+      smtpConfigured,
+      deliveryMode,
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+      totalTargeted: targets.length,
+      processedCount: 0,
+      deliveredCount: 0,
+      queuedAwaitingSmtpCount: 0,
+      failedCount: 0,
+      customSubject,
+      message: `Dispatching Buyer Request & Counter-Offer alert to ${targets.length} listed client(s)...`,
+      recipients: []
+    };
+
+    const runPromise = runCounterOfferBroadcastBatch(targets, {
+      jobId,
+      scope,
+      customSubject,
+      customMessage,
+      smtpConfigured
+    });
+
+    // Fast path: when queued without SMTP credentials or <= 2 live recipients, finish within request
+    if (!smtpConfigured || targets.length <= 2) {
+      await runPromise;
+      logServerActivity(
+        req,
+        'LISTED_CLIENTS_COUNTER_OFFER_EMAIL',
+        'ADMIN',
+        'ADMIN',
+        '/api/v1/admin/email-listed-clients-counter-offer',
+        `Counter-offer broadcast to ${targets.length} listed client(s) [${scope}]: ${counterOfferBroadcastState.deliveredCount} delivered via SMTP, ${counterOfferBroadcastState.queuedAwaitingSmtpCount} queued awaiting SMTP credentials.`,
+        'SUCCESS'
+      );
+      return res.json({
+        success: true,
+        ...counterOfferBroadcastState
+      });
+    }
+
+    // Async path for live SMTP batches (>2 recipients) so browser/Cloud Run never hits 60s timeout
+    void runPromise;
+    return res.status(202).json({
+      success: true,
+      ...counterOfferBroadcastState
+    });
+  } catch (err: any) {
+    counterOfferBroadcastState.inProgress = false;
+    return res.status(500).json({
+      success: false,
+      message: `Failed to trigger listed clients counter-offer broadcast: ${err?.message || err}`
     });
   }
 });
@@ -5552,6 +6241,7 @@ app.post('/api/v1/auth/register', (req, res) => {
   saveServerUsersToDisk();
   const token = generateServerJwt(newRecord);
   touchActivePlatformSession(req, newRecord, 'HOMEPAGE');
+  recordPlatformAuthEvent(req, 'LOGIN', newRecord, 'HOMEPAGE');
 
   logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api/v1/auth/register', `User ${name} verified 6-digit email OTP and registered successfully as ${resolvedRole} for company ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
 
@@ -5638,24 +6328,77 @@ app.post('/api/v1/auth/heartbeat', (req, res) => {
   return res.json({ success: true, serverTime: Date.now() });
 });
 
-// POST /api/v1/auth/logout - Remove active platform presence session immediately on sign-out
+// POST /api/v1/auth/logout - Remove active platform presence session immediately on sign-out & notify admin
 app.post('/api/v1/auth/logout', (req, res) => {
+  let actorEmail = '';
+  let actorInfo: { email?: string; name?: string; role?: string; companyName?: string; country?: string; id?: string } = {};
+  let lastView = typeof req.body?.currentView === 'string' ? req.body.currentView : 'HOMEPAGE';
+
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     const payload = verifyServerJwt(token);
     if (payload?.email) {
-      activePlatformSessions.delete(normalizeRecipientEmail(payload.email));
+      actorEmail = normalizeRecipientEmail(payload.email);
+      actorInfo = { ...payload };
     }
   }
   const bodyEmail = typeof req.body?.email === 'string' ? normalizeRecipientEmail(req.body.email) : '';
-  if (bodyEmail) {
+  if (!actorEmail && bodyEmail) {
+    actorEmail = bodyEmail;
+  }
+
+  if (actorEmail) {
+    const existingSession = activePlatformSessions.get(actorEmail);
+    if (existingSession) {
+      lastView = existingSession.currentView || lastView;
+      actorInfo = {
+        id: existingSession.userId,
+        email: existingSession.email,
+        name: existingSession.name,
+        role: existingSession.role,
+        companyName: existingSession.companyName,
+        country: existingSession.country
+      };
+      activePlatformSessions.delete(actorEmail);
+    } else {
+      const matched = findRegisteredUserForAuth(actorEmail);
+      if (matched) {
+        actorInfo = {
+          id: matched.id,
+          email: matched.email,
+          name: matched.name,
+          role: matched.role,
+          companyName: matched.companyName,
+          country: matched.country
+        };
+      } else {
+        actorInfo = { email: actorEmail, name: actorEmail, role: String(req.body?.role || 'MEMBER') };
+      }
+    }
+
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    console.log(`[LOGOUT AUDIT] User ${actorInfo.email} (${actorInfo.name}, ${actorInfo.role}) logged out at ${timestamp} EST.`);
+
+    recordPlatformAuthEvent(req, 'LOGOUT', actorInfo, lastView);
+    logServerActivity(
+      req,
+      'AUTH_LOGOUT',
+      actorInfo.email || actorEmail,
+      getCorrectRoleForEmail(actorInfo.email || actorEmail, (actorInfo.role as any) || 'BUYER'),
+      '/api/v1/auth/logout',
+      `User ${actorInfo.name || actorEmail} (${actorInfo.role || 'MEMBER'}) signed out from ${lastView}.`,
+      'SUCCESS',
+      String(actorInfo.id || 'unknown')
+    );
+  }
+  if (bodyEmail && bodyEmail !== actorEmail) {
     activePlatformSessions.delete(bodyEmail);
   }
   return res.json({ success: true });
 });
 
-// GET /api/v1/admin/active-users - Return currently logged-in & recently active platform users
+// GET /api/v1/admin/active-users - Return currently logged-in & recently active platform users + recent login/logout alerts
 app.get('/api/v1/admin/active-users', (req, res) => {
   const now = Date.now();
   const ONLINE_WINDOW_MS = 2 * 60 * 1000;
@@ -5683,7 +6426,38 @@ app.get('/api/v1/admin/active-users', (req, res) => {
     onlineCount: activeSessions.filter(s => s.isOnlineNow).length,
     activeSessionCount: activeSessions.length,
     totalRegisteredUsers: serverUsersStore.length,
-    sessions: activeSessions
+    sessions: activeSessions,
+    recentAuthEvents: recentAuthEventsStore.slice(0, 50),
+    authAlertSettings: {
+      emailAlertsEnabled: authAlertEmailConfig.enabled,
+      recipientEmail: authAlertEmailConfig.recipientEmail
+    }
+  });
+});
+
+// GET /api/v1/admin/auth-events - Live stream of login & logout events for Admin NotificationBell & Dashboard
+app.get('/api/v1/admin/auth-events', (_req, res) => {
+  return res.json({
+    success: true,
+    serverTime: Date.now(),
+    emailAlertsEnabled: authAlertEmailConfig.enabled,
+    recipientEmail: authAlertEmailConfig.recipientEmail,
+    events: recentAuthEventsStore.slice(0, 50)
+  });
+});
+
+// POST /api/v1/admin/auth-alert-settings - Toggle admin email alerts on user login/logout
+app.post('/api/v1/admin/auth-alert-settings', (req, res) => {
+  if (typeof req.body?.emailAlertsEnabled === 'boolean') {
+    authAlertEmailConfig.enabled = req.body.emailAlertsEnabled;
+  }
+  if (typeof req.body?.recipientEmail === 'string' && req.body.recipientEmail.includes('@')) {
+    authAlertEmailConfig.recipientEmail = normalizeRecipientEmail(req.body.recipientEmail);
+  }
+  return res.json({
+    success: true,
+    emailAlertsEnabled: authAlertEmailConfig.enabled,
+    recipientEmail: authAlertEmailConfig.recipientEmail
   });
 });
 
@@ -6119,34 +6893,21 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   try {
-    const { email } = req.body;
+    const { email } = req.body || {};
     if (!email || typeof email !== 'string') {
-      return res.status(400).json({ success: false, message: 'Valid corporate email address is required.' });
+      return res.status(400).json({ success: false, message: 'Valid registered corporate email address is required.' });
     }
     const cleanEmail = normalizeRecipientEmail(email);
-    let user = serverUsersStore.find(u => normalizeRecipientEmail(u.email) === cleanEmail);
+    const user = findRegisteredUserForAuth(cleanEmail);
 
     if (!user) {
-      const derivedName = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Trade Partner';
-      user = {
-        id: `user-${Date.now()}`,
-        email: cleanEmail,
-        passwordHash: 'TradeHeaven@2026',
-        name: derivedName,
-        role: 'BUYER',
-        companyName: 'Enterprise Trading Firm',
-        country: 'United States',
-        status: 'ACTIVE',
-        isVerified: true,
-        isPremium: false,
-        membershipStatus: 'free',
-        tier: 'FREE',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
-      };
-      serverUsersStore.push(user);
+      return res.status(404).json({
+        success: false,
+        message: 'This email address is not registered on Trade Heaven. Only registered users can request an OTP.'
+      });
     }
 
-    const initialCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const initialCode = crypto.randomInt(100000, 999999).toString();
     const tokenExpiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');
 
     const dispatchResult = await sendClientOtpEmail(cleanEmail, user.name, initialCode);
@@ -6155,27 +6916,43 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
     user.reset_token = verificationCode;
     user.reset_token_expiry = tokenExpiry;
+    saveServerUsersToDisk();
 
-    console.log(`[PASSWORD RESET] Automated 6-Digit Verification Code dispatched for ${cleanEmail} from noreply@tradeheaven.net (${dispatchResult.mode}): ${verificationCode}`);
+    sendActivityAlert(
+      emailSent ? 'PASSWORD_RESET_OTP_SENT' : 'PASSWORD_RESET_OTP_FAILED',
+      cleanEmail,
+      emailSent
+        ? `Automated 6-digit password reset OTP dispatched from noreply@tradeheaven.net to ${cleanEmail} via ${dispatchResult.mode}.`
+        : `Password reset OTP delivery failed for ${cleanEmail}: ${dispatchResult.error || 'SMTP failure'}`,
+      {
+        clientEmail: cleanEmail,
+        clientName: user.name,
+        sender: 'noreply@tradeheaven.net',
+        emailSent,
+        deliveryMode: dispatchResult.mode
+      }
+    );
 
-    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP (${verificationCode}) dispatched from noreply@tradeheaven.net to ${cleanEmail} via ${dispatchResult.mode}.`, {
-      clientEmail: cleanEmail,
-      clientName: user.name,
-      sender: 'noreply@tradeheaven.net',
-      verificationCode,
-      emailSent,
-      deliveryMode: dispatchResult.mode
-    });
+    if (!emailSent) {
+      return res.status(502).json({
+        success: false,
+        status: 'error',
+        sender: 'noreply@tradeheaven.net',
+        emailSent: false,
+        deliveryMode: dispatchResult.mode,
+        error: dispatchResult.error,
+        message: `Unable to deliver the 6-digit password reset OTP to ${maskRegisteredEmail(cleanEmail)} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+      });
+    }
 
     return res.status(200).json({
       success: true,
       status: 'success',
       sender: 'noreply@tradeheaven.net',
-      emailSent,
+      emailSent: true,
       deliveryMode: dispatchResult.mode,
-      code: verificationCode,
-      verification_code: verificationCode,
-      message: `A 6-digit verification code has been automatically sent to ${cleanEmail} from noreply@tradeheaven.net.`
+      messageId: dispatchResult.messageId,
+      message: `A 6-digit verification code has been automatically sent to ${maskRegisteredEmail(cleanEmail)} from noreply@tradeheaven.net.`
     });
   } catch (error: any) {
     console.error('Forgot password internal server error:', error);
@@ -6297,6 +7074,20 @@ app.post('/api.php', async (req, res) => {
         accountType === 'SUPPLIER' ? 'SUPPLIER' : 'BUYER'
       );
       const maskedEmail = maskRegisteredEmail(cleanEmail);
+      if (!dispatchInfo.emailSent) {
+        return res.status(502).json({
+          status: 'error',
+          success: false,
+          otp_dispatched: false,
+          mode: 'REGISTER',
+          email: cleanEmail,
+          maskedEmail,
+          emailSent: false,
+          deliveryMode: dispatchInfo.deliveryMode,
+          error: dispatchInfo.error,
+          message: `Unable to deliver the 6-digit OTP to ${maskedEmail} right now. Please verify the email address and retry, or contact Trade Heaven on WhatsApp (+91 8532934479).`
+        });
+      }
       return res.json({
         status: 'success',
         success: true,
@@ -6304,7 +7095,9 @@ app.post('/api.php', async (req, res) => {
         mode: 'REGISTER',
         email: cleanEmail,
         maskedEmail,
-        emailSent: dispatchInfo.emailSent,
+        emailSent: true,
+        deliveryMode: dispatchInfo.deliveryMode,
+        messageId: dispatchInfo.messageId,
         message: `A 6-digit verification code has been sent to ${maskedEmail} via noreply@tradeheaven.net. Enter it below to complete registration.`
       });
     }
@@ -6327,6 +7120,22 @@ app.post('/api.php', async (req, res) => {
     }
     const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
     const maskedEmail = maskRegisteredEmail(matchedUser.email);
+    if (!dispatchInfo.emailSent) {
+      return res.status(502).json({
+        status: 'error',
+        success: false,
+        otp_dispatched: false,
+        mode: 'LOGIN',
+        requiresOtp: false,
+        email: matchedUser.email,
+        maskedEmail,
+        role: matchedUser.role,
+        emailSent: false,
+        deliveryMode: dispatchInfo.deliveryMode,
+        error: dispatchInfo.error,
+        message: `Unable to deliver your 6-digit login OTP to ${maskedEmail} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+      });
+    }
     return res.json({
       status: 'success',
       success: true,
@@ -6336,7 +7145,9 @@ app.post('/api.php', async (req, res) => {
       email: matchedUser.email,
       maskedEmail,
       role: matchedUser.role,
-      emailSent: dispatchInfo.emailSent,
+      emailSent: true,
+      deliveryMode: dispatchInfo.deliveryMode,
+      messageId: dispatchInfo.messageId,
       message: isRootAdmin
         ? `Admin OTP-Only Security: A 6-digit verification code has been sent to your registered admin email (${maskedEmail}).`
         : `A 6-digit verification code has been sent to your registered email (${maskedEmail}) via noreply@tradeheaven.net.`
@@ -6379,7 +7190,10 @@ app.post('/api.php', async (req, res) => {
     const isAdmin = AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN';
     const resolvedRole = isAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
     const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
+    touchActivePlatformSession(req, { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
     sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+    recordPlatformAuthEvent(req, 'LOGIN', { ...matchedUser, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
+    logServerActivity(req, 'SECURITY_LOGIN_EVENT', matchedUser.email, resolvedRole, '/api.php?action=login', `User ${matchedUser.name} (${resolvedRole}) completed OTP login.`, 'SUCCESS', matchedUser.id);
     return res.json({
       status: 'success',
       success: true,
@@ -6419,13 +7233,28 @@ app.post('/api.php', async (req, res) => {
     }
     const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
     const maskedEmail = maskRegisteredEmail(matchedUser.email);
+    if (!dispatchInfo.emailSent) {
+      return res.status(502).json({
+        status: 'error',
+        success: false,
+        requiresOtp: false,
+        email: matchedUser.email,
+        maskedEmail,
+        emailSent: false,
+        deliveryMode: dispatchInfo.deliveryMode,
+        error: dispatchInfo.error,
+        message: `Unable to resend your 6-digit verification OTP to ${maskedEmail} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+      });
+    }
     return res.json({
       status: 'success',
       success: true,
       requiresOtp: true,
       email: matchedUser.email,
       maskedEmail,
-      emailSent: dispatchInfo.emailSent,
+      emailSent: true,
+      deliveryMode: dispatchInfo.deliveryMode,
+      messageId: dispatchInfo.messageId,
       message: `A fresh 6-digit verification OTP has been sent to your registered email (${maskedEmail}).`
     });
   }
@@ -6501,6 +7330,8 @@ app.post('/api.php', async (req, res) => {
     serverUsersStore.unshift(newRecord);
     saveServerUsersToDisk();
     const token = generateServerJwt(newRecord);
+    touchActivePlatformSession(req, newRecord, 'HOMEPAGE');
+    recordPlatformAuthEvent(req, 'LOGIN', newRecord, 'HOMEPAGE');
 
     logServerActivity(req, 'USER_REGISTRATION', cleanEmail, resolvedRole, '/api.php?action=register', `User ${newRecord.name} verified 6-digit email OTP and registered a corporate account for ${newRecord.companyName}.`, 'SUCCESS', newRecord.id);
 
@@ -6574,21 +7405,41 @@ app.post('/api.php', async (req, res) => {
     user.reset_token_expiry = tokenExpiry;
     saveServerUsersToDisk();
 
-    sendActivityAlert('PASSWORD_RESET_OTP_SENT', cleanEmail, `Automated 6-digit password reset OTP dispatched from noreply@tradeheaven.net to registered user ${cleanEmail} via ${dispatchResult.mode}.`, {
-      clientEmail: cleanEmail,
-      clientName: user.name,
-      sender: 'noreply@tradeheaven.net',
-      emailSent,
-      deliveryMode: dispatchResult.mode
-    });
+    sendActivityAlert(
+      emailSent ? 'PASSWORD_RESET_OTP_SENT' : 'PASSWORD_RESET_OTP_FAILED',
+      cleanEmail,
+      emailSent
+        ? `Automated 6-digit password reset OTP dispatched from noreply@tradeheaven.net to registered user ${cleanEmail} via ${dispatchResult.mode}.`
+        : `Password reset OTP delivery failed for ${cleanEmail}: ${dispatchResult.error || 'SMTP failure'}`,
+      {
+        clientEmail: cleanEmail,
+        clientName: user.name,
+        sender: 'noreply@tradeheaven.net',
+        emailSent,
+        deliveryMode: dispatchResult.mode
+      }
+    );
+
+    if (!emailSent) {
+      return res.status(502).json({
+        success: false,
+        status: 'error',
+        sender: 'noreply@tradeheaven.net',
+        emailSent: false,
+        deliveryMode: dispatchResult.mode,
+        error: dispatchResult.error,
+        message: `Unable to deliver the 6-digit password reset OTP to ${maskRegisteredEmail(cleanEmail)} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+      });
+    }
 
     // Security: NEVER return the OTP code in the HTTP response body
     return res.status(200).json({
       success: true,
       status: 'success',
       sender: 'noreply@tradeheaven.net',
-      emailSent,
+      emailSent: true,
       deliveryMode: dispatchResult.mode,
+      messageId: dispatchResult.messageId,
       message: `A 6-digit verification OTP has been sent to your registered email (${maskRegisteredEmail(cleanEmail)}) from noreply@tradeheaven.net.`
     });
   }
@@ -6690,7 +7541,10 @@ app.post('/api.php', async (req, res) => {
 
       const resolvedRole = isRootAdmin ? 'ADMIN' : (matchedUser.role === 'ADMIN' ? 'SUPPLIER' : matchedUser.role);
       const token = generateServerJwt({ ...matchedUser, role: resolvedRole });
+      touchActivePlatformSession(req, { ...matchedUser, role: resolvedRole }, isRootAdmin ? 'ADMIN_PORTAL' : 'HOMEPAGE');
       sendLoginAlert(matchedUser.email, matchedUser.name, resolvedRole, matchedUser.companyName, matchedUser.country);
+      recordPlatformAuthEvent(req, 'LOGIN', { ...matchedUser, role: resolvedRole }, isRootAdmin ? 'ADMIN_PORTAL' : 'HOMEPAGE');
+      logServerActivity(req, 'SECURITY_LOGIN_EVENT', matchedUser.email, resolvedRole, '/api.php?action=login', `User ${matchedUser.name} (${resolvedRole}) completed OTP login.`, 'SUCCESS', matchedUser.id);
       return res.json({
         status: 'success',
         success: true,
@@ -6721,7 +7575,34 @@ app.post('/api.php', async (req, res) => {
     const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
     const maskedEmail = maskRegisteredEmail(matchedUser.email);
 
-    logServerActivity(req, 'LOGIN_OTP_DISPATCHED', matchedUser.email, matchedUser.role, '/api.php?action=login', `6-digit login OTP dispatched to registered email ${matchedUser.email}.`, 'SUCCESS', matchedUser.id);
+    logServerActivity(
+      req,
+      dispatchInfo.emailSent ? 'LOGIN_OTP_DISPATCHED' : 'LOGIN_OTP_FAILED',
+      matchedUser.email,
+      matchedUser.role,
+      '/api.php?action=login',
+      dispatchInfo.emailSent
+        ? `6-digit login OTP dispatched to registered email ${matchedUser.email}.`
+        : `6-digit login OTP failed for ${matchedUser.email}: ${dispatchInfo.error || 'SMTP failure'}.`,
+      dispatchInfo.emailSent ? 'SUCCESS' : 'FAILED',
+      matchedUser.id
+    );
+
+    if (!dispatchInfo.emailSent) {
+      return res.status(502).json({
+        status: 'error',
+        success: false,
+        requiresOtp: false,
+        email: matchedUser.email,
+        maskedEmail,
+        role: matchedUser.role,
+        emailSent: false,
+        deliveryMode: dispatchInfo.deliveryMode,
+        error: dispatchInfo.error,
+        message: `Unable to deliver the 6-digit security verification OTP to ${maskedEmail} right now. Please retry or contact Trade Heaven on WhatsApp (+91 8532934479).`
+      });
+    }
+
     return res.json({
       status: 'success',
       success: true,
@@ -6729,7 +7610,9 @@ app.post('/api.php', async (req, res) => {
       email: matchedUser.email,
       maskedEmail,
       role: matchedUser.role,
-      emailSent: dispatchInfo.emailSent,
+      emailSent: true,
+      deliveryMode: dispatchInfo.deliveryMode,
+      messageId: dispatchInfo.messageId,
       message: `A 6-digit security verification OTP has been sent to your registered email (${maskedEmail}).`
     });
   }

@@ -114,6 +114,20 @@ interface ActivePlatformUserSession {
   secondsAgo: number;
 }
 
+interface PlatformAuthEventItem {
+  id: string;
+  eventType: 'LOGIN' | 'LOGOUT';
+  email: string;
+  name: string;
+  role: string;
+  companyName: string;
+  country: string;
+  currentView: string;
+  ipAddress: string;
+  timestamp: string;
+  emailAlertQueued?: boolean;
+}
+
 interface AdminDashboardProps {
   initialTab?: AdminDashboardTabId;
   currentUser: AuthUser | null;
@@ -280,6 +294,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [initialTab]);
 
   const [liveUserSessions, setLiveUserSessions] = useState<ActivePlatformUserSession[]>([]);
+  const [recentAuthEvents, setRecentAuthEvents] = useState<PlatformAuthEventItem[]>([]);
+  const [authEmailAlertsEnabled, setAuthEmailAlertsEnabled] = useState<boolean>(true);
+  const [isTogglingAuthAlerts, setIsTogglingAuthAlerts] = useState(false);
   const [liveUserCounts, setLiveUserCounts] = useState<{
     onlineCount: number;
     activeSessionCount: number;
@@ -295,6 +312,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const data = await res.json();
       if (res.ok && data?.success) {
         setLiveUserSessions(Array.isArray(data.sessions) ? data.sessions : []);
+        if (Array.isArray(data.recentAuthEvents)) {
+          setRecentAuthEvents(data.recentAuthEvents);
+        }
+        if (typeof data.authAlertSettings?.emailAlertsEnabled === 'boolean') {
+          setAuthEmailAlertsEnabled(data.authAlertSettings.emailAlertsEnabled);
+        }
         setLiveUserCounts({
           onlineCount: Number(data.onlineCount || 0),
           activeSessionCount: Number(data.activeSessionCount || 0),
@@ -306,12 +329,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleToggleAuthEmailAlerts = async () => {
+    if (!isStrictAdmin || isTogglingAuthAlerts) return;
+    setIsTogglingAuthAlerts(true);
+    try {
+      const nextVal = !authEmailAlertsEnabled;
+      const res = await fetch('/api/v1/admin/auth-alert-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailAlertsEnabled: nextVal })
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        setAuthEmailAlertsEnabled(Boolean(data.emailAlertsEnabled));
+      }
+    } catch {} finally {
+      setIsTogglingAuthAlerts(false);
+    }
+  };
+
   useEffect(() => {
     if (!isStrictAdmin || activeTab !== 'ADMIN_MENU_OVERVIEW') return;
     void fetchLiveActiveUsers();
     const interval = window.setInterval(() => {
       void fetchLiveActiveUsers();
-    }, 15000);
+    }, 10000);
     return () => window.clearInterval(interval);
   }, [isStrictAdmin, activeTab]);
 
@@ -1120,16 +1162,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => void fetchLiveActiveUsers()}
-                  disabled={isLoadingLiveUsers}
-                  data-testid="refresh-live-users-btn"
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer whitespace-nowrap shrink-0"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingLiveUsers ? 'animate-spin' : ''}`} />
-                  <span>{isLoadingLiveUsers ? 'Refreshing...' : 'Refresh Live Users'}</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => void handleToggleAuthEmailAlerts()}
+                    disabled={isTogglingAuthAlerts}
+                    data-testid="toggle-auth-email-alerts-btn"
+                    className={`px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                      authEmailAlertsEnabled
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                        : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+                    }`}
+                    title="Send automated email notifications to Admin whenever any user logs in or logs out"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Login/Logout Email Alerts: {authEmailAlertsEnabled ? 'ON' : 'OFF'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void fetchLiveActiveUsers()}
+                    disabled={isLoadingLiveUsers}
+                    data-testid="refresh-live-users-btn"
+                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingLiveUsers ? 'animate-spin' : ''}`} />
+                    <span>{isLoadingLiveUsers ? 'Refreshing...' : 'Refresh Live Users'}</span>
+                  </button>
+                </div>
               </div>
 
               <div className="border border-slate-200 rounded-xl overflow-x-auto">
@@ -1193,6 +1253,62 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* RECENT LOGIN & LOGOUT NOTIFICATIONS STREAM */}
+              <div className="pt-2 space-y-2.5" data-testid="admin-auth-events-feed">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Recent Login &amp; Logout Notifications</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-500 tabular-nums">
+                    {recentAuthEvents.length} recent events
+                  </span>
+                </div>
+
+                {recentAuthEvents.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-500">
+                    No login or logout notifications recorded in this server session yet. Events appear immediately when any buyer, supplier, or admin signs in or signs out.
+                  </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                    {recentAuthEvents.slice(0, 20).map(evt => {
+                      const isLogin = evt.eventType === 'LOGIN';
+                      return (
+                        <div
+                          key={evt.id}
+                          className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs hover:bg-slate-50"
+                        >
+                          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                            <span
+                              className={`px-2 py-0.5 rounded font-black text-[10px] uppercase shrink-0 ${
+                                isLogin
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                              }`}
+                            >
+                              {isLogin ? 'Logged In' : 'Logged Out'}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 truncate">
+                                {evt.name} <span className="font-normal text-slate-500">({evt.role})</span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 truncate">
+                                <span className="font-mono">{evt.email}</span>
+                                {evt.companyName ? ` • ${evt.companyName}` : ''}
+                                {evt.currentView ? ` • Page: ${evt.currentView}` : ''}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-500 shrink-0 tabular-nums">
+                            {new Date(evt.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </section>
           </div>

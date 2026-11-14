@@ -191,7 +191,9 @@
     "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
     "login_otp_code": null,
     "login_otp_expiry": null,
-    "login_otp_attempts": 0
+    "login_otp_attempts": 0,
+    "reset_token": "869625",
+    "reset_token_expiry": "2026-11-14 05:43:12"
   },
   {
     "id": "user-supplier-afreh-yaw",
