@@ -545,7 +545,8 @@ export type ActiveView =
   | 'B2B_TRUST_CERTIFICATE'
   | 'RENEWAL_INSIGHTS'
   | 'RENEWAL_EMAIL_EDITOR'
-  | 'MAIL_DELIVERY_HISTORY';
+  | 'MAIL_DELIVERY_HISTORY'
+  | 'SUPPLIER_MESSAGES';
 
 export * from './types/planPricingTypes';
 
@@ -805,4 +806,87 @@ export interface DeliveryQueueHealthStatus {
   lastDispatchedAt: string | null;
   recentDeliveries: DeliveryQueueReceipt[];
 }
+
+export type ChatMediaType = 'none' | 'image' | 'video' | 'pdf';
+
+export type ChatMessageSenderRole = 'buyer_identity' | 'supplier';
+
+export interface AdminBuyerIdentity {
+  id: string;
+  buyerName: string;
+  companyName: string;
+  country: string;
+  city: string;
+  phone: string;
+  email: string;
+  productInterest: string;
+  address?: string;
+  avatarUrl?: string;
+  verifiedBuyer?: boolean;
+  createdAt: string;
+}
+
+export interface ChatConversationIdentityView {
+  id: string;
+  buyerName: string;
+  companyName: string;
+  country: string;
+  city: string;
+  phone: string;
+  email: string;
+  productInterest: string;
+  address?: string;
+  avatarUrl?: string;
+  verifiedBuyer?: boolean;
+  phoneHidden?: boolean;
+  emailHidden?: boolean;
+  companyHidden?: boolean;
+}
+
+export interface ChatConversation {
+  id: string;
+  identityId: string;
+  supplierId: string;
+  supplierName: string;
+  supplierEmail?: string;
+  supplierCompany?: string;
+  supplierCountry?: string;
+  showPhone: boolean;
+  showEmail: boolean;
+  showCompany: boolean;
+  lastMessage: string;
+  lastMessageIsRead?: boolean;
+  lastMessageSenderRole?: ChatMessageSenderRole;
+  unreadCount?: number;
+  unreadForAdmin?: number;
+  unreadForSupplier?: number;
+  updatedAt: string;
+  createdAt?: string;
+  identity?: ChatConversationIdentityView;
+}
+
+export interface MultiChatMessage {
+  id: string;
+  conversationId: string;
+  senderRole: ChatMessageSenderRole;
+  messageText: string;
+  mediaType: ChatMediaType;
+  mediaUrl: string;
+  mediaName: string;
+  mediaSize: number;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface ChatMediaUploadResult {
+  success: boolean;
+  mediaType: ChatMediaType;
+  mediaUrl: string;
+  mediaName: string;
+  mediaSize: number;
+  mimeType?: string;
+  message?: string;
+}
+
 

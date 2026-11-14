@@ -7,6 +7,7 @@ import {
 } from '../../data/detailedVendorProfiles';
 import { SafeImage } from '../common/SafeImage';
 import { api } from '../../services/apiService';
+import { SupplierMessagesInbox } from './SupplierMessagesInbox';
 import {
   ShieldCheck,
   Package,
@@ -125,7 +126,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
   };
 
   // Active Main Navigation Tab
-  const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'INQUIRIES' | 'PENDING_RFQS'>('PRODUCTS');
+  const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'INQUIRIES' | 'PENDING_RFQS' | 'MESSAGES'>('PRODUCTS');
   const [productPendingDelete, setProductPendingDelete] = useState<SupplierProductItem | null>(null);
 
   // Supplier identity resolution
@@ -1238,6 +1239,19 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                 {pendingRfqs.length}
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('MESSAGES')}
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'MESSAGES'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Messages / Buyer Inquiries</span>
+            </button>
           </div>
 
           <div className="pb-3 text-xs text-slate-500 font-medium hidden sm:block">
@@ -1563,6 +1577,10 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'MESSAGES' && (
+          <SupplierMessagesInbox currentUser={currentUser} />
         )}
 
         {/* ========================================================= */}

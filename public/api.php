@@ -265,6 +265,81 @@ if ($db_connected) {
             $db_connected = false;
         }
     }
+
+    // Separate migration marker for Multi-Identity Admin Buyer Chat & Media Messaging tables
+    $chat_marker_file = __DIR__ . '/.db_chat_schema_v1';
+    if ($db_connected && $pdo && !file_exists($chat_marker_file)) {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS admin_buyer_identities (
+                id VARCHAR(64) PRIMARY KEY,
+                buyer_name VARCHAR(150) NOT NULL,
+                company_name VARCHAR(255) DEFAULT '',
+                country VARCHAR(100) DEFAULT 'United States',
+                city VARCHAR(120) DEFAULT '',
+                phone VARCHAR(100) DEFAULT '',
+                email VARCHAR(255) DEFAULT '',
+                product_interest VARCHAR(255) DEFAULT '',
+                address TEXT,
+                avatar_url TEXT,
+                verified_buyer TINYINT(1) DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS chat_conversations (
+                id VARCHAR(64) PRIMARY KEY,
+                identity_id VARCHAR(64) NOT NULL,
+                supplier_id VARCHAR(128) NOT NULL,
+                supplier_name VARCHAR(255) DEFAULT '',
+                supplier_email VARCHAR(255) DEFAULT '',
+                supplier_company VARCHAR(255) DEFAULT '',
+                supplier_country VARCHAR(100) DEFAULT '',
+                show_phone TINYINT(1) DEFAULT 0,
+                show_email TINYINT(1) DEFAULT 0,
+                show_company TINYINT(1) DEFAULT 0,
+                last_message TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_chat_identity (identity_id),
+                INDEX idx_chat_supplier (supplier_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS chat_messages (
+                id VARCHAR(64) PRIMARY KEY,
+                conversation_id VARCHAR(64) NOT NULL,
+                sender_role ENUM('buyer_identity', 'supplier') NOT NULL DEFAULT 'buyer_identity',
+                message_text TEXT,
+                media_type ENUM('none', 'image', 'video', 'pdf') NOT NULL DEFAULT 'none',
+                media_url TEXT,
+                media_name VARCHAR(255) DEFAULT '',
+                media_size BIGINT DEFAULT 0,
+                is_read TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_chat_conv (conversation_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            @file_put_contents($chat_marker_file, '1');
+        } catch (Exception $e) {
+            @file_put_contents(__DIR__ . '/db_error.log', "Chat schema migration warning: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    // Ensure chat_messages has is_read & read_at columns on pre-existing installations
+    $chat_v2_marker = __DIR__ . '/.db_chat_schema_v2';
+    if ($db_connected && $pdo && !file_exists($chat_v2_marker)) {
+        try {
+            $colCheck = $pdo->query("SHOW COLUMNS FROM chat_messages LIKE 'is_read'")->fetch();
+            if (!$colCheck) {
+                $pdo->exec("ALTER TABLE chat_messages ADD COLUMN is_read TINYINT(1) NOT NULL DEFAULT 0 AFTER media_size");
+            }
+            $readAtCheck = $pdo->query("SHOW COLUMNS FROM chat_messages LIKE 'read_at'")->fetch();
+            if (!$readAtCheck) {
+                $pdo->exec("ALTER TABLE chat_messages ADD COLUMN read_at TIMESTAMP NULL DEFAULT NULL AFTER is_read");
+            }
+            @file_put_contents($chat_v2_marker, '1');
+        } catch (Exception $e) {
+            @file_put_contents(__DIR__ . '/db_error.log', "Chat v2 migration warning: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
 }
 
 // -------------------------------------------------------------
@@ -3172,6 +3247,557 @@ switch ($action) {
             "failedCount" => $failed,
             "recipients" => $receipts,
             "message" => "Processed {$delivered}/" . count($targets_map) . " counter-offer alert email(s) via Trade Heaven PHP mail()."
+        ]);
+        break;
+
+    // -------------------------------------------------------------
+    // MULTI-IDENTITY ADMIN BUYER CHAT & RICH MEDIA ENDPOINTS
+    // -------------------------------------------------------------
+    case 'get_buyer_identities':
+        $identities = [];
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->query("SELECT * FROM admin_buyer_identities ORDER BY created_at DESC");
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $identities[] = [
+                        'id' => (string)$r['id'],
+                        'buyerName' => (string)$r['buyer_name'],
+                        'companyName' => (string)($r['company_name'] ?? ''),
+                        'country' => (string)($r['country'] ?? 'United States'),
+                        'city' => (string)($r['city'] ?? ''),
+                        'phone' => (string)($r['phone'] ?? ''),
+                        'email' => (string)($r['email'] ?? ''),
+                        'productInterest' => (string)($r['product_interest'] ?? ''),
+                        'address' => (string)($r['address'] ?? ''),
+                        'avatarUrl' => (string)($r['avatar_url'] ?? ''),
+                        'verifiedBuyer' => !isset($r['verified_buyer']) || !empty($r['verified_buyer']),
+                        'createdAt' => (string)($r['created_at'] ?? date('c'))
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+        $chat_json_file = __DIR__ . '/uploads/chat_media/chat-system-store.json';
+        if (empty($identities) && file_exists($chat_json_file)) {
+            $parsed = json_decode((string)file_get_contents($chat_json_file), true);
+            if (is_array($parsed['identities'] ?? null)) {
+                $identities = $parsed['identities'];
+            }
+        }
+        echo json_encode(["status" => "success", "success" => true, "data" => $identities]);
+        break;
+
+    case 'create_buyer_identity':
+        $buyer_name = trim((string)($input['buyerName'] ?? $input['buyer_name'] ?? ''));
+        if ($buyer_name === '') {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "buyerName is required"]);
+            break;
+        }
+        $id = 'persona-' . round(microtime(true) * 1000) . '-' . substr(md5(uniqid('', true)), 0, 6);
+        $company_name = trim((string)($input['companyName'] ?? $input['company_name'] ?? ''));
+        $country = trim((string)($input['country'] ?? 'United States'));
+        $city = trim((string)($input['city'] ?? ''));
+        $phone = trim((string)($input['phone'] ?? ''));
+        $email = trim((string)($input['email'] ?? ''));
+        $product_interest = trim((string)($input['productInterest'] ?? $input['product_interest'] ?? ''));
+        $address = trim((string)($input['address'] ?? ''));
+        $avatar_url = trim((string)($input['avatarUrl'] ?? $input['avatar_url'] ?? ''));
+        $created_at = gmdate('Y-m-d H:i:s');
+
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO admin_buyer_identities (id, buyer_name, company_name, country, city, phone, email, product_interest, address, avatar_url, verified_buyer, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)");
+                $stmt->execute([$id, $buyer_name, $company_name, $country, $city, $phone, $email, $product_interest, $address, $avatar_url, $created_at]);
+            } catch (Exception $e) {}
+        }
+
+        $record = [
+            'id' => $id,
+            'buyerName' => $buyer_name,
+            'companyName' => $company_name,
+            'country' => $country,
+            'city' => $city,
+            'phone' => $phone,
+            'email' => $email,
+            'productInterest' => $product_interest,
+            'address' => $address,
+            'avatarUrl' => $avatar_url,
+            'verifiedBuyer' => true,
+            'createdAt' => gmdate('c')
+        ];
+        echo json_encode(["status" => "success", "success" => true, "data" => $record]);
+        break;
+
+    case 'update_buyer_identity':
+        $id = trim((string)($input['id'] ?? ''));
+        if ($id === '') {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "Identity id is required"]);
+            break;
+        }
+        $buyer_name = trim((string)($input['buyerName'] ?? $input['buyer_name'] ?? ''));
+        $company_name = trim((string)($input['companyName'] ?? $input['company_name'] ?? ''));
+        $country = trim((string)($input['country'] ?? 'United States'));
+        $city = trim((string)($input['city'] ?? ''));
+        $phone = trim((string)($input['phone'] ?? ''));
+        $email = trim((string)($input['email'] ?? ''));
+        $product_interest = trim((string)($input['productInterest'] ?? $input['product_interest'] ?? ''));
+        $address = trim((string)($input['address'] ?? ''));
+        $avatar_url = trim((string)($input['avatarUrl'] ?? $input['avatar_url'] ?? ''));
+
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->prepare("UPDATE admin_buyer_identities SET buyer_name = ?, company_name = ?, country = ?, city = ?, phone = ?, email = ?, product_interest = ?, address = ?, avatar_url = ? WHERE id = ?");
+                $stmt->execute([$buyer_name, $company_name, $country, $city, $phone, $email, $product_interest, $address, $avatar_url, $id]);
+            } catch (Exception $e) {}
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                'id' => $id,
+                'buyerName' => $buyer_name,
+                'companyName' => $company_name,
+                'country' => $country,
+                'city' => $city,
+                'phone' => $phone,
+                'email' => $email,
+                'productInterest' => $product_interest,
+                'address' => $address,
+                'avatarUrl' => $avatar_url,
+                'verifiedBuyer' => true,
+                'createdAt' => (string)($input['createdAt'] ?? gmdate('c'))
+            ]
+        ]);
+        break;
+
+    case 'delete_buyer_identity':
+        $id = trim((string)($input['id'] ?? $_GET['id'] ?? ''));
+        if ($db_connected && $pdo && $id !== '') {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM admin_buyer_identities WHERE id = ?");
+                $stmt->execute([$id]);
+            } catch (Exception $e) {}
+        }
+        echo json_encode(["status" => "success", "success" => true, "deletedId" => $id]);
+        break;
+
+    case 'get_chat_conversations':
+        $view_mode = strtolower(trim((string)($_GET['view_mode'] ?? $input['view_mode'] ?? 'admin')));
+        $supplier_id = trim((string)($_GET['supplier_id'] ?? $input['supplier_id'] ?? ''));
+        $supplier_email = strtolower(trim((string)($_GET['supplier_email'] ?? $input['supplier_email'] ?? '')));
+        $conversations = [];
+
+        if ($db_connected && $pdo) {
+            try {
+                $sql = "SELECT c.*, i.buyer_name, i.company_name AS i_company_name, i.country AS i_country, i.city AS i_city, i.phone AS i_phone, i.email AS i_email, i.product_interest AS i_product_interest, i.address AS i_address, i.avatar_url AS i_avatar_url
+                        FROM chat_conversations c
+                        LEFT JOIN admin_buyer_identities i ON c.identity_id = i.id";
+                $params = [];
+                if ($view_mode === 'supplier') {
+                    $conds = [];
+                    if ($supplier_id !== '') {
+                        $conds[] = "c.supplier_id = ?";
+                        $params[] = $supplier_id;
+                    }
+                    if ($supplier_email !== '') {
+                        $conds[] = "LOWER(c.supplier_email) = ?";
+                        $params[] = $supplier_email;
+                    }
+                    if (!empty($conds)) {
+                        $sql .= " WHERE (" . implode(" OR ", $conds) . ")";
+                    }
+                }
+                $sql .= " ORDER BY c.updated_at DESC";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $show_phone = !empty($r['show_phone']);
+                    $show_email = !empty($r['show_email']);
+                    $show_company = !empty($r['show_company']);
+
+                    $raw_phone = (string)($r['i_phone'] ?? '');
+                    $raw_email = (string)($r['i_email'] ?? '');
+                    $raw_company = (string)($r['i_company_name'] ?? '');
+                    $raw_address = (string)($r['i_address'] ?? '');
+                    $raw_country = (string)($r['i_country'] ?? 'United States');
+                    $raw_city = (string)($r['i_city'] ?? '');
+
+                    $masked_phone = strlen(preg_replace('/\D+/', '', $raw_phone)) >= 4
+                        ? substr($raw_phone, 0, 2) . ' •••-•••-' . substr(preg_replace('/\D+/', '', $raw_phone), -4) . ' [Protected by Trade Heaven]'
+                        : '+•• •••-•••-•••• [Protected by Trade Heaven]';
+                    $email_parts = explode('@', $raw_email);
+                    $masked_email = (strlen($email_parts[0] ?? '') > 0 ? substr($email_parts[0], 0, 1) : 'b') . '••••@••••.' . (strpos($email_parts[1] ?? '', '.') !== false ? substr(strrchr($email_parts[1], '.'), 1) : 'com');
+                    $masked_company = 'Verified Importer • ' . $raw_country . ' [Protected by Trade Heaven]';
+
+                    // Count unread messages & last message read status
+                    $unread_admin = 0;
+                    $unread_supplier = 0;
+                    $last_msg_is_read = false;
+                    $last_msg_sender_role = null;
+                    try {
+                        $uStmt = $pdo->prepare("SELECT sender_role, COUNT(*) AS cnt FROM chat_messages WHERE conversation_id = ? AND is_read = 0 GROUP BY sender_role");
+                        $uStmt->execute([$r['id']]);
+                        foreach ($uStmt->fetchAll(PDO::FETCH_ASSOC) as $ur) {
+                            if ($ur['sender_role'] === 'supplier') $unread_admin = intval($ur['cnt']);
+                            if ($ur['sender_role'] === 'buyer_identity') $unread_supplier = intval($ur['cnt']);
+                        }
+                        $lStmt = $pdo->prepare("SELECT sender_role, is_read FROM chat_messages WHERE conversation_id = ? ORDER BY created_at DESC, id DESC LIMIT 1");
+                        $lStmt->execute([$r['id']]);
+                        $lastRow = $lStmt->fetch(PDO::FETCH_ASSOC);
+                        if ($lastRow) {
+                            $last_msg_sender_role = (string)$lastRow['sender_role'];
+                            $last_msg_is_read = !empty($lastRow['is_read']);
+                        }
+                    } catch (Exception $e) {}
+
+                    $is_supplier_view = ($view_mode === 'supplier');
+                    $conversations[] = [
+                        'id' => (string)$r['id'],
+                        'identityId' => (string)$r['identity_id'],
+                        'supplierId' => (string)$r['supplier_id'],
+                        'supplierName' => (string)$r['supplier_name'],
+                        'supplierEmail' => (string)($r['supplier_email'] ?? ''),
+                        'supplierCompany' => (string)($r['supplier_company'] ?? ''),
+                        'supplierCountry' => (string)($r['supplier_country'] ?? ''),
+                        'showPhone' => $show_phone,
+                        'showEmail' => $show_email,
+                        'showCompany' => $show_company,
+                        'lastMessage' => (string)($r['last_message'] ?? ''),
+                        'lastMessageIsRead' => $last_msg_is_read,
+                        'lastMessageSenderRole' => $last_msg_sender_role,
+                        'unreadForAdmin' => $unread_admin,
+                        'unreadForSupplier' => $unread_supplier,
+                        'unreadCount' => $is_supplier_view ? $unread_supplier : $unread_admin,
+                        'updatedAt' => (string)($r['updated_at'] ?? date('c')),
+                        'createdAt' => (string)($r['created_at'] ?? date('c')),
+                        'identity' => [
+                            'id' => (string)$r['identity_id'],
+                            'buyerName' => (string)($r['buyer_name'] ?? 'Verified Buyer'),
+                            'country' => $raw_country,
+                            'city' => $raw_city,
+                            'productInterest' => (string)($r['i_product_interest'] ?? ''),
+                            'avatarUrl' => (string)($r['i_avatar_url'] ?? ''),
+                            'verifiedBuyer' => true,
+                            'phone' => ($is_supplier_view && !$show_phone) ? $masked_phone : $raw_phone,
+                            'email' => ($is_supplier_view && !$show_email) ? $masked_email : $raw_email,
+                            'companyName' => ($is_supplier_view && !$show_company) ? $masked_company : $raw_company,
+                            'address' => ($is_supplier_view && !$show_company) ? ($raw_city ? "{$raw_city}, {$raw_country} [Exact Address Hidden]" : "{$raw_country} [Exact Address Hidden]") : $raw_address,
+                            'phoneHidden' => !$show_phone,
+                            'emailHidden' => !$show_email,
+                            'companyHidden' => !$show_company
+                        ]
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+        echo json_encode(["status" => "success", "success" => true, "data" => $conversations]);
+        break;
+
+    case 'create_chat_conversation':
+        $identity_id = trim((string)($input['identityId'] ?? $input['identity_id'] ?? ''));
+        $supplier_id = trim((string)($input['supplierId'] ?? $input['supplier_id'] ?? ''));
+        $supplier_name = trim((string)($input['supplierName'] ?? $input['supplier_name'] ?? 'Verified Supplier'));
+        $supplier_email = trim((string)($input['supplierEmail'] ?? $input['supplier_email'] ?? ''));
+        $supplier_company = trim((string)($input['supplierCompany'] ?? $input['supplier_company'] ?? $supplier_name));
+        $supplier_country = trim((string)($input['supplierCountry'] ?? $input['supplier_country'] ?? ''));
+
+        if ($identity_id === '' || $supplier_id === '') {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "identityId and supplierId are required"]);
+            break;
+        }
+
+        $conv_row = null;
+        if ($db_connected && $pdo) {
+            try {
+                $chk = $pdo->prepare("SELECT * FROM chat_conversations WHERE identity_id = ? AND supplier_id = ? LIMIT 1");
+                $chk->execute([$identity_id, $supplier_id]);
+                $existing = $chk->fetch(PDO::FETCH_ASSOC);
+                if ($existing) {
+                    $conv_row = $existing;
+                } else {
+                    $new_id = 'conv-' . round(microtime(true) * 1000) . '-' . substr(md5(uniqid('', true)), 0, 5);
+                    $now = gmdate('Y-m-d H:i:s');
+                    $ins = $pdo->prepare("INSERT INTO chat_conversations (id, identity_id, supplier_id, supplier_name, supplier_email, supplier_company, supplier_country, show_phone, show_email, show_company, last_message, updated_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, '', ?, ?)");
+                    $ins->execute([$new_id, $identity_id, $supplier_id, $supplier_name, $supplier_email, $supplier_company, $supplier_country, $now, $now]);
+                    $conv_row = [
+                        'id' => $new_id,
+                        'identity_id' => $identity_id,
+                        'supplier_id' => $supplier_id,
+                        'supplier_name' => $supplier_name,
+                        'supplier_email' => $supplier_email,
+                        'supplier_company' => $supplier_company,
+                        'supplier_country' => $supplier_country,
+                        'show_phone' => 0,
+                        'show_email' => 0,
+                        'show_company' => 0,
+                        'last_message' => '',
+                        'updated_at' => $now,
+                        'created_at' => $now
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                'id' => (string)($conv_row['id'] ?? ('conv-' . round(microtime(true) * 1000))),
+                'identityId' => $identity_id,
+                'supplierId' => $supplier_id,
+                'supplierName' => $supplier_name,
+                'supplierEmail' => $supplier_email,
+                'supplierCompany' => $supplier_company,
+                'supplierCountry' => $supplier_country,
+                'showPhone' => !empty($conv_row['show_phone']),
+                'showEmail' => !empty($conv_row['show_email']),
+                'showCompany' => !empty($conv_row['show_company']),
+                'lastMessage' => (string)($conv_row['last_message'] ?? ''),
+                'updatedAt' => (string)($conv_row['updated_at'] ?? gmdate('c'))
+            ]
+        ]);
+        break;
+
+    case 'toggle_chat_visibility':
+        $conv_id = trim((string)($input['conversationId'] ?? $input['conversation_id'] ?? $input['id'] ?? ''));
+        if ($conv_id === '') {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "conversationId is required"]);
+            break;
+        }
+        $show_phone = isset($input['showPhone']) ? (!empty($input['showPhone']) ? 1 : 0) : (isset($input['show_phone']) ? (!empty($input['show_phone']) ? 1 : 0) : null);
+        $show_email = isset($input['showEmail']) ? (!empty($input['showEmail']) ? 1 : 0) : (isset($input['show_email']) ? (!empty($input['show_email']) ? 1 : 0) : null);
+        $show_company = isset($input['showCompany']) ? (!empty($input['showCompany']) ? 1 : 0) : (isset($input['show_company']) ? (!empty($input['show_company']) ? 1 : 0) : null);
+
+        if ($db_connected && $pdo) {
+            try {
+                $cur = $pdo->prepare("SELECT show_phone, show_email, show_company FROM chat_conversations WHERE id = ? LIMIT 1");
+                $cur->execute([$conv_id]);
+                $row = $cur->fetch(PDO::FETCH_ASSOC);
+                if ($row) {
+                    $sp = ($show_phone !== null) ? $show_phone : intval($row['show_phone']);
+                    $se = ($show_email !== null) ? $show_email : intval($row['show_email']);
+                    $sc = ($show_company !== null) ? $show_company : intval($row['show_company']);
+                    $upd = $pdo->prepare("UPDATE chat_conversations SET show_phone = ?, show_email = ?, show_company = ? WHERE id = ?");
+                    $upd->execute([$sp, $se, $sc, $conv_id]);
+                    $show_phone = $sp;
+                    $show_email = $se;
+                    $show_company = $sc;
+                }
+            } catch (Exception $e) {}
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                'conversationId' => $conv_id,
+                'showPhone' => (bool)$show_phone,
+                'showEmail' => (bool)$show_email,
+                'showCompany' => (bool)$show_company
+            ]
+        ]);
+        break;
+
+    case 'get_chat_messages':
+        $conv_id = trim((string)($_GET['conversation_id'] ?? $_GET['conversationId'] ?? $input['conversationId'] ?? ''));
+        $reader_role = trim((string)($_GET['reader_role'] ?? $_GET['readerRole'] ?? $input['readerRole'] ?? ''));
+        $messages = [];
+        if ($db_connected && $pdo && $conv_id !== '') {
+            try {
+                if ($reader_role === 'buyer_identity' || $reader_role === 'supplier') {
+                    $opposite = ($reader_role === 'buyer_identity') ? 'supplier' : 'buyer_identity';
+                    $mrk = $pdo->prepare("UPDATE chat_messages SET is_read = 1, read_at = COALESCE(read_at, NOW()) WHERE conversation_id = ? AND sender_role = ? AND is_read = 0");
+                    $mrk->execute([$conv_id, $opposite]);
+                }
+                $stmt = $pdo->prepare("SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC, id ASC");
+                $stmt->execute([$conv_id]);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                    $messages[] = [
+                        'id' => (string)$r['id'],
+                        'conversationId' => (string)$r['conversation_id'],
+                        'senderRole' => (string)$r['sender_role'],
+                        'messageText' => (string)($r['message_text'] ?? ''),
+                        'mediaType' => (string)($r['media_type'] ?? 'none'),
+                        'mediaUrl' => (string)($r['media_url'] ?? ''),
+                        'mediaName' => (string)($r['media_name'] ?? ''),
+                        'mediaSize' => intval($r['media_size'] ?? 0),
+                        'isRead' => !empty($r['is_read']),
+                        'readAt' => !empty($r['read_at']) ? (string)$r['read_at'] : null,
+                        'createdAt' => (string)($r['created_at'] ?? gmdate('c'))
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+        echo json_encode(["status" => "success", "success" => true, "data" => $messages]);
+        break;
+
+    case 'mark_chat_read':
+        $conv_id = trim((string)($input['conversationId'] ?? $input['conversation_id'] ?? $_GET['conversation_id'] ?? ''));
+        $reader_role = trim((string)($input['readerRole'] ?? $input['reader_role'] ?? $_GET['reader_role'] ?? ''));
+        $updated_count = 0;
+        $read_at = gmdate('c');
+        if ($conv_id === '' || ($reader_role !== 'buyer_identity' && $reader_role !== 'supplier')) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "conversationId and valid readerRole are required"]);
+            break;
+        }
+        if ($db_connected && $pdo) {
+            try {
+                $opposite = ($reader_role === 'buyer_identity') ? 'supplier' : 'buyer_identity';
+                $mrk = $pdo->prepare("UPDATE chat_messages SET is_read = 1, read_at = COALESCE(read_at, NOW()) WHERE conversation_id = ? AND sender_role = ? AND is_read = 0");
+                $mrk->execute([$conv_id, $opposite]);
+                $updated_count = $mrk->rowCount();
+            } catch (Exception $e) {}
+        }
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                "conversationId" => $conv_id,
+                "readerRole" => $reader_role,
+                "readSenderRole" => ($reader_role === 'buyer_identity') ? 'supplier' : 'buyer_identity',
+                "updatedCount" => $updated_count,
+                "readAt" => $read_at
+            ]
+        ]);
+        break;
+
+    case 'send_chat_message':
+        $conv_id = trim((string)($input['conversationId'] ?? $input['conversation_id'] ?? ''));
+        $sender_role = (($input['senderRole'] ?? $input['sender_role'] ?? '') === 'supplier') ? 'supplier' : 'buyer_identity';
+        $message_text = trim((string)($input['messageText'] ?? $input['message_text'] ?? ''));
+        $allowed_media = ['none', 'image', 'video', 'pdf'];
+        $media_type = in_array(($input['mediaType'] ?? $input['media_type'] ?? 'none'), $allowed_media, true) ? ($input['mediaType'] ?? $input['media_type'] ?? 'none') : 'none';
+        $media_url = trim((string)($input['mediaUrl'] ?? $input['media_url'] ?? ''));
+        $media_name = trim((string)($input['mediaName'] ?? $input['media_name'] ?? ''));
+        $media_size = intval($input['mediaSize'] ?? $input['media_size'] ?? 0);
+
+        if ($conv_id === '' || ($message_text === '' && $media_url === '')) {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "conversationId and messageText or mediaUrl are required"]);
+            break;
+        }
+
+        $msg_id = trim((string)($input['id'] ?? '')) ?: ('msg-' . round(microtime(true) * 1000) . '-' . substr(md5(uniqid('', true)), 0, 5));
+        $now = gmdate('Y-m-d H:i:s');
+        $preview = $message_text !== '' ? $message_text : ($media_type === 'video' ? '🎬 Video attachment' : ($media_type === 'pdf' ? '📄 ' . ($media_name ?: 'PDF Document') : '🖼️ Image attachment'));
+
+        if ($db_connected && $pdo) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO chat_messages (id, conversation_id, sender_role, message_text, media_type, media_url, media_name, media_size, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)");
+                $stmt->execute([$msg_id, $conv_id, $sender_role, $message_text, $media_type, $media_url, $media_name, $media_size, $now]);
+                $upd = $pdo->prepare("UPDATE chat_conversations SET last_message = ?, updated_at = ? WHERE id = ?");
+                $upd->execute([$preview, $now, $conv_id]);
+            } catch (Exception $e) {}
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "data" => [
+                'id' => $msg_id,
+                'conversationId' => $conv_id,
+                'senderRole' => $sender_role,
+                'messageText' => $message_text,
+                'mediaType' => $media_type,
+                'mediaUrl' => $media_url,
+                'mediaName' => $media_name,
+                'mediaSize' => $media_size,
+                'isRead' => false,
+                'createdAt' => gmdate('c')
+            ]
+        ]);
+        break;
+
+    case 'upload_chat_media':
+        $chat_media_dir = __DIR__ . '/uploads/chat_media';
+        if (!is_dir($chat_media_dir)) {
+            @mkdir($chat_media_dir, 0775, true);
+        }
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm', 'mov', 'pdf'];
+        $max_bytes = 50 * 1024 * 1024; // 50MB
+
+        $final_name = '';
+        $final_size = 0;
+        $orig_name = 'attachment';
+        $ext = '';
+        $mime_type = 'application/octet-stream';
+
+        if (!empty($_FILES['file']) && is_array($_FILES['file']) && ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+            $tmp_path = $_FILES['file']['tmp_name'];
+            $orig_name = basename((string)($_FILES['file']['name'] ?? 'attachment'));
+            $final_size = intval($_FILES['file']['size'] ?? 0);
+            $ext = strtolower(pathinfo($orig_name, PATHINFO_EXTENSION));
+            if ($final_size > $max_bytes) {
+                http_response_code(413);
+                echo json_encode(["status" => "error", "success" => false, "message" => "File exceeds maximum 50MB limit."]);
+                break;
+            }
+            if (!in_array($ext, $allowed_extensions, true)) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "success" => false, "message" => "Unsupported file format. Allowed: jpg, jpeg, png, webp, mp4, webm, mov, pdf."]);
+                break;
+            }
+            $finfo = function_exists('finfo_open') ? @finfo_open(FILEINFO_MIME_TYPE) : false;
+            if ($finfo) {
+                $mime_type = (string)@finfo_file($finfo, $tmp_path);
+                @finfo_close($finfo);
+            }
+            $safe_base = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($orig_name, PATHINFO_FILENAME));
+            $safe_base = substr(trim($safe_base, '-'), 0, 50) ?: 'chat-media';
+            $final_name = $safe_base . '-' . round(microtime(true) * 1000) . '.' . $ext;
+            $dest = $chat_media_dir . '/' . $final_name;
+            if (!@move_uploaded_file($tmp_path, $dest)) {
+                @copy($tmp_path, $dest);
+            }
+        } elseif (!empty($input['base64Data'])) {
+            $orig_name = basename((string)($input['fileName'] ?? 'attachment.pdf'));
+            $ext = strtolower(pathinfo($orig_name, PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed_extensions, true)) {
+                http_response_code(400);
+                echo json_encode(["status" => "error", "success" => false, "message" => "Unsupported file extension."]);
+                break;
+            }
+            $raw_b64 = (string)$input['base64Data'];
+            if (preg_match('/^data:([A-Za-z0-9\-\+\/\.]+);base64,(.+)$/', $raw_b64, $m)) {
+                $mime_type = $m[1];
+                $raw_b64 = $m[2];
+            }
+            $binary = base64_decode($raw_b64);
+            $final_size = strlen((string)$binary);
+            if ($final_size > $max_bytes) {
+                http_response_code(413);
+                echo json_encode(["status" => "error", "success" => false, "message" => "File exceeds 50MB limit."]);
+                break;
+            }
+            $safe_base = preg_replace('/[^a-zA-Z0-9_-]/', '-', pathinfo($orig_name, PATHINFO_FILENAME));
+            $safe_base = substr(trim($safe_base, '-'), 0, 50) ?: 'chat-media';
+            $final_name = $safe_base . '-' . round(microtime(true) * 1000) . '.' . $ext;
+            @file_put_contents($chat_media_dir . '/' . $final_name, $binary);
+        } else {
+            http_response_code(400);
+            echo json_encode(["status" => "error", "success" => false, "message" => "No file uploaded. Send multipart 'file' or 'base64Data'."]);
+            break;
+        }
+
+        $resolved_media_type = 'image';
+        if (in_array($ext, ['mp4', 'webm', 'mov'], true)) {
+            $resolved_media_type = 'video';
+        } elseif ($ext === 'pdf') {
+            $resolved_media_type = 'pdf';
+        }
+        $public_url = '/uploads/chat_media/' . $final_name;
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "mediaType" => $resolved_media_type,
+            "mediaUrl" => $public_url,
+            "mediaName" => $orig_name,
+            "mediaSize" => $final_size,
+            "mimeType" => $mime_type,
+            "url" => $public_url
         ]);
         break;
 

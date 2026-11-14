@@ -10,6 +10,8 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
+import { WebSocketServer, WebSocket } from 'ws';
+import multer from 'multer';
 import {
   TradeHeavenMediatorEngine,
   TradeHeavenSqlPoolAdapter,
@@ -560,6 +562,21 @@ app.use('/assets/tradeheaven', express.static(uploadsStaticDir, {
   setHeaders: (res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+  }
+}));
+
+// Dedicated streaming-capable static route for Multi-Identity Chat rich media (Images, Videos, PDFs)
+const chatMediaDir = path.join(process.cwd(), 'public', 'uploads', 'chat_media');
+try {
+  fs.mkdirSync(chatMediaDir, { recursive: true });
+} catch {}
+
+app.use('/uploads/chat_media', express.static(chatMediaDir, {
+  acceptRanges: true,
+  maxAge: '7d',
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Accept-Ranges', 'bytes');
   }
 }));
 
@@ -7013,6 +7030,318 @@ let serverSiteSettingsStore: Record<string, string> = {
   trade_protection_limit: '$1,000,000 USD'
 };
 
+// =============================================================
+// MULTI-IDENTITY ADMIN BUYER CHAT & RICH MEDIA STORE + WEBSOCKET
+// =============================================================
+const chatSystemStorePath = path.join(chatMediaDir, 'chat-system-store.json');
+
+interface ServerBuyerIdentityRecord {
+  id: string;
+  buyerName: string;
+  companyName: string;
+  country: string;
+  city: string;
+  phone: string;
+  email: string;
+  productInterest: string;
+  address: string;
+  avatarUrl: string;
+  verifiedBuyer: boolean;
+  createdAt: string;
+}
+
+interface ServerChatConversationRecord {
+  id: string;
+  identityId: string;
+  supplierId: string;
+  supplierName: string;
+  supplierEmail: string;
+  supplierCompany: string;
+  supplierCountry: string;
+  showPhone: boolean;
+  showEmail: boolean;
+  showCompany: boolean;
+  lastMessage: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+interface ServerChatMessageRecord {
+  id: string;
+  conversationId: string;
+  senderRole: 'buyer_identity' | 'supplier';
+  messageText: string;
+  mediaType: 'none' | 'image' | 'video' | 'pdf';
+  mediaUrl: string;
+  mediaName: string;
+  mediaSize: number;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+const DEFAULT_BUYER_IDENTITIES: ServerBuyerIdentityRecord[] = [
+  {
+    id: 'persona-marcus-vance',
+    buyerName: 'Marcus Vance',
+    companyName: 'Pacific Timber & Stone LLC',
+    country: 'United States',
+    city: 'Seattle',
+    phone: '+1 206-555-0194',
+    email: 'marcus.vance@pacifictimberstone.com',
+    productInterest: 'Black Jade, Minerals, Natural Stone',
+    address: '1420 Harbor Island Way, Suite 410, Seattle, WA 98134, USA',
+    avatarUrl: '',
+    verifiedBuyer: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'persona-elena-rostova',
+    buyerName: 'Dr. Elena Rostova',
+    companyName: 'EuroMed Diagnostics GmbH',
+    country: 'Germany',
+    city: 'Hamburg',
+    phone: '+49 40 555 8120',
+    email: 'e.rostova@euromed-diagnostics.de',
+    productInterest: 'Medical Lab Consumables, Surgical PPE',
+    address: 'Am Sandtorkai 72, 20457 Hamburg, Germany',
+    avatarUrl: '',
+    verifiedBuyer: true,
+    createdAt: new Date().toISOString()
+  }
+];
+
+let serverBuyerIdentitiesStore: ServerBuyerIdentityRecord[] = [...DEFAULT_BUYER_IDENTITIES];
+let serverChatConversationsStore: ServerChatConversationRecord[] = [];
+let serverChatMessagesStore: ServerChatMessageRecord[] = [];
+
+function loadChatSystemStore() {
+  try {
+    if (fs.existsSync(chatSystemStorePath)) {
+      const raw = JSON.parse(fs.readFileSync(chatSystemStorePath, 'utf8'));
+      if (Array.isArray(raw.identities) && raw.identities.length > 0) {
+        serverBuyerIdentitiesStore = raw.identities;
+      }
+      if (Array.isArray(raw.conversations)) {
+        serverChatConversationsStore = raw.conversations;
+      }
+      if (Array.isArray(raw.messages)) {
+        serverChatMessagesStore = raw.messages;
+      }
+    } else {
+      persistChatSystemStore();
+    }
+  } catch (err) {
+    console.warn('[Chat Store] Failed to load disk store:', err);
+  }
+}
+
+function persistChatSystemStore() {
+  try {
+    fs.mkdirSync(chatMediaDir, { recursive: true });
+    fs.writeFileSync(
+      chatSystemStorePath,
+      JSON.stringify(
+        {
+          identities: serverBuyerIdentitiesStore,
+          conversations: serverChatConversationsStore,
+          messages: serverChatMessagesStore
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+  } catch (err) {
+    console.warn('[Chat Store] Failed to persist disk store:', err);
+  }
+}
+
+loadChatSystemStore();
+
+function maskChatPhone(phone: string): string {
+  const digits = String(phone || '').replace(/\D+/g, '');
+  if (digits.length >= 4) {
+    const prefix = String(phone || '').trim().slice(0, 2) || '+1';
+    return `${prefix} •••-•••-${digits.slice(-4)} [Protected by Trade Heaven]`;
+  }
+  return '+•• •••-•••-•••• [Protected by Trade Heaven]';
+}
+
+function maskChatEmail(email: string): string {
+  const clean = String(email || '').trim();
+  const [local = 'b', domain = 'company.com'] = clean.split('@');
+  const tld = domain.includes('.') ? domain.slice(domain.lastIndexOf('.') + 1) : 'com';
+  const firstChar = local.length > 0 ? local[0] : 'b';
+  return `${firstChar}••••@••••.${tld}`;
+}
+
+function maskChatCompany(country: string): string {
+  return `Verified Importer • ${country || 'Global'} [Protected by Trade Heaven]`;
+}
+
+function buildConversationView(conv: ServerChatConversationRecord, viewMode: 'admin' | 'supplier') {
+  const identity = serverBuyerIdentitiesStore.find(i => i.id === conv.identityId);
+  const rawCountry = identity?.country || 'United States';
+  const rawCity = identity?.city || '';
+  const rawPhone = identity?.phone || '';
+  const rawEmail = identity?.email || '';
+  const rawCompany = identity?.companyName || '';
+  const rawAddress = identity?.address || '';
+  const isSupplierView = viewMode === 'supplier';
+
+  let unreadForAdmin = 0;
+  let unreadForSupplier = 0;
+  let latestMsg: ServerChatMessageRecord | null = null;
+  for (const m of serverChatMessagesStore) {
+    if (m.conversationId !== conv.id) continue;
+    if (!latestMsg || new Date(m.createdAt).getTime() >= new Date(latestMsg.createdAt).getTime()) {
+      latestMsg = m;
+    }
+    if (m.isRead) continue;
+    if (m.senderRole === 'supplier') unreadForAdmin += 1;
+    if (m.senderRole === 'buyer_identity') unreadForSupplier += 1;
+  }
+
+  return {
+    id: conv.id,
+    identityId: conv.identityId,
+    supplierId: conv.supplierId,
+    supplierName: conv.supplierName,
+    supplierEmail: conv.supplierEmail,
+    supplierCompany: conv.supplierCompany,
+    supplierCountry: conv.supplierCountry,
+    showPhone: Boolean(conv.showPhone),
+    showEmail: Boolean(conv.showEmail),
+    showCompany: Boolean(conv.showCompany),
+    lastMessage: conv.lastMessage || '',
+    lastMessageIsRead: latestMsg ? Boolean(latestMsg.isRead) : false,
+    lastMessageSenderRole: latestMsg?.senderRole,
+    unreadForAdmin,
+    unreadForSupplier,
+    unreadCount: isSupplierView ? unreadForSupplier : unreadForAdmin,
+    updatedAt: conv.updatedAt,
+    createdAt: conv.createdAt,
+    identity: {
+      id: conv.identityId,
+      buyerName: identity?.buyerName || 'Verified Buyer',
+      country: rawCountry,
+      city: rawCity,
+      productInterest: identity?.productInterest || '',
+      avatarUrl: identity?.avatarUrl || '',
+      verifiedBuyer: identity?.verifiedBuyer !== false,
+      phone: isSupplierView && !conv.showPhone ? maskChatPhone(rawPhone) : rawPhone,
+      email: isSupplierView && !conv.showEmail ? maskChatEmail(rawEmail) : rawEmail,
+      companyName: isSupplierView && !conv.showCompany ? maskChatCompany(rawCountry) : rawCompany,
+      address:
+        isSupplierView && !conv.showCompany
+          ? rawCity
+            ? `${rawCity}, ${rawCountry} [Exact Address Hidden]`
+            : `${rawCountry} [Exact Address Hidden]`
+          : rawAddress,
+      phoneHidden: !conv.showPhone,
+      emailHidden: !conv.showEmail,
+      companyHidden: !conv.showCompany
+    }
+  };
+}
+
+const CHAT_ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.mp4', '.webm', '.mov', '.pdf']);
+
+function detectChatMediaTypeByExt(ext: string): 'image' | 'video' | 'pdf' {
+  const lower = ext.toLowerCase();
+  if (['.jpg', '.jpeg', '.png', '.webp'].includes(lower)) return 'image';
+  if (['.mp4', '.webm', '.mov'].includes(lower)) return 'video';
+  return 'pdf';
+}
+
+const chatMediaStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      fs.mkdirSync(chatMediaDir, { recursive: true });
+    } catch {}
+    cb(null, chatMediaDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const safeBase = path
+      .basename(file.originalname || 'attachment', ext)
+      .replace(/[^a-zA-Z0-9._-]+/g, '_')
+      .slice(0, 40) || 'file';
+    cb(null, `chat_${Date.now()}_${crypto.randomBytes(4).toString('hex')}_${safeBase}${ext}`);
+  }
+});
+
+const chatMediaUpload = multer({
+  storage: chatMediaStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (!CHAT_ALLOWED_EXTENSIONS.has(ext)) {
+      return cb(new Error('Unsupported file type. Allowed: .jpg, .jpeg, .png, .webp, .mp4, .webm, .mov, .pdf'));
+    }
+    cb(null, true);
+  }
+});
+
+const activeChatWsClients = new Set<WebSocket>();
+
+function broadcastChatEvent(type: string, payload: any) {
+  const packet = JSON.stringify({ type, payload, timestamp: new Date().toISOString() });
+  for (const ws of activeChatWsClients) {
+    if (ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(packet);
+      } catch {}
+    }
+  }
+}
+
+function markConversationMessagesRead(
+  convId: string,
+  readerRole: 'buyer_identity' | 'supplier'
+): {
+  conversationId: string;
+  readerRole: 'buyer_identity' | 'supplier';
+  readSenderRole: 'buyer_identity' | 'supplier';
+  updatedIds: string[];
+  updatedCount: number;
+  readAt: string;
+} {
+  const oppositeRole: 'buyer_identity' | 'supplier' =
+    readerRole === 'buyer_identity' ? 'supplier' : 'buyer_identity';
+  const readAt = new Date().toISOString();
+  const updatedIds: string[] = [];
+
+  for (const m of serverChatMessagesStore) {
+    if (m.conversationId === convId && m.senderRole === oppositeRole && !m.isRead) {
+      m.isRead = true;
+      m.readAt = readAt;
+      updatedIds.push(m.id);
+    }
+  }
+
+  if (updatedIds.length > 0) {
+    persistChatSystemStore();
+    broadcastChatEvent('chat:messages_read', {
+      conversationId: convId,
+      readerRole,
+      readSenderRole: oppositeRole,
+      messageIds: updatedIds,
+      readAt
+    });
+  }
+
+  return {
+    conversationId: convId,
+    readerRole,
+    readSenderRole: oppositeRole,
+    updatedIds,
+    updatedCount: updatedIds.length,
+    readAt
+  };
+}
+
 // BigRock PHP API Gateway (/api.php)
 app.options('/api.php', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -7169,6 +7498,47 @@ app.get('/api.php', (req, res) => {
 
   if (action === 'get_settings' || action === 'site_settings') {
     return res.json(serverSiteSettingsStore);
+  }
+
+  // Multi-Identity Admin Buyer Chat GET actions
+  if (action === 'get_buyer_identities') {
+    const sorted = [...serverBuyerIdentitiesStore].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return res.json({ status: 'success', success: true, data: sorted });
+  }
+
+  if (action === 'get_chat_conversations') {
+    const viewMode = String(req.query.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
+    const supplierId = String(req.query.supplier_id || '').trim();
+    const supplierEmail = String(req.query.supplier_email || '').trim().toLowerCase();
+
+    let list = [...serverChatConversationsStore];
+    if (viewMode === 'supplier') {
+      list = list.filter(c => {
+        if (supplierId && c.supplierId === supplierId) return true;
+        if (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail) return true;
+        return !supplierId && !supplierEmail;
+      });
+    }
+    list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return res.json({
+      status: 'success',
+      success: true,
+      data: list.map(c => buildConversationView(c, viewMode))
+    });
+  }
+
+  if (action === 'get_chat_messages') {
+    const convId = String(req.query.conversation_id || req.query.conversationId || '').trim();
+    const readerRole = String(req.query.reader_role || req.query.readerRole || '').trim();
+    if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+      markConversationMessagesRead(convId, readerRole);
+    }
+    const msgs = serverChatMessagesStore
+      .filter(m => m.conversationId === convId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return res.json({ status: 'success', success: true, data: msgs });
   }
 
   res.json({
@@ -7330,6 +7700,24 @@ app.post('/api/auth/reset-password', async (req, res) => {
     console.error('Reset password internal error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error while updating password.' });
   }
+});
+
+app.post('/api.php', (req, res, next) => {
+  const action = String(req.query.action || '').replace(/-/g, '_').toLowerCase();
+  const contentType = String(req.headers['content-type'] || '').toLowerCase();
+  if (action === 'upload_chat_media' && contentType.includes('multipart/form-data')) {
+    return chatMediaUpload.single('file')(req, res, (err: any) => {
+      if (err) {
+        return res.status(400).json({
+          status: 'error',
+          success: false,
+          message: err?.message || 'File upload failed validation (max 50MB; jpg, png, webp, mp4, webm, mov, pdf).'
+        });
+      }
+      next();
+    });
+  }
+  return next();
 });
 
 app.post('/api.php', async (req, res) => {
@@ -8307,10 +8695,329 @@ app.post('/api.php', async (req, res) => {
     });
   }
 
+  // -------------------------------------------------------------
+  // MULTI-IDENTITY ADMIN BUYER CHAT & RICH MEDIA POST HANDLERS
+  // -------------------------------------------------------------
+  if (action === 'get_buyer_identities') {
+    const sorted = [...serverBuyerIdentitiesStore].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return res.json({ status: 'success', success: true, data: sorted });
+  }
+
+  if (action === 'create_buyer_identity') {
+    const buyerName = String(input.buyerName || input.buyer_name || '').trim();
+    if (!buyerName) {
+      return res.status(400).json({ status: 'error', success: false, message: 'buyerName is required' });
+    }
+    const record: ServerBuyerIdentityRecord = {
+      id: `persona-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+      buyerName,
+      companyName: String(input.companyName || input.company_name || '').trim(),
+      country: String(input.country || 'United States').trim(),
+      city: String(input.city || '').trim(),
+      phone: String(input.phone || '').trim(),
+      email: String(input.email || '').trim(),
+      productInterest: String(input.productInterest || input.product_interest || '').trim(),
+      address: String(input.address || '').trim(),
+      avatarUrl: String(input.avatarUrl || input.avatar_url || '').trim(),
+      verifiedBuyer: input.verifiedBuyer !== false,
+      createdAt: new Date().toISOString()
+    };
+    serverBuyerIdentitiesStore.unshift(record);
+    persistChatSystemStore();
+    broadcastChatEvent('chat:identity_updated', { identity: record });
+    return res.json({ status: 'success', success: true, data: record });
+  }
+
+  if (action === 'update_buyer_identity') {
+    const id = String(input.id || '').trim();
+    const idx = serverBuyerIdentitiesStore.findIndex(i => i.id === id);
+    if (!id || idx === -1) {
+      return res.status(404).json({ status: 'error', success: false, message: 'Buyer identity not found' });
+    }
+    const cur = serverBuyerIdentitiesStore[idx];
+    const updated: ServerBuyerIdentityRecord = {
+      ...cur,
+      buyerName: String(input.buyerName ?? input.buyer_name ?? cur.buyerName).trim(),
+      companyName: String(input.companyName ?? input.company_name ?? cur.companyName).trim(),
+      country: String(input.country ?? cur.country).trim(),
+      city: String(input.city ?? cur.city).trim(),
+      phone: String(input.phone ?? cur.phone).trim(),
+      email: String(input.email ?? cur.email).trim(),
+      productInterest: String(input.productInterest ?? input.product_interest ?? cur.productInterest).trim(),
+      address: String(input.address ?? cur.address).trim(),
+      avatarUrl: String(input.avatarUrl ?? input.avatar_url ?? cur.avatarUrl).trim(),
+      verifiedBuyer: input.verifiedBuyer !== undefined ? Boolean(input.verifiedBuyer) : cur.verifiedBuyer
+    };
+    serverBuyerIdentitiesStore[idx] = updated;
+    persistChatSystemStore();
+    broadcastChatEvent('chat:identity_updated', { identity: updated });
+    return res.json({ status: 'success', success: true, data: updated });
+  }
+
+  if (action === 'delete_buyer_identity') {
+    const id = String(input.id || req.query.id || '').trim();
+    serverBuyerIdentitiesStore = serverBuyerIdentitiesStore.filter(i => i.id !== id);
+    persistChatSystemStore();
+    broadcastChatEvent('chat:identity_deleted', { id });
+    return res.json({ status: 'success', success: true, deletedId: id });
+  }
+
+  if (action === 'get_chat_conversations') {
+    const viewMode = String(req.query.view_mode || input.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
+    const supplierId = String(req.query.supplier_id || input.supplier_id || input.supplierId || '').trim();
+    const supplierEmail = String(req.query.supplier_email || input.supplier_email || input.supplierEmail || '').trim().toLowerCase();
+
+    let list = [...serverChatConversationsStore];
+    if (viewMode === 'supplier') {
+      list = list.filter(c => {
+        if (supplierId && c.supplierId === supplierId) return true;
+        if (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail) return true;
+        return !supplierId && !supplierEmail;
+      });
+    }
+    list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return res.json({
+      status: 'success',
+      success: true,
+      data: list.map(c => buildConversationView(c, viewMode))
+    });
+  }
+
+  if (action === 'create_chat_conversation') {
+    const identityId = String(input.identityId || input.identity_id || '').trim();
+    const supplierId = String(input.supplierId || input.supplier_id || '').trim();
+    const supplierName = String(input.supplierName || input.supplier_name || 'Verified Supplier').trim();
+    const supplierEmail = String(input.supplierEmail || input.supplier_email || '').trim();
+    const supplierCompany = String(input.supplierCompany || input.supplier_company || supplierName).trim();
+    const supplierCountry = String(input.supplierCountry || input.supplier_country || '').trim();
+
+    if (!identityId || !supplierId) {
+      return res.status(400).json({ status: 'error', success: false, message: 'identityId and supplierId are required' });
+    }
+
+    let existing = serverChatConversationsStore.find(
+      c => c.identityId === identityId && (c.supplierId === supplierId || (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail.toLowerCase()))
+    );
+    if (!existing) {
+      const now = new Date().toISOString();
+      existing = {
+        id: `conv-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+        identityId,
+        supplierId,
+        supplierName,
+        supplierEmail,
+        supplierCompany,
+        supplierCountry,
+        showPhone: false,
+        showEmail: false,
+        showCompany: false,
+        lastMessage: '',
+        updatedAt: now,
+        createdAt: now
+      };
+      serverChatConversationsStore.unshift(existing);
+      persistChatSystemStore();
+      broadcastChatEvent('chat:conversation_created', { conversationId: existing.id, supplierId, identityId });
+    }
+    return res.json({ status: 'success', success: true, data: buildConversationView(existing, 'admin') });
+  }
+
+  if (action === 'toggle_chat_visibility') {
+    const convId = String(input.conversationId || input.conversation_id || input.id || '').trim();
+    const conv = serverChatConversationsStore.find(c => c.id === convId);
+    if (!conv) {
+      return res.status(404).json({ status: 'error', success: false, message: 'Conversation not found' });
+    }
+    if (input.showPhone !== undefined || input.show_phone !== undefined) {
+      conv.showPhone = Boolean(input.showPhone ?? input.show_phone);
+    }
+    if (input.showEmail !== undefined || input.show_email !== undefined) {
+      conv.showEmail = Boolean(input.showEmail ?? input.show_email);
+    }
+    if (input.showCompany !== undefined || input.show_company !== undefined) {
+      conv.showCompany = Boolean(input.showCompany ?? input.show_company);
+    }
+    persistChatSystemStore();
+    broadcastChatEvent('chat:visibility_updated', {
+      conversationId: conv.id,
+      showPhone: conv.showPhone,
+      showEmail: conv.showEmail,
+      showCompany: conv.showCompany
+    });
+    return res.json({
+      status: 'success',
+      success: true,
+      data: {
+        conversationId: conv.id,
+        showPhone: conv.showPhone,
+        showEmail: conv.showEmail,
+        showCompany: conv.showCompany
+      }
+    });
+  }
+
+  if (action === 'get_chat_messages') {
+    const convId = String(req.query.conversation_id || req.query.conversationId || input.conversationId || '').trim();
+    const readerRole = String(req.query.reader_role || req.query.readerRole || input.readerRole || '').trim();
+    if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+      markConversationMessagesRead(convId, readerRole);
+    }
+    const msgs = serverChatMessagesStore
+      .filter(m => m.conversationId === convId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return res.json({ status: 'success', success: true, data: msgs });
+  }
+
+  if (action === 'mark_chat_read') {
+    const convId = String(input.conversationId || input.conversation_id || req.query.conversation_id || '').trim();
+    const readerRole = String(input.readerRole || input.reader_role || req.query.reader_role || '').trim();
+    if (!convId || (readerRole !== 'buyer_identity' && readerRole !== 'supplier')) {
+      return res.status(400).json({ status: 'error', success: false, message: 'conversationId and valid readerRole are required' });
+    }
+    const result = markConversationMessagesRead(convId, readerRole);
+    return res.json({ status: 'success', success: true, data: result });
+  }
+
+  if (action === 'send_chat_message') {
+    const convId = String(input.conversationId || input.conversation_id || '').trim();
+    const senderRole: 'buyer_identity' | 'supplier' =
+      (input.senderRole || input.sender_role) === 'supplier' ? 'supplier' : 'buyer_identity';
+    const messageText = String(input.messageText || input.message_text || '').trim();
+    const rawMediaType = String(input.mediaType || input.media_type || 'none');
+    const mediaType: 'none' | 'image' | 'video' | 'pdf' = ['none', 'image', 'video', 'pdf'].includes(rawMediaType)
+      ? (rawMediaType as 'none' | 'image' | 'video' | 'pdf')
+      : 'none';
+    const mediaUrl = String(input.mediaUrl || input.media_url || '').trim();
+    const mediaName = String(input.mediaName || input.media_name || '').trim();
+    const mediaSize = Number(input.mediaSize || input.media_size || 0) || 0;
+
+    if (!convId || (!messageText && !mediaUrl)) {
+      return res.status(400).json({ status: 'error', success: false, message: 'conversationId and messageText or mediaUrl are required' });
+    }
+
+    const msg: ServerChatMessageRecord = {
+      id: `msg-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+      conversationId: convId,
+      senderRole,
+      messageText,
+      mediaType: mediaUrl ? mediaType : 'none',
+      mediaUrl,
+      mediaName,
+      mediaSize,
+      isRead: false,
+      createdAt: new Date().toISOString()
+    };
+    serverChatMessagesStore.push(msg);
+
+    const conv = serverChatConversationsStore.find(c => c.id === convId);
+    if (conv) {
+      conv.lastMessage = messageText || (mediaType === 'image' ? '[Image]' : mediaType === 'video' ? '[Video]' : '[PDF Document]');
+      conv.updatedAt = msg.createdAt;
+    }
+    persistChatSystemStore();
+    broadcastChatEvent('chat:new_message', { conversationId: convId, message: msg });
+    return res.json({ status: 'success', success: true, data: msg });
+  }
+
+  if (action === 'upload_chat_media') {
+    const uploadedFile = (req as any).file as Express.Multer.File | undefined;
+    if (uploadedFile) {
+      const ext = path.extname(uploadedFile.originalname || uploadedFile.filename || '').toLowerCase();
+      const mediaType = detectChatMediaTypeByExt(ext);
+      const mediaUrl = `/uploads/chat_media/${uploadedFile.filename}`;
+      return res.json({
+        status: 'success',
+        success: true,
+        mediaType,
+        mediaUrl,
+        mediaName: uploadedFile.originalname || uploadedFile.filename,
+        mediaSize: uploadedFile.size,
+        mimeType: uploadedFile.mimetype
+      });
+    }
+
+    const base64Data = String(input.base64Data || '');
+    const fileName = String(input.fileName || 'attachment.bin');
+    const ext = path.extname(fileName).toLowerCase();
+    if (!base64Data || !CHAT_ALLOWED_EXTENSIONS.has(ext)) {
+      return res.status(400).json({
+        status: 'error',
+        success: false,
+        message: 'No valid media file received. Supported: jpg, jpeg, png, webp, mp4, webm, mov, pdf (max 50MB).'
+      });
+    }
+    const cleaned = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+    const buffer = Buffer.from(cleaned, 'base64');
+    if (buffer.length > 50 * 1024 * 1024) {
+      return res.status(413).json({ status: 'error', success: false, message: 'File exceeds 50MB limit' });
+    }
+    const safeBase = path.basename(fileName, ext).replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 40) || 'file';
+    const destName = `chat_${Date.now()}_${crypto.randomBytes(4).toString('hex')}_${safeBase}${ext}`;
+    fs.mkdirSync(chatMediaDir, { recursive: true });
+    fs.writeFileSync(path.join(chatMediaDir, destName), buffer);
+    return res.json({
+      status: 'success',
+      success: true,
+      mediaType: detectChatMediaTypeByExt(ext),
+      mediaUrl: `/uploads/chat_media/${destName}`,
+      mediaName: fileName,
+      mediaSize: buffer.length
+    });
+  }
+
   res.json({
     success: true,
     status: 'success',
     message: `Action ${action || 'default'} executed successfully on BigRock backend`
+  });
+});
+
+// Dedicated REST aliases for Multi-Identity Admin Buyer Chat & Media Messaging
+app.get('/api/v1/chat/identities', (_req, res) => {
+  const sorted = [...serverBuyerIdentitiesStore].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  res.json({ status: 'success', success: true, data: sorted });
+});
+
+app.get('/api/v1/chat/conversations', (req, res) => {
+  const viewMode = String(req.query.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
+  const supplierId = String(req.query.supplier_id || '').trim();
+  const supplierEmail = String(req.query.supplier_email || '').trim().toLowerCase();
+  let list = [...serverChatConversationsStore];
+  if (viewMode === 'supplier') {
+    list = list.filter(c => {
+      if (supplierId && c.supplierId === supplierId) return true;
+      if (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail) return true;
+      return !supplierId && !supplierEmail;
+    });
+  }
+  list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  res.json({ status: 'success', success: true, data: list.map(c => buildConversationView(c, viewMode)) });
+});
+
+app.post('/api/v1/chat/upload-media', (req, res) => {
+  chatMediaUpload.single('file')(req, res, (err: any) => {
+    if (err || !(req as any).file) {
+      return res.status(400).json({
+        status: 'error',
+        success: false,
+        message: err?.message || 'File upload failed validation (max 50MB; jpg, png, webp, mp4, webm, mov, pdf).'
+      });
+    }
+    const uploadedFile = (req as any).file as Express.Multer.File;
+    const ext = path.extname(uploadedFile.originalname || uploadedFile.filename).toLowerCase();
+    return res.json({
+      status: 'success',
+      success: true,
+      mediaType: detectChatMediaTypeByExt(ext),
+      mediaUrl: `/uploads/chat_media/${uploadedFile.filename}`,
+      mediaName: uploadedFile.originalname || uploadedFile.filename,
+      mediaSize: uploadedFile.size,
+      mimeType: uploadedFile.mimetype
+    });
   });
 });
 
@@ -13278,7 +13985,7 @@ async function startServer() {
   // Serve pre-built code-split dist assets first whenever dist/index.html exists
   app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-    if (req.path.startsWith('/api')) return next();
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads/chat_media') || req.path.startsWith('/ws/')) return next();
 
     const distIndexHtml = path.join(distPath, 'index.html');
     if (!fs.existsSync(distIndexHtml)) return next();
@@ -13356,6 +14063,33 @@ async function startServer() {
     setTimeout(() => {
       executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
     }, 1500);
+  });
+
+  // Real-time WebSocket server for Multi-Identity Admin Buyer Chat (/ws/chat)
+  const chatWss = new WebSocketServer({ server: httpServer, path: '/ws/chat' });
+  chatWss.on('connection', (ws) => {
+    activeChatWsClients.add(ws);
+    ws.send(JSON.stringify({ type: 'chat:connected', timestamp: new Date().toISOString() }));
+    ws.on('message', (raw) => {
+      try {
+        const parsed = JSON.parse(String(raw));
+        if (parsed?.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong', timestamp: new Date().toISOString() }));
+        } else if (parsed?.type === 'chat:mark_read') {
+          const convId = String(parsed.conversationId || '').trim();
+          const readerRole = String(parsed.readerRole || '').trim();
+          if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+            markConversationMessagesRead(convId, readerRole);
+          }
+        }
+      } catch {}
+    });
+    ws.on('close', () => {
+      activeChatWsClients.delete(ws);
+    });
+    ws.on('error', () => {
+      activeChatWsClients.delete(ws);
+    });
   });
 
   httpServer.on('error', (err: any) => {

@@ -42,6 +42,7 @@ import { BuyersDirectoryView } from './components/services/BuyersDirectoryView';
 import { PremiumServicesView } from './components/services/PremiumServicesView';
 import { BuyerSupplierDashboard } from './components/marketplace/BuyerSupplierDashboard';
 import { VerifiedSupplierDedicatedDashboard } from './components/vendor/VerifiedSupplierDedicatedDashboard';
+import { SupplierMessagesInbox } from './components/vendor/SupplierMessagesInbox';
 
 // Helper for retryable lazy loaded views with automatic cache-busting reload and resilient fallback recovery
 function lazyWithRetry<T extends React.ComponentType<any>>(
@@ -2256,6 +2257,10 @@ const MainApp: React.FC = () => {
       setActiveView('ONBOARD_WITH_US');
       return;
     }
+    if (target === 'SUPPLIER_MESSAGES' || target === 'BUYER_INQUIRIES' || target === 'MESSAGES') {
+      setActiveView('SUPPLIER_MESSAGES');
+      return;
+    }
     if (target === 'NEGOTIATION' || target === 'NEGOTIATION_ROOM' || target === 'CHAT') {
       setActiveView('NEGOTIATION_ROOM');
       return;
@@ -2610,6 +2615,13 @@ const MainApp: React.FC = () => {
                     isLoading={isLoadingInitialData}
                     initialSearch={catalogSearch}
                   />
+                );
+
+              case 'SUPPLIER_MESSAGES':
+                return (
+                  <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6">
+                    <SupplierMessagesInbox currentUser={currentUser} />
+                  </div>
                 );
 
               case 'NEGOTIATION_ROOM':

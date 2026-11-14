@@ -1,0 +1,34 @@
+{
+  "identities": [
+    {
+      "id": "persona-marcus-vance",
+      "buyerName": "Marcus Vance",
+      "companyName": "Pacific Timber & Stone LLC",
+      "country": "United States",
+      "city": "Seattle",
+      "phone": "+1 206-555-0194",
+      "email": "marcus.vance@pacifictimberstone.com",
+      "productInterest": "Black Jade, Minerals, Natural Stone",
+      "address": "1420 Harbor Island Way, Suite 410, Seattle, WA 98134, USA",
+      "avatarUrl": "",
+      "verifiedBuyer": true,
+      "createdAt": "2026-11-14T08:35:43.692Z"
+    },
+    {
+      "id": "persona-elena-rostova",
+      "buyerName": "Dr. Elena Rostova",
+      "companyName": "EuroMed Diagnostics GmbH",
+      "country": "Germany",
+      "city": "Hamburg",
+      "phone": "+49 40 555 8120",
+      "email": "e.rostova@euromed-diagnostics.de",
+      "productInterest": "Medical Lab Consumables, Surgical PPE",
+      "address": "Am Sandtorkai 72, 20457 Hamburg, Germany",
+      "avatarUrl": "",
+      "verifiedBuyer": true,
+      "createdAt": "2026-11-14T08:35:43.692Z"
+    }
+  ],
+  "conversations": [],
+  "messages": []
+}

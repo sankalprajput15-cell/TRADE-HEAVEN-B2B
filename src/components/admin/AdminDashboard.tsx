@@ -37,6 +37,7 @@ import {
   ActivePlatformUserSession,
   PlatformAuthEventItem
 } from './ActiveUsersPanel';
+import { AdminBuyerChatDeskModule } from './AdminBuyerChatDeskModule';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -73,12 +74,14 @@ import {
   FolderLock,
   Server,
   Megaphone,
-  Contrast
+  Contrast,
+  MessagesSquare
 } from 'lucide-react';
 
 export type AdminDashboardTabId = 
   | 'ADMIN_MENU_OVERVIEW'
   | 'ACTIVE_USERS'
+  | 'BUYER_CHAT_DESK'
   | 'CLIENT_LISTING_OFFER_STUDIO'
   | 'OFFERS_ANNOUNCEMENTS'
   | 'MASTER_UPLOADS_VAULT'
@@ -136,6 +139,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const validTabs: string[] = [
           'ADMIN_MENU_OVERVIEW',
           'ACTIVE_USERS',
+          'BUYER_CHAT_DESK',
           'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
@@ -227,7 +231,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const normalized = tabParam.toUpperCase().replace(/-/g, '_');
         
         const validTabs: string[] = [
-          'ADMIN_MENU_OVERVIEW', 'ACTIVE_USERS', 'CLIENT_LISTING_OFFER_STUDIO',
+          'ADMIN_MENU_OVERVIEW', 'ACTIVE_USERS', 'BUYER_CHAT_DESK', 'CLIENT_LISTING_OFFER_STUDIO',
           'OFFERS_ANNOUNCEMENTS', 'MASTER_UPLOADS_VAULT', 'CLIENT_UPLOADS', 'AUTOMATED_EMAIL_SUITE',
           'CUSTOM_EMAIL_DISPATCHER', 'RENEWAL_INSIGHTS', 'RENEWAL_EMAIL_HTML_EDITOR',
           'PRODUCT_IMAGE_SYSTEM', 'CMS', 'DATABASE', 'DIAGNOSTICS',
@@ -593,6 +597,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }> = [
     { id: 'ADMIN_MENU_OVERVIEW', label: '🏠 Admin Menu & Live Users', icon: Layout },
     { id: 'ACTIVE_USERS', label: '🟢 Active Users', icon: Users },
+    { id: 'BUYER_CHAT_DESK', label: '💬 Buyer Identities & Live Chat Desk', icon: MessagesSquare },
     { id: 'CLIENT_LISTING_OFFER_STUDIO', label: '➕ Client, Listing & Offer Studio', icon: Plus },
     { id: 'OFFERS_ANNOUNCEMENTS', label: '📢 Offers, Banners & Announcements', icon: Megaphone },
     { id: 'MASTER_UPLOADS_VAULT', label: '🌐 Universal Site Uploads & Files Vault', icon: FolderLock },
@@ -1143,6 +1148,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onRefresh={() => void fetchLiveActiveUsers()}
               onToggleAuthEmailAlerts={() => void handleToggleAuthEmailAlerts()}
             />
+          </div>
+        )}
+
+        {activeTab === 'BUYER_CHAT_DESK' && (
+          <div className="space-y-4" data-testid="admin-buyer-chat-desk-section">
+            <AdminBuyerChatDeskModule />
           </div>
         )}
 

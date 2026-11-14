@@ -9,6 +9,7 @@ import { SupplierBankAccountManagement } from './SupplierBankAccountManagement';
 import { tradeHeavenMediationService, MediationSystemState } from '../../services/tradeHeavenMediatorEngine';
 import { formatBalanceInNativeCurrency } from '../../utils/entityCurrency';
 import { generateCommercialInvoicePDF } from '../common/ExportToPDF';
+import { SupplierMessagesInbox } from '../vendor/SupplierMessagesInbox';
 import { 
   LayoutDashboard, 
   Landmark,
@@ -63,7 +64,7 @@ interface Props {
   onNavigate?: (view: ActiveView) => void;
   onSelectRfq?: (rfq: RfqRequirement) => void;
   onOpenUpgradeModal?: () => void;
-  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
+  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'MESSAGES' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
 }
 
 const AVAILABLE_CATEGORIES = [
@@ -105,7 +106,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenUpgradeModal,
   initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'MESSAGES' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
     initialTab || 'TRANSACTION_LEDGER'
   );
 
@@ -903,6 +904,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
                 icon: Bookmark
               },
               {
+                id: 'MESSAGES',
+                label: 'Messages / Buyer Inquiries',
+                icon: MessageCircle
+              },
+              {
                 id: 'SETTINGS',
                 label: 'Alerts & Settings',
                 icon: Settings
@@ -1250,6 +1256,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Tab Content: MESSAGES */}
+      {activeTab === 'MESSAGES' && (
+        <SupplierMessagesInbox currentUser={currentUser} />
       )}
 
       {/* Tab Content: SAVED_LEADS */}
