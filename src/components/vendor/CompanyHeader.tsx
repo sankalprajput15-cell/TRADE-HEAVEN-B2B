@@ -35,7 +35,7 @@ export const CompanyHeader: React.FC<Props> = ({
   })();
 
   const isFreeMember = String(effectiveTier).toLowerCase().includes('free');
-  const isBasicPlan = profile.id === 'comp-zac-importation-fadetech' || String(effectiveTier).toLowerCase().includes('basic plan');
+  const isBasicPlan = !isFreeMember && String(effectiveTier).toLowerCase().includes('basic plan');
 
   const handleShareClick = () => {
     window.dispatchEvent(

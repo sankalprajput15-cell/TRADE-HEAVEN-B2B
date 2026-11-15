@@ -502,15 +502,15 @@ export const bigrockApi = {
       {
         id: 'user-supplier-zac',
         name: 'Zachary Aldin',
-        email: 'Zac@otec.ltd',
+        email: 'zac@otec.ltd',
         role: 'SUPPLIER',
         company_name: 'IMPORTATION FADE-TECH',
         country: 'Australia',
         status: 'ACTIVE',
-        is_verified: true,
+        is_verified: false,
         is_premium: false,
-        membership_status: 'paid',
-        tier: 'Basic Plan'
+        membership_status: 'free',
+        tier: 'Free Member'
       }
     ];
     return fallbackList.filter(u => {

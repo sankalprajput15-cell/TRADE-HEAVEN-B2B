@@ -1228,6 +1228,198 @@ export function buildZacBalanceFundPaymentAndAdminRightTemplates(
   };
 }
 
+export function buildZacClearBalanceAndFreeTierTemplates(
+  params?: Partial<ZacBalanceFundConfirmationPayload>
+) {
+  const companyName = params?.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)';
+  const address = params?.address || '42a Bassett street hurstville, New South Wales 2220, Australia';
+  const email = params?.email || 'zac@otec.ltd';
+  const decisionMakerName = params?.decisionMakerName || 'Zachary Aldin (Zac)';
+  const contactPhone = params?.contactPhone || '+61 424 854 899';
+  const paymentMethod = params?.paymentMethod || 'Bank Wire / Card Settlement';
+  const amountPaidUsd = typeof params?.amountPaidUsd === 'number' ? params.amountPaidUsd : 400;
+  const standardPlanAmountUsd = typeof params?.standardPlanAmountUsd === 'number' ? params.standardPlanAmountUsd : 1100;
+  const diwaliDiscountedPlanUsd = typeof params?.diwaliDiscountedPlanUsd === 'number' ? params.diwaliDiscountedPlanUsd : 990;
+  const remainingBalanceUsd =
+    typeof params?.remainingBalanceUsd === 'number'
+      ? params.remainingBalanceUsd
+      : Math.max(0, diwaliDiscountedPlanUsd - amountPaidUsd);
+  const invoiceRef = params?.invoiceRef || 'TRD-INV-27-0004';
+  const rootUrl = getPublicTrackingBaseUrl().replace(/\/+$/, '');
+  const ctaUrl =
+    params?.ctaUrl ||
+    `${rootUrl}/?pay_zac=1&email=${encodeURIComponent(email)}&amount=${remainingBalanceUsd}&company=${encodeURIComponent(companyName)}`;
+  const ctaText = `Clear Basic Plan Balance ($${remainingBalanceUsd}.00 USD) & Restore Paid Plan →`;
+
+  const zacSubject = `Action Required: Clear Basic Plan Balance ($${remainingBalanceUsd}.00 USD) — Account Moved to Free Tier Member (${companyName} • Ref: ${invoiceRef})`;
+
+  const zacText = [
+    'TRADE HEAVEN • BILLING & MEMBERSHIP STATUS NOTICE',
+    `Clear Remaining Basic Plan Balance ($${remainingBalanceUsd}.00 USD) • Account Transitioned to Free Tier Member`,
+    '',
+    `Dear ${decisionMakerName},`,
+    '',
+    `This is an official update regarding your supplier account for ${companyName} (${email} • Invoice Ref: ${invoiceRef}).`,
+    '',
+    `Because the remaining balance payment of $${remainingBalanceUsd}.00 USD on your Basic Business Plan has not yet been cleared, your Trade Heaven supplier account has been moved to the Free Tier Member plan effective immediately.`,
+    '',
+    '============================================================',
+    'BASIC PLAN BALANCE CLEARANCE STATEMENT',
+    '============================================================',
+    `• Supplier Entity: ${companyName}`,
+    `• Account Holder: ${decisionMakerName} (${email} | ${contactPhone})`,
+    `• Registered Address: ${address}`,
+    `• Agreement / Invoice Ref: ${invoiceRef}`,
+    `• Current Account Tier: Free Tier Member (Pending Balance Clearance)`,
+    `• Standard Basic Business Plan Rate: $${standardPlanAmountUsd.toLocaleString()}.00 USD / Year`,
+    `• Diwali 10% OFF Basic Plan Rate (DIWALI10): $${diwaliDiscountedPlanUsd.toLocaleString()}.00 USD / Year`,
+    `• Earlier Payment Credited: -$${amountPaidUsd.toLocaleString()}.00 USD`,
+    `• REMAINING BALANCE DUE TO CLEAR BASIC PLAN: $${remainingBalanceUsd.toLocaleString()}.00 USD`,
+    '',
+    '============================================================',
+    'WHAT CHANGES ON FREE TIER vs. CLEARING YOUR BALANCE',
+    '============================================================',
+    '• While on Free Tier Member: Verified supplier badge, sponsored coal ads, and direct paid buyer lead contact unlocks remain restricted under Free Tier limits.',
+    `• Once $${remainingBalanceUsd}.00 USD Balance Is Cleared: Your earlier $${amountPaidUsd}.00 USD credit remains applied in full and your account is immediately restored to Full Basic Business Plan with active buyer outreach and ad visibility.`,
+    '',
+    `Clear your $${remainingBalanceUsd}.00 USD Basic Plan balance directly here: ${ctaUrl}`,
+    '',
+    'For billing support or wire instructions, reply to help@tradeheaven.net or reach us on WhatsApp at +91 85329 34479.'
+  ].join('\n');
+
+  const zacHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 6px 20px rgba(0,0,0,0.08);">
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #7c2d12 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <div style="display: inline-block; font-size: 11px; font-weight: 900; letter-spacing: 1.6px; color: #fde68a; text-transform: uppercase; margin-bottom: 10px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(253, 230, 138, 0.45); padding: 5px 14px; border-radius: 9999px;">
+          TRADE HEAVEN • BILLING &amp; MEMBERSHIP STATUS DESK
+        </div>
+        <h1 style="margin: 0; font-size: 22px; font-weight: 900; color: #ffffff; line-height: 1.3;">
+          Clear Basic Plan Balance ($${remainingBalanceUsd}.00 USD) — Account Set to Free Tier
+        </h1>
+        <p style="margin: 8px 0 0 0; font-size: 13px; color: #cbd5e1;">
+          <strong>${companyName}</strong> • Attn: <strong>${decisionMakerName}</strong> • Ref: <strong>${invoiceRef}</strong>
+        </p>
+      </div>
+
+      <div style="padding: 28px 24px; background: #ffffff; color: #1e293b;">
+        <p style="font-size: 15px; line-height: 1.6; margin: 0 0 12px 0; color: #0f172a;">
+          Dear <strong>${decisionMakerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.65; margin: 0 0 16px 0; color: #334155;">
+          We are writing regarding the remaining balance payment of <strong>$${remainingBalanceUsd.toLocaleString()}.00 USD</strong> toward your <strong>Basic Business Plan</strong> for <strong>${companyName}</strong> (following your earlier <strong>$${amountPaidUsd.toLocaleString()}.00 USD</strong> payment under Ref: <strong>${invoiceRef}</strong>).
+        </p>
+
+        <div style="background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #d97706; border-radius: 12px; padding: 14px 18px; margin: 0 0 20px 0;">
+          <div style="font-size: 12px; font-weight: 900; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
+            Membership Status Update: Transitioned to Free Tier Member
+          </div>
+          <p style="margin: 0; font-size: 13px; color: #78350f; line-height: 1.55;">
+            Because the remaining Basic Plan balance has not yet been cleared, your account (<span style="font-family: monospace;">${email}</span>) has been moved to <strong>Free Tier Member</strong> status. Your earlier <strong>$${amountPaidUsd}.00 USD</strong> payment remains credited on file, and your full Basic Plan privileges will be restored as soon as the <strong>$${remainingBalanceUsd}.00 USD</strong> balance is cleared.
+          </p>
+        </div>
+
+        <div style="background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 14px; padding: 20px; margin: 0 0 22px 0;">
+          <div style="font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 1.1px; margin-bottom: 12px;">
+            BASIC PLAN BALANCE CLEARANCE SUMMARY (${invoiceRef})
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #475569; width: 205px; font-weight: 600;">Supplier Entity:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${companyName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Account Email:</td>
+              <td style="padding: 6px 0; color: #2563eb; font-weight: 700; font-family: monospace;">${email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Current Membership Tier:</td>
+              <td style="padding: 6px 0;"><span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 11px;">Free Tier Member (Until Balance Cleared)</span></td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Basic Business Plan (10% OFF):</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">$${diwaliDiscountedPlanUsd.toLocaleString()}.00 USD / Year <span style="color:#64748b; text-decoration:line-through; font-weight:500;">$${standardPlanAmountUsd.toLocaleString()}.00</span></td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #059669; font-weight: 800;">Earlier Payment Credited:</td>
+              <td style="padding: 6px 0; color: #059669; font-weight: 900;">-$${amountPaidUsd.toLocaleString()}.00 USD (Applied)</td>
+            </tr>
+            <tr style="border-top: 2px solid #cbd5e1;">
+              <td style="padding: 10px 0 4px 0; color: #0f172a; font-weight: 900; font-size: 14px;">Balance Payment Due:</td>
+              <td style="padding: 10px 0 4px 0; color: #dc2626; font-weight: 900; font-size: 18px;">$${remainingBalanceUsd.toLocaleString()}.00 USD</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${ctaUrl}" data-renewal-trigger="true" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; font-weight: 900; font-size: 14px; text-decoration: none; padding: 15px 30px; border-radius: 12px; box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28);">
+            ${ctaText}
+          </a>
+          <div style="font-size: 11px; color: #64748b; margin-top: 8px;">
+            Clears remaining <strong>$${remainingBalanceUsd}.00 USD</strong> Basic Plan balance &amp; upgrades account back from Free Tier • Method: <strong>${paymentMethod}</strong>
+          </div>
+        </div>
+
+        <p style="font-size: 12px; color: #64748b; margin: 18px 0 0 0; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+          Sent via <strong>noreply@tradeheaven.net</strong> • Billing &amp; Settlement Support: <strong>help@tradeheaven.net</strong> or WhatsApp <strong>+91 85329 34479</strong>.
+        </p>
+      </div>
+    </div>
+  `;
+
+  const adminSubject = `[Admin Copy] Basic Plan Balance Clearance ($${remainingBalanceUsd}.00 USD) + Free Tier Update Sent to Zac (${email})`;
+
+  const adminText = [
+    'TRADE HEAVEN • ADMIN BILLING & MEMBERSHIP AUDIT COPY',
+    '',
+    `Dispatched Basic Plan balance clearance notice ($${remainingBalanceUsd}.00 USD due after $${amountPaidUsd}.00 USD earlier deposit) to ${decisionMakerName} (${email} • ${companyName}).`,
+    'Account Status Applied: Free Tier Member (isPremium: false, isVerified: false, tier: Free Member).',
+    `Checkout Link: ${ctaUrl}`
+  ].join('\n');
+
+  const adminHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #cbd5e1;">
+      <div style="background: #0f172a; padding: 16px 24px; color: #ffffff;">
+        <div style="font-size: 10px; font-weight: 800; color: #fbbf24; text-transform: uppercase; letter-spacing: 1px;">
+          TRADE HEAVEN • ADMIN COPY &amp; TIER UPDATE CONFIRMATION
+        </div>
+        <div style="font-size: 14px; font-weight: 700; color: #ffffff; margin-top: 4px;">
+          Sent to <strong>${decisionMakerName}</strong> (${email}) • Account Updated to <strong>Free Tier Member</strong>
+        </div>
+        <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">
+          Invoice: ${invoiceRef} • Remaining Balance Requested: $${remainingBalanceUsd}.00 USD ($${amountPaidUsd}.00 USD earlier credited)
+        </div>
+      </div>
+      <div>
+        ${zacHtml}
+      </div>
+    </div>
+  `;
+
+  return {
+    zacSubject,
+    zacText,
+    zacHtml,
+    adminSubject,
+    adminText,
+    adminHtml,
+    ctaText,
+    ctaUrl,
+    resolvedFields: {
+      companyName,
+      address,
+      email,
+      decisionMakerName,
+      contactPhone,
+      paymentMethod,
+      amountPaidUsd,
+      standardPlanAmountUsd,
+      diwaliDiscountedPlanUsd,
+      remainingBalanceUsd,
+      invoiceRef
+    }
+  };
+}
+
 
 interface QueuedEmailTask {
   id: string;
@@ -6189,6 +6381,83 @@ export class AutomatedSmtpService {
         transporter || undefined
       );
       adminReceipts.push(adminRec);
+    }
+
+    return {
+      success: zacReceipt.success,
+      zacReceipt,
+      adminReceipts
+    };
+  }
+
+  /**
+   * Dispatches Basic Plan Balance Clearance email to Zac (zac@otec.ltd) notifying him
+   * that his account has been transitioned to Free Tier Member pending clearance of the $590.00 USD balance,
+   * and sends official Admin archive copies.
+   */
+  public async sendZacClearBalanceAndFreeTierEmail(
+    payload?: Partial<ZacBalanceFundConfirmationPayload> & { sendAdminCopy?: boolean }
+  ): Promise<{
+    success: boolean;
+    zacReceipt: SerializedDeliveryReceipt;
+    adminReceipts: SerializedDeliveryReceipt[];
+  }> {
+    const built = buildZacClearBalanceAndFreeTierTemplates(payload);
+    const transporter = this.createPrimaryTransporter();
+    const cleanZacEmail = normalizeRecipientEmail(built.resolvedFields.email || 'zac@otec.ltd');
+    const trackingId = `ms-trk-zac-clear-balance-free-tier-${Date.now().toString(36)}`;
+
+    const zacReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      cleanZacEmail,
+      {
+        from: this.senderFormatted,
+        replyTo: this.replyToAddress,
+        subject: built.zacSubject,
+        text: built.zacText,
+        html: built.zacHtml,
+        dispatchType: payload?.dispatchType || 'MANUAL',
+        category: 'CUSTOM_ADMIN',
+        companyName: built.resolvedFields.companyName,
+        companyId: 'comp-zac-importation-fadetech',
+        recipientName: built.resolvedFields.decisionMakerName,
+        trackingId,
+        summaryText: `LIVE MAIL TO ZAC (${cleanZacEmail}): Clear Basic Plan Balance ($${built.resolvedFields.remainingBalanceUsd}.00 USD due after $${built.resolvedFields.amountPaidUsd}.00 USD deposit) — Account transitioned to Free Tier Member (${built.resolvedFields.invoiceRef}).`
+      },
+      transporter || undefined
+    );
+
+    const adminReceipts: SerializedDeliveryReceipt[] = [];
+    if (payload?.sendAdminCopy !== false) {
+      const rawAdminTargets =
+        Array.isArray(payload?.adminEmails) && payload!.adminEmails.length > 0
+          ? payload!.adminEmails
+          : ['sankalprajput15@gmail.com', 'yr943334@gmail.com'];
+      const uniqueAdmins = Array.from(
+        new Set(rawAdminTargets.map((e) => normalizeRecipientEmail(e)).filter((e) => e && e.includes('@')))
+      );
+
+      for (const adminEmail of uniqueAdmins) {
+        if (adminEmail === cleanZacEmail) continue;
+        const adminRec = await serverDeliveryQueueManager.enqueueSingle(
+          adminEmail,
+          {
+            from: this.senderFormatted,
+            replyTo: this.replyToAddress,
+            subject: built.adminSubject,
+            text: built.adminText,
+            html: built.adminHtml,
+            dispatchType: payload?.dispatchType || 'MANUAL',
+            category: 'CUSTOM_ADMIN',
+            companyName: built.resolvedFields.companyName,
+            companyId: 'comp-zac-importation-fadetech',
+            recipientName: `Admin Copy (${adminEmail})`,
+            trackingId: `${trackingId}-admin-${adminEmail.split('@')[0]}`,
+            summaryText: `[ADMIN COPY] Basic Plan balance clearance notice ($${built.resolvedFields.remainingBalanceUsd}.00 USD) + Free Tier Member transition dispatched to ${built.resolvedFields.decisionMakerName} (${cleanZacEmail}).`
+          },
+          transporter || undefined
+        );
+        adminReceipts.push(adminRec);
+      }
     }
 
     return {

@@ -34,7 +34,19 @@ import {
   UserPlus,
   Share2
 } from 'lucide-react';
-import { isRfqClaimedFree, claimDailyFreeLead, getFreeLeadStatus, FreeLeadState, isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
+import {
+  claimDailyFreeLead,
+  fetchSupplierDailyMessageQuota,
+  FreeLeadState,
+  getFreeLeadStatus,
+  getLocalFreeMemberMessageQuota,
+  isFreeTierSupplierUser,
+  isPaidEntity,
+  isPaidMemberUser,
+  isRfqClaimedFree,
+  recordServerDailyMessageSend,
+  SupplierDailyMessageQuota
+} from '../../services/freeLeadService';
 import { PitchBuyerModal } from './PitchBuyerModal';
 
 interface Props {
@@ -74,10 +86,16 @@ export const RfqDetailModal: React.FC<Props> = ({
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [quoteQuotaError, setQuoteQuotaError] = useState<string | null>(null);
   const [showPitchModal, setShowPitchModal] = useState(false);
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
+  const [dailyQuota, setDailyQuota] = useState<SupplierDailyMessageQuota>(() =>
+    getLocalFreeMemberMessageQuota(currentUser)
+  );
   const isPaidLead = isPaidEntity(rfq);
   const isCallerPaid = isPaidMemberUser(currentUser);
+  const isFreeMember = isFreeTierSupplierUser(currentUser);
+  const isDailyMessageRestricted = Boolean(isFreeMember && dailyQuota?.isRestricted);
   const isClaimed = Boolean(currentUser) && isRfqClaimedFree(rfq.id);
 
   // Sync activeTab to URL rfqTab parameter
@@ -117,6 +135,27 @@ export const RfqDetailModal: React.FC<Props> = ({
       window.removeEventListener('tradeheaven_free_lead_updated', handleFreeLeadUpdated);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isFreeMember) return;
+    let active = true;
+    const syncQuota = () => {
+      void fetchSupplierDailyMessageQuota({
+        supplierId: currentUser?.id,
+        supplierEmail: currentUser?.email,
+        authToken: currentUser?.token,
+        user: currentUser
+      }).then(q => {
+        if (active) setDailyQuota(q);
+      });
+    };
+    syncQuota();
+    window.addEventListener('tradeheaven_free_message_quota_updated', syncQuota);
+    return () => {
+      active = false;
+      window.removeEventListener('tradeheaven_free_message_quota_updated', syncQuota);
+    };
+  }, [isFreeMember, currentUser]);
 
   // Quote form state
   const [quoteForm, setQuoteForm] = useState({
@@ -164,9 +203,33 @@ export const RfqDetailModal: React.FC<Props> = ({
 
   const handleQuoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setQuoteQuotaError(null);
+    if (isDailyMessageRestricted) {
+      setQuoteQuotaError('Daily limit reached: Free tier members can only send 1 message/quote to buyers per day.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      if (isFreeMember) {
+        const quotaRes = await recordServerDailyMessageSend({
+          supplierId: currentUser?.id,
+          supplierEmail: currentUser?.email,
+          targetId: rfq.id,
+          targetType: 'quote',
+          authToken: currentUser?.token,
+          user: currentUser
+        });
+        setDailyQuota(quotaRes.quota);
+        if (!quotaRes.allowed) {
+          setQuoteQuotaError(
+            quotaRes.message || 'Daily limit reached: Free tier members can only send 1 message/quote to buyers per day.'
+          );
+          return;
+        }
+      }
+
       const res = await api.submitSupplierQuote({
         rfqId: rfq.id,
         supplierId: currentUser?.id || 'comp-verified-supplier',
@@ -664,6 +727,52 @@ export const RfqDetailModal: React.FC<Props> = ({
 
           {activeTab === 'SUBMIT_QUOTE' && (
             <form onSubmit={handleQuoteSubmit} className="space-y-4">
+              {isFreeMember && (
+                <div
+                  className={`rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs border ${
+                    isDailyMessageRestricted
+                      ? 'bg-rose-50 border-rose-200 text-rose-950'
+                      : 'bg-amber-50 border-amber-200 text-amber-950'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Lock className={`w-4 h-4 shrink-0 mt-0.5 ${isDailyMessageRestricted ? 'text-rose-600' : 'text-amber-700'}`} />
+                    <div>
+                      <strong>
+                        {isDailyMessageRestricted
+                          ? `Daily Buyer Message Limit Reached (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used today):`
+                          : `Free Tier Limit (${dailyQuota.remainingToday ?? 1}/${dailyQuota.dailyLimit || 1} buyer message left today):`}
+                      </strong>{' '}
+                      {isDailyMessageRestricted
+                        ? `Free members can only send 1 message or quote to buyers daily.${
+                            dailyQuota.resetInFormatted ? ` Resets in ${dailyQuota.resetInFormatted}.` : ''
+                          } Upgrade or clear your Basic Plan balance to submit additional quotes.`
+                        : 'Submitting a factory quotation counts toward your 1 daily buyer message limit.'}
+                    </div>
+                  </div>
+                  {onOpenUpgradeModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenUpgradeModal}
+                      className={`px-3.5 py-2 rounded-xl font-black text-[11px] shrink-0 cursor-pointer ${
+                        isDailyMessageRestricted
+                          ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                          : 'bg-amber-400 hover:bg-amber-300 text-slate-950'
+                      }`}
+                    >
+                      Upgrade Plan
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {quoteQuotaError && (
+                <div className="bg-rose-600 text-white p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span>{quoteQuotaError}</span>
+                </div>
+              )}
+
               <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 text-xs text-emerald-950">
                 <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
@@ -792,11 +901,17 @@ export const RfqDetailModal: React.FC<Props> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isDailyMessageRestricted}
                   className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Submitting Bid...' : 'Submit Official Factory Quote'}</span>
+                  <span>
+                    {isDailyMessageRestricted
+                      ? 'Daily Buyer Limit Reached (1/1)'
+                      : isSubmitting
+                      ? 'Submitting Bid...'
+                      : 'Submit Official Factory Quote'}
+                  </span>
                 </button>
               </div>
             </form>

@@ -87,7 +87,16 @@ async function postChatAction<T = any>(
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data?.success === false || data?.status === 'error') {
-    throw new Error(data?.message || `Chat API action "${action}" failed`);
+    const err: any = new Error(data?.message || `Chat API action "${action}" failed`);
+    err.status = res.status;
+    err.code = data?.code;
+    err.quota = data?.quota || data?.data;
+    if (data?.code === 'FREE_MEMBER_DAILY_MESSAGE_LIMIT' && typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new CustomEvent('tradeheaven_free_message_quota_updated', { detail: err.quota }));
+      } catch {}
+    }
+    throw err;
   }
   return data as T;
 }
@@ -386,12 +395,21 @@ export async function sendChatMessage(payload: {
   mediaUrl?: string;
   mediaName?: string;
   mediaSize?: number;
+  supplierId?: string;
+  supplierEmail?: string;
+  authToken?: string;
 }): Promise<MultiChatMessage> {
-  const json = await postChatAction<{ data: MultiChatMessage }>('send_chat_message', payload);
+  const { authToken, ...bodyPayload } = payload;
+  const json = await postChatAction<{ data: MultiChatMessage }>('send_chat_message', bodyPayload, authToken);
   emitLocalChatBroadcast('chat:new_message', {
     conversationId: payload.conversationId,
     message: json.data
   });
+  if (payload.senderRole === 'supplier' && typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent('tradeheaven_free_message_quota_updated'));
+    } catch {}
+  }
   return json.data;
 }
 

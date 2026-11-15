@@ -10,6 +10,13 @@ import { CURRENCY_RATES } from '../../data/mockData';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { ProformaInvoiceModal } from '../modals/ProformaInvoiceModal';
 import { bigrockApi } from '../../services/bigrockApi';
+import {
+  fetchSupplierDailyMessageQuota,
+  getLocalFreeMemberMessageQuota,
+  isFreeTierSupplierUser,
+  recordServerDailyMessageSend,
+  SupplierDailyMessageQuota
+} from '../../services/freeLeadService';
 import { 
   MessageSquare, 
   Send, 
@@ -297,6 +304,33 @@ export const TradeNegotiationChat: React.FC<Props> = ({
   const [isTyping, setIsTyping] = useState(false);
   const [typingSender, setTypingSender] = useState('');
   const [lastDeliveredNotice, setLastDeliveredNotice] = useState<string | null>(null);
+  const [quotaErrorNotice, setQuotaErrorNotice] = useState<string | null>(null);
+  const [dailyQuota, setDailyQuota] = useState<SupplierDailyMessageQuota>(() =>
+    getLocalFreeMemberMessageQuota(currentUser)
+  );
+  const isFreeMember = isFreeTierSupplierUser(currentUser);
+  const isDailyMessageRestricted = Boolean(isFreeMember && dailyQuota?.isRestricted);
+
+  useEffect(() => {
+    if (!isFreeMember) return;
+    let active = true;
+    const syncQuota = () => {
+      void fetchSupplierDailyMessageQuota({
+        supplierId: currentUser?.id,
+        supplierEmail: currentUser?.email,
+        authToken: currentUser?.token,
+        user: currentUser
+      }).then(q => {
+        if (active) setDailyQuota(q);
+      });
+    };
+    syncQuota();
+    window.addEventListener('tradeheaven_free_message_quota_updated', syncQuota);
+    return () => {
+      active = false;
+      window.removeEventListener('tradeheaven_free_message_quota_updated', syncQuota);
+    };
+  }, [isFreeMember, currentUser]);
 
   // Auto-persist threads to localStorage
   useEffect(() => {
@@ -380,10 +414,36 @@ export const TradeNegotiationChat: React.FC<Props> = ({
   };
 
   // Handle sending message
-  const handleSendMessage = (e?: React.FormEvent, customText?: string) => {
+  const handleSendMessage = async (e?: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault();
     const text = (customText || replyText).trim();
     if (!text && !counterPriceUsd) return;
+
+    setQuotaErrorNotice(null);
+    if (isDailyMessageRestricted) {
+      setQuotaErrorNotice(
+        `Daily limit reached: Free tier members can only send 1 message to buyers per day (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used).`
+      );
+      return;
+    }
+
+    if (isFreeMember) {
+      const qRes = await recordServerDailyMessageSend({
+        supplierId: currentUser?.id,
+        supplierEmail: currentUser?.email,
+        targetId: activeThread.id,
+        targetType: 'inquiry',
+        authToken: currentUser?.token,
+        user: currentUser
+      });
+      setDailyQuota(qRes.quota);
+      if (!qRes.allowed) {
+        setQuotaErrorNotice(
+          qRes.message || 'Daily limit reached: Free tier members can only send 1 message to buyers per day.'
+        );
+        return;
+      }
+    }
 
     const senderBuyerName = currentUser?.name || activeThread.buyerName || 'Marcus Vance';
     const senderBuyerCompany = currentUser?.companyName || activeThread.buyerCompany || 'Enterprise Buyer';
@@ -429,9 +489,35 @@ export const TradeNegotiationChat: React.FC<Props> = ({
   };
 
   // Handle submitting formal counter-offer
-  const handleProposeCounterOffer = (e: React.FormEvent) => {
+  const handleProposeCounterOffer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!counterPriceUsd || counterPriceUsd <= 0) return;
+
+    setQuotaErrorNotice(null);
+    if (isDailyMessageRestricted) {
+      setQuotaErrorNotice(
+        `Daily limit reached: Free tier members can only send 1 message to buyers per day (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used).`
+      );
+      return;
+    }
+
+    if (isFreeMember) {
+      const qRes = await recordServerDailyMessageSend({
+        supplierId: currentUser?.id,
+        supplierEmail: currentUser?.email,
+        targetId: activeThread.id,
+        targetType: 'inquiry',
+        authToken: currentUser?.token,
+        user: currentUser
+      });
+      setDailyQuota(qRes.quota);
+      if (!qRes.allowed) {
+        setQuotaErrorNotice(
+          qRes.message || 'Daily limit reached: Free tier members can only send 1 message to buyers per day.'
+        );
+        return;
+      }
+    }
 
     const senderBuyerName = currentUser?.name || activeThread.buyerName || 'Marcus Vance';
     const senderBuyerCompany = currentUser?.companyName || activeThread.buyerCompany || 'Enterprise Buyer';
@@ -1245,16 +1331,48 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                   </div>
                 )}
 
+                {/* Free Member Daily Message Quota Notice */}
+                {(isFreeMember || quotaErrorNotice) && (
+                  <div
+                    className={`px-3.5 py-2 rounded-xl text-[11px] flex flex-wrap items-center justify-between gap-2 border ${
+                      isDailyMessageRestricted || quotaErrorNotice
+                        ? 'bg-rose-50 border-rose-200 text-rose-900'
+                        : 'bg-amber-50 border-amber-200 text-amber-950'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <Lock className="w-3.5 h-3.5 shrink-0" />
+                      {quotaErrorNotice
+                        ? quotaErrorNotice
+                        : isDailyMessageRestricted
+                        ? `Daily Buyer Message Limit Reached (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used today) — Free members can only send 1 message to buyers daily.`
+                        : `Free Tier Allowance: ${dailyQuota.remainingToday ?? 1}/${dailyQuota.dailyLimit || 1} buyer message remaining today.`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate?.('PLANS')}
+                      className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] cursor-pointer"
+                    >
+                      Upgrade Plan
+                    </button>
+                  </div>
+                )}
+
                 <form onSubmit={handleSendMessage} className="flex flex-col sm:flex-row gap-2">
                   <div className="relative flex-1">
                     <input
                       type="text"
-                      placeholder={`Message ${activeThread.supplierName || 'supplier'} on price, packaging, SGS inspections, or delivery...`}
+                      disabled={isDailyMessageRestricted}
+                      placeholder={
+                        isDailyMessageRestricted
+                          ? 'Sending disabled: Free members can only send 1 message to buyers daily.'
+                          : `Message ${activeThread.supplierName || 'supplier'} on price, packaging, SGS inspections, or delivery...`
+                      }
                       value={replyText}
                       onChange={e => setReplyText(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all shadow-inner disabled:opacity-60 disabled:cursor-not-allowed"
                     />
-                    {replyText && (
+                    {replyText && !isDailyMessageRestricted && (
                       <button
                         type="button"
                         onClick={() => setReplyText('')}
@@ -1268,8 +1386,9 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
+                      disabled={isDailyMessageRestricted}
                       onClick={() => setIsCounterOfferOpen(!isCounterOfferOpen)}
-                      className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${
                         isCounterOfferOpen 
                           ? 'bg-amber-100 border-amber-300 text-amber-900 shadow-xs' 
                           : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
@@ -1282,7 +1401,7 @@ export const TradeNegotiationChat: React.FC<Props> = ({
 
                     <button
                       type="submit"
-                      disabled={!replyText.trim()}
+                      disabled={isDailyMessageRestricted || !replyText.trim()}
                       className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer shrink-0"
                     >
                       <Send className="w-3.5 h-3.5" />

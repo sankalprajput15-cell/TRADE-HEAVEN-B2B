@@ -12,8 +12,10 @@ import { ChatMediaComposer } from '../chat/ChatMediaComposer';
 import { MessageReadStatus } from '../chat/MessageReadStatus';
 import { setupChatViewportReadObserver } from '../../utils/chatViewportReadObserver';
 import {
+  AlertTriangle,
   BadgeCheck,
   Building2,
+  Crown,
   Loader2,
   Lock,
   Mail,
@@ -24,6 +26,14 @@ import {
   Search,
   ShieldCheck
 } from 'lucide-react';
+import {
+  fetchSupplierDailyMessageQuota,
+  FREE_MEMBER_DAILY_MESSAGE_LIMIT,
+  getLocalFreeMemberMessageQuota,
+  isFreeTierSupplierUser,
+  recordLocalFreeMemberMessageSend,
+  SupplierDailyMessageQuota
+} from '../../services/freeLeadService';
 
 interface SupplierMessagesInboxProps {
   currentUser: AuthUser | null;
@@ -78,6 +88,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
+  const [dailyQuota, setDailyQuota] = useState<SupplierDailyMessageQuota | null>(null);
 
   const selectedConvIdRef = useRef<string>('');
   selectedConvIdRef.current = selectedConvId;
@@ -88,6 +99,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   const supplierEmail = (currentUser?.email || '').trim().toLowerCase();
   const supplierAuthToken = currentUser?.token;
   const isAuthenticatedUser = Boolean(currentUser && (supplierId || supplierEmail) && String(currentUser.role || '').toUpperCase() !== 'ADMIN');
+  const isFreeMember = Boolean(isAuthenticatedUser && isFreeTierSupplierUser(currentUser));
 
   const doesUserMatchConv = useCallback(
     (conv: ChatConversation | null | undefined): boolean => {
@@ -372,6 +384,74 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
     [conversations]
   );
 
+  const refreshDailyQuota = useCallback(async () => {
+    if (!isFreeMember) {
+      setDailyQuota(null);
+      return;
+    }
+    try {
+      const q = await fetchSupplierDailyMessageQuota({
+        supplierId,
+        supplierEmail,
+        conversationId: selectedConvIdRef.current || undefined,
+        authToken: supplierAuthToken,
+        user: currentUser
+      });
+      setDailyQuota(q);
+    } catch {
+      setDailyQuota(getLocalFreeMemberMessageQuota(currentUser));
+    }
+  }, [isFreeMember, supplierId, supplierEmail, supplierAuthToken, currentUser]);
+
+  useEffect(() => {
+    void refreshDailyQuota();
+  }, [refreshDailyQuota, selectedConvId, messages.length]);
+
+  useEffect(() => {
+    if (!isFreeMember) return;
+    const onQuotaEvt = () => {
+      void refreshDailyQuota();
+    };
+    window.addEventListener('tradeheaven_free_message_quota_updated', onQuotaEvt);
+    return () => {
+      window.removeEventListener('tradeheaven_free_message_quota_updated', onQuotaEvt);
+    };
+  }, [isFreeMember, refreshDailyQuota]);
+
+  const effectiveQuota = useMemo<SupplierDailyMessageQuota>(() => {
+    const local = getLocalFreeMemberMessageQuota(currentUser);
+    if (!isFreeMember) return dailyQuota || local;
+
+    const cutoffMs = Date.now() - 24 * 60 * 60 * 1000;
+    const recentThreadSupplierMsgs = messages.filter(m => {
+      if (m.senderRole !== 'supplier' || !m.createdAt) return false;
+      const raw = String(m.createdAt).trim();
+      const norm = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(raw)
+        ? raw.replace(' ', 'T') + 'Z'
+        : raw;
+      const ms = new Date(norm).getTime();
+      return !Number.isNaN(ms) && ms >= cutoffMs;
+    }).length;
+
+    const sentToday = Math.max(
+      dailyQuota?.sentToday ?? 0,
+      local.sentToday,
+      recentThreadSupplierMsgs
+    );
+    const limit = dailyQuota?.dailyLimit ?? FREE_MEMBER_DAILY_MESSAGE_LIMIT;
+    const remaining = Math.max(0, limit - sentToday);
+    return {
+      ...(dailyQuota || local),
+      isFreeMember: true,
+      dailyLimit: limit,
+      sentToday,
+      remainingToday: remaining,
+      isRestricted: sentToday >= limit
+    };
+  }, [isFreeMember, currentUser, dailyQuota, messages]);
+
+  const isMessageLimitReached = Boolean(isFreeMember && effectiveQuota.isRestricted);
+
   const handleSendReply = async (payload: {
     messageText: string;
     mediaType: ChatMediaType;
@@ -380,15 +460,31 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
     mediaSize: number;
   }) => {
     if (!activeConv) return;
+    if (isMessageLimitReached) {
+      throw new Error(
+        `Daily limit reached: Free tier members can only send 1 message to buyers per day (${effectiveQuota.sentToday}/${effectiveQuota.dailyLimit || 1} used).`
+      );
+    }
     setSending(true);
     try {
       const sent = await sendChatMessage({
         conversationId: activeConv.id,
         senderRole: 'supplier',
+        supplierId,
+        supplierEmail,
+        authToken: supplierAuthToken,
         ...payload
       });
       setMessages(prev => (prev.some(m => m.id === sent.id) ? prev : [...prev, sent]));
-      await loadConversations();
+      if (isFreeMember) {
+        recordLocalFreeMemberMessageSend(currentUser, activeConv.id);
+      }
+      await Promise.all([loadConversations(), refreshDailyQuota()]);
+    } catch (err) {
+      if (isFreeMember) {
+        void refreshDailyQuota();
+      }
+      throw err;
     } finally {
       setSending(false);
     }
@@ -702,10 +798,60 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Free Member Daily Message Quota Banner */}
+              {isFreeMember && (
+                <div
+                  className={`border-t px-3.5 py-2.5 text-xs flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between ${
+                    isMessageLimitReached
+                      ? 'border-rose-200 bg-rose-50 text-rose-900'
+                      : 'border-amber-200 bg-amber-50 text-amber-950'
+                  }`}
+                >
+                  <div className="flex items-start gap-2 min-w-0">
+                    {isMessageLimitReached ? (
+                      <Lock className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                    ) : (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-extrabold">
+                        {isMessageLimitReached
+                          ? `Daily Buyer Message Limit Reached (${effectiveQuota.sentToday}/${effectiveQuota.dailyLimit || 1} sent today)`
+                          : `Free Member Messaging Allowance: ${effectiveQuota.remainingToday ?? 1} of ${effectiveQuota.dailyLimit || 1} buyer message left today`}
+                      </p>
+                      <p className="text-[11px] opacity-90">
+                        {isMessageLimitReached
+                          ? `Free members can only send 1 message to buyers per day.${
+                              effectiveQuota.resetInFormatted ? ` Resets in ${effectiveQuota.resetInFormatted}.` : ' Resets after 24 hours.'
+                            } Upgrade or clear your Basic Plan balance to message buyers without daily limits.`
+                          : 'Free Tier members are limited to 1 outgoing buyer message every 24 hours. Upgrade to Basic or VIP for unlimited buyer chat.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'PLANS' }))}
+                    className={`inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-3 py-1.5 text-[11px] font-black shadow-xs transition cursor-pointer sm:self-auto ${
+                      isMessageLimitReached
+                        ? 'bg-rose-600 text-white hover:bg-rose-700'
+                        : 'bg-amber-400 text-slate-950 hover:bg-amber-300'
+                    }`}
+                  >
+                    <Crown className="h-3.5 w-3.5" />
+                    <span>{isMessageLimitReached ? 'Upgrade / Clear Balance' : 'Upgrade Plan'}</span>
+                  </button>
+                </div>
+              )}
+
               {/* Composer */}
               <ChatMediaComposer
+                disabled={sending || isMessageLimitReached}
                 sending={sending}
-                placeholder={`Reply to ${activeConv.identity?.buyerName || 'buyer'} with quote details, images, video, or PDF...`}
+                placeholder={
+                  isMessageLimitReached
+                    ? 'Sending disabled: Free members can only send 1 message to buyers per day.'
+                    : `Reply to ${activeConv.identity?.buyerName || 'buyer'} with quote details, images, video, or PDF...`
+                }
                 onSend={handleSendReply}
               />
             </>

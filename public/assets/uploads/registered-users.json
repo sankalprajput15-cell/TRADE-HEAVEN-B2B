@@ -77,10 +77,10 @@
     "companyName": "IMPORTATION FADE-TECH",
     "country": "Australia",
     "status": "ACTIVE",
-    "isVerified": true,
+    "isVerified": false,
     "isPremium": false,
-    "membershipStatus": "paid",
-    "tier": "Basic Plan",
+    "membershipStatus": "free",
+    "tier": "Free Member",
     "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
   },
   {

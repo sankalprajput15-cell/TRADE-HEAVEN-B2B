@@ -1074,10 +1074,10 @@ const DEFAULT_SERVER_USERS: ServerUserRecord[] = [
     companyName: 'IMPORTATION FADE-TECH',
     country: 'Australia',
     status: 'ACTIVE',
-    isVerified: true,
+    isVerified: false,
     isPremium: false,
-    membershipStatus: 'paid',
-    tier: 'Basic Plan',
+    membershipStatus: 'free',
+    tier: 'Free Member',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
   },
   {
@@ -1417,11 +1417,17 @@ function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
       ? (resolvedStatusRaw as any)
       : 'ACTIVE';
 
+  const rawMemInput = String(input.membershipStatus || input.membership_status || '').toLowerCase().trim();
+  const rawTierInput = String(input.tier || '').toLowerCase().trim();
+  const isExplicitFreeRequest = rawMemInput === 'free' || rawTierInput.includes('free');
+
   const resolvedIsPremium =
     input.isPremium !== undefined
       ? Boolean(input.isPremium)
       : input.is_premium !== undefined
       ? Boolean(input.is_premium)
+      : isExplicitFreeRequest
+      ? false
       : existing?.isPremium ?? (resolvedRole === 'ADMIN');
 
   const resolvedIsVerified =
@@ -1429,11 +1435,17 @@ function upsertServerUserRecord(input: Record<string, any>): ServerUserRecord {
       ? Boolean(input.isVerified)
       : input.is_verified !== undefined
       ? Boolean(input.is_verified)
+      : isExplicitFreeRequest
+      ? false
       : existing?.isVerified ?? true;
 
   const rawMem = String(input.membershipStatus || input.membership_status || existing?.membershipStatus || '').toLowerCase();
   const resolvedMembershipStatus: 'free' | 'paid' =
-    rawMem === 'paid' || rawMem === 'verified' || rawMem === 'basic' || resolvedIsPremium ? 'paid' : 'free';
+    isExplicitFreeRequest
+      ? 'free'
+      : rawMem === 'paid' || rawMem === 'verified' || rawMem === 'basic' || resolvedIsPremium
+      ? 'paid'
+      : 'free';
 
   const record: ServerUserRecord = {
     id: existing?.id || String(input.id || `user-${Date.now()}`),
@@ -3970,6 +3982,167 @@ app.post('/api/v1/admin/send-zac-balance-fund-confirmation', async (req, res) =>
   }
 });
 
+// POST /api/v1/admin/send-zac-clear-balance-free-tier - Emails Zac regarding clearing Basic Plan balance AND converts his account to Free Tier Member
+app.post('/api/v1/admin/send-zac-clear-balance-free-tier', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const zacEmail = (payload.email || payload.recipientEmail || 'zac@otec.ltd').trim();
+    const adminEmails: string[] = Array.isArray(payload.adminEmails)
+      ? payload.adminEmails
+      : ['sankalprajput15@gmail.com', 'yr943334@gmail.com'];
+
+    // 1. Transition Zac's account to Free Tier Member in local server store + disk
+    const updatedUser = upsertServerUserRecord({
+      id: 'user-supplier-zac',
+      email: zacEmail,
+      name: 'Zachary Aldin',
+      role: 'SUPPLIER',
+      companyName: 'IMPORTATION FADE-TECH',
+      country: 'Australia',
+      status: 'ACTIVE',
+      isVerified: false,
+      isPremium: false,
+      membershipStatus: 'free',
+      tier: 'Free Member'
+    });
+
+    // 2. Sync Free Member tier + unverified status to upstream PHP/MySQL if live proxy enabled
+    let upstreamSynced = false;
+    if (LIVE_UPSTREAM_PROXY_ENABLED) {
+      try {
+        const upUsersRes = await executeUpstreamHttpRequest(
+          `${LIVE_TRADEHEAVEN_API_URL}?action=get_users`,
+          'GET',
+          { Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+          undefined,
+          10000
+        );
+        const upJson: any = JSON.parse(upUsersRes.body.toString('utf8'));
+        const upUsers: any[] = Array.isArray(upJson?.data) ? upJson.data : [];
+        const liveZac = upUsers.find((u) => String(u?.email || '').toLowerCase().trim() === zacEmail.toLowerCase());
+        const targetUpstreamId = liveZac?.id ? String(liveZac.id) : '4';
+
+        await executeUpstreamHttpRequest(
+          `${LIVE_TRADEHEAVEN_API_URL}?action=upsert_user`,
+          'POST',
+          { 'Content-Type': 'application/json', Accept: 'application/json' },
+          Buffer.from(
+            JSON.stringify({
+              id: targetUpstreamId,
+              email: zacEmail,
+              name: liveZac?.name || 'Zachary Aldin',
+              companyName: liveZac?.companyName || 'IMPORTATION FADE-TECH',
+              country: liveZac?.country || 'Australia',
+              tier: 'Free Member'
+            }),
+            'utf8'
+          ),
+          10000
+        );
+
+        if (liveZac?.isVerified) {
+          await executeUpstreamHttpRequest(
+            `${LIVE_TRADEHEAVEN_API_URL}?action=toggle_verification`,
+            'POST',
+            { 'Content-Type': 'application/json', Accept: 'application/json' },
+            Buffer.from(
+              JSON.stringify({
+                id: targetUpstreamId,
+                userId: targetUpstreamId,
+                is_verified: 1,
+                isVerified: true
+              }),
+              'utf8'
+            ),
+            10000
+          );
+        }
+        upstreamSynced = true;
+      } catch (syncErr: any) {
+        console.warn('[Zac Free Tier Upstream Sync Warning]:', syncErr?.message || syncErr);
+      }
+    }
+
+    // 3. Dispatch Basic Plan balance clearance email + Free Tier notice to Zac + Admin Copy
+    const result = await automatedSmtpService.sendZacClearBalanceAndFreeTierEmail({
+      companyName: payload.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: payload.address || '42a Bassett street hurstville, New South Wales 2220, Australia',
+      email: zacEmail,
+      decisionMakerName: payload.decisionMakerName || 'Zachary Aldin (Zac)',
+      contactPhone: payload.contactPhone || '+61 424 854 899',
+      paymentMethod: payload.paymentMethod || 'Bank Wire / Card Settlement',
+      amountPaidUsd: typeof payload.amountPaidUsd === 'number' ? payload.amountPaidUsd : 400,
+      standardPlanAmountUsd: typeof payload.standardPlanAmountUsd === 'number' ? payload.standardPlanAmountUsd : 1100,
+      diwaliDiscountedPlanUsd: typeof payload.diwaliDiscountedPlanUsd === 'number' ? payload.diwaliDiscountedPlanUsd : 990,
+      remainingBalanceUsd: typeof payload.remainingBalanceUsd === 'number' ? payload.remainingBalanceUsd : 590,
+      invoiceRef: payload.invoiceRef || 'TRD-INV-27-0004',
+      ctaUrl: payload.ctaUrl,
+      adminEmails,
+      sendAdminCopy: payload.sendAdminCopy !== false,
+      dispatchType: payload.dispatchType || 'MANUAL'
+    });
+
+    recordRenewalDispatchInInsights({
+      recipientEmail: zacEmail,
+      recipientName: 'Zachary Aldin (Zac)',
+      companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+      address: '42a Bassett street hurstville, New South Wales 2220, Australia',
+      paymentMethod: 'Free Tier Member ($400 Paid • $590 Balance Payment Requested)',
+      planId: 'basic-business-plan',
+      renewalAmountUsd: 590,
+      subject:
+        'Action Required: Clear Basic Plan Balance ($590.00 USD) — Account Moved to Free Tier Member (IMPORTATION FADE-TECH (OTEC LTD) • Ref: TRD-INV-27-0004)',
+      delivered: result.zacReceipt.success,
+      adminCopySent: result.adminReceipts.some((r) => r.success),
+      adminCopyEmail: adminEmails[0] || 'sankalprajput15@gmail.com',
+      trackingId: result.zacReceipt.trackingId || `ms-trk-zac-free-tier-${Date.now().toString(36)}`
+    });
+
+    serverFailedAdLaunchUsers = serverFailedAdLaunchUsers.map((u) =>
+      u.email.toLowerCase() === zacEmail.toLowerCase()
+        ? {
+            ...u,
+            currentPlanName: 'Free Tier Member (Reverted from Partial $400 Basic Plan)',
+            failureReason:
+              'Moved to Free Tier Member pending clearance of $590.00 USD Basic Plan balance payment (Ref: TRD-INV-27-0004)',
+            accountStatus: 'FOLLOWUP_SENT',
+            followUpCount: (u.followUpCount || 1) + 1,
+            lastFollowUpAt: new Date().toISOString(),
+            lastTrackingId: result.zacReceipt.trackingId || u.lastTrackingId
+          }
+        : u
+    );
+
+    logServerActivity(
+      req,
+      'ZAC_CLEAR_BALANCE_AND_FREE_TIER',
+      zacEmail,
+      'ADMIN',
+      '/api/v1/admin/send-zac-clear-balance-free-tier',
+      `Set Zac (${zacEmail} • IMPORTATION FADE-TECH) to Free Tier Member and dispatched Basic Plan balance clearance ($590.00 USD due) email + Admin copies.`,
+      result.success ? 'SUCCESS' : 'FAILED'
+    );
+
+    return res.json({
+      success: result.success,
+      message: result.success
+        ? `Updated ${zacEmail} to Free Tier Member and dispatched Basic Plan balance clearance ($590.00 USD) email to Zac + Admin copies.`
+        : `Updated ${zacEmail} to Free Tier Member, but SMTP dispatch failed: ${result.zacReceipt.error || 'Unknown SMTP error'}`,
+      updatedUser,
+      upstreamSynced,
+      zacReceipt: result.zacReceipt,
+      adminReceipts: result.adminReceipts,
+      summary: serverDeliveryQueueManager.getMailSuiteAnalytics(),
+      history: serverDeliveryQueueManager.getEmailHistory()
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Failed to email Zac or update Free Tier membership: ${err?.message || err}`
+    });
+  }
+});
+
 
 // In-memory store for the Admin-editable 'Renewal Offer' HTML Email Template & Supplier Segment Branding
 let serverRenewalOfferTemplateStore: {
@@ -5279,7 +5452,7 @@ let serverFailedAdLaunchUsers: FailedAdLaunchAccount[] = [
     address: '42a Bassett street hurstville, New South Wales 2220, Australia',
     phone: '+61 424 854 899',
     invoiceRef: 'TRD-INV-27-0004',
-    currentPlanName: 'Basic Business Plan (Partial $400 Paid)',
+    currentPlanName: 'Free Tier Member (Reverted from Partial $400 Basic Plan)',
     targetFullPlanName: 'Full Basic Business Plan ($990 Diwali Offer) / VIP Upgrade',
     amountPaidUsd: 400,
     standardPlanUsd: 1100,
@@ -5287,7 +5460,7 @@ let serverFailedAdLaunchUsers: FailedAdLaunchAccount[] = [
     remainingBalanceUsd: 590,
     failedCampaignId: 'ADS-COAL-AU-2026',
     failedCampaignName: 'Global Coal Buyer Acquisition & Sponsored Banner Campaign (GAR 6000–6500 kcal/kg)',
-    failureReason: 'Insufficient Plan Balance: Only $400 USD paid toward Basic Plan ($590 USD balance required with Diwali 10% OFF)',
+    failureReason: 'Moved to Free Tier Member pending clearance of $590.00 USD Basic Plan balance payment (Ref: TRD-INV-27-0004)',
     failedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
     accountStatus: 'FOLLOWUP_SENT',
     followUpCount: 2,
@@ -8379,6 +8552,326 @@ async function resolveAuthenticatedNonAdminChatActor(
   return null;
 }
 
+const FREE_MEMBER_DAILY_MESSAGES_FILE = path.join(process.cwd(), 'data', 'free_member_daily_messages.json');
+const FREE_MEMBER_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const FREE_MEMBER_DAILY_MESSAGE_LIMIT = 1;
+
+interface FreeMemberDailyMessageEntry {
+  id: string;
+  supplierKey: string;
+  supplierEmail: string;
+  supplierId: string;
+  conversationId?: string;
+  messageId?: string;
+  targetType?: 'chat' | 'pitch' | 'quote' | 'inquiry';
+  sentAt: string;
+}
+
+function parseFlexibleUtcTimestampMs(ts?: string): number {
+  const raw = String(ts || '').trim();
+  if (!raw) return 0;
+  let normalized = raw;
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(raw)) {
+    normalized = raw.replace(' ', 'T') + 'Z';
+  } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(raw)) {
+    normalized = raw + 'Z';
+  }
+  const ms = new Date(normalized).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
+function loadFreeMemberDailyMessages(): FreeMemberDailyMessageEntry[] {
+  try {
+    if (!fs.existsSync(FREE_MEMBER_DAILY_MESSAGES_FILE)) return [];
+    const parsed = JSON.parse(fs.readFileSync(FREE_MEMBER_DAILY_MESSAGES_FILE, 'utf8'));
+    const list = Array.isArray(parsed?.sends) ? parsed.sends : Array.isArray(parsed) ? parsed : [];
+    const cutoff = Date.now() - FREE_MEMBER_DAILY_WINDOW_MS * 2;
+    return list.filter((e: any) => e && parseFlexibleUtcTimestampMs(e.sentAt) > cutoff);
+  } catch {
+    return [];
+  }
+}
+
+function saveFreeMemberDailyMessages(entries: FreeMemberDailyMessageEntry[]): void {
+  try {
+    fs.mkdirSync(path.dirname(FREE_MEMBER_DAILY_MESSAGES_FILE), { recursive: true });
+    fs.writeFileSync(
+      FREE_MEMBER_DAILY_MESSAGES_FILE,
+      JSON.stringify({ updatedAt: new Date().toISOString(), sends: entries }, null, 2),
+      'utf8'
+    );
+  } catch {}
+}
+
+function recordFreeMemberDailyMessageSend(params: {
+  supplierId?: string;
+  supplierEmail?: string;
+  conversationId?: string;
+  messageId?: string;
+  targetType?: 'chat' | 'pitch' | 'quote' | 'inquiry';
+}): FreeMemberDailyMessageEntry {
+  const email = String(params.supplierEmail || '').trim().toLowerCase();
+  const id = String(params.supplierId || '').trim();
+  const key = email || id || 'unknown-free-supplier';
+  const entries = loadFreeMemberDailyMessages();
+  const entry: FreeMemberDailyMessageEntry = {
+    id: `fmdm-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+    supplierKey: key,
+    supplierEmail: email,
+    supplierId: id,
+    conversationId: params.conversationId || '',
+    messageId: params.messageId || '',
+    targetType: params.targetType || 'chat',
+    sentAt: new Date().toISOString()
+  };
+  entries.push(entry);
+  saveFreeMemberDailyMessages(entries);
+  return entry;
+}
+
+function isUserRecordFreeTierMember(user: Partial<ServerUserRecord> & { role?: string; tier?: string; membershipStatus?: string; membership_status?: string; isPremium?: boolean; is_premium?: boolean } | null | undefined): boolean {
+  if (!user) return false;
+  const role = String(user.role || '').toUpperCase();
+  if (role === 'ADMIN') return false;
+  const mem = String(user.membershipStatus || user.membership_status || '').trim().toLowerCase();
+  const tier = String(user.tier || '').trim().toLowerCase();
+  const isPrem = user.isPremium === true || user.is_premium === true;
+  if (mem === 'free' || tier.includes('free')) return true;
+  if (isPrem || mem === 'paid' || mem === 'basic' || mem === 'vip' || mem === 'gold') return false;
+  if (tier.includes('basic') || tier.includes('vip') || tier.includes('gold') || tier.includes('platinum') || tier.includes('establishment')) {
+    return false;
+  }
+  return true;
+}
+
+function formatDurationCompact(ms: number): string {
+  if (ms <= 0) return '0m';
+  const totalMin = Math.ceil(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+async function resolveSupplierContextForQuota(params: {
+  supplierId?: string;
+  supplierEmail?: string;
+  conversationId?: string;
+  req?: express.Request;
+}): Promise<{ supplierId: string; supplierEmail: string; matchingConvIds: Set<string>; userRecord: ServerUserRecord | null }> {
+  let supplierId = String(params.supplierId || '').trim();
+  let supplierEmail = String(params.supplierEmail || '').trim().toLowerCase();
+  const convId = String(params.conversationId || '').trim();
+  const matchingConvIds = new Set<string>(convId ? [convId] : []);
+
+  if (params.req && (!supplierEmail || !supplierId)) {
+    const actor = await resolveAuthenticatedNonAdminChatActor(params.req);
+    if (actor) {
+      if (!supplierEmail && actor.email) supplierEmail = actor.email.toLowerCase();
+      if (!supplierId && actor.id) supplierId = actor.id;
+    }
+  }
+
+  // Resolve supplier ownership from local conversations first
+  if (convId) {
+    const localConv = serverChatConversationsStore.find(c => c.id === convId);
+    if (localConv) {
+      if (!supplierId && localConv.supplierId) supplierId = String(localConv.supplierId).trim();
+      if (!supplierEmail && localConv.supplierEmail) supplierEmail = String(localConv.supplierEmail).toLowerCase().trim();
+    }
+  }
+
+  // Also check upstream conversations when live proxy enabled
+  let upstreamConvs: any[] = [];
+  if (LIVE_UPSTREAM_PROXY_ENABLED) {
+    try {
+      const convRes = await executeUpstreamHttpRequest(
+        `${LIVE_TRADEHEAVEN_API_URL}?action=get_chat_conversations&view_mode=admin`,
+        'GET',
+        { Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+        undefined,
+        8000
+      );
+      const convJson: any = JSON.parse(convRes.body.toString('utf8'));
+      if (Array.isArray(convJson?.data)) {
+        upstreamConvs = convJson.data;
+        if (convId && (!supplierId || !supplierEmail)) {
+          const matchedConv = upstreamConvs.find(c => String(c?.id || '') === convId);
+          if (matchedConv) {
+            if (!supplierId && matchedConv.supplierId) supplierId = String(matchedConv.supplierId).trim();
+            if (!supplierEmail && matchedConv.supplierEmail) supplierEmail = String(matchedConv.supplierEmail).toLowerCase().trim();
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Collect all conversations owned by this supplier
+  for (const c of [...serverChatConversationsStore, ...upstreamConvs]) {
+    if (!c?.id) continue;
+    const cEmail = String(c.supplierEmail || '').toLowerCase().trim();
+    const cId = String(c.supplierId || '').trim();
+    const emailMatch = supplierEmail && cEmail && supplierEmail === cEmail;
+    const idMatch = supplierId && cId && (
+      supplierId === cId ||
+      supplierId.replace(/^(supp-|user-supplier-)/i, '') === cId.replace(/^(supp-|user-supplier-)/i, '')
+    );
+    if (emailMatch || idMatch) {
+      matchingConvIds.add(String(c.id));
+      if (!supplierEmail && cEmail) supplierEmail = cEmail;
+      if (!supplierId && cId) supplierId = cId;
+    }
+  }
+
+  const userRecord =
+    serverUsersStore.find(
+      u =>
+        (supplierEmail && u.email.toLowerCase().trim() === supplierEmail) ||
+        (supplierId && u.id === supplierId)
+    ) || null;
+
+  if (userRecord) {
+    if (!supplierEmail) supplierEmail = userRecord.email.toLowerCase().trim();
+    if (!supplierId) supplierId = userRecord.id;
+  }
+
+  return { supplierId, supplierEmail, matchingConvIds, userRecord };
+}
+
+async function getSupplierDailyMessageQuota(params: {
+  supplierId?: string;
+  supplierEmail?: string;
+  conversationId?: string;
+  req?: express.Request;
+}): Promise<{
+  isFreeMember: boolean;
+  dailyLimit: number | null;
+  sentToday: number;
+  remainingToday: number | null;
+  isRestricted: boolean;
+  nextResetAt: string | null;
+  resetInFormatted: string;
+  accountTier: string;
+  supplierEmail: string;
+  supplierId: string;
+}> {
+  const ctx = await resolveSupplierContextForQuota(params);
+  const { supplierId, supplierEmail, matchingConvIds, userRecord } = ctx;
+
+  // Check if user is Free Tier Member (never restrict Admins or explicit Paid/Basic/VIP users)
+  let effectiveUser: any = userRecord;
+  if (!effectiveUser && LIVE_UPSTREAM_PROXY_ENABLED && (supplierEmail || supplierId)) {
+    try {
+      const upUsersRes = await executeUpstreamHttpRequest(
+        `${LIVE_TRADEHEAVEN_API_URL}?action=get_users`,
+        'GET',
+        { Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+        undefined,
+        6000
+      );
+      const upUsersJson: any = JSON.parse(upUsersRes.body.toString('utf8'));
+      const list: any[] = Array.isArray(upUsersJson?.data) ? upUsersJson.data : [];
+      effectiveUser =
+        list.find(
+          u =>
+            (supplierEmail && String(u?.email || '').toLowerCase().trim() === supplierEmail) ||
+            (supplierId && String(u?.id || '').trim() === supplierId)
+        ) || null;
+    } catch {}
+  }
+
+  const isFreeMember = effectiveUser
+    ? isUserRecordFreeTierMember(effectiveUser)
+    : supplierEmail === 'zac@otec.ltd';
+
+  const accountTier = String(effectiveUser?.tier || (isFreeMember ? 'Free Member' : 'Paid Member'));
+
+  if (!isFreeMember) {
+    return {
+      isFreeMember: false,
+      dailyLimit: null,
+      sentToday: 0,
+      remainingToday: null,
+      isRestricted: false,
+      nextResetAt: null,
+      resetInFormatted: '',
+      accountTier,
+      supplierEmail,
+      supplierId
+    };
+  }
+
+  const nowMs = Date.now();
+  const windowStartMs = nowMs - FREE_MEMBER_DAILY_WINDOW_MS;
+  const activeEvents = new Map<string, number>();
+
+  // 1. Persisted daily quota ledger entries
+  for (const entry of loadFreeMemberDailyMessages()) {
+    const emailMatch = supplierEmail && entry.supplierEmail && entry.supplierEmail === supplierEmail;
+    const idMatch = supplierId && entry.supplierId && entry.supplierId === supplierId;
+    const convMatch = entry.conversationId && matchingConvIds.has(entry.conversationId);
+    if (!emailMatch && !idMatch && !convMatch) continue;
+    const ms = parseFlexibleUtcTimestampMs(entry.sentAt);
+    if (ms >= windowStartMs) {
+      const dedupeKey = entry.messageId ? `msg:${entry.messageId}` : entry.id;
+      activeEvents.set(dedupeKey, ms);
+    }
+  }
+
+  // 2. Local chat messages sent by supplier in the last 24h
+  for (const m of serverChatMessagesStore) {
+    if (m.senderRole !== 'supplier') continue;
+    if (!matchingConvIds.has(m.conversationId)) continue;
+    const ms = parseFlexibleUtcTimestampMs(m.createdAt);
+    if (ms >= windowStartMs) {
+      activeEvents.set(`msg:${m.id}`, ms);
+    }
+  }
+
+  // 3. Live upstream chat messages sent by supplier in the last 24h (e.g. Zac's messages on 2026-11-15)
+  if (LIVE_UPSTREAM_PROXY_ENABLED && matchingConvIds.size > 0) {
+    for (const cId of matchingConvIds) {
+      try {
+        const msgRes = await executeUpstreamHttpRequest(
+          `${LIVE_TRADEHEAVEN_API_URL}?action=get_chat_messages&conversation_id=${encodeURIComponent(cId)}`,
+          'GET',
+          { Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+          undefined,
+          7000
+        );
+        const msgJson: any = JSON.parse(msgRes.body.toString('utf8'));
+        const msgs: any[] = Array.isArray(msgJson?.data) ? msgJson.data : [];
+        for (const m of msgs) {
+          if (String(m?.senderRole || '') !== 'supplier') continue;
+          const ms = parseFlexibleUtcTimestampMs(m.createdAt);
+          if (ms >= windowStartMs) {
+            activeEvents.set(`msg:${m.id}`, ms);
+          }
+        }
+      } catch {}
+    }
+  }
+
+  const timestamps = Array.from(activeEvents.values()).sort((a, b) => a - b);
+  const sentToday = timestamps.length;
+  const remainingToday = Math.max(0, FREE_MEMBER_DAILY_MESSAGE_LIMIT - sentToday);
+  const isRestricted = sentToday >= FREE_MEMBER_DAILY_MESSAGE_LIMIT;
+  const earliestMs = timestamps.length > 0 ? timestamps[0] : null;
+  const nextResetMs = earliestMs ? earliestMs + FREE_MEMBER_DAILY_WINDOW_MS : null;
+
+  return {
+    isFreeMember: true,
+    dailyLimit: FREE_MEMBER_DAILY_MESSAGE_LIMIT,
+    sentToday,
+    remainingToday,
+    isRestricted,
+    nextResetAt: nextResetMs ? new Date(nextResetMs).toISOString() : null,
+    resetInFormatted: nextResetMs ? formatDurationCompact(Math.max(0, nextResetMs - nowMs)) : '',
+    accountTier,
+    supplierEmail,
+    supplierId
+  };
+}
+
 async function forwardApiPhpToLiveUpstream(
   req: express.Request,
   res: express.Response,
@@ -8455,6 +8948,57 @@ async function forwardApiPhpToLiveUpstream(
       }
     }
 
+    // Security guard 3: Free Tier Members can only send 1 buyer message per day (24h) — enforces restriction for Zac & all Free Members
+    let freeSupplierQuotaOnSend: Awaited<ReturnType<typeof getSupplierDailyMessageQuota>> | null = null;
+    if (action === 'send_chat_message' && method === 'POST') {
+      const reqSenderRole = String(req.body?.senderRole || req.body?.sender_role || '').trim();
+      if (reqSenderRole === 'supplier') {
+        const convId = String(req.body?.conversationId || req.body?.conversation_id || '').trim();
+        freeSupplierQuotaOnSend = await getSupplierDailyMessageQuota({
+          supplierId: String(req.body?.supplierId || req.body?.supplier_id || '').trim(),
+          supplierEmail: String(req.body?.supplierEmail || req.body?.supplier_email || '').trim().toLowerCase(),
+          conversationId: convId,
+          req
+        });
+        if (freeSupplierQuotaOnSend.isFreeMember && freeSupplierQuotaOnSend.isRestricted) {
+          res.status(429).json({
+            status: 'error',
+            success: false,
+            code: 'FREE_MEMBER_DAILY_MESSAGE_LIMIT',
+            message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${freeSupplierQuotaOnSend.sentToday}/${freeSupplierQuotaOnSend.dailyLimit} used). Please upgrade or clear your Basic Plan balance to send more messages.`,
+            quota: freeSupplierQuotaOnSend
+          });
+          return true;
+        }
+      }
+    } else if ((action === 'submit_quote' || action === 'submit_inquiry') && method === 'POST') {
+      const actor = await resolveAuthenticatedNonAdminChatActor(req);
+      const qEmail = String(req.body?.supplierEmail || req.body?.email || actor?.email || '').trim().toLowerCase();
+      const qId = String(req.body?.supplierId || actor?.id || '').trim();
+      if (qEmail || qId) {
+        const matchedSender = serverUsersStore.find(
+          u => (qEmail && u.email.toLowerCase().trim() === qEmail) || (qId && u.id === qId)
+        );
+        if (matchedSender && matchedSender.role === 'SUPPLIER' && isUserRecordFreeTierMember(matchedSender)) {
+          freeSupplierQuotaOnSend = await getSupplierDailyMessageQuota({
+            supplierId: matchedSender.id,
+            supplierEmail: matchedSender.email,
+            req
+          });
+          if (freeSupplierQuotaOnSend.isFreeMember && freeSupplierQuotaOnSend.isRestricted) {
+            res.status(429).json({
+              status: 'error',
+              success: false,
+              code: 'FREE_MEMBER_DAILY_MESSAGE_LIMIT',
+              message: `Daily limit reached: Free tier members can only send 1 buyer message or quote per day (${freeSupplierQuotaOnSend.sentToday}/${freeSupplierQuotaOnSend.dailyLimit} used). Please upgrade to send more messages.`,
+              quota: freeSupplierQuotaOnSend
+            });
+            return true;
+          }
+        }
+      }
+    }
+
     const targetUrl = `${LIVE_TRADEHEAVEN_API_URL}?${searchParams.toString()}`;
     const headers: Record<string, string> = {
       Accept: 'application/json',
@@ -8505,6 +9049,42 @@ async function forwardApiPhpToLiveUpstream(
       }
     }
 
+    // Overlay authoritative local serverUsersStore tier/membership/verification state on upstream get_users
+    if ((action === 'get_users' || action === 'users') && Array.isArray(parsed?.data)) {
+      const byEmail = new Map(
+        serverUsersStore.map((u) => [String(u.email || '').toLowerCase().trim(), u])
+      );
+      parsed.data = parsed.data.map((row: any) => {
+        const em = String(row?.email || '').toLowerCase().trim();
+        const localMatch = em ? byEmail.get(em) : undefined;
+        if (!localMatch) return row;
+        return {
+          ...row,
+          tier: localMatch.tier || row.tier,
+          membershipStatus: localMatch.membershipStatus || row.membershipStatus,
+          membership_status: localMatch.membershipStatus || row.membershipStatus,
+          isPremium: localMatch.isPremium,
+          is_premium: localMatch.isPremium,
+          isVerified: localMatch.isVerified,
+          is_verified: localMatch.isVerified ? 1 : 0,
+          status: localMatch.status || row.status
+        };
+      });
+    }
+
+    // Sync local serverUsersStore when upstream upsert_user / update_profile / edit_profile succeeds
+    if (
+      upstreamRes.status >= 200 &&
+      upstreamRes.status < 300 &&
+      (action === 'upsert_user' || action === 'update_profile' || action === 'edit_profile') &&
+      req.body &&
+      (req.body.email || req.body.id)
+    ) {
+      try {
+        upsertServerUserRecord(req.body);
+      } catch {}
+    }
+
     // Track genuine supplier login alerts & verified read receipts
     if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
       if ((action === 'login' || action === 'verify_login_otp') && parsed?.success && parsed?.user?.email) {
@@ -8535,6 +9115,22 @@ async function forwardApiPhpToLiveUpstream(
         if (convId) {
           recordVerifiedSupplierReadAudit(convId, verifiedSupplierActor.email, []);
         }
+      }
+
+      if (
+        freeSupplierQuotaOnSend &&
+        freeSupplierQuotaOnSend.isFreeMember &&
+        (action === 'send_chat_message' || action === 'submit_quote' || action === 'submit_inquiry') &&
+        parsed?.success !== false &&
+        parsed?.status !== 'error'
+      ) {
+        recordFreeMemberDailyMessageSend({
+          supplierId: freeSupplierQuotaOnSend.supplierId,
+          supplierEmail: freeSupplierQuotaOnSend.supplierEmail,
+          conversationId: String(req.body?.conversationId || req.body?.conversation_id || ''),
+          messageId: String(parsed?.data?.id || parsed?.id || ''),
+          targetType: action === 'submit_quote' ? 'quote' : action === 'submit_inquiry' ? 'inquiry' : 'chat'
+        });
       }
 
       if (action === 'process_unseen_alerts' && Array.isArray(parsed?.data?.details)) {
@@ -10538,6 +11134,25 @@ Message: ${formattedInquiry.message}`
       return res.status(400).json({ status: 'error', success: false, message: 'conversationId and messageText or mediaUrl are required' });
     }
 
+    let localFreeQuota: Awaited<ReturnType<typeof getSupplierDailyMessageQuota>> | null = null;
+    if (senderRole === 'supplier') {
+      localFreeQuota = await getSupplierDailyMessageQuota({
+        supplierId: String(input.supplierId || input.supplier_id || '').trim(),
+        supplierEmail: String(input.supplierEmail || input.supplier_email || '').trim().toLowerCase(),
+        conversationId: convId,
+        req
+      });
+      if (localFreeQuota.isFreeMember && localFreeQuota.isRestricted) {
+        return res.status(429).json({
+          status: 'error',
+          success: false,
+          code: 'FREE_MEMBER_DAILY_MESSAGE_LIMIT',
+          message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${localFreeQuota.sentToday}/${localFreeQuota.dailyLimit} used). Please upgrade or clear your Basic Plan balance to send more messages.`,
+          quota: localFreeQuota
+        });
+      }
+    }
+
     const msg: ServerChatMessageRecord = {
       id: `msg-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
       conversationId: convId,
@@ -10557,6 +11172,15 @@ Message: ${formattedInquiry.message}`
     if (conv) {
       conv.lastMessage = messageText || (mediaType === 'image' ? '[Image]' : mediaType === 'video' ? '[Video]' : '[PDF Document]');
       conv.updatedAt = msg.createdAt;
+    }
+    if (localFreeQuota && localFreeQuota.isFreeMember) {
+      recordFreeMemberDailyMessageSend({
+        supplierId: localFreeQuota.supplierId || conv?.supplierId,
+        supplierEmail: localFreeQuota.supplierEmail || conv?.supplierEmail,
+        conversationId: convId,
+        messageId: msg.id,
+        targetType: 'chat'
+      });
     }
     persistChatSystemStore();
     broadcastChatEvent('chat:new_message', { conversationId: convId, message: msg });
@@ -10691,6 +11315,70 @@ app.get('/api/v1/chat/messages', async (req, res) => {
     .filter(m => m.conversationId === convId)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   res.json({ status: 'success', success: true, data: msgs });
+});
+
+app.get('/api/v1/chat/supplier-message-quota', async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const quota = await getSupplierDailyMessageQuota({
+      supplierId: String(req.query.supplier_id || req.query.supplierId || '').trim(),
+      supplierEmail: String(req.query.supplier_email || req.query.supplierEmail || '').trim().toLowerCase(),
+      conversationId: String(req.query.conversation_id || req.query.conversationId || '').trim(),
+      req
+    });
+    return res.json({ status: 'success', success: true, data: quota });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: err?.message || 'Unable to compute supplier daily message quota'
+    });
+  }
+});
+
+app.post('/api/v1/chat/record-daily-message', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const quota = await getSupplierDailyMessageQuota({
+      supplierId: String(body.supplierId || body.supplier_id || '').trim(),
+      supplierEmail: String(body.supplierEmail || body.supplier_email || '').trim().toLowerCase(),
+      conversationId: String(body.conversationId || body.conversation_id || '').trim(),
+      req
+    });
+
+    if (quota.isFreeMember && quota.isRestricted) {
+      return res.status(429).json({
+        status: 'error',
+        success: false,
+        code: 'FREE_MEMBER_DAILY_MESSAGE_LIMIT',
+        message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${quota.sentToday}/${quota.dailyLimit} used).`,
+        data: quota
+      });
+    }
+
+    if (quota.isFreeMember) {
+      recordFreeMemberDailyMessageSend({
+        supplierId: quota.supplierId,
+        supplierEmail: quota.supplierEmail,
+        conversationId: String(body.conversationId || body.conversation_id || ''),
+        messageId: String(body.messageId || body.targetId || ''),
+        targetType: body.targetType || 'pitch'
+      });
+    }
+
+    const updated = await getSupplierDailyMessageQuota({
+      supplierId: quota.supplierId,
+      supplierEmail: quota.supplierEmail,
+      req
+    });
+    return res.json({ status: 'success', success: true, data: updated });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 'error',
+      success: false,
+      message: err?.message || 'Failed to record daily message quota'
+    });
+  }
 });
 
 app.post('/api/v1/chat/upload-media', (req, res) => {

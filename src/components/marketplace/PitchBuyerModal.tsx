@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { RfqRequirement, AuthUser, Currency } from '../../types';
 import { CURRENCY_RATES } from '../../data/mockData';
 import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
@@ -17,7 +17,15 @@ import {
   Lock,
   UserPlus
 } from 'lucide-react';
-import { isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
+import {
+  fetchSupplierDailyMessageQuota,
+  getLocalFreeMemberMessageQuota,
+  isFreeTierSupplierUser,
+  isPaidEntity,
+  isPaidMemberUser,
+  recordServerDailyMessageSend,
+  SupplierDailyMessageQuota
+} from '../../services/freeLeadService';
 
 interface Props {
   rfq: RfqRequirement;
@@ -41,23 +49,79 @@ export const PitchBuyerModal: React.FC<Props> = ({
   const [supplierCompany, setSupplierCompany] = useState<string>(currentUser?.companyName || 'Verified Exporter Co.');
   const [supplierContact, setSupplierContact] = useState<string>(currentUser?.email || 'sales@exporter.com');
   const [isSent, setIsSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+  const [dailyQuota, setDailyQuota] = useState<SupplierDailyMessageQuota>(() =>
+    getLocalFreeMemberMessageQuota(currentUser)
+  );
 
   const isPaidLead = isPaidEntity(rfq);
   const isCallerPaid = isPaidMemberUser(currentUser);
+  const isFreeMember = isFreeTierSupplierUser(currentUser);
+
+  useEffect(() => {
+    if (!isFreeMember) return;
+    let active = true;
+    const syncQuota = () => {
+      void fetchSupplierDailyMessageQuota({
+        supplierId: currentUser?.id,
+        supplierEmail: currentUser?.email,
+        authToken: currentUser?.token,
+        user: currentUser
+      }).then(q => {
+        if (active) setDailyQuota(q);
+      });
+    };
+    syncQuota();
+    window.addEventListener('tradeheaven_free_message_quota_updated', syncQuota);
+    return () => {
+      active = false;
+      window.removeEventListener('tradeheaven_free_message_quota_updated', syncQuota);
+    };
+  }, [isFreeMember, currentUser]);
+
+  const isDailyMessageRestricted = Boolean(isFreeMember && dailyQuota?.isRestricted);
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
-  const handleSendPitch = (e: React.FormEvent) => {
+  const handleSendPitch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSent(true);
-    // Trigger notification or toast if available
-    window.dispatchEvent(new CustomEvent('tradeheaven_notification', {
-      detail: {
-        title: 'Direct Pitch Delivered',
-        message: `Your factory proposal for "${rfq.productName}" was sent to ${rfq.buyerCompany}.`,
-        type: 'SUCCESS'
+    setQuotaError(null);
+    if (isDailyMessageRestricted) {
+      setQuotaError('Daily limit reached: Free members can only send 1 message to buyers daily.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (isFreeMember) {
+        const res = await recordServerDailyMessageSend({
+          supplierId: currentUser?.id,
+          supplierEmail: currentUser?.email,
+          targetId: rfq.id,
+          targetType: 'pitch',
+          authToken: currentUser?.token,
+          user: currentUser
+        });
+        setDailyQuota(res.quota);
+        if (!res.allowed) {
+          setQuotaError(res.message || 'Daily limit reached: Free members can only send 1 message to buyers daily.');
+          return;
+        }
       }
-    }));
+
+      setIsSent(true);
+      // Trigger notification or toast if available
+      window.dispatchEvent(new CustomEvent('tradeheaven_notification', {
+        detail: {
+          title: 'Direct Pitch Delivered',
+          message: `Your factory proposal for "${rfq.productName}" was sent to ${rfq.buyerCompany}.`,
+          type: 'SUCCESS'
+        }
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const whatsappText = encodeURIComponent(
@@ -252,8 +316,50 @@ export const PitchBuyerModal: React.FC<Props> = ({
                     </button>
                   </div>
                 </div>
+              ) : isDailyMessageRestricted ? (
+                <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <Lock className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-black text-rose-950">
+                        Daily Buyer Message Limit Reached ({dailyQuota.sentToday}/{dailyQuota.dailyLimit || 1} used today)
+                      </h4>
+                      <p className="text-xs text-rose-800 leading-relaxed">
+                        Free Tier members can only send <strong>1 message to buyers daily</strong>.
+                        {dailyQuota.resetInFormatted ? ` Your quota resets in ${dailyQuota.resetInFormatted}.` : ''} Please upgrade or clear your Basic Plan balance to continue pitching buyers.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                    {onOpenUpgradeModal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenUpgradeModal();
+                        }}
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Crown className="w-3.5 h-3.5" />
+                        <span>Upgrade Plan</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2 rounded-xl border border-rose-300 bg-white text-rose-800 hover:bg-rose-100 font-bold text-xs cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <form onSubmit={handleSendPitch} className="space-y-4">
+                  {quotaError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800">
+                      {quotaError}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -317,10 +423,11 @@ export const PitchBuyerModal: React.FC<Props> = ({
                       </button>
                       <button
                         type="submit"
-                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>Send Free Direct Pitch</span>
+                        <span>{isSubmitting ? 'Sending...' : 'Send Free Direct Pitch'}</span>
                       </button>
                     </div>
                   </div>

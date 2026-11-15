@@ -306,6 +306,21 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       tier: 'Basic Plan Member (Card Payment • Ultra Dispersed Copper Powder TU 1793-001-74350164-2005)',
       created_at: '2026-11-12 22:25:00 UTC'
     };
+    const zacSupplier: RegisteredSupplier = {
+      id: 'user-supplier-zac',
+      name: 'Zachary Aldin',
+      email: 'zac@otec.ltd',
+      company_name: 'IMPORTATION FADE-TECH (OTEC LTD)',
+      companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+      phone: '+61 424 854 899',
+      country: 'Australia',
+      role: 'SUPPLIER',
+      status: 'FREE',
+      is_verified: 0,
+      isVerified: false,
+      tier: 'Free Member',
+      created_at: '2026-09-04 10:00:00 UTC'
+    };
 
     const filterOutDeleted = (list: RegisteredSupplier[]) => {
       const deleted = getPermanentlyDeletedUsers();
@@ -380,6 +395,21 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
         if (emailLower.includes('larsbarnhart') || emailLower.includes('blackstone')) {
           return { ...s, ...larsBarnhartSupplier };
         }
+        if (emailLower === 'zac@otec.ltd') {
+          const isFreeTier =
+            String(s.membershipStatus || s.membership_status || '').toLowerCase() === 'free' ||
+            String(s.tier || '').toLowerCase().includes('free');
+          return {
+            ...s,
+            company_name: s.companyName || s.company_name || zacSupplier.company_name,
+            companyName: s.companyName || s.company_name || zacSupplier.companyName,
+            phone: s.phone || zacSupplier.phone,
+            tier: isFreeTier ? 'Free Member' : s.tier || zacSupplier.tier,
+            status: isFreeTier ? 'FREE' : s.status,
+            is_verified: isFreeTier ? 0 : s.is_verified,
+            isVerified: isFreeTier ? false : Boolean(s.isVerified)
+          };
+        }
         return s;
       });
 
@@ -392,8 +422,10 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       const hasMelissa = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('mpcommoditybroker'));
       const hasSvetlana = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('joybambooforestfarm'));
       const hasAce = finalSuppliers.some((s) => String(s.email || '').toLowerCase().includes('ezekiahali') || String(s.company_name || '').toLowerCase().includes('ace intermediary'));
+      const hasZac = finalSuppliers.some((s) => String(s.email || '').toLowerCase().trim() === 'zac@otec.ltd');
 
       let merged = [...finalSuppliers];
+      if (!hasZac) merged = [zacSupplier, ...merged];
       if (!hasAfreh) merged = [afrehGroupSupplier, ...merged];
       if (!hasLars) merged = [larsBarnhartSupplier, ...merged];
       if (!hasEmmanuel) merged = [emmanuelSupplier, ...merged];
@@ -406,7 +438,7 @@ export const RegisteredSuppliersAdmin: React.FC = () => {
       setSuppliers(filterOutDeleted(merged));
     } catch (err: any) {
       console.warn('[RegisteredSuppliersAdmin] Using local supplier store:', err);
-      setSuppliers(filterOutDeleted([afrehGroupSupplier, larsBarnhartSupplier, emmanuelSupplier, aceIntermediarySupplier, markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
+      setSuppliers(filterOutDeleted([zacSupplier, afrehGroupSupplier, larsBarnhartSupplier, emmanuelSupplier, aceIntermediarySupplier, markJohnsonSupplier, randySupplier, donaldSupplier, svetlanaSupplier, melissaSupplier]));
     } finally {
       setLoading(false);
     }

@@ -137,15 +137,13 @@ const PAID_ENTITY_IDS = new Set([
   'comp-joy-bamboo-forest-farm',
   'comp-melissa-mpcommodity',
   'comp-middle-fox-llc',
-  'comp-zac-importation-fadetech',
   'comp-apex-motorsport',
   'comp-shenzhen-batt',
   'comp-eec-poland-sp-zoo',
   'user-supplier-mark-johnson',
   'user-supplier-svetlana',
   'user-supplier-melissa',
-  'user-supplier-randy',
-  'user-supplier-zac'
+  'user-supplier-randy'
 ]);
 
 /**
@@ -205,8 +203,6 @@ export const isPaidEntity = (entity: any): boolean => {
     buyerCompany.includes('joy bamboo') ||
     buyerCompany.includes('mp commodity') ||
     buyerCompany.includes('middle fork') ||
-    buyerCompany.includes('fade-tech') ||
-    buyerCompany.includes('otec ltd') ||
     detailed.includes('basic plan') ||
     detailed.includes('paid basic') ||
     detailed.includes('only accessed by vip') ||
@@ -214,7 +210,6 @@ export const isPaidEntity = (entity: any): boolean => {
     email.includes('midforkcap') ||
     email.includes('mpcommoditybroker') ||
     email.includes('joybambooforestfarm') ||
-    email.includes('otec.ltd') ||
     email.includes('sorkindon') ||
     email.includes('titanindustrial')
   ) {
@@ -325,3 +320,256 @@ export const isRfqClaimedFree = (rfqId: string): boolean => {
   return status.claimedRfqIdsHistory.includes(rfqId);
 };
 
+// ============================================================================
+// FREE TIER DAILY BUYER MESSAGE QUOTA (STRICT 1 MESSAGE / 24 HOURS)
+// ============================================================================
+
+export const FREE_MEMBER_DAILY_MESSAGE_LIMIT = 1;
+const DAILY_MSG_STORAGE_KEY = 'tradeheaven_free_member_daily_message_v1';
+
+export interface SupplierDailyMessageQuota {
+  isFreeMember: boolean;
+  dailyLimit: number | null;
+  sentToday: number;
+  remainingToday: number | null;
+  isRestricted: boolean;
+  nextResetAt: string | null;
+  resetInFormatted: string;
+  accountTier: string;
+  supplierEmail?: string;
+  supplierId?: string;
+}
+
+interface LocalMessageSendRecord {
+  sentAt: number;
+  targetId?: string;
+}
+
+function getSupplierQuotaKey(user: any): string {
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (email) return email;
+  const id = String(user?.id || '').trim();
+  return id || 'anonymous';
+}
+
+function formatQuotaDuration(ms: number): string {
+  if (ms <= 0) return '0m';
+  const totalMin = Math.ceil(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+export function isFreeTierSupplierUser(user: any): boolean {
+  if (!user) return false;
+  if (String(user.role || '').toUpperCase() === 'ADMIN' || user.isVerifiedAdmin === true) return false;
+  return !isPaidMemberUser(user);
+}
+
+function readLocalDailyMessageStore(): Record<string, LocalMessageSendRecord[]> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(DAILY_MSG_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function getLocalFreeMemberMessageQuota(user: any): SupplierDailyMessageQuota {
+  const isFree = isFreeTierSupplierUser(user);
+  const accountTier = String(user?.tier || (isFree ? 'Free Member' : 'Paid Member'));
+  const supplierEmail = String(user?.email || '').trim().toLowerCase();
+  const supplierId = String(user?.id || '').trim();
+
+  if (!isFree) {
+    return {
+      isFreeMember: false,
+      dailyLimit: null,
+      sentToday: 0,
+      remainingToday: null,
+      isRestricted: false,
+      nextResetAt: null,
+      resetInFormatted: '',
+      accountTier,
+      supplierEmail,
+      supplierId
+    };
+  }
+
+  const now = Date.now();
+  const cutoff = now - CLAIM_INTERVAL_MS;
+  const store = readLocalDailyMessageStore();
+  const key = getSupplierQuotaKey(user);
+  const entries = Array.isArray(store[key])
+    ? store[key].filter(e => e && typeof e.sentAt === 'number' && e.sentAt >= cutoff).sort((a, b) => a.sentAt - b.sentAt)
+    : [];
+
+  const sentToday = entries.length;
+  const remainingToday = Math.max(0, FREE_MEMBER_DAILY_MESSAGE_LIMIT - sentToday);
+  const isRestricted = sentToday >= FREE_MEMBER_DAILY_MESSAGE_LIMIT;
+  const earliest = entries.length > 0 ? entries[0].sentAt : null;
+  const nextResetMs = earliest ? earliest + CLAIM_INTERVAL_MS : null;
+
+  return {
+    isFreeMember: true,
+    dailyLimit: FREE_MEMBER_DAILY_MESSAGE_LIMIT,
+    sentToday,
+    remainingToday,
+    isRestricted,
+    nextResetAt: nextResetMs ? new Date(nextResetMs).toISOString() : null,
+    resetInFormatted: nextResetMs ? formatQuotaDuration(Math.max(0, nextResetMs - now)) : '',
+    accountTier,
+    supplierEmail,
+    supplierId
+  };
+}
+
+export function recordLocalFreeMemberMessageSend(user: any, targetId?: string): SupplierDailyMessageQuota {
+  if (typeof window === 'undefined' || !isFreeTierSupplierUser(user)) {
+    return getLocalFreeMemberMessageQuota(user);
+  }
+  try {
+    const now = Date.now();
+    const cutoff = now - CLAIM_INTERVAL_MS;
+    const store = readLocalDailyMessageStore();
+    const key = getSupplierQuotaKey(user);
+    const existing = Array.isArray(store[key])
+      ? store[key].filter(e => e && typeof e.sentAt === 'number' && e.sentAt >= cutoff)
+      : [];
+    existing.push({ sentAt: now, targetId });
+    store[key] = existing;
+    localStorage.setItem(DAILY_MSG_STORAGE_KEY, JSON.stringify(store));
+  } catch {}
+
+  const updated = getLocalFreeMemberMessageQuota(user);
+  try {
+    window.dispatchEvent(new CustomEvent('tradeheaven_free_message_quota_updated', { detail: updated }));
+  } catch {}
+  return updated;
+}
+
+function mergeQuotaWithLocal(serverQuota: SupplierDailyMessageQuota, localQuota: SupplierDailyMessageQuota): SupplierDailyMessageQuota {
+  if (!serverQuota.isFreeMember && !localQuota.isFreeMember) {
+    return serverQuota;
+  }
+  const sentToday = Math.max(Number(serverQuota.sentToday || 0), Number(localQuota.sentToday || 0));
+  const dailyLimit = serverQuota.dailyLimit ?? FREE_MEMBER_DAILY_MESSAGE_LIMIT;
+  const remainingToday = Math.max(0, dailyLimit - sentToday);
+  return {
+    ...serverQuota,
+    isFreeMember: true,
+    dailyLimit,
+    sentToday,
+    remainingToday,
+    isRestricted: sentToday >= dailyLimit,
+    nextResetAt: serverQuota.nextResetAt || localQuota.nextResetAt,
+    resetInFormatted: serverQuota.resetInFormatted || localQuota.resetInFormatted
+  };
+}
+
+export async function fetchSupplierDailyMessageQuota(params: {
+  supplierId?: string;
+  supplierEmail?: string;
+  conversationId?: string;
+  authToken?: string;
+  user?: any;
+}): Promise<SupplierDailyMessageQuota> {
+  const localQuota = getLocalFreeMemberMessageQuota(params.user);
+  try {
+    const qs = new URLSearchParams({ _t: String(Date.now()) });
+    if (params.supplierId) qs.set('supplier_id', params.supplierId);
+    if (params.supplierEmail) qs.set('supplier_email', params.supplierEmail);
+    if (params.conversationId) qs.set('conversation_id', params.conversationId);
+
+    const headers: Record<string, string> = { Accept: 'application/json', 'Cache-Control': 'no-cache' };
+    if (params.authToken) {
+      headers.Authorization = `Bearer ${params.authToken}`;
+    }
+
+    const res = await fetch(`/api/v1/chat/supplier-message-quota?${qs.toString()}`, {
+      cache: 'no-store',
+      headers
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && json?.data) {
+      return mergeQuotaWithLocal(json.data as SupplierDailyMessageQuota, localQuota);
+    }
+  } catch {}
+  return localQuota;
+}
+
+export async function recordServerDailyMessageSend(params: {
+  supplierId?: string;
+  supplierEmail?: string;
+  conversationId?: string;
+  targetId?: string;
+  targetType?: 'chat' | 'pitch' | 'quote' | 'inquiry';
+  authToken?: string;
+  user?: any;
+}): Promise<{ allowed: boolean; quota: SupplierDailyMessageQuota; message?: string }> {
+  const localQuota = getLocalFreeMemberMessageQuota(params.user);
+  if (localQuota.isFreeMember && localQuota.isRestricted) {
+    return {
+      allowed: false,
+      quota: localQuota,
+      message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${localQuota.sentToday}/${localQuota.dailyLimit} used).`
+    };
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    };
+    if (params.authToken) {
+      headers.Authorization = `Bearer ${params.authToken}`;
+    }
+    const res = await fetch('/api/v1/chat/record-daily-message', {
+      method: 'POST',
+      cache: 'no-store',
+      headers,
+      body: JSON.stringify({
+        supplierId: params.supplierId || params.user?.id || '',
+        supplierEmail: params.supplierEmail || params.user?.email || '',
+        conversationId: params.conversationId || '',
+        targetId: params.targetId || '',
+        targetType: params.targetType || 'pitch'
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    const serverQuota = (json?.data || localQuota) as SupplierDailyMessageQuota;
+
+    if (res.status === 429 || json?.code === 'FREE_MEMBER_DAILY_MESSAGE_LIMIT') {
+      const merged = mergeQuotaWithLocal(serverQuota, localQuota);
+      try {
+        window.dispatchEvent(new CustomEvent('tradeheaven_free_message_quota_updated', { detail: merged }));
+      } catch {}
+      return {
+        allowed: false,
+        quota: merged,
+        message: json?.message || 'Daily limit reached: Free tier members can only send 1 message to buyers per day.'
+      };
+    }
+
+    if (res.ok) {
+      const updatedLocal = isFreeTierSupplierUser(params.user)
+        ? recordLocalFreeMemberMessageSend(params.user, params.targetId || params.conversationId)
+        : localQuota;
+      const merged = mergeQuotaWithLocal(serverQuota, updatedLocal);
+      try {
+        window.dispatchEvent(new CustomEvent('tradeheaven_free_message_quota_updated', { detail: merged }));
+      } catch {}
+      return { allowed: true, quota: merged };
+    }
+  } catch {}
+
+  // Offline / transient network fallback
+  if (isFreeTierSupplierUser(params.user)) {
+    const updated = recordLocalFreeMemberMessageSend(params.user, params.targetId || params.conversationId);
+    return { allowed: true, quota: updated };
+  }
+  return { allowed: true, quota: localQuota };
+}

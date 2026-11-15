@@ -88,13 +88,13 @@ const DEFAULT_ZAC_CLIENT_USER: AuthUser = {
   email: 'zac@otec.ltd',
   role: 'SUPPLIER',
   isVerifiedAdmin: false,
-  isVerified: true,
+  isVerified: false,
   avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
   companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
-  country: 'United States',
+  country: 'Australia',
   isPremium: false,
-  membershipStatus: 'basic',
-  tier: 'SILVER',
+  membershipStatus: 'free',
+  tier: 'Free Member' as any,
   status: 'ACTIVE'
 };
 

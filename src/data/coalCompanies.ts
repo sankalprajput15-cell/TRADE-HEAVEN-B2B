@@ -11,10 +11,10 @@ export const GLOBAL_COAL_COMPANIES: any[] = [
     address: '42a Bassett street hurstville, New South Wales 2220, Australia',
     establishedYear: 2018,
     totalEmployees: '50-100 Staff',
-    description: 'IMPORTATION FADE-TECH (42a Bassett street hurstville, Australia | Zac@otec.ltd) is a Basic Plan Holder (Invoice TRD-INV-27-0004). Direct on-site funds transfers from the portal are disabled for Basic Plan accounts (VIP membership required for direct site settlements). Specializing in Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal, and High-Carbon PCI Coal. Authorized Representative: Zachary Aldin (+61 424 854 899). Accepted Payment: Off-Platform Bank Wire Transfer / L/C at sight.',
+    description: 'IMPORTATION FADE-TECH (42a Bassett street hurstville, Australia | Zac@otec.ltd) is currently on the Free Tier Member plan pending Basic Plan balance clearance (Invoice TRD-INV-27-0004). Direct on-site funds transfers from the portal are disabled. Specializing in Australian export coal including High-CV Thermal Coal (GAR 6000-6500 kcal/kg), Hard Coking Metallurgical Coal, and High-Carbon PCI Coal. Authorized Representative: Zachary Aldin (+61 424 854 899). Accepted Payment: Off-Platform Bank Wire Transfer / L/C at sight.',
     trustScore: 99,
     legalRegistrationNumber: 'TRD-INV-27-0004',
-    isVerifiedKYC: true,
+    isVerifiedKYC: false,
     responseRate: '99.8%',
     avgResponseTime: '< 30 mins',
     annualRevenueUsd: '35M - 70M USD',
@@ -25,7 +25,7 @@ export const GLOBAL_COAL_COMPANIES: any[] = [
     whatsapp: '+61424854899',
     tradeAssuranceLimitUsd: 0,
     completedOrdersCount: 215,
-    tier: 'SILVER',
+    tier: 'FREE',
     contactPerson: 'Zachary Aldin'
   },
   {

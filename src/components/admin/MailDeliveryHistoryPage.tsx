@@ -291,6 +291,38 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
     }
   };
 
+  const handleSendZacClearBalanceAndFreeTier = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/v1/admin/send-zac-clear-balance-free-tier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        await fetchHistoryAndAnalytics();
+        window.dispatchEvent(new Event('tradeheaven_users_updated'));
+        setStatusBanner({
+          type: 'success',
+          message: data.message || 'Emailed Zac (zac@otec.ltd) regarding Basic Plan balance clearance and set him to Free Tier Member!'
+        });
+      } else {
+        setStatusBanner({
+          type: 'error',
+          message: data?.message || 'Failed to dispatch Basic Plan balance clearance email to Zac.'
+        });
+      }
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        message: err?.message || 'Network error while dispatching Basic Plan balance clearance email.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendRandy10BuyersPetroleumAlert = async () => {
     setIsLoading(true);
     try {
@@ -659,6 +691,16 @@ export const MailDeliveryHistoryPage: React.FC<MailDeliveryHistoryPageProps> = (
             >
               <Send className="w-3.5 h-3.5" />
               <span>⚖️ Send Zac Refund Escalation (Export Manager David)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendZacClearBalanceAndFreeTier}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer disabled:opacity-50 border border-slate-600"
+            >
+              <Send className="w-3.5 h-3.5 text-amber-300" />
+              <span>Email Zac (Clear Basic Plan Balance) + Set Free Tier</span>
             </button>
 
             <button
