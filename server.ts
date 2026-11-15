@@ -7077,7 +7077,7 @@ let serverRfqsStore: any[] = [
     phone: '+1 416 555 0198',
     subject: '🌟 GOLDEN LEAD [VIP Member Exclusive • 100% Advance Payment]: 10 Units Industrial Diesel Generators to Canada + Special Diwali Offer',
     product_name: '10 Units CAT / Cummins Heavy-Duty Industrial Diesel Generators (500kW - 2000kW)',
-    message: 'GOLDEN LEAD — 100% ADVANCE PAYMENT (ONLY ACCESSED BY VIP MEMBER): Urgent Canadian infrastructure & northern mining procurement for 10 Units Industrial Diesel Generators (CAT Power / Cummins Power Generation) for delivery to Canada (Toronto, Ontario / Calgary, Alberta). Payment Terms: 100% Advance Payment via Direct Wire / TT upon Proforma Invoice. Assigned to Mark Johnson (President, Shore Technical Equipment Inc. DBA: Atlantic Power & Equipment Co., P.O. Box 1176, Marmora, NJ 08223 USA | mjohnson@atlanticpowerequip.com | C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131). SPECIAL DIWALI OFFER: Upgrade from Basic Plan to VIP Member with Diwali Offer (Flat 10% OFF + Instant Golden Lead Unlock) to access direct buyer settlement with 100% Advance Payment.',
+    message: 'Urgent Canadian infrastructure & northern mining procurement for 10 Units Industrial Diesel Generators (CAT Power / Cummins Power Generation) for delivery to Canada (Toronto, Ontario / Calgary, Alberta). Payment Terms: 100% Advance Payment via Direct Wire / TT upon Proforma Invoice.',
     status: 'pending',
     target_quantity: 10,
     quantity_unit: 'Units (Generators)',
@@ -9287,6 +9287,46 @@ async function postLiveAutoBatchRfqs(rfqs: any[], keyword: string, insightSummar
       10000
     );
   } catch {}
+
+  // Also persist up to 4 newly generated RFQs via action=submit_rfq so upstream MySQL stores them
+  for (const rfq of rfqs.slice(0, 4)) {
+    try {
+      const submitPayload = {
+        id: rfq.id,
+        title: rfq.productName || rfq.title,
+        product_name: rfq.productName || rfq.title,
+        category: rfq.category || 'Industrial Machinery & Equipment',
+        quantity: String(rfq.targetQuantity || rfq.quantity || 1),
+        unit: rfq.quantityUnit || rfq.unit || 'Sets',
+        order_frequency: rfq.orderFrequency || rfq.order_frequency || 'One-Time',
+        targetPrice: String(rfq.targetPriceUsd || rfq.targetPrice || 0),
+        incoterms: rfq.preferredIncoterm || rfq.incoterms || 'CIF',
+        destinationPort: rfq.destinationPort || rfq.destination_port || 'Global Port',
+        payment_terms: rfq.paymentTerms || rfq.payment_terms || 'CIF, Irrevocable LC at Sight / TT',
+        specifications: rfq.detailedRequirements || rfq.specifications || rfq.detailedDescription || '',
+        buyer_name: rfq.buyerName || rfq.buyer_name || 'International Procurement Directorate',
+        buyer_company: rfq.buyerCompany || rfq.buyer_company || 'Global Infrastructure & Trade Corp.',
+        buyer_country: rfq.buyerCountry || rfq.buyer_country || 'United Arab Emirates',
+        buyer_email: rfq.buyerEmail || rfq.buyer_email || 'procurement@almaktoumcommodities.ae',
+        buyer_phone: rfq.buyerPhone || rfq.buyer_phone || '+971 50 482 9130',
+        buyer_address: rfq.buyerAddress || rfq.buyer_address || '',
+        source: 'auto_generated',
+        sync_tag: 'market_sync',
+        search_keyword: rfq.searchKeyword || rfq.search_keyword || keyword,
+        market_insight: insightSummary || rfq.marketInsight || rfq.market_insight || '',
+        posted_label: rfq.postedLabel || rfq.posted_label || 'Just now',
+        status: 'OPEN'
+      };
+      const itemBuf = Buffer.from(JSON.stringify(submitPayload), 'utf8');
+      await executeUpstreamHttpRequest(
+        `${LIVE_TRADEHEAVEN_API_URL}?action=submit_rfq`,
+        'POST',
+        { 'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+        itemBuf,
+        8000
+      );
+    } catch {}
+  }
 }
 
 // BigRock PHP API Gateway (/api.php)
@@ -9344,13 +9384,51 @@ app.get('/api.php', async (req, res) => {
     });
   }
 
-  if (await forwardApiPhpToLiveUpstream(req, res, action, 'GET')) {
-    return;
-  }
-
   if (action === 'get_rfqs' || action === 'rfqs') {
     const keywordQuery = String(req.query.keyword || req.query.search || '').trim();
-    let list = serverRfqsStore.map(standardizeServerRfq);
+    const mergedMap = new Map<string, any>();
+    const seenTitleBuyer = new Set<string>();
+
+    const addRfqToMerged = (rawItem: any) => {
+      if (!rawItem) return;
+      const std = standardizeServerRfq(rawItem);
+      const idKey = String(std.id || '').trim();
+      const titleKey = `${String(std.productName || std.title || '').toLowerCase().trim()}::${String(std.buyerEmail || std.buyerCountry || '').toLowerCase().trim()}`;
+      if (idKey && mergedMap.has(idKey)) return;
+      if (titleKey.length > 4 && seenTitleBuyer.has(titleKey)) return;
+      if (idKey) mergedMap.set(idKey, std);
+      else mergedMap.set(`rfq-${mergedMap.size}`, std);
+      if (titleKey.length > 4) seenTitleBuyer.add(titleKey);
+    };
+
+    // 1. Always include local serverRfqsStore (includes persisted auto-generated RFQs from rfq-market-store.json)
+    serverRfqsStore.forEach(addRfqToMerged);
+
+    // 2. Also merge live upstream RFQs if proxy is enabled
+    if (LIVE_UPSTREAM_PROXY_ENABLED) {
+      try {
+        const upstreamRes = await executeUpstreamHttpRequest(
+          `${LIVE_TRADEHEAVEN_API_URL}?action=get_rfqs`,
+          'GET',
+          { Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+          undefined,
+          8000
+        );
+        if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
+          const parsed = JSON.parse(upstreamRes.body.toString('utf8'));
+          const upstreamList = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.data)
+            ? parsed.data
+            : Array.isArray(parsed?.rfqs)
+            ? parsed.rfqs
+            : [];
+          upstreamList.forEach(addRfqToMerged);
+        }
+      } catch {}
+    }
+
+    let list = Array.from(mergedMap.values());
     if (keywordQuery) {
       list = list.filter(r => matchesRfqKeyword(r, keywordQuery));
     }
@@ -9361,6 +9439,10 @@ app.get('/api.php', async (req, res) => {
       status: 'success',
       data: sorted
     });
+  }
+
+  if (await forwardApiPhpToLiveUpstream(req, res, action, 'GET')) {
+    return;
   }
 
   if (action === 'get_inquiries' || action === 'inquiries') {
@@ -15881,7 +15963,8 @@ function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array
   const isGrainOrSpice = /(rice|wheat|corn|maize|soybean|sugar|coffee|tea|cocoa|cashew|almond|walnut|pistachio|pepper|turmeric|cardamom|cumin|cinnamon|clove|vanilla|spice|pulse|lentil|chickpea|flour|oil|honey)/i.test(lower);
   const isMetalOrMineral = /(copper|aluminium|aluminum|steel|iron|zinc|nickel|lithium|cobalt|gold|silver|scrap|cathode|billet|ingot|ore|coal|cement|clinker|slag|quartz)/i.test(lower);
   const isEnergyOrChem = /(diesel|en590|jet|fuel|bitumen|urea|sulphur|sulfur|petcoke|lng|lpg|crude|acid|polymer|resin|pvc|hdpe|ldpe|caustic|chemical|solvent)/i.test(lower);
-  const isMachineryOrTech = /(cnc|machine|excavator|tractor|generator|turbine|solar|inverter|battery|panel|transformer|pump|valve|compressor|elevator|drone|laptop|iphone|ipad|macbook|electronics|semiconductor|led)/i.test(lower);
+  const isPowerGenerationOrHeavyPlant = /(generation|generator|genset|power\s*plant|power\s*station|\b\d+\s*mw\b|\b\d+\s*kw\b|\b\d+\s*kva\b|turbine|substation|switchgear|cogeneration|chp|natural\s*gas\s*gen)/i.test(lower);
+  const isMachineryOrTech = /(cnc|machine|machinery|equipment|system|excavator|tractor|generator|generation|turbine|solar|inverter|battery|panel|transformer|pump|valve|compressor|boiler|chiller|elevator|drone|laptop|iphone|ipad|macbook|electronics|semiconductor|led)/i.test(lower);
   const isConstructionMaterial = /(brick|bricks|tile|tiles|ceramic|masonry|granite|marble|timber|lumber|plywood|glass|cement|clinker|concrete|paver|pavers|slate|stone|plaster|insulation|roofing)/i.test(lower);
 
   let category = 'Agriculture & Foodstuff';
@@ -16111,6 +16194,42 @@ function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array
         freq: 'Bi-Weekly',
         price: 730,
         specs: `Containerized flexitank or palletized drum shipment, full dangerous/non-dangerous cargo export clearance and marine insurance included.`
+      }
+    ];
+  } else if (isPowerGenerationOrHeavyPlant) {
+    category = 'Energy, Power & Electrical Equipment';
+    unit = 'Sets';
+    basePrice = 485000;
+    typicalPriceRange = '$280,000 – $1,650,000 per Complete Turnkey System / Set (CIF / CIP)';
+    packagingStandards = 'Heavy-duty skid-mounted modular acoustic enclosures & breakbulk / 40ft FR seaworthy export crating with VCI corrosion protection';
+    variants = [
+      {
+        title: `${cleanTitle} - Turnkey Skid-Mounted Utility Power Plant Package`,
+        qty: 2,
+        freq: 'One-Time',
+        price: 640000,
+        specs: `Complete industrial ${cleanTitle} rated for continuous base-load (COP) & prime utility duty, 50Hz/60Hz grid-sync PLC switchgear, SCADA telemetry, low-NOx emissions compliance, and factory acceptance test (FAT) certificate.`
+      },
+      {
+        title: `High-Efficiency ${cleanTitle} - Industrial IPP & Grid Substation Tender`,
+        qty: 4,
+        freq: 'Quarterly',
+        price: 520000,
+        specs: `ISO 8528 / IEC 60034 certified power generation package with step-up transformer interface, automatic voltage regulation (AVR), heat recovery steam/exhaust readiness, and 24-month OEM warranty.`
+      },
+      {
+        title: `Modular Containerized ${cleanTitle} - EPC Infrastructure Procurement`,
+        qty: 3,
+        freq: 'One-Time',
+        price: 495000,
+        specs: `Weatherproof sound-attenuated 40ft ISO high-cube acoustic housing, integrated gas train & pressure regulation skid, fire detection/suppression system, and SGS pre-shipment load bank test report.`
+      },
+      {
+        title: `Heavy-Duty Commercial ${cleanTitle} - Direct OEM Supply & Spare Parts Kit`,
+        qty: 5,
+        freq: 'Annual Contract',
+        price: 450000,
+        specs: `Direct manufacturer supply with 8,000-hour critical commissioning & maintenance spares kit, full ASME/CE pressure & electrical schematics, and on-site supervision documentation.`
       }
     ];
   } else if (isMachineryOrTech) {

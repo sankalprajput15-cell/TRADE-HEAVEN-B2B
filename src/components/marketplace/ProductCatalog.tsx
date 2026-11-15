@@ -83,7 +83,7 @@ export const ProductCatalog: React.FC<Props> = ({
   onSelectRfq,
   onNavigateToBuyLeads,
   onRfqsUpdated,
-  showMatchedRfqs = false,
+  showMatchedRfqs = true,
   selectedCategory: propCategory,
   onCategoryChange,
   initialCategory,
@@ -466,6 +466,10 @@ export const ProductCatalog: React.FC<Props> = ({
     [filtered]
   );
   const catalogResultSig = catalogResultTitles.join('|').toLowerCase();
+  const catalogResultTitlesRef = React.useRef<string[]>(catalogResultTitles);
+  catalogResultTitlesRef.current = catalogResultTitles;
+  const userRef = React.useRef(user);
+  userRef.current = user;
 
   const lastCatalogRfqScanRef = React.useRef<string>('');
   useEffect(() => {
@@ -479,17 +483,18 @@ export const ProductCatalog: React.FC<Props> = ({
     if (lastCatalogRfqScanRef.current === sig) return;
 
     let cancelled = false;
+    setIsScanningCatalogRfqs(true);
+
     const timer = window.setTimeout(async () => {
-      lastCatalogRfqScanRef.current = sig;
-      setIsScanningCatalogRfqs(true);
       try {
         const res = await checkAndDiscoverRfqsForKeyword({
           keyword: trimmed,
-          searchResults: catalogResultTitles,
+          searchResults: catalogResultTitlesRef.current,
           currentRfqs: catalogRfqsPoolRef.current,
-          currentUser: user || undefined
+          currentUser: userRef.current || undefined
         });
         if (cancelled) return;
+        lastCatalogRfqScanRef.current = sig;
         if (Array.isArray(res.rfqs) && res.rfqs.length > 0) {
           const merged = sortRfqsRealFirst(mergeRfqLists(catalogRfqsPoolRef.current, res.rfqs));
           setCatalogRfqsPool(merged);
@@ -507,13 +512,13 @@ export const ProductCatalog: React.FC<Props> = ({
           setIsScanningCatalogRfqs(false);
         }
       }
-    }, 380);
+    }, 180);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [searchTerm, catalogResultSig, user]);
+  }, [searchTerm, catalogResultSig]);
 
   const matchedCatalogRfqs = React.useMemo(() => {
     const trimmed = searchTerm.trim();
@@ -1066,11 +1071,11 @@ export const ProductCatalog: React.FC<Props> = ({
             <>
             {(showMatchedRfqs || Boolean(onSelectRfq)) && searchTerm.trim().length >= 2 && (isScanningCatalogRfqs || matchedCatalogRfqs.length > 0) ? (
               <div className="space-y-4">
-                {isScanningCatalogRfqs ? (
+                {isScanningCatalogRfqs && matchedCatalogRfqs.length === 0 ? (
                   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-center gap-3 shadow-xs">
                     <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
                     <div className="text-xs sm:text-sm font-bold text-slate-800">
-                      Loading...
+                      Discovering live buyer RFQs & global market demand for "{searchTerm.trim()}"...
                     </div>
                   </div>
                 ) : (

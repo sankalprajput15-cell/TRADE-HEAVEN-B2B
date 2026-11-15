@@ -739,18 +739,56 @@ export function generateContextualPageRfqs(options: ContextualPageRfqOptions): R
     const cleanKeywordTitle = cleanSearch
       .replace(/\b\w/g, ch => ch.toUpperCase());
 
+    const isCustomPowerPlant =
+      usesCustomKeyword &&
+      /(generation|generator|genset|power\s*plant|power\s*station|\b\d+\s*mw\b|\b\d+\s*kw\b|\b\d+\s*kva\b|turbine|substation|switchgear|cogeneration|chp|natural\s*gas\s*gen)/i.test(cleanSearch);
+    const isCustomMachinery =
+      usesCustomKeyword &&
+      !isCustomPowerPlant &&
+      /(cnc|machine|machinery|equipment|system|excavator|tractor|solar|inverter|battery|panel|transformer|pump|valve|compressor|boiler|chiller|elevator|drone|laptop|electronics|semiconductor|led)/i.test(cleanSearch);
+
+    const powerQualifiers = [
+      'Turnkey Skid-Mounted Utility Power Plant Package',
+      'Industrial IPP & Grid Substation Tender',
+      'Modular Containerized EPC Infrastructure Spec',
+      'Direct OEM Supply & Commissioning Spares Package'
+    ];
+    const effectiveQualifier = isCustomPowerPlant
+      ? powerQualifiers[(idx + i) % powerQualifiers.length]
+      : qualifier;
+
     const productName = usesCustomKeyword
-      ? `${cleanKeywordTitle} - ${qualifier}`
+      ? `${cleanKeywordTitle} - ${effectiveQualifier}`
       : i >= commodityPool.length
       ? `${baseTemplate.productName} (${qualifier})`
       : baseTemplate.productName;
 
-    const resolvedCategory = cleanCategory || baseTemplate.category;
-    const unit = baseTemplate.unit || 'MT';
+    const resolvedCategory = cleanCategory
+      ? cleanCategory
+      : isCustomPowerPlant
+      ? 'Energy, Power & Electrical Equipment'
+      : isCustomMachinery
+      ? 'Industrial Machinery & Equipment'
+      : baseTemplate.category;
 
-    let qty = baseTemplate.quantities[(idx + i) % baseTemplate.quantities.length] || 100;
+    const unit = isCustomPowerPlant
+      ? 'Sets'
+      : isCustomMachinery
+      ? 'Units'
+      : baseTemplate.unit || 'MT';
+
     const priceVariance = 1 + ((((idx + i) % 9) - 4) * 0.03);
-    let targetPriceUsd = Number((baseTemplate.priceUsd * priceVariance).toFixed(2));
+    let qty = isCustomPowerPlant
+      ? [2, 4, 3, 5][(idx + i) % 4]
+      : isCustomMachinery
+      ? [10, 25, 15, 30][(idx + i) % 4]
+      : baseTemplate.quantities[(idx + i) % baseTemplate.quantities.length] || 100;
+
+    let targetPriceUsd = isCustomPowerPlant
+      ? [640000, 520000, 495000, 450000][(idx + i) % 4]
+      : isCustomMachinery
+      ? Number((2450 * priceVariance).toFixed(2))
+      : Number((baseTemplate.priceUsd * priceVariance).toFixed(2));
 
     // Adjust quantity/price to satisfy active budget filter if set
     const adjustToBudget = (minUsd: number, maxUsd: number) => {
@@ -801,7 +839,11 @@ export function generateContextualPageRfqs(options: ContextualPageRfqOptions): R
     }
     existingIds.add(candidateId);
 
-    const specsText = usesCustomKeyword
+    const specsText = isCustomPowerPlant
+      ? `Complete industrial ${cleanKeywordTitle} (${effectiveQualifier}) rated for continuous base-load (COP) & prime utility duty, ISO 8528 / IEC 60034 certified, 50Hz/60Hz grid-sync PLC switchgear, SCADA telemetry, low-NOx emissions compliance, and factory acceptance test (FAT) certificate.`
+      : isCustomMachinery
+      ? `Brand-new factory original ${cleanKeywordTitle} (${effectiveQualifier}) with CE, ISO 9001 & IEC compliance, pre-shipment factory acceptance test (FAT) + SGS inspection, seaworthy ISPM-15 export crating, and 24-month OEM warranty.`
+      : usesCustomKeyword
       ? `Export grade ${cleanKeywordTitle} (${qualifier}), international quality inspection (SGS / Bureau Veritas), seaworthy export packaging with certificate of origin and phytosanitary/mill test compliance.`
       : baseTemplate.specs;
 

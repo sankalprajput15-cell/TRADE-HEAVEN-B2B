@@ -9901,7 +9901,7 @@ const BASE_MOCK_RFQS: RfqRequirement[] = [
     destinationPort: "Toronto, ON / Calgary, AB / Vancouver, BC — Canada",
     preferredIncoterm: "DDP",
     paymentTerms: "100% ADVANCE PAYMENT (100% Upfront Wire / TT — Only Accessed by VIP Member)",
-    detailedRequirements: "GOLDEN LEAD — 100% ADVANCE PAYMENT (ONLY ACCESSED BY VIP MEMBER): Verified Canadian infrastructure & utility consortium requires 10 Units of Heavy-Duty Industrial Diesel Generators (CAT Power / Cummins Power Generation, cold-weather CSA package) for immediate delivery to Canada. Payment Terms: 100% Advance Payment upon Proforma Invoice. Shared on mail with Basic Plan Member Mark Johnson (President, Shore Technical Equipment Inc. DBA: Atlantic Power & Equipment Co., P.O. Box 1176, Marmora, New Jersey 08223 USA | mjohnson@atlanticpowerequip.com | Web: www.atlanticpowerequip.com | C: +1-609-374-5131 | O: +1-609-965-8200 | WhatsApp: +16093745131). SPECIAL DIWALI OFFER: Basic Plan members can upgrade to VIP Membership under the Diwali Festival Offer (Promo Code: DIWALI10 — Flat 10% OFF + Instant Golden Lead Unlock) to access direct buyer settlement with 100% Advance Payment.",
+    detailedRequirements: "Verified Canadian infrastructure & utility consortium requires 10 Units of Heavy-Duty Industrial Diesel Generators (CAT Power / Cummins Power Generation, cold-weather CSA package) for immediate delivery to Canada. Payment Terms: 100% Advance Payment upon Proforma Invoice.",
     postedDate: "2026-10-25",
     expiryDate: "2026-12-31",
     urgency: "URGENT",

@@ -966,29 +966,6 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
         </div>
       ) : (
         <>
-          {/* Compact Live Market Demand Insight Banner inside Dropdown */}
-          {marketInsight && marketInsight.summary && (
-            <div
-              data-testid="dropdown-market-insight-banner"
-              className="px-3.5 py-2 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white border-b border-blue-500/30 space-y-1"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-300">
-                  <TrendingUp className="w-3 h-3 text-emerald-400" />
-                  <span>Live Market Demand Insight · {marketInsight.keyword || trimmed}</span>
-                </span>
-                {marketInsight.typicalPriceRange && (
-                  <span className="text-[10px] font-mono text-emerald-200 truncate">
-                    {marketInsight.typicalPriceRange}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-200 line-clamp-2 leading-snug">
-                {marketInsight.summary}
-              </p>
-            </div>
-          )}
-
           {!hasVisibleResults ? (
             <div className="p-4 text-center text-xs text-slate-500 space-y-2.5">
               <div>
