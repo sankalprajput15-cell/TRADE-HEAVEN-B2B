@@ -404,18 +404,11 @@ export const RfqComparisonView: React.FC<Props> = ({
       {isScanningDemand && (
         <div
           data-testid="rfq-hub-scanning-demand-banner"
-          className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex items-center gap-4 shadow-xs animate-in fade-in duration-200"
+          className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-center gap-3 shadow-xs animate-in fade-in duration-200"
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="text-sm font-black text-slate-900">
-              Scanning live global buyer demand for {scanningKeyword || searchTerm}...
-            </div>
-            <p className="text-xs text-slate-600">
-              Fetching real-time importing ports, wholesale market rates, and export packaging specs from Global Trade Index...
-            </p>
+          <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+          <div className="text-sm font-black text-slate-900">
+            Loading...
           </div>
         </div>
       )}
@@ -500,7 +493,7 @@ export const RfqComparisonView: React.FC<Props> = ({
               {filteredRfqs.length === 0 ? (
                 <div className="p-6 text-center bg-white rounded-2xl border border-slate-200 space-y-2">
                   <p className="text-xs font-bold text-slate-700">
-                    {isScanningDemand ? `Scanning live global buyer demand for ${searchTerm}...` : 'No matching RFQs found'}
+                    {isScanningDemand ? 'Loading...' : 'No matching RFQs found'}
                   </p>
                   <p className="text-[11px] text-slate-500">Try searching for "Mango", "EN590", "Jet A1", or "Rotterdam".</p>
                 </div>

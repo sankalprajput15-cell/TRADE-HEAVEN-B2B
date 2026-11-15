@@ -956,60 +956,41 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
         </div>
       </div>
 
-      {/* Live Global Buyer Demand Scanning Banner inside Dropdown */}
-      {isScanningRfqs && (
+      {isScanningRfqs ? (
         <div
           data-testid="dropdown-scanning-demand-banner"
-          className="px-3.5 py-2.5 bg-blue-50 border-b border-blue-200 flex items-center justify-between gap-2 text-xs text-blue-950"
+          className="p-8 flex items-center justify-center gap-2.5 text-xs text-slate-700"
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
-            <span className="font-bold truncate">
-              Scanning live global buyer demand for "{trimmed}"...
-            </span>
-          </div>
-          <span className="text-[10px] font-mono font-semibold text-blue-700 shrink-0">
-            Live Trade Sync
-          </span>
+          <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
+          <span className="font-bold">Loading...</span>
         </div>
-      )}
-
-      {/* Compact Live Market Demand Insight Banner inside Dropdown */}
-      {!isScanningRfqs && marketInsight && marketInsight.summary && (
-        <div
-          data-testid="dropdown-market-insight-banner"
-          className="px-3.5 py-2 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white border-b border-blue-500/30 space-y-1"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-300">
-              <TrendingUp className="w-3 h-3 text-emerald-400" />
-              <span>Live Market Demand Insight · {marketInsight.keyword || trimmed}</span>
-            </span>
-            {marketInsight.typicalPriceRange && (
-              <span className="text-[10px] font-mono text-emerald-200 truncate">
-                {marketInsight.typicalPriceRange}
-              </span>
-            )}
-          </div>
-          <p className="text-[11px] text-slate-200 line-clamp-2 leading-snug">
-            {marketInsight.summary}
-          </p>
-        </div>
-      )}
-
-      {!hasVisibleResults ? (
-        <div className="p-4 text-center text-xs text-slate-500 space-y-2.5">
-          {isScanningRfqs ? (
-            <div className="space-y-1 py-2">
-              <div className="font-bold text-slate-800">
-                Scanning live global buyer demand for "{trimmed}"...
+      ) : (
+        <>
+          {/* Compact Live Market Demand Insight Banner inside Dropdown */}
+          {marketInsight && marketInsight.summary && (
+            <div
+              data-testid="dropdown-market-insight-banner"
+              className="px-3.5 py-2 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white border-b border-blue-500/30 space-y-1"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                  <TrendingUp className="w-3 h-3 text-emerald-400" />
+                  <span>Live Market Demand Insight · {marketInsight.keyword || trimmed}</span>
+                </span>
+                {marketInsight.typicalPriceRange && (
+                  <span className="text-[10px] font-mono text-emerald-200 truncate">
+                    {marketInsight.typicalPriceRange}
+                  </span>
+                )}
               </div>
-              <div className="text-[11px] text-slate-500">
-                Fetching active importing countries, ports, and wholesale buyer RFQs from Global Trade Index...
-              </div>
+              <p className="text-[11px] text-slate-200 line-clamp-2 leading-snug">
+                {marketInsight.summary}
+              </p>
             </div>
-          ) : (
-            <>
+          )}
+
+          {!hasVisibleResults ? (
+            <div className="p-4 text-center text-xs text-slate-500 space-y-2.5">
               <div>
                 No matching{' '}
                 {activeQuickFilter === 'PRODUCTS'
@@ -1048,10 +1029,8 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
                   </button>
                 </div>
               )}
-            </>
-          )}
-        </div>
-      ) : (
+            </div>
+          ) : (
         <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
           {/* Section 1 (TOP PRIORITY): Auto-SEO Ranked B2B & Export Products */}
           {visibleProducts.length > 0 && (
@@ -1437,6 +1416,8 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
             </div>
           )}
         </div>
+      )}
+        </>
       )}
 
       {/* Footer Action: View Buyer RFQs + See All Results */}

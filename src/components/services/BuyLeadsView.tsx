@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { RfqRequirement, Currency, AuthUser, ActiveView, MarketDemandInsight } from '../../types';
+import { RfqRequirement, Currency, AuthUser, ActiveView } from '../../types';
 import { CURRENCY_RATES, MOCK_RFQS } from '../../data/mockData';
 import { api } from '../../services/apiService';
 import { SafeImage } from '../common/SafeImage';
@@ -48,7 +48,6 @@ import { PitchBuyerModal } from '../marketplace/PitchBuyerModal';
 import { PaginationControls } from '../common/PaginationControls';
 import { getFreeLeadStatus, claimDailyFreeLead, isRfqClaimedFree, FreeLeadState, isPaidEntity, isPaidMemberUser } from '../../services/freeLeadService';
 import { LeadAccessValueModal } from '../marketplace/LeadAccessValueModal';
-import { LiveMarketDemandBanner } from '../marketplace/LiveMarketDemandBanner';
 import {
   checkAndDiscoverRfqsForKeyword,
   generateAndPersistNextPageRfqs,
@@ -132,7 +131,6 @@ export const BuyLeadsView: React.FC<Props> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isScanningDemand, setIsScanningDemand] = useState(false);
   const [scanningKeyword, setScanningKeyword] = useState('');
-  const [marketInsight, setMarketInsight] = useState<MarketDemandInsight | null>(null);
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [pitchRfq, setPitchRfq] = useState<RfqRequirement | null>(null);
   const [freeLeadStatus, setFreeLeadStatus] = useState<FreeLeadState>(getFreeLeadStatus());
@@ -282,7 +280,6 @@ export const BuyLeadsView: React.FC<Props> = ({
       const trimmed = rawKeyword.trim();
       const norm = trimmed.toLowerCase();
       if (!trimmed || trimmed.length < 2) {
-        setMarketInsight(null);
         setScanNotice(null);
         setIsScanningDemand(false);
         return;
@@ -329,7 +326,6 @@ export const BuyLeadsView: React.FC<Props> = ({
             onRfqsUpdatedRef.current(merged);
           }
         }
-        setMarketInsight(result.insight || null);
         if (result.notice) {
           setScanNotice(result.notice);
         }
@@ -350,7 +346,6 @@ export const BuyLeadsView: React.FC<Props> = ({
   useEffect(() => {
     const trimmed = searchTerm.trim();
     if (!trimmed || trimmed.length < 2) {
-      setMarketInsight(null);
       setScanNotice(null);
       setIsScanningDemand(false);
       return;
@@ -709,20 +704,7 @@ export const BuyLeadsView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 1 Free Buy Order Daily Banner */}
-      <DailyFreeLeadBanner
-        onUpgradeToPlans={onOpenUpgradeModal}
-        featuredRfq={filtered.find(r => !isPaidEntity(r)) || rfqs.find(r => !isPaidEntity(r)) || null}
-        onClaimLead={handleClaimLead}
-        currentUser={currentUser}
-        onOpenRegisterFree={onOpenRegisterFree}
-        onSelectClaimedRfq={(rfqId) => {
-          const target = rfqs.find(r => r.id === rfqId);
-          if (target) {
-            onSelectRfq(target);
-          }
-        }}
-      />
+
 
       {/* Security & Access Clearance Notice */}
       <div className="p-4 rounded-2xl border text-xs flex items-center justify-between gap-4 flex-wrap bg-blue-50/80 border-blue-200 text-blue-950">
@@ -1207,73 +1189,61 @@ export const BuyLeadsView: React.FC<Props> = ({
       </div>
 
       {/* Live Global Buyer Demand Loading State */}
-      {isScanningDemand && (
+      {isScanningDemand ? (
         <div
           data-testid="scanning-global-demand-banner"
-          className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex items-center gap-4 shadow-xs animate-in fade-in duration-200"
+          className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-center gap-3.5 shadow-xs animate-in fade-in duration-200"
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="text-sm font-black text-slate-900">
-              Scanning live global buyer demand for {scanningKeyword || searchTerm}...
-            </div>
-            <p className="text-xs text-slate-600">
-              Fetching real-time importing ports, wholesale market rates, and export packaging specs from Global Trade Index...
-            </p>
+          <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+          <div className="text-sm font-black text-slate-900">
+            Loading...
           </div>
         </div>
-      )}
-
-      {/* Non-fatal API notice if scan timed out or returned fallback */}
-      {scanNotice && !isScanningDemand && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-xs text-amber-900 flex items-center justify-between gap-3">
-          <span>{scanNotice}</span>
-          <button
-            type="button"
-            onClick={() => setScanNotice(null)}
-            className="text-amber-700 hover:text-amber-950 font-bold cursor-pointer"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* Live Market Demand Insight Summary Banner */}
-      {searchTerm.trim().length >= 2 && marketInsight && !isScanningDemand && (
-        <LiveMarketDemandBanner insight={marketInsight} searchedProduct={searchTerm.trim()} />
-      )}
-
-      {/* Leads Grid / Empty State */}
-      {isLoading ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-          <TradeHeavenDataLoader 
-            message="Fetching live procurement buy leads..." 
-            subMessage="Connecting to verified international importer tenders and global buyer RFQs..."
-            size="lg"
-          />
-        </div>
-      ) : filtered.length === 0 && !isScanningDemand ? (
-        <EmptyState
-          type="rfqs"
-          title="No Active Buying Leads Found"
-          description={
-            hasActiveFilters 
-              ? `No live buyer inquiries match your active filters (${[
-                  selectedCountry !== 'ALL' ? `Country: ${selectedCountry}` : null,
-                  selectedCategory !== 'ALL' ? `Category: ${selectedCategory}` : null,
-                  selectedBudgetRange !== 'ALL' ? `Budget: ${selectedBudgetRange === 'CUSTOM' ? `$${minBudget || '0'} – $${maxBudget || '∞'}` : (BUDGET_RANGES.find(b => b.id === selectedBudgetRange)?.label || selectedBudgetRange)}` : null,
-                  urgentOnly ? 'Urgent Tenders' : null,
-                  searchTerm.trim() ? `Keyword: "${searchTerm.trim()}"` : null
-                ].filter(Boolean).join(', ')}). Try adjusting or resetting your filter criteria.` 
-              : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."
-          }
-          actionLabel="Clear All Search Filters"
-          onAction={handleClearFilters}
-        />
       ) : (
-        <div className="space-y-8">
+        <>
+          {/* Non-fatal API notice if scan timed out or returned fallback */}
+          {scanNotice && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-xs text-amber-900 flex items-center justify-between gap-3">
+              <span>{scanNotice}</span>
+              <button
+                type="button"
+                onClick={() => setScanNotice(null)}
+                className="text-amber-700 hover:text-amber-950 font-bold cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Leads Grid / Empty State */}
+          {isLoading ? (
+            <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+              <TradeHeavenDataLoader 
+                message="Fetching live procurement buy leads..." 
+                subMessage="Connecting to verified international importer tenders and global buyer RFQs..."
+                size="lg"
+              />
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              type="rfqs"
+              title="No Active Buying Leads Found"
+              description={
+                hasActiveFilters 
+                  ? `No live buyer inquiries match your active filters (${[
+                      selectedCountry !== 'ALL' ? `Country: ${selectedCountry}` : null,
+                      selectedCategory !== 'ALL' ? `Category: ${selectedCategory}` : null,
+                      selectedBudgetRange !== 'ALL' ? `Budget: ${selectedBudgetRange === 'CUSTOM' ? `$${minBudget || '0'} – $${maxBudget || '∞'}` : (BUDGET_RANGES.find(b => b.id === selectedBudgetRange)?.label || selectedBudgetRange)}` : null,
+                      urgentOnly ? 'Urgent Tenders' : null,
+                      searchTerm.trim() ? `Keyword: "${searchTerm.trim()}"` : null
+                    ].filter(Boolean).join(', ')}). Try adjusting or resetting your filter criteria.` 
+                  : "There are currently no active buying leads in the database. Be the first to post an RFQ and receive competitive factory quotes."
+              }
+              actionLabel="Clear All Search Filters"
+              onAction={handleClearFilters}
+            />
+          ) : (
+            <div className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
             {currentItems.map((rfq) => {
               const isCallerPaid = isPaidMemberUser(currentUser);
@@ -1343,29 +1313,16 @@ export const BuyLeadsView: React.FC<Props> = ({
                       </span>
                     </div>
 
-                    {/* Product Thumbnail & Title */}
+                    {/* Product Title */}
                     <div
                       onClick={() => onSelectRfq(rfq)}
-                      className="flex items-start gap-3.5 cursor-pointer"
+                      className="cursor-pointer"
                     >
-                      <SafeImage
-                        src={rfq.image || rfq.images?.[0]}
-                        alt={rfq.productName}
-                        productId={rfq.id}
-                        productTitle={rfq.productName}
-                        category={rfq.category}
-                        type="rfq"
-                        isThumbnail
-                        className="w-12 h-12 rounded-xl border border-slate-200/80 shrink-0 bg-slate-100"
-                        imgClassName="group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-[15px] text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
-                          {rfq.productName}
-                        </h3>
-                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                          Ref: {rfq.id}
-                        </div>
+                      <h3 className="font-bold text-[15px] text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
+                        {rfq.productName}
+                      </h3>
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        Ref: {rfq.id}
                       </div>
                     </div>
 
@@ -1592,7 +1549,24 @@ export const BuyLeadsView: React.FC<Props> = ({
           continuousNext={true}
           onLoadNextPage={ensurePageHorizon}
         />
-      </div>
+        </div>
+          )}
+
+          {/* 1 Free Buy Order Daily Banner */}
+          <DailyFreeLeadBanner
+            onUpgradeToPlans={onOpenUpgradeModal}
+            featuredRfq={filtered.find(r => !isPaidEntity(r)) || rfqs.find(r => !isPaidEntity(r)) || null}
+            onClaimLead={handleClaimLead}
+            currentUser={currentUser}
+            onOpenRegisterFree={onOpenRegisterFree}
+            onSelectClaimedRfq={(rfqId) => {
+              const target = rfqs.find(r => r.id === rfqId);
+              if (target) {
+                onSelectRfq(target);
+              }
+            }}
+          />
+        </>
       )}
 
       {/* Direct Pitch Buyer Modal for Claimed Daily Free Lead */}

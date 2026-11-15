@@ -88,9 +88,13 @@ export const TradeWheelHomePage: React.FC<Props> = ({
   const mobileSearchInputRef = React.useRef<HTMLInputElement>(null);
 
   const isUserPaidMember = isPaidMemberUser(currentUser);
-  const activeRfqsPool = React.useMemo(
-    () => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).slice(0, 40).map(r => securityService.gateRfqRequirement(r, currentUser)),
+  const allHomeRfqsPool = React.useMemo(
+    () => (rfqs && rfqs.length > 0 ? rfqs : MOCK_RFQS).map(r => securityService.gateRfqRequirement(r, currentUser)),
     [rfqs, currentUser]
+  );
+  const activeRfqsPool = React.useMemo(
+    () => allHomeRfqsPool.slice(0, 40),
+    [allHomeRfqsPool]
   );
   const displayedRfqs = React.useMemo(() => activeRfqsPool.slice(0, 12), [activeRfqsPool]);
   const displayedCompanies = React.useMemo(
@@ -187,7 +191,7 @@ export const TradeWheelHomePage: React.FC<Props> = ({
         onOpenCreateRfq={onOpenCreateRfq}
         onOpenLiveTool={onOpenLiveTool}
         products={products}
-        rfqs={activeRfqsPool}
+        rfqs={allHomeRfqsPool}
         selectedCurrency={selectedCurrency}
         onSelectProduct={onSelectProduct}
         onOpenStorefront={onOpenStorefront}

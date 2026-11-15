@@ -13795,32 +13795,60 @@ function sanitizePublicTradeSources(
 
 async function fetchLiveGoogleTradeSources(keyword: string): Promise<Array<{ title: string; uri: string }>> {
   const sources: Array<{ title: string; uri: string }> = [];
-  try {
-    const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(`${keyword} import export wholesale trade market`)}&hl=en-US&gl=US&ceid=US:en`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
-    const resp = await fetch(rssUrl, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenMarketSync/1.0)' }
-    });
-    clearTimeout(timer);
-    if (resp.ok) {
-      const xml = await resp.text();
-      const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-      let match: RegExpExecArray | null;
-      while ((match = itemRegex.exec(xml)) !== null && sources.length < 4) {
-        const block = match[1];
-        const titleMatch = block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/);
-        const linkMatch = block.match(/<link>(.*?)<\/link>/);
-        const rawTitle = (titleMatch?.[1] || titleMatch?.[2] || '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim();
-        const rawLink = (linkMatch?.[1] || '').trim();
-        if (rawTitle && rawLink && !rawLink.toLowerCase().includes('google.com')) {
-          sources.push({ title: sanitizePublicTradeText(rawTitle), uri: rawLink });
+  const decodeXmlText = (val: string) =>
+    String(val || '')
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+      .replace(/&amp;/g, '&')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .trim();
+
+  const queries = [
+    `${keyword} import export wholesale trade market`,
+    `${keyword} global buyer demand price`
+  ];
+
+  for (const qText of queries) {
+    if (sources.length >= 4) break;
+    try {
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(qText)}&hl=en-US&gl=US&ceid=US:en`;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const resp = await fetch(rssUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenMarketSync/1.0)' }
+      });
+      clearTimeout(timer);
+      if (resp.ok) {
+        const xml = await resp.text();
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        let match: RegExpExecArray | null;
+        while ((match = itemRegex.exec(xml)) !== null && sources.length < 6) {
+          const block = match[1];
+          const titleMatch = block.match(/<title>([\s\S]*?)<\/title>/);
+          const linkMatch = block.match(/<link>([\s\S]*?)<\/link>/);
+          const sourceMatch = block.match(/<source\s+url="([^"]+)"[^>]*>([\s\S]*?)<\/source>/i);
+
+          const rawTitle = decodeXmlText(titleMatch?.[1] || '');
+          const publisherUrl = decodeXmlText(sourceMatch?.[1] || '');
+          const rawLink = decodeXmlText(linkMatch?.[1] || '');
+          const candidateUri =
+            publisherUrl && !publisherUrl.toLowerCase().includes('google.com')
+              ? publisherUrl
+              : rawLink && !rawLink.toLowerCase().includes('google.com')
+                ? rawLink
+                : '';
+
+          if (rawTitle && candidateUri) {
+            sources.push({ title: sanitizePublicTradeText(rawTitle), uri: candidateUri });
+          }
         }
       }
+    } catch {
+      // Non-fatal fallback
     }
-  } catch {
-    // Non-fatal fallback
   }
 
   return sanitizePublicTradeSources(sources);
@@ -14337,7 +14365,12 @@ app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
   }
 
   // 2. LIVE DEMAND FETCH & AUTO-RFQ GENERATION (for primary query + all search results)
-  const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
+  const apiKey = String(
+    process.env.GEMINI_API_KEY ||
+      serverSiteSettingsStore?.GEMINI_API_KEY ||
+      serverSiteSettingsStore?.gemini_api_key ||
+      ''
+  ).trim();
   let parsed: any = null;
   let sources: Array<{ title: string; uri: string }> = [];
   let generationSource = existingMatches.length >= 3 ? 'search_results_auto_sync' : 'gemini_live_trade';
@@ -14445,6 +14478,8 @@ Strict requirements:
       parsed = synthesizeStructuredMarketDemand(rawKeyword, []);
       parsed.rfqs = [];
     }
+  } else if (sources.length === 0) {
+    sources = await fetchLiveGoogleTradeSources(rawKeyword);
   }
 
   try {
