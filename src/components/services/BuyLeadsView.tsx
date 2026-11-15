@@ -55,6 +55,7 @@ import {
   matchesRfqKeywordClient,
   mergeRfqLists,
   prewarmAndAutoSaveRfqImages,
+  sanitizeSearchKeyword,
   sortRfqsRealFirst
 } from '../../services/rfqMarketDemandService';
 import { Product } from '../../types';
@@ -117,9 +118,31 @@ export const BuyLeadsView: React.FC<Props> = ({
 }) => {
   const [itemsPerPage, setItemsPerPage] = useState(18);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState(initialSearch || '');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [selectedCountry, setSelectedCountry] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState(() => {
+    if (initialSearch) return sanitizeSearchKeyword(initialSearch);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || params.get('search') || params.get('query') || params.get('keyword');
+      if (q) return sanitizeSearchKeyword(decodeURIComponent(q));
+    }
+    return '';
+  });
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category') || params.get('cat');
+      if (cat && cat !== 'ALL') return decodeURIComponent(cat);
+    }
+    return 'ALL';
+  });
+  const [selectedCountry, setSelectedCountry] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const country = params.get('country');
+      if (country && country !== 'ALL') return decodeURIComponent(country);
+    }
+    return 'ALL';
+  });
   const [selectedBudgetRange, setSelectedBudgetRange] = useState<string>('ALL');
   const [minBudget, setMinBudget] = useState('');
   const [maxBudget, setMaxBudget] = useState('');
@@ -153,8 +176,8 @@ export const BuyLeadsView: React.FC<Props> = ({
   }, [propRfqs]);
 
   useEffect(() => {
-    if (initialSearch !== undefined) {
-      setSearchTerm(initialSearch);
+    if (initialSearch !== undefined && initialSearch !== '') {
+      setSearchTerm(sanitizeSearchKeyword(initialSearch));
     }
   }, [initialSearch]);
 
@@ -162,12 +185,56 @@ export const BuyLeadsView: React.FC<Props> = ({
     const handleSearchSync = (e: Event) => {
       const q = (e as CustomEvent<{ query?: string }>)?.detail?.query;
       if (typeof q === 'string') {
-        setSearchTerm(q);
+        setSearchTerm(sanitizeSearchKeyword(q));
       }
     };
     window.addEventListener('tradeheaven_search_submitted', handleSearchSync);
     return () => window.removeEventListener('tradeheaven_search_submitted', handleSearchSync);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const cleanSearch = sanitizeSearchKeyword(searchTerm);
+    const url = new URL(window.location.href);
+    if (!url.searchParams.get('view')) {
+      url.searchParams.set('view', 'BUY_LEADS');
+    }
+    if (cleanSearch) {
+      url.searchParams.set('q', cleanSearch);
+      url.searchParams.delete('search');
+      url.searchParams.delete('query');
+      url.searchParams.delete('keyword');
+    } else {
+      url.searchParams.delete('q');
+      url.searchParams.delete('search');
+      url.searchParams.delete('query');
+      url.searchParams.delete('keyword');
+    }
+    if (selectedCategory && selectedCategory !== 'ALL') {
+      url.searchParams.set('category', selectedCategory);
+    } else {
+      url.searchParams.delete('category');
+      url.searchParams.delete('cat');
+    }
+    if (selectedCountry && selectedCountry !== 'ALL') {
+      url.searchParams.set('country', selectedCountry);
+    } else {
+      url.searchParams.delete('country');
+    }
+    if (url.toString() !== window.location.href) {
+      window.history.replaceState({}, '', url.toString());
+    }
+    window.dispatchEvent(
+      new CustomEvent('tradeheaven_active_search_changed', {
+        detail: {
+          query: cleanSearch,
+          category: selectedCategory,
+          country: selectedCountry,
+          view: 'BUY_LEADS'
+        }
+      })
+    );
+  }, [searchTerm, selectedCategory, selectedCountry]);
 
   const handleOpenLeadAccessModal = (rfq: RfqRequirement) => {
     if (onOpenUpgradeModal) {
@@ -277,7 +344,7 @@ export const BuyLeadsView: React.FC<Props> = ({
   // Smart Self-Populating RFQ Demand Check (Database-first -> Live Trade Search if < 3 matches or uncovered search results)
   const triggerMarketDemandSearch = useCallback(
     async (rawKeyword: string, forceScan: boolean = false) => {
-      const trimmed = rawKeyword.trim();
+      const trimmed = sanitizeSearchKeyword(rawKeyword);
       const norm = trimmed.toLowerCase();
       if (!trimmed || trimmed.length < 2) {
         setScanNotice(null);
@@ -344,7 +411,7 @@ export const BuyLeadsView: React.FC<Props> = ({
   );
 
   useEffect(() => {
-    const trimmed = searchTerm.trim();
+    const trimmed = sanitizeSearchKeyword(searchTerm);
     if (!trimmed || trimmed.length < 2) {
       setScanNotice(null);
       setIsScanningDemand(false);
@@ -359,7 +426,7 @@ export const BuyLeadsView: React.FC<Props> = ({
 
     const timer = setTimeout(() => {
       void triggerMarketDemandSearch(trimmed, false);
-    }, 650);
+    }, 350);
 
     return () => clearTimeout(timer);
   }, [searchTerm, triggerMarketDemandSearch]);
@@ -431,16 +498,16 @@ export const BuyLeadsView: React.FC<Props> = ({
   const filtered = useMemo(() => {
     let list = [...rfqs];
 
-    const q = searchTerm.toLowerCase().trim();
+    const q = sanitizeSearchKeyword(searchTerm).toLowerCase().trim();
     if (q) {
       const tokens = q.split(/\s+/).filter(Boolean);
       list = list.filter(r => {
         if (matchesRfqKeywordClient(r, q)) return true;
+        const cleanSearchKeyword = sanitizeSearchKeyword(String(r.searchKeyword || '').split('|')[0] || '');
         const searchableText = [
           r.productName,
           r.title,
-          r.searchKeyword,
-          r.marketInsight,
+          cleanSearchKeyword,
           r.category,
           (r as any).subCategory,
           r.detailedDescription,
@@ -535,18 +602,23 @@ export const BuyLeadsView: React.FC<Props> = ({
 
   const ensurePageHorizon = useCallback(
     (targetPage: number) => {
-      const desiredMinItems = (Math.max(1, targetPage) + 1) * itemsPerPage;
+      const cleanSearch = sanitizeSearchKeyword(searchTerm);
+      const desiredMinItems = cleanSearch
+        ? Math.max(1, targetPage) * itemsPerPage
+        : (Math.max(1, targetPage) + 1) * itemsPerPage;
       const deficit = desiredMinItems - filtered.length;
       if (deficit <= 0) return;
 
-      const batchCount = Math.max(itemsPerPage * 2, deficit + itemsPerPage);
+      const batchCount = cleanSearch
+        ? Math.min(itemsPerPage, Math.max(6, deficit))
+        : Math.max(itemsPerPage * 2, deficit + itemsPerPage);
       const existingIds = new Set<string>(rfqsRef.current.map(r => r.id));
       const nextSeed = pageGenSeedRef.current++;
 
       const newPageBatch = generateAndPersistNextPageRfqs({
         page: Math.max(1, targetPage) + nextSeed,
         count: batchCount,
-        searchTerm: searchTerm.trim(),
+        searchTerm: cleanSearch,
         category: selectedCategory,
         country: selectedCountry,
         budgetRange: selectedBudgetRange,
@@ -582,13 +654,22 @@ export const BuyLeadsView: React.FC<Props> = ({
     ]
   );
 
-  // Automatically expand RFQ pages ahead of currentPage so moving Next & Next never hits a dead end
+  // Automatically expand RFQ pages ahead of currentPage when browsing all leads, or if a search has 0 matches after scanning
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || isScanningDemand) return;
+    const cleanSearch = sanitizeSearchKeyword(searchTerm);
+    if (cleanSearch.length >= 2) {
+      if (currentPage > 1 && filtered.length < currentPage * itemsPerPage) {
+        ensurePageHorizon(currentPage);
+      } else if (filtered.length === 0) {
+        ensurePageHorizon(1);
+      }
+      return;
+    }
     if (filtered.length < (currentPage + 1) * itemsPerPage) {
       ensurePageHorizon(currentPage);
     }
-  }, [currentPage, filtered.length, itemsPerPage, isLoading, ensurePageHorizon]);
+  }, [currentPage, filtered.length, itemsPerPage, isLoading, isScanningDemand, searchTerm, ensurePageHorizon]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -666,22 +747,30 @@ export const BuyLeadsView: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => {
+              const cleanSearch = sanitizeSearchKeyword(searchTerm);
               window.dispatchEvent(
                 new CustomEvent('tradeheaven_open_share', {
                   detail: {
-                    type: 'PAGE',
+                    type: cleanSearch ? 'SEARCH' : 'PAGE',
                     view: 'BUY_LEADS',
-                    title: 'Global Buy Leads & RFQ Tender Hub | Trade Heaven',
-                    subtitle: 'Live international purchase requests and verified importer sourcing tenders.'
+                    search: cleanSearch || undefined,
+                    category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+                    country: selectedCountry !== 'ALL' ? selectedCountry : undefined,
+                    title: cleanSearch
+                      ? `"${cleanSearch}" — Active Wholesale Buy Leads & Buyer RFQs | Trade Heaven`
+                      : 'Global Buy Leads & RFQ Tender Hub | Trade Heaven',
+                    subtitle: cleanSearch
+                      ? `Browse ${filtered.length} verified international buyer RFQs and procurement tenders for "${cleanSearch}" on Trade Heaven.`
+                      : 'Live international purchase requests and verified importer sourcing tenders.'
                   }
                 })
               );
             }}
             className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-2 border border-slate-200 transition-all cursor-pointer"
-            title="Share Custom Link to Buy Leads Hub"
+            title={sanitizeSearchKeyword(searchTerm) ? `Share "${sanitizeSearchKeyword(searchTerm)}" Buy Leads Search Link` : 'Share Custom Link to Buy Leads Hub'}
           >
             <Share2 className="w-4 h-4 text-blue-600" />
-            <span>Share Hub</span>
+            <span>{sanitizeSearchKeyword(searchTerm) ? 'Share Search' : 'Share Hub'}</span>
           </button>
 
           <button
@@ -724,7 +813,11 @@ export const BuyLeadsView: React.FC<Props> = ({
           <form
             onSubmit={e => {
               e.preventDefault();
-              void triggerMarketDemandSearch(searchTerm, true);
+              const cleaned = sanitizeSearchKeyword(searchTerm);
+              if (cleaned !== searchTerm) {
+                setSearchTerm(cleaned);
+              }
+              void triggerMarketDemandSearch(cleaned, true);
             }}
             className="relative flex-1 flex items-center gap-2"
           >
@@ -735,7 +828,14 @@ export const BuyLeadsView: React.FC<Props> = ({
                 type="text"
                 placeholder="Search any product (e.g., Mango, Steel, Solar) to view or discover live buyer RFQs..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (/^\s*(?:search|keyword|query|filter|rfq|find)\s*:\s*/i.test(val)) {
+                    setSearchTerm(sanitizeSearchKeyword(val));
+                  } else {
+                    setSearchTerm(val);
+                  }
+                }}
                 className="w-full bg-slate-50/90 hover:bg-white focus:bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-2xl pl-10 pr-10 py-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all"
               />
               {searchTerm && (
@@ -751,12 +851,38 @@ export const BuyLeadsView: React.FC<Props> = ({
             </div>
             <button
               type="submit"
-              disabled={isScanningDemand || searchTerm.trim().length < 2}
+              disabled={isScanningDemand || sanitizeSearchKeyword(searchTerm).length < 2}
               className="px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-2xs"
             >
               {isScanningDemand ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">Search</span>
             </button>
+            {sanitizeSearchKeyword(searchTerm).length >= 2 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const cleanSearch = sanitizeSearchKeyword(searchTerm);
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_open_share', {
+                      detail: {
+                        type: 'SEARCH',
+                        view: 'BUY_LEADS',
+                        search: cleanSearch,
+                        category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+                        country: selectedCountry !== 'ALL' ? selectedCountry : undefined,
+                        title: `"${cleanSearch}" — Active Wholesale Buy Leads & Buyer RFQs | Trade Heaven`,
+                        subtitle: `Browse ${filtered.length} verified international buyer RFQs and procurement tenders for "${cleanSearch}" on Trade Heaven.`
+                      }
+                    })
+                  );
+                }}
+                className="px-3.5 py-3 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                title={`Share link to "${sanitizeSearchKeyword(searchTerm)}" search results`}
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden sm:inline">Share Search</span>
+              </button>
+            )}
           </form>
 
           {/* Controls Cluster: Sort, Urgency Toggle, Refresh Feed */}
@@ -1056,10 +1182,10 @@ export const BuyLeadsView: React.FC<Props> = ({
               </span>
             )}
 
-            {searchTerm.trim() !== '' && (
+            {sanitizeSearchKeyword(searchTerm) !== '' && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold text-[11px] border border-slate-200">
                 <Search className="w-3 h-3 text-slate-600" />
-                <span>Keyword: "{searchTerm.trim()}"</span>
+                <span>Keyword: "{sanitizeSearchKeyword(searchTerm)}"</span>
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
@@ -1071,14 +1197,44 @@ export const BuyLeadsView: React.FC<Props> = ({
               </span>
             )}
 
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer ml-auto"
-            >
-              <X className="w-3 h-3" />
-              <span>Clear All ({filtered.length} matches)</span>
-            </button>
+            <div className="ml-auto flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const cleanSearch = sanitizeSearchKeyword(searchTerm);
+                  window.dispatchEvent(
+                    new CustomEvent('tradeheaven_open_share', {
+                      detail: {
+                        type: cleanSearch ? 'SEARCH' : 'PAGE',
+                        view: 'BUY_LEADS',
+                        search: cleanSearch || undefined,
+                        category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+                        country: selectedCountry !== 'ALL' ? selectedCountry : undefined,
+                        title: cleanSearch
+                          ? `"${cleanSearch}" — Active Wholesale Buy Leads & Buyer RFQs | Trade Heaven`
+                          : 'Global Buy Leads & RFQ Tender Hub | Trade Heaven',
+                        subtitle: cleanSearch
+                          ? `Browse ${filtered.length} verified international buyer RFQs and procurement tenders for "${cleanSearch}" on Trade Heaven.`
+                          : 'Live international purchase requests and verified importer sourcing tenders.'
+                      }
+                    })
+                  );
+                }}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Share2 className="w-3 h-3" />
+                <span>Share Search Link</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+                <span>Clear All ({filtered.length} matches)</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -1538,7 +1694,7 @@ export const BuyLeadsView: React.FC<Props> = ({
         {/* Pagination Controls */}
         <PaginationControls
           currentPage={currentPage}
-          totalPages={Math.max(totalPages, currentPage + 1)}
+          totalPages={sanitizeSearchKeyword(searchTerm) ? totalPages : Math.max(totalPages, currentPage + 1)}
           totalItems={filtered.length}
           itemsPerPage={itemsPerPage}
           onPageChange={setCurrentPage}
@@ -1546,7 +1702,7 @@ export const BuyLeadsView: React.FC<Props> = ({
           itemsPerPageOptions={[18, 36, 54]}
           itemLabel="leads"
           scrollTargetId="buy-leads-view-root"
-          continuousNext={true}
+          continuousNext={!sanitizeSearchKeyword(searchTerm)}
           onLoadNextPage={ensurePageHorizon}
         />
         </div>

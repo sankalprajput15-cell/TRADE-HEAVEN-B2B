@@ -62,6 +62,8 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
   const [isBoothFullscreen, setIsBoothFullscreen] = useState(false);
   const [isDownloadingBadge, setIsDownloadingBadge] = useState(false);
 
+  const [editableSearch, setEditableSearch] = useState(target?.search || target?.query || '');
+
   useEffect(() => {
     if (target?.supplierTab) {
       setSelectedTab(target.supplierTab);
@@ -78,6 +80,13 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
     } else {
       setSelectedBuyerTab('OVERVIEW');
     }
+    const urlQ =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('q') ||
+          new URLSearchParams(window.location.search).get('search') ||
+          ''
+        : '';
+    setEditableSearch(target?.search || target?.query || urlQ || '');
     setCustomNote(target?.customNote || '');
     setCopied(false);
     setViewMode(target?.autoShowQr ? 'QR' : 'LINK');
@@ -87,14 +96,20 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
   // Generate dynamic link based on current settings
   const generated: GeneratedCustomLink | null = useMemo(() => {
     if (!target) return null;
+    const cleanSearchVal = editableSearch.trim();
     return buildCustomLink({
       ...target,
+      type:
+        (target.type === 'PAGE' || target.type === 'SEARCH') && cleanSearchVal
+          ? 'SEARCH'
+          : target.type,
+      search: cleanSearchVal || undefined,
       supplierTab: target.type === 'SUPPLIER' ? selectedTab : undefined,
       rfqTab: target.type === 'RFQ' ? selectedRfqTab : undefined,
       buyerTab: target.type === 'BUYER' ? selectedBuyerTab : undefined,
       customNote: customNote.trim() || undefined
     });
-  }, [target, selectedTab, selectedRfqTab, selectedBuyerTab, customNote]);
+  }, [target, editableSearch, selectedTab, selectedRfqTab, selectedBuyerTab, customNote]);
 
   if (!isOpen || !target || !generated) return null;
 
@@ -417,6 +432,26 @@ export const CustomShareModal: React.FC<Props> = ({ isOpen, onClose, target }) =
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Search Keyword in Shared Link (for SEARCH, CATEGORY, or PAGE views like BUY_LEADS / PRODUCT_DIRECTORY) */}
+          {(target.type === 'SEARCH' || target.type === 'PAGE' || target.type === 'CATEGORY') && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Globe2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Search Keyword to Share in Link (Optional):</span>
+                </span>
+                <span className="text-[11px] font-normal text-blue-600">Embeds ?q=... in shared URL</span>
+              </label>
+              <input
+                type="text"
+                value={editableSearch}
+                onChange={(e) => setEditableSearch(e.target.value)}
+                placeholder="e.g. 49MW Natural Gas Generation System, Copper Cathodes, Solar..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-blue-200 bg-blue-50/40 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600"
+              />
             </div>
           )}
 

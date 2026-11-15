@@ -7,6 +7,7 @@ import {
   checkAndDiscoverRfqsForKeyword,
   matchesRfqKeywordClient,
   mergeRfqLists,
+  sanitizeSearchKeyword,
   sortRfqsRealFirst
 } from '../../services/rfqMarketDemandService';
 import { MOCK_PRODUCTS } from '../../data/mockData';
@@ -133,10 +134,40 @@ export const Header: React.FC<Props> = ({
   const { setCurrentUser, logout, login } = useAuth();
   const { isLiveEditMode, setIsLiveEditMode, toggleLiveEditMode, publishChangesToServer, updatePageContent } = useSiteContent();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || params.get('search') || params.get('query') || params.get('keyword');
+      if (q) return sanitizeSearchKeyword(decodeURIComponent(q));
+    }
+    return '';
+  });
   const [searchFocused, setSearchFocused] = useState(false);
+  const searchFocusedRef = useRef(false);
+  searchFocusedRef.current = searchFocused;
   const [activeSuggestIndex, setActiveSuggestIndex] = useState(-1);
   const [dropdownQuickFilter, setDropdownQuickFilter] = useState<QuickFilterMode>('ALL');
+
+  useEffect(() => {
+    const handleActiveSearchSync = (e: Event) => {
+      if (searchFocusedRef.current) return;
+      const q = (e as CustomEvent<{ query?: string }>)?.detail?.query;
+      if (typeof q === 'string') {
+        setSearchTerm(sanitizeSearchKeyword(q));
+      }
+    };
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || params.get('search') || params.get('query') || params.get('keyword') || '';
+      setSearchTerm(sanitizeSearchKeyword(decodeURIComponent(q)));
+    };
+    window.addEventListener('tradeheaven_active_search_changed', handleActiveSearchSync);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('tradeheaven_active_search_changed', handleActiveSearchSync);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
   const [liveRfqs, setLiveRfqs] = useState<RfqRequirement[]>(() => sortRfqsRealFirst(rfqs));
   const liveRfqsRef = useRef<RfqRequirement[]>(liveRfqs);
   liveRfqsRef.current = liveRfqs;
@@ -353,7 +384,7 @@ export const Header: React.FC<Props> = ({
 
   // Live Self-Populating RFQ Demand Check on Header Global Search (`input#header-global-search-input`)
   useEffect(() => {
-    const trimmed = searchTerm.trim();
+    const trimmed = sanitizeSearchKeyword(searchTerm);
     if (trimmed.length < 2) {
       setIsScanningRfqs(false);
       setHeaderMarketInsight(null);
@@ -417,7 +448,10 @@ export const Header: React.FC<Props> = ({
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const trimmed = searchTerm.trim();
+    const trimmed = sanitizeSearchKeyword(searchTerm);
+    if (trimmed !== searchTerm) {
+      setSearchTerm(trimmed);
+    }
     setSearchFocused(false);
     setUserMenuOpen(false);
     setActiveSuggestIndex(-1);
@@ -1186,12 +1220,16 @@ export const Header: React.FC<Props> = ({
                     type="button"
                     onClick={() => {
                       setUserMenuOpen(false);
+                      const cleanSearch = sanitizeSearchKeyword(searchTerm);
                       window.dispatchEvent(
                         new CustomEvent('tradeheaven_open_share', {
                           detail: {
-                            type: 'PAGE',
+                            type: cleanSearch ? 'SEARCH' : 'PAGE',
                             view: activeView,
-                            title: document.title
+                            search: cleanSearch || undefined,
+                            title: cleanSearch
+                              ? `"${cleanSearch}" — ${activeView === 'BUY_LEADS' ? 'Active Wholesale Buy Leads & Buyer RFQs' : 'Wholesale Suppliers, Products & RFQs'} | Trade Heaven`
+                              : document.title
                           }
                         })
                       );
@@ -1199,7 +1237,7 @@ export const Header: React.FC<Props> = ({
                     className="px-2.5 py-1 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <Share2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span>Share</span>
+                    <span>{sanitizeSearchKeyword(searchTerm) ? 'Share Search' : 'Share'}</span>
                   </button>
                 </div>
 

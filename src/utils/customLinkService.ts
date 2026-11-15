@@ -19,7 +19,9 @@ export interface CustomLinkTarget {
   buyerTab?: BuyerModalTab;
   articleId?: string;
   category?: string;
+  country?: string;
   search?: string;
+  query?: string;
   action?: 'post-rfq' | 'post-sell' | 'login' | 'register' | 'work-with-us';
   title?: string;
   subtitle?: string;
@@ -276,6 +278,11 @@ export function buildCustomLink(target: CustomLinkTarget): GeneratedCustomLink {
 
   let title = 'Trade Heaven | Global B2B Wholesale Marketplace';
   let summary = 'Connect with verified factory manufacturers and secure global bulk trade on Trade Heaven.';
+  const cleanTargetSearch = String(target.search || target.query || '')
+    .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/gi, '')
+    .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
+    .trim()
+    .replace(/\s+/g, ' ');
 
   // 1. Supplier Storefront
   if (target.type === 'SUPPLIER' && target.supplierId) {
@@ -362,21 +369,36 @@ export function buildCustomLink(target: CustomLinkTarget): GeneratedCustomLink {
   else if (target.type === 'CATEGORY' && target.category) {
     searchParams.set('view', target.view || 'PRODUCT_DIRECTORY');
     searchParams.set('category', target.category);
-    if (target.search) {
-      searchParams.set('q', target.search);
+    if (cleanTargetSearch) {
+      searchParams.set('q', cleanTargetSearch);
     }
-    title = `${target.category} Wholesale Products & Manufacturers | Trade Heaven`;
-    summary = `Explore verified factory suppliers and bulk wholesale listings in ${target.category} on Trade Heaven.`;
+    if (target.country && target.country !== 'ALL') {
+      searchParams.set('country', target.country);
+    }
+    title = target.title || `${target.category} Wholesale Products & Manufacturers | Trade Heaven`;
+    summary = target.subtitle || `Explore verified factory suppliers and bulk wholesale listings in ${target.category} on Trade Heaven.`;
   }
   // 7. Search
-  else if (target.type === 'SEARCH' && target.search) {
-    searchParams.set('view', target.view || 'PRODUCT_DIRECTORY');
+  else if (target.type === 'SEARCH' && cleanTargetSearch) {
+    const targetView = target.view || 'PRODUCT_DIRECTORY';
+    searchParams.set('view', targetView);
     if (target.category && target.category !== 'ALL') {
       searchParams.set('category', target.category);
     }
-    searchParams.set('q', target.search);
-    title = `"${target.search}" Wholesale Sourcing & Suppliers | Trade Heaven`;
-    summary = `Search results for "${target.search}" across verified manufacturers, bulk exporters & live buy leads.`;
+    if (target.country && target.country !== 'ALL') {
+      searchParams.set('country', target.country);
+    }
+    searchParams.set('q', cleanTargetSearch);
+    if (targetView === 'BUY_LEADS' || targetView === 'RFQ_HUB') {
+      title = target.title || `"${cleanTargetSearch}" — Active Wholesale Buy Leads & Buyer RFQs | Trade Heaven`;
+      summary = target.subtitle || `Live verified international buyer tenders and bulk procurement inquiries for "${cleanTargetSearch}" on Trade Heaven.`;
+    } else if (targetView === 'SUPPLIERS_DIRECTORY') {
+      title = target.title || `"${cleanTargetSearch}" — Verified Global Suppliers & Exporters | Trade Heaven`;
+      summary = target.subtitle || `Connect with audited manufacturers and direct bulk exporters for "${cleanTargetSearch}" on Trade Heaven.`;
+    } else {
+      title = target.title || `"${cleanTargetSearch}" Wholesale Sourcing & Suppliers | Trade Heaven`;
+      summary = target.subtitle || `Search results for "${cleanTargetSearch}" across verified manufacturers, bulk exporters & live buy leads.`;
+    }
   }
   // 8. Action
   else if (target.type === 'ACTION' && target.action) {
@@ -390,7 +412,7 @@ export function buildCustomLink(target: CustomLinkTarget): GeneratedCustomLink {
       summary = 'List your wholesale inventory and reach thousands of international B2B buyers and importers.';
     }
   }
-  // 9. General Page View (preserves current search/category/selectedRfq if present)
+  // 9. General Page View (preserves current search/category/country/selectedRfq if present)
   else {
     const activeView = target.view || 'HOMEPAGE';
     if (activeView !== 'HOMEPAGE') {
@@ -399,14 +421,29 @@ export function buildCustomLink(target: CustomLinkTarget): GeneratedCustomLink {
     if (target.category && target.category !== 'ALL') {
       searchParams.set('category', target.category);
     }
-    if (target.search && target.search.trim()) {
-      searchParams.set('q', target.search.trim());
+    if (target.country && target.country !== 'ALL') {
+      searchParams.set('country', target.country);
+    }
+    if (cleanTargetSearch) {
+      searchParams.set('q', cleanTargetSearch);
     }
     if (target.rfqId) {
       searchParams.set('selectedRfq', target.rfqId);
     }
-    title = target.title || `${activeView.replace(/_/g, ' ')} | Trade Heaven B2B Marketplace`;
-    summary = target.subtitle || target.description || summary;
+    if (cleanTargetSearch) {
+      title =
+        target.title ||
+        (activeView === 'BUY_LEADS'
+          ? `"${cleanTargetSearch}" — Active Wholesale Buy Leads | Trade Heaven`
+          : `"${cleanTargetSearch}" — ${activeView.replace(/_/g, ' ')} | Trade Heaven`);
+      summary =
+        target.subtitle ||
+        target.description ||
+        `Direct link to "${cleanTargetSearch}" search results on Trade Heaven B2B Marketplace.`;
+    } else {
+      title = target.title || `${activeView.replace(/_/g, ' ')} | Trade Heaven B2B Marketplace`;
+      summary = target.subtitle || target.description || summary;
+    }
   }
 
   // Include custom note if provided

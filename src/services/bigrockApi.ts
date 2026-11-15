@@ -234,10 +234,32 @@ export function mapInquiryToRfq(raw: any, index: number = 0): RfqRequirement {
   ];
   const t = fallbackTenders[index % fallbackTenders.length];
 
-  const targetQuantity = raw.target_quantity || (parsedQuantityMatch ? parseInt(parsedQuantityMatch[1].replace(/,/g, ''), 10) : (raw.quantity || t.qty));
-  const targetPriceUsd = raw.target_price || (parsedPriceMatch ? parseFloat(parsedPriceMatch[1]) : t.price);
-  const preferredIncoterm = (raw.incoterms || raw.incoterm || (parsedIncotermMatch ? parsedIncotermMatch[1].toUpperCase() : t.term)) as any;
-  const destinationPort = (raw.destination_port || (parsedPortMatch ? parsedPortMatch[1].trim() : t.port));
+  const rawQtyVal = raw.targetQuantity ?? raw.target_quantity ?? raw.quantity;
+  const targetQuantity =
+    rawQtyVal !== undefined && rawQtyVal !== null && String(rawQtyVal).trim() !== ''
+      ? Number(String(rawQtyVal).replace(/,/g, ''))
+      : parsedQuantityMatch
+      ? parseInt(parsedQuantityMatch[1].replace(/,/g, ''), 10)
+      : t.qty;
+
+  const rawPriceVal = raw.targetPriceUsd ?? raw.targetPrice ?? raw.target_price;
+  const targetPriceUsd =
+    rawPriceVal !== undefined && rawPriceVal !== null && String(rawPriceVal).trim() !== '' && Number(rawPriceVal) > 0
+      ? Number(String(rawPriceVal).replace(/[^0-9.]/g, ''))
+      : parsedPriceMatch
+      ? parseFloat(parsedPriceMatch[1])
+      : t.price;
+
+  const preferredIncoterm = (
+    raw.preferredIncoterm ||
+    raw.incoterms ||
+    raw.incoterm ||
+    (parsedIncotermMatch ? parsedIncotermMatch[1].toUpperCase() : t.term)
+  ) as any;
+  const destinationPort =
+    raw.destinationPort ||
+    raw.destination_port ||
+    (parsedPortMatch ? parsedPortMatch[1].trim() : t.port);
 
   const idStr = String(raw.id || `live-${index + 101}`);
   const formattedId = idStr.startsWith('rfq-') ? idStr : `rfq-${idStr}`;

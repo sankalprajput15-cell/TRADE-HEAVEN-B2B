@@ -659,7 +659,11 @@ export interface ContextualPageRfqOptions {
 export function generateContextualPageRfqs(options: ContextualPageRfqOptions): RfqRequirement[] {
   const count = Math.max(6, Math.min(72, options.count || 18));
   const page = Math.max(1, options.page || 1);
-  const cleanSearch = String(options.searchTerm || '').trim();
+  const cleanSearch = String(options.searchTerm || '')
+    .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/gi, '')
+    .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
+    .trim()
+    .replace(/\s+/g, ' ');
   const cleanCategory = options.category && options.category !== 'ALL' ? options.category.trim() : '';
   const cleanCountry = options.country && options.country !== 'ALL' ? options.country.trim() : '';
   const budgetRange = options.budgetRange && options.budgetRange !== 'ALL' ? options.budgetRange : 'ALL';
@@ -696,12 +700,11 @@ export function generateContextualPageRfqs(options: ContextualPageRfqOptions): R
 
   if (cleanSearch) {
     const qLower = cleanSearch.toLowerCase();
-    const searchMatches = commodityPool.filter(
-      c =>
-        c.productName.toLowerCase().includes(qLower) ||
-        c.specs.toLowerCase().includes(qLower) ||
-        c.category.toLowerCase().includes(qLower)
-    );
+    const searchTokens = qLower.split(/\s+/).filter(Boolean);
+    const searchMatches = commodityPool.filter(c => {
+      const hay = `${c.productName} ${c.specs} ${c.category}`.toLowerCase();
+      return searchTokens.every(tk => hay.includes(tk));
+    });
     if (searchMatches.length > 0) {
       commodityPool = searchMatches;
     }
@@ -732,12 +735,19 @@ export function generateContextualPageRfqs(options: ContextualPageRfqOptions): R
     const qualifier = PRODUCT_VARIANT_QUALIFIERS[(idx + i * 2) % PRODUCT_VARIANT_QUALIFIERS.length];
 
     // If user searched a custom keyword not in templates, synthesize a tailored product name
+    const searchTokensForMatch = cleanSearch.toLowerCase().split(/\s+/).filter(Boolean);
     const usesCustomKeyword =
       cleanSearch.length >= 2 &&
-      !baseTemplate.productName.toLowerCase().includes(cleanSearch.toLowerCase());
+      !searchTokensForMatch.every(tk => baseTemplate.productName.toLowerCase().includes(tk));
 
     const cleanKeywordTitle = cleanSearch
-      .replace(/\b\w/g, ch => ch.toUpperCase());
+      .split(/\s+/)
+      .map(w => {
+        if (/^\d+(?:mw|kw|kva|kv|hp|mt|gsm|w)$/i.test(w)) return w.toUpperCase();
+        if (/^(?:cnc|led|pvc|hdpe|lldpe|icumsa|en590|lng|lpg|iqf|oem|plc|ipp)$/i.test(w)) return w.toUpperCase();
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      })
+      .join(' ');
 
     const isCustomPowerPlant =
       usesCustomKeyword &&

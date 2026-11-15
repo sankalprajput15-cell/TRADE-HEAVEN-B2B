@@ -41,17 +41,35 @@ export function sortRfqsRealFirst(list: RfqRequirement[]): RfqRequirement[] {
   });
 }
 
+export function sanitizeSearchKeyword(raw?: string | null): string {
+  let clean = String(raw || '').trim();
+  if (!clean) return '';
+  for (let i = 0; i < 4; i++) {
+    clean = clean
+      .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/i, '')
+      .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
+      .trim();
+  }
+  return clean.replace(/\s+/g, ' ');
+}
+
 export function matchesRfqKeywordClient(rfq: RfqRequirement, keyword: string): boolean {
-  const q = String(keyword || '').toLowerCase().trim();
+  const q = sanitizeSearchKeyword(keyword).toLowerCase();
   if (!q) return true;
   const tokens = q.split(/\s+/).filter(Boolean);
+  const rawSearchKw = String(rfq.searchKeyword || '');
+  const primarySearchKw = rawSearchKw.includes('|')
+    ? sanitizeSearchKeyword(rawSearchKw.split('|').pop() || '')
+    : sanitizeSearchKeyword(rawSearchKw);
+  const cleanTitle = sanitizeSearchKeyword(rfq.productName || rfq.title || '');
   const searchable = [
+    cleanTitle,
     rfq.productName,
     rfq.title,
     rfq.category,
     rfq.detailedDescription,
     rfq.detailedRequirements,
-    rfq.searchKeyword,
+    primarySearchKw,
     rfq.destinationPort,
     rfq.buyerCountry,
     rfq.preferredIncoterm,
@@ -286,7 +304,7 @@ async function loadStaticMarketStoreData(): Promise<{
 }
 
 function synthesizeClientMarketInsight(keyword: string): MarketDemandInsight {
-  const cleanTitle = String(keyword || '').trim().replace(/\s+/g, ' ');
+  const cleanTitle = sanitizeSearchKeyword(keyword);
   const lower = cleanTitle.toLowerCase();
   const isPowerPlant = /(generation|generator|genset|power\s*plant|power\s*station|\b\d+\s*mw\b|\b\d+\s*kw\b|\b\d+\s*kva\b|turbine|substation|switchgear|cogeneration|chp|natural\s*gas\s*gen)/i.test(lower);
   const isMachinery = !isPowerPlant && /(cnc|machine|machinery|equipment|system|excavator|tractor|solar|inverter|battery|panel|transformer|pump|valve|compressor|boiler|chiller|elevator|drone|laptop|electronics|semiconductor|led)/i.test(lower);
@@ -373,7 +391,7 @@ export async function checkAndDiscoverRfqsForKeyword(params: {
   triggeredAi: boolean;
   notice?: string | null;
 }> {
-  const trimmed = String(params.keyword || '').trim();
+  const trimmed = sanitizeSearchKeyword(params.keyword);
   const currentUser = params.currentUser || null;
 
   if (!trimmed || trimmed.length < 2) {
@@ -381,14 +399,19 @@ export async function checkAndDiscoverRfqsForKeyword(params: {
   }
 
   const normalizedQuery = trimmed.toLowerCase();
+  const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
   const cleanSearchResults = Array.isArray(params.searchResults)
     ? Array.from(
         new Set(
           params.searchResults
-            .map(s => String(s || '').trim().replace(/\s+/g, ' '))
-            .filter(s => s.length >= 2 && s.toLowerCase() !== normalizedQuery)
+            .map(s => sanitizeSearchKeyword(s))
+            .filter(s => {
+              if (s.length < 2 || s.toLowerCase() === normalizedQuery) return false;
+              const lowerItem = s.toLowerCase();
+              return queryTokens.every(tk => lowerItem.includes(tk));
+            })
         )
-      ).slice(0, 10)
+      ).slice(0, 8)
     : [];
 
   const getUncoveredSearchResults = (rfqPool: RfqRequirement[]): string[] =>

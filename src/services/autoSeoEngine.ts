@@ -1343,7 +1343,12 @@ class AutoSeoEngineService {
    * comes on TOP in the search bar for B2B portal and export searches!
    */
   public rankProductsForSearch(query: string, products: Product[], limit = 50): Product[] {
-    const q = (query || '').trim().toLowerCase();
+    const cleanQ = (query || '')
+      .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/gi, '')
+      .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
+      .trim()
+      .toLowerCase();
+    const q = cleanQ;
     const tokens = q.split(/\s+/).filter(Boolean);
     const isGenericB2BExportSearch =
       q === 'b2b' ||
@@ -1354,6 +1359,24 @@ class AutoSeoEngineService {
       q === 'top' ||
       q === 'verified';
 
+    const genericModifierStopwords = new Set([
+      'b2b',
+      'export',
+      'wholesale',
+      'trade',
+      'heaven',
+      'fob',
+      'cif',
+      'bulk',
+      'buy',
+      'supplier',
+      'suppliers',
+      'manufacturer',
+      'manufacturers'
+    ]);
+    const meaningfulTokens = tokens.filter(tk => !genericModifierStopwords.has(tk));
+    const requiredTokens = meaningfulTokens.length > 0 ? meaningfulTokens : tokens;
+
     const scored: { product: Product; score: number }[] = [];
 
     for (const p of products) {
@@ -1363,12 +1386,10 @@ class AutoSeoEngineService {
 
       const titleLower = (p.title || '').toLowerCase();
       const catLower = (p.category || '').toLowerCase();
+      const subCatLower = (p.subCategory || '').toLowerCase();
       const supLower = (p.supplierName || '').toLowerCase();
       const originLower = (p.supplierCountry || (p as any).origin || '').toLowerCase();
       const tagsLower = ((p as any).tags || []).join(' ').toLowerCase();
-      const seoKeywordsLower = seoRec
-        ? `${seoRec.seoTitle} ${seoRec.metaDescription} ${seoRec.keywords.join(' ')} ${seoRec.b2bExportTags.join(' ')}`.toLowerCase()
-        : '';
 
       if (!q) {
         // When query is empty, still surface uploaded/SEO boosted items first
@@ -1377,7 +1398,19 @@ class AutoSeoEngineService {
         continue;
       }
 
-      let matchScore = 0;
+      if (isGenericB2BExportSearch) {
+        const baseScore = isUploadedBoosted ? (seoRec?.searchPriorityBoost || 1500) + 900 : 100;
+        scored.push({ product: p, score: baseScore });
+        continue;
+      }
+
+      const coreProductHaystack = `${titleLower} ${catLower} ${subCatLower} ${supLower} ${originLower} ${tagsLower}`;
+      const allRequiredTokensMatch = requiredTokens.every(tk => coreProductHaystack.includes(tk));
+      if (!allRequiredTokensMatch) {
+        continue;
+      }
+
+      let matchScore = 100;
 
       // Exact or prefix title match
       if (titleLower === q) matchScore += 600;
@@ -1390,34 +1423,12 @@ class AutoSeoEngineService {
       if (originLower.includes(q)) matchScore += 160;
       if (tagsLower.includes(q)) matchScore += 200;
 
-      // Auto-SEO generated keywords & B2B export metadata match
-      if (seoKeywordsLower && seoKeywordsLower.includes(q)) {
-        matchScore += 260;
-      }
-
-      // Multi-token match (e.g. "turmeric export b2b" or "copper fob")
-      if (tokens.length > 1) {
-        let matchedTokenCount = 0;
-        const combinedSearchable = `${titleLower} ${catLower} ${supLower} ${originLower} ${tagsLower} ${seoKeywordsLower} b2b export wholesale trade heaven fob cif`;
-        for (const tk of tokens) {
-          if (combinedSearchable.includes(tk)) {
-            matchedTokenCount++;
-            if (titleLower.includes(tk)) matchScore += 90;
-            else matchScore += 45;
-          }
-        }
-        if (matchedTokenCount === tokens.length) {
-          matchScore += 250; // All query words matched!
-        }
-      }
-
-      // If user searches "b2b", "export", "trade heaven", "wholesale", surface all uploaded/SEO-optimized items at the very top!
-      if (isGenericB2BExportSearch && isUploadedBoosted) {
-        matchScore += 900;
+      for (const tk of requiredTokens) {
+        if (titleLower.includes(tk)) matchScore += 90;
+        else matchScore += 45;
       }
 
       if (matchScore > 0) {
-        // Apply the Auto-SEO Priority Boost so uploaded images/products ALWAYS rank #1 on top of the search bar!
         const seoBoost = isUploadedBoosted ? (seoRec?.searchPriorityBoost || 1500) : (seoRec ? 300 : 0);
         const recencyBoost = seoRec?.updatedAt
           ? Math.max(0, 200 - Math.floor((Date.now() - new Date(seoRec.updatedAt).getTime()) / (1000 * 60 * 60)))
@@ -1438,7 +1449,11 @@ class AutoSeoEngineService {
    * Searches uploaded & SEO-indexed B2B Articles for the search bar dropdown & Insights page
    */
   public searchArticles(query: string, limit = 6): UploadedB2BArticle[] {
-    const q = (query || '').trim().toLowerCase();
+    const q = (query || '')
+      .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/gi, '')
+      .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
+      .trim()
+      .toLowerCase();
     if (!q) return this.articles.slice(0, limit);
 
     const tokens = q.split(/\s+/).filter(Boolean);
@@ -1446,21 +1461,20 @@ class AutoSeoEngineService {
 
     for (const art of this.articles) {
       const seoRec = art.seoRecordId ? this.records[art.seoRecordId] : undefined;
-      const hay = `${art.title} ${art.excerpt} ${art.category} ${art.tags.join(' ')} ${seoRec ? seoRec.keywords.join(' ') : ''} b2b export trade heaven`.toLowerCase();
+      const hay = `${art.title} ${art.excerpt} ${art.category} ${art.tags.join(' ')}`.toLowerCase();
+      if (!tokens.every(tk => hay.includes(tk))) continue;
 
-      let score = 0;
+      let score = 100;
       if (art.title.toLowerCase().includes(q)) score += 500;
       if (hay.includes(q)) score += 300;
       for (const tk of tokens) {
         if (hay.includes(tk)) score += 100;
       }
 
-      if (score > 0) {
-        scored.push({
-          article: art,
-          score: score + (seoRec?.searchPriorityBoost || 1000)
-        });
-      }
+      scored.push({
+        article: art,
+        score: score + (seoRec?.searchPriorityBoost || 1000)
+      });
     }
 
     scored.sort((a, b) => b.score - a.score);

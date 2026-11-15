@@ -167,7 +167,7 @@ const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/Pay
 const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
 const CustomShareModal = lazyWithRetry(() => import('./components/modals/CustomShareModal'), 'CustomShareModal');
 const MembershipUpgradeModal = lazyWithRetry(() => import('./components/modals/MembershipUpgradeModal'), 'MembershipUpgradeModal');
-import { sortRfqsRealFirst, mergeRfqLists } from './services/rfqMarketDemandService';
+import { sortRfqsRealFirst, mergeRfqLists, sanitizeSearchKeyword } from './services/rfqMarketDemandService';
 import { 
   CustomLinkTarget, 
   resolveSupplierId, 
@@ -290,6 +290,15 @@ function parseIncomingEmailLinkParams(rawSearch: string): ParsedEmailLinkRoute {
       forcedView = 'TRADE_ASSURANCE_CERTIFICATE';
     } else if (params.get('supplier') || params.get('supplierId') || params.get('vendor')) {
       forcedView = 'VENDOR_PROFILE';
+    } else if (
+      params.get('q') ||
+      params.get('search') ||
+      params.get('query') ||
+      params.get('keyword') ||
+      params.get('category') ||
+      params.get('cat')
+    ) {
+      forcedView = 'PRODUCT_DIRECTORY';
     }
   }
 
@@ -664,11 +673,26 @@ const MainApp: React.FC = () => {
   const [catalogSearch, setCatalogSearch] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const q = params.get('q') || params.get('search') || params.get('query');
-      if (q) return decodeURIComponent(q);
+      const q = params.get('q') || params.get('search') || params.get('query') || params.get('keyword');
+      if (q) return sanitizeSearchKeyword(decodeURIComponent(q));
     }
     return '';
   });
+
+  useEffect(() => {
+    const handleActiveSearchChanged = (e: Event) => {
+      const detail = (e as CustomEvent<{ query?: string; category?: string }>)?.detail;
+      if (detail && typeof detail.query === 'string') {
+        const cleaned = sanitizeSearchKeyword(detail.query);
+        setCatalogSearch(prev => (prev !== cleaned ? cleaned : prev));
+      }
+      if (detail && typeof detail.category === 'string') {
+        setCatalogCategory(prev => (prev !== detail.category ? detail.category! : prev));
+      }
+    };
+    window.addEventListener('tradeheaven_active_search_changed', handleActiveSearchChanged);
+    return () => window.removeEventListener('tradeheaven_active_search_changed', handleActiveSearchChanged);
+  }, []);
 
   const [selectedSupplierTiers, setSelectedSupplierTiers] = useState<string[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -684,13 +708,14 @@ const MainApp: React.FC = () => {
   });
 
   const handleDebouncedSearch = useCallback((query: string, immediate = false) => {
+    const cleanQuery = sanitizeSearchKeyword(query);
     if (searchTimer) clearTimeout(searchTimer);
     if (immediate) {
-      setCatalogSearch(query);
+      setCatalogSearch(cleanQuery);
       return;
     }
     const timer = setTimeout(() => {
-      setCatalogSearch(query);
+      setCatalogSearch(cleanQuery);
     }, 350);
     setSearchTimer(timer);
   }, [searchTimer]);
@@ -769,7 +794,8 @@ const MainApp: React.FC = () => {
       if (cat) setCatalogCategory(decodeURIComponent(cat));
       else setCatalogCategory('ALL');
 
-      if (q) setCatalogSearch(decodeURIComponent(q));
+      const rawQ = q || params.get('keyword');
+      if (rawQ) setCatalogSearch(sanitizeSearchKeyword(decodeURIComponent(rawQ)));
       else setCatalogSearch('');
     };
     window.addEventListener('popstate', handlePopState);
@@ -846,24 +872,40 @@ const MainApp: React.FC = () => {
         url.searchParams.delete('lead');
       }
 
-      if (activeView === 'PRODUCT_DIRECTORY') {
+      const isSearchableView =
+        activeView === 'PRODUCT_DIRECTORY' ||
+        activeView === 'BUY_LEADS' ||
+        activeView === 'RFQ_HUB' ||
+        activeView === 'SUPPLIERS_DIRECTORY' ||
+        activeView === 'BUYERS_DIRECTORY';
+
+      if (isSearchableView) {
         if (catalogCategory && catalogCategory !== 'ALL') {
           url.searchParams.set('category', catalogCategory);
         } else {
           url.searchParams.delete('category');
           url.searchParams.delete('cat');
         }
-        if (catalogSearch && catalogSearch.trim()) {
-          url.searchParams.set('q', catalogSearch.trim());
+        const cleanSearch = sanitizeSearchKeyword(catalogSearch || '');
+        if (cleanSearch) {
+          url.searchParams.set('q', cleanSearch);
+          url.searchParams.delete('search');
+          url.searchParams.delete('query');
+          url.searchParams.delete('keyword');
         } else {
           url.searchParams.delete('q');
           url.searchParams.delete('search');
+          url.searchParams.delete('query');
+          url.searchParams.delete('keyword');
         }
       } else {
         url.searchParams.delete('category');
         url.searchParams.delete('cat');
         url.searchParams.delete('q');
         url.searchParams.delete('search');
+        url.searchParams.delete('query');
+        url.searchParams.delete('keyword');
+        url.searchParams.delete('country');
       }
 
       // Only push if the URL actually changed to prevent infinite loops with popstate
@@ -878,7 +920,27 @@ const MainApp: React.FC = () => {
     const handleOpenShare = (e: Event) => {
       const customEvent = e as CustomEvent<any>;
       const detail = customEvent?.detail;
-      if (!detail || (detail.type === 'PAGE' && !detail.id)) {
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const urlSearchFallback = urlParams
+        ? sanitizeSearchKeyword(
+            decodeURIComponent(
+              urlParams.get('q') || urlParams.get('search') || urlParams.get('query') || urlParams.get('keyword') || ''
+            )
+          )
+        : '';
+      const activeSearchQuery = sanitizeSearchKeyword(detail?.search || detail?.query || catalogSearch || urlSearchFallback || '');
+      const activeCatFilter =
+        detail?.category && detail.category !== 'ALL'
+          ? detail.category
+          : catalogCategory && catalogCategory !== 'ALL'
+            ? catalogCategory
+            : urlParams?.get('category') || undefined;
+      const activeCountryFilter =
+        detail?.country && detail.country !== 'ALL'
+          ? detail.country
+          : urlParams?.get('country') || undefined;
+
+      if (!detail || (detail.type === 'PAGE' && !detail.id && !detail.search && !detail.query)) {
         // Context-aware fallback when clicking global Share button in Header
         if (selectedProduct) {
           setShareModalConfig({
@@ -935,25 +997,48 @@ const MainApp: React.FC = () => {
           });
           return;
         }
-        if (activeView === 'PRODUCT_DIRECTORY' && catalogSearch && catalogSearch.trim()) {
+        const targetView = ((detail?.view as ActiveView) || activeView) as ActiveView;
+        if (
+          activeSearchQuery &&
+          (targetView === 'PRODUCT_DIRECTORY' ||
+            targetView === 'BUY_LEADS' ||
+            targetView === 'RFQ_HUB' ||
+            targetView === 'SUPPLIERS_DIRECTORY')
+        ) {
           setShareModalConfig({
             isOpen: true,
             target: {
               type: 'SEARCH',
-              search: catalogSearch.trim(),
-              category: catalogCategory !== 'ALL' ? catalogCategory : undefined,
-              title: `"${catalogSearch.trim()}" Wholesale Suppliers & Products`
+              view: targetView,
+              search: activeSearchQuery,
+              category: activeCatFilter,
+              country: activeCountryFilter,
+              title:
+                detail?.title ||
+                (targetView === 'BUY_LEADS' || targetView === 'RFQ_HUB'
+                  ? `"${activeSearchQuery}" — Active Wholesale Buy Leads & Buyer RFQs | Trade Heaven`
+                  : `"${activeSearchQuery}" Wholesale Suppliers, Products & RFQs | Trade Heaven`),
+              subtitle: detail?.subtitle
             }
           });
           return;
         }
-        if (activeView === 'PRODUCT_DIRECTORY' && catalogCategory && catalogCategory !== 'ALL') {
+        if (
+          activeCatFilter &&
+          (targetView === 'PRODUCT_DIRECTORY' || targetView === 'BUY_LEADS')
+        ) {
           setShareModalConfig({
             isOpen: true,
             target: {
               type: 'CATEGORY',
-              category: catalogCategory,
-              title: `${catalogCategory} Wholesale Suppliers & Products`
+              view: targetView,
+              category: activeCatFilter,
+              country: activeCountryFilter,
+              title:
+                detail?.title ||
+                (targetView === 'BUY_LEADS'
+                  ? `${activeCatFilter} — Active Wholesale Buy Leads & Buyer RFQs`
+                  : `${activeCatFilter} Wholesale Suppliers & Products`)
             }
           });
           return;
@@ -962,7 +1047,8 @@ const MainApp: React.FC = () => {
           isOpen: true,
           target: {
             type: 'PAGE',
-            view: (detail?.view as ActiveView) || activeView,
+            view: targetView,
+            country: activeCountryFilter,
             title: detail?.title || document.title,
             subtitle: detail?.subtitle
           }
@@ -1022,16 +1108,37 @@ const MainApp: React.FC = () => {
           title: detail.title || 'Trade Heaven Editorial Insight',
           subtitle: detail.subtitle
         };
+      } else if (detail.type === 'SEARCH') {
+        const targetView = ((detail.view as ActiveView) || activeView) as ActiveView;
+        formattedTarget = {
+          type: 'SEARCH',
+          view: targetView,
+          search: activeSearchQuery,
+          category: activeCatFilter,
+          country: activeCountryFilter,
+          title:
+            detail.title ||
+            (targetView === 'BUY_LEADS' || targetView === 'RFQ_HUB'
+              ? `"${activeSearchQuery}" — Active Wholesale Buy Leads & Buyer RFQs | Trade Heaven`
+              : `"${activeSearchQuery}" Wholesale Suppliers, Products & RFQs | Trade Heaven`),
+          subtitle: detail.subtitle
+        };
       } else if (detail.type === 'CATEGORY') {
         formattedTarget = {
           type: 'CATEGORY',
-          category: detail.category || catalogCategory,
-          title: detail.title || `${detail.category || catalogCategory} Wholesale Suppliers & Products`
+          view: (detail.view as ActiveView) || activeView,
+          category: activeCatFilter,
+          search: activeSearchQuery || undefined,
+          country: activeCountryFilter,
+          title: detail.title || `${activeCatFilter} Wholesale Suppliers & Products`
         };
       } else {
         formattedTarget = {
-          type: 'PAGE',
-          view: activeView,
+          type: activeSearchQuery ? 'SEARCH' : 'PAGE',
+          view: (detail.view as ActiveView) || activeView,
+          search: activeSearchQuery || undefined,
+          category: activeCatFilter,
+          country: activeCountryFilter,
           title: detail.title || document.title,
           subtitle: detail.subtitle
         };
@@ -2427,10 +2534,11 @@ const MainApp: React.FC = () => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onNavigateToSearch={(query, targetView) => {
+          const cleanQ = sanitizeSearchKeyword(query || '');
           setCatalogCategory('ALL');
-          setCatalogSearch(query);
+          setCatalogSearch(cleanQ);
           setSelectedProduct(null);
-          const trimmed = (query || '').trim().toLowerCase();
+          const trimmed = cleanQ.toLowerCase();
           const tokens = trimmed.split(/\s+/).filter(Boolean);
           const hasMatchingProducts =
             tokens.length === 0 ||

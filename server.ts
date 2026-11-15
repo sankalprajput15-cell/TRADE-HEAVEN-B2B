@@ -7160,8 +7160,20 @@ const serverMarketInsightsStore = new Map<string, {
   generatedAt: string;
 }>();
 
+function sanitizeMarketKeyword(keyword: string): string {
+  let clean = String(keyword || '').trim();
+  if (!clean) return '';
+  for (let i = 0; i < 4; i++) {
+    clean = clean
+      .replace(/^(?:search|keyword|query|filter|rfq|find|sector|category)\s*:\s*/i, '')
+      .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '')
+      .trim();
+  }
+  return clean.replace(/\s+/g, ' ');
+}
+
 function normalizeMarketKeyword(keyword: string): string {
-  return String(keyword || '').toLowerCase().trim().replace(/\s+/g, ' ');
+  return sanitizeMarketKeyword(keyword).toLowerCase();
 }
 
 function saveRfqMarketStoreToDisk(): void {
@@ -7193,21 +7205,48 @@ function loadRfqMarketStoreFromDisk(): void {
     const raw = fs.readFileSync(RFQ_MARKET_STORE_FILE, 'utf-8');
     if (!raw || !raw.trim()) return;
     const parsed = JSON.parse(raw);
+    let mutated = false;
     if (Array.isArray(parsed?.rfqs)) {
       const existingIds = new Set(serverRfqsStore.map(r => String(r.id)));
       parsed.rfqs.forEach((item: any) => {
-        if (item && item.id && !existingIds.has(String(item.id))) {
-          serverRfqsStore.push(item);
-          existingIds.add(String(item.id));
+        if (!item || !item.id || existingIds.has(String(item.id))) return;
+        const rawKw = String(item.searchKeyword || item.search_keyword || '');
+        if (rawKw.includes('|')) {
+          const ownLabel = sanitizeMarketKeyword(rawKw.split('|').pop() || '');
+          item.searchKeyword = ownLabel;
+          item.search_keyword = ownLabel;
+          mutated = true;
+        } else if (/^(?:search|keyword|query)\s*:/i.test(rawKw) || /^["']/.test(rawKw)) {
+          const cleanedKw = sanitizeMarketKeyword(rawKw);
+          item.searchKeyword = cleanedKw;
+          item.search_keyword = cleanedKw;
+          mutated = true;
         }
+        if (typeof item.title === 'string' && /^(?:search|keyword|query)\s*:/i.test(item.title)) {
+          item.title = item.title.replace(/^(?:search|keyword|query)\s*:\s*["'“”]?([^"'“”]+)["'“”]?\s*/i, '$1 ');
+          item.productName = item.title;
+          mutated = true;
+        }
+        if (typeof item.productName === 'string' && /^(?:search|keyword|query)\s*:/i.test(item.productName)) {
+          item.productName = item.productName.replace(/^(?:search|keyword|query)\s*:\s*["'“”]?([^"'“”]+)["'“”]?\s*/i, '$1 ');
+          item.title = item.productName;
+          mutated = true;
+        }
+        serverRfqsStore.push(item);
+        existingIds.add(String(item.id));
       });
     }
     if (parsed?.insights && typeof parsed.insights === 'object') {
       Object.entries(parsed.insights).forEach(([k, v]: [string, any]) => {
-        if (k && v && typeof v === 'object') {
-          serverMarketInsightsStore.set(k, v);
+        const cleanKey = normalizeMarketKeyword(k);
+        if (cleanKey && v && typeof v === 'object') {
+          v.keyword = sanitizeMarketKeyword(v.keyword || k);
+          serverMarketInsightsStore.set(cleanKey, v);
         }
       });
+    }
+    if (mutated) {
+      saveRfqMarketStoreToDisk();
     }
   } catch (err) {
     console.warn('[ServerRfqsStore] Failed to load rfq-market-store.json:', err);
@@ -7231,6 +7270,10 @@ function matchesRfqKeyword(r: any, keyword: string): boolean {
   const q = normalizeMarketKeyword(keyword);
   if (!q) return true;
   const tokens = q.split(/\s+/).filter(Boolean);
+  const rawSearchKw = String(r.searchKeyword || r.search_keyword || '');
+  const primarySearchKw = rawSearchKw.includes('|')
+    ? sanitizeMarketKeyword(rawSearchKw.split('|').pop() || '')
+    : sanitizeMarketKeyword(rawSearchKw);
   const haystack = [
     r.title,
     r.productName,
@@ -7241,8 +7284,7 @@ function matchesRfqKeyword(r: any, keyword: string): boolean {
     r.detailedRequirements,
     r.detailedDescription,
     r.message,
-    r.searchKeyword,
-    r.search_keyword,
+    primarySearchKw,
     r.destinationPort,
     r.destination_port,
     r.buyerCountry,
@@ -15949,11 +15991,14 @@ async function fetchLiveGoogleTradeSources(keyword: string): Promise<Array<{ tit
 }
 
 function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array<{ title: string; uri: string }>) {
-  const cleanTitle = rawKeyword
-    .trim()
-    .replace(/\s+/g, ' ')
+  const sanitized = sanitizeMarketKeyword(rawKeyword);
+  const cleanTitle = sanitized
     .split(' ')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .map(w => {
+      if (/^\d+(?:mw|kw|kva|kv|hp|mt|gsm|w)$/i.test(w)) return w.toUpperCase();
+      if (/^(?:cnc|led|pvc|hdpe|lldpe|icumsa|en590|lng|lpg|iqf|oem|plc|ipp)$/i.test(w)) return w.toUpperCase();
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
     .join(' ');
   const lower = cleanTitle.toLowerCase();
 
@@ -16430,8 +16475,9 @@ function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array
 }
 
 app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
-  const rawKeyword = String(req.body?.keyword || req.query?.keyword || '').trim();
+  const rawKeyword = sanitizeMarketKeyword(String(req.body?.keyword || req.query?.keyword || ''));
   const normalizedKeyword = normalizeMarketKeyword(rawKeyword);
+  const queryTokens = normalizedKeyword.split(/\s+/).filter(Boolean);
   const rawSearchResults = Array.isArray(req.body?.searchResults)
     ? req.body.searchResults
     : Array.isArray(req.body?.keywords)
@@ -16441,12 +16487,17 @@ app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
   const cleanSearchResults: string[] = [];
   const seenResultNorms = new Set<string>();
   for (const item of rawSearchResults) {
-    const label = String(item || '').trim().replace(/\s+/g, ' ');
+    const label = sanitizeMarketKeyword(String(item || ''));
     const norm = normalizeMarketKeyword(label);
-    if (norm.length >= 2 && norm !== normalizedKeyword && !seenResultNorms.has(norm)) {
+    if (
+      norm.length >= 2 &&
+      norm !== normalizedKeyword &&
+      !seenResultNorms.has(norm) &&
+      queryTokens.every(tk => norm.includes(tk))
+    ) {
       seenResultNorms.add(norm);
       cleanSearchResults.push(label);
-      if (cleanSearchResults.length >= 10) break;
+      if (cleanSearchResults.length >= 8) break;
     }
   }
 
@@ -16747,7 +16798,7 @@ Strict requirements:
     // Generate tailored auto-RFQs for every uncovered search result item from the search environment
     uncoveredResults.forEach((resultLabel, rIdx) => {
       const synthesized = synthesizeStructuredMarketDemand(resultLabel, cleanSources);
-      const resultTag = `${rawKeyword} | ${resultLabel}`;
+      const resultTag = resultLabel;
       synthesized.rfqs.slice(0, 2).forEach((item, vIdx) => {
         const rotatedIdx = (rIdx + vIdx) % 4;
         generatedRawList.push(buildRfqRecord(item, rotatedIdx, resultTag, idCounter++));
