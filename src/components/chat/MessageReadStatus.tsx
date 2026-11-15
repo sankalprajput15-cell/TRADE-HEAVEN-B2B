@@ -4,6 +4,7 @@ import { Check, CheckCheck } from 'lucide-react';
 interface MessageReadStatusProps {
   isRead: boolean;
   readAt?: string;
+  unconfirmedRead?: boolean;
   variant?: 'bubble' | 'compact';
   recipientLabel?: string;
   showLabel?: boolean;
@@ -19,14 +20,16 @@ function formatReadTimestamp(iso?: string): string {
 export const MessageReadStatus: React.FC<MessageReadStatusProps> = ({
   isRead,
   readAt,
+  unconfirmedRead = false,
   variant = 'bubble',
   recipientLabel = 'recipient',
   showLabel = true
 }) => {
   const formattedTime = formatReadTimestamp(readAt);
+  const effectiveIsRead = Boolean(isRead && !unconfirmedRead);
 
   if (variant === 'compact') {
-    return isRead ? (
+    return effectiveIsRead ? (
       <span
         data-testid="is-read-status-read"
         title={`Seen by ${recipientLabel}${formattedTime ? ` at ${formattedTime}` : ''}`}
@@ -37,7 +40,11 @@ export const MessageReadStatus: React.FC<MessageReadStatusProps> = ({
     ) : (
       <span
         data-testid="is-read-status-sent"
-        title={`Sent • Unseen by ${recipientLabel}`}
+        title={
+          unconfirmedRead
+            ? `Sent • No verified ${recipientLabel} login recorded`
+            : `Sent • Unseen by ${recipientLabel}`
+        }
         className="inline-flex shrink-0 items-center text-slate-400"
       >
         <Check className="h-3.5 w-3.5 text-slate-400" aria-label="Sent" />
@@ -47,15 +54,17 @@ export const MessageReadStatus: React.FC<MessageReadStatusProps> = ({
 
   return (
     <div
-      data-testid={isRead ? 'is-read-status-read' : 'is-read-status-sent'}
+      data-testid={effectiveIsRead ? 'is-read-status-read' : 'is-read-status-sent'}
       className="mt-1 flex items-center justify-end gap-1 text-[10px]"
       title={
-        isRead
+        effectiveIsRead
           ? `Seen by ${recipientLabel}${formattedTime ? ` at ${formattedTime}` : ''}`
-          : `Sent • Unseen by ${recipientLabel}`
+          : unconfirmedRead
+            ? `Delivered • Unconfirmed (No verified ${recipientLabel} login recorded)`
+            : `Sent • Unseen by ${recipientLabel}`
       }
     >
-      {isRead ? (
+      {effectiveIsRead ? (
         <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-1.5 py-0.5 font-bold text-blue-600 shadow-2xs">
           <CheckCheck className="h-3.5 w-3.5 text-blue-600" aria-label="Read" />
           {showLabel && (
@@ -65,7 +74,9 @@ export const MessageReadStatus: React.FC<MessageReadStatusProps> = ({
       ) : (
         <span className="inline-flex items-center gap-1 font-medium text-blue-100/90">
           <Check className="h-3.5 w-3.5 text-blue-100/90" aria-label="Sent" />
-          {showLabel && <span>Sent</span>}
+          {showLabel && (
+            <span>{unconfirmedRead ? `Sent • No ${recipientLabel} login` : 'Sent'}</span>
+          )}
         </span>
       )}
     </div>

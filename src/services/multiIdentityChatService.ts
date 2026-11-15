@@ -67,14 +67,22 @@ function emitLocalChatBroadcast(type: string, payload: any) {
   } catch {}
 }
 
-async function postChatAction<T = any>(action: string, payload: Record<string, any>): Promise<T> {
+async function postChatAction<T = any>(
+  action: string,
+  payload: Record<string, any>,
+  authToken?: string
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json'
+  };
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
   const res = await fetch(`${API_BASE}?action=${encodeURIComponent(action)}`, {
     method: 'POST',
     cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    },
+    headers,
     body: JSON.stringify({ action, ...payload })
   });
   const data = await res.json().catch(() => ({}));
@@ -167,7 +175,8 @@ export async function toggleChatVisibility(payload: {
 
 export async function fetchChatMessages(
   conversationId: string,
-  readerRole?: ChatMessageSenderRole
+  readerRole?: ChatMessageSenderRole,
+  authToken?: string
 ): Promise<MultiChatMessage[]> {
   const params = new URLSearchParams({
     action: 'get_chat_messages',
@@ -175,9 +184,13 @@ export async function fetchChatMessages(
     _t: String(Date.now())
   });
   if (readerRole) params.set('reader_role', readerRole);
+  const headers: Record<string, string> = { Accept: 'application/json', 'Cache-Control': 'no-cache' };
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
   const res = await fetch(`${API_BASE}?${params.toString()}`, {
     cache: 'no-store',
-    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+    headers
   });
   const json = await res.json().catch(() => ({}));
   return Array.isArray(json?.data) ? json.data : [];
@@ -185,13 +198,15 @@ export async function fetchChatMessages(
 
 export async function markChatMessagesRead(
   conversationId: string,
-  readerRole: ChatMessageSenderRole
+  readerRole: ChatMessageSenderRole,
+  authToken?: string
 ): Promise<{
   conversationId: string;
   readerRole: ChatMessageSenderRole;
   readSenderRole: ChatMessageSenderRole;
   updatedCount: number;
   readAt: string;
+  skippedUnauthenticated?: boolean;
 }> {
   const json = await postChatAction<{
     data: {
@@ -200,29 +215,124 @@ export async function markChatMessagesRead(
       readSenderRole: ChatMessageSenderRole;
       updatedCount: number;
       readAt: string;
+      skippedUnauthenticated?: boolean;
     };
-  }>('mark_chat_read', { conversationId, readerRole });
-  if (json.data?.updatedCount > 0) {
+  }>('mark_chat_read', { conversationId, readerRole }, authToken);
+  if (json.data?.updatedCount > 0 && !json.data?.skippedUnauthenticated) {
     emitLocalChatBroadcast('chat:messages_read', json.data);
   }
   return json.data;
 }
 
-export async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
+export interface VerifiedEmailAlertRecord {
+  messageId: string;
+  conversationId: string;
+  supplierEmail: string;
+  supplierMailAccepted: boolean;
+  adminCopyRecipients: string[];
+  adminCopyAccepted: boolean;
+  deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED';
+  sentAt: string;
+  error?: string;
+}
+
+export interface ChatThreadInsight {
+  conversationId: string;
+  supplierId: string;
+  supplierEmail: string;
+  hasVerifiedLogin: boolean;
+  isCurrentlyOnline: boolean;
+  lastLoginAt: string | null;
+  lastActiveAt: string | null;
+  loginCount: number;
+  verifiedMessageIds: string[];
+  lastVerifiedReadAt: string | null;
+  lastVerifiedReadByEmail: string | null;
+  verifiedEmailsByLogin: string[];
+  verifiedConvReadIds: string[];
+  smtpConfigured?: boolean;
+  adminAlertRecipients?: string[];
+  emailAlertReceiptsByMsgId?: Record<string, VerifiedEmailAlertRecord>;
+}
+
+export async function reverifyChatEmailAlert(payload: {
+  conversationId: string;
+  messageId: string;
+  messageText?: string;
+  supplierEmail?: string;
+  supplierName?: string;
+  supplierCompany?: string;
+  buyerName?: string;
+  buyerCountry?: string;
+}): Promise<{ success: boolean; data?: VerifiedEmailAlertRecord; message?: string }> {
+  const res = await fetch('/api/v1/admin/chat-reverify-email-alert', {
+    method: 'POST',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const json = await res.json().catch(() => ({}));
+  return {
+    success: Boolean(res.ok && json?.success),
+    data: json?.data,
+    message: json?.message
+  };
+}
+
+export async function fetchChatThreadInsight(params: {
+  conversationId: string;
+  supplierEmail?: string;
+  supplierId?: string;
+}): Promise<ChatThreadInsight | null> {
+  try {
+    const qs = new URLSearchParams({
+      conversation_id: params.conversationId,
+      _t: String(Date.now())
+    });
+    if (params.supplierEmail) qs.set('supplier_email', params.supplierEmail);
+    if (params.supplierId) qs.set('supplier_id', params.supplierId);
+    const res = await fetch(`/api/v1/admin/chat-thread-insight?${qs.toString()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+    });
+    const json = await res.json().catch(() => ({}));
+    return json?.data || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function processUnseenChatAlerts(
+  minAgeSeconds = 60,
+  options?: { manualTrigger?: boolean; conversationId?: string }
+): Promise<{
   processedCount: number;
   alertsSent: number;
   supplierAlerts: number;
   adminAlerts: number;
+  adminCopiesSent?: number;
+  failedCount?: number;
+  checkedConversations?: number;
+  checkedMessages?: number;
+  smtpVerified?: boolean;
   messageIds?: string[];
   details: Array<{
     conversationId: string;
-    targetRole: 'supplier' | 'admin';
+    targetRole: 'supplier' | 'admin' | 'admin_copy';
     recipient: string;
     subject: string;
     messageCount: number;
+    supplierMailAccepted?: boolean;
+    adminCopyAccepted?: boolean;
+    deliveryMode?: string;
+    error?: string;
   }>;
 }> {
-  const json = await postChatAction<{ data: any }>('process_unseen_alerts', { minAgeSeconds });
+  const json = await postChatAction<{ data: any }>('process_unseen_alerts', {
+    minAgeSeconds,
+    manualTrigger: Boolean(options?.manualTrigger),
+    conversationId: options?.conversationId || ''
+  });
   return json.data;
 }
 

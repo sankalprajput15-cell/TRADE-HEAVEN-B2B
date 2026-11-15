@@ -3820,9 +3820,11 @@ switch ($action) {
                         $conds[] = "LOWER(c.supplier_email) = ?";
                         $params[] = $supplier_email;
                     }
-                    if (!empty($conds)) {
-                        $sql .= " WHERE (" . implode(" OR ", $conds) . ")";
+                    if (empty($conds)) {
+                        echo json_encode(["status" => "success", "success" => true, "data" => []]);
+                        break;
                     }
+                    $sql .= " WHERE (" . implode(" OR ", $conds) . ")";
                 }
                 $sql .= " ORDER BY c.updated_at DESC";
                 $stmt = $pdo->prepare($sql);
@@ -4215,7 +4217,7 @@ switch ($action) {
                     }
 
                     if ($sender_role === 'buyer_identity') {
-                        // Buyer sent -> Supplier hasn't read within 60s
+                        // Buyer sent -> Supplier hasn't read within 60s (+ send Admin Copy so Admin can verify delivery)
                         $target_email = trim(strtolower((string)($meta['supplier_email'] ?? '')));
                         if ($target_email === '' && !empty($meta['supplier_id'])) {
                             try {
@@ -4253,11 +4255,49 @@ switch ($action) {
                               </div>
                             </body></html>";
                             $ok = @mail($target_email, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
-                            if (!$ok) @mail($target_email, $subject, $html_body, $headers_str);
-                            @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_SUPPLIER_ALERT] {$subject} -> {$target_email}\n", FILE_APPEND);
-                            $alerts_sent++;
-                            $supplier_alerts++;
-                            $alert_details[] = ['conversationId' => $conv_id, 'targetRole' => 'supplier', 'recipient' => $target_email, 'subject' => $subject, 'messageCount' => count($msgs)];
+                            if (!$ok) {
+                                $ok = @mail($target_email, $subject, $html_body, $headers_str);
+                            }
+
+                            $admin_recipients = ['sankalprajput15@gmail.com', 'solutionthe87@gmail.com', 'yr943334@gmail.com'];
+                            $env_r = getenv('ALERT_EMAIL');
+                            if (!empty($env_r)) {
+                                foreach (explode(',', $env_r) as $er) {
+                                    $er = trim(strtolower($er));
+                                    if ($er && filter_var($er, FILTER_VALIDATE_EMAIL) && !in_array($er, $admin_recipients, true)) {
+                                        $admin_recipients[] = $er;
+                                    }
+                                }
+                            }
+                            $admin_copy_ok = false;
+                            $admin_copy_subject = "[Admin Copy] {$subject} -> {$target_email}";
+                            foreach ($admin_recipients as $ar) {
+                                $aok = @mail($ar, $admin_copy_subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+                                if (!$aok) {
+                                    $aok = @mail($ar, $admin_copy_subject, $html_body, $headers_str);
+                                }
+                                if ($aok) $admin_copy_ok = true;
+                            }
+
+                            @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_SUPPLIER_ALERT] {$subject} -> {$target_email} (supplierOk=" . ($ok ? '1' : '0') . ", adminCopyOk=" . ($admin_copy_ok ? '1' : '0') . ")\n", FILE_APPEND);
+                            if ($ok || $admin_copy_ok) {
+                                $alerts_sent++;
+                                $supplier_alerts++;
+                            }
+                            $alert_details[] = [
+                                'conversationId' => $conv_id,
+                                'targetRole' => 'supplier',
+                                'recipient' => $target_email,
+                                'subject' => $subject,
+                                'messageCount' => count($msgs),
+                                'messageIds' => $msg_ids,
+                                'supplierMailAccepted' => (bool)$ok,
+                                'adminCopyRecipients' => $admin_recipients,
+                                'adminCopyAccepted' => (bool)$admin_copy_ok
+                            ];
+                            if (!$ok && !$admin_copy_ok) {
+                                continue;
+                            }
                         }
                     } else {
                         // Supplier sent -> Admin hasn't read within 60s
@@ -4290,14 +4330,30 @@ switch ($action) {
                             </div>
                           </div>
                         </body></html>";
+                        $admin_ok = false;
                         foreach ($admin_recipients as $ar) {
                             $ok = @mail($ar, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
-                            if (!$ok) @mail($ar, $subject, $html_body, $headers_str);
+                            if (!$ok) $ok = @mail($ar, $subject, $html_body, $headers_str);
+                            if ($ok) $admin_ok = true;
                         }
-                        @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_ADMIN_ALERT] {$subject} -> " . implode(', ', $admin_recipients) . "\n", FILE_APPEND);
-                        $alerts_sent++;
-                        $admin_alerts++;
-                        $alert_details[] = ['conversationId' => $conv_id, 'targetRole' => 'admin', 'recipient' => implode(', ', $admin_recipients), 'subject' => $subject, 'messageCount' => count($msgs)];
+                        @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_ADMIN_ALERT] {$subject} -> " . implode(', ', $admin_recipients) . " (ok=" . ($admin_ok ? '1' : '0') . ")\n", FILE_APPEND);
+                        if ($admin_ok) {
+                            $alerts_sent++;
+                            $admin_alerts++;
+                        }
+                        $alert_details[] = [
+                            'conversationId' => $conv_id,
+                            'targetRole' => 'admin',
+                            'recipient' => implode(', ', $admin_recipients),
+                            'subject' => $subject,
+                            'messageCount' => count($msgs),
+                            'messageIds' => $msg_ids,
+                            'adminCopyRecipients' => $admin_recipients,
+                            'adminCopyAccepted' => (bool)$admin_ok
+                        ];
+                        if (!$admin_ok) {
+                            continue;
+                        }
                     }
 
                     // Mark all messages in group as email_alert_sent = 1

@@ -6,14 +6,17 @@ import {
   MultiChatMessage
 } from '../../types';
 import {
+  ChatThreadInsight,
   createBuyerIdentity,
   createOrGetChatConversation,
   deleteBuyerIdentity,
   fetchBuyerIdentities,
   fetchChatConversations,
   fetchChatMessages,
+  fetchChatThreadInsight,
   markChatMessagesRead,
   processUnseenChatAlerts,
+  reverifyChatEmailAlert,
   sendChatMessage,
   subscribeMultiIdentityChatEvents,
   toggleChatVisibility,
@@ -136,7 +139,9 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
   const [checkingAlerts, setCheckingAlerts] = useState(false);
+  const [reverifyingMsgId, setReverifyingMsgId] = useState<string | null>(null);
   const [alertStatusBanner, setAlertStatusBanner] = useState<string | null>(null);
+  const [threadInsight, setThreadInsight] = useState<ChatThreadInsight | null>(null);
 
   // Filters & Top Switcher
   const [sidebarSearch, setSidebarSearch] = useState('');
@@ -221,6 +226,22 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     }
   }, []);
 
+  const conversationsRef = useRef<ChatConversation[]>([]);
+  conversationsRef.current = conversations;
+
+  const loadThreadInsight = useCallback(async (conv: ChatConversation | null) => {
+    if (!conv) {
+      setThreadInsight(null);
+      return;
+    }
+    const insight = await fetchChatThreadInsight({
+      conversationId: conv.id,
+      supplierEmail: conv.supplierEmail,
+      supplierId: conv.supplierId
+    });
+    setThreadInsight(insight);
+  }, []);
+
   const refreshDeskData = useCallback(async (alsoReloadActiveMessages = false) => {
     try {
       const [idList, convList] = await Promise.all([
@@ -229,18 +250,22 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       ]);
       setIdentities(idList);
       setConversations(convList);
+      conversationsRef.current = convList;
       if (idList.length > 0) {
         setSwitcherIdentityId(prev => (prev && idList.some(i => i.id === prev) ? prev : idList[0].id));
       }
+      const targetConvId = selectedConvIdRef.current || (convList[0]?.id ?? '');
       if (!selectedConvIdRef.current && convList.length > 0) {
         setSelectedConvId(convList[0].id);
       } else if (alsoReloadActiveMessages && selectedConvIdRef.current) {
         await loadMessagesForThread(selectedConvIdRef.current, true);
       }
+      const activeConvObj = convList.find(c => c.id === targetConvId) || null;
+      void loadThreadInsight(activeConvObj);
     } finally {
       setLoadingInitial(false);
     }
-  }, [loadMessagesForThread]);
+  }, [loadMessagesForThread, loadThreadInsight]);
 
   useEffect(() => {
     void refreshDeskData();
@@ -250,10 +275,13 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
   useEffect(() => {
     if (selectedConvId) {
       void loadMessagesForThread(selectedConvId);
+      const convObj = conversationsRef.current.find(c => c.id === selectedConvId) || null;
+      void loadThreadInsight(convObj);
     } else {
       setMessages([]);
+      setThreadInsight(null);
     }
-  }, [selectedConvId, loadMessagesForThread]);
+  }, [selectedConvId, loadMessagesForThread, loadThreadInsight]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -601,24 +629,80 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     setCheckingAlerts(true);
     setAlertStatusBanner(null);
     try {
-      const summary = await processUnseenChatAlerts(60);
-      if (summary.alertsSent > 0) {
+      const summary = await processUnseenChatAlerts(60, { manualTrigger: true });
+      await refreshDeskData(true);
+      if (summary.alertsSent > 0 || (summary.adminCopiesSent || 0) > 0) {
         const idSet = new Set(summary.messageIds || []);
         setMessages(prev =>
           prev.map(m =>
             idSet.has(m.id) ? { ...m, emailAlertSent: true, emailAlertSentAt: new Date().toISOString() } : m
           )
         );
+        const sentSummary = (summary.details || [])
+          .filter(d => d.supplierMailAccepted || d.adminCopyAccepted)
+          .map(d =>
+            d.targetRole === 'admin_copy'
+              ? `Admin Copy (${d.recipient})`
+              : `${d.recipient} [Supplier: ${d.supplierMailAccepted ? 'Sent' : 'Failed'}, Admin Copy: ${d.adminCopyAccepted ? 'Sent' : 'Failed'}]`
+          )
+          .join('; ');
         setAlertStatusBanner(
-          `Dispatched ${summary.alertsSent} urgent 1-minute unseen alert email(s) (${summary.supplierAlerts} supplier, ${summary.adminAlerts} admin).`
+          `SMTP Alert Scan (${summary.smtpVerified ? 'Verified SMTP' : 'Mail Relay'}): ${summary.supplierAlerts} supplier alert(s), ${summary.adminCopiesSent || 0} admin copy/copies dispatched.${sentSummary ? ` Details: ${sentSummary}` : ''}`
+        );
+      } else if ((summary.failedCount || 0) > 0) {
+        const firstErr = summary.details?.find(d => d.error)?.error || 'SMTP/mail relay rejected delivery';
+        setAlertStatusBanner(
+          `Found pending >60s alert(s) across ${summary.checkedConversations || 0} thread(s), but delivery failed: ${firstErr}`
         );
       } else {
-        setAlertStatusBanner('No unseen messages older than 60 seconds pending email alert.');
+        setAlertStatusBanner(
+          `Scanned ${summary.checkedConversations || 0} thread(s) (${summary.checkedMessages || 0} message(s)): no unverified >60s buyer/supplier messages pending delivery.`
+        );
       }
     } catch {
       setAlertStatusBanner('Unable to check 1-minute unseen alerts right now.');
     } finally {
       setCheckingAlerts(false);
+    }
+  };
+
+  const handleReverifyMessageAlert = async (msg: MultiChatMessage) => {
+    if (!activeConversation || reverifyingMsgId) return;
+    setReverifyingMsgId(msg.id);
+    try {
+      const result = await reverifyChatEmailAlert({
+        conversationId: activeConversation.id,
+        messageId: msg.id,
+        messageText: msg.messageText,
+        supplierEmail: activeConversation.supplierEmail,
+        supplierName: activeConversation.supplierName,
+        supplierCompany: activeConversation.supplierCompany,
+        buyerName: activeFullIdentity?.buyerName || activeConversation.identity?.buyerName || 'International Buyer',
+        buyerCountry: activeFullIdentity?.country || activeConversation.identity?.country || 'Global'
+      });
+      if (result.data) {
+        setThreadInsight(prev =>
+          prev
+            ? {
+                ...prev,
+                emailAlertReceiptsByMsgId: {
+                  ...(prev.emailAlertReceiptsByMsgId || {}),
+                  [msg.id]: result.data!
+                }
+              }
+            : prev
+        );
+        const r = result.data;
+        setAlertStatusBanner(
+          `Re-verify result -> Supplier (${r.supplierEmail}): ${r.supplierMailAccepted ? 'Accepted' : 'Failed'} | Admin Copy (${r.adminCopyRecipients.join(', ')}): ${r.adminCopyAccepted ? 'Accepted' : 'Failed'}${r.error ? ` — ${r.error}` : ''}`
+        );
+      } else {
+        setAlertStatusBanner(result.message || 'Unable to re-verify email alert delivery.');
+      }
+    } catch {
+      setAlertStatusBanner('Network error while re-verifying email alert delivery.');
+    } finally {
+      setReverifyingMsgId(null);
     }
   };
 
@@ -656,14 +740,14 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
               disabled={checkingAlerts}
               onClick={() => void handleRunUnseenAlertCheck()}
               className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
-              title="Scan all unread messages older than 60 seconds and send urgent deal alert emails"
+              title="Scan all live threads for unverified/unseen >60s messages and send verified SMTP alerts to both Supplier and Admin Copy"
             >
               {checkingAlerts ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <BellRing className="h-3.5 w-3.5" />
               )}
-              <span>Check 1m Alerts</span>
+              <span>{checkingAlerts ? 'Checking Alerts...' : 'Check 1m Alerts'}</span>
             </button>
             <button
               type="button"
@@ -922,13 +1006,21 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
 
                     {conv.lastMessage && (
                       <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-600">
-                        {conv.lastMessageSenderRole === 'buyer_identity' && (
-                          <MessageReadStatus
-                            isRead={Boolean(conv.lastMessageIsRead)}
-                            variant="compact"
-                            recipientLabel="supplier"
-                          />
-                        )}
+                        {conv.lastMessageSenderRole === 'buyer_identity' && (() => {
+                          const sEmail = String(conv.supplierEmail || '').trim().toLowerCase();
+                          const convVerified = Boolean(
+                            threadInsight?.verifiedConvReadIds?.includes(conv.id) ||
+                            (sEmail && threadInsight?.verifiedEmailsByLogin?.includes(sEmail))
+                          );
+                          return (
+                            <MessageReadStatus
+                              isRead={Boolean(conv.lastMessageIsRead)}
+                              unconfirmedRead={Boolean(conv.lastMessageIsRead && !convVerified)}
+                              variant="compact"
+                              recipientLabel="supplier"
+                            />
+                          );
+                        })()}
                         <p className="truncate">{conv.lastMessage}</p>
                       </div>
                     )}
@@ -1049,11 +1141,75 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
                 <span className="shrink-0 text-[10px] text-slate-400">Changes sync live to supplier</span>
               </div>
 
-              {/* Messages List */}
+              {/* Messages List (Focused Container) */}
               <div
                 ref={messagesContainerRef}
                 className="flex-1 min-h-[280px] sm:min-h-[320px] max-h-[55vh] lg:max-h-none space-y-3 overflow-y-auto overflow-x-hidden bg-slate-50/40 p-3 sm:p-4"
               >
+                {(() => {
+                  const supplierReplies = messages.filter(m => m.senderRole === 'supplier');
+                  const lastSupplierReplyMs = supplierReplies.reduce((maxMs, m) => {
+                    const t = new Date(m.createdAt).getTime();
+                    return Number.isFinite(t) && t > maxMs ? t : maxMs;
+                  }, 0);
+                  const hasVerifiedLogin = Boolean(threadInsight?.hasVerifiedLogin);
+                  const verifiedReadIdsSet = new Set<string>(threadInsight?.verifiedMessageIds || []);
+                  const hasAnyUnconfirmedDbRead = messages.some(m => {
+                    if (m.senderRole !== 'buyer_identity' || !m.isRead) return false;
+                    const msgCreatedMs = new Date(m.createdAt).getTime();
+                    const confirmed =
+                      verifiedReadIdsSet.has(m.id) ||
+                      hasVerifiedLogin ||
+                      (lastSupplierReplyMs > 0 && msgCreatedMs <= lastSupplierReplyMs);
+                    return !confirmed;
+                  });
+                  const alertReceiptsMap = threadInsight?.emailAlertReceiptsByMsgId || {};
+                  const buyerAlertMsgs = messages.filter(
+                    m => m.senderRole === 'buyer_identity' && (m.emailAlertSent || Boolean(alertReceiptsMap[m.id]))
+                  );
+                  const verifiedAlertsCount = buyerAlertMsgs.filter(
+                    m => alertReceiptsMap[m.id]?.supplierMailAccepted && alertReceiptsMap[m.id]?.adminCopyAccepted
+                  ).length;
+                  const unverifiedAlertsCount = buyerAlertMsgs.length - verifiedAlertsCount;
+
+                  return (
+                    <div
+                      data-testid="real-supplier-login-insight"
+                      className={`rounded-xl border px-3 py-2 text-[11px] leading-snug ${
+                        hasVerifiedLogin || supplierReplies.length > 0
+                          ? 'border-emerald-200 bg-emerald-50/80 text-emerald-900'
+                          : 'border-amber-200 bg-amber-50/90 text-amber-950'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-bold">
+                          {hasVerifiedLogin
+                            ? threadInsight?.isCurrentlyOnline
+                              ? `Verified Supplier Session Active (${activeConversation.supplierEmail || activeConversation.supplierName})`
+                              : `Verified Supplier Login Recorded: ${new Date(threadInsight?.lastLoginAt || '').toLocaleString()}`
+                            : supplierReplies.length > 0
+                              ? `Supplier Replied in Thread (${new Date(lastSupplierReplyMs).toLocaleString()})`
+                              : `No Supplier Login Recorded Yet (${activeConversation.supplierEmail || activeConversation.supplierName})`}
+                        </span>
+                        <span className="text-[10px] font-semibold opacity-90">
+                          {buyerAlertMsgs.length === 0
+                            ? 'No email alert triggered yet'
+                            : unverifiedAlertsCount > 0
+                              ? `DB Flag Only: ${unverifiedAlertsCount} unverified (0 admin copy) • ${verifiedAlertsCount} verified`
+                              : `Verified Alerts: ${verifiedAlertsCount} (Supplier + Admin Copy)`}
+                        </span>
+                      </div>
+                      {!hasVerifiedLogin && supplierReplies.length === 0 && (
+                        <p className="mt-1 text-[10.5px] text-amber-900/90">
+                          {hasAnyUnconfirmedDbRead
+                            ? '0 supplier logins and 0 supplier replies recorded. Earlier DB read flag without a supplier login is shown below as Sent (Unconfirmed) instead of Seen.'
+                            : '0 supplier logins and 0 supplier replies recorded. Message status reflects actual delivery only until the supplier signs in or replies.'}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {loadingMessages ? (
                   <div className="flex items-center justify-center py-12 text-xs text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" /> Loading chat history...
@@ -1068,74 +1224,139 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  messages.map(msg => {
-                    const isBuyerIdentity = msg.senderRole === 'buyer_identity';
-                    return (
-                      <div
-                        key={msg.id}
-                        data-chat-message-id={msg.id}
-                        className={`flex min-w-0 ${isBuyerIdentity ? 'justify-end' : 'justify-start'}`}
-                      >
+                  (() => {
+                    const supplierReplies = messages.filter(m => m.senderRole === 'supplier');
+                    const lastSupplierReplyMs = supplierReplies.reduce((maxMs, m) => {
+                      const t = new Date(m.createdAt).getTime();
+                      return Number.isFinite(t) && t > maxMs ? t : maxMs;
+                    }, 0);
+                    const hasVerifiedLogin = Boolean(threadInsight?.hasVerifiedLogin);
+                    const lastLoginMs = threadInsight?.lastLoginAt
+                      ? new Date(threadInsight.lastLoginAt).getTime()
+                      : 0;
+                    const verifiedReadIdsSet = new Set<string>(threadInsight?.verifiedMessageIds || []);
+
+                    return messages.map(msg => {
+                      const isBuyerIdentity = msg.senderRole === 'buyer_identity';
+                      const msgCreatedMs = new Date(msg.createdAt).getTime();
+                      const readAtMs = msg.readAt ? new Date(msg.readAt).getTime() : 0;
+                      const isConfirmedSupplierRead = Boolean(
+                        msg.isRead &&
+                          (verifiedReadIdsSet.has(msg.id) ||
+                            (hasVerifiedLogin &&
+                              lastLoginMs > 0 &&
+                              (!readAtMs || lastLoginMs <= readAtMs + 60000)) ||
+                            (lastSupplierReplyMs > 0 && msgCreatedMs <= lastSupplierReplyMs))
+                      );
+                      const isUnconfirmedRead = Boolean(isBuyerIdentity && msg.isRead && !isConfirmedSupplierRead);
+
+                      return (
                         <div
-                          className={`min-w-0 max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-xs sm:max-w-[75%] overflow-hidden ${
-                            isBuyerIdentity
-                              ? 'rounded-br-sm bg-blue-600 text-white'
-                              : 'rounded-bl-sm border border-slate-200 bg-white text-slate-900'
-                          }`}
+                          key={msg.id}
+                          data-chat-message-id={msg.id}
+                          className={`flex min-w-0 ${isBuyerIdentity ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold ${isBuyerIdentity ? 'text-blue-100' : 'text-slate-500'}`}>
-                            <span>
-                              {isBuyerIdentity
-                                ? `${activeFullIdentity?.buyerName || activeConversation.identity?.buyerName || 'Buyer Identity'}`
-                                : activeConversation.supplierName}
-                            </span>
-                            <span>•</span>
-                            <span>{formatChatTime(msg.createdAt)}</span>
+                          <div
+                            className={`min-w-0 max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-xs sm:max-w-[75%] overflow-hidden ${
+                              isBuyerIdentity
+                                ? 'rounded-br-sm bg-blue-600 text-white'
+                                : 'rounded-bl-sm border border-slate-200 bg-white text-slate-900'
+                            }`}
+                          >
+                            <div className={`mb-1 flex items-center gap-1.5 text-[10px] font-bold ${isBuyerIdentity ? 'text-blue-100' : 'text-slate-500'}`}>
+                              <span>
+                                {isBuyerIdentity
+                                  ? `${activeFullIdentity?.buyerName || activeConversation.identity?.buyerName || 'Buyer Identity'}`
+                                  : activeConversation.supplierName}
+                              </span>
+                              <span>•</span>
+                              <span>{formatChatTime(msg.createdAt)}</span>
+                            </div>
+
+                            <ChatMediaBubbleContent message={msg} isOwnMessage={isBuyerIdentity} />
+
+                            {msg.messageText && (
+                              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                                {msg.messageText}
+                              </p>
+                            )}
+
+                            {isBuyerIdentity ? (
+                              <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
+                                {(msg.emailAlertSent || Boolean(threadInsight?.emailAlertReceiptsByMsgId?.[msg.id])) && (() => {
+                                  const alertReceipt = threadInsight?.emailAlertReceiptsByMsgId?.[msg.id];
+                                  const isFullyVerified = Boolean(
+                                    alertReceipt?.supplierMailAccepted && alertReceipt?.adminCopyAccepted
+                                  );
+                                  const isReverifying = reverifyingMsgId === msg.id;
+                                  const supplierTarget = alertReceipt?.supplierEmail || activeConversation.supplierEmail || 'supplier';
+                                  const adminList = (alertReceipt?.adminCopyRecipients || threadInsight?.adminAlertRecipients || []).join(', ');
+                                  return (
+                                    <span
+                                      className={`inline-flex flex-wrap items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                                        isFullyVerified
+                                          ? 'bg-emerald-400/25 text-emerald-100'
+                                          : 'bg-amber-400/20 text-amber-100'
+                                      }`}
+                                      title={
+                                        alertReceipt
+                                          ? `To: ${supplierTarget} (${alertReceipt.supplierMailAccepted ? 'Accepted' : 'Failed'}) | Admin Copy: ${adminList} (${alertReceipt.adminCopyAccepted ? 'Accepted' : 'Failed'}) | Mode: ${alertReceipt.deliveryMode} | At: ${new Date(alertReceipt.sentAt).toLocaleString()}${alertReceipt.error ? ` | Error: ${alertReceipt.error}` : ''}`
+                                          : `DB flag at ${msg.emailAlertSentAt || 'unknown'}: PHP mail() ran without SMTP verification or Admin Copy (${supplierTarget} only). Click Re-verify to send to both Supplier + Admin Copy.`
+                                      }
+                                    >
+                                      <BellRing className="h-2.5 w-2.5 shrink-0" />
+                                      {isFullyVerified ? (
+                                        <span>
+                                          Verified Alert → {supplierTarget} + Admin Copy
+                                        </span>
+                                      ) : alertReceipt ? (
+                                        <span>
+                                          Alert Partial ({supplierTarget}: {alertReceipt.supplierMailAccepted ? 'OK' : 'Fail'}, Admin Copy: {alertReceipt.adminCopyAccepted ? 'OK' : 'Fail'})
+                                        </span>
+                                      ) : (
+                                        <span>
+                                          Unverified PHP Alert → {supplierTarget} (0 Admin Copy)
+                                        </span>
+                                      )}
+                                      {!isFullyVerified && (
+                                        <button
+                                          type="button"
+                                          disabled={isReverifying}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void handleReverifyMessageAlert(msg);
+                                          }}
+                                          className="ml-1 rounded bg-white/20 px-1.5 py-0.2 text-[9px] font-extrabold text-white hover:bg-white/30 disabled:opacity-60"
+                                        >
+                                          {isReverifying ? 'Sending...' : 'Re-verify & Copy Admin'}
+                                        </button>
+                                      )}
+                                    </span>
+                                  );
+                                })()}
+                                <MessageReadStatus
+                                  isRead={isConfirmedSupplierRead}
+                                  readAt={isConfirmedSupplierRead ? msg.readAt : undefined}
+                                  unconfirmedRead={isUnconfirmedRead}
+                                  variant="bubble"
+                                  recipientLabel="supplier"
+                                />
+                              </div>
+                            ) : (
+                              <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-slate-400">
+                                {msg.emailAlertSent && (
+                                  <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700 border border-amber-200">
+                                    <BellRing className="h-2.5 w-2.5" /> 1m Admin Alert Sent
+                                  </span>
+                                )}
+                                <span>{msg.isRead ? 'Seen' : 'Unseen'}</span>
+                              </div>
+                            )}
                           </div>
-
-                          <ChatMediaBubbleContent message={msg} isOwnMessage={isBuyerIdentity} />
-
-                          {msg.messageText && (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                              {msg.messageText}
-                            </p>
-                          )}
-
-                          {isBuyerIdentity ? (
-                            <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
-                              {msg.emailAlertSent && (
-                                <span
-                                  className="inline-flex items-center gap-1 rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-100"
-                                  title={
-                                    msg.emailAlertSentAt
-                                      ? `1-minute unseen alert emailed at ${new Date(msg.emailAlertSentAt).toLocaleString()}`
-                                      : '1-minute unseen alert email sent to supplier'
-                                  }
-                                >
-                                  <BellRing className="h-2.5 w-2.5" /> 1m Alert Sent
-                                </span>
-                              )}
-                              <MessageReadStatus
-                                isRead={Boolean(msg.isRead)}
-                                readAt={msg.readAt}
-                                variant="bubble"
-                                recipientLabel="supplier"
-                              />
-                            </div>
-                          ) : (
-                            <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-slate-400">
-                              {msg.emailAlertSent && (
-                                <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-700 border border-amber-200">
-                                  <BellRing className="h-2.5 w-2.5" /> 1m Admin Alert Sent
-                                </span>
-                              )}
-                              <span>{msg.isRead ? 'Seen' : 'Unseen'}</span>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    });
+                  })()
                 )}
                 <div ref={messagesEndRef} />
               </div>

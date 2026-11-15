@@ -5,17 +5,18 @@ export function setupChatViewportReadObserver(
   containerEl: HTMLElement | null,
   conversationId: string | null,
   readerRole: ChatMessageSenderRole,
-  onMessagesMarkedRead?: () => void
+  onMessagesMarkedRead?: () => void,
+  options?: { authToken?: string; enabled?: boolean }
 ): () => void {
-  if (!containerEl || !conversationId) return () => {};
+  if (!containerEl || !conversationId || options?.enabled === false) return () => {};
 
   let timeoutId: number | null = null;
 
   const triggerMarkRead = () => {
-    if (!conversationId) return;
-    void markChatMessagesRead(conversationId, readerRole)
+    if (!conversationId || options?.enabled === false) return;
+    void markChatMessagesRead(conversationId, readerRole, options?.authToken)
       .then(res => {
-        if (res && res.updatedCount > 0) {
+        if (res && res.updatedCount > 0 && !res.skippedUnauthenticated) {
           onMessagesMarkedRead?.();
         }
       })

@@ -86,64 +86,101 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
 
   const supplierId = currentUser?.id || '';
   const supplierEmail = (currentUser?.email || '').trim().toLowerCase();
+  const supplierAuthToken = currentUser?.token;
+  const isAuthenticatedUser = Boolean(currentUser && (supplierId || supplierEmail) && String(currentUser.role || '').toUpperCase() !== 'ADMIN');
 
-  const loadMessages = useCallback(async (convId: string, silent = false) => {
-    if (!convId) {
-      setMessages([]);
-      return;
-    }
-    if (!silent) setLoadingMsgs(true);
-    try {
-      const list = await fetchChatMessages(convId, 'supplier');
-      setMessages(prev => {
-        if (
-          prev.length === list.length &&
-          prev.every((m, idx) =>
-            m.id === list[idx]?.id &&
-            m.isRead === list[idx]?.isRead
-          )
-        ) {
-          return prev;
-        }
-        return list;
-      });
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c
-        )
-      );
-    } finally {
-      if (!silent) setLoadingMsgs(false);
-    }
-  }, []);
-
-  const loadConversations = useCallback(async (alsoReloadActiveMessages = false) => {
-    try {
-      const list = await fetchChatConversations({
-        viewMode: 'supplier',
-        supplierId,
-        supplierEmail
-      });
-      setConversations(list);
-      if (!selectedConvIdRef.current && list.length > 0) {
-        setSelectedConvId(list[0].id);
-      } else if (alsoReloadActiveMessages && selectedConvIdRef.current) {
-        await loadMessages(selectedConvIdRef.current, true);
+  const doesUserMatchConv = useCallback(
+    (conv: ChatConversation | null | undefined): boolean => {
+      if (!conv || !isAuthenticatedUser) return false;
+      if (supplierEmail && conv.supplierEmail && conv.supplierEmail.trim().toLowerCase() === supplierEmail) {
+        return true;
       }
-    } finally {
-      setLoadingThreads(false);
-    }
-  }, [supplierId, supplierEmail, loadMessages]);
+      if (supplierId && conv.supplierId) {
+        if (conv.supplierId === supplierId) return true;
+        const normConv = conv.supplierId.replace(/^(supp-|user-supplier-)/i, '');
+        const normUser = supplierId.replace(/^(supp-|user-supplier-)/i, '');
+        if (normConv && normUser && normConv === normUser) return true;
+      }
+      return false;
+    },
+    [isAuthenticatedUser, supplierEmail, supplierId]
+  );
+
+  const conversationsRef = useRef<ChatConversation[]>([]);
+  conversationsRef.current = conversations;
+
+  const loadMessages = useCallback(
+    async (convId: string, silent = false) => {
+      if (!convId || !isAuthenticatedUser) {
+        setMessages([]);
+        return;
+      }
+      if (!silent) setLoadingMsgs(true);
+      try {
+        const matchedConv = conversationsRef.current.find(c => c.id === convId);
+        const canMarkRead = Boolean(supplierAuthToken && doesUserMatchConv(matchedConv));
+        const list = await fetchChatMessages(
+          convId,
+          canMarkRead ? 'supplier' : undefined,
+          supplierAuthToken
+        );
+        setMessages(prev => {
+          if (
+            prev.length === list.length &&
+            prev.every((m, idx) => m.id === list[idx]?.id && m.isRead === list[idx]?.isRead)
+          ) {
+            return prev;
+          }
+          return list;
+        });
+        if (canMarkRead) {
+          setConversations(prev =>
+            prev.map(c => (c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c))
+          );
+        }
+      } finally {
+        if (!silent) setLoadingMsgs(false);
+      }
+    },
+    [isAuthenticatedUser, supplierAuthToken, doesUserMatchConv]
+  );
+
+  const loadConversations = useCallback(
+    async (alsoReloadActiveMessages = false) => {
+      if (!isAuthenticatedUser) {
+        setConversations([]);
+        setLoadingThreads(false);
+        return;
+      }
+      try {
+        const list = await fetchChatConversations({
+          viewMode: 'supplier',
+          supplierId,
+          supplierEmail
+        });
+        conversationsRef.current = list;
+        setConversations(list);
+        if (!selectedConvIdRef.current && list.length > 0) {
+          setSelectedConvId(list[0].id);
+        } else if (alsoReloadActiveMessages && selectedConvIdRef.current) {
+          await loadMessages(selectedConvIdRef.current, true);
+        }
+      } finally {
+        setLoadingThreads(false);
+      }
+    },
+    [isAuthenticatedUser, supplierId, supplierEmail, loadMessages]
+  );
 
   useEffect(() => {
     void loadConversations();
   }, [loadConversations]);
 
   useEffect(() => {
-    if (selectedConvId) {
+    if (selectedConvId && isAuthenticatedUser) {
       void loadMessages(selectedConvId);
     }
-  }, [selectedConvId, loadMessages]);
+  }, [selectedConvId, isAuthenticatedUser, loadMessages]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -152,11 +189,13 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
     }
   }, [messages.length, selectedConvId]);
 
-  // Viewport Intersection & Open Thread Read Observer for Supplier
+  // Viewport Intersection & Open Thread Read Observer for Supplier (Authenticated Owner Only)
   useEffect(() => {
     const container = messagesContainerRef.current;
     const convId = selectedConvId;
-    if (!container || !convId) return;
+    const matchedConv = conversations.find(c => c.id === convId);
+    const canMarkRead = Boolean(supplierAuthToken && doesUserMatchConv(matchedConv));
+    if (!container || !convId || !canMarkRead) return;
 
     const cleanup = setupChatViewportReadObserver(
       container,
@@ -173,19 +212,29 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
         setConversations(prev =>
           prev.map(c => (c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c))
         );
-      }
+      },
+      { authToken: supplierAuthToken, enabled: canMarkRead }
     );
     return cleanup;
-  }, [selectedConvId, messages.length]);
+  }, [selectedConvId, messages.length, conversations, supplierAuthToken, doesUserMatchConv]);
 
-  // Mark incoming buyer messages as read when browser tab regains visibility/focus
+  // Mark incoming buyer messages as read when authenticated supplier tab regains visibility/focus
   useEffect(() => {
     const syncVisibleRead = () => {
       const convId = selectedConvIdRef.current;
-      if (!convId || document.visibilityState !== 'visible') return;
+      const matchedConv = conversationsRef.current.find(c => c.id === convId);
+      if (
+        !convId ||
+        document.visibilityState !== 'visible' ||
+        !supplierAuthToken ||
+        !doesUserMatchConv(matchedConv)
+      ) {
+        return;
+      }
       const hasUnreadIncoming = messages.some(m => m.senderRole === 'buyer_identity' && !m.isRead);
       if (hasUnreadIncoming) {
-        void markChatMessagesRead(convId, 'supplier').then(() => {
+        void markChatMessagesRead(convId, 'supplier', supplierAuthToken).then(res => {
+          if (res?.skippedUnauthenticated) return;
           setMessages(prev =>
             prev.map(m =>
               m.senderRole === 'buyer_identity' && !m.isRead
@@ -205,9 +254,10 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       window.removeEventListener('focus', syncVisibleRead);
       document.removeEventListener('visibilitychange', syncVisibleRead);
     };
-  }, [messages]);
+  }, [messages, supplierAuthToken, doesUserMatchConv]);
 
   useEffect(() => {
+    if (!isAuthenticatedUser) return;
     const unsub = subscribeMultiIdentityChatEvents(evt => {
       if (evt.type === 'chat:connected') {
         void loadConversations(true);
@@ -218,8 +268,10 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
           setSelectedConvId(convId);
         }
         if (convId && convId === selectedConvIdRef.current && msg) {
+          const matchedConv = conversationsRef.current.find(c => c.id === convId);
+          const canMarkRead = Boolean(supplierAuthToken && doesUserMatchConv(matchedConv));
           const isIncomingAndVisible =
-            msg.senderRole === 'buyer_identity' && document.visibilityState === 'visible';
+            canMarkRead && msg.senderRole === 'buyer_identity' && document.visibilityState === 'visible';
           const normalizedMsg: MultiChatMessage = isIncomingAndVisible
             ? { ...msg, isRead: true, readAt: new Date().toISOString() }
             : msg;
@@ -227,7 +279,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
             prev.some(m => m.id === normalizedMsg.id) ? prev : [...prev, normalizedMsg]
           );
           if (isIncomingAndVisible) {
-            void markChatMessagesRead(convId, 'supplier');
+            void markChatMessagesRead(convId, 'supplier', supplierAuthToken);
           }
         }
         void loadConversations();
@@ -270,10 +322,11 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       }
     });
     return unsub;
-  }, [loadConversations]);
+  }, [isAuthenticatedUser, supplierAuthToken, doesUserMatchConv, loadConversations]);
 
   // Guaranteed periodic & focus fallback sync so incoming admin messages appear within seconds
   useEffect(() => {
+    if (!isAuthenticatedUser) return;
     const syncNow = () => {
       if (document.visibilityState === 'visible') {
         void loadConversations(true);
@@ -287,7 +340,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       window.removeEventListener('focus', syncNow);
       document.removeEventListener('visibilitychange', syncNow);
     };
-  }, [loadConversations]);
+  }, [isAuthenticatedUser, loadConversations]);
 
   const filteredConversations = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -334,6 +387,20 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       setSending(false);
     }
   };
+
+  if (!isAuthenticatedUser) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+          <Lock className="h-6 w-6" />
+        </div>
+        <h2 className="text-base font-extrabold text-slate-900">Supplier Sign-In Required</h2>
+        <p className="mx-auto mt-1 max-w-md text-xs text-slate-600">
+          Please sign in with your registered supplier account to access private buyer inquiries, contact permissions, and message read receipts.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

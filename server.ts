@@ -4,6 +4,8 @@ import fs from 'fs';
 import zlib from 'zlib';
 import net from 'net';
 import dns from 'dns';
+import http from 'http';
+import https from 'https';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -595,6 +597,130 @@ app.use((req, res, next) => {
     return next();
   }
   return publicStaticMiddleware(req, res, next);
+});
+
+function executeUpstreamHttpRequestOnce(
+  targetUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  bodyBuffer?: Buffer,
+  timeoutMs = 15000,
+  redirectsRemaining = 2
+): Promise<{ status: number; headers: Record<string, string | string[] | undefined>; body: Buffer }> {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(targetUrl);
+    const isHttps = parsedUrl.protocol === 'https:';
+    const transport = isHttps ? https : http;
+
+    const reqHeaders: Record<string, string> = {
+      ...headers,
+      Connection: 'close'
+    };
+    if (bodyBuffer && method !== 'GET' && method !== 'HEAD') {
+      reqHeaders['Content-Length'] = String(bodyBuffer.length);
+    }
+
+    const req = transport.request(
+      {
+        hostname: parsedUrl.hostname,
+        port: parsedUrl.port || (isHttps ? 443 : 80),
+        path: `${parsedUrl.pathname}${parsedUrl.search}`,
+        method,
+        headers: reqHeaders,
+        agent: false,
+        family: 4,
+        timeout: timeoutMs
+      },
+      (res) => {
+        const status = res.statusCode || 500;
+        const locationHeader = res.headers.location;
+        if (
+          redirectsRemaining > 0 &&
+          [301, 302, 303, 307, 308].includes(status) &&
+          typeof locationHeader === 'string' &&
+          locationHeader.trim()
+        ) {
+          res.resume();
+          const nextUrl = new URL(locationHeader, parsedUrl).toString();
+          const nextMethod = status === 303 ? 'GET' : method;
+          const nextBody = status === 303 ? undefined : bodyBuffer;
+          executeUpstreamHttpRequestOnce(nextUrl, nextMethod, headers, nextBody, timeoutMs, redirectsRemaining - 1)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+        res.on('end', () => {
+          resolve({
+            status,
+            headers: res.headers as Record<string, string | string[] | undefined>,
+            body: Buffer.concat(chunks)
+          });
+        });
+        res.on('error', reject);
+      }
+    );
+
+    req.on('timeout', () => {
+      req.destroy(new Error(`Upstream timeout after ${timeoutMs}ms`));
+    });
+    req.on('error', reject);
+
+    if (bodyBuffer && method !== 'GET' && method !== 'HEAD') {
+      req.write(bodyBuffer);
+    }
+    req.end();
+  });
+}
+
+async function executeUpstreamHttpRequest(
+  targetUrl: string,
+  method: string,
+  headers: Record<string, string>,
+  bodyBuffer?: Buffer,
+  timeoutMs = 15000
+): Promise<{ status: number; headers: Record<string, string | string[] | undefined>; body: Buffer }> {
+  let lastError: any = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await executeUpstreamHttpRequestOnce(targetUrl, method, headers, bodyBuffer, timeoutMs);
+    } catch (err: any) {
+      lastError = err;
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// Live Upstream Fallback for uploaded chat media or product images stored on production host
+app.get(['/uploads/*', '/assets/uploads/*'], async (req, res, next) => {
+  if (process.env.DISABLE_LIVE_UPSTREAM_PROXY === 'true') return next();
+  const liveOrigin = (process.env.TRADEHEAVEN_LIVE_API_URL || 'https://tradeheaven.net/api.php')
+    .trim()
+    .replace(/\/api\.php.*$/i, '');
+  try {
+    const upstreamRes = await executeUpstreamHttpRequest(
+      `${liveOrigin}${req.originalUrl}`,
+      'GET',
+      { 'User-Agent': 'TradeHeaven-Media-Proxy/1.0' },
+      undefined,
+      12000
+    );
+    if (upstreamRes.status < 200 || upstreamRes.status >= 400) return next();
+    const contentType = upstreamRes.headers['content-type'];
+    if (typeof contentType === 'string') res.setHeader('Content-Type', contentType);
+    const contentLength = upstreamRes.headers['content-length'];
+    if (typeof contentLength === 'string') res.setHeader('Content-Length', contentLength);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.status(upstreamRes.status).send(upstreamRes.body);
+  } catch {
+    return next();
+  }
 });
 
 // Explicit favicon endpoint for Google-Favicon & browser bots
@@ -1627,6 +1753,129 @@ const authAlertEmailConfig = {
   recipientEmail: 'sankalprajput15@gmail.com'
 };
 
+interface VerifiedLoginAuditRecord {
+  email: string;
+  name: string;
+  role: string;
+  companyName: string;
+  country: string;
+  lastLoginAt: string;
+  loginCount: number;
+}
+
+interface VerifiedConvReadRecord {
+  lastVerifiedReadAt: string;
+  lastVerifiedReadByEmail: string;
+  verifiedMessageIds: string[];
+}
+
+export interface VerifiedEmailAlertRecord {
+  messageId: string;
+  conversationId: string;
+  supplierEmail: string;
+  supplierMailAccepted: boolean;
+  adminCopyRecipients: string[];
+  adminCopyAccepted: boolean;
+  deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED';
+  sentAt: string;
+  error?: string;
+}
+
+const CHAT_VERIFIED_READS_FILE = path.join(process.cwd(), 'data', 'chat_verified_reads.json');
+let serverVerifiedLoginsByEmail: Record<string, VerifiedLoginAuditRecord> = {};
+let serverVerifiedConvReadsByConvId: Record<string, VerifiedConvReadRecord> = {};
+let serverVerifiedEmailAlertsByMsgId: Record<string, VerifiedEmailAlertRecord> = {};
+const upstreamTokenActorCache = new Map<string, { email: string; id: string; role: string; expiresAt: number }>();
+
+function loadChatVerifiedAuditStore() {
+  try {
+    if (fs.existsSync(CHAT_VERIFIED_READS_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(CHAT_VERIFIED_READS_FILE, 'utf8'));
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.logins && typeof parsed.logins === 'object') {
+          serverVerifiedLoginsByEmail = parsed.logins;
+        }
+        if (parsed.reads && typeof parsed.reads === 'object') {
+          serverVerifiedConvReadsByConvId = parsed.reads;
+        }
+        if (parsed.emailAlerts && typeof parsed.emailAlerts === 'object') {
+          serverVerifiedEmailAlertsByMsgId = parsed.emailAlerts;
+        }
+      }
+    }
+  } catch {}
+}
+
+function saveChatVerifiedAuditStore() {
+  try {
+    fs.mkdirSync(path.dirname(CHAT_VERIFIED_READS_FILE), { recursive: true });
+    fs.writeFileSync(
+      CHAT_VERIFIED_READS_FILE,
+      JSON.stringify(
+        {
+          logins: serverVerifiedLoginsByEmail,
+          reads: serverVerifiedConvReadsByConvId,
+          emailAlerts: serverVerifiedEmailAlertsByMsgId
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+  } catch {}
+}
+
+loadChatVerifiedAuditStore();
+
+function recordVerifiedEmailAlertAudit(record: VerifiedEmailAlertRecord) {
+  if (!record?.messageId) return;
+  serverVerifiedEmailAlertsByMsgId[record.messageId] = record;
+  saveChatVerifiedAuditStore();
+}
+
+function recordVerifiedLoginAudit(u: {
+  email?: string;
+  name?: string;
+  role?: string;
+  companyName?: string;
+  country?: string;
+}, timestampIso?: string) {
+  const cleanEmail = normalizeRecipientEmail(String(u.email || ''));
+  if (!cleanEmail) return;
+  const existing = serverVerifiedLoginsByEmail[cleanEmail];
+  const nowIso = timestampIso || new Date().toISOString();
+  serverVerifiedLoginsByEmail[cleanEmail] = {
+    email: cleanEmail,
+    name: String(u.name || existing?.name || cleanEmail),
+    role: String(u.role || existing?.role || 'BUYER').toUpperCase(),
+    companyName: String(u.companyName || existing?.companyName || ''),
+    country: String(u.country || existing?.country || ''),
+    lastLoginAt: nowIso,
+    loginCount: (existing?.loginCount || 0) + 1
+  };
+  saveChatVerifiedAuditStore();
+}
+
+function recordVerifiedSupplierReadAudit(convId: string, supplierEmail: string, messageIds: string[]) {
+  if (!convId || !supplierEmail) return;
+  const cleanEmail = normalizeRecipientEmail(supplierEmail);
+  const existing = serverVerifiedConvReadsByConvId[convId] || {
+    lastVerifiedReadAt: new Date().toISOString(),
+    lastVerifiedReadByEmail: cleanEmail,
+    verifiedMessageIds: []
+  };
+  const idSet = new Set<string>(existing.verifiedMessageIds || []);
+  messageIds.forEach(id => {
+    if (id) idSet.add(String(id));
+  });
+  serverVerifiedConvReadsByConvId[convId] = {
+    lastVerifiedReadAt: new Date().toISOString(),
+    lastVerifiedReadByEmail: cleanEmail,
+    verifiedMessageIds: Array.from(idSet)
+  };
+  saveChatVerifiedAuditStore();
+}
+
 function recordPlatformAuthEvent(
   req: express.Request | null,
   eventType: 'LOGIN' | 'LOGOUT',
@@ -1676,6 +1925,19 @@ function recordPlatformAuthEvent(
   recentAuthEventsStore.unshift(eventRecord);
   if (recentAuthEventsStore.length > 200) {
     recentAuthEventsStore.length = 200;
+  }
+
+  if (eventType === 'LOGIN') {
+    recordVerifiedLoginAudit(
+      {
+        email: cleanEmail,
+        name: resolvedName,
+        role: resolvedRole,
+        companyName: resolvedCompany,
+        country: resolvedCountry
+      },
+      timestamp
+    );
   }
 
   if (shouldSendEmail) {
@@ -7327,11 +7589,11 @@ const activeChatWsClients = new Set<WebSocket>();
 const activeChatSseClients = new Set<express.Response>();
 
 function matchesSupplierConversation(
-  c: ServerChatConversationRecord,
+  c: { supplierId?: string; supplierEmail?: string },
   supplierId: string,
   supplierEmail: string
 ): boolean {
-  if (!supplierId && !supplierEmail) return true;
+  if (!supplierId && !supplierEmail) return false;
   if (supplierEmail && c.supplierEmail && c.supplierEmail.trim().toLowerCase() === supplierEmail) {
     return true;
   }
@@ -7418,26 +7680,71 @@ function escapeChatHtml(val: string): string {
 
 let isProcessingUnseenChatAlerts = false;
 
-async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
+function parseChatTimestampMs(raw?: string | null): number {
+  const s = String(raw || '').trim();
+  if (!s) return NaN;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+    return Date.parse(s.replace(' ', 'T') + 'Z');
+  }
+  return new Date(s).getTime();
+}
+
+async function fetchLiveUpstreamJson(action: string, extraParams: Record<string, string> = {}): Promise<any | null> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return null;
+  try {
+    const qs = new URLSearchParams({ action, _t: String(Date.now()), ...extraParams });
+    const upstreamRes = await executeUpstreamHttpRequest(
+      `${LIVE_TRADEHEAVEN_API_URL}?${qs.toString()}`,
+      'GET',
+      { Accept: 'application/json', 'User-Agent': 'TradeHeaven-AlertScanner/1.0' },
+      undefined,
+      12000
+    );
+    if (upstreamRes.status < 200 || upstreamRes.status >= 300) return null;
+    return JSON.parse(upstreamRes.body.toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+async function processUnseenChatAlerts(
+  minAgeSeconds = 60,
+  options?: { manualTrigger?: boolean; conversationId?: string }
+): Promise<{
   processedCount: number;
   alertsSent: number;
   supplierAlerts: number;
   adminAlerts: number;
+  adminCopiesSent: number;
+  failedCount: number;
+  checkedConversations: number;
+  checkedMessages: number;
+  smtpVerified: boolean;
   messageIds: string[];
   details: Array<{
     conversationId: string;
-    targetRole: 'supplier' | 'admin';
+    targetRole: 'supplier' | 'admin' | 'admin_copy';
     recipient: string;
     subject: string;
     messageCount: number;
+    supplierMailAccepted?: boolean;
+    adminCopyAccepted?: boolean;
+    deliveryMode?: string;
+    error?: string;
   }>;
 }> {
+  const smtpVerified = automatedSmtpService.isSmtpConfigured();
   if (isProcessingUnseenChatAlerts) {
     return {
       processedCount: 0,
       alertsSent: 0,
       supplierAlerts: 0,
       adminAlerts: 0,
+      adminCopiesSent: 0,
+      failedCount: 0,
+      checkedConversations: 0,
+      checkedMessages: 0,
+      smtpVerified,
       messageIds: [],
       details: []
     };
@@ -7448,65 +7755,145 @@ async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
     const thresholdMs = Math.max(1, Number(minAgeSeconds) || 60) * 1000;
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
+    const manualTrigger = Boolean(options?.manualTrigger);
+    const filterConvId = String(options?.conversationId || '').trim();
 
-    const dueMessages = serverChatMessagesStore.filter(m => {
-      if (m.isRead || m.emailAlertSent) return false;
-      const createdMs = new Date(m.createdAt).getTime();
-      if (!Number.isFinite(createdMs)) return false;
-      return nowMs - createdMs >= thresholdMs;
-    });
+    // 1. Gather all conversations, buyer identities, and messages from live upstream + local store
+    const convById = new Map<string, any>();
+    const identityById = new Map<string, any>();
+    const msgsByConvId = new Map<string, any[]>();
 
-    if (dueMessages.length === 0) {
-      return {
-        processedCount: 0,
-        alertsSent: 0,
-        supplierAlerts: 0,
-        adminAlerts: 0,
-        messageIds: [],
-        details: []
-      };
+    for (const ident of serverBuyerIdentitiesStore) {
+      identityById.set(ident.id, ident);
+    }
+    for (const conv of serverChatConversationsStore) {
+      if (!filterConvId || conv.id === filterConvId) {
+        convById.set(conv.id, conv);
+      }
+    }
+    for (const m of serverChatMessagesStore) {
+      if (filterConvId && m.conversationId !== filterConvId) continue;
+      const list = msgsByConvId.get(m.conversationId) || [];
+      if (!list.some(x => x.id === m.id)) list.push(m);
+      msgsByConvId.set(m.conversationId, list);
     }
 
-    const groups = new Map<string, ServerChatMessageRecord[]>();
-    for (const msg of dueMessages) {
-      const key = `${msg.conversationId}::${msg.senderRole}`;
-      const list = groups.get(key) || [];
-      list.push(msg);
-      groups.set(key, list);
+    if (LIVE_UPSTREAM_PROXY_ENABLED) {
+      const [liveIdentsRes, liveConvsRes] = await Promise.all([
+        fetchLiveUpstreamJson('get_buyer_identities'),
+        fetchLiveUpstreamJson('get_chat_conversations', { view_mode: 'admin' })
+      ]);
+      if (Array.isArray(liveIdentsRes?.data)) {
+        for (const ident of liveIdentsRes.data) {
+          if (ident?.id) identityById.set(String(ident.id), ident);
+        }
+      }
+      if (Array.isArray(liveConvsRes?.data)) {
+        for (const conv of liveConvsRes.data) {
+          if (!conv?.id) continue;
+          if (filterConvId && String(conv.id) !== filterConvId) continue;
+          convById.set(String(conv.id), conv);
+        }
+      }
+
+      const convIdsToFetch = Array.from(convById.keys());
+      await Promise.all(
+        convIdsToFetch.map(async cid => {
+          const liveMsgsRes = await fetchLiveUpstreamJson('get_chat_messages', { conversation_id: cid });
+          if (Array.isArray(liveMsgsRes?.data)) {
+            const existing = msgsByConvId.get(cid) || [];
+            const seen = new Set(existing.map(x => String(x.id)));
+            for (const m of liveMsgsRes.data) {
+              if (m?.id && !seen.has(String(m.id))) {
+                existing.push(m);
+                seen.add(String(m.id));
+              }
+            }
+            msgsByConvId.set(cid, existing);
+          }
+        })
+      );
     }
 
     const basePortalUrl = (process.env.PUBLIC_PORTAL_URL || 'https://tradeheaven.net').replace(/\/+$/, '');
-    const fromAddress = 'Trade Heaven Deal Desk <noreply@tradeheaven.net>';
+    const adminRecipients = getAlertRecipients();
 
     let processedCount = 0;
     let alertsSent = 0;
     let supplierAlerts = 0;
     let adminAlerts = 0;
+    let adminCopiesSent = 0;
+    let failedCount = 0;
+    let checkedMessages = 0;
     const allMarkedIds: string[] = [];
     const details: Array<{
       conversationId: string;
-      targetRole: 'supplier' | 'admin';
+      targetRole: 'supplier' | 'admin' | 'admin_copy';
       recipient: string;
       subject: string;
       messageCount: number;
+      supplierMailAccepted?: boolean;
+      adminCopyAccepted?: boolean;
+      deliveryMode?: string;
+      error?: string;
     }> = [];
 
-    for (const [, msgs] of groups.entries()) {
-      msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      const first = msgs[0];
-      const conv = serverChatConversationsStore.find(c => c.id === first.conversationId);
-      if (!conv) {
-        for (const m of msgs) {
-          m.emailAlertSent = true;
-          m.emailAlertSentAt = nowIso;
-          allMarkedIds.push(m.id);
-          processedCount += 1;
+    for (const [convId, conv] of convById.entries()) {
+      const convMsgs = msgsByConvId.get(convId) || [];
+      checkedMessages += convMsgs.length;
+      if (convMsgs.length === 0) continue;
+
+      const supplierReplies = convMsgs.filter(m => m.senderRole === 'supplier');
+      const lastSupplierReplyMs = supplierReplies.reduce((mx, m) => {
+        const t = parseChatTimestampMs(m.createdAt);
+        return Number.isFinite(t) && t > mx ? t : mx;
+      }, 0);
+
+      const cleanSupplierEmail = normalizeRecipientEmail(String(conv.supplierEmail || ''));
+      const auditLogin = cleanSupplierEmail ? serverVerifiedLoginsByEmail[cleanSupplierEmail] : undefined;
+      const lastVerifiedLoginMs = auditLogin?.lastLoginAt ? new Date(auditLogin.lastLoginAt).getTime() : 0;
+      const verifiedReadIdsSet = new Set<string>(serverVerifiedConvReadsByConvId[convId]?.verifiedMessageIds || []);
+
+      const isBuyerMsgConfirmedRead = (m: any) => {
+        if (!m.isRead) return false;
+        const createdMs = parseChatTimestampMs(m.createdAt);
+        const readAtMs = m.readAt ? parseChatTimestampMs(m.readAt) : 0;
+        return Boolean(
+          verifiedReadIdsSet.has(String(m.id)) ||
+            (lastVerifiedLoginMs > 0 && (!readAtMs || lastVerifiedLoginMs <= readAtMs + 60000)) ||
+            (lastSupplierReplyMs > 0 && Number.isFinite(createdMs) && createdMs <= lastSupplierReplyMs)
+        );
+      };
+
+      const dueFullBuyerMsgs: any[] = [];
+      const dueAdminCopyOnlyMsgs: any[] = [];
+      const dueSupplierMsgs: any[] = [];
+
+      for (const m of convMsgs) {
+        const createdMs = parseChatTimestampMs(m.createdAt);
+        if (!Number.isFinite(createdMs) || nowMs - createdMs < thresholdMs) continue;
+
+        const existingReceipt = serverVerifiedEmailAlertsByMsgId[String(m.id)];
+        if (m.senderRole === 'buyer_identity') {
+          if (isBuyerMsgConfirmedRead(m)) continue;
+          if (existingReceipt?.supplierMailAccepted && existingReceipt?.adminCopyAccepted) continue;
+
+          if (!m.emailAlertSent && !existingReceipt) {
+            dueFullBuyerMsgs.push(m);
+          } else if (manualTrigger && m.emailAlertSent && !existingReceipt?.adminCopyAccepted) {
+            dueAdminCopyOnlyMsgs.push(m);
+          }
+        } else if (m.senderRole === 'supplier') {
+          if (!m.isRead && !m.emailAlertSent && !existingReceipt) {
+            dueSupplierMsgs.push(m);
+          }
         }
-        continue;
       }
 
-      const identity = serverBuyerIdentitiesStore.find(i => i.id === conv.identityId);
-      const buyerName = identity?.buyerName || 'International Buyer';
+      const identity = identityById.get(conv.identityId) || conv.identity || null;
+      const buyerName = identity?.buyerName && identity.buyerName !== 'Verified Buyer'
+        ? identity.buyerName
+        : 'International Buyer';
       const buyerCountry = identity?.country || 'Global';
       const buyerCity = identity?.city || '';
       const buyerInterest = identity?.productInterest || '';
@@ -7525,98 +7912,203 @@ async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
           ? `${buyerCity}, ${buyerCountry} [Protected]`
           : `${buyerCountry} [Protected]`;
 
-      const snippetsHtml = msgs
-        .slice(-3)
-        .map(m => {
-          const preview =
-            (m.messageText || '').trim() ||
-            `[${String(m.mediaType || 'file').toUpperCase()}: ${m.mediaName || 'Attachment'}]`;
-          return `<li style="margin-bottom:6px;color:#0f172a;">${escapeChatHtml(preview)}</li>`;
-        })
-        .join('');
-      const snippetsText = msgs
-        .slice(-3)
-        .map(m => {
-          const preview =
-            (m.messageText || '').trim() ||
-            `[${String(m.mediaType || 'file').toUpperCase()}: ${m.mediaName || 'Attachment'}]`;
-          return `- ${preview}`;
-        })
-        .join('\n');
+      const buildSnippets = (list: any[]) => ({
+        html: list
+          .slice(-3)
+          .map(m => {
+            const preview =
+              (m.messageText || '').trim() ||
+              `[${String(m.mediaType || 'file').toUpperCase()}: ${m.mediaName || 'Attachment'}]`;
+            return `<li style="margin-bottom:6px;color:#0f172a;">${escapeChatHtml(preview)}</li>`;
+          })
+          .join(''),
+        text: list
+          .slice(-3)
+          .map(m => {
+            const preview =
+              (m.messageText || '').trim() ||
+              `[${String(m.mediaType || 'file').toUpperCase()}: ${m.mediaName || 'Attachment'}]`;
+            return `- ${preview}`;
+          })
+          .join('\n')
+      });
 
-      // Mark before async enqueue inside mutex so overlapping timers never double-send
-      for (const m of msgs) {
-        m.emailAlertSent = true;
-        m.emailAlertSentAt = nowIso;
-        allMarkedIds.push(m.id);
-        processedCount += 1;
+      let targetSupplierEmail = cleanSupplierEmail;
+      if (!targetSupplierEmail && conv.supplierId) {
+        const matchedUser = serverUsersStore.find(u => u.id === conv.supplierId);
+        if (matchedUser?.email) {
+          targetSupplierEmail = normalizeRecipientEmail(matchedUser.email);
+        }
       }
 
-      if (first.senderRole === 'buyer_identity') {
-        let targetEmail = String(conv.supplierEmail || '').trim().toLowerCase();
-        if (!targetEmail && conv.supplierId) {
-          const matchedUser = serverUsersStore.find(u => u.id === conv.supplierId);
-          if (matchedUser?.email) {
-            targetEmail = String(matchedUser.email).trim().toLowerCase();
-          }
-        }
-        if (targetEmail && targetEmail.includes('@')) {
-          const subject = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven`;
-          const replyLink = `${basePortalUrl}/?view=SUPPLIER_MESSAGES`;
-          const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;">
-            <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
-              <div style="background:#0f172a;padding:20px 24px;color:#ffffff;">
-                <h2 style="margin:0;font-size:18px;color:#38bdf8;">Urgent Export Deal Update Pending Reply</h2>
-                <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">You have ${msgs.length} unread message(s) from ${escapeChatHtml(buyerName)} (${escapeChatHtml(buyerCountry)})</p>
-              </div>
-              <div style="padding:24px;">
-                <p style="margin:0 0 14px;font-size:14px;color:#334155;"><strong>Action Required:</strong> An international buyer sent a message over 1 minute ago and is awaiting your response on Trade Heaven.</p>
-                <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;">
-                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;width:140px;">Buyer Name:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerName)}</td></tr>
-                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Company:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeCompany)}</td></tr>
-                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Location:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeAddress)}</td></tr>
-                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Phone:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safePhone)}</td></tr>
-                  <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Email:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeEmail)}</td></tr>
-                  ${buyerInterest ? `<tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Product Interest:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerInterest)}</td></tr>` : ''}
-                </table>
-                <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;">
-                  <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Unread Message Preview:</p>
-                  <ul style="margin:0;padding-left:18px;font-size:13px;">${snippetsHtml}</ul>
-                </div>
-                <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Reply to Buyer Now &rarr;</a>
-              </div>
+      // A. Un-alerted buyer messages -> Send verified SMTP to Supplier + Admin Copy
+      if (dueFullBuyerMsgs.length > 0 && targetSupplierEmail && targetSupplierEmail.includes('@')) {
+        dueFullBuyerMsgs.sort((a, b) => parseChatTimestampMs(a.createdAt) - parseChatTimestampMs(b.createdAt));
+        const snippets = buildSnippets(dueFullBuyerMsgs);
+        const subject = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven`;
+        const replyLink = `${basePortalUrl}/?view=SUPPLIER_MESSAGES`;
+        const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;">
+          <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+            <div style="background:#0f172a;padding:20px 24px;color:#ffffff;">
+              <h2 style="margin:0;font-size:18px;color:#38bdf8;">Urgent Export Deal Update Pending Reply</h2>
+              <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">You have ${dueFullBuyerMsgs.length} unread message(s) from ${escapeChatHtml(buyerName)} (${escapeChatHtml(buyerCountry)})</p>
             </div>
-          </body></html>`;
-          const text = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven\n\nBuyer: ${buyerName}\nCompany: ${safeCompany}\nLocation: ${safeAddress}\nPhone: ${safePhone}\nEmail: ${safeEmail}\n\nUnread Messages:\n${snippetsText}\n\nReply now: ${replyLink}`;
+            <div style="padding:24px;">
+              <p style="margin:0 0 14px;font-size:14px;color:#334155;"><strong>Action Required:</strong> An international buyer sent a message over 1 minute ago and is awaiting your response on Trade Heaven.</p>
+              <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;">
+                <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;width:140px;">Buyer Name:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerName)}</td></tr>
+                <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Company:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeCompany)}</td></tr>
+                <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Location:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeAddress)}</td></tr>
+                <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Phone:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safePhone)}</td></tr>
+                <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Email:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeEmail)}</td></tr>
+                ${buyerInterest ? `<tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Product Interest:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerInterest)}</td></tr>` : ''}
+              </table>
+              <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Unread Message Preview:</p>
+                <ul style="margin:0;padding-left:18px;font-size:13px;">${snippets.html}</ul>
+              </div>
+              <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Reply to Buyer Now &rarr;</a>
+            </div>
+          </div>
+        </body></html>`;
+        const text = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven\n\nBuyer: ${buyerName}\nCompany: ${safeCompany}\nLocation: ${safeAddress}\nPhone: ${safePhone}\nEmail: ${safeEmail}\n\nUnread Messages:\n${snippets.text}\n\nReply now: ${replyLink}`;
 
-          await serverDeliveryQueueManager
-            .enqueueSingle(targetEmail, {
-              from: fromAddress,
-              replyTo: 'help@tradeheaven.net',
-              subject,
-              text,
-              html,
-              dispatchType: 'AUTOMATED',
-              category: 'SYSTEM_ALERT',
-              recipientName: conv.supplierName || conv.supplierCompany || 'Supplier',
-              companyName: conv.supplierCompany || 'Trade Heaven Supplier',
-              skipLegacyInquiryRelay: true
-            })
-            .catch(err => console.warn('[Chat Unseen Alert] Supplier email dispatch error:', err?.message || err));
+        const supplierDispatch = await dispatchVerifiedChatAlertEmail({
+          toEmail: targetSupplierEmail,
+          subject,
+          text,
+          html,
+          recipientName: conv.supplierName || conv.supplierCompany || 'Supplier',
+          companyName: conv.supplierCompany || 'Trade Heaven Supplier'
+        });
 
+        const adminCopySubject = `[Admin Copy] ${subject} -> ${targetSupplierEmail}`;
+        let adminCopyAccepted = false;
+        let adminCopyErr: string | undefined;
+        for (const adminEmail of adminRecipients) {
+          const adminRes = await dispatchVerifiedChatAlertEmail({
+            toEmail: adminEmail,
+            subject: adminCopySubject,
+            text: `${text}\n\n--- Supplier Recipient: ${targetSupplierEmail} (Accepted=${supplierDispatch.accepted}) ---`,
+            html,
+            recipientName: 'Trade Heaven Admin',
+            companyName: 'Trade Heaven Operations'
+          });
+          if (adminRes.accepted) adminCopyAccepted = true;
+          else if (adminRes.error && !adminCopyErr) adminCopyErr = adminRes.error;
+        }
+
+        const combinedError = [supplierDispatch.error, adminCopyErr].filter(Boolean).join(' | ') || undefined;
+        for (const m of dueFullBuyerMsgs) {
+          const localMsg = serverChatMessagesStore.find(x => x.id === m.id);
+          if (localMsg && (supplierDispatch.accepted || adminCopyAccepted)) {
+            localMsg.emailAlertSent = true;
+            localMsg.emailAlertSentAt = nowIso;
+          }
+          recordVerifiedEmailAlertAudit({
+            messageId: String(m.id),
+            conversationId: convId,
+            supplierEmail: targetSupplierEmail,
+            supplierMailAccepted: supplierDispatch.accepted,
+            adminCopyRecipients: adminRecipients,
+            adminCopyAccepted,
+            deliveryMode: supplierDispatch.deliveryMode,
+            sentAt: nowIso,
+            error: combinedError
+          });
+          allMarkedIds.push(String(m.id));
+          processedCount += 1;
+        }
+
+        if (supplierDispatch.accepted) {
           alertsSent += 1;
           supplierAlerts += 1;
-          details.push({
-            conversationId: conv.id,
-            targetRole: 'supplier',
-            recipient: targetEmail,
-            subject,
-            messageCount: msgs.length
-          });
         }
-      } else {
+        if (adminCopyAccepted) {
+          adminCopiesSent += 1;
+        }
+        if (!supplierDispatch.accepted && !adminCopyAccepted) {
+          failedCount += 1;
+        }
+        details.push({
+          conversationId: convId,
+          targetRole: 'supplier',
+          recipient: targetSupplierEmail,
+          subject,
+          messageCount: dueFullBuyerMsgs.length,
+          supplierMailAccepted: supplierDispatch.accepted,
+          adminCopyAccepted,
+          deliveryMode: supplierDispatch.deliveryMode,
+          error: combinedError
+        });
+      }
+
+      // B. On manual Check 1m Alerts click, also deliver missing Admin Copy for legacy PHP-flagged messages
+      if (dueAdminCopyOnlyMsgs.length > 0 && targetSupplierEmail) {
+        dueAdminCopyOnlyMsgs.sort((a, b) => parseChatTimestampMs(a.createdAt) - parseChatTimestampMs(b.createdAt));
+        const snippets = buildSnippets(dueAdminCopyOnlyMsgs);
+        const subject = `[Admin Copy - Legacy PHP Alert] Unread message from ${buyerName} to ${targetSupplierEmail}`;
+        const replyLink = `${basePortalUrl}/?view=CLIENT_ADMIN&tab=BUYER_CHAT_DESK`;
+        const html = `<div style="font-family:Arial,sans-serif;padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;"><h3 style="margin-top:0;color:#0f172a;">Admin Copy: Earlier Buyer Alert (${escapeChatHtml(targetSupplierEmail)})</h3><p>This message previously had only a legacy PHP mail flag with 0 admin copy recorded.</p><ul style="padding-left:18px;">${snippets.html}</ul><p><a href="${replyLink}" style="display:inline-block;background:#0f172a;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;">Open Admin Chat Desk &rarr;</a></p></div>`;
+        const text = `Admin Copy for earlier buyer alert sent to ${targetSupplierEmail}:\n\n${snippets.text}\n\nOpen desk: ${replyLink}`;
+
+        let adminCopyAccepted = false;
+        let lastMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED' = smtpVerified ? 'LIVE_SMTP' : 'PHP_MAIL_RELAY';
+        let adminErr: string | undefined;
+        for (const adminEmail of adminRecipients) {
+          const r = await dispatchVerifiedChatAlertEmail({
+            toEmail: adminEmail,
+            subject,
+            text,
+            html,
+            recipientName: 'Trade Heaven Admin',
+            companyName: 'Trade Heaven Operations'
+          });
+          lastMode = r.deliveryMode;
+          if (r.accepted) adminCopyAccepted = true;
+          else if (r.error && !adminErr) adminErr = r.error;
+        }
+
+        for (const m of dueAdminCopyOnlyMsgs) {
+          recordVerifiedEmailAlertAudit({
+            messageId: String(m.id),
+            conversationId: convId,
+            supplierEmail: targetSupplierEmail,
+            supplierMailAccepted: false, // Legacy PHP flag — supplier SMTP delivery was never verified
+            adminCopyRecipients: adminRecipients,
+            adminCopyAccepted,
+            deliveryMode: lastMode,
+            sentAt: nowIso,
+            error: adminErr || 'Supplier had legacy PHP flag only; Admin Copy delivered now'
+          });
+          allMarkedIds.push(String(m.id));
+          processedCount += 1;
+        }
+
+        if (adminCopyAccepted) {
+          alertsSent += 1;
+          adminCopiesSent += 1;
+        } else {
+          failedCount += 1;
+        }
+        details.push({
+          conversationId: convId,
+          targetRole: 'admin_copy',
+          recipient: adminRecipients.join(', '),
+          subject,
+          messageCount: dueAdminCopyOnlyMsgs.length,
+          supplierMailAccepted: false,
+          adminCopyAccepted,
+          deliveryMode: lastMode,
+          error: adminErr
+        });
+      }
+
+      // C. Unread supplier replies (>60s) -> Admin Alert
+      if (dueSupplierMsgs.length > 0) {
+        dueSupplierMsgs.sort((a, b) => parseChatTimestampMs(a.createdAt) - parseChatTimestampMs(b.createdAt));
+        const snippets = buildSnippets(dueSupplierMsgs);
         const supCompany = conv.supplierCompany || conv.supplierName || 'Verified Supplier';
-        const adminRecipients = getAlertRecipients();
         const subject = `Urgent Supplier Reply: Unread message from ${supCompany} to ${buyerName} on Trade Heaven`;
         const adminLink = `${basePortalUrl}/?view=CLIENT_ADMIN&tab=BUYER_CHAT_DESK`;
         const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;">
@@ -7626,42 +8118,70 @@ async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
               <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">${escapeChatHtml(supCompany)} replied to buyer persona ${escapeChatHtml(buyerName)}</p>
             </div>
             <div style="padding:24px;">
-              <p style="margin:0 0 14px;font-size:14px;color:#334155;">A supplier sent ${msgs.length} message(s) that remain unread in the Admin Multi-Identity Chat Desk after 60 seconds.</p>
+              <p style="margin:0 0 14px;font-size:14px;color:#334155;">A supplier sent ${dueSupplierMsgs.length} message(s) that remain unread in the Admin Multi-Identity Chat Desk after 60 seconds.</p>
               <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:12px 16px;margin-bottom:20px;">
                 <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#92400e;">Supplier Message Preview:</p>
-                <ul style="margin:0;padding-left:18px;font-size:13px;">${snippetsHtml}</ul>
+                <ul style="margin:0;padding-left:18px;font-size:13px;">${snippets.html}</ul>
               </div>
               <a href="${adminLink}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Open Admin Chat Desk &rarr;</a>
             </div>
           </div>
         </body></html>`;
-        const text = `Urgent Supplier Reply: Unread message from ${supCompany} to ${buyerName} on Trade Heaven\n\nMessages:\n${snippetsText}\n\nOpen Admin Chat Desk: ${adminLink}`;
+        const text = `Urgent Supplier Reply: Unread message from ${supCompany} to ${buyerName} on Trade Heaven\n\nMessages:\n${snippets.text}\n\nOpen Admin Chat Desk: ${adminLink}`;
 
+        let adminAccepted = false;
+        let lastMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED' = smtpVerified ? 'LIVE_SMTP' : 'UNCONFIGURED';
+        let lastErr: string | undefined;
         for (const adminEmail of adminRecipients) {
-          await serverDeliveryQueueManager
-            .enqueueSingle(adminEmail, {
-              from: fromAddress,
-              replyTo: 'help@tradeheaven.net',
-              subject,
-              text,
-              html,
-              dispatchType: 'AUTOMATED',
-              category: 'SYSTEM_ALERT',
-              recipientName: 'Trade Heaven Admin',
-              companyName: 'Trade Heaven Operations',
-              skipLegacyInquiryRelay: true
-            })
-            .catch(err => console.warn('[Chat Unseen Alert] Admin email dispatch error:', err?.message || err));
+          const r = await dispatchVerifiedChatAlertEmail({
+            toEmail: adminEmail,
+            subject,
+            text,
+            html,
+            recipientName: 'Trade Heaven Admin',
+            companyName: 'Trade Heaven Operations'
+          });
+          lastMode = r.deliveryMode;
+          if (r.accepted) adminAccepted = true;
+          else if (r.error && !lastErr) lastErr = r.error;
         }
 
-        alertsSent += 1;
-        adminAlerts += 1;
+        for (const m of dueSupplierMsgs) {
+          const localMsg = serverChatMessagesStore.find(x => x.id === m.id);
+          if (localMsg && adminAccepted) {
+            localMsg.emailAlertSent = true;
+            localMsg.emailAlertSentAt = nowIso;
+          }
+          recordVerifiedEmailAlertAudit({
+            messageId: String(m.id),
+            conversationId: convId,
+            supplierEmail: targetSupplierEmail,
+            supplierMailAccepted: true,
+            adminCopyRecipients: adminRecipients,
+            adminCopyAccepted: adminAccepted,
+            deliveryMode: lastMode,
+            sentAt: nowIso,
+            error: lastErr
+          });
+          allMarkedIds.push(String(m.id));
+          processedCount += 1;
+        }
+
+        if (adminAccepted) {
+          alertsSent += 1;
+          adminAlerts += 1;
+        } else {
+          failedCount += 1;
+        }
         details.push({
-          conversationId: conv.id,
+          conversationId: convId,
           targetRole: 'admin',
           recipient: adminRecipients.join(', '),
           subject,
-          messageCount: msgs.length
+          messageCount: dueSupplierMsgs.length,
+          adminCopyAccepted: adminAccepted,
+          deliveryMode: lastMode,
+          error: lastErr
         });
       }
     }
@@ -7673,6 +8193,7 @@ async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
         alertsSent,
         supplierAlerts,
         adminAlerts,
+        adminCopiesSent,
         messageIds: allMarkedIds,
         emailAlertSentAt: nowIso
       });
@@ -7683,12 +8204,493 @@ async function processUnseenChatAlerts(minAgeSeconds = 60): Promise<{
       alertsSent,
       supplierAlerts,
       adminAlerts,
+      adminCopiesSent,
+      failedCount,
+      checkedConversations: convById.size,
+      checkedMessages,
+      smtpVerified,
       messageIds: allMarkedIds,
       details
     };
   } finally {
     isProcessingUnseenChatAlerts = false;
   }
+}
+
+// Live Production Upstream Proxy (https://tradeheaven.net/api.php -> MySQL a17604c7_tradeheaven_db)
+const LIVE_TRADEHEAVEN_API_URL = (process.env.TRADEHEAVEN_LIVE_API_URL || 'https://tradeheaven.net/api.php').trim();
+const LIVE_UPSTREAM_PROXY_ENABLED = process.env.DISABLE_LIVE_UPSTREAM_PROXY !== 'true';
+const LIVE_UPSTREAM_PROXY_ACTIONS = new Set<string>([
+  // Multi-Identity Buyer Chat & Rich Media
+  'get_buyer_identities',
+  'create_buyer_identity',
+  'update_buyer_identity',
+  'delete_buyer_identity',
+  'get_chat_conversations',
+  'create_chat_conversation',
+  'toggle_chat_visibility',
+  'get_chat_messages',
+  'mark_chat_read',
+  'send_chat_message',
+  'upload_chat_media',
+  // Users / Suppliers / Buyers CRM
+  'get_users',
+  'users',
+  'upsert_user',
+  'update_profile',
+  'edit_profile',
+  'toggle_verification',
+  // RFQs & Inquiries
+  'get_rfqs',
+  'rfqs',
+  'submit_rfq',
+  'create_rfq',
+  'auto_batch_persist_rfqs',
+  'auto_batch_persist',
+  'submit_inquiry',
+  'create_inquiry',
+  'submit_quote',
+  // Listings / Products / Catalog / Product Images
+  'get_listings',
+  'listings',
+  'products',
+  'get_products',
+  'create_listing',
+  'update_listing',
+  'submit_listing',
+  'delete_listing',
+  'delete_product',
+  'custom_catalog',
+  'get_custom_catalog',
+  'get_product_images',
+  'product_images',
+  'upload_product_image',
+  'set_product_images',
+  'delete_product_images',
+  // Site Content, Homepage Config, Stats & Market Data
+  'site_content',
+  'get_content',
+  'save_content',
+  'homepage_config',
+  'get_homepage_config',
+  'save_homepage_config',
+  'stats',
+  'get_stats',
+  'commodity_indices',
+  'flash_deals'
+]);
+
+function emitLocalChatEventFromUpstream(action: string, parsed: any, input: Record<string, any>) {
+  if (!parsed || typeof parsed !== 'object' || parsed.status === 'error' || parsed.success === false) return;
+  if (action === 'create_buyer_identity' || action === 'update_buyer_identity') {
+    if (parsed.data) broadcastChatEvent('chat:identity_updated', { identity: parsed.data });
+  } else if (action === 'delete_buyer_identity') {
+    const id = String(parsed.deletedId || input.id || '').trim();
+    if (id) broadcastChatEvent('chat:identity_deleted', { id });
+  } else if (action === 'create_chat_conversation') {
+    if (parsed.data?.id) {
+      broadcastChatEvent('chat:conversation_created', {
+        conversationId: parsed.data.id,
+        supplierId: input.supplierId || input.supplier_id || parsed.data.supplierId,
+        identityId: input.identityId || input.identity_id || parsed.data.identityId
+      });
+    }
+  } else if (action === 'toggle_chat_visibility') {
+    const convId = String(parsed.data?.conversationId || input.conversationId || input.conversation_id || input.id || '').trim();
+    if (convId) {
+      broadcastChatEvent('chat:visibility_updated', {
+        conversationId: convId,
+        showPhone: parsed.data?.showPhone,
+        showEmail: parsed.data?.showEmail,
+        showCompany: parsed.data?.showCompany
+      });
+    }
+  } else if (action === 'mark_chat_read') {
+    const convId = String(parsed.data?.conversationId || input.conversationId || input.conversation_id || '').trim();
+    const readerRole = String(input.readerRole || input.reader_role || parsed.data?.readerRole || '').trim();
+    if (convId) {
+      broadcastChatEvent('chat:messages_read', {
+        conversationId: convId,
+        readerRole,
+        messageIds: parsed.data?.updatedIds || [],
+        readAt: parsed.data?.readAt || new Date().toISOString()
+      });
+    }
+  } else if (action === 'send_chat_message') {
+    const convId = String(parsed.data?.conversationId || input.conversationId || input.conversation_id || '').trim();
+    if (convId && parsed.data) {
+      broadcastChatEvent('chat:new_message', { conversationId: convId, message: parsed.data });
+    }
+  }
+}
+
+async function resolveAuthenticatedNonAdminChatActor(
+  req: express.Request
+): Promise<{ email: string; id: string; role: string } | null> {
+  const authHeader = String(req.headers.authorization || '').trim();
+  if (!authHeader.toLowerCase().startsWith('bearer ')) return null;
+  const token = authHeader.slice(7).trim();
+  if (!token) return null;
+
+  const localPayload = verifyServerJwt(token);
+  if (localPayload) {
+    const cleanEmail = normalizeRecipientEmail(String(localPayload.email || ''));
+    const role = String(localPayload.role || '').toUpperCase();
+    if (!cleanEmail || role === 'ADMIN' || AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) {
+      return null;
+    }
+    return { email: cleanEmail, id: String(localPayload.uid || ''), role };
+  }
+
+  const cached = upstreamTokenActorCache.get(token);
+  if (cached && Date.now() < cached.expiresAt) {
+    if (!cached.email || cached.role === 'ADMIN' || AUTHORIZED_ROOT_ADMIN_EMAILS.has(cached.email)) {
+      return null;
+    }
+    return { email: cached.email, id: cached.id, role: cached.role };
+  }
+
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return null;
+  try {
+    const upRes = await executeUpstreamHttpRequest(
+      `${LIVE_TRADEHEAVEN_API_URL}?action=auth_me`,
+      'GET',
+      {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'TradeHeaven-Live-Gateway/1.0'
+      },
+      undefined,
+      8000
+    );
+    if (upRes.status >= 200 && upRes.status < 300) {
+      const upJson: any = JSON.parse(upRes.body.toString('utf8'));
+      const u = upJson?.user;
+      const cleanEmail = normalizeRecipientEmail(String(u?.email || ''));
+      const role = String(u?.role || '').toUpperCase();
+      if (cleanEmail) {
+        const actor = { email: cleanEmail, id: String(u?.id || ''), role, expiresAt: Date.now() + 10 * 60 * 1000 };
+        upstreamTokenActorCache.set(token, actor);
+        if (role === 'ADMIN' || AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail)) return null;
+        return { email: cleanEmail, id: actor.id, role };
+      }
+    }
+  } catch {}
+  return null;
+}
+
+async function forwardApiPhpToLiveUpstream(
+  req: express.Request,
+  res: express.Response,
+  action: string,
+  method: 'GET' | 'POST',
+  options?: { forceProxy?: boolean; forcedQueryParams?: Record<string, string> }
+): Promise<boolean> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED) return false;
+  if (!options?.forceProxy && !LIVE_UPSTREAM_PROXY_ACTIONS.has(action)) return false;
+
+  try {
+    const searchParams = new URLSearchParams();
+    for (const [k, v] of Object.entries(req.query || {})) {
+      if (Array.isArray(v)) {
+        v.forEach(item => searchParams.append(k, String(item)));
+      } else if (v !== undefined && v !== null) {
+        searchParams.set(k, String(v));
+      }
+    }
+    if (options?.forcedQueryParams) {
+      for (const [k, v] of Object.entries(options.forcedQueryParams)) {
+        searchParams.set(k, v);
+      }
+    }
+    if (!searchParams.get('action') && action) {
+      searchParams.set('action', action);
+    }
+
+    // Security guard 1: Never return all supplier threads when supplier identity is missing
+    if (action === 'get_chat_conversations') {
+      const viewMode = String(searchParams.get('view_mode') || req.body?.view_mode || 'admin').toLowerCase();
+      const sId = String(searchParams.get('supplier_id') || req.body?.supplier_id || '').trim();
+      const sEmail = String(searchParams.get('supplier_email') || req.body?.supplier_email || '').trim().toLowerCase();
+      if (viewMode === 'supplier' && !sId && !sEmail) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.status(200).json({ status: 'success', success: true, data: [] });
+        return true;
+      }
+    }
+
+    // Security guard 2: Never allow unauthenticated or Admin visitors to mark supplier messages read
+    let verifiedSupplierActor: { email: string; id: string; role: string } | null = null;
+    const requestedReaderRole = String(
+      searchParams.get('reader_role') ||
+        searchParams.get('readerRole') ||
+        req.body?.readerRole ||
+        req.body?.reader_role ||
+        ''
+    ).trim();
+
+    if (action === 'get_chat_messages' && requestedReaderRole === 'supplier') {
+      verifiedSupplierActor = await resolveAuthenticatedNonAdminChatActor(req);
+      if (!verifiedSupplierActor) {
+        searchParams.delete('reader_role');
+        searchParams.delete('readerRole');
+      }
+    } else if (action === 'mark_chat_read' && requestedReaderRole === 'supplier') {
+      verifiedSupplierActor = await resolveAuthenticatedNonAdminChatActor(req);
+      if (!verifiedSupplierActor) {
+        const convId = String(req.body?.conversationId || req.body?.conversation_id || searchParams.get('conversation_id') || '').trim();
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.status(200).json({
+          status: 'success',
+          success: true,
+          data: {
+            conversationId: convId,
+            readerRole: 'supplier',
+            readSenderRole: 'buyer_identity',
+            updatedCount: 0,
+            skippedUnauthenticated: true
+          }
+        });
+        return true;
+      }
+    }
+
+    const targetUrl = `${LIVE_TRADEHEAVEN_API_URL}?${searchParams.toString()}`;
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'User-Agent': 'TradeHeaven-Live-Gateway/1.0'
+    };
+    if (req.headers.authorization) {
+      headers.Authorization = String(req.headers.authorization);
+    }
+
+    let bodyBuffer: Buffer | undefined;
+    if (method === 'POST') {
+      const uploadedFile = (req as any).file as Express.Multer.File | undefined;
+      if (action === 'upload_chat_media' && uploadedFile) {
+        const fileBuffer = uploadedFile.buffer || fs.readFileSync(uploadedFile.path);
+        const boundary = `----TradeHeavenBoundary${crypto.randomBytes(12).toString('hex')}`;
+        const safeName = (uploadedFile.originalname || uploadedFile.filename || 'upload.bin').replace(/["\r\n]/g, '_');
+        const mimeType = uploadedFile.mimetype || 'application/octet-stream';
+        const headerPart = Buffer.from(
+          `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${safeName}"\r\nContent-Type: ${mimeType}\r\n\r\n`,
+          'utf8'
+        );
+        const footerPart = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
+        bodyBuffer = Buffer.concat([headerPart, fileBuffer, footerPart]);
+        headers['Content-Type'] = `multipart/form-data; boundary=${boundary}`;
+      } else {
+        headers['Content-Type'] = 'application/json';
+        bodyBuffer = Buffer.from(JSON.stringify(req.body || {}), 'utf8');
+      }
+    }
+
+    const upstreamRes = await executeUpstreamHttpRequest(targetUrl, method, headers, bodyBuffer, 15000);
+    const rawText = upstreamRes.body.toString('utf8');
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      console.warn(`[Live Upstream Proxy] Non-JSON response for action=${action} (HTTP ${upstreamRes.status})`);
+      return false;
+    }
+
+    // Strict post-filter for supplier conversations
+    if (action === 'get_chat_conversations' && Array.isArray(parsed?.data)) {
+      const viewMode = String(searchParams.get('view_mode') || req.body?.view_mode || 'admin').toLowerCase();
+      if (viewMode === 'supplier') {
+        const sId = String(searchParams.get('supplier_id') || req.body?.supplier_id || '').trim();
+        const sEmail = String(searchParams.get('supplier_email') || req.body?.supplier_email || '').trim().toLowerCase();
+        parsed.data = parsed.data.filter((c: any) => matchesSupplierConversation(c, sId, sEmail));
+      }
+    }
+
+    // Track genuine supplier login alerts & verified read receipts
+    if (upstreamRes.status >= 200 && upstreamRes.status < 300) {
+      if ((action === 'login' || action === 'verify_login_otp') && parsed?.success && parsed?.user?.email) {
+        const u = parsed.user;
+        const rawRole = String(u.role || 'SUPPLIER').toUpperCase();
+        const resolvedRole: 'ADMIN' | 'BUYER' | 'SUPPLIER' | 'VERIFIER' | 'SYSTEM' | 'GUEST' =
+          rawRole === 'ADMIN' || rawRole === 'BUYER' || rawRole === 'SUPPLIER' || rawRole === 'VERIFIER' || rawRole === 'SYSTEM' || rawRole === 'GUEST'
+            ? rawRole
+            : 'SUPPLIER';
+        touchActivePlatformSession(req, { ...u, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
+        recordPlatformAuthEvent(req, 'LOGIN', { ...u, role: resolvedRole }, resolvedRole === 'ADMIN' ? 'ADMIN_PORTAL' : 'HOMEPAGE');
+        sendLoginAlert(u.email, u.name || u.email, resolvedRole, u.companyName || '', u.country || '');
+        logServerActivity(req, 'SECURITY_LOGIN_EVENT', u.email, resolvedRole, `/api.php?action=${action}`, `User ${u.name || u.email} (${resolvedRole}) signed in.`, 'SUCCESS', String(u.id || ''));
+      }
+
+      if (verifiedSupplierActor && action === 'get_chat_messages' && Array.isArray(parsed?.data)) {
+        const convId = String(searchParams.get('conversation_id') || searchParams.get('conversationId') || '').trim();
+        const buyerMsgIds = parsed.data
+          .filter((m: any) => m?.senderRole === 'buyer_identity' && m?.id)
+          .map((m: any) => String(m.id));
+        if (convId && buyerMsgIds.length > 0) {
+          recordVerifiedSupplierReadAudit(convId, verifiedSupplierActor.email, buyerMsgIds);
+        }
+      }
+
+      if (verifiedSupplierActor && action === 'mark_chat_read') {
+        const convId = String(req.body?.conversationId || req.body?.conversation_id || searchParams.get('conversation_id') || '').trim();
+        if (convId) {
+          recordVerifiedSupplierReadAudit(convId, verifiedSupplierActor.email, []);
+        }
+      }
+
+      if (action === 'process_unseen_alerts' && Array.isArray(parsed?.data?.details)) {
+        const nowIso = new Date().toISOString();
+        const adminRecipients = getAlertRecipients();
+        for (const detail of parsed.data.details) {
+          const msgIds: string[] = Array.isArray(detail?.messageIds) ? detail.messageIds.map(String) : [];
+          if (detail?.targetRole === 'supplier') {
+            const supplierEmail = String(detail.recipient || '').trim().toLowerCase();
+            let adminCopyAccepted = Boolean(detail.adminCopyAccepted);
+            let deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED' = 'PHP_MAIL_RELAY';
+            if (!adminCopyAccepted && supplierEmail) {
+              const copySubject = `[Admin Copy] ${String(detail.subject || 'Urgent Buyer Chat Alert')} -> ${supplierEmail}`;
+              const copyText = `Admin Copy of Trade Heaven 1-minute unseen buyer chat alert dispatched to supplier ${supplierEmail} (Conversation: ${String(detail.conversationId || '')}, Messages: ${Number(detail.messageCount || 1)}).`;
+              const copyHtml = `<div style="font-family:Arial,sans-serif;padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;"><h3 style="margin-top:0;color:#0f172a;">Admin Copy: 1-Minute Unseen Supplier Alert</h3><p><strong>Supplier Recipient:</strong> ${escapeChatHtml(supplierEmail)}</p><p><strong>Conversation ID:</strong> ${escapeChatHtml(String(detail.conversationId || ''))}</p><p><strong>Unread Messages:</strong> ${Number(detail.messageCount || 1)}</p><p><strong>Subject:</strong> ${escapeChatHtml(String(detail.subject || ''))}</p><p><a href="https://tradeheaven.net/?view=CLIENT_ADMIN&tab=BUYER_CHAT_DESK">Open Admin Chat Desk &rarr;</a></p></div>`;
+              for (const adminEmail of adminRecipients) {
+                const resCopy = await dispatchVerifiedChatAlertEmail({
+                  toEmail: adminEmail,
+                  subject: copySubject,
+                  text: copyText,
+                  html: copyHtml,
+                  recipientName: 'Trade Heaven Admin',
+                  companyName: 'Trade Heaven Operations'
+                });
+                deliveryMode = resCopy.deliveryMode;
+                if (resCopy.accepted) adminCopyAccepted = true;
+              }
+              detail.adminCopyRecipients = adminRecipients;
+              detail.adminCopyAccepted = adminCopyAccepted;
+            }
+            for (const mid of msgIds) {
+              recordVerifiedEmailAlertAudit({
+                messageId: mid,
+                conversationId: String(detail.conversationId || ''),
+                supplierEmail,
+                supplierMailAccepted: detail.supplierMailAccepted !== false,
+                adminCopyRecipients: Array.isArray(detail.adminCopyRecipients) ? detail.adminCopyRecipients : adminRecipients,
+                adminCopyAccepted,
+                deliveryMode,
+                sentAt: nowIso
+              });
+            }
+          }
+        }
+      }
+
+      if (method === 'POST') {
+        emitLocalChatEventFromUpstream(action, parsed, (req.body || {}) as Record<string, any>);
+      }
+    }
+
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('X-TradeHeaven-Upstream', 'live');
+    res.status(upstreamRes.status).json(parsed);
+    return true;
+  } catch (err: any) {
+    console.warn(`[Live Upstream Proxy Fallback] action=${action}:`, err?.message || err);
+    return false;
+  }
+}
+
+async function dispatchVerifiedChatAlertEmail(params: {
+  toEmail: string;
+  subject: string;
+  text: string;
+  html: string;
+  recipientName: string;
+  companyName: string;
+}): Promise<{ accepted: boolean; deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED'; error?: string }> {
+  const cleanEmail = normalizeRecipientEmail(params.toEmail);
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { accepted: false, deliveryMode: 'UNCONFIGURED', error: 'Invalid recipient email address' };
+  }
+
+  if (automatedSmtpService.isSmtpConfigured()) {
+    try {
+      const receipt = await serverDeliveryQueueManager.enqueueSingle(cleanEmail, {
+        from: 'Trade Heaven Deal Desk <noreply@tradeheaven.net>',
+        replyTo: 'help@tradeheaven.net',
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+        dispatchType: 'AUTOMATED',
+        category: 'SYSTEM_ALERT',
+        recipientName: params.recipientName,
+        companyName: params.companyName,
+        skipLegacyInquiryRelay: true
+      });
+      if (receipt.success && receipt.deliveryMode === 'LIVE_SMTP') {
+        return { accepted: true, deliveryMode: 'LIVE_SMTP' };
+      }
+    } catch (err: any) {
+      // fall through to live domain mail relay
+      console.warn('[Chat Alert SMTP error, trying live relay]:', err?.message || err);
+    }
+  }
+
+  if (LIVE_UPSTREAM_PROXY_ENABLED) {
+    try {
+      const relayRes = await executeUpstreamHttpRequest(
+        `${LIVE_TRADEHEAVEN_API_URL}?action=send_custom_email`,
+        'POST',
+        {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'User-Agent': 'TradeHeaven-Live-AlertRelay/1.0'
+        },
+        Buffer.from(
+          JSON.stringify({
+            recipientEmail: cleanEmail,
+            recipientName: params.recipientName,
+            companyName: params.companyName,
+            subject: params.subject,
+            introMessage: params.text,
+            rawHtmlOverride: params.html,
+            ctaUrl: 'https://tradeheaven.net/?view=SUPPLIER_MESSAGES'
+          }),
+          'utf8'
+        ),
+        15000
+      );
+      const parsed = JSON.parse(relayRes.body.toString('utf8'));
+      const ok = Boolean(relayRes.status >= 200 && relayRes.status < 300 && parsed?.success === true);
+      return {
+        accepted: ok,
+        deliveryMode: 'PHP_MAIL_RELAY',
+        error: ok ? undefined : String(parsed?.message || 'Domain PHP mail() rejected or failed delivery')
+      };
+    } catch (err: any) {
+      return {
+        accepted: false,
+        deliveryMode: 'PHP_MAIL_RELAY',
+        error: err?.message || 'Upstream domain mail relay unreachable'
+      };
+    }
+  }
+
+  return {
+    accepted: false,
+    deliveryMode: 'UNCONFIGURED',
+    error: 'SMTP credentials not configured and live domain relay disabled'
+  };
+}
+
+async function postLiveAutoBatchRfqs(rfqs: any[], keyword: string, insightSummary: string): Promise<void> {
+  if (!LIVE_UPSTREAM_PROXY_ENABLED || !Array.isArray(rfqs) || rfqs.length === 0) return;
+  try {
+    const bodyBuffer = Buffer.from(JSON.stringify({ rfqs, keyword, insightSummary }), 'utf8');
+    await executeUpstreamHttpRequest(
+      `${LIVE_TRADEHEAVEN_API_URL}?action=auto_batch_persist_rfqs`,
+      'POST',
+      { 'Content-Type': 'application/json', Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+      bodyBuffer,
+      10000
+    );
+  } catch {}
 }
 
 // BigRock PHP API Gateway (/api.php)
@@ -7713,6 +8715,11 @@ app.get('/api.php', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const payload = verifyServerJwt(token);
     if (!payload) {
+      if (LIVE_UPSTREAM_PROXY_ENABLED) {
+        if (await forwardApiPhpToLiveUpstream(req, res, 'auth_me', 'GET', { forceProxy: true })) {
+          return;
+        }
+      }
       return res.status(401).json({
         success: false,
         revoked: true,
@@ -7739,6 +8746,10 @@ app.get('/api.php', async (req, res) => {
         token
       }
     });
+  }
+
+  if (await forwardApiPhpToLiveUpstream(req, res, action, 'GET')) {
+    return;
   }
 
   if (action === 'get_rfqs' || action === 'rfqs') {
@@ -7833,6 +8844,27 @@ app.get('/api.php', async (req, res) => {
         }
       });
     }
+    if (LIVE_UPSTREAM_PROXY_ENABLED && (queryEmail || queryId)) {
+      try {
+        const upRes = await executeUpstreamHttpRequest(
+          `${LIVE_TRADEHEAVEN_API_URL}?action=get_users`,
+          'GET',
+          { Accept: 'application/json', 'User-Agent': 'TradeHeaven-Live-Gateway/1.0' },
+          undefined,
+          10000
+        );
+        const upJson: any = JSON.parse(upRes.body.toString('utf8'));
+        const upUsers: any[] = Array.isArray(upJson?.data) ? upJson.data : [];
+        const liveMatched = upUsers.find(
+          u =>
+            (queryEmail && String(u?.email || '').toLowerCase().trim() === queryEmail) ||
+            (queryId && String(u?.id || '').trim() === queryId)
+        );
+        if (liveMatched) {
+          return res.json({ success: true, data: liveMatched });
+        }
+      } catch {}
+    }
     return res.json({ success: false, message: 'User not found' });
   }
 
@@ -7880,8 +8912,14 @@ app.get('/api.php', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const convId = String(req.query.conversation_id || req.query.conversationId || '').trim();
     const readerRole = String(req.query.reader_role || req.query.readerRole || '').trim();
-    if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+    if (convId && readerRole === 'buyer_identity') {
       markConversationMessagesRead(convId, readerRole);
+    } else if (convId && readerRole === 'supplier') {
+      const actor = await resolveAuthenticatedNonAdminChatActor(req);
+      if (actor) {
+        const resRead = markConversationMessagesRead(convId, 'supplier');
+        recordVerifiedSupplierReadAudit(convId, actor.email, resRead.updatedIds);
+      }
     }
     const msgs = serverChatMessagesStore
       .filter(m => m.conversationId === convId)
@@ -7891,7 +8929,9 @@ app.get('/api.php', async (req, res) => {
 
   if (action === 'process_unseen_alerts') {
     const minAge = Number(req.query.min_age_seconds || req.query.minAgeSeconds || 60) || 60;
-    const summary = await processUnseenChatAlerts(minAge);
+    const manualTrigger = req.query.manual === '1' || req.query.manualTrigger === 'true';
+    const conversationId = String(req.query.conversation_id || req.query.conversationId || '').trim();
+    const summary = await processUnseenChatAlerts(minAge, { manualTrigger, conversationId });
     return res.json({ status: 'success', success: true, data: summary });
   }
 
@@ -8109,6 +9149,10 @@ app.post('/api.php', async (req, res) => {
   const action = String(req.query.action || req.body?.action || '').replace(/-/g, '_').toLowerCase();
   const input = req.body || {};
 
+  if (await forwardApiPhpToLiveUpstream(req, res, action, 'POST')) {
+    return;
+  }
+
   // Send OTP (Login or Registration) via /api.php?action=send_otp
   if (action === 'send_otp') {
     const { email, password, name, mode = 'LOGIN', accountType } = input;
@@ -8173,6 +9217,11 @@ app.post('/api.php', async (req, res) => {
 
     const matchedUser = findRegisteredUserForAuth(cleanEmail);
     if (!matchedUser) {
+      if (!AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && LIVE_UPSTREAM_PROXY_ENABLED) {
+        if (await forwardApiPhpToLiveUpstream(req, res, 'send_otp', 'POST', { forceProxy: true })) {
+          return;
+        }
+      }
       return res.status(401).json({
         status: 'error',
         success: false,
@@ -8231,7 +9280,15 @@ app.post('/api.php', async (req, res) => {
       return res.status(400).json({ status: 'error', success: false, message: 'Both registered email and 6-digit OTP code are required.' });
     }
     const matchedUser = findRegisteredUserForAuth(cleanEmail);
-    if (!matchedUser || !matchedUser.login_otp_code || !matchedUser.login_otp_expiry) {
+    if (!matchedUser) {
+      if (!AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && LIVE_UPSTREAM_PROXY_ENABLED) {
+        if (await forwardApiPhpToLiveUpstream(req, res, 'verify_login_otp', 'POST', { forceProxy: true })) {
+          return;
+        }
+      }
+      return res.status(401).json({ status: 'error', success: false, message: 'No active OTP session found or code expired. Please request a new OTP.' });
+    }
+    if (!matchedUser.login_otp_code || !matchedUser.login_otp_expiry) {
       return res.status(401).json({ status: 'error', success: false, message: 'No active OTP session found or code expired. Please request a new OTP.' });
     }
     matchedUser.login_otp_attempts = (matchedUser.login_otp_attempts || 0) + 1;
@@ -8298,6 +9355,11 @@ app.post('/api.php', async (req, res) => {
     }
     const matchedUser = findRegisteredUserForAuth(cleanEmail);
     if (!matchedUser) {
+      if (!AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && LIVE_UPSTREAM_PROXY_ENABLED) {
+        if (await forwardApiPhpToLiveUpstream(req, res, 'resend_login_otp', 'POST', { forceProxy: true })) {
+          return;
+        }
+      }
       return res.status(404).json({ status: 'error', success: false, message: 'No registered user found for this email.' });
     }
     const dispatchInfo = await issueAndDispatchLoginOtp(matchedUser);
@@ -8574,6 +9636,12 @@ app.post('/api.php', async (req, res) => {
     const cleanEmail = normalizeRecipientEmail(email);
     const matchedUser = findRegisteredUserForAuth(cleanEmail);
     const isRootAdmin = Boolean(matchedUser && AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && matchedUser.role === 'ADMIN');
+
+    if (!matchedUser && !AUTHORIZED_ROOT_ADMIN_EMAILS.has(cleanEmail) && LIVE_UPSTREAM_PROXY_ENABLED) {
+      if (await forwardApiPhpToLiveUpstream(req, res, 'login', 'POST', { forceProxy: true })) {
+        return;
+      }
+    }
 
     if (!matchedUser || (!isRootAdmin && (!password || !verifyRegisteredUserPassword(matchedUser, String(password))))) {
       logServerActivity(req, 'AUTH_LOGIN', cleanEmail, 'GUEST', '/api.php?action=login', `Failed login attempt for corporate email: ${cleanEmail} via PHP gateway`, 'UNAUTHORIZED_401');
@@ -9305,8 +10373,14 @@ Message: ${formattedInquiry.message}`
   if (action === 'get_chat_messages') {
     const convId = String(req.query.conversation_id || req.query.conversationId || input.conversationId || '').trim();
     const readerRole = String(req.query.reader_role || req.query.readerRole || input.readerRole || '').trim();
-    if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+    if (convId && readerRole === 'buyer_identity') {
       markConversationMessagesRead(convId, readerRole);
+    } else if (convId && readerRole === 'supplier') {
+      const actor = await resolveAuthenticatedNonAdminChatActor(req);
+      if (actor) {
+        const resRead = markConversationMessagesRead(convId, 'supplier');
+        recordVerifiedSupplierReadAudit(convId, actor.email, resRead.updatedIds);
+      }
     }
     const msgs = serverChatMessagesStore
       .filter(m => m.conversationId === convId)
@@ -9320,13 +10394,28 @@ Message: ${formattedInquiry.message}`
     if (!convId || (readerRole !== 'buyer_identity' && readerRole !== 'supplier')) {
       return res.status(400).json({ status: 'error', success: false, message: 'conversationId and valid readerRole are required' });
     }
+    if (readerRole === 'supplier') {
+      const actor = await resolveAuthenticatedNonAdminChatActor(req);
+      if (!actor) {
+        return res.json({
+          status: 'success',
+          success: true,
+          data: { conversationId: convId, readerRole: 'supplier', readSenderRole: 'buyer_identity', updatedCount: 0, skippedUnauthenticated: true }
+        });
+      }
+      const result = markConversationMessagesRead(convId, 'supplier');
+      recordVerifiedSupplierReadAudit(convId, actor.email, result.updatedIds);
+      return res.json({ status: 'success', success: true, data: result });
+    }
     const result = markConversationMessagesRead(convId, readerRole);
     return res.json({ status: 'success', success: true, data: result });
   }
 
   if (action === 'process_unseen_alerts') {
     const minAge = Number(input.minAgeSeconds || req.query.min_age_seconds || 60) || 60;
-    const summary = await processUnseenChatAlerts(minAge);
+    const manualTrigger = Boolean(input.manualTrigger || req.query.manual === '1');
+    const conversationId = String(input.conversationId || req.query.conversation_id || '').trim();
+    const summary = await processUnseenChatAlerts(minAge, { manualTrigger, conversationId });
     return res.json({ status: 'success', success: true, data: summary });
   }
 
@@ -9555,7 +10644,10 @@ app.get('/api/v1/chat/stream', (req, res) => {
   });
 });
 
-app.get('/api/v1/chat/identities', (_req, res) => {
+app.get('/api/v1/chat/identities', async (req, res) => {
+  if (await forwardApiPhpToLiveUpstream(req, res, 'get_buyer_identities', 'GET', { forcedQueryParams: { action: 'get_buyer_identities' } })) {
+    return;
+  }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const sorted = [...serverBuyerIdentitiesStore].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -9563,7 +10655,10 @@ app.get('/api/v1/chat/identities', (_req, res) => {
   res.json({ status: 'success', success: true, data: sorted });
 });
 
-app.get('/api/v1/chat/conversations', (req, res) => {
+app.get('/api/v1/chat/conversations', async (req, res) => {
+  if (await forwardApiPhpToLiveUpstream(req, res, 'get_chat_conversations', 'GET', { forcedQueryParams: { action: 'get_chat_conversations' } })) {
+    return;
+  }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const viewMode = String(req.query.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
   const supplierId = String(req.query.supplier_id || '').trim();
@@ -9576,12 +10671,21 @@ app.get('/api/v1/chat/conversations', (req, res) => {
   res.json({ status: 'success', success: true, data: list.map(c => buildConversationView(c, viewMode)) });
 });
 
-app.get('/api/v1/chat/messages', (req, res) => {
+app.get('/api/v1/chat/messages', async (req, res) => {
+  if (await forwardApiPhpToLiveUpstream(req, res, 'get_chat_messages', 'GET', { forcedQueryParams: { action: 'get_chat_messages' } })) {
+    return;
+  }
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const convId = String(req.query.conversation_id || req.query.conversationId || '').trim();
   const readerRole = String(req.query.reader_role || req.query.readerRole || '').trim();
-  if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+  if (convId && readerRole === 'buyer_identity') {
     markConversationMessagesRead(convId, readerRole);
+  } else if (convId && readerRole === 'supplier') {
+    const actor = await resolveAuthenticatedNonAdminChatActor(req);
+    if (actor) {
+      const resRead = markConversationMessagesRead(convId, 'supplier');
+      recordVerifiedSupplierReadAudit(convId, actor.email, resRead.updatedIds);
+    }
   }
   const msgs = serverChatMessagesStore
     .filter(m => m.conversationId === convId)
@@ -9590,13 +10694,16 @@ app.get('/api/v1/chat/messages', (req, res) => {
 });
 
 app.post('/api/v1/chat/upload-media', (req, res) => {
-  chatMediaUpload.single('file')(req, res, (err: any) => {
+  chatMediaUpload.single('file')(req, res, async (err: any) => {
     if (err || !(req as any).file) {
       return res.status(400).json({
         status: 'error',
         success: false,
         message: err?.message || 'File upload failed validation (max 50MB; jpg, png, webp, mp4, webm, mov, pdf).'
       });
+    }
+    if (await forwardApiPhpToLiveUpstream(req, res, 'upload_chat_media', 'POST', { forcedQueryParams: { action: 'upload_chat_media' } })) {
+      return;
     }
     const uploadedFile = (req as any).file as Express.Multer.File;
     const ext = path.extname(uploadedFile.originalname || uploadedFile.filename).toLowerCase();
@@ -9614,13 +10721,170 @@ app.post('/api/v1/chat/upload-media', (req, res) => {
 
 app.get('/api/v1/chat/process-unseen-alerts', async (req, res) => {
   const minAge = Number(req.query.min_age_seconds || req.query.minAgeSeconds || 60) || 60;
-  const summary = await processUnseenChatAlerts(minAge);
+  const manualTrigger = req.query.manual === '1' || req.query.manualTrigger === 'true';
+  const conversationId = String(req.query.conversation_id || req.query.conversationId || '').trim();
+  const summary = await processUnseenChatAlerts(minAge, { manualTrigger, conversationId });
   return res.json({ status: 'success', success: true, data: summary });
+});
+
+// Real (non-fabricated) supplier login & verified read-receipt insight for Admin Chat Desk
+app.get('/api/v1/admin/chat-thread-insight', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  const convId = String(req.query.conversation_id || req.query.conversationId || '').trim();
+  const cleanEmail = normalizeRecipientEmail(String(req.query.supplier_email || req.query.supplierEmail || ''));
+  const supplierId = String(req.query.supplier_id || req.query.supplierId || '').trim();
+
+  expireInactiveSessions(Date.now());
+
+  const activeSession = cleanEmail ? activePlatformSessions.get(cleanEmail) : undefined;
+  const auditLogin = cleanEmail ? serverVerifiedLoginsByEmail[cleanEmail] : undefined;
+  const authEventLogins = cleanEmail
+    ? recentAuthEventsStore.filter(e => e.eventType === 'LOGIN' && normalizeRecipientEmail(e.email) === cleanEmail)
+    : [];
+  const activityLogins = cleanEmail
+    ? serverAuditLogsStore.filter(
+        l =>
+          normalizeRecipientEmail(l.actorEmail) === cleanEmail &&
+          (l.action === 'SECURITY_LOGIN_EVENT' || l.action === 'AUTH_LOGIN') &&
+          l.status === 'SUCCESS'
+      )
+    : [];
+
+  let lastLoginAt: string | null = null;
+  const candidateTimes: number[] = [];
+  if (auditLogin?.lastLoginAt) candidateTimes.push(new Date(auditLogin.lastLoginAt).getTime());
+  if (activeSession?.loggedInAt) candidateTimes.push(activeSession.loggedInAt);
+  authEventLogins.forEach(e => candidateTimes.push(e.createdAtMs));
+  activityLogins.forEach(l => candidateTimes.push(new Date(l.timestamp).getTime()));
+  const validTimes = candidateTimes.filter(t => Number.isFinite(t) && t > 0);
+  if (validTimes.length > 0) {
+    lastLoginAt = new Date(Math.max(...validTimes)).toISOString();
+  }
+
+  const loginCount = Math.max(auditLogin?.loginCount || 0, authEventLogins.length, activityLogins.length, activeSession ? 1 : 0);
+  const hasVerifiedLogin = Boolean(lastLoginAt && loginCount > 0);
+  const convRead = convId ? serverVerifiedConvReadsByConvId[convId] : undefined;
+
+  const convEmailAlertReceipts: Record<string, VerifiedEmailAlertRecord> = {};
+  for (const [mid, rec] of Object.entries(serverVerifiedEmailAlertsByMsgId)) {
+    if (!convId || rec.conversationId === convId) {
+      convEmailAlertReceipts[mid] = rec;
+    }
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      conversationId: convId,
+      supplierId,
+      supplierEmail: cleanEmail,
+      hasVerifiedLogin,
+      isCurrentlyOnline: Boolean(activeSession),
+      lastLoginAt,
+      lastActiveAt: activeSession?.lastActiveAt ? new Date(activeSession.lastActiveAt).toISOString() : null,
+      loginCount,
+      verifiedMessageIds: convRead?.verifiedMessageIds || [],
+      lastVerifiedReadAt: convRead?.lastVerifiedReadAt || null,
+      lastVerifiedReadByEmail: convRead?.lastVerifiedReadByEmail || null,
+      verifiedEmailsByLogin: Object.keys(serverVerifiedLoginsByEmail),
+      verifiedConvReadIds: Object.keys(serverVerifiedConvReadsByConvId),
+      smtpConfigured: automatedSmtpService.isSmtpConfigured(),
+      adminAlertRecipients: getAlertRecipients(),
+      emailAlertReceiptsByMsgId: convEmailAlertReceipts
+    }
+  });
+});
+
+// Re-verify & re-send a 1m unseen alert to BOTH supplier + Admin copy recipients
+app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  const body = (req.body || {}) as Record<string, any>;
+  const conversationId = String(body.conversationId || '').trim();
+  const messageId = String(body.messageId || '').trim();
+  const supplierEmail = normalizeRecipientEmail(String(body.supplierEmail || ''));
+  const supplierName = String(body.supplierName || 'Supplier');
+  const supplierCompany = String(body.supplierCompany || 'Trade Heaven Supplier');
+  const buyerName = String(body.buyerName || 'International Buyer');
+  const buyerCountry = String(body.buyerCountry || 'Global');
+  const messageText = String(body.messageText || '').trim();
+
+  if (!messageId || !supplierEmail || !supplierEmail.includes('@')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Valid messageId and supplierEmail are required to re-verify email alert delivery.'
+    });
+  }
+
+  const subject = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven`;
+  const replyLink = 'https://tradeheaven.net/?view=SUPPLIER_MESSAGES';
+  const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f1f5f9;padding:24px;margin:0;">
+    <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
+      <div style="background:#0f172a;padding:20px 24px;color:#ffffff;">
+        <h2 style="margin:0;font-size:18px;color:#38bdf8;">Urgent Export Deal Update Pending Reply</h2>
+        <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">Buyer ${escapeChatHtml(buyerName)} (${escapeChatHtml(buyerCountry)}) is awaiting your reply</p>
+      </div>
+      <div style="padding:24px;">
+        <p style="margin:0 0 14px;font-size:14px;color:#334155;">Hello <strong>${escapeChatHtml(supplierName)}</strong> (${escapeChatHtml(supplierCompany)}), you have an unread buyer inquiry on Trade Heaven:</p>
+        <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;">
+          <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Buyer Message:</p>
+          <p style="margin:0;font-size:13px;color:#0f172a;">${escapeChatHtml(messageText || '[Buyer Attachment / Message]')}</p>
+        </div>
+        <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Reply to Buyer Now &rarr;</a>
+      </div>
+    </div>
+  </body></html>`;
+  const text = `Urgent Deal Update from ${buyerName} (${buyerCountry}) on Trade Heaven:\n\n${messageText}\n\nReply now: ${replyLink}`;
+
+  const supplierResult = await dispatchVerifiedChatAlertEmail({
+    toEmail: supplierEmail,
+    subject,
+    text,
+    html,
+    recipientName: supplierName,
+    companyName: supplierCompany
+  });
+
+  const adminRecipients = getAlertRecipients();
+  const adminCopySubject = `[Admin Copy] ${subject} -> ${supplierEmail}`;
+  let adminCopyAccepted = false;
+  let adminErr: string | undefined;
+  for (const adminEmail of adminRecipients) {
+    const adminRes = await dispatchVerifiedChatAlertEmail({
+      toEmail: adminEmail,
+      subject: adminCopySubject,
+      text: `${text}\n\n--- Dispatched To Supplier: ${supplierEmail} (Accepted=${supplierResult.accepted}) ---`,
+      html,
+      recipientName: 'Trade Heaven Admin',
+      companyName: 'Trade Heaven Operations'
+    });
+    if (adminRes.accepted) adminCopyAccepted = true;
+    else if (adminRes.error && !adminErr) adminErr = adminRes.error;
+  }
+
+  const record: VerifiedEmailAlertRecord = {
+    messageId,
+    conversationId,
+    supplierEmail,
+    supplierMailAccepted: supplierResult.accepted,
+    adminCopyRecipients: adminRecipients,
+    adminCopyAccepted,
+    deliveryMode: supplierResult.deliveryMode,
+    sentAt: new Date().toISOString(),
+    error: [supplierResult.error, adminErr].filter(Boolean).join(' | ') || undefined
+  };
+  recordVerifiedEmailAlertAudit(record);
+
+  return res.json({
+    success: supplierResult.accepted || adminCopyAccepted,
+    data: record
+  });
 });
 
 app.post('/api/v1/chat/process-unseen-alerts', async (req, res) => {
   const minAge = Number((req.body && req.body.minAgeSeconds) || req.query.min_age_seconds || 60) || 60;
-  const summary = await processUnseenChatAlerts(minAge);
+  const manualTrigger = Boolean(req.body?.manualTrigger ?? true);
+  const conversationId = String(req.body?.conversationId || req.query.conversation_id || '').trim();
+  const summary = await processUnseenChatAlerts(minAge, { manualTrigger, conversationId });
   return res.json({ status: 'success', success: true, data: summary });
 });
 
@@ -14698,6 +15962,7 @@ Strict requirements:
     }
     if (newlyAdded.length > 0) {
       saveRfqMarketStoreToDisk();
+      void postLiveAutoBatchRfqs(newlyAdded, rawKeyword, insightObj?.summary || '');
     }
 
     const combinedMatches = sortRfqsRealFirst(
@@ -14861,6 +16126,7 @@ app.post('/api/v1/rfqs/auto-batch-persist', async (req, res) => {
     if (addedItems.length > 0) {
       saveRfqMarketStoreToDisk();
       scheduleSaveOverridesState(true);
+      void postLiveAutoBatchRfqs(addedItems, keyword, insightSummary);
     }
 
     return res.json({
