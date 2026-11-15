@@ -56,9 +56,21 @@ export function validateChatMediaFile(file: File): { valid: boolean; error?: str
   return { valid: true, mediaType };
 }
 
+const CHAT_BROADCAST_CHANNEL = 'tradeheaven_chat_events';
+
+function emitLocalChatBroadcast(type: string, payload: any) {
+  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
+  try {
+    const bc = new BroadcastChannel(CHAT_BROADCAST_CHANNEL);
+    bc.postMessage({ type, payload, timestamp: new Date().toISOString() });
+    bc.close();
+  } catch {}
+}
+
 async function postChatAction<T = any>(action: string, payload: Record<string, any>): Promise<T> {
   const res = await fetch(`${API_BASE}?action=${encodeURIComponent(action)}`, {
     method: 'POST',
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json'
@@ -74,7 +86,8 @@ async function postChatAction<T = any>(action: string, payload: Record<string, a
 
 export async function fetchBuyerIdentities(): Promise<AdminBuyerIdentity[]> {
   const res = await fetch(`${API_BASE}?action=get_buyer_identities&_t=${Date.now()}`, {
-    headers: { Accept: 'application/json' }
+    cache: 'no-store',
+    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
   });
   const json = await res.json().catch(() => ({}));
   return Array.isArray(json?.data) ? json.data : [];
@@ -84,6 +97,7 @@ export async function createBuyerIdentity(
   payload: Omit<AdminBuyerIdentity, 'id' | 'createdAt'>
 ): Promise<AdminBuyerIdentity> {
   const json = await postChatAction<{ data: AdminBuyerIdentity }>('create_buyer_identity', payload);
+  emitLocalChatBroadcast('chat:identity_updated', { identity: json.data });
   return json.data;
 }
 
@@ -91,11 +105,13 @@ export async function updateBuyerIdentity(
   payload: Partial<AdminBuyerIdentity> & { id: string }
 ): Promise<AdminBuyerIdentity> {
   const json = await postChatAction<{ data: AdminBuyerIdentity }>('update_buyer_identity', payload);
+  emitLocalChatBroadcast('chat:identity_updated', { identity: json.data });
   return json.data;
 }
 
 export async function deleteBuyerIdentity(id: string): Promise<void> {
   await postChatAction('delete_buyer_identity', { id });
+  emitLocalChatBroadcast('chat:identity_deleted', { id });
 }
 
 export async function fetchChatConversations(options: {
@@ -112,7 +128,8 @@ export async function fetchChatConversations(options: {
   if (options.supplierEmail) params.set('supplier_email', options.supplierEmail);
 
   const res = await fetch(`${API_BASE}?${params.toString()}`, {
-    headers: { Accept: 'application/json' }
+    cache: 'no-store',
+    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
   });
   const json = await res.json().catch(() => ({}));
   return Array.isArray(json?.data) ? json.data : [];
@@ -127,6 +144,11 @@ export async function createOrGetChatConversation(payload: {
   supplierCountry?: string;
 }): Promise<ChatConversation> {
   const json = await postChatAction<{ data: ChatConversation }>('create_chat_conversation', payload);
+  emitLocalChatBroadcast('chat:conversation_created', {
+    conversationId: json.data?.id,
+    supplierId: payload.supplierId,
+    identityId: payload.identityId
+  });
   return json.data;
 }
 
@@ -139,6 +161,7 @@ export async function toggleChatVisibility(payload: {
   const json = await postChatAction<{
     data: { conversationId: string; showPhone: boolean; showEmail: boolean; showCompany: boolean };
   }>('toggle_chat_visibility', payload);
+  emitLocalChatBroadcast('chat:visibility_updated', json.data);
   return json.data;
 }
 
@@ -153,7 +176,8 @@ export async function fetchChatMessages(
   });
   if (readerRole) params.set('reader_role', readerRole);
   const res = await fetch(`${API_BASE}?${params.toString()}`, {
-    headers: { Accept: 'application/json' }
+    cache: 'no-store',
+    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
   });
   const json = await res.json().catch(() => ({}));
   return Array.isArray(json?.data) ? json.data : [];
@@ -178,6 +202,9 @@ export async function markChatMessagesRead(
       readAt: string;
     };
   }>('mark_chat_read', { conversationId, readerRole });
+  if (json.data?.updatedCount > 0) {
+    emitLocalChatBroadcast('chat:messages_read', json.data);
+  }
   return json.data;
 }
 
@@ -209,6 +236,10 @@ export async function sendChatMessage(payload: {
   mediaSize?: number;
 }): Promise<MultiChatMessage> {
   const json = await postChatAction<{ data: MultiChatMessage }>('send_chat_message', payload);
+  emitLocalChatBroadcast('chat:new_message', {
+    conversationId: payload.conversationId,
+    message: json.data
+  });
   return json.data;
 }
 
@@ -285,12 +316,74 @@ export function subscribeMultiIdentityChatEvents(
   if (typeof window === 'undefined') return () => {};
 
   let ws: WebSocket | null = null;
+  let sse: EventSource | null = null;
+  let bc: BroadcastChannel | null = null;
   let closedByCaller = false;
   let reconnectTimer: number | null = null;
+  let sseReconnectTimer: number | null = null;
   let pingTimer: number | null = null;
   let attempt = 0;
 
-  const connect = () => {
+  // Deduplicate identical events delivered simultaneously by WS, SSE, and BroadcastChannel
+  const recentKeys = new Map<string, number>();
+  const dispatch = (evt: ChatSocketEvent) => {
+    if (!evt || !evt.type || evt.type === 'pong') return;
+    if (evt.type !== 'chat:connected') {
+      const fingerprint = `${evt.type}:${evt.payload?.message?.id || evt.payload?.conversationId || evt.payload?.identity?.id || evt.payload?.id || ''}:${evt.timestamp || ''}`;
+      const now = Date.now();
+      const prevAt = recentKeys.get(fingerprint);
+      if (prevAt && now - prevAt < 1500) return;
+      recentKeys.set(fingerprint, now);
+      if (recentKeys.size > 100) {
+        for (const [k, ts] of recentKeys.entries()) {
+          if (now - ts > 4000) recentKeys.delete(k);
+        }
+      }
+    }
+    onEvent(evt);
+  };
+
+  // 1. Cross-tab BroadcastChannel for instant multi-tab Chrome updates
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      bc = new BroadcastChannel(CHAT_BROADCAST_CHANNEL);
+      bc.onmessage = (msgEvt) => {
+        const parsed = msgEvt.data;
+        if (parsed && parsed.type) {
+          dispatch(parsed);
+        }
+      };
+    } catch {}
+  }
+
+  // 2. Server-Sent Events (/api/v1/chat/stream) — works reliably through HTTPS/HTTP2 proxies
+  const connectSse = () => {
+    if (closedByCaller || typeof EventSource === 'undefined') return;
+    try {
+      sse = new EventSource('/api/v1/chat/stream');
+      sse.onmessage = (msgEvt) => {
+        try {
+          const parsed = JSON.parse(String(msgEvt.data || '{}'));
+          dispatch(parsed);
+        } catch {}
+      };
+      sse.onerror = () => {
+        try {
+          sse?.close();
+        } catch {}
+        sse = null;
+        if (!closedByCaller && !sseReconnectTimer) {
+          sseReconnectTimer = window.setTimeout(() => {
+            sseReconnectTimer = null;
+            connectSse();
+          }, 3000);
+        }
+      };
+    } catch {}
+  };
+
+  // 3. WebSocket (/ws/chat)
+  const connectWs = () => {
     if (closedByCaller) return;
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -312,9 +405,7 @@ export function subscribeMultiIdentityChatEvents(
       ws.onmessage = (msgEvt) => {
         try {
           const parsed = JSON.parse(String(msgEvt.data || '{}'));
-          if (parsed && parsed.type && parsed.type !== 'pong') {
-            onEvent(parsed);
-          }
+          dispatch(parsed);
         } catch {}
       };
 
@@ -326,7 +417,7 @@ export function subscribeMultiIdentityChatEvents(
         if (!closedByCaller) {
           attempt = Math.min(attempt + 1, 6);
           const delay = Math.min(15000, 1000 * Math.pow(1.6, attempt));
-          reconnectTimer = window.setTimeout(connect, delay);
+          reconnectTimer = window.setTimeout(connectWs, delay);
         }
       };
 
@@ -337,19 +428,27 @@ export function subscribeMultiIdentityChatEvents(
       };
     } catch {
       if (!closedByCaller) {
-        reconnectTimer = window.setTimeout(connect, 4000);
+        reconnectTimer = window.setTimeout(connectWs, 4000);
       }
     }
   };
 
-  connect();
+  connectSse();
+  connectWs();
 
   return () => {
     closedByCaller = true;
     if (reconnectTimer) window.clearTimeout(reconnectTimer);
+    if (sseReconnectTimer) window.clearTimeout(sseReconnectTimer);
     if (pingTimer) window.clearInterval(pingTimer);
     try {
       ws?.close();
+    } catch {}
+    try {
+      sse?.close();
+    } catch {}
+    try {
+      bc?.close();
     } catch {}
   };
 }

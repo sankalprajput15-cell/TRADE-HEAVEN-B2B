@@ -7324,6 +7324,25 @@ const chatMediaUpload = multer({
 });
 
 const activeChatWsClients = new Set<WebSocket>();
+const activeChatSseClients = new Set<express.Response>();
+
+function matchesSupplierConversation(
+  c: ServerChatConversationRecord,
+  supplierId: string,
+  supplierEmail: string
+): boolean {
+  if (!supplierId && !supplierEmail) return true;
+  if (supplierEmail && c.supplierEmail && c.supplierEmail.trim().toLowerCase() === supplierEmail) {
+    return true;
+  }
+  if (supplierId && c.supplierId) {
+    if (c.supplierId === supplierId) return true;
+    const normConv = c.supplierId.replace(/^(supp-|user-supplier-)/i, '');
+    const normReq = supplierId.replace(/^(supp-|user-supplier-)/i, '');
+    if (normConv && normReq && normConv === normReq) return true;
+  }
+  return false;
+}
 
 function broadcastChatEvent(type: string, payload: any) {
   const packet = JSON.stringify({ type, payload, timestamp: new Date().toISOString() });
@@ -7332,6 +7351,13 @@ function broadcastChatEvent(type: string, payload: any) {
       try {
         ws.send(packet);
       } catch {}
+    }
+  }
+  for (const sseRes of activeChatSseClients) {
+    try {
+      sseRes.write(`data: ${packet}\n\n`);
+    } catch {
+      activeChatSseClients.delete(sseRes);
     }
   }
 }
@@ -7825,6 +7851,7 @@ app.get('/api.php', async (req, res) => {
 
   // Multi-Identity Admin Buyer Chat GET actions
   if (action === 'get_buyer_identities') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const sorted = [...serverBuyerIdentitiesStore].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -7832,17 +7859,14 @@ app.get('/api.php', async (req, res) => {
   }
 
   if (action === 'get_chat_conversations') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const viewMode = String(req.query.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
     const supplierId = String(req.query.supplier_id || '').trim();
     const supplierEmail = String(req.query.supplier_email || '').trim().toLowerCase();
 
     let list = [...serverChatConversationsStore];
     if (viewMode === 'supplier') {
-      list = list.filter(c => {
-        if (supplierId && c.supplierId === supplierId) return true;
-        if (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail) return true;
-        return !supplierId && !supplierEmail;
-      });
+      list = list.filter(c => matchesSupplierConversation(c, supplierId, supplierEmail));
     }
     list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     return res.json({
@@ -7853,6 +7877,7 @@ app.get('/api.php', async (req, res) => {
   }
 
   if (action === 'get_chat_messages') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const convId = String(req.query.conversation_id || req.query.conversationId || '').trim();
     const readerRole = String(req.query.reader_role || req.query.readerRole || '').trim();
     if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
@@ -9187,17 +9212,14 @@ Message: ${formattedInquiry.message}`
   }
 
   if (action === 'get_chat_conversations') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const viewMode = String(req.query.view_mode || input.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
     const supplierId = String(req.query.supplier_id || input.supplier_id || input.supplierId || '').trim();
     const supplierEmail = String(req.query.supplier_email || input.supplier_email || input.supplierEmail || '').trim().toLowerCase();
 
     let list = [...serverChatConversationsStore];
     if (viewMode === 'supplier') {
-      list = list.filter(c => {
-        if (supplierId && c.supplierId === supplierId) return true;
-        if (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail) return true;
-        return !supplierId && !supplierEmail;
-      });
+      list = list.filter(c => matchesSupplierConversation(c, supplierId, supplierEmail));
     }
     list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     return res.json({
@@ -9505,8 +9527,36 @@ Message: ${formattedInquiry.message}`
   });
 });
 
-// Dedicated REST aliases for Multi-Identity Admin Buyer Chat & Media Messaging
+// Dedicated REST aliases & Real-Time SSE Stream for Multi-Identity Admin Buyer Chat & Media Messaging
+app.get('/api/v1/chat/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  activeChatSseClients.add(res);
+  try {
+    res.write(`data: ${JSON.stringify({ type: 'chat:connected', timestamp: new Date().toISOString() })}\n\n`);
+  } catch {}
+
+  const keepalive = setInterval(() => {
+    try {
+      res.write(': keepalive\n\n');
+    } catch {
+      clearInterval(keepalive);
+      activeChatSseClients.delete(res);
+    }
+  }, 20000);
+
+  req.on('close', () => {
+    clearInterval(keepalive);
+    activeChatSseClients.delete(res);
+  });
+});
+
 app.get('/api/v1/chat/identities', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const sorted = [...serverBuyerIdentitiesStore].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -9514,19 +9564,29 @@ app.get('/api/v1/chat/identities', (_req, res) => {
 });
 
 app.get('/api/v1/chat/conversations', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const viewMode = String(req.query.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
   const supplierId = String(req.query.supplier_id || '').trim();
   const supplierEmail = String(req.query.supplier_email || '').trim().toLowerCase();
   let list = [...serverChatConversationsStore];
   if (viewMode === 'supplier') {
-    list = list.filter(c => {
-      if (supplierId && c.supplierId === supplierId) return true;
-      if (supplierEmail && c.supplierEmail.toLowerCase() === supplierEmail) return true;
-      return !supplierId && !supplierEmail;
-    });
+    list = list.filter(c => matchesSupplierConversation(c, supplierId, supplierEmail));
   }
   list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   res.json({ status: 'success', success: true, data: list.map(c => buildConversationView(c, viewMode)) });
+});
+
+app.get('/api/v1/chat/messages', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  const convId = String(req.query.conversation_id || req.query.conversationId || '').trim();
+  const readerRole = String(req.query.reader_role || req.query.readerRole || '').trim();
+  if (convId && (readerRole === 'buyer_identity' || readerRole === 'supplier')) {
+    markConversationMessagesRead(convId, readerRole);
+  }
+  const msgs = serverChatMessagesStore
+    .filter(m => m.conversationId === convId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  res.json({ status: 'success', success: true, data: msgs });
 });
 
 app.post('/api/v1/chat/upload-media', (req, res) => {

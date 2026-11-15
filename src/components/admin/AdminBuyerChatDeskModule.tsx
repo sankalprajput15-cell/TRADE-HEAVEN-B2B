@@ -189,7 +189,39 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     }
   }, []);
 
-  const refreshDeskData = useCallback(async () => {
+  const loadMessagesForThread = useCallback(async (convId: string, silent = false) => {
+    if (!convId) {
+      setMessages([]);
+      return;
+    }
+    if (!silent) setLoadingMessages(true);
+    try {
+      const list = await fetchChatMessages(convId, 'buyer_identity');
+      setMessages(prev => {
+        if (
+          prev.length === list.length &&
+          prev.every((m, idx) =>
+            m.id === list[idx]?.id &&
+            m.isRead === list[idx]?.isRead &&
+            m.emailAlertSent === list[idx]?.emailAlertSent
+          )
+        ) {
+          return prev;
+        }
+        return list;
+      });
+      // Clear local unread badge immediately after mark-read fetch
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === convId ? { ...c, unreadForAdmin: 0, unreadCount: 0 } : c
+        )
+      );
+    } finally {
+      if (!silent) setLoadingMessages(false);
+    }
+  }, []);
+
+  const refreshDeskData = useCallback(async (alsoReloadActiveMessages = false) => {
     try {
       const [idList, convList] = await Promise.all([
         fetchBuyerIdentities(),
@@ -202,31 +234,13 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       }
       if (!selectedConvIdRef.current && convList.length > 0) {
         setSelectedConvId(convList[0].id);
+      } else if (alsoReloadActiveMessages && selectedConvIdRef.current) {
+        await loadMessagesForThread(selectedConvIdRef.current, true);
       }
     } finally {
       setLoadingInitial(false);
     }
-  }, []);
-
-  const loadMessagesForThread = useCallback(async (convId: string, silent = false) => {
-    if (!convId) {
-      setMessages([]);
-      return;
-    }
-    if (!silent) setLoadingMessages(true);
-    try {
-      const list = await fetchChatMessages(convId, 'buyer_identity');
-      setMessages(list);
-      // Clear local unread badge immediately after mark-read fetch
-      setConversations(prev =>
-        prev.map(c =>
-          c.id === convId ? { ...c, unreadForAdmin: 0, unreadCount: 0 } : c
-        )
-      );
-    } finally {
-      if (!silent) setLoadingMessages(false);
-    }
-  }, []);
+  }, [loadMessagesForThread]);
 
   useEffect(() => {
     void refreshDeskData();
@@ -242,7 +256,10 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
   }, [selectedConvId, loadMessagesForThread]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages.length, selectedConvId]);
 
   // Viewport Intersection & Open Thread Read Observer
@@ -300,12 +317,17 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     };
   }, [messages]);
 
-  // Real-time WebSocket subscription
+  // Real-time multi-transport subscription (SSE + WebSocket + BroadcastChannel)
   useEffect(() => {
     const unsub = subscribeMultiIdentityChatEvents(evt => {
-      if (evt.type === 'chat:new_message') {
+      if (evt.type === 'chat:connected') {
+        void refreshDeskData(true);
+      } else if (evt.type === 'chat:new_message') {
         const msg: MultiChatMessage | undefined = evt.payload?.message;
         const convId = String(evt.payload?.conversationId || msg?.conversationId || '');
+        if (convId && !selectedConvIdRef.current) {
+          setSelectedConvId(convId);
+        }
         if (convId && convId === selectedConvIdRef.current && msg) {
           const isIncomingAndVisible =
             msg.senderRole === 'supplier' && document.visibilityState === 'visible';
@@ -319,14 +341,19 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
             void markChatMessagesRead(convId, 'buyer_identity');
           }
         }
-        void fetchChatConversations({ viewMode: 'admin' }).then(setConversations);
+        void fetchChatConversations({ viewMode: 'admin' }).then(list => {
+          setConversations(list);
+          if (!selectedConvIdRef.current && list.length > 0) {
+            setSelectedConvId(list[0].id);
+          }
+        });
       } else if (
         evt.type === 'chat:visibility_updated' ||
         evt.type === 'chat:conversation_created' ||
         evt.type === 'chat:identity_updated' ||
         evt.type === 'chat:identity_deleted'
       ) {
-        void refreshDeskData();
+        void refreshDeskData(true);
       } else if (evt.type === 'chat:messages_read') {
         const convId = String(evt.payload?.conversationId || '');
         const readSenderRole = String(evt.payload?.readSenderRole || '');
@@ -370,6 +397,23 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       }
     });
     return unsub;
+  }, [refreshDeskData]);
+
+  // Guaranteed periodic & focus fallback sync so cross-browser Chrome messages always appear within seconds
+  useEffect(() => {
+    const syncNow = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshDeskData(true);
+      }
+    };
+    const intervalId = window.setInterval(syncNow, 3000);
+    window.addEventListener('focus', syncNow);
+    document.addEventListener('visibilitychange', syncNow);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', syncNow);
+      document.removeEventListener('visibilitychange', syncNow);
+    };
   }, [refreshDeskData]);
 
   const activeConversation = useMemo(
@@ -624,7 +668,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                void refreshDeskData();
+                void refreshDeskData(true);
                 void loadSuppliers();
               }}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"

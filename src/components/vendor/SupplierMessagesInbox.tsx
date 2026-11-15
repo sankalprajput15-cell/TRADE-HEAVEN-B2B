@@ -87,22 +87,6 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   const supplierId = currentUser?.id || '';
   const supplierEmail = (currentUser?.email || '').trim().toLowerCase();
 
-  const loadConversations = useCallback(async () => {
-    try {
-      const list = await fetchChatConversations({
-        viewMode: 'supplier',
-        supplierId,
-        supplierEmail
-      });
-      setConversations(list);
-      if (!selectedConvIdRef.current && list.length > 0) {
-        setSelectedConvId(list[0].id);
-      }
-    } finally {
-      setLoadingThreads(false);
-    }
-  }, [supplierId, supplierEmail]);
-
   const loadMessages = useCallback(async (convId: string, silent = false) => {
     if (!convId) {
       setMessages([]);
@@ -111,7 +95,18 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
     if (!silent) setLoadingMsgs(true);
     try {
       const list = await fetchChatMessages(convId, 'supplier');
-      setMessages(list);
+      setMessages(prev => {
+        if (
+          prev.length === list.length &&
+          prev.every((m, idx) =>
+            m.id === list[idx]?.id &&
+            m.isRead === list[idx]?.isRead
+          )
+        ) {
+          return prev;
+        }
+        return list;
+      });
       setConversations(prev =>
         prev.map(c =>
           c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c
@@ -121,6 +116,24 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       if (!silent) setLoadingMsgs(false);
     }
   }, []);
+
+  const loadConversations = useCallback(async (alsoReloadActiveMessages = false) => {
+    try {
+      const list = await fetchChatConversations({
+        viewMode: 'supplier',
+        supplierId,
+        supplierEmail
+      });
+      setConversations(list);
+      if (!selectedConvIdRef.current && list.length > 0) {
+        setSelectedConvId(list[0].id);
+      } else if (alsoReloadActiveMessages && selectedConvIdRef.current) {
+        await loadMessages(selectedConvIdRef.current, true);
+      }
+    } finally {
+      setLoadingThreads(false);
+    }
+  }, [supplierId, supplierEmail, loadMessages]);
 
   useEffect(() => {
     void loadConversations();
@@ -133,7 +146,10 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   }, [selectedConvId, loadMessages]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages.length, selectedConvId]);
 
   // Viewport Intersection & Open Thread Read Observer for Supplier
@@ -193,9 +209,14 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
 
   useEffect(() => {
     const unsub = subscribeMultiIdentityChatEvents(evt => {
-      if (evt.type === 'chat:new_message') {
+      if (evt.type === 'chat:connected') {
+        void loadConversations(true);
+      } else if (evt.type === 'chat:new_message') {
         const msg: MultiChatMessage | undefined = evt.payload?.message;
         const convId = String(evt.payload?.conversationId || msg?.conversationId || '');
+        if (convId && !selectedConvIdRef.current) {
+          setSelectedConvId(convId);
+        }
         if (convId && convId === selectedConvIdRef.current && msg) {
           const isIncomingAndVisible =
             msg.senderRole === 'buyer_identity' && document.visibilityState === 'visible';
@@ -215,7 +236,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
         evt.type === 'chat:conversation_created' ||
         evt.type === 'chat:identity_updated'
       ) {
-        void loadConversations();
+        void loadConversations(true);
       } else if (evt.type === 'chat:messages_read') {
         const convId = String(evt.payload?.conversationId || '');
         const readSenderRole = String(evt.payload?.readSenderRole || '');
@@ -249,6 +270,23 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       }
     });
     return unsub;
+  }, [loadConversations]);
+
+  // Guaranteed periodic & focus fallback sync so incoming admin messages appear within seconds
+  useEffect(() => {
+    const syncNow = () => {
+      if (document.visibilityState === 'visible') {
+        void loadConversations(true);
+      }
+    };
+    const intervalId = window.setInterval(syncNow, 3000);
+    window.addEventListener('focus', syncNow);
+    document.addEventListener('visibilitychange', syncNow);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', syncNow);
+      document.removeEventListener('visibilitychange', syncNow);
+    };
   }, [loadConversations]);
 
   const filteredConversations = useMemo(() => {
@@ -321,7 +359,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
         </div>
         <button
           type="button"
-          onClick={() => void loadConversations()}
+          onClick={() => void loadConversations(true)}
           className="inline-flex items-center gap-1.5 self-start rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:self-auto"
         >
           <RefreshCw className="h-3.5 w-3.5" /> Refresh Inbox
