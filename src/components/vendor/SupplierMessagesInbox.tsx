@@ -138,6 +138,8 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
             prev.map(c => (c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c))
           );
         }
+      } catch {
+        // Keep existing messages on transient network error
       } finally {
         if (!silent) setLoadingMsgs(false);
       }
@@ -165,6 +167,8 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
         } else if (alsoReloadActiveMessages && selectedConvIdRef.current) {
           await loadMessages(selectedConvIdRef.current, true);
         }
+      } catch {
+        // Keep existing conversations on transient network error
       } finally {
         setLoadingThreads(false);
       }
@@ -233,19 +237,21 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
       }
       const hasUnreadIncoming = messages.some(m => m.senderRole === 'buyer_identity' && !m.isRead);
       if (hasUnreadIncoming) {
-        void markChatMessagesRead(convId, 'supplier', supplierAuthToken).then(res => {
-          if (res?.skippedUnauthenticated) return;
-          setMessages(prev =>
-            prev.map(m =>
-              m.senderRole === 'buyer_identity' && !m.isRead
-                ? { ...m, isRead: true, readAt: new Date().toISOString() }
-                : m
-            )
-          );
-          setConversations(prev =>
-            prev.map(c => (c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c))
-          );
-        });
+        void markChatMessagesRead(convId, 'supplier', supplierAuthToken)
+          .then(res => {
+            if (res?.skippedUnauthenticated) return;
+            setMessages(prev =>
+              prev.map(m =>
+                m.senderRole === 'buyer_identity' && !m.isRead
+                  ? { ...m, isRead: true, readAt: new Date().toISOString() }
+                  : m
+              )
+            );
+            setConversations(prev =>
+              prev.map(c => (c.id === convId ? { ...c, unreadForSupplier: 0, unreadCount: 0 } : c))
+            );
+          })
+          .catch(() => {});
       }
     };
     window.addEventListener('focus', syncVisibleRead);
@@ -279,7 +285,7 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
             prev.some(m => m.id === normalizedMsg.id) ? prev : [...prev, normalizedMsg]
           );
           if (isIncomingAndVisible) {
-            void markChatMessagesRead(convId, 'supplier', supplierAuthToken);
+            void markChatMessagesRead(convId, 'supplier', supplierAuthToken).catch(() => {});
           }
         }
         void loadConversations();

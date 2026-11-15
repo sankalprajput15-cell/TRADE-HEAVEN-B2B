@@ -221,6 +221,8 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
           c.id === convId ? { ...c, unreadForAdmin: 0, unreadCount: 0 } : c
         )
       );
+    } catch {
+      // Preserve current messages on transient network error
     } finally {
       if (!silent) setLoadingMessages(false);
     }
@@ -234,12 +236,18 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       setThreadInsight(null);
       return;
     }
-    const insight = await fetchChatThreadInsight({
-      conversationId: conv.id,
-      supplierEmail: conv.supplierEmail,
-      supplierId: conv.supplierId
-    });
-    setThreadInsight(insight);
+    try {
+      const insight = await fetchChatThreadInsight({
+        conversationId: conv.id,
+        supplierEmail: conv.supplierEmail,
+        supplierId: conv.supplierId
+      });
+      if (insight) {
+        setThreadInsight(insight);
+      }
+    } catch {
+      // Keep last insight on transient network error
+    }
   }, []);
 
   const refreshDeskData = useCallback(async (alsoReloadActiveMessages = false) => {
@@ -262,6 +270,8 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       }
       const activeConvObj = convList.find(c => c.id === targetConvId) || null;
       void loadThreadInsight(activeConvObj);
+    } catch {
+      // Preserve existing desk state on transient network error
     } finally {
       setLoadingInitial(false);
     }
@@ -323,18 +333,20 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       if (!convId || document.visibilityState !== 'visible') return;
       const hasUnreadIncoming = messages.some(m => m.senderRole === 'supplier' && !m.isRead);
       if (hasUnreadIncoming) {
-        void markChatMessagesRead(convId, 'buyer_identity').then(() => {
-          setMessages(prev =>
-            prev.map(m =>
-              m.senderRole === 'supplier' && !m.isRead
-                ? { ...m, isRead: true, readAt: new Date().toISOString() }
-                : m
-            )
-          );
-          setConversations(prev =>
-            prev.map(c => (c.id === convId ? { ...c, unreadForAdmin: 0, unreadCount: 0 } : c))
-          );
-        });
+        void markChatMessagesRead(convId, 'buyer_identity')
+          .then(() => {
+            setMessages(prev =>
+              prev.map(m =>
+                m.senderRole === 'supplier' && !m.isRead
+                  ? { ...m, isRead: true, readAt: new Date().toISOString() }
+                  : m
+              )
+            );
+            setConversations(prev =>
+              prev.map(c => (c.id === convId ? { ...c, unreadForAdmin: 0, unreadCount: 0 } : c))
+            );
+          })
+          .catch(() => {});
       }
     };
     window.addEventListener('focus', syncVisibleRead);
@@ -366,15 +378,17 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
             prev.some(m => m.id === normalizedMsg.id) ? prev : [...prev, normalizedMsg]
           );
           if (isIncomingAndVisible) {
-            void markChatMessagesRead(convId, 'buyer_identity');
+            void markChatMessagesRead(convId, 'buyer_identity').catch(() => {});
           }
         }
-        void fetchChatConversations({ viewMode: 'admin' }).then(list => {
-          setConversations(list);
-          if (!selectedConvIdRef.current && list.length > 0) {
-            setSelectedConvId(list[0].id);
-          }
-        });
+        void fetchChatConversations({ viewMode: 'admin' })
+          .then(list => {
+            setConversations(list);
+            if (!selectedConvIdRef.current && list.length > 0) {
+              setSelectedConvId(list[0].id);
+            }
+          })
+          .catch(() => {});
       } else if (
         evt.type === 'chat:visibility_updated' ||
         evt.type === 'chat:conversation_created' ||

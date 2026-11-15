@@ -92,13 +92,40 @@ async function postChatAction<T = any>(
   return data as T;
 }
 
+const cachedBuyerIdentities: AdminBuyerIdentity[] = [];
+const cachedConversationsByKey = new Map<string, ChatConversation[]>();
+const cachedMessagesByConvId = new Map<string, MultiChatMessage[]>();
+
+async function fetchJsonWithRetry(url: string, init: RequestInit): Promise<any> {
+  let lastErr: any;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      return await res.json().catch(() => ({}));
+    } catch (err) {
+      lastErr = err;
+      if (attempt === 0) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 export async function fetchBuyerIdentities(): Promise<AdminBuyerIdentity[]> {
-  const res = await fetch(`${API_BASE}?action=get_buyer_identities&_t=${Date.now()}`, {
-    cache: 'no-store',
-    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
-  });
-  const json = await res.json().catch(() => ({}));
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await fetchJsonWithRetry(`${API_BASE}?action=get_buyer_identities&_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+    });
+    if (Array.isArray(json?.data)) {
+      cachedBuyerIdentities.splice(0, cachedBuyerIdentities.length, ...json.data);
+      return json.data;
+    }
+    return [...cachedBuyerIdentities];
+  } catch {
+    return [...cachedBuyerIdentities];
+  }
 }
 
 export async function createBuyerIdentity(
@@ -134,13 +161,21 @@ export async function fetchChatConversations(options: {
   });
   if (options.supplierId) params.set('supplier_id', options.supplierId);
   if (options.supplierEmail) params.set('supplier_email', options.supplierEmail);
+  const cacheKey = `${options.viewMode}:${options.supplierId || ''}:${options.supplierEmail || ''}`;
 
-  const res = await fetch(`${API_BASE}?${params.toString()}`, {
-    cache: 'no-store',
-    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
-  });
-  const json = await res.json().catch(() => ({}));
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await fetchJsonWithRetry(`${API_BASE}?${params.toString()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
+    });
+    if (Array.isArray(json?.data)) {
+      cachedConversationsByKey.set(cacheKey, json.data);
+      return json.data;
+    }
+    return cachedConversationsByKey.get(cacheKey) || [];
+  } catch {
+    return cachedConversationsByKey.get(cacheKey) || [];
+  }
 }
 
 export async function createOrGetChatConversation(payload: {
@@ -188,12 +223,19 @@ export async function fetchChatMessages(
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`;
   }
-  const res = await fetch(`${API_BASE}?${params.toString()}`, {
-    cache: 'no-store',
-    headers
-  });
-  const json = await res.json().catch(() => ({}));
-  return Array.isArray(json?.data) ? json.data : [];
+  try {
+    const json = await fetchJsonWithRetry(`${API_BASE}?${params.toString()}`, {
+      cache: 'no-store',
+      headers
+    });
+    if (Array.isArray(json?.data)) {
+      cachedMessagesByConvId.set(conversationId, json.data);
+      return json.data;
+    }
+    return cachedMessagesByConvId.get(conversationId) || [];
+  } catch {
+    return cachedMessagesByConvId.get(conversationId) || [];
+  }
 }
 
 export async function markChatMessagesRead(
