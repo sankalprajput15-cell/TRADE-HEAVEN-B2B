@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  FileSpreadsheet, 
-  Upload, 
-  Download, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
-  RefreshCw, 
-  Package, 
+import {
+  FileSpreadsheet,
+  Upload,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  RefreshCw,
+  Package,
   ArrowRight,
   FileText,
   Check,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
+import { fetchVisualProductImages, isManuallyUploadedImageUrl } from '../../services/visualProductImageService';
 
 interface ImportedProduct {
   id: string;
@@ -25,6 +27,8 @@ interface ImportedProduct {
   country: string;
   description: string;
   imageUrl: string;
+  images?: string[];
+  isAutoMatchedImage?: boolean;
   certifications: string[];
   status: 'valid' | 'error';
   errorMessage?: string;
@@ -100,7 +104,7 @@ export const BulkCsvProductImporter: React.FC<{
       const supplierCompany = values[5] || 'Verified Global Supplier';
       const country = values[6] || 'Global';
       const description = values[7] || title;
-      const imageUrl = values[8] || 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800';
+      const imageUrl = (values[8] || '').trim();
       const certsRaw = values[9] || '';
       const certifications = certsRaw ? certsRaw.split(',').map(s => s.trim()).filter(Boolean) : ['ISO 9001'];
 
@@ -126,6 +130,8 @@ export const BulkCsvProductImporter: React.FC<{
         country,
         description,
         imageUrl,
+        images: imageUrl ? [imageUrl] : [],
+        isAutoMatchedImage: !imageUrl,
         certifications,
         status,
         errorMessage
@@ -155,25 +161,63 @@ export const BulkCsvProductImporter: React.FC<{
     parseCsvData(SAMPLE_CSV);
   };
 
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
     const validRows = parsedProducts.filter(p => p.status === 'valid');
     if (validRows.length === 0) return;
 
     setIsImporting(true);
-    setTimeout(() => {
+    try {
+      const enrichedRows = await Promise.all(
+        validRows.map(async (row) => {
+          if (isManuallyUploadedImageUrl(row.imageUrl)) {
+            return {
+              ...row,
+              images: row.images && row.images.length > 0 ? row.images : [row.imageUrl],
+              isAutoMatchedImage: false
+            };
+          }
+          const searchRes = await fetchVisualProductImages({
+            productName: row.title,
+            category: row.category,
+            specifications: row.description,
+            count: 15
+          });
+          if (searchRes.success && searchRes.images.length > 0) {
+            const gallery = searchRes.images.slice(0, 4).map(i => i.url);
+            return {
+              ...row,
+              imageUrl: gallery[0],
+              images: gallery,
+              isAutoMatchedImage: true
+            };
+          }
+          return {
+            ...row,
+            imageUrl: '',
+            images: [],
+            isAutoMatchedImage: false
+          };
+        })
+      );
+
+      setParsedProducts(prev =>
+        prev.map(p => enrichedRows.find(e => e.id === p.id) || p)
+      );
+
       // Save to localStorage so product catalog picks them up
       try {
         const existingCustom = JSON.parse(localStorage.getItem('trade_heaven_custom_products') || '[]');
-        const updatedCustom = [...validRows, ...existingCustom];
+        const updatedCustom = [...enrichedRows, ...existingCustom];
         localStorage.setItem('trade_heaven_custom_products', JSON.stringify(updatedCustom));
       } catch (err) {
         console.error('Failed to save imported products to local storage', err);
       }
 
+      setImportSummary({ success: enrichedRows.length, errors: parsedProducts.length - enrichedRows.length });
+      onImportSuccess(enrichedRows.length);
+    } finally {
       setIsImporting(false);
-      setImportSummary({ success: validRows.length, errors: parsedProducts.length - validRows.length });
-      onImportSuccess(validRows.length);
-    }, 1000);
+    }
   };
 
   const validCount = parsedProducts.filter(p => p.status === 'valid').length;
@@ -337,7 +381,15 @@ export const BulkCsvProductImporter: React.FC<{
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 font-bold text-slate-900 max-w-xs truncate">{p.title}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900 max-w-xs truncate">
+                      <div className="truncate">{p.title}</div>
+                      {!p.imageUrl && p.status === 'valid' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-indigo-600 font-semibold">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Auto-Visual Search on import</span>
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-medium">{p.category}</span>
                     </td>

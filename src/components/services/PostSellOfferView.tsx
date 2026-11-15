@@ -209,19 +209,35 @@ export const PostSellOfferView: React.FC<Props> = ({
     };
 
     try {
+      const primaryImg = imageList[0] || imageUrl;
+      if (primaryImg) {
+        productImageManagerService.registerAutoSavedImage({
+          productTitle: title,
+          url: primaryImg
+        });
+      }
       // Save directly to Secure listings database
-      await bigrockApi.createListing({
+      const listingRes = await bigrockApi.createListing({
         title,
         description: description || `Factory direct supply of ${title}. MOQ: ${moq} ${moqUnit}, Port: ${portOfDispatch}.`,
         category,
         sub_category: subCategory,
         price: priceTier1,
-        image_url: imageUrl,
+        image_url: primaryImg,
+        images: imageList,
         moq,
         moq_unit: moqUnit,
         supplier_name: supplierName,
         supplier_country: 'China'
       });
+      const createdListingId = (listingRes as any)?.data?.id ? `prod-db-${(listingRes as any).data.id}` : '';
+      if (primaryImg && createdListingId) {
+        productImageManagerService.registerAutoSavedImage({
+          productId: createdListingId,
+          productTitle: title,
+          url: primaryImg
+        });
+      }
     } catch (err) {
       console.warn('Listing saved to local store');
     }

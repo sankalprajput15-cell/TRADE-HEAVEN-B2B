@@ -6,7 +6,12 @@ import {
   MARK_JOHNSON_15_BUYER_VISITS
 } from '../../data/detailedVendorProfiles';
 import { SafeImage } from '../common/SafeImage';
+import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
 import { api } from '../../services/apiService';
+import { bigrockApi } from '../../services/bigrockApi';
+import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
+import { isManuallyUploadedImageUrl, autoUploadDisplayedProductImage } from '../../services/visualProductImageService';
+import { productImageManagerService } from '../../services/productImageManagerService';
 import { SupplierMessagesInbox } from './SupplierMessagesInbox';
 import {
   ShieldCheck,
@@ -40,7 +45,9 @@ import {
   Lock,
   RefreshCw,
   SlidersHorizontal,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  Loader2
 } from 'lucide-react';
 
 export interface SupplierProductItem {
@@ -238,6 +245,13 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
   const [newProdPort, setNewProdPort] = useState('Port of Houston / Long Beach');
   const [newProdLeadTime, setNewProdLeadTime] = useState('14');
   const [newProdImageUrl, setNewProdImageUrl] = useState('');
+  const [newProdImages, setNewProdImages] = useState<string[]>([]);
+  const [newProdHasManualImage, setNewProdHasManualImage] = useState(false);
+  const [newProdAutoMatched, setNewProdAutoMatched] = useState(false);
+  const [isUploadingNewProdImage, setIsUploadingNewProdImage] = useState(false);
+  const [editProdHasManualImage, setEditProdHasManualImage] = useState(false);
+  const [editProdAutoMatched, setEditProdAutoMatched] = useState(false);
+  const [isUploadingEditProdImage, setIsUploadingEditProdImage] = useState(false);
 
   // Quote Submission Form State
   const [quoteUnitPrice, setQuoteUnitPrice] = useState('');
@@ -865,6 +879,11 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     const moqNum = parseInt(newProdMoq) || 1;
     const leadTimeNum = parseInt(newProdLeadTime) || 7;
 
+    const resolvedImages =
+      newProdHasManualImage && newProdImageUrl.trim()
+        ? [newProdImageUrl.trim(), ...newProdImages.filter(u => u !== newProdImageUrl.trim())].slice(0, 4)
+        : newProdImages;
+
     const newProd: SupplierProductItem = {
       id: `prod-${Date.now()}`,
       title: newProdTitle.trim(),
@@ -876,10 +895,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       stockCount: 50,
       inStock: true,
       leadTimeDays: leadTimeNum,
-      images: [
-        newProdImageUrl.trim() ||
-          'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
-      ],
+      images: resolvedImages,
       inquiryCount: 0,
       fobPort: newProdPort.trim() || 'Port of Origin',
       isVerifiedListing: true,
@@ -892,9 +908,54 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     };
 
     setProducts((prev) => [newProd, ...prev]);
+
+    if (resolvedImages.length > 0) {
+      const primaryUrl = resolvedImages[0];
+      productImageManagerService.registerAutoSavedImage({
+        productId: newProd.id,
+        productTitle: newProd.title,
+        url: primaryUrl
+      });
+      if (/^https?:\/\//i.test(primaryUrl)) {
+        void autoUploadDisplayedProductImage({
+          imageUrl: primaryUrl,
+          productId: newProd.id,
+          productName: newProd.title,
+          category: newProd.category
+        }).then(localUrl => {
+          if (localUrl) {
+            productImageManagerService.registerAutoSavedImage({
+              productId: newProd.id,
+              productTitle: newProd.title,
+              url: localUrl,
+              originalUrl: primaryUrl
+            });
+          }
+        });
+      }
+      void api.createProduct({
+        id: newProd.id,
+        title: newProd.title,
+        category: newProd.category,
+        description: `${newProd.title} — ISO 9001:2015 Verified Supply`,
+        moq: newProd.moq,
+        moqUnit: newProd.moqUnit,
+        priceTiers: [{ minUnits: newProd.moq, priceUsd: newProd.priceUsd }],
+        images: resolvedImages,
+        supplierId,
+        supplierName: companyName,
+        supplierCountry: currentUser?.country || 'Global',
+        supplierTier: (currentUser?.tier as SupplierTier) || 'GOLD',
+        supplierIsVerified: true
+      }).catch(() => {});
+    }
+
     setIsAddProductOpen(false);
     setNewProdTitle('');
     setNewProdImageUrl('');
+    setNewProdImages([]);
+    setNewProdHasManualImage(false);
+    setNewProdAutoMatched(false);
     showToast(`✓ Published "${newProd.title}" to your active catalog.`);
   };
 
@@ -905,7 +966,33 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     setProducts((prev) =>
       prev.map((p) => (p.id === editingProduct.id ? editingProduct : p))
     );
+    if (Array.isArray(editingProduct.images) && editingProduct.images.length > 0) {
+      const primaryUrl = editingProduct.images[0];
+      productImageManagerService.registerAutoSavedImage({
+        productId: editingProduct.id,
+        productTitle: editingProduct.title,
+        url: primaryUrl
+      });
+      if (/^https?:\/\//i.test(primaryUrl)) {
+        void autoUploadDisplayedProductImage({
+          imageUrl: primaryUrl,
+          productId: editingProduct.id,
+          productName: editingProduct.title,
+          category: editingProduct.category
+        });
+      }
+      void api.updateProduct(editingProduct.id, {
+        title: editingProduct.title,
+        category: editingProduct.category,
+        moq: editingProduct.moq,
+        moqUnit: editingProduct.moqUnit,
+        priceTiers: [{ minUnits: editingProduct.moq, priceUsd: editingProduct.priceUsd }],
+        images: editingProduct.images
+      }).catch(() => {});
+    }
     setEditingProduct(null);
+    setEditProdHasManualImage(false);
+    setEditProdAutoMatched(false);
     showToast(`✓ Updated listing details for "${editingProduct.title}".`);
   };
 
@@ -1389,7 +1476,12 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => setEditingProduct(prod)}
+                            onClick={() => {
+                              const hasManual = (prod.images || []).some(u => isManuallyUploadedImageUrl(u));
+                              setEditProdHasManualImage(hasManual);
+                              setEditProdAutoMatched(false);
+                              setEditingProduct(prod);
+                            }}
                             className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                             title="Edit Product Price & Details"
                           >
@@ -1772,8 +1864,8 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       {/* ========================================================= */}
       {isAddProductOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 bg-slate-900 text-white flex items-center justify-between">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[92dvh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-black text-base">Add New Verified Product Listing</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -1783,13 +1875,13 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
               <button
                 type="button"
                 onClick={() => setIsAddProductOpen(false)}
-                className="p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateProductSubmit} className="p-5 space-y-3.5 text-xs text-slate-700">
+            <form onSubmit={handleCreateProductSubmit} className="p-5 space-y-3.5 text-xs text-slate-700 overflow-y-auto flex-1">
               <div>
                 <label className="block font-bold text-slate-800 mb-1">Product Title *</label>
                 <input
@@ -1802,7 +1894,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block font-bold text-slate-800 mb-1">Industry Category</label>
                   <select
@@ -1877,14 +1969,85 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">Image URL (Optional)</label>
-                <input
-                  type="url"
-                  placeholder="https://... (leave blank for high-res auto asset)"
-                  value={newProdImageUrl}
-                  onChange={(e) => setNewProdImageUrl(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium"
+              <div className="space-y-2">
+                <label className="block font-bold text-slate-800">
+                  Product Photo Upload or Custom URL (Leave empty to auto-fetch via Visual Product Search)
+                </label>
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                  <label className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 flex items-center gap-1.5 cursor-pointer shrink-0">
+                    {isUploadingNewProdImage ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isUploadingNewProdImage ? 'Uploading...' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingNewProdImage}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const check = validateUploadFile(file, 'IMAGE');
+                        if (!check.valid) {
+                          showToast(check.error || 'Invalid image file.');
+                          e.target.value = '';
+                          return;
+                        }
+                        setIsUploadingNewProdImage(true);
+                        try {
+                          const compressed = await compressAndResizeImage(file);
+                          setNewProdImageUrl(compressed.dataUrl);
+                          setNewProdHasManualImage(true);
+                          setNewProdAutoMatched(false);
+                          const uploaded = await bigrockApi.uploadFile(file, 'listings');
+                          if (uploaded.success && uploaded.publicUrl) {
+                            setNewProdImageUrl(uploaded.publicUrl);
+                          }
+                        } catch (err: any) {
+                          showToast(err?.message || 'Image upload failed');
+                        } finally {
+                          setIsUploadingNewProdImage(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://... (leave empty for Visual Product Search)"
+                    value={newProdImageUrl}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewProdImageUrl(val);
+                      setNewProdHasManualImage(isManuallyUploadedImageUrl(val));
+                      if (val.trim()) setNewProdAutoMatched(false);
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium"
+                  />
+                </div>
+
+                <VisualProductImagePicker
+                  productName={newProdTitle}
+                  category={newProdCategory}
+                  hasManualImage={newProdHasManualImage}
+                  selectedImages={
+                    newProdHasManualImage && newProdImageUrl.trim()
+                      ? [newProdImageUrl.trim()]
+                      : newProdImages
+                  }
+                  isAutoMatched={!newProdHasManualImage && newProdAutoMatched}
+                  maxSelect={4}
+                  compact
+                  onSelectImages={(urls, isAuto) => {
+                    setNewProdImages(urls);
+                    setNewProdAutoMatched(isAuto);
+                    if (urls.length > 0 && newProdHasManualImage) {
+                      setNewProdImageUrl('');
+                      setNewProdHasManualImage(false);
+                    }
+                  }}
                 />
               </div>
 
@@ -1892,7 +2055,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                 <button
                   type="button"
                   onClick={() => setIsAddProductOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold"
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1914,8 +2077,8 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       {/* ========================================================= */}
       {editingProduct && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 bg-slate-900 text-white flex items-center justify-between">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[92dvh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-black text-base">Edit Product Listing</h3>
                 <p className="text-xs text-slate-400 mt-0.5">SKU: {editingProduct.sku}</p>
@@ -1923,13 +2086,13 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
               <button
                 type="button"
                 onClick={() => setEditingProduct(null)}
-                className="p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateProductSubmit} className="p-5 space-y-3.5 text-xs text-slate-700">
+            <form onSubmit={handleUpdateProductSubmit} className="p-5 space-y-3.5 text-xs text-slate-700 overflow-y-auto flex-1">
               <div>
                 <label className="block font-bold text-slate-800 mb-1">Product Title</label>
                 <input
@@ -1977,11 +2140,95 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                 />
               </div>
 
+              <div className="space-y-2">
+                <label className="block font-bold text-slate-800">
+                  Product Images (Upload manual image or leave empty for Visual Product Search)
+                </label>
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                  <label className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 flex items-center gap-1.5 cursor-pointer shrink-0">
+                    {isUploadingEditProdImage ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isUploadingEditProdImage ? 'Uploading...' : 'Upload Photo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingEditProdImage}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !editingProduct) return;
+                        const check = validateUploadFile(file, 'IMAGE');
+                        if (!check.valid) {
+                          showToast(check.error || 'Invalid image file.');
+                          e.target.value = '';
+                          return;
+                        }
+                        setIsUploadingEditProdImage(true);
+                        try {
+                          const compressed = await compressAndResizeImage(file);
+                          setEditingProduct(prev =>
+                            prev ? { ...prev, images: [compressed.dataUrl, ...(prev.images || []).slice(0, 3)] } : null
+                          );
+                          setEditProdHasManualImage(true);
+                          setEditProdAutoMatched(false);
+                          const uploaded = await bigrockApi.uploadFile(file, 'listings');
+                          if (uploaded.success && uploaded.publicUrl) {
+                            setEditingProduct(prev =>
+                              prev ? { ...prev, images: [uploaded.publicUrl!, ...(prev.images || []).slice(1)] } : null
+                            );
+                          }
+                        } catch (err: any) {
+                          showToast(err?.message || 'Image upload failed');
+                        } finally {
+                          setIsUploadingEditProdImage(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://... (clear to auto-match via Visual Product Search)"
+                    value={editingProduct.images?.[0] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingProduct({
+                        ...editingProduct,
+                        images: val.trim() ? [val.trim(), ...(editingProduct.images || []).slice(1)] : []
+                      });
+                      setEditProdHasManualImage(isManuallyUploadedImageUrl(val));
+                      if (val.trim()) setEditProdAutoMatched(false);
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium"
+                  />
+                </div>
+
+                <VisualProductImagePicker
+                  productName={editingProduct.title}
+                  category={editingProduct.category}
+                  hasManualImage={editProdHasManualImage}
+                  selectedImages={editingProduct.images || []}
+                  isAutoMatched={!editProdHasManualImage && editProdAutoMatched}
+                  maxSelect={4}
+                  compact
+                  onSelectImages={(urls, isAuto) => {
+                    setEditingProduct(prev => (prev ? { ...prev, images: urls } : null));
+                    setEditProdAutoMatched(isAuto);
+                    if (urls.length > 0 && editProdHasManualImage) {
+                      setEditProdHasManualImage(false);
+                    }
+                  }}
+                />
+              </div>
+
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold"
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>

@@ -1604,7 +1604,27 @@ export const api = {
           title: l.title,
           category: l.category || 'General',
           subCategory: l.sub_category || 'Industrial Equipment',
-          images: [l.image_url || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+          images: (() => {
+            const parsed: string[] = [];
+            if (Array.isArray(l.images)) {
+              for (const u of l.images) {
+                if (typeof u === 'string' && u.trim() && !parsed.includes(u.trim())) parsed.push(u.trim());
+              }
+            } else if (typeof l.images === 'string' && l.images.trim().startsWith('[')) {
+              try {
+                const arr = JSON.parse(l.images);
+                if (Array.isArray(arr)) {
+                  for (const u of arr) {
+                    if (typeof u === 'string' && u.trim() && !parsed.includes(u.trim())) parsed.push(u.trim());
+                  }
+                }
+              } catch {}
+            }
+            if (l.image_url && String(l.image_url).trim() && !parsed.includes(String(l.image_url).trim())) {
+              parsed.unshift(String(l.image_url).trim());
+            }
+            return parsed;
+          })(),
           moq: Number(l.moq || 1),
           moqUnit: l.moq_unit || 'Pieces',
           priceTiers: [
@@ -1745,9 +1765,7 @@ export const api = {
         title: product.title || 'New Marketplace Product',
         category: product.category || 'General Agriculture & Commodities',
         subCategory: product.subCategory || 'Raw Materials',
-        images: product.images && product.images.length > 0 ? product.images : [
-          '/assets/uploads/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'
-        ],
+        images: product.images && product.images.length > 0 ? product.images : [],
         moq: product.moq || 1,
         moqUnit: product.moqUnit || 'Kgs',
         priceTiers: product.priceTiers || [

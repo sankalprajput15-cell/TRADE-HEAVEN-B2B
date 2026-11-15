@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import { validateUploadFile, compressAndResizeImage, UPLOAD_LIMITS } from '../../utils/fileUploadGuard';
 import { bigrockApi } from '../../services/bigrockApi';
+import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
+import { productImageManagerService } from '../../services/productImageManagerService';
+import { autoUploadDisplayedProductImage } from '../../services/visualProductImageService';
 
 interface Props {
   isOpen?: boolean;
@@ -59,6 +62,14 @@ export const RfqCreationModal: React.FC<Props> = ({
   const [buyerEmail, setBuyerEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [autoVisualImages, setAutoVisualImages] = useState<string[]>([]);
+  const [isAutoMatchedImages, setIsAutoMatchedImages] = useState(false);
+
+  const manualImageUrls = attachedFiles
+    .map(f => f.previewUrl)
+    .filter((u): u is string => Boolean(u && u.trim()));
+  const hasManualImage = manualImageUrls.length > 0;
 
   const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
@@ -66,6 +77,8 @@ export const RfqCreationModal: React.FC<Props> = ({
     e.preventDefault();
     setIsSubmitting(true);
 
+    setSubmitError(null);
+    const finalImages = hasManualImage ? manualImageUrls : autoVisualImages;
     const generatedId = `rfq-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
 
     const newRfq: RfqRequirement = {
@@ -92,7 +105,9 @@ export const RfqCreationModal: React.FC<Props> = ({
       expiryDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       status: 'OPEN',
       matchedSupplierCount: 6,
-      spamScore: 1.0
+      spamScore: 1.0,
+      image: finalImages[0],
+      images: finalImages
     };
 
     try {
@@ -102,7 +117,7 @@ export const RfqCreationModal: React.FC<Props> = ({
         buyer_email: buyerEmail || 'support@tradeheaven.net',
         buyer_phone: '',
         buyer_company: buyerCompany || 'Procurement Officer',
-        buyer_country: 'United States',
+        buyer_country: buyerCountry || 'United States',
         product_name: productName,
         category,
         quantity: Number(targetQuantity) || 100,
@@ -112,6 +127,8 @@ export const RfqCreationModal: React.FC<Props> = ({
         destination_port: destinationPort,
         payment_terms: paymentTerms,
         requirements: description || `Seeking direct OEM/ODM factory quotation for ${targetQuantity} ${quantityUnit} of ${productName}. Target Incoterm: ${preferredIncoterm}, Destination Port: ${destinationPort}.`,
+        image_url: finalImages[0] || '',
+        images: finalImages,
         name: buyerCompany || 'Procurement Officer',
         email: buyerEmail || 'support@tradeheaven.net',
         phone: '',
@@ -121,9 +138,42 @@ export const RfqCreationModal: React.FC<Props> = ({
       if (!bigrockResult.success) {
         throw new Error(bigrockResult.message || 'Failed to sync with BigRock MySQL API');
       }
+      const primaryRfqImg = finalImages[0];
+      if (primaryRfqImg) {
+        const persistedRfqId = (bigrockResult as any)?.data?.id || generatedId;
+        productImageManagerService.registerAutoSavedImage({
+          productId: generatedId,
+          productTitle: newRfq.productName,
+          url: primaryRfqImg
+        });
+        if (persistedRfqId !== generatedId) {
+          productImageManagerService.registerAutoSavedImage({
+            productId: persistedRfqId,
+            productTitle: newRfq.productName,
+            url: primaryRfqImg
+          });
+        }
+        if (/^https?:\/\//i.test(primaryRfqImg)) {
+          void autoUploadDisplayedProductImage({
+            imageUrl: primaryRfqImg,
+            productId: persistedRfqId,
+            productName: newRfq.productName,
+            category
+          }).then(localUrl => {
+            if (localUrl) {
+              productImageManagerService.registerAutoSavedImage({
+                productId: persistedRfqId,
+                productTitle: newRfq.productName,
+                url: localUrl,
+                originalUrl: primaryRfqImg
+              });
+            }
+          });
+        }
+      }
       window.dispatchEvent(new CustomEvent('tradeheaven_rfq_created', { detail: newRfq }));
     } catch (e: any) {
-      alert(e.message || 'API Error');
+      setSubmitError(e?.message || 'API Error');
     }
 
     setTimeout(() => {
@@ -535,6 +585,24 @@ export const RfqCreationModal: React.FC<Props> = ({
                     <span>{uploadError}</span>
                   </div>
                 )}
+
+                <VisualProductImagePicker
+                  productName={productName}
+                  category={category}
+                  specifications={description}
+                  hasManualImage={hasManualImage}
+                  selectedImages={hasManualImage ? manualImageUrls : autoVisualImages}
+                  isAutoMatched={!hasManualImage && isAutoMatchedImages}
+                  maxSelect={4}
+                  compact
+                  onSelectImages={(urls, isAuto) => {
+                    if (hasManualImage) {
+                      setAttachedFiles(prev => prev.filter(f => !f.previewUrl));
+                    }
+                    setAutoVisualImages(urls);
+                    setIsAutoMatchedImages(isAuto);
+                  }}
+                />
               </div>
             </div>
 
@@ -592,6 +660,12 @@ export const RfqCreationModal: React.FC<Props> = ({
 
             {/* Submit Confirmation Button */}
             <div className="space-y-3 pt-2">
+              {submitError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{submitError}</span>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isSubmitting}

@@ -390,12 +390,14 @@ async function runAutonomousImageOptimizerCycle(trigger = 'SCHEDULED_60S_AUTONOM
 
       for (const fileName of entries) {
         sourceCount += 1;
-        const targetPath = path.join(dir, fileName);
-        const generated = await prewarmSingleImageFile(targetPath);
-        newlyOptimized += generated;
-        // Yield cleanly to keep HTTP latency unaffected while running every minute
-        if (generated > 0) {
-          await new Promise<void>((resolve) => setImmediate(resolve));
+        if (newlyOptimized < 8) {
+          const targetPath = path.join(dir, fileName);
+          const generated = await prewarmSingleImageFile(targetPath);
+          newlyOptimized += generated;
+          // Yield cleanly to keep HTTP latency unaffected while running every minute
+          if (generated > 0) {
+            await new Promise<void>((resolve) => setImmediate(resolve));
+          }
         }
       }
     }
@@ -778,15 +780,17 @@ function logServerActivity(
     console.warn(`[AUDIT ${status}] ${action} by ${actorEmail} [${actorRole}] on ${targetResource} - Details: ${details}`);
   }
 
-  // Automatically dispatch email alert alert via nodemailer/simulator helper
-  sendActivityAlert(action, actorEmail || 'anonymous', `${details} (Status: ${status}, Source IP: ${cleanIp})`, {
-    action,
-    actorRole,
-    targetResource,
-    status,
-    ipAddress: cleanIp,
-    details
-  });
+  // Skip email alert telemetry for product listings, RFQs, image uploads, media, content, or SEO actions
+  if (!/LISTING|PRODUCT|IMAGE|UPLOAD|MEDIA|CONTENT|SEO|CATALOG|RFQ|MARKET_DEMAND/i.test(action)) {
+    sendActivityAlert(action, actorEmail || 'anonymous', `${details} (Status: ${status}, Source IP: ${cleanIp})`, {
+      action,
+      actorRole,
+      targetResource,
+      status,
+      ipAddress: cleanIp,
+      details
+    });
+  }
 
   // Automatically update last-action timestamp if this actor has an active platform session
   if (status === 'SUCCESS' && action !== 'AUTH_LOGOUT' && actorEmail) {
@@ -6824,12 +6828,41 @@ function standardizeServerRfq(r: any) {
   const estOrderVal =
     Number(r.estimatedOrderValueUsd || r.estimated_order_value_usd || 0) ||
     (qtyNum > 0 && priceNum > 0 ? Math.round(qtyNum * priceNum * 100) / 100 : 0);
+  const resolvedProductName = r.productName || r.product_name || r.title || r.subject || 'Sourcing Requirement';
+
+  // Resolve any auto-saved local image override for this RFQ ID or product title
+  const cleanSubj = cleanProductSearchSubject(resolvedProductName);
+  const overrideById = serverProductImageState?.overrides?.[idStr];
+  const overrideByTitle =
+    serverProductImageState?.overrides?.[resolvedProductName] ||
+    serverProductImageState?.overrides?.[String(resolvedProductName).toLowerCase().trim()] ||
+    (cleanSubj ? serverProductImageState?.overrides?.[cleanSubj] : undefined);
+
+  const savedOverridePrimary =
+    (overrideById?.primary && String(overrideById.primary).startsWith('/assets/uploads/') ? overrideById.primary : '') ||
+    (overrideByTitle?.primary && String(overrideByTitle.primary).startsWith('/assets/uploads/') ? overrideByTitle.primary : '');
+
+  const rawPrimaryImg =
+    savedOverridePrimary ||
+    String(
+      r.image ||
+        r.image_url ||
+        r.imageUrl ||
+        (Array.isArray(r.images) && r.images.length > 0 ? r.images[0] : '') ||
+        ''
+    ).trim();
+
+  const resolvedGallery = Array.isArray(r.images) && r.images.length > 0
+    ? (savedOverridePrimary ? [savedOverridePrimary, ...r.images.filter((u: any) => u && u !== savedOverridePrimary)] : r.images)
+    : rawPrimaryImg
+    ? [rawPrimaryImg]
+    : [];
 
   return {
     id: idStr,
     raw_id: typeof r.raw_id === 'number' ? r.raw_id : (typeof r.id === 'number' ? r.id : parseInt(String(r.id).replace(/\D/g, '') || '101', 10)),
-    title: r.title || r.productName || r.product_name || r.subject || 'Sourcing Requirement',
-    productName: r.productName || r.product_name || r.title || r.subject || 'Sourcing Requirement',
+    title: r.title || resolvedProductName,
+    productName: resolvedProductName,
     category: r.category || 'Industrial Machinery & CNC',
     quantity: String(r.quantity || r.target_quantity || r.targetQuantity || '1000'),
     targetQuantity: qtyNum,
@@ -6875,6 +6908,10 @@ function standardizeServerRfq(r: any) {
     searchKeyword: r.searchKeyword || r.search_keyword || '',
     marketInsight: r.marketInsight || r.market_insight || '',
     marketDemandVerified: isAuto || Boolean(r.marketDemandVerified || r.market_demand_verified),
+    image: rawPrimaryImg || undefined,
+    image_url: rawPrimaryImg || undefined,
+    images: resolvedGallery,
+    ...(typeof r.pageSequenceOrder === 'number' ? { pageSequenceOrder: r.pageSequenceOrder } : {}),
     created_at: createdIso
   };
 }
@@ -7833,6 +7870,34 @@ app.get('/api.php', async (req, res) => {
     return res.json({ status: 'success', success: true, data: summary });
   }
 
+  if (action === 'fetch_product_images' || action === 'visual_product_search') {
+    const result = await handleVisualProductImageSearch({
+      productName: String(req.query.product_name || req.query.productName || req.query.q || ''),
+      category: String(req.query.category || ''),
+      specifications: String(req.query.specifications || req.query.specs || ''),
+      count: Number(req.query.count || 15) || 15,
+      forceRefresh: req.query.force_refresh === '1' || req.query.forceRefresh === 'true'
+    });
+    return res.json(result);
+  }
+
+  if (action === 'auto_upload_product_image') {
+    const extUrl = String(req.query.image_url || req.query.imageUrl || req.query.url || '').trim();
+    const localUrl = await mirrorExternalProductImageToLocalUploads({
+      externalUrl: extUrl,
+      productId: String(req.query.product_id || req.query.productId || '').trim(),
+      productName: String(req.query.product_name || req.query.productName || '').trim(),
+      category: String(req.query.category || '').trim()
+    });
+    return res.json({
+      status: localUrl ? 'success' : 'error',
+      success: Boolean(localUrl),
+      localUrl: localUrl || '',
+      url: localUrl || '',
+      originalUrl: extUrl
+    });
+  }
+
   res.json({
     status: 'ok',
     service: 'Trade Heaven BigRock MySQL Gateway Emulation',
@@ -8719,9 +8784,42 @@ app.post('/api.php', async (req, res) => {
       marketInsight,
       market_insight: marketInsight,
       marketDemandVerified: source === 'auto_generated' || Boolean(input.market_demand_verified || input.marketDemandVerified),
+      image_url: String(input.image_url || input.imageUrl || (Array.isArray(input.images) && input.images[0]) || '').trim(),
+      images: Array.isArray(input.images)
+        ? input.images.map((u: any) => String(u || '').trim()).filter(Boolean)
+        : input.image_url || input.imageUrl
+        ? [String(input.image_url || input.imageUrl).trim()]
+        : [],
       persisted: true,
       created_at: new Date().toISOString()
     };
+
+    if (formattedRfq.images.length > 0) {
+      const rfqPrimary = formattedRfq.images[0];
+      if (/^https?:\/\//i.test(rfqPrimary)) {
+        void mirrorExternalProductImageToLocalUploads({
+          externalUrl: rfqPrimary,
+          productId: formattedRfq.id,
+          productName,
+          category,
+          flushNow: true
+        }).then(localUrl => {
+          if (localUrl) {
+            formattedRfq.image_url = localUrl;
+            formattedRfq.images = [localUrl, ...formattedRfq.images.slice(1)];
+            saveRfqMarketStoreToDisk();
+          }
+        });
+      } else {
+        bindAutoSavedImageOverride({
+          localUrl: rfqPrimary,
+          productId: formattedRfq.id,
+          productName,
+          gallery: formattedRfq.images,
+          flushNow: true
+        });
+      }
+    }
 
     if (source === 'auto_generated') {
       serverRfqsStore.push(formattedRfq);
@@ -8731,22 +8829,7 @@ app.post('/api.php', async (req, res) => {
     saveRfqMarketStoreToDisk();
 
     if (source !== 'auto_generated') {
-      logServerActivity(req, 'CONTACT_REVEALED', buyerEmail, 'BUYER', `/api.php?action=submit_rfq`, `New B2B RFQ listed for: "${productName}" - Vol: ${quantity} ${unit}.`, 'SUCCESS');
-
-      sendActivityAlert('RFQ_SUBMISSION', buyerEmail, `A new RFQ was submitted: "${productName}". Target Quantity: ${quantity} ${unit}. Company: ${buyerCompany}`, {
-        rfqId: formattedRfq.id,
-        buyerName,
-        buyerEmail,
-        buyerCompany,
-        buyerCountry,
-        productName,
-        category,
-        quantity,
-        unit,
-        targetPrice,
-        incoterms,
-        specifications
-      });
+      logServerActivity(req, 'RFQ_LISTED', buyerEmail, 'BUYER', `/api.php?action=submit_rfq`, `New B2B RFQ listed for: "${productName}" - Vol: ${quantity} ${unit}.`, 'SUCCESS');
     }
 
     return res.json({
@@ -8792,6 +8875,12 @@ app.post('/api.php', async (req, res) => {
   }
 
   if (action === 'submit_listing' || action === 'create_listing' || action === 'listings') {
+    const cleanImgUrl = String(input.image_url || input.imageUrl || '').trim();
+    const galleryImgs = Array.isArray(input.images)
+      ? input.images.map((u: any) => String(u || '').trim()).filter(Boolean)
+      : cleanImgUrl
+      ? [cleanImgUrl]
+      : [];
     const newListing = {
       id: Date.now(),
       title: input.title || 'New Listing Item',
@@ -8803,7 +8892,8 @@ app.post('/api.php', async (req, res) => {
       moq_unit: input.moq_unit || 'Pieces',
       supplier_name: input.supplier_name || 'Verified Exporter Ltd',
       supplier_country: input.supplier_country || 'Global',
-      image_url: input.image_url || '',
+      image_url: galleryImgs[0] || cleanImgUrl,
+      images: galleryImgs,
       owner_email: input.owner_email || '',
       owner_id: input.owner_id || '',
       created_at: new Date().toISOString()
@@ -8811,17 +8901,32 @@ app.post('/api.php', async (req, res) => {
 
     serverListingsStore.unshift(newListing);
 
-    sendActivityAlert('LISTING_CREATED', newListing.owner_email || 'Supplier Account', `A product listing was posted in the catalog: "${newListing.title}"`, {
-      listingId: newListing.id,
-      title: newListing.title,
-      category: newListing.category,
-      price: newListing.price,
-      moq: newListing.moq,
-      moq_unit: newListing.moq_unit,
-      supplier_name: newListing.supplier_name,
-      supplier_country: newListing.supplier_country,
-      owner_email: newListing.owner_email
-    });
+    const listingPid = `prod-db-${newListing.id}`;
+    if (galleryImgs.length > 0) {
+      const primaryImg = galleryImgs[0];
+      if (/^https?:\/\//i.test(primaryImg)) {
+        void mirrorExternalProductImageToLocalUploads({
+          externalUrl: primaryImg,
+          productId: listingPid,
+          productName: newListing.title,
+          category: newListing.category,
+          flushNow: true
+        }).then(localUrl => {
+          if (localUrl) {
+            newListing.image_url = localUrl;
+            newListing.images = [localUrl, ...galleryImgs.slice(1)];
+          }
+        });
+      } else {
+        bindAutoSavedImageOverride({
+          localUrl: primaryImg,
+          productId: listingPid,
+          productName: newListing.title,
+          gallery: galleryImgs,
+          flushNow: true
+        });
+      }
+    }
 
     return res.json({ success: true, data: newListing });
   }
@@ -8849,12 +8954,6 @@ app.post('/api.php', async (req, res) => {
     if (catalogStore.products.length !== prevCatalogCount) {
       saveCustomCatalogToDisk(catalogStore);
     }
-
-    sendActivityAlert('LISTING_DELETED', targetListing?.owner_email || 'Verified User', `A product listing was removed from the database: "${targetListing?.title || rawDelId}"`, {
-      listingId: rawDelId,
-      listingTitle: targetListing?.title || 'Unknown',
-      category: targetListing?.category || 'Unknown'
-    });
 
     return res.json({
       success: true,
@@ -8912,10 +9011,6 @@ app.post('/api.php', async (req, res) => {
   if (action === 'save_content') {
     const payload = input.siteContent || input || {};
     serverSiteContent = { ...(serverSiteContent || {}), ...payload };
-
-    sendActivityAlert('SITE_CONTENT_PUBLISHED', 'Live Editor', `Site text and media content has been updated and published.`, {
-      updatedKeys: Object.keys(payload)
-    });
 
     return res.json({
       success: true,
@@ -9176,6 +9271,108 @@ app.post('/api.php', async (req, res) => {
     const minAge = Number(input.minAgeSeconds || req.query.min_age_seconds || 60) || 60;
     const summary = await processUnseenChatAlerts(minAge);
     return res.json({ status: 'success', success: true, data: summary });
+  }
+
+  if (action === 'fetch_product_images' || action === 'visual_product_search') {
+    const result = await handleVisualProductImageSearch({
+      productName: String(input.product_name || input.productName || input.q || req.query.product_name || ''),
+      category: String(input.category || req.query.category || ''),
+      specifications: String(input.specifications || input.specs || req.query.specifications || ''),
+      count: Number(input.count || req.query.count || 15) || 15,
+      forceRefresh: Boolean(input.force_refresh || input.forceRefresh || req.query.force_refresh === '1')
+    });
+    return res.json(result);
+  }
+
+  if (action === 'auto_upload_product_image') {
+    const extUrl = String(input.image_url || input.imageUrl || input.url || req.query.image_url || '').trim();
+    const localUrl = await mirrorExternalProductImageToLocalUploads({
+      externalUrl: extUrl,
+      productId: String(input.product_id || input.productId || req.query.product_id || '').trim(),
+      productName: String(input.product_name || input.productName || req.query.product_name || '').trim(),
+      category: String(input.category || req.query.category || '').trim(),
+      flushNow: true
+    });
+    return res.json({
+      status: localUrl ? 'success' : 'error',
+      success: Boolean(localUrl),
+      localUrl: localUrl || '',
+      url: localUrl || '',
+      originalUrl: extUrl
+    });
+  }
+
+  if (action === 'auto_batch_persist_rfqs' || action === 'auto_batch_persist') {
+    const incomingList = Array.isArray(input.rfqs) ? input.rfqs : [];
+    const keyword = String(input.keyword || '').trim();
+    const insightSummary = String(input.insightSummary || '').trim();
+    if (incomingList.length === 0) {
+      return res.json({ status: 'success', success: true, addedCount: 0, rfqs: [] });
+    }
+    const existingById = new Map<string, any>();
+    serverRfqsStore.forEach(r => {
+      if (r && r.id) existingById.set(String(r.id), r);
+    });
+    const addedItems: any[] = [];
+    for (const raw of incomingList) {
+      if (!raw || typeof raw !== 'object') continue;
+      const rfqId = String(raw.id || `rfq-auto-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+      const productName = String(raw.productName || raw.product_name || raw.title || 'Wholesale Product').trim();
+      const category = String(raw.category || 'Agriculture & Global Commodities').trim();
+      const cleanSubj = cleanProductSearchSubject(productName);
+      const existingOverride =
+        serverProductImageState?.overrides?.[rfqId] ||
+        serverProductImageState?.overrides?.[productName] ||
+        serverProductImageState?.overrides?.[productName.toLowerCase()] ||
+        (cleanSubj ? serverProductImageState?.overrides?.[cleanSubj] : undefined);
+      const cacheKey = normalizeVisualSearchKeyword(productName, category);
+      const cachedPoolEntry = serverProductImageCacheMap.get(cacheKey);
+      const cachedLocalUrl =
+        cachedPoolEntry?.images?.find(img => img?.url && String(img.url).startsWith('/assets/uploads/'))?.url || '';
+      const resolvedImg =
+        (existingOverride?.primary && String(existingOverride.primary).startsWith('/assets/uploads/')
+          ? existingOverride.primary
+          : '') ||
+        cachedLocalUrl ||
+        String(raw.image || raw.image_url || (Array.isArray(raw.images) && raw.images[0]) || '').trim();
+
+      if (existingById.has(rfqId)) {
+        const ex = existingById.get(rfqId);
+        if (resolvedImg && (!ex.image_url || !String(ex.image_url).startsWith('/assets/uploads/'))) {
+          ex.image = resolvedImg;
+          ex.image_url = resolvedImg;
+          ex.images = [resolvedImg];
+        }
+        continue;
+      }
+
+      const record: any = {
+        ...raw,
+        id: rfqId,
+        title: String(raw.title || productName),
+        productName,
+        category,
+        source: 'auto_generated',
+        syncTag: 'market_sync',
+        sync_tag: 'market_sync',
+        searchKeyword: String(raw.searchKeyword || keyword || productName),
+        marketInsight: String(raw.marketInsight || insightSummary || ''),
+        marketDemandVerified: true,
+        image: resolvedImg,
+        image_url: resolvedImg,
+        images: resolvedImg ? [resolvedImg] : [],
+        status: 'OPEN',
+        persisted: true,
+        created_at: new Date().toISOString()
+      };
+      serverRfqsStore.push(record);
+      existingById.set(rfqId, record);
+      addedItems.push(standardizeServerRfq(record));
+    }
+    if (addedItems.length > 0) {
+      saveRfqMarketStoreToDisk();
+    }
+    return res.json({ status: 'success', success: true, addedCount: addedItems.length, rfqs: addedItems });
   }
 
   if (action === 'send_chat_message') {
@@ -9809,22 +10006,25 @@ app.post('/api/v1/products', (req, res) => {
   saveServerProductsToDisk();
 
   if (Array.isArray(newProduct.images) && newProduct.images.length > 0) {
-    serverProductImageState.overrides[newProduct.id] = {
-      primary: newProduct.images[0],
-      gallery: newProduct.images,
-      updatedAt: new Date().toISOString()
-    };
-    saveServerProductImageState();
+    const primaryUrl = String(newProduct.images[0] || '').trim();
+    if (/^https?:\/\//i.test(primaryUrl)) {
+      void mirrorExternalProductImageToLocalUploads({
+        externalUrl: primaryUrl,
+        productId: newProduct.id,
+        productName: newProduct.title,
+        category: newProduct.category,
+        flushNow: true
+      });
+    } else if (primaryUrl) {
+      bindAutoSavedImageOverride({
+        localUrl: primaryUrl,
+        productId: newProduct.id,
+        productName: newProduct.title,
+        gallery: newProduct.images,
+        flushNow: true
+      });
+    }
   }
-
-  sendActivityAlert('CATALOG_PRODUCT_CREATED', newProduct.supplierEmail || 'Merchant Profile', `A catalog product was listed: "${newProduct.title}"`, {
-    productId: newProduct.id,
-    title: newProduct.title,
-    category: newProduct.category,
-    price: newProduct.priceUsd || newProduct.price,
-    supplier: newProduct.supplierName,
-    country: newProduct.supplierCountry
-  });
 
   res.status(201).json({ success: true, data: newProduct, message: 'Product listed successfully' });
 });
@@ -9843,19 +10043,25 @@ app.put('/api/v1/products/:id', (req, res) => {
   saveServerProductsToDisk();
 
   if (Array.isArray(req.body?.images) && req.body.images.length > 0) {
-    serverProductImageState.overrides[id] = {
-      primary: req.body.images[0],
-      gallery: req.body.images,
-      updatedAt: new Date().toISOString()
-    };
-    saveServerProductImageState();
+    const primaryUrl = String(req.body.images[0] || '').trim();
+    if (/^https?:\/\//i.test(primaryUrl)) {
+      void mirrorExternalProductImageToLocalUploads({
+        externalUrl: primaryUrl,
+        productId: id,
+        productName: updatedProduct?.title,
+        category: updatedProduct?.category,
+        flushNow: true
+      });
+    } else if (primaryUrl) {
+      bindAutoSavedImageOverride({
+        localUrl: primaryUrl,
+        productId: id,
+        productName: updatedProduct?.title,
+        gallery: req.body.images,
+        flushNow: true
+      });
+    }
   }
-
-  sendActivityAlert('CATALOG_PRODUCT_UPDATED', updatedProduct.supplierEmail || 'Merchant Profile', `A catalog product was updated: "${updatedProduct.title || id}"`, {
-    productId: id,
-    title: updatedProduct.title || id,
-    changes: req.body
-  });
 
   res.json({ success: true, data: updatedProduct, message: 'Product updated successfully' });
 });
@@ -9864,10 +10070,6 @@ app.delete('/api/v1/products/:id', (req, res) => {
   const rawId = decodeURIComponent(String(req.params.id || '')).trim();
   const dbListingId = rawId.startsWith('prod-db-') ? rawId.replace('prod-db-', '') : rawId;
   const idsToRemove = new Set<string>([rawId, dbListingId, `prod-db-${dbListingId}`].filter(Boolean));
-
-  const targetProduct =
-    serverProductsStore.find(p => idsToRemove.has(String(p.id))) ||
-    serverListingsStore.find(l => idsToRemove.has(String(l.id)) || idsToRemove.has(`prod-db-${l.id}`));
 
   serverProductsStore = serverProductsStore.filter(p => !idsToRemove.has(String(p.id)));
   serverListingsStore = serverListingsStore.filter(
@@ -9896,11 +10098,6 @@ app.delete('/api/v1/products/:id', (req, res) => {
   if (imageOverrideRemoved) {
     saveServerProductImageState();
   }
-
-  sendActivityAlert('CATALOG_PRODUCT_DELETED', targetProduct?.supplierEmail || targetProduct?.owner_email || 'Merchant Profile', `A catalog product was deleted from site: "${targetProduct?.title || rawId}"`, {
-    productId: rawId,
-    title: targetProduct?.title || 'Unknown'
-  });
 
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.json({
@@ -9954,6 +10151,24 @@ function normalizeServerAssetUrl(url: string | undefined | null): string {
   return url.replace(/^\/assets\/aistudio\//, '/assets/uploads/');
 }
 
+function isGenericOrPlaceholderServerUrl(url: string | undefined | null): boolean {
+  const clean = String(url || '').trim().toLowerCase();
+  if (!clean) return true;
+  return [
+    'picsum.photos',
+    'via.placeholder.com',
+    'placeholder.com',
+    'dummyimage.com',
+    'placekitten.com',
+    'images.unsplash.com',
+    'unsplash.com',
+    'pexels.com',
+    'pixabay.com',
+    'vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port',
+    'vecteezy_cargo-tanker-ship'
+  ].some(p => clean.includes(p));
+}
+
 function ensureUploadsDir() {
   try {
     if (!fs.existsSync(UPLOADS_DIR)) {
@@ -9985,15 +10200,16 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
         const entry = rawEntry as ProductImageOverrideEntry & { previousPrimary?: string };
         if (!entry || !entry.primary) continue;
         const cleanPrimary = normalizeServerAssetUrl(entry.primary);
+        if (isGenericOrPlaceholderServerUrl(cleanPrimary)) continue;
         const cleanGallery = Array.isArray(entry.gallery) && entry.gallery.length > 0
-          ? entry.gallery.map(u => normalizeServerAssetUrl(u)).filter(Boolean)
+          ? entry.gallery.map(u => normalizeServerAssetUrl(u)).filter(u => Boolean(u) && !isGenericOrPlaceholderServerUrl(u))
           : [cleanPrimary];
         const existing = defaultState.overrides[pid];
         if (!existing || forceOverwrite) {
           defaultState.overrides[pid] = {
             ...entry,
             primary: cleanPrimary,
-            gallery: cleanGallery
+            gallery: cleanGallery.length > 0 ? cleanGallery : [cleanPrimary]
           };
         } else {
           const existingTime = Date.parse(existing.updatedAt || '') || 0;
@@ -10002,7 +10218,7 @@ function loadServerProductImageState(existingMemoryState?: ProductImageSystemSta
             defaultState.overrides[pid] = {
               ...entry,
               primary: cleanPrimary,
-              gallery: cleanGallery
+              gallery: cleanGallery.length > 0 ? cleanGallery : [cleanPrimary]
             };
           }
         }
@@ -13476,16 +13692,71 @@ app.get('/api/v1/rfqs/market-insights', (req, res) => {
   const normalized = normalizeMarketKeyword(keyword);
   const direct = serverMarketInsightsStore.get(normalized);
   if (direct) {
-    return res.json({ success: true, insight: { ...direct, fromCache: true } });
+    return res.json({
+      success: true,
+      insight: {
+        ...direct,
+        summary: sanitizePublicTradeText(direct.summary || ''),
+        sources: sanitizePublicTradeSources(direct.sources || []),
+        fromCache: true
+      }
+    });
   }
   // Fuzzy substring check against cached insights
   for (const [k, v] of serverMarketInsightsStore.entries()) {
     if (k.includes(normalized) || normalized.includes(k)) {
-      return res.json({ success: true, insight: { ...v, fromCache: true } });
+      return res.json({
+        success: true,
+        insight: {
+          ...v,
+          summary: sanitizePublicTradeText(v.summary || ''),
+          sources: sanitizePublicTradeSources(v.sources || []),
+          fromCache: true
+        }
+      });
     }
   }
   return res.json({ success: true, insight: null });
 });
+
+function sanitizePublicTradeText(text: string): string {
+  return String(text || '')
+    .replace(/\bGoogle\s+Trade\s+Search\b/gi, 'Global Trade Index')
+    .replace(/\bGoogle\s+Trade\s+Sync\b/gi, 'Live Trade Sync')
+    .replace(/\bLive\s+Google\s+Trade\s+Index\b/gi, 'Live Global Trade Index')
+    .replace(/\bGoogle\s+Global\s+Trade\s+Index\b/gi, 'Global Maritime Trade Index')
+    .replace(/\bGoogle\s+Search\b/gi, 'Global Trade Index')
+    .replace(/\bvia\s+Google\b/gi, 'via Global Trade Index')
+    .trim();
+}
+
+function sanitizePublicTradeSources(
+  rawSources: Array<{ title: string; uri: string }>
+): Array<{ title: string; uri: string }> {
+  const seen = new Set<string>();
+  const cleaned: Array<{ title: string; uri: string }> = [];
+  for (const s of rawSources || []) {
+    const uri = String(s?.uri || '').trim();
+    const title = sanitizePublicTradeText(String(s?.title || '').trim());
+    if (!uri || !title) continue;
+    const lowerUri = uri.toLowerCase();
+    // Never expose google.com / news.google / vertexaisearch links publicly in search UI
+    if (
+      lowerUri.includes('google.com') ||
+      lowerUri.includes('googleapis.com') ||
+      lowerUri.includes('gstatic.com') ||
+      /google/i.test(title)
+    ) {
+      continue;
+    }
+    if (!seen.has(uri)) {
+      seen.add(uri);
+      cleaned.push({ title, uri });
+    }
+    if (cleaned.length >= 4) break;
+  }
+  return cleaned;
+}
 
 async function fetchLiveGoogleTradeSources(keyword: string): Promise<Array<{ title: string; uri: string }>> {
   const sources: Array<{ title: string; uri: string }> = [];
@@ -13508,8 +13779,8 @@ async function fetchLiveGoogleTradeSources(keyword: string): Promise<Array<{ tit
         const linkMatch = block.match(/<link>(.*?)<\/link>/);
         const rawTitle = (titleMatch?.[1] || titleMatch?.[2] || '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim();
         const rawLink = (linkMatch?.[1] || '').trim();
-        if (rawTitle && rawLink) {
-          sources.push({ title: rawTitle, uri: rawLink });
+        if (rawTitle && rawLink && !rawLink.toLowerCase().includes('google.com')) {
+          sources.push({ title: sanitizePublicTradeText(rawTitle), uri: rawLink });
         }
       }
     }
@@ -13517,20 +13788,7 @@ async function fetchLiveGoogleTradeSources(keyword: string): Promise<Array<{ tit
     // Non-fatal fallback
   }
 
-  if (sources.length === 0) {
-    const encoded = encodeURIComponent(`${keyword} wholesale import export price`);
-    sources.push(
-      {
-        title: `Google Global Trade Index: ${keyword} Import & Wholesale Demand`,
-        uri: `https://www.google.com/search?q=${encoded}`
-      },
-      {
-        title: `UN Comtrade & Global Port Customs Data — ${keyword}`,
-        uri: `https://www.google.com/search?q=${encodeURIComponent(`${keyword} global import ports HS code wholesale`)}`
-      }
-    );
-  }
-  return sources;
+  return sanitizePublicTradeSources(sources);
 }
 
 function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array<{ title: string; uri: string }>) {
@@ -13943,6 +14201,23 @@ function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array
 app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
   const rawKeyword = String(req.body?.keyword || req.query?.keyword || '').trim();
   const normalizedKeyword = normalizeMarketKeyword(rawKeyword);
+  const rawSearchResults = Array.isArray(req.body?.searchResults)
+    ? req.body.searchResults
+    : Array.isArray(req.body?.keywords)
+    ? req.body.keywords
+    : [];
+
+  const cleanSearchResults: string[] = [];
+  const seenResultNorms = new Set<string>();
+  for (const item of rawSearchResults) {
+    const label = String(item || '').trim().replace(/\s+/g, ' ');
+    const norm = normalizeMarketKeyword(label);
+    if (norm.length >= 2 && norm !== normalizedKeyword && !seenResultNorms.has(norm)) {
+      seenResultNorms.add(norm);
+      cleanSearchResults.push(label);
+      if (cleanSearchResults.length >= 10) break;
+    }
+  }
 
   if (!normalizedKeyword || normalizedKeyword.length < 2) {
     return res.json({
@@ -13953,31 +14228,49 @@ app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
     });
   }
 
-  // 1. DATABASE-FIRST CHECK on server store
+  // 1. DATABASE-FIRST CHECK on server store (for main keyword + all passed searchResults)
   const existingMatches = sortRfqsRealFirst(
     serverRfqsStore.filter(r => matchesRfqKeyword(r, normalizedKeyword)).map(standardizeServerRfq)
   );
   const cachedInsight = serverMarketInsightsStore.get(normalizedKeyword) || null;
+  const sanitizedCachedInsight = cachedInsight
+    ? {
+        ...cachedInsight,
+        summary: sanitizePublicTradeText(cachedInsight.summary || ''),
+        sources: sanitizePublicTradeSources(cachedInsight.sources || []),
+        fromCache: true
+      }
+    : null;
 
-  if (existingMatches.length >= 3) {
+  const uncoveredResults = cleanSearchResults.filter(item => {
+    const normItem = normalizeMarketKeyword(item);
+    return !serverRfqsStore.some(
+      r =>
+        isAutoGeneratedServerRfq(r) &&
+        (normalizeMarketKeyword(String(r.searchKeyword || r.search_keyword || '')) === normItem ||
+          matchesRfqKeyword(r, item))
+    );
+  });
+
+  if (existingMatches.length >= 3 && uncoveredResults.length === 0) {
     return res.json({
       success: true,
       source: 'database_cache',
       fromCache: true,
       keyword: rawKeyword,
       rfqs: existingMatches,
-      insight: cachedInsight ? { ...cachedInsight, fromCache: true } : null,
+      insight: sanitizedCachedInsight,
       generatedCount: 0
     });
   }
 
-  // 2. LIVE GOOGLE DEMAND FETCH & AUTO-RFQ GENERATION
+  // 2. LIVE DEMAND FETCH & AUTO-RFQ GENERATION (for primary query + all search results)
   const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
   let parsed: any = null;
   let sources: Array<{ title: string; uri: string }> = [];
-  let generationSource = 'gemini_google_search';
+  let generationSource = existingMatches.length >= 3 ? 'search_results_auto_sync' : 'gemini_live_trade';
 
-  if (apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
+  if (existingMatches.length < 3 && apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
     const ai = new GoogleGenAI({
       apiKey,
       httpOptions: {
@@ -13986,9 +14279,9 @@ app.post('/api/v1/rfqs/discover-market-demand', async (req, res) => {
     });
 
     const prompt = `You are a global B2B wholesale import/export trade analyst.
-Use Google Search to gather real-time global import/export trade demand, active importing countries and destination ports, current wholesale market prices (in USD), and export packaging/grade standards for the product: "${rawKeyword}".
+Gather real-time global import/export trade demand, active importing countries and destination ports, current wholesale market prices (in USD), and export packaging/grade standards for the product: "${rawKeyword}".
 
-Based on the live Google Search data you find, output ONLY a valid JSON object (no markdown commentary outside JSON) with this exact structure:
+Output ONLY a valid JSON object (no markdown commentary outside JSON) with this exact structure:
 {
   "marketInsight": {
     "summary": "2-3 concise sentences summarizing current global buyer demand, top importing hubs/ports, wholesale price range, and quality/packaging requirements for ${rawKeyword}.",
@@ -14023,7 +14316,8 @@ Strict requirements:
 - Generate 3 or 4 distinct, realistic international buyer RFQs tailored specifically to "${rawKeyword}" from different active importing countries/ports found in current trade demand.
 - targetQuantity and targetPriceUsd MUST be realistic positive numbers (no commas or currency symbols).
 - preferredIncoterm must be one of: FOB, CIF, CFR, EXW, DDP.
-- Use varied postedLabel values like "Just now", "42 mins ago", "2 hours ago", "3 hours ago".`;
+- Use varied postedLabel values like "Just now", "42 mins ago", "2 hours ago", "3 hours ago".
+- Do NOT mention search engines or Google in your summary.`;
 
     const candidateModels = ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
     for (const modelName of candidateModels) {
@@ -14047,18 +14341,17 @@ Strict requirements:
         if (candidateParsed && Array.isArray(candidateParsed.rfqs) && candidateParsed.rfqs.length > 0) {
           parsed = candidateParsed;
           const rawChunks = response?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-          const seenUris = new Set<string>();
+          const rawChunkSources: Array<{ title: string; uri: string }> = [];
           if (Array.isArray(rawChunks)) {
             for (const chunk of rawChunks) {
               const uri = chunk?.web?.uri;
               const title = chunk?.web?.title;
-              if (uri && !seenUris.has(uri)) {
-                seenUris.add(uri);
-                sources.push({ title: title || uri, uri });
+              if (uri) {
+                rawChunkSources.push({ title: title || uri, uri });
               }
-              if (sources.length >= 5) break;
             }
           }
+          sources = sanitizePublicTradeSources(rawChunkSources);
           break;
         }
       } catch (err: any) {
@@ -14067,26 +14360,39 @@ Strict requirements:
     }
   }
 
-  // If Gemini hit a 429 quota limit or is unconfigured, fetch live Google trade RSS & synthesize verified demand
+  // If Gemini hit a 429 quota limit, is unconfigured, or we only needed uncovered searchResults
   if (!parsed || !Array.isArray(parsed.rfqs) || parsed.rfqs.length === 0) {
-    generationSource = 'google_trade_search_sync';
-    sources = await fetchLiveGoogleTradeSources(rawKeyword);
-    parsed = synthesizeStructuredMarketDemand(rawKeyword, sources);
+    if (existingMatches.length < 3) {
+      generationSource = 'global_trade_index_sync';
+      sources = await fetchLiveGoogleTradeSources(rawKeyword);
+      parsed = synthesizeStructuredMarketDemand(rawKeyword, sources);
+    } else if (sanitizedCachedInsight) {
+      parsed = { marketInsight: sanitizedCachedInsight, rfqs: [] };
+      sources = sanitizedCachedInsight.sources || [];
+    } else {
+      parsed = synthesizeStructuredMarketDemand(rawKeyword, []);
+      parsed.rfqs = [];
+    }
   }
 
   try {
-    const insightObj = {
-      keyword: rawKeyword,
-      summary: String(
+    const cleanSummary = sanitizePublicTradeText(
+      String(
         parsed.marketInsight?.summary ||
         `Active global buyer demand detected for ${rawKeyword} across major international import ports with wholesale benchmark pricing and export-grade packaging requirements.`
-      ).trim(),
+      ).trim()
+    );
+    const cleanSources = sanitizePublicTradeSources(sources);
+
+    const insightObj = {
+      keyword: rawKeyword,
+      summary: cleanSummary,
       topImportingCountries: Array.isArray(parsed.marketInsight?.topImportingCountries)
         ? parsed.marketInsight.topImportingCountries.slice(0, 5).map((c: any) => String(c))
         : [],
       typicalPriceRange: String(parsed.marketInsight?.typicalPriceRange || 'Market benchmark'),
       packagingStandards: String(parsed.marketInsight?.packagingStandards || 'Standard seaworthy / export grade'),
-      sources,
+      sources: cleanSources,
       generatedAt: new Date().toISOString()
     };
 
@@ -14094,13 +14400,14 @@ Strict requirements:
 
     const allowedIncoterms = new Set(['FOB', 'CIF', 'CFR', 'EXW', 'DDP', 'DAP', 'FCA']);
     const nowMs = Date.now();
-    const generatedRawList = parsed.rfqs.slice(0, 4).map((item: any, idx: number) => {
+
+    const buildRfqRecord = (item: any, idx: number, searchTag: string, idSuffix: number) => {
       const qty = Math.max(1, Number(String(item.targetQuantity || 20).replace(/[^0-9.]/g, '')) || 20);
       const price = Math.max(1, Number(String(item.targetPriceUsd || 100).replace(/[^0-9.]/g, '')) || 100);
       const incotermRaw = String(item.preferredIncoterm || 'CIF').toUpperCase().trim();
       const incoterm = allowedIncoterms.has(incotermRaw) ? incotermRaw : 'CIF';
       const createdIso = new Date(nowMs - idx * 35 * 60000).toISOString();
-      const uid = nowMs + idx;
+      const uid = nowMs + idSuffix;
 
       return {
         id: `rfq-mkt-${uid}`,
@@ -14147,14 +14454,33 @@ Strict requirements:
         source: 'auto_generated',
         syncTag: 'market_sync',
         sync_tag: 'market_sync',
-        searchKeyword: rawKeyword,
-        search_keyword: rawKeyword,
+        searchKeyword: searchTag,
+        search_keyword: searchTag,
         marketInsight: insightObj.summary,
         market_insight: insightObj.summary,
         marketDemandVerified: true,
         persisted: true,
         created_at: createdIso
       };
+    };
+
+    const generatedRawList: any[] = [];
+    let idCounter = 0;
+
+    if (existingMatches.length < 3 && Array.isArray(parsed.rfqs)) {
+      parsed.rfqs.slice(0, 4).forEach((item: any, idx: number) => {
+        generatedRawList.push(buildRfqRecord(item, idx, rawKeyword, idCounter++));
+      });
+    }
+
+    // Generate tailored auto-RFQs for every uncovered search result item from the search environment
+    uncoveredResults.forEach((resultLabel, rIdx) => {
+      const synthesized = synthesizeStructuredMarketDemand(resultLabel, cleanSources);
+      const resultTag = `${rawKeyword} | ${resultLabel}`;
+      synthesized.rfqs.slice(0, 2).forEach((item, vIdx) => {
+        const rotatedIdx = (rIdx + vIdx) % 4;
+        generatedRawList.push(buildRfqRecord(item, rotatedIdx, resultTag, idCounter++));
+      });
     });
 
     // Save into server store (deduped) and persist to disk
@@ -14170,10 +14496,18 @@ Strict requirements:
         newlyAdded.push(standardizeServerRfq(item));
       }
     }
-    saveRfqMarketStoreToDisk();
+    if (newlyAdded.length > 0) {
+      saveRfqMarketStoreToDisk();
+    }
 
     const combinedMatches = sortRfqsRealFirst(
-      serverRfqsStore.filter(r => matchesRfqKeyword(r, normalizedKeyword)).map(standardizeServerRfq)
+      serverRfqsStore
+        .filter(
+          r =>
+            matchesRfqKeyword(r, normalizedKeyword) ||
+            cleanSearchResults.some(sr => matchesRfqKeyword(r, sr))
+        )
+        .map(standardizeServerRfq)
     );
 
     logServerActivity(
@@ -14182,18 +14516,18 @@ Strict requirements:
       'system@tradeheaven.net',
       'SYSTEM',
       '/api/v1/rfqs/discover-market-demand',
-      `Live Google demand scan (${generationSource}) for "${rawKeyword}" generated & saved ${newlyAdded.length} verified buyer RFQs.`,
+      `Live market demand scan (${generationSource}) for "${rawKeyword}" (+${uncoveredResults.length} search results) generated & saved ${newlyAdded.length} verified buyer RFQs.`,
       'SUCCESS'
     );
 
     return res.json({
       success: true,
       source: generationSource,
-      fromCache: false,
+      fromCache: newlyAdded.length === 0,
       keyword: rawKeyword,
       rfqs: combinedMatches.length > 0 ? combinedMatches : newlyAdded,
       newlyGeneratedRfqs: newlyAdded,
-      insight: { ...insightObj, fromCache: false },
+      insight: { ...insightObj, fromCache: newlyAdded.length === 0 },
       generatedCount: newlyAdded.length
     });
   } catch (err: any) {
@@ -14206,6 +14540,1716 @@ Strict requirements:
       message: 'Live global trade scan is temporarily unavailable. Showing existing marketplace RFQs.',
       rfqs: existingMatches,
       insight: cachedInsight
+    });
+  }
+});
+
+// Fast Batch Persistence for Continuous Pagination Auto-Generated RFQs (Zero Email Guarantees)
+app.post('/api/v1/rfqs/auto-batch-persist', async (req, res) => {
+  try {
+    const incomingList = Array.isArray(req.body?.rfqs) ? req.body.rfqs : [];
+    const keyword = String(req.body?.keyword || '').trim();
+    const insightSummary = String(req.body?.insightSummary || '').trim();
+
+    if (incomingList.length === 0) {
+      return res.json({ success: true, addedCount: 0, rfqs: [] });
+    }
+
+    const existingIds = new Set(serverRfqsStore.map(r => String(r.id || '')));
+    const addedItems: any[] = [];
+
+    for (const raw of incomingList) {
+      if (!raw || typeof raw !== 'object') continue;
+      const rfqId = String(raw.id || `rfq-auto-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+      if (existingIds.has(rfqId)) continue;
+
+      const productName = String(raw.productName || raw.product_name || raw.title || 'Wholesale Product').trim();
+      const category = String(raw.category || 'Agriculture & Global Commodities').trim();
+
+      // Check if we already have an auto-saved local image for this product (in overrides or visual cache)
+      const cleanSubj = cleanProductSearchSubject(productName);
+      const existingOverride =
+        serverProductImageState?.overrides?.[rfqId] ||
+        serverProductImageState?.overrides?.[productName] ||
+        serverProductImageState?.overrides?.[productName.toLowerCase()] ||
+        (cleanSubj ? serverProductImageState?.overrides?.[cleanSubj] : undefined);
+
+      const cacheKey = normalizeVisualSearchKeyword(productName, category);
+      const cachedPoolEntry = serverProductImageCacheMap.get(cacheKey);
+      const cachedLocalUrl =
+        cachedPoolEntry?.images?.find(img => img?.url && String(img.url).startsWith('/assets/uploads/'))?.url || '';
+
+      const resolvedImg =
+        (existingOverride?.primary && String(existingOverride.primary).startsWith('/assets/uploads/')
+          ? existingOverride.primary
+          : '') ||
+        cachedLocalUrl ||
+        String(raw.image || raw.image_url || (Array.isArray(raw.images) && raw.images[0]) || '').trim();
+
+      const record: any = {
+        id: rfqId,
+        raw_id: Number(String(rfqId).replace(/\D/g, '').slice(-8) || Date.now()),
+        title: String(raw.title || productName),
+        productName,
+        category,
+        quantity: String(raw.targetQuantity || raw.quantity || 100),
+        targetQuantity: Number(raw.targetQuantity || raw.quantity || 100),
+        unit: String(raw.quantityUnit || raw.unit || 'MT'),
+        quantityUnit: String(raw.quantityUnit || raw.unit || 'MT'),
+        orderFrequency: String(raw.orderFrequency || raw.order_frequency || 'Monthly'),
+        order_frequency: String(raw.orderFrequency || raw.order_frequency || 'Monthly'),
+        targetPrice: String(raw.targetPriceUsd || raw.targetPrice || 100),
+        targetPriceUsd: Number(raw.targetPriceUsd || raw.targetPrice || 100),
+        estimatedOrderValueUsd: Number(raw.estimatedOrderValueUsd || 0),
+        incoterms: String(raw.preferredIncoterm || raw.incoterms || 'CIF'),
+        preferredIncoterm: String(raw.preferredIncoterm || raw.incoterms || 'CIF'),
+        destinationPort: String(raw.destinationPort || raw.destination_port || 'Global Port'),
+        destination_port: String(raw.destinationPort || raw.destination_port || 'Global Port'),
+        specifications: String(raw.detailedRequirements || raw.specifications || ''),
+        detailedRequirements: String(raw.detailedRequirements || raw.specifications || ''),
+        detailedDescription: String(raw.detailedDescription || raw.detailedRequirements || raw.specifications || ''),
+        buyer_name: String(raw.buyerName || raw.buyer_name || 'International Procurement Officer'),
+        buyerName: String(raw.buyerName || raw.buyer_name || 'International Procurement Officer'),
+        buyer_company: String(raw.buyerCompany || raw.buyer_company || 'Global Trading Corp'),
+        buyerCompany: String(raw.buyerCompany || raw.buyer_company || 'Global Trading Corp'),
+        buyer_country: String(raw.buyerCountry || raw.buyer_country || 'United States'),
+        buyerCountry: String(raw.buyerCountry || raw.buyer_country || 'United States'),
+        buyer_email: String(raw.buyerEmail || raw.buyer_email || 'sourcing@globaltrade.com'),
+        buyerEmail: String(raw.buyerEmail || raw.buyer_email || 'sourcing@globaltrade.com'),
+        buyer_phone: String(raw.buyerPhone || raw.buyer_phone || ''),
+        buyerPhone: String(raw.buyerPhone || raw.buyer_phone || ''),
+        buyer_address: String(raw.buyerAddress || raw.buyer_address || ''),
+        buyerAddress: String(raw.buyerAddress || raw.buyer_address || ''),
+        paymentTerms: String(raw.paymentTerms || raw.payment_terms || 'CIF, LC / TT'),
+        payment_terms: String(raw.paymentTerms || raw.payment_terms || 'CIF, LC / TT'),
+        postedLabel: String(raw.postedLabel || raw.posted_label || 'Just now'),
+        posted_label: String(raw.postedLabel || raw.posted_label || 'Just now'),
+        urgency: String(raw.urgency || 'STANDARD'),
+        quotesCount: Number(raw.quotesCount || 2),
+        status: 'OPEN',
+        source: 'auto_generated',
+        syncTag: 'market_sync',
+        sync_tag: 'market_sync',
+        searchKeyword: String(raw.searchKeyword || keyword || productName),
+        search_keyword: String(raw.searchKeyword || keyword || productName),
+        marketInsight: String(raw.marketInsight || insightSummary || ''),
+        market_insight: String(raw.marketInsight || insightSummary || ''),
+        marketDemandVerified: true,
+        image: resolvedImg,
+        image_url: resolvedImg,
+        images: resolvedImg ? [resolvedImg] : [],
+        ...(typeof raw.pageSequenceOrder === 'number' ? { pageSequenceOrder: raw.pageSequenceOrder } : {}),
+        persisted: true,
+        created_at: new Date().toISOString()
+      };
+
+      if (resolvedImg && resolvedImg.startsWith('/assets/uploads/')) {
+        bindAutoSavedImageOverride({
+          localUrl: resolvedImg,
+          productId: rfqId,
+          productName,
+          gallery: [resolvedImg],
+          flushNow: false
+        });
+      }
+
+      serverRfqsStore.push(record);
+      existingIds.add(rfqId);
+      addedItems.push(standardizeServerRfq(record));
+    }
+
+    if (addedItems.length > 0) {
+      saveRfqMarketStoreToDisk();
+      scheduleSaveOverridesState(true);
+    }
+
+    return res.json({
+      success: true,
+      addedCount: addedItems.length,
+      rfqs: addedItems
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Batch auto-RFQ persistence failed'
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// VISUAL PRODUCT IMAGE FINDER / AUTO-FETCH ENGINE (7-DAY CACHE + >10 RANDOMIZED RESULTS)
+// -------------------------------------------------------------
+interface VisualImageCandidate {
+  url: string;
+  thumbnailUrl?: string;
+  title?: string;
+  sourceDomain?: string;
+  width?: number;
+  height?: number;
+  relevanceScore?: number;
+}
+
+interface ProductImageCacheRecord {
+  keyword: string;
+  queryUsed: string;
+  images: VisualImageCandidate[];
+  updatedAt: string;
+  provider: string;
+}
+
+const PRODUCT_IMAGE_CACHE_FILE = path.join(process.cwd(), 'product_image_cache.json');
+const PRODUCT_IMAGE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const serverProductImageCacheMap = new Map<string, ProductImageCacheRecord>();
+
+function loadProductImageCacheFromDisk() {
+  try {
+    if (!fs.existsSync(PRODUCT_IMAGE_CACHE_FILE)) return;
+    const raw = fs.readFileSync(PRODUCT_IMAGE_CACHE_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      for (const [k, rec] of Object.entries(parsed)) {
+        const entry = rec as ProductImageCacheRecord;
+        if (entry && Array.isArray(entry.images) && entry.updatedAt) {
+          serverProductImageCacheMap.set(k, entry);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[VisualProductImageCache] Failed loading disk cache:', err);
+  }
+}
+loadProductImageCacheFromDisk();
+
+function saveProductImageCacheToDisk() {
+  try {
+    const obj: Record<string, ProductImageCacheRecord> = {};
+    for (const [k, v] of serverProductImageCacheMap.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(PRODUCT_IMAGE_CACHE_FILE, JSON.stringify(obj, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[VisualProductImageCache] Failed writing disk cache:', err);
+  }
+}
+
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function cleanProductSearchSubject(rawName: string): string {
+  let s = String(rawName || '').trim();
+  if (!s) return '';
+  s = s.replace(/\([^)]*\)/g, ' ');
+  s = s.replace(/\[[^\]]*\]/g, ' ');
+  s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
+  s = s.replace(
+    /^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+contract|rfq|wanted)\b[\s:\-–—•]*/gi,
+    ''
+  );
+  s = s.replace(/^[^\wA-Za-z0-9]+/, '').trim();
+  s = s.replace(
+    /^\d[\d,.]*\s*(?:mt|metric\s+tons?|tons?|units?|pcs|pieces|barrels?|bbl|containers?|fcl|teu|kg|kgs|liters?|lbs)\b\s*(?:of\s+)?/i,
+    ''
+  );
+  s = s.replace(/\s+[-–—]\s*\d[\d,.]*\s*(?:mt|tons?|units?|pcs|barrels?|fcl|mw|kw|months?|years?).*$/i, '');
+  s = s.replace(/\b\d+(?:\.\d+)?\s*-\s*ton\b/gi, ' ');
+  s = s.replace(/\bgrade\s+[a-z0-9+-]+\b/gi, ' ');
+  s = s.replace(/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/g, ' ');
+  s = s.replace(/\s+/g, ' ').trim();
+  return s || String(rawName || '').trim();
+}
+
+function normalizeVisualSearchKeyword(productName: string, category?: string): string {
+  const cleanedSubject = cleanProductSearchSubject(productName);
+  const cleanName = String(cleanedSubject || productName || '')
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const cleanCat = String(category || '')
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleanName) return cleanCat;
+  return cleanCat ? `${cleanName}::${cleanCat}` : cleanName;
+}
+
+function buildCommercialProductImageQuery(productName: string, category?: string, specifications?: string): string {
+  const cleanName = cleanProductSearchSubject(productName);
+  const cleanCat = String(category || '').replace(/\s+/g, ' ').trim();
+  const specHints = String(specifications || '')
+    .replace(/[{}\[\]"]/g, ' ')
+    .split(/[\s,;|]+/)
+    .filter(w => w.length >= 3 && !/^(the|and|for|with|grade|quality|export|iso|verified)$/i.test(w))
+    .slice(0, 3)
+    .join(' ');
+  const catWord =
+    cleanCat && !cleanName.toLowerCase().includes(cleanCat.toLowerCase().split(' ')[0])
+      ? cleanCat.split(/[&,]/)[0].trim()
+      : '';
+  const core = [cleanName, catWord, specHints].filter(Boolean).join(' ').trim();
+  return `"${cleanName}" ${core} product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme`;
+}
+
+const BLOCKED_IMAGE_DOMAINS = [
+  'picsum.photos',
+  'via.placeholder.com',
+  'placeholder.com',
+  'dummyimage.com',
+  'placekitten.com',
+  'unsplash.com',
+  'images.unsplash.com',
+  'pexels.com',
+  'pixabay.com',
+  'shutterstock.com',
+  'istockphoto.com',
+  'gettyimages.com',
+  'alamy.com',
+  '123rf.com',
+  'depositphotos.com',
+  'dreamstime.com',
+  'lookaside.fbsbx.com',
+  'fbsbx.com',
+  'facebook.com',
+  'instagram.com',
+  'tiktok.com',
+  'pinterest.com',
+  'twimg.com'
+];
+
+const EXCLUDED_IMAGE_TERMS_REGEX =
+  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|archaeology|manuscript|djvu|storybook|story_book|study_in|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
+
+const PRODUCT_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'from', 'that', 'this', 'export', 'grade', 'quality',
+  'wholesale', 'bulk', 'supply', 'direct', 'factory', 'oem', 'odm', 'verified',
+  'new', 'high', 'best', 'commercial', 'industrial', 'product', 'products', 'unit', 'units',
+  'tons', 'metric', 'pcs', 'pieces', 'kgs', 'kg', 'ton', 'pure', 'natural', 'premium',
+  'standard', 'international', 'global', 'certified', 'genuine', 'original', 'custom',
+  'rfq', 'wanted', 'urgent', 'requirement', 'tender', 'cif', 'fob', 'port', 'months', 'month'
+]);
+
+const GENERIC_MODIFIER_WORDS = new Set([
+  'fresh', 'raw', 'black', 'white', 'red', 'green', 'yellow', 'blue', 'golden', 'silver',
+  'refined', 'unrefined', 'organic', 'processed', 'frozen', 'dried', 'dry', 'wet', 'liquid',
+  'solid', 'powder', 'powdered', 'granular', 'granules', 'crude', 'heavy', 'light', 'duty',
+  'medium', 'small', 'large', 'extra', 'long', 'short', 'steam', 'parboiled',
+  'broken', 'whole', 'split', 'peeled', 'washed', 'polished', 'unpolished', 'stone', 'stones',
+  'rock', 'hydraulic', 'crawler', 'wheeled', 'portable', 'automatic', 'semi', 'manual',
+  'electric', 'electronic', 'digital', 'smart', 'mini', 'micro', 'multi', 'single', 'double',
+  'triple', 'stage', 'type', 'class', 'series', 'model', 'system', 'systems', 'machine',
+  'machinery', 'equipment', 'automotive', 'agricultural', 'medical', 'surgical',
+  'pharmaceutical', 'cosmetic', 'food', 'edible', 'packaging', 'printed', 'plain',
+  'corrugated', 'kraft', 'woven', 'nonwoven', 'knitted', 'stainless', 'carbon', 'alloy',
+  'cast', 'forged', 'hot', 'cold', 'rolled', 'galvanized', 'coated', 'painted', 'anodized',
+  'aspheric', 'optical', 'infrared', 'thermal', 'solar', 'inverter', 'window', 'wall',
+  'mounted', 'ceiling', 'floor', 'standing', 'grain', 'electrolytic'
+]);
+
+function getWordStems(word: string): string[] {
+  const w = word.toLowerCase().trim();
+  const stems = new Set<string>([w]);
+  if (w.length > 4) {
+    if (w.endsWith('ies')) stems.add(w.slice(0, -3) + 'y');
+    if (w.endsWith('es')) stems.add(w.slice(0, -2));
+    if (w.endsWith('s')) stems.add(w.slice(0, -1));
+  }
+  return Array.from(stems).filter(s => s.length >= 3);
+}
+
+interface ProductTokenProfile {
+  allTokens: string[];
+  coreNouns: string[];
+}
+
+function extractProductKeywordTokens(productName: string): ProductTokenProfile {
+  const cleanedSubject = cleanProductSearchSubject(productName);
+  const raw = cleanedSubject
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ');
+  const allTokens = Array.from(
+    new Set(
+      raw
+        .split(/\s+/)
+        .filter(t => t.length >= 3 && !/^\d+$/.test(t) && !PRODUCT_STOPWORDS.has(t))
+    )
+  );
+  const coreNouns = allTokens.filter(t => !GENERIC_MODIFIER_WORDS.has(t));
+  return {
+    allTokens,
+    coreNouns: coreNouns.length > 0 ? coreNouns : allTokens
+  };
+}
+
+const DIRECT_IMAGE_EXT_REGEX = /\.(?:jpe?g|png|webp)(?:[?#!_].*)?$/i;
+
+function tokenMatchesText(token: string, text: string): boolean {
+  const stems = getWordStems(token);
+  for (const s of stems) {
+    if (text.includes(s)) return true;
+  }
+  return false;
+}
+
+function isCandidateStrictlyRelevant(
+  item: VisualImageCandidate,
+  tokenProfile: ProductTokenProfile,
+  options: { allowCdnWithoutExt?: boolean } = {}
+): { valid: boolean; score: number } {
+  const rawUrl = String(item.url || '').trim();
+  if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) return { valid: false, score: 0 };
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    return { valid: false, score: 0 };
+  }
+
+  const host = parsedUrl.hostname.toLowerCase();
+  if (BLOCKED_IMAGE_DOMAINS.some(d => host === d || host.endsWith('.' + d))) {
+    return { valid: false, score: 0 };
+  }
+
+  const combinedText = `${rawUrl} ${item.title || ''} ${item.sourceDomain || ''}`.toLowerCase();
+  if (EXCLUDED_IMAGE_TERMS_REGEX.test(combinedText)) {
+    return { valid: false, score: 0 };
+  }
+
+  if (!options.allowCdnWithoutExt && !DIRECT_IMAGE_EXT_REGEX.test(rawUrl)) {
+    return { valid: false, score: 0 };
+  }
+
+  if (typeof item.width === 'number' && item.width > 0 && item.width < 300) {
+    return { valid: false, score: 0 };
+  }
+  if (typeof item.height === 'number' && item.height > 0 && item.height < 300) {
+    return { valid: false, score: 0 };
+  }
+
+  const { allTokens, coreNouns } = tokenProfile;
+  if (allTokens.length === 0) return { valid: true, score: 1 };
+
+  let matchedAll = 0;
+  for (const tk of allTokens) {
+    if (tokenMatchesText(tk, combinedText)) {
+      matchedAll++;
+    }
+  }
+
+  let matchedCore = 0;
+  for (const cn of coreNouns) {
+    if (tokenMatchesText(cn, combinedText)) {
+      matchedCore++;
+    }
+  }
+
+  if (matchedCore === 0) {
+    return { valid: false, score: 0 };
+  }
+
+  const headNoun = coreNouns[coreNouns.length - 1];
+  const firstCoreNoun = coreNouns[0];
+  const headMatched = headNoun ? tokenMatchesText(headNoun, combinedText) : false;
+  const firstCoreMatched = firstCoreNoun ? tokenMatchesText(firstCoreNoun, combinedText) : false;
+
+  if (allTokens.length >= 2 && matchedAll < 2 && !headMatched && !firstCoreMatched) {
+    return { valid: false, score: 0 };
+  }
+
+  const score = matchedCore * 3 + matchedAll + (headMatched ? 2 : 0);
+  return { valid: true, score };
+}
+
+function parseGeminiImageListPayload(rawText: string): Array<Record<string, any>> {
+  if (!rawText || typeof rawText !== 'string') return [];
+  const cleaned = rawText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  const tryExtractArray = (parsed: any): Array<Record<string, any>> => {
+    if (Array.isArray(parsed)) return parsed.filter(x => x && typeof x === 'object');
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.images)) return parsed.images.filter((x: any) => x && typeof x === 'object');
+      if (Array.isArray(parsed.results)) return parsed.results.filter((x: any) => x && typeof x === 'object');
+    }
+    return [];
+  };
+
+  try {
+    const arr = tryExtractArray(JSON.parse(cleaned));
+    if (arr.length > 0) return arr;
+  } catch {
+    const objStart = cleaned.indexOf('{');
+    const objEnd = cleaned.lastIndexOf('}');
+    if (objStart !== -1 && objEnd > objStart) {
+      try {
+        const arr = tryExtractArray(JSON.parse(cleaned.slice(objStart, objEnd + 1)));
+        if (arr.length > 0) return arr;
+      } catch {}
+    }
+    const arrStart = cleaned.indexOf('[');
+    const arrEnd = cleaned.lastIndexOf(']');
+    if (arrStart !== -1 && arrEnd > arrStart) {
+      try {
+        const arr = tryExtractArray(JSON.parse(cleaned.slice(arrStart, arrEnd + 1)));
+        if (arr.length > 0) return arr;
+      } catch {}
+    }
+  }
+
+  // Fallback: scrape any direct .jpg/.jpeg/.png/.webp URLs out of grounded text
+  const urlMatches = cleaned.match(/https?:\/\/[^\s"'<>)\]]+?\.(?:jpe?g|png|webp)(?:\?[^\s"'<>)\]]*)?/gi) || [];
+  return Array.from(new Set(urlMatches)).map(url => ({ url }));
+}
+
+function resolveMaybeRelativeUrl(raw: string, baseUrl: string): string | null {
+  const clean = String(raw || '').trim().replace(/&amp;/g, '&');
+  if (!clean || clean.startsWith('data:')) return null;
+  try {
+    const u = new URL(clean, baseUrl);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function extractProductImagesFromGroundedPages(
+  pageUrls: Array<{ uri: string; title?: string }>,
+  productName: string,
+  tokenProfile: ProductTokenProfile
+): Promise<VisualImageCandidate[]> {
+  const uniquePages: Array<{ uri: string; title?: string }> = [];
+  const seenPages = new Set<string>();
+  for (const p of pageUrls) {
+    const clean = String(p?.uri || '').trim();
+    if (!clean || !/^https?:\/\//i.test(clean) || seenPages.has(clean)) continue;
+    try {
+      const host = new URL(clean).hostname.toLowerCase();
+      if (BLOCKED_IMAGE_DOMAINS.some(d => host === d || host.endsWith('.' + d))) continue;
+      seenPages.add(clean);
+      uniquePages.push({ uri: clean, title: p.title });
+      if (uniquePages.length >= 10) break;
+    } catch {}
+  }
+
+  if (uniquePages.length === 0) return [];
+
+  const results: VisualImageCandidate[] = [];
+  const perPageFetch = await Promise.allSettled(
+    uniquePages.map(async page => {
+      const resp = await fetch(page.uri, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)',
+          Accept: 'text/html,application/xhtml+xml'
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(3500)
+      });
+      if (!resp.ok) return [];
+      const finalPageUrl = resp.url && /^https?:\/\//i.test(resp.url) ? resp.url : page.uri;
+      let domain = '';
+      try {
+        domain = new URL(finalPageUrl).hostname.toLowerCase();
+        if (BLOCKED_IMAGE_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) {
+          return [];
+        }
+      } catch {}
+
+      const ctype = String(resp.headers.get('content-type') || '').toLowerCase();
+      if (!ctype.includes('text/html') && !ctype.includes('application/xhtml')) return [];
+      const html = (await resp.text()).slice(0, 220000);
+      const pageTitleMatch = html.match(/<title[^>]*>([^<]{1,180})<\/title>/i);
+      const pageTitle = (page.title || pageTitleMatch?.[1] || productName).replace(/\s+/g, ' ').trim();
+
+      const extracted: VisualImageCandidate[] = [];
+
+      const metaMatches = [
+        ...html.matchAll(
+          /<meta[^>]+(?:property|name)=["'](?:og:image|og:image:secure_url|twitter:image)["'][^>]+content=["']([^"']+)["']/gi
+        ),
+        ...html.matchAll(
+          /<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["'](?:og:image|og:image:secure_url|twitter:image)["']/gi
+        )
+      ];
+      for (const m of metaMatches) {
+        const resolved = resolveMaybeRelativeUrl(m[1], finalPageUrl);
+        if (resolved) {
+          extracted.push({
+            url: resolved,
+            thumbnailUrl: resolved,
+            title: pageTitle,
+            sourceDomain: domain
+          });
+        }
+      }
+
+      const imgMatches = html.matchAll(
+        /<img[^>]+(?:src|data-src|data-original)=["']([^"']+\.(?:jpe?g|png|webp)(?:\?[^"']*)?)["'][^>]*>/gi
+      );
+      let imgCount = 0;
+      for (const m of imgMatches) {
+        if (imgCount >= 8) break;
+        const resolved = resolveMaybeRelativeUrl(m[1], finalPageUrl);
+        if (!resolved) continue;
+        const altMatch = m[0].match(/alt=["']([^"']{2,140})["']/i);
+        const candTitle = altMatch?.[1]?.trim() || pageTitle;
+        const cand: VisualImageCandidate = {
+          url: resolved,
+          thumbnailUrl: resolved,
+          title: candTitle,
+          sourceDomain: domain
+        };
+        if (isCandidateStrictlyRelevant(cand, tokenProfile).valid) {
+          extracted.push(cand);
+          imgCount++;
+        }
+      }
+      return extracted;
+    })
+  );
+
+  for (const r of perPageFetch) {
+    if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+      results.push(...r.value);
+    }
+  }
+  return results;
+}
+
+async function verifyLiveProductImageUrl(
+  cand: VisualImageCandidate
+): Promise<VisualImageCandidate | null> {
+  const url = String(cand.url || '').trim();
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+
+  const inspectResponse = (resp: Response): VisualImageCandidate | null => {
+    if (!resp.ok && resp.status !== 206) return null;
+    const ctype = String(resp.headers.get('content-type') || '').toLowerCase();
+    const clenRaw = resp.headers.get('content-length');
+    const clen = clenRaw ? Number(clenRaw) : NaN;
+
+    if (ctype) {
+      if (
+        ctype.includes('text/html') ||
+        ctype.includes('application/json') ||
+        ctype.includes('svg') ||
+        ctype.includes('image/gif') ||
+        ctype.includes('icon')
+      ) {
+        return null;
+      }
+      const isSupportedMime =
+        ctype.includes('image/jpeg') ||
+        ctype.includes('image/jpg') ||
+        ctype.includes('image/png') ||
+        ctype.includes('image/webp') ||
+        (ctype.includes('application/octet-stream') && DIRECT_IMAGE_EXT_REGEX.test(url));
+      if (!isSupportedMime) return null;
+    } else if (!DIRECT_IMAGE_EXT_REGEX.test(url)) {
+      return null;
+    }
+
+    // Reject tiny placeholder pixels or <6KB thumbnails when Content-Length header is supplied
+    if (!Number.isNaN(clen) && clen > 0 && clen < 6000) {
+      return null;
+    }
+
+    const finalUrl = resp.url && /^https?:\/\//i.test(resp.url) ? resp.url : url;
+    return {
+      ...cand,
+      url: finalUrl,
+      thumbnailUrl: finalUrl
+    };
+  };
+
+  try {
+    const headResp = await fetch(url, {
+      method: 'HEAD',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)',
+        Accept: 'image/webp,image/png,image/jpeg,*/*;q=0.8'
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(2200)
+    });
+    const checked = inspectResponse(headResp);
+    if (checked) return checked;
+    if (headResp.status !== 405 && headResp.status !== 403 && headResp.status !== 501 && headResp.status !== 400) {
+      return null;
+    }
+  } catch {
+    // Retry via partial GET below
+  }
+
+  try {
+    const getResp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)',
+        Accept: 'image/webp,image/png,image/jpeg,*/*;q=0.8',
+        Range: 'bytes=0-4095'
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(2500)
+    });
+    const checked = inspectResponse(getResp);
+    try {
+      await getResp.body?.cancel();
+    } catch {}
+    return checked;
+  } catch {
+    return null;
+  }
+}
+
+let geminiGroundedQuotaCooldownUntil = 0;
+
+async function runGeminiGroundedImageSearchRound(params: {
+  ai: GoogleGenAI;
+  prompt: string;
+  productName: string;
+}): Promise<{
+  candidates: VisualImageCandidate[];
+  groundedPages: Array<{ uri: string; title?: string }>;
+  errorMessage?: string;
+}> {
+  if (Date.now() < geminiGroundedQuotaCooldownUntil) {
+    return {
+      candidates: [],
+      groundedPages: [],
+      errorMessage: 'RESOURCE_EXHAUSTED (cooldown active)'
+    };
+  }
+
+  const models = ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
+  let lastError = '';
+
+  for (const modelName of models) {
+    try {
+      const timeoutPromise = new Promise<never>((_, rej) =>
+        setTimeout(() => rej(new Error(`Gemini (${modelName}) visual search timed out`)), 15000)
+      );
+      const response = await Promise.race([
+        params.ai.models.generateContent({
+          model: modelName,
+          contents: params.prompt,
+          config: {
+            tools: [{ googleSearch: {} }]
+          }
+        }),
+        timeoutPromise
+      ]);
+
+      const rawText = String(response?.text || '');
+      const parsedItems = parseGeminiImageListPayload(rawText);
+      const candidates: VisualImageCandidate[] = [];
+
+      for (const item of parsedItems) {
+        const rawUrl = String(item?.url || item?.imageUrl || item?.image_url || item?.src || '').trim();
+        if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) continue;
+        let domain = String(item?.sourceDomain || item?.domain || '').trim();
+        if (!domain) {
+          try {
+            domain = new URL(rawUrl).hostname;
+          } catch {}
+        }
+        candidates.push({
+          url: rawUrl,
+          thumbnailUrl: String(item?.thumbnailUrl || rawUrl).trim(),
+          title: String(item?.title || item?.description || params.productName).trim(),
+          sourceDomain: domain,
+          width: Number(item?.width || 0) || undefined,
+          height: Number(item?.height || 0) || undefined
+        });
+      }
+
+      const groundedPages: Array<{ uri: string; title?: string }> = [];
+      for (const item of parsedItems) {
+        const sp = String(item?.sourcePageUrl || item?.pageUrl || '').trim();
+        if (sp && /^https?:\/\//i.test(sp)) {
+          groundedPages.push({ uri: sp, title: String(item?.title || params.productName) });
+        }
+      }
+
+      const chunks = response?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      if (Array.isArray(chunks)) {
+        for (const ch of chunks) {
+          const uri = String(ch?.web?.uri || '').trim();
+          const title = String(ch?.web?.title || params.productName).trim();
+          if (uri && /^https?:\/\//i.test(uri)) {
+            if (DIRECT_IMAGE_EXT_REGEX.test(uri)) {
+              let domain = '';
+              try {
+                domain = new URL(uri).hostname;
+              } catch {}
+              candidates.push({
+                url: uri,
+                thumbnailUrl: uri,
+                title,
+                sourceDomain: domain
+              });
+            } else {
+              groundedPages.push({ uri, title });
+            }
+          }
+        }
+      }
+
+      if (candidates.length > 0 || groundedPages.length > 0) {
+        return { candidates, groundedPages };
+      }
+    } catch (err: any) {
+      const rawMsg = String(err?.message || err || 'Gemini grounded search failed');
+      lastError = rawMsg;
+      try {
+        const parsedErr = JSON.parse(rawMsg);
+        if (parsedErr?.error?.message) {
+          lastError = String(parsedErr.error.message);
+        }
+      } catch {}
+      console.warn(`[VisualProductImageSearch] ${modelName} search error:`, lastError.slice(0, 180));
+      if (/429|RESOURCE_EXHAUSTED|quota/i.test(lastError)) {
+        geminiGroundedQuotaCooldownUntil = Date.now() + 5 * 60 * 1000;
+        break;
+      }
+      if (/API_KEY_INVALID|PERMISSION_DENIED/i.test(lastError)) {
+        break;
+      }
+    }
+  }
+
+  return { candidates: [], groundedPages: [], errorMessage: lastError };
+}
+
+async function fetchLiveCommercialWebProductImages(
+  productName: string,
+  _category?: string,
+  specifications?: string
+): Promise<VisualImageCandidate[]> {
+  const discovered: VisualImageCandidate[] = [];
+  const cleanedSubject = cleanProductSearchSubject(productName);
+  const specHint = specifications
+    ? specifications
+        .replace(/[^\w\s-]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length >= 3)
+        .slice(0, 2)
+        .join(' ')
+    : '';
+
+  const searchQueries = [
+    cleanedSubject,
+    `${cleanedSubject} ${specHint} wholesale`.replace(/\s+/g, ' ').trim()
+  ];
+
+  for (let idx = 0; idx < searchQueries.length; idx++) {
+    const qStr = searchQueries[idx];
+    try {
+      const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}&form=HDRSC2&first=1`;
+      const resp = await fetch(searchUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9'
+        },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      const attrMatches = html.matchAll(/m="(\{&quot;[^"]+\})"/g);
+      for (const m of attrMatches) {
+        try {
+          const rawJson = m[1]
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&#39;/g, "'");
+          const meta = JSON.parse(rawJson);
+          const murl = String(meta?.murl || '').trim();
+          if (!murl || !/^https?:\/\//i.test(murl)) continue;
+          const purl = String(meta?.purl || '').trim();
+          let domain = '';
+          try {
+            domain = new URL(purl || murl).hostname.toLowerCase();
+          } catch {}
+          discovered.push({
+            url: murl,
+            thumbnailUrl: murl,
+            title: String(meta?.t || meta?.desc || cleanedSubject)
+              .replace(/&gt;/g, '>')
+              .replace(/&amp;/g, '&')
+              .replace(/[\uE000-\uF8FF]/g, '')
+              .trim(),
+            sourceDomain: domain
+          });
+        } catch {}
+      }
+    } catch {}
+  }
+
+  return discovered;
+}
+
+async function filterCandidatesWithGemini(
+  productName: string,
+  category: string,
+  candidates: VisualImageCandidate[],
+  explicitGeminiKey?: string
+): Promise<VisualImageCandidate[]> {
+  if (Date.now() < geminiGroundedQuotaCooldownUntil) return candidates;
+  const geminiKey = String(explicitGeminiKey || process.env.GEMINI_API_KEY || '').trim();
+  if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY' || candidates.length <= 12) return candidates;
+  try {
+    const ai = new GoogleGenAI({
+      apiKey: geminiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+    });
+    const compact = candidates.slice(0, 26).map((c, idx) => ({
+      idx,
+      title: String(c.title || '').slice(0, 120),
+      domain: c.sourceDomain || '',
+      urlPath: String(c.url || '').split('?')[0].slice(-90)
+    }));
+    const prompt = `You are a strict B2B e-commerce visual QA reviewer.
+Target product: "${productName}" (Category: "${category || 'General'}").
+Review the image candidates below and return ONLY a JSON array of integer indices (e.g. [0, 2, 5]) that genuinely depict the real commercial product "${productName}".
+Discard charts, company logos, unrelated portraits, generic warehouses/offices/ships (unless the product itself is a ship or warehouse), cartoons, or off-topic items.
+Candidates:
+${JSON.stringify(compact)}`;
+
+    const timeoutPromise = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Gemini relevance timeout')), 6000));
+    const resp = await Promise.race([
+      ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      }),
+      timeoutPromise
+    ]);
+    const text = String(resp?.text || '').trim();
+    const arr = JSON.parse(text);
+    if (Array.isArray(arr) && arr.length > 0) {
+      const kept = arr
+        .map(n => Number(n))
+        .filter(n => Number.isInteger(n) && n >= 0 && n < candidates.length)
+        .map(n => candidates[n]);
+      if (kept.length >= 11 || kept.length >= Math.min(candidates.length, 6)) {
+        return kept;
+      }
+    }
+  } catch (err: any) {
+    console.warn('[VisualProductImageSearch] Gemini relevance QA skipped:', String(err?.message || err).slice(0, 140));
+  }
+  return candidates;
+}
+
+async function handleVisualProductImageSearch(params: {
+  productName: string;
+  category?: string;
+  specifications?: string;
+  count?: number;
+  forceRefresh?: boolean;
+}) {
+  const rawInputName = String(params.productName || '').trim();
+  const cleanName = cleanProductSearchSubject(rawInputName);
+  const cleanCategory = String(params.category || '').trim();
+  const cleanSpecs = String(params.specifications || '').trim();
+  const requestedCount = Math.max(12, Math.min(20, Number(params.count) || 15));
+
+  if (cleanName.length < 2) {
+    return {
+      success: false,
+      status: 'invalid_query',
+      message: 'Please enter a product name to auto-fetch relevant product images.',
+      images: [],
+      pool: []
+    };
+  }
+
+  const normalizedKey = normalizeVisualSearchKeyword(cleanName, cleanCategory);
+  const queryUsed = buildCommercialProductImageQuery(cleanName, cleanCategory, cleanSpecs);
+
+  // 1. Check 7-day persistent cache first (refresh from disk on cache miss)
+  if (!serverProductImageCacheMap.has(normalizedKey)) {
+    loadProductImageCacheFromDisk();
+  }
+  const cached = serverProductImageCacheMap.get(normalizedKey);
+  if (cached && !params.forceRefresh) {
+    const ageMs = Date.now() - Date.parse(cached.updatedAt || '');
+    if (!Number.isNaN(ageMs) && ageMs < PRODUCT_IMAGE_CACHE_TTL_MS && cached.images.length >= 10) {
+      // Map any already-replaced URLs immediately
+      for (const img of cached.images) {
+        const mappedUrl = serverProductImageState.urlReplacements?.[img.url];
+        if (mappedUrl && mappedUrl.startsWith('/assets/uploads/')) {
+          img.url = mappedUrl;
+          img.thumbnailUrl = mappedUrl;
+        }
+      }
+
+      // Eagerly mirror up to 4 items on cache hit if fewer than 4 are local /assets/uploads/ files
+      const currentLocalCount = cached.images.filter(img => String(img.url || '').startsWith('/assets/uploads/')).length;
+      if (currentLocalCount < 4) {
+        const externalToMirror = cached.images
+          .filter(img => /^https?:\/\//i.test(String(img.url || '')))
+          .slice(0, 4 - currentLocalCount);
+        if (externalToMirror.length > 0) {
+          await Promise.allSettled(
+            externalToMirror.map(async item => {
+              const localUrl = await mirrorExternalProductImageToLocalUploads({
+                externalUrl: item.url,
+                productName: cleanName,
+                category: cleanCategory
+              });
+              if (localUrl) {
+                item.url = localUrl;
+                item.thumbnailUrl = localUrl;
+              }
+            })
+          );
+          saveProductImageCacheToDisk();
+          saveServerProductImageState();
+        }
+      }
+
+      // Self-upgrade any remaining external URLs in cached pool in background
+      if (cached.images.some(img => /^https?:\/\//i.test(img.url))) {
+        void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, cached.images);
+      }
+
+      const mappedCached = cached.images.map(img => {
+        const mappedUrl = serverProductImageState.urlReplacements?.[img.url] || img.url;
+        return {
+          ...img,
+          url: mappedUrl,
+          thumbnailUrl: mappedUrl
+        };
+      });
+      const localItems = fisherYatesShuffle(
+        mappedCached.filter(img => img.url.startsWith('/assets/uploads/'))
+      );
+      const externalItems = fisherYatesShuffle(
+        mappedCached.filter(img => !img.url.startsWith('/assets/uploads/'))
+      );
+      const shuffledPool = [...localItems, ...externalItems];
+      const selected = shuffledPool.slice(0, requestedCount);
+      return {
+        success: true,
+        status: 'cached',
+        fromCache: true,
+        provider: cached.provider || 'gemini_google_search_grounding',
+        queryUsed: cached.queryUsed,
+        totalVerified: shuffledPool.length,
+        images: selected,
+        pool: shuffledPool
+      };
+    }
+  }
+
+  // 2. Resolve ONLY GEMINI_API_KEY (no GOOGLE_SEARCH_API_KEY / GOOGLE_SEARCH_CX required)
+  const rawGeminiKey = String(
+    process.env.GEMINI_API_KEY ||
+      serverSiteSettingsStore?.GEMINI_API_KEY ||
+      serverSiteSettingsStore?.gemini_api_key ||
+      ''
+  ).trim();
+  const geminiKey = rawGeminiKey && rawGeminiKey !== 'MY_GEMINI_API_KEY' ? rawGeminiKey : '';
+
+  if (!geminiKey) {
+    return {
+      success: false,
+      status: 'api_key_missing',
+      configRequired: true,
+      message:
+        'GEMINI_API_KEY is not configured. Please ensure GEMINI_API_KEY is set in Settings > Secrets to enable Gemini Google Search Grounding visual product search.',
+      queryUsed,
+      images: [],
+      pool: []
+    };
+  }
+
+  const ai = new GoogleGenAI({
+    apiKey: geminiKey,
+    httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+  });
+
+  const tokenProfile = extractProductKeywordTokens(cleanName);
+  const candidateMap = new Map<string, VisualImageCandidate>();
+  const verifiedMap = new Map<string, VisualImageCandidate>();
+  let quotaErrorMessage = '';
+
+  const collectAndFilter = (list: VisualImageCandidate[]) => {
+    for (const c of list) {
+      const cleanUrl = String(c.url || '').trim();
+      const dedupKey = cleanUrl.split('#')[0];
+      if (!cleanUrl || candidateMap.has(dedupKey) || verifiedMap.has(dedupKey)) continue;
+      const rel = isCandidateStrictlyRelevant(c, tokenProfile);
+      if (!rel.valid) continue;
+      candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score });
+    }
+  };
+
+  const verifyPendingBatch = async (limit: number = 35) => {
+    const sortedPending = Array.from(candidateMap.entries()).sort(
+      (a, b) => (b[1].relevanceScore || 0) - (a[1].relevanceScore || 0)
+    );
+    const batch = sortedPending.slice(0, limit);
+    if (batch.length === 0) return;
+    for (const [k] of batch) candidateMap.delete(k);
+
+    const checks = await Promise.allSettled(
+      batch.map(async ([, cand]) => verifyLiveProductImageUrl(cand))
+    );
+    for (const chk of checks) {
+      if (chk.status === 'fulfilled' && chk.value) {
+        const vKey = chk.value.url.split('#')[0];
+        if (!verifiedMap.has(vKey)) {
+          verifiedMap.set(vKey, chk.value);
+        }
+      }
+    }
+  };
+
+  // 3A. Round 1: Gemini Google Search Grounding for high-res direct .jpg/.png/.webp product photos
+  const round1Prompt = `You are a commercial product image research engine using Google Search.
+Find 20 to 25 REAL, public, high-resolution, direct product photography image URLs (.jpg, .jpeg, .png, or .webp) strictly depicting the exact commercial product: "${cleanName}"${cleanCategory ? ` in category "${cleanCategory}"` : ''}${cleanSpecs ? ` (${cleanSpecs})` : ''}.
+
+STRICT REQUIREMENTS:
+- Use Google Search to verify real pages and real direct image URLs (e.g., Wikimedia Commons upload.wikimedia.org, official exporter/manufacturer sites, wholesale supplier catalogs, e-commerce CDNs).
+- Every "url" MUST be a direct image file URL ending in .jpg, .jpeg, .png, or .webp (minimum 300x300 high-resolution product photo).
+- STRICTLY NO stock watermark domains (shutterstock, istockphoto, gettyimages, alamy, 123rf, depositphotos, dreamstime), NO placeholder generators (picsum.photos, via.placeholder.com, unsplash.com), NO logos, icons, SVG, GIF, charts, memes, clipart, or unrelated generic warehouse/office photos.
+- Every image title/URL must strictly relate to "${cleanName}".
+
+Return ONLY valid JSON in this format:
+{
+  "images": [
+    {
+      "url": "https://.../product-photo.jpg",
+      "sourcePageUrl": "https://.../product-page",
+      "title": "Descriptive title matching ${cleanName}",
+      "sourceDomain": "example.com"
+    }
+  ]
+}`;
+
+  const round1 = await runGeminiGroundedImageSearchRound({
+    ai,
+    prompt: round1Prompt,
+    productName: cleanName
+  });
+
+  if (round1.errorMessage && /quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i.test(round1.errorMessage)) {
+    const cleanErr = round1.errorMessage.split('\n')[0].slice(0, 160).trim();
+    quotaErrorMessage = `Gemini Google Search Grounding API quota or key error (${cleanErr}). Please check GEMINI_API_KEY plan/billing or Settings > Secrets.`;
+  }
+
+  collectAndFilter(round1.candidates);
+
+  // Extract additional direct .jpg/.png/.webp product images from grounded web pages returned by Google Search
+  if (round1.groundedPages.length > 0 && candidateMap.size < 25) {
+    const pageImages = await extractProductImagesFromGroundedPages(
+      round1.groundedPages,
+      cleanName,
+      tokenProfile
+    );
+    collectAndFilter(pageImages);
+  }
+
+  await verifyPendingBatch(32);
+
+  // 3B. Round 2 top-up if fewer than 12 live verified images were obtained
+  if (verifiedMap.size < 12 && !quotaErrorMessage) {
+    const excludeDomains = Array.from(verifiedMap.values())
+      .map(v => v.sourceDomain)
+      .filter(Boolean)
+      .slice(0, 6)
+      .join(', ');
+
+    const round2Prompt = `Search Google for more distinct high-resolution commercial photography URLs (.jpg, .png, .webp) showing "${cleanName}" (${cleanCategory || 'wholesale export product'}).
+Look specifically across Wikimedia Commons (upload.wikimedia.org), university/agricultural/industrial databases, retail & wholesale supplier product pages${excludeDomains ? ` (prefer additional sources beyond ${excludeDomains})` : ''}.
+Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourcePageUrl": "https://...", "title": "...", "sourceDomain": "..." }] } with 15 to 20 direct high-resolution product photo URLs.`;
+
+    const round2 = await runGeminiGroundedImageSearchRound({
+      ai,
+      prompt: round2Prompt,
+      productName: cleanName
+    });
+
+    collectAndFilter(round2.candidates);
+    if (round2.groundedPages.length > 0 && candidateMap.size < 22) {
+      const pageImages2 = await extractProductImagesFromGroundedPages(
+        round2.groundedPages,
+        cleanName,
+        tokenProfile
+      );
+      collectAndFilter(pageImages2);
+    }
+
+    await verifyPendingBatch(30);
+  }
+
+  // 3C. If Gemini Grounding yielded < 12 live verified images (or hit a transient 429 quota cap),
+  // top up from live commercial web product image discovery with identical strict relevance & HTTP verification
+  if (verifiedMap.size < 12) {
+    const webCandidates = await fetchLiveCommercialWebProductImages(
+      cleanName,
+      cleanCategory,
+      cleanSpecs
+    );
+    collectAndFilter(webCandidates);
+    await verifyPendingBatch(40);
+  }
+
+  const allVerified = Array.from(verifiedMap.values()).sort(
+    (a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0)
+  );
+
+  if (allVerified.length === 0) {
+    return {
+      success: false,
+      status: quotaErrorMessage ? 'quota_exceeded' : 'no_relevant_matches',
+      configRequired: Boolean(quotaErrorMessage),
+      message:
+        quotaErrorMessage ||
+        `No verified commercial product photos (.jpg/.png/.webp) matched "${cleanName}" via Gemini Google Search Grounding. Try refining the product title or upload an image manually.`,
+      queryUsed,
+      images: [],
+      pool: []
+    };
+  }
+
+  const geminiVerified = await filterCandidatesWithGemini(cleanName, cleanCategory, allVerified, geminiKey);
+
+  // Auto-upload top 4 verified images onto our site (/assets/uploads/auto-...webp) immediately,
+  // and mirror the rest of the >10 pool in the background so subsequent loads take 0ms!
+  const topToMirrorNow = geminiVerified.slice(0, 4);
+  await Promise.allSettled(
+    topToMirrorNow.map(async item => {
+      const localUrl = await mirrorExternalProductImageToLocalUploads({
+        externalUrl: item.url,
+        productName: cleanName,
+        category: cleanCategory
+      });
+      if (localUrl) {
+        item.url = localUrl;
+        item.thumbnailUrl = localUrl;
+      }
+    })
+  );
+
+  // Persist verified pool in 7-day cache
+  serverProductImageCacheMap.set(normalizedKey, {
+    keyword: normalizedKey,
+    queryUsed,
+    images: geminiVerified,
+    updatedAt: new Date().toISOString(),
+    provider: 'gemini_google_search_grounding'
+  });
+  saveProductImageCacheToDisk();
+
+  // Mirror remaining pool items in background
+  void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, geminiVerified);
+
+  // Fisher-Yates shuffle on every request so >10 randomized results appear
+  const shuffledPool = fisherYatesShuffle(geminiVerified);
+  const selected = shuffledPool.slice(0, requestedCount);
+
+  return {
+    success: true,
+    status: 'ok',
+    fromCache: false,
+    provider: 'gemini_google_search_grounding',
+    queryUsed,
+    totalVerified: shuffledPool.length,
+    images: selected,
+    pool: shuffledPool
+  };
+}
+
+const inFlightExternalMirrors = new Map<string, Promise<string | null>>();
+let saveOverridesDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let saveCacheDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSaveOverridesState(immediate = false) {
+  if (immediate) {
+    if (saveOverridesDebounceTimer) {
+      clearTimeout(saveOverridesDebounceTimer);
+      saveOverridesDebounceTimer = null;
+    }
+    saveServerProductImageState();
+    return;
+  }
+  if (saveOverridesDebounceTimer) return;
+  saveOverridesDebounceTimer = setTimeout(() => {
+    saveOverridesDebounceTimer = null;
+    saveServerProductImageState();
+  }, 500);
+}
+
+function scheduleSaveProductImageCache(immediate = false) {
+  if (immediate) {
+    if (saveCacheDebounceTimer) {
+      clearTimeout(saveCacheDebounceTimer);
+      saveCacheDebounceTimer = null;
+    }
+    saveProductImageCacheToDisk();
+    return;
+  }
+  if (saveCacheDebounceTimer) return;
+  saveCacheDebounceTimer = setTimeout(() => {
+    saveCacheDebounceTimer = null;
+    saveProductImageCacheToDisk();
+  }, 500);
+}
+
+function isLocalUploadPresentOnDisk(url: string | undefined | null): boolean {
+  const clean = String(url || '').trim().split('?')[0];
+  if (!clean.startsWith('/assets/uploads/')) return false;
+  try {
+    const fileOnDisk = path.join(UPLOADS_DIR, path.basename(clean));
+    if (!fs.existsSync(fileOnDisk)) return false;
+    return fs.statSync(fileOnDisk).size > 1500;
+  } catch {
+    return false;
+  }
+}
+
+function shouldBindOverrideForKey(key: string): boolean {
+  const existing = serverProductImageState.overrides[key];
+  if (!existing || !existing.primary) return true;
+  if (isGenericOrPlaceholderServerUrl(existing.primary)) return true;
+  if (/^https?:\/\//i.test(existing.primary)) return true;
+  if (existing.primary.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(existing.primary)) {
+    return true;
+  }
+  return false;
+}
+
+function bindAutoSavedImageOverride(params: {
+  localUrl: string;
+  rawExternalUrl?: string;
+  productId?: string;
+  productName?: string;
+  gallery?: string[];
+  flushNow?: boolean;
+}) {
+  const cleanLocal = normalizeServerAssetUrl(params.localUrl).split('?')[0];
+  if (!cleanLocal || isGenericOrPlaceholderServerUrl(cleanLocal)) return;
+
+  const nowIso = new Date().toISOString();
+  const resolvedGallery =
+    Array.isArray(params.gallery) && params.gallery.length > 0
+      ? params.gallery
+          .map(u => normalizeServerAssetUrl(u).split('?')[0])
+          .filter(u => Boolean(u) && !isGenericOrPlaceholderServerUrl(u))
+      : [cleanLocal];
+  if (resolvedGallery.length === 0) resolvedGallery.push(cleanLocal);
+
+  if (params.rawExternalUrl && /^https?:\/\//i.test(params.rawExternalUrl)) {
+    serverProductImageState.urlReplacements[params.rawExternalUrl] = cleanLocal;
+  }
+
+  // Ensure mediaLibrary records the local upload once
+  if (
+    cleanLocal.startsWith('/assets/uploads/') &&
+    !serverProductImageState.mediaLibrary.some(m => m.url === cleanLocal)
+  ) {
+    const fname = path.basename(cleanLocal);
+    const fpath = path.join(UPLOADS_DIR, fname);
+    let sizeBytes: number | undefined;
+    try {
+      if (fs.existsSync(fpath)) sizeBytes = fs.statSync(fpath).size;
+    } catch {}
+    serverProductImageState.mediaLibrary.unshift({
+      id: `media-${fname}`,
+      url: cleanLocal,
+      name: fname,
+      format: (path.extname(fname).replace('.', '') || 'WEBP').toUpperCase(),
+      sizeBytes,
+      uploadedAt: nowIso
+    });
+  }
+
+  let stateUpdated = false;
+  const pid = String(params.productId || '').trim();
+  const pname = String(params.productName || '').trim();
+  const cleanSubjectName = cleanProductSearchSubject(pname);
+
+  if (pid && shouldBindOverrideForKey(pid)) {
+    serverProductImageState.overrides[pid] = {
+      primary: cleanLocal,
+      gallery: resolvedGallery,
+      format: (path.extname(cleanLocal).replace('.', '') || 'WEBP').toUpperCase(),
+      updatedAt: nowIso,
+      updatedBy: 'auto-site-upload'
+    };
+    stateUpdated = true;
+  }
+
+  if (cleanSubjectName.length >= 3 && shouldBindOverrideForKey(cleanSubjectName)) {
+    serverProductImageState.overrides[cleanSubjectName] = {
+      primary: cleanLocal,
+      gallery: resolvedGallery,
+      format: (path.extname(cleanLocal).replace('.', '') || 'WEBP').toUpperCase(),
+      updatedAt: nowIso,
+      updatedBy: 'auto-site-upload'
+    };
+    stateUpdated = true;
+  }
+
+  // Update persisted serverProductsStore / serverRfqsStore entries if they match pid
+  if (pid) {
+    let prodUpdated = false;
+    serverProductsStore = serverProductsStore.map(p => {
+      if (String(p.id) !== pid) return p;
+      const curImg = String(p.images?.[0] || p.image || '').trim();
+      if (!curImg || isGenericOrPlaceholderServerUrl(curImg) || /^https?:\/\//i.test(curImg)) {
+        prodUpdated = true;
+        return { ...p, image: cleanLocal, images: resolvedGallery };
+      }
+      return p;
+    });
+    if (prodUpdated) saveServerProductsToDisk();
+
+    let rfqUpdated = false;
+    serverRfqsStore = serverRfqsStore.map(r => {
+      if (String(r.id) !== pid && `rfq-${r.raw_id}` !== pid) return r;
+      const curRfqImg = String(r.image_url || r.imageUrl || r.images?.[0] || '').trim();
+      if (!curRfqImg || isGenericOrPlaceholderServerUrl(curRfqImg) || /^https?:\/\//i.test(curRfqImg)) {
+        rfqUpdated = true;
+        return { ...r, image_url: cleanLocal, images: resolvedGallery };
+      }
+      return r;
+    });
+    if (rfqUpdated) saveRfqMarketStoreToDisk();
+  }
+
+  if (stateUpdated || params.rawExternalUrl) {
+    scheduleSaveOverridesState(Boolean(params.flushNow));
+  }
+}
+
+async function mirrorExternalProductImageToLocalUploads(params: {
+  externalUrl: string;
+  productName?: string;
+  productId?: string;
+  category?: string;
+  flushNow?: boolean;
+}): Promise<string | null> {
+  const rawUrl = String(params.externalUrl || '').trim();
+  if (!rawUrl) return null;
+  if (
+    rawUrl.startsWith('/assets/uploads/') ||
+    rawUrl.startsWith('/src/assets/') ||
+    rawUrl.startsWith('/uploads/')
+  ) {
+    const cleanLocal = rawUrl.split('?')[0];
+    if (cleanLocal.startsWith('/assets/uploads/') && !isLocalUploadPresentOnDisk(cleanLocal)) {
+      return null;
+    }
+    bindAutoSavedImageOverride({
+      localUrl: cleanLocal,
+      productId: params.productId,
+      productName: params.productName,
+      flushNow: Boolean(params.flushNow)
+    });
+    return cleanLocal;
+  }
+  if (!/^https?:\/\//i.test(rawUrl)) return null;
+
+  ensureUploadsDir();
+
+  // Check if already mirrored and file exists on disk
+  const existingReplacement = serverProductImageState.urlReplacements?.[rawUrl];
+  if (existingReplacement && existingReplacement.startsWith('/assets/uploads/')) {
+    if (isLocalUploadPresentOnDisk(existingReplacement)) {
+      bindAutoSavedImageOverride({
+        localUrl: existingReplacement,
+        rawExternalUrl: rawUrl,
+        productId: params.productId,
+        productName: params.productName,
+        flushNow: Boolean(params.flushNow)
+      });
+      return existingReplacement;
+    }
+  }
+
+  const hash = crypto.createHash('sha1').update(rawUrl).digest('hex').slice(0, 12);
+  const slug =
+    cleanProductSearchSubject(params.productName || 'product')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 36) || 'product';
+  const fileName = `auto-${slug}-${hash}.webp`;
+  const filePath = path.join(UPLOADS_DIR, fileName);
+  const localUrl = `/assets/uploads/${fileName}`;
+
+  if (fs.existsSync(filePath)) {
+    try {
+      const st = fs.statSync(filePath);
+      if (st.size > 1500) {
+        bindAutoSavedImageOverride({
+          localUrl,
+          rawExternalUrl: rawUrl,
+          productId: params.productId,
+          productName: params.productName,
+          flushNow: Boolean(params.flushNow)
+        });
+        return localUrl;
+      }
+    } catch {}
+  }
+
+  const finishBind = (resolvedLocalUrl: string) => {
+    bindAutoSavedImageOverride({
+      localUrl: resolvedLocalUrl,
+      rawExternalUrl: rawUrl,
+      productId: params.productId,
+      productName: params.productName,
+      flushNow: Boolean(params.flushNow)
+    });
+    return resolvedLocalUrl;
+  };
+
+  if (inFlightExternalMirrors.has(rawUrl)) {
+    const resUrl = await inFlightExternalMirrors.get(rawUrl)!;
+    return resUrl ? finishBind(resUrl) : null;
+  }
+
+  const job = (async (): Promise<string | null> => {
+    const tryDownload = async (withReferer: boolean) => {
+      const headers: Record<string, string> = {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8'
+      };
+      if (withReferer) {
+        try {
+          headers.Referer = `${new URL(rawUrl).origin}/`;
+        } catch {}
+      }
+      return fetch(rawUrl, {
+        headers,
+        redirect: 'follow',
+        signal: AbortSignal.timeout(6500)
+      });
+    };
+
+    try {
+      let resp = await tryDownload(false);
+      if (!resp.ok && (resp.status === 401 || resp.status === 403)) {
+        resp = await tryDownload(true);
+      }
+      if (!resp.ok) return null;
+      const ctype = String(resp.headers.get('content-type') || '').toLowerCase();
+      if (
+        ctype.includes('text/html') ||
+        ctype.includes('application/json') ||
+        ctype.includes('svg') ||
+        ctype.includes('gif')
+      ) {
+        return null;
+      }
+
+      const arrBuf = await resp.arrayBuffer();
+      const rawBuffer = Buffer.from(arrBuf);
+      if (rawBuffer.length < 2500) return null;
+
+      let outBuffer: Buffer;
+      try {
+        outBuffer = await sharp(rawBuffer, { failOn: 'none' })
+          .rotate()
+          .resize({ width: 960, withoutEnlargement: true })
+          .webp({ quality: 82, effort: 3 })
+          .toBuffer();
+      } catch {
+        return null;
+      }
+
+      if (!outBuffer || outBuffer.length < 1500) return null;
+
+      fs.writeFileSync(filePath, outBuffer);
+      void prewarmSingleImageFile(filePath);
+
+      // Update any cached pools referencing rawUrl so future pool reads are 100% local
+      let cacheModified = false;
+      for (const [, rec] of serverProductImageCacheMap.entries()) {
+        for (const img of rec.images || []) {
+          if (img.url === rawUrl) {
+            img.url = localUrl;
+            img.thumbnailUrl = localUrl;
+            cacheModified = true;
+          }
+        }
+      }
+      if (cacheModified) {
+        scheduleSaveProductImageCache(Boolean(params.flushNow));
+      }
+
+      return localUrl;
+    } catch {
+      return null;
+    }
+  })();
+
+  inFlightExternalMirrors.set(rawUrl, job);
+  try {
+    const downloadedUrl = await job;
+    return downloadedUrl ? finishBind(downloadedUrl) : null;
+  } finally {
+    inFlightExternalMirrors.delete(rawUrl);
+  }
+}
+
+async function mirrorVerifiedPoolInBackground(
+  normalizedKey: string,
+  productName: string,
+  pool: VisualImageCandidate[]
+): Promise<void> {
+  try {
+    const externalItems = pool.filter(item => item?.url && /^https?:\/\//i.test(item.url)).slice(0, 16);
+    if (externalItems.length === 0) return;
+
+    let anyUpdated = false;
+    // Process in batches of 4 to avoid network spikes
+    for (let i = 0; i < externalItems.length; i += 4) {
+      const chunk = externalItems.slice(i, i + 4);
+      await Promise.allSettled(
+        chunk.map(async item => {
+          const localUrl = await mirrorExternalProductImageToLocalUploads({
+            externalUrl: item.url,
+            productName
+          });
+          if (localUrl) {
+            item.url = localUrl;
+            item.thumbnailUrl = localUrl;
+            anyUpdated = true;
+          }
+        })
+      );
+    }
+
+    if (anyUpdated) {
+      const existing = serverProductImageCacheMap.get(normalizedKey);
+      if (existing) {
+        serverProductImageCacheMap.set(normalizedKey, {
+          ...existing,
+          images: pool
+        });
+      }
+      scheduleSaveProductImageCache(true);
+      scheduleSaveOverridesState(true);
+    }
+  } catch {}
+}
+
+app.post('/api/v1/products/auto-upload-image', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const externalUrl = String(body.image_url || body.imageUrl || body.url || '').trim();
+    const productId = String(body.product_id || body.productId || '').trim();
+    const productName = String(body.product_name || body.productName || '').trim();
+    const category = String(body.category || '').trim();
+
+    if (!externalUrl) {
+      return res.status(400).json({ success: false, message: 'Missing image_url' });
+    }
+
+    const localUrl = await mirrorExternalProductImageToLocalUploads({
+      externalUrl,
+      productId,
+      productName,
+      category,
+      flushNow: true
+    });
+
+    if (!localUrl) {
+      return res.json({
+        success: false,
+        localUrl: '',
+        originalUrl: externalUrl
+      });
+    }
+
+    return res.json({
+      success: true,
+      localUrl,
+      url: localUrl,
+      originalUrl: externalUrl
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to auto-upload image to site.'
+    });
+  }
+});
+
+app.post('/api/v1/products/fetch-images', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const productName = String(body.product_name || body.productName || body.query || '');
+    const productId = String(body.product_id || body.productId || '').trim();
+    const category = String(body.category || '');
+    const result = await handleVisualProductImageSearch({
+      productName,
+      category,
+      specifications: String(body.specifications || body.specs || ''),
+      count: Number(body.count || 15) || 15,
+      forceRefresh: Boolean(body.force_refresh || body.forceRefresh || body.shuffle)
+    });
+    if (result.success && Array.isArray(result.images) && result.images.length > 0) {
+      const localMatches = result.images
+        .map(img => String(img?.url || '').trim())
+        .filter(u => u.startsWith('/assets/uploads/'));
+      if (localMatches.length > 0 && (productId || productName.trim().length >= 3)) {
+        bindAutoSavedImageOverride({
+          localUrl: localMatches[0],
+          productId: productId || undefined,
+          productName: productName.trim(),
+          gallery: localMatches.slice(0, 4),
+          flushNow: true
+        });
+      }
+    }
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      status: 'error',
+      message: err?.message || 'Failed to fetch product images.',
+      images: [],
+      pool: []
+    });
+  }
+});
+
+app.get('/api/v1/products/fetch-images', async (req, res) => {
+  try {
+    const result = await handleVisualProductImageSearch({
+      productName: String(req.query.product_name || req.query.productName || req.query.q || ''),
+      category: String(req.query.category || ''),
+      specifications: String(req.query.specifications || ''),
+      count: Number(req.query.count || 15) || 15,
+      forceRefresh: req.query.force_refresh === '1' || req.query.forceRefresh === 'true'
+    });
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      status: 'error',
+      message: err?.message || 'Failed to fetch product images.',
+      images: [],
+      pool: []
     });
   }
 });
@@ -14370,10 +16414,10 @@ async function startServer() {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
     setTimeout(() => {
       void runAutonomousImageOptimizerCycle('BOOT_INITIALIZATION_EVERY_MINUTE_DAEMON');
-    }, 150);
+    }, 15000);
     setTimeout(() => {
       executeAutonomousServerSeoCycle('BOOT_INITIALIZATION_24_7_365');
-    }, 1500);
+    }, 12000);
     setInterval(() => {
       void processUnseenChatAlerts(60);
     }, 30000);

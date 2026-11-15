@@ -10,6 +10,20 @@ interface Props {
 export const LiveMarketDemandBanner: React.FC<Props> = ({ insight, searchedProduct }) => {
   if (!insight || !insight.summary) return null;
 
+  const publicSources = Array.isArray(insight.sources)
+    ? insight.sources.filter(src => {
+        const uri = String(src?.uri || '').toLowerCase();
+        const title = String(src?.title || '').toLowerCase();
+        return (
+          uri &&
+          !uri.includes('google.com') &&
+          !uri.includes('googleapis.com') &&
+          !uri.includes('gstatic.com') &&
+          !title.includes('google')
+        );
+      })
+    : [];
+
   return (
     <div
       data-testid="live-market-demand-insight-banner"
@@ -28,7 +42,7 @@ export const LiveMarketDemandBanner: React.FC<Props> = ({ insight, searchedProdu
 
         <div className="flex items-center gap-2 text-[11px] text-slate-300">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>{insight.fromCache ? 'Cached Market Sync' : 'Live Google Trade Index'}</span>
+          <span>{insight.fromCache ? 'Cached Market Sync' : 'Live Global Trade Index'}</span>
         </div>
       </div>
 
@@ -65,13 +79,13 @@ export const LiveMarketDemandBanner: React.FC<Props> = ({ insight, searchedProdu
         )}
       </div>
 
-      {Array.isArray(insight.sources) && insight.sources.length > 0 && (
+      {publicSources.length > 0 && (
         <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
           <span className="inline-flex items-center gap-1 font-semibold text-blue-300">
             <Sparkles className="w-3 h-3" />
             <span>Market Sources:</span>
           </span>
-          {insight.sources.slice(0, 4).map((src, idx) => (
+          {publicSources.slice(0, 4).map((src, idx) => (
             <a
               key={`${src.uri}-${idx}`}
               href={src.uri}

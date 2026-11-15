@@ -42,6 +42,9 @@ export interface RawRFQPayload {
   market_insight?: string;
   posted_label?: string;
   id?: string;
+  image_url?: string;
+  imageUrl?: string;
+  images?: string[];
   // Alternative aliases for maximum cross-compatibility
   product_name?: string;
   quantity_unit?: string;
@@ -249,6 +252,8 @@ export const apiClient = {
         buyer_company: payload.buyer_company || payload.buyer_name || 'Enterprise Trading Firm',
         buyer_phone: payload.buyer_phone || '',
         buyer_address: payload.buyer_address || '',
+        image_url: payload.image_url || payload.imageUrl || (Array.isArray(payload.images) && payload.images[0]) || '',
+        images: Array.isArray(payload.images) ? payload.images : [],
         source: payload.source || 'user',
         sync_tag: payload.sync_tag || (payload.source === 'auto_generated' ? 'market_sync' : ''),
         search_keyword: payload.search_keyword || '',
@@ -310,9 +315,12 @@ export const apiClient = {
   },
 
   /**
-   * Live Google Demand Fetch & Auto-RFQ Generation (when < 3 DB RFQs exist for a keyword)
+   * Live Market Demand Fetch & Auto-RFQ Generation (when < 3 DB RFQs exist or search results lack auto-RFQs)
    */
-  async discoverMarketDemandRfqs(keyword: string): Promise<{
+  async discoverMarketDemandRfqs(
+    keyword: string,
+    searchResults?: string[]
+  ): Promise<{
     success: boolean;
     fromCache?: boolean;
     rfqs: RFQ[];
@@ -324,6 +332,15 @@ export const apiClient = {
     if (!q || q.length < 2) {
       return { success: false, rfqs: [], insight: null, message: 'Keyword too short' };
     }
+    const cleanResults = Array.isArray(searchResults)
+      ? Array.from(
+          new Set(
+            searchResults
+              .map(s => String(s || '').trim())
+              .filter(s => s.length >= 2)
+          )
+        ).slice(0, 10)
+      : [];
     try {
       const res = await fetch('/api/v1/rfqs/discover-market-demand', {
         method: 'POST',
@@ -331,7 +348,10 @@ export const apiClient = {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ keyword: q })
+        body: JSON.stringify({
+          keyword: q,
+          ...(cleanResults.length > 0 ? { searchResults: cleanResults } : {})
+        })
       });
       if (!res.ok) {
         return { success: false, rfqs: [], insight: null, message: `HTTP ${res.status}` };
@@ -377,7 +397,27 @@ export const apiClient = {
           title: item.title,
           category: item.category || 'General',
           subCategory: item.sub_category || 'Industrial Equipment',
-          images: [item.image_url || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'],
+          images: (() => {
+            const parsed: string[] = [];
+            if (Array.isArray(item.images)) {
+              for (const u of item.images) {
+                if (typeof u === 'string' && u.trim() && !parsed.includes(u.trim())) parsed.push(u.trim());
+              }
+            } else if (typeof item.images === 'string' && item.images.trim().startsWith('[')) {
+              try {
+                const arr = JSON.parse(item.images);
+                if (Array.isArray(arr)) {
+                  for (const u of arr) {
+                    if (typeof u === 'string' && u.trim() && !parsed.includes(u.trim())) parsed.push(u.trim());
+                  }
+                }
+              } catch {}
+            }
+            if (item.image_url && String(item.image_url).trim() && !parsed.includes(String(item.image_url).trim())) {
+              parsed.unshift(String(item.image_url).trim());
+            }
+            return parsed;
+          })(),
           moq: Number(item.moq || 1),
           moqUnit: item.moq_unit || 'Pieces',
           priceTiers: [

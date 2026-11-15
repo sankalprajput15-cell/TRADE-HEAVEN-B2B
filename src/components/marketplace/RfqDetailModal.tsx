@@ -6,6 +6,7 @@ import { OFFICIAL_WHATSAPP_DATA } from '../common/TradeHeavenSocialBar';
 import { PremiumContactGate } from '../common/PremiumContactGate';
 import { TradeHeavenDataLoader } from '../common/TradeHeavenDataLoader';
 import { getFreshRfqDate } from '../../utils/rfqDateUtils';
+import { SafeImage } from '../common/SafeImage';
 import { 
   X, 
   FileText, 
@@ -212,14 +213,18 @@ export const RfqDetailModal: React.FC<Props> = ({
         {/* Modal Header */}
         <div className="bg-slate-900 text-white p-5 sm:p-6 flex items-start justify-between gap-4 shrink-0">
           <div className="flex items-start gap-4 min-w-0">
-            {(rfq.image || rfq.images?.[0]) && (
-              <img
-                src={rfq.image || rfq.images?.[0]}
-                alt={rfq.productName}
-                referrerPolicy="no-referrer"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-700 shrink-0 bg-slate-800 shadow-md"
-              />
-            )}
+            <SafeImage
+              src={rfq.image || rfq.images?.[0]}
+              fallbackSrc={rfq.images?.[1]}
+              productId={rfq.id}
+              alt={rfq.productName}
+              productTitle={rfq.productName}
+              category={rfq.category}
+              type="rfq"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-700 shrink-0 bg-slate-800 shadow-md"
+              imgClassName="w-full h-full object-cover"
+              disableLiveUpload
+            />
             <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">

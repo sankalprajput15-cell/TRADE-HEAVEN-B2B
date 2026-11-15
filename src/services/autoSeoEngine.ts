@@ -575,7 +575,6 @@ class AutoSeoEngineService {
 
     this.computeRealGeoDistribution();
     this.saveToStorage();
-    await this.evaluateAlertThresholds();
 
     return {
       metrics: this.healthMetrics,
@@ -731,7 +730,6 @@ class AutoSeoEngineService {
                 timestamp: new Date().toISOString()
               };
               this.saveToStorage();
-              this.evaluateAlertThresholds();
             }
           })
           .catch(() => {});

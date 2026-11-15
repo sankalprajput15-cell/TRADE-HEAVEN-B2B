@@ -9,6 +9,7 @@ import { SupplierBankAccountManagement } from './SupplierBankAccountManagement';
 import { tradeHeavenMediationService, MediationSystemState } from '../../services/tradeHeavenMediatorEngine';
 import { formatBalanceInNativeCurrency } from '../../utils/entityCurrency';
 import { generateCommercialInvoicePDF } from '../common/ExportToPDF';
+import { SafeImage } from '../common/SafeImage';
 import { SupplierMessagesInbox } from '../vendor/SupplierMessagesInbox';
 import { 
   LayoutDashboard, 
@@ -1422,18 +1423,17 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
 
                       {/* Product Name & Image */}
                       <div className="flex items-center gap-3 h-13">
-                        <div className="w-12 h-12 rounded-lg border border-slate-200 shrink-0 bg-slate-100 shadow-2xs flex items-center justify-center overflow-hidden">
-                          {(rfq.image || rfq.images?.[0]) ? (
-                            <img
-                              src={rfq.image || rfq.images?.[0]}
-                              alt={rfq.productName}
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Package className="w-6 h-6 text-slate-400" />
-                          )}
-                        </div>
+                        <SafeImage
+                          src={rfq.image || rfq.images?.[0]}
+                          productId={rfq.id}
+                          alt={rfq.productName}
+                          productTitle={rfq.productName}
+                          category={rfq.category}
+                          type="rfq"
+                          isThumbnail
+                          className="w-12 h-12 rounded-lg border border-slate-200 shrink-0 bg-slate-100 shadow-2xs overflow-hidden"
+                          imgClassName="w-full h-full object-cover"
+                        />
                         <div className="min-w-0 flex-1">
                           <h4 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
                             {rfq.productName}

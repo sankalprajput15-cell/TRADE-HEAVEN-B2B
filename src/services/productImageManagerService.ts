@@ -246,10 +246,7 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
   },
   'prod-reverse-energy-sa-coal': {
     primary: regeneratedSupplierCoalImg,
-    gallery: [
-      regeneratedSupplierCoalImg,
-      'https://images.unsplash.com/photo-1578319439584-104c94d37305?w=800&auto=format&fit=crop&q=80'
-    ],
+    gallery: [regeneratedSupplierCoalImg],
     format: 'JPG',
     updatedAt: '2026-11-09T00:00:00.000Z'
   }
@@ -434,21 +431,37 @@ class ProductImageManagerService {
     };
   }
 
+  private isPlaceholderOverrideUrl(url: string | undefined | null): boolean {
+    const clean = String(url || '').trim().toLowerCase();
+    if (!clean) return true;
+    return [
+      'picsum.photos',
+      'via.placeholder.com',
+      'placeholder.com',
+      'dummyimage.com',
+      'placekitten.com',
+      'images.unsplash.com',
+      'unsplash.com',
+      'pexels.com',
+      'pixabay.com'
+    ].some(p => clean.includes(p));
+  }
+
   private normalizeOverrideMap(rawMap: Record<string, any>): Record<string, ProductImageOverrideEntry> {
     const out: Record<string, ProductImageOverrideEntry> = {};
     if (!rawMap || typeof rawMap !== 'object') return out;
     for (const [k, v] of Object.entries(rawMap)) {
       if (!v || typeof v !== 'object' || !v.primary) continue;
       const primary = normalizeProductAssetUrl(v.primary);
-      if (!primary) continue;
+      if (!primary || this.isPlaceholderOverrideUrl(primary)) continue;
       const previousPrimary = v.previousPrimary ? normalizeProductAssetUrl(v.previousPrimary) : undefined;
       const gallery = Array.isArray(v.gallery) && v.gallery.length > 0
-        ? v.gallery.map((u: string) => normalizeProductAssetUrl(u)).filter(Boolean)
+        ? v.gallery.map((u: string) => normalizeProductAssetUrl(u)).filter((u: string) => Boolean(u) && !this.isPlaceholderOverrideUrl(u))
         : [primary];
       out[k] = {
         primary,
         ...(previousPrimary ? { previousPrimary } : {}),
-        gallery,
+        gallery: gallery.length > 0 ? gallery : [primary],
         format: v.format || this.detectFormatFromUrl(primary),
         updatedAt: v.updatedAt || '2024-01-01T00:00:00.000Z',
         updatedBy: v.updatedBy
@@ -828,18 +841,22 @@ class ProductImageManagerService {
           ...DEFAULT_BUILTIN_OVERRIDES
         };
 
-        // Server overrides ALWAYS take priority over built-in defaults and stale localStorage
+        // Server overrides take priority over built-in defaults, except local /assets/uploads/ overrides beat external/older entries
         for (const [pid, srvEntry] of Object.entries(srvOverrides)) {
           if (this.locallyDeletedIds.has(pid)) continue;
           mergedOverrides[pid] = srvEntry;
         }
 
-        // Only keep local overrides if they were mutated in THIS tab within the last 60 seconds
+        // Preserve local overrides if recently mutated in this tab OR if local holds a saved /assets/uploads/ image while server does not
         for (const [pid, localEntry] of Object.entries(localOverrides)) {
           if (!localEntry?.primary || this.locallyDeletedIds.has(pid)) continue;
           const mutatedAt = this.localMutationTimes.get(pid) || 0;
           const isRecentTabMutation = mutatedAt > 0 && Date.now() - mutatedAt < 60000;
-          if (isRecentTabMutation) {
+          const srvPrimary = mergedOverrides[pid]?.primary || '';
+          const localIsUploaded = localEntry.primary.startsWith('/assets/uploads/');
+          const srvIsUploaded = srvPrimary.startsWith('/assets/uploads/');
+          const srvIsStaleExternal = !srvPrimary || /^https?:\/\//i.test(srvPrimary) || this.isPlaceholderOverrideUrl(srvPrimary);
+          if (isRecentTabMutation || (localIsUploaded && !srvIsUploaded && srvIsStaleExternal)) {
             mergedOverrides[pid] = localEntry;
           }
         }
@@ -1837,6 +1854,82 @@ class ProductImageManagerService {
         headers: { 'Content-Type': 'application/json' },
         body: bodyStr
       }).catch(() => {});
+    }
+  }
+
+  /**
+   * Silently persists an auto-fetched / auto-mirrored image in client overrides + localStorage + IndexedDB
+   * without triggering toast popups or SEO/email alerts.
+   */
+  public registerAutoSavedImage(params: {
+    productId?: string;
+    productTitle?: string;
+    url: string;
+    originalUrl?: string;
+  }): void {
+    const rawUrl = normalizeProductAssetUrl(params.url);
+    if (!rawUrl || this.isPlaceholderOverrideUrl(rawUrl)) return;
+    const cleanUrl =
+      rawUrl.startsWith('/assets/uploads/') || rawUrl.startsWith('/src/assets/')
+        ? rawUrl.split('?')[0]
+        : rawUrl;
+
+    const keys = Array.from(
+      new Set([params.productId?.trim(), params.productTitle?.trim()].filter((k): k is string => Boolean(k && k.length >= 2)))
+    );
+    if (keys.length === 0 && !params.originalUrl) return;
+
+    const nowIso = new Date().toISOString();
+    const format = this.detectFormatFromUrl(cleanUrl);
+    let updated = false;
+
+    for (const key of keys) {
+      if (this.locallyDeletedIds.has(key)) continue;
+      const existing = this.state.overrides[key];
+      const existingPrimary = existing?.primary || '';
+      const existingIsSavedLocal =
+        (existingPrimary.startsWith('/assets/uploads/') || existingPrimary.startsWith('/src/assets/')) &&
+        !this.isPlaceholderOverrideUrl(existingPrimary);
+      if (existingIsSavedLocal) continue;
+
+      this.localMutationTimes.set(key, Date.now());
+      this.state.overrides[key] = {
+        primary: cleanUrl,
+        gallery: [cleanUrl],
+        format,
+        updatedAt: nowIso,
+        updatedBy: 'auto-site-upload'
+      };
+      updated = true;
+    }
+
+    if (params.originalUrl && /^https?:\/\//i.test(params.originalUrl) && cleanUrl.startsWith('/assets/uploads/')) {
+      if (this.state.urlReplacements[params.originalUrl] !== cleanUrl) {
+        this.state.urlReplacements[params.originalUrl] = cleanUrl;
+        updated = true;
+      }
+    }
+
+    if (
+      cleanUrl.startsWith('/assets/uploads/') &&
+      !this.state.mediaLibrary.some(m => m.url === cleanUrl)
+    ) {
+      const fileName = cleanUrl.split('/').pop() || 'auto-product.webp';
+      this.state.mediaLibrary = [
+        {
+          id: `media-${fileName}`,
+          url: cleanUrl,
+          name: fileName,
+          format,
+          uploadedAt: nowIso
+        },
+        ...this.state.mediaLibrary
+      ];
+      updated = true;
+    }
+
+    if (updated) {
+      this.saveToLocalStorage({ productId: params.productId, url: cleanUrl, action: 'auto_save_image' });
     }
   }
 

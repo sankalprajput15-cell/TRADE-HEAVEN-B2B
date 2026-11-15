@@ -13,6 +13,8 @@ import {
   hasActiveImageFilters
 } from '../../services/productImageManagerService';
 import { SafeImage } from '../common/SafeImage';
+import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
+import { isManuallyUploadedImageUrl } from '../../services/visualProductImageService';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { autoSeoEngine, AutoSeoRecord } from '../../services/autoSeoEngine';
@@ -211,6 +213,8 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   // Full Product Edit / Create Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingNewProduct, setIsAddingNewProduct] = useState<boolean>(false);
+  const [isManualFormImages, setIsManualFormImages] = useState<boolean>(false);
+  const [isAutoMatchedFormImages, setIsAutoMatchedFormImages] = useState<boolean>(false);
   const [productForm, setProductForm] = useState<{
     id: string;
     title: string;
@@ -268,16 +272,21 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         { name: 'Grade', value: 'Grade A Export Quality' },
         { name: 'Moisture Content', value: '30-35%' }
       ],
-      images: [
-        '/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg'
-      ]
+      images: []
     });
+    setIsManualFormImages(false);
+    setIsAutoMatchedFormImages(false);
     setIsAddingNewProduct(true);
   };
 
   const handleOpenEditProductDetails = (product: Product) => {
     setIsAddingNewProduct(false);
     setEditingProduct(product);
+    const existingImages = Array.isArray(product.images)
+      ? product.images.filter(u => isManuallyUploadedImageUrl(u))
+      : [];
+    setIsManualFormImages(existingImages.length > 0);
+    setIsAutoMatchedFormImages(false);
     setProductForm({
       id: product.id,
       title: product.title || '',
@@ -300,7 +309,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
             { name: 'Grade', value: 'Grade A' },
             { name: 'Packaging', value: 'Vacuum Sealed' }
           ],
-      images: product.images && product.images.length > 0 ? [...product.images] : ['/assets/aistudio/sidath-vimukthi-fIGw-jVGy5g-unsplash_c8b9928d.jpg']
+      images: existingImages
     });
   };
 
@@ -572,10 +581,15 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
     if (target.mode === 'FORM_GALLERY_IMAGE' && typeof target.imageIndex === 'number') {
       const previousGalleryImages = [...productForm.images];
       const removedIdx = target.imageIndex;
+      const nextImages = previousGalleryImages.filter((_, i) => i !== removedIdx);
       setProductForm(prev => ({
         ...prev,
         images: prev.images.filter((_, i) => i !== removedIdx)
       }));
+      if (nextImages.length === 0) {
+        setIsManualFormImages(false);
+        setIsAutoMatchedFormImages(false);
+      }
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
           detail: {
@@ -3589,6 +3603,8 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                               ...prev,
                               images: [...prev.images, ...newUrls]
                             }));
+                            setIsManualFormImages(true);
+                            setIsAutoMatchedFormImages(false);
                             showToast('success', `Uploaded & attached ${newUrls.length} image(s)!`);
                           } catch (err: any) {
                             showToast('error', err?.message || 'Upload failed');
@@ -3605,7 +3621,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                     {productForm.images.map((imgUrl, idx) => (
                       <div key={idx} className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 group h-28">
-                        <img src={imgUrl} alt={`Product ${idx}`} className="w-full h-full object-cover" />
+                        <img src={imgUrl} alt={`Product ${idx}`} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                         <span className="absolute top-1 left-1 bg-slate-900/80 text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded">
                           {idx === 0 ? 'Primary' : `#${idx + 1}`}
                         </span>
@@ -3643,12 +3659,30 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
                               ...productForm,
                               images: [...productForm.images, val]
                             });
+                            setIsManualFormImages(true);
+                            setIsAutoMatchedFormImages(false);
                             (e.target as HTMLInputElement).value = '';
                           }
                         }
                       }}
                     />
                   </div>
+
+                  {/* Visual Product Image Finder (Auto-triggers when no manual image uploaded) */}
+                  <VisualProductImagePicker
+                    productName={productForm.title}
+                    category={productForm.category}
+                    specifications={productForm.specifications.map(s => `${s.name} ${s.value}`).join(' ')}
+                    hasManualImage={isManualFormImages}
+                    selectedImages={productForm.images}
+                    isAutoMatched={!isManualFormImages && isAutoMatchedFormImages}
+                    maxSelect={4}
+                    onSelectImages={(urls, isAuto) => {
+                      setProductForm(prev => ({ ...prev, images: urls }));
+                      setIsAutoMatchedFormImages(isAuto);
+                      setIsManualFormImages(false);
+                    }}
+                  />
                 </div>
               </div>
 

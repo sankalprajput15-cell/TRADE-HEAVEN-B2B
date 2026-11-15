@@ -138,9 +138,11 @@ export const Header: React.FC<Props> = ({
   const [activeSuggestIndex, setActiveSuggestIndex] = useState(-1);
   const [dropdownQuickFilter, setDropdownQuickFilter] = useState<QuickFilterMode>('ALL');
   const [liveRfqs, setLiveRfqs] = useState<RfqRequirement[]>(() => sortRfqsRealFirst(rfqs));
+  const liveRfqsRef = useRef<RfqRequirement[]>(liveRfqs);
+  liveRfqsRef.current = liveRfqs;
   const [isScanningRfqs, setIsScanningRfqs] = useState(false);
   const [headerMarketInsight, setHeaderMarketInsight] = useState<MarketDemandInsight | null>(null);
-  const lastDiscoveredHeaderKeywordRef = useRef<string>('');
+  const lastDiscoveredHeaderSignatureRef = useRef<string>('');
 
   useEffect(() => {
     if (Array.isArray(rfqs) && rfqs.length > 0) {
@@ -324,7 +326,30 @@ export const Header: React.FC<Props> = ({
     }
   };
 
-  const autoSuggestions = useSearchAutoSuggest(searchTerm, products, 5, 5, 3, liveRfqs, 6);
+  const autoSuggestions = useSearchAutoSuggest(searchTerm, products, 5, 5, 5, liveRfqs, 15);
+
+  const headerSearchResultTerms = useMemo(() => {
+    const terms: string[] = [];
+    const seen = new Set<string>();
+    const pushTerm = (val?: string) => {
+      const clean = String(val || '').trim();
+      const key = clean.toLowerCase();
+      if (clean.length >= 2 && !seen.has(key)) {
+        seen.add(key);
+        terms.push(clean);
+      }
+    };
+    autoSuggestions.products.forEach(p => pushTerm(p.title));
+    autoSuggestions.categories.forEach(c => pushTerm(c.name));
+    (autoSuggestions.articles || []).forEach(a => pushTerm(a.title));
+    return terms.slice(0, 8);
+  }, [autoSuggestions.products, autoSuggestions.categories, autoSuggestions.articles]);
+
+  const headerSearchResultSignature = headerSearchResultTerms.join('|').toLowerCase();
+  const headerSearchResultTermsRef = useRef<string[]>(headerSearchResultTerms);
+  headerSearchResultTermsRef.current = headerSearchResultTerms;
+  const onRfqsUpdatedRef = useRef(onRfqsUpdated);
+  onRfqsUpdatedRef.current = onRfqsUpdated;
 
   // Live Self-Populating RFQ Demand Check on Header Global Search (`input#header-global-search-input`)
   useEffect(() => {
@@ -335,14 +360,21 @@ export const Header: React.FC<Props> = ({
       return;
     }
 
+    const currentPool = liveRfqsRef.current;
+    const currentResultTerms = headerSearchResultTermsRef.current;
     const normalizedKey = trimmed.toLowerCase();
-    const localMatching = liveRfqs.filter(r => matchesRfqKeywordClient(r, trimmed));
-    if (localMatching.length >= 3) {
+    const signature = `${normalizedKey}::${headerSearchResultSignature}`;
+    const localMatching = currentPool.filter(r => matchesRfqKeywordClient(r, trimmed));
+    const hasUncoveredResults = currentResultTerms.some(
+      term => !currentPool.some(r => matchesRfqKeywordClient(r, term))
+    );
+
+    if (localMatching.length >= 3 && !hasUncoveredResults) {
       setIsScanningRfqs(false);
       return;
     }
 
-    if (lastDiscoveredHeaderKeywordRef.current === normalizedKey) {
+    if (lastDiscoveredHeaderSignatureRef.current === signature) {
       return;
     }
 
@@ -352,19 +384,18 @@ export const Header: React.FC<Props> = ({
       try {
         const result = await checkAndDiscoverRfqsForKeyword({
           keyword: trimmed,
-          currentRfqs: liveRfqs,
+          searchResults: headerSearchResultTermsRef.current,
+          currentRfqs: liveRfqsRef.current,
           currentUser: currentUser || undefined
         });
         if (cancelled) return;
-        lastDiscoveredHeaderKeywordRef.current = normalizedKey;
+        lastDiscoveredHeaderSignatureRef.current = signature;
         if (result.rfqs.length > 0) {
-          setLiveRfqs(prev => {
-            const merged = mergeRfqLists(result.rfqs, prev);
-            if (onRfqsUpdated) {
-              onRfqsUpdated(merged);
-            }
-            return merged;
-          });
+          const merged = sortRfqsRealFirst(mergeRfqLists(result.rfqs, liveRfqsRef.current));
+          setLiveRfqs(merged);
+          if (onRfqsUpdatedRef.current) {
+            onRfqsUpdatedRef.current(merged);
+          }
         }
         if (result.insight) {
           setHeaderMarketInsight(result.insight);
@@ -382,7 +413,7 @@ export const Header: React.FC<Props> = ({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [searchTerm, liveRfqs, onRfqsUpdated]);
+  }, [searchTerm, headerSearchResultSignature, currentUser]);
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -390,6 +421,10 @@ export const Header: React.FC<Props> = ({
     setSearchFocused(false);
     setUserMenuOpen(false);
     setActiveSuggestIndex(-1);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tradeheaven_search_submitted', { detail: { query: trimmed } }));
+    }
 
     const hasCatalogMatches =
       autoSuggestions.products.length > 0 ||

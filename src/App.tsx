@@ -167,7 +167,7 @@ const PaymentCheckoutModal = lazyWithRetry(() => import('./components/modals/Pay
 const BackendDataManagementModal = lazyWithRetry(() => import('./components/modals/BackendDataManagementModal'), 'BackendDataManagementModal');
 const CustomShareModal = lazyWithRetry(() => import('./components/modals/CustomShareModal'), 'CustomShareModal');
 const MembershipUpgradeModal = lazyWithRetry(() => import('./components/modals/MembershipUpgradeModal'), 'MembershipUpgradeModal');
-import { sortRfqsRealFirst } from './services/rfqMarketDemandService';
+import { sortRfqsRealFirst, mergeRfqLists } from './services/rfqMarketDemandService';
 import { 
   CustomLinkTarget, 
   resolveSupplierId, 
@@ -1149,12 +1149,13 @@ const MainApp: React.FC = () => {
   const fetchRFQs = async () => {
     try {
       const loadedRfqs = await apiClient.getRfqs();
-      const mockIds = new Set(MOCK_RFQS.map(r => r.id));
-      const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs.filter(r => !mockIds.has(r.id)) : [];
+      const extraLoaded = Array.isArray(loadedRfqs) ? loadedRfqs : [];
       if (extraLoaded.length > 0) {
-        const mergedRfqs = sortRfqsRealFirst([...MOCK_RFQS, ...extraLoaded]);
-        setRfqs(mergedRfqs as any);
-        setSelectedRfqId(prev => (prev && mergedRfqs.some(r => r.id === prev)) ? prev : mergedRfqs[0].id);
+        setRfqs(prev => {
+          const merged = sortRfqsRealFirst(mergeRfqLists(mergeRfqLists(MOCK_RFQS, prev), extraLoaded));
+          setSelectedRfqId(currId => (currId && merged.some(r => r.id === currId)) ? currId : (merged[0]?.id || null));
+          return merged as any;
+        });
       }
     } catch (err) {}
   };
@@ -2430,15 +2431,13 @@ const MainApp: React.FC = () => {
           setCatalogSearch(query);
           setSelectedProduct(null);
           const trimmed = (query || '').trim().toLowerCase();
+          const tokens = trimmed.split(/\s+/).filter(Boolean);
           const hasMatchingProducts =
-            !trimmed ||
-            products.some(
-              (p) =>
-                p.title.toLowerCase().includes(trimmed) ||
-                p.category.toLowerCase().includes(trimmed) ||
-                (p.subCategory && p.subCategory.toLowerCase().includes(trimmed)) ||
-                (p.supplierName && p.supplierName.toLowerCase().includes(trimmed))
-            );
+            tokens.length === 0 ||
+            products.some((p) => {
+              const hay = `${p.title || ''} ${p.category || ''} ${p.subCategory || ''} ${p.supplierName || ''} ${p.supplierCountry || ''} ${p.description || ''}`.toLowerCase();
+              return tokens.every(tk => hay.includes(tk));
+            });
           if (targetView) {
             setActiveView(targetView);
           } else if (activeView === 'BUY_LEADS' || activeView === 'RFQ_HUB') {
@@ -2559,7 +2558,7 @@ const MainApp: React.FC = () => {
                       setActiveView('BUY_LEADS');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    isLoadingProducts={isLoadingInitialData}
+                    isLoadingProducts={isLoadingInitialData && products.length === 0}
                     currentUser={currentUser}
                     onOpenRegisterFree={handleOpenRegisterFree}
                   />
@@ -2587,14 +2586,28 @@ const MainApp: React.FC = () => {
 
                     <ProductCatalog
                       products={products}
+                      rfqs={rfqs}
                       selectedCurrency={selectedCurrency}
                       onSelectProduct={handleSelectProduct}
                       onOpenStorefront={handleOpenStorefront}
                       onContactSupplier={handleContactSupplier}
+                      onSelectRfq={(rfq) => {
+                        setSelectedRfqId(rfq.id);
+                        setSelectedRfqForModal(rfq);
+                      }}
+                      onNavigateToBuyLeads={(q) => {
+                        setCatalogSearch(q || '');
+                        setActiveView('BUY_LEADS');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      onRfqsUpdated={(updatedRfqs) => {
+                        setRfqs(prev => sortRfqsRealFirst(mergeRfqLists(prev, updatedRfqs)));
+                      }}
+                      showMatchedRfqs={true}
                       selectedCategory={catalogCategory}
                       onCategoryChange={setCatalogCategory}
                       initialSearch={catalogSearch}
-                      isLoading={isLoadingInitialData}
+                      isLoading={isLoadingInitialData && products.length === 0}
                       selectedSupplierTiers={selectedSupplierTiers}
                       onSupplierTiersChange={setSelectedSupplierTiers}
                       selectedCountries={selectedCountries}
@@ -2622,7 +2635,7 @@ const MainApp: React.FC = () => {
                     onOpenNegotiation={() => setActiveView('NEGOTIATION_ROOM')}
                     currentUser={currentUser}
                     onOpenUpgradeModal={handleOpenMembershipUpgradeModal}
-                    isLoading={isLoadingInitialData}
+                    isLoading={isLoadingInitialData && rfqs.length === 0}
                     initialSearch={catalogSearch}
                   />
                 );
@@ -2722,6 +2735,11 @@ const MainApp: React.FC = () => {
                     onOpenRegisterFree={handleOpenRegisterFree}
                     onNavigate={handleNavigate}
                     initialSearch={catalogSearch}
+                    rfqs={rfqs}
+                    products={products}
+                    onRfqsUpdated={(updatedRfqs) => {
+                      setRfqs(prev => sortRfqsRealFirst(mergeRfqLists(prev, updatedRfqs)));
+                    }}
                   />
                 );
 

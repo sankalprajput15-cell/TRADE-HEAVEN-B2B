@@ -342,7 +342,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [100, 250, 500, 1000, 2500],
     priceUsd: 940,
-    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: '8.35mm average grain length, max 1% broken, double silky sortex cleaned, packed in 25kg/50kg PP non-woven bags.'
   },
   {
@@ -351,7 +351,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [500, 1500, 5000, 12500, 25000],
     priceUsd: 465,
-    image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Polarization 99.80% min, moisture 0.04% max, ash content 0.04% max, 100% water soluble, SGS certified.'
   },
   {
@@ -360,7 +360,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [80, 200, 450, 1000],
     priceUsd: 980,
-    image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: '100% pure Winterized Refined Deodorized Sunflower Oil, Vitamin A & D enriched, private label OEM packaging required.'
   },
   {
@@ -369,7 +369,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [200, 500, 1000, 3000],
     priceUsd: 8650,
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'LME Grade A standard Cu 99.99% min, dimensions 914mm x 914mm x 12mm, palletized and banded with SGS assay certificate.'
   },
   {
@@ -378,7 +378,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [10000, 25000, 50000, 100000],
     priceUsd: 615,
-    image: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Ultra-Low Sulfur Diesel max 10ppm sulfur, density 0.820-0.845 kg/L at 15°C, dip test & SGS inspection at discharge port.'
   },
   {
@@ -387,7 +387,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [1000, 5000, 12500, 25000],
     priceUsd: 335,
-    image: 'https://images.unsplash.com/photo-1628352081506-83c43123ed6d?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Nitrogen 46.0% min, Biuret 1.0% max, moisture 0.5% max, free flowing anti-caking treated, 50kg PP woven bags with PE liner.'
   },
   {
@@ -396,7 +396,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [40, 100, 250, 500],
     priceUsd: 7450,
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Clean unalloyed bare bright copper wire scrap, wire diameter 1.0mm-3.0mm, free of insulation, oil, and oxidation.'
   },
   {
@@ -405,7 +405,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [20, 50, 100, 240],
     priceUsd: 6200,
-    image: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'New crop vacuum-packed in 2x10kg tins per carton or 22.68kg flexi pouches flushed with CO2/Nitrogen, moisture <5%.'
   },
   {
@@ -414,7 +414,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Units',
     quantities: [1000, 2500, 5000, 10000],
     priceUsd: 68,
-    image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Tier-1 N-Type TOPCon half-cut cells, 22.4% efficiency, IP68 junction box, TUV/CE/IEC 61215 certified, 25-year warranty.'
   },
   {
@@ -423,7 +423,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Reams',
     quantities: [8000, 16000, 32000, 80000],
     priceUsd: 1.95,
-    image: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: '210mm x 297mm international A4 size, 102-104% brightness, 500 sheets per ream, 5 reams per box, jam-free high speed.'
   },
   {
@@ -432,7 +432,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [100, 300, 1000, 2500],
     priceUsd: 2380,
-    image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Al 99.70% min, Fe 0.20% max, Si 0.10% max, 20kg/25kg standard ingots strapped on fumigated wooden pallets.'
   },
   {
@@ -441,7 +441,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [500, 2000, 10000, 25000],
     priceUsd: 215,
-    image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Moisture 14% max, protein 8.5% min, aflatoxin <20 ppb, broken kernels 3% max, non-GMO & GMO options accepted.'
   },
   {
@@ -450,7 +450,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [1000, 5000, 15000, 30000],
     priceUsd: 54,
-    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'EN 197-1 / ASTM C150 standard Ordinary Portland Cement, packed in 50kg 3-ply kraft + PP woven sling bags.'
   },
   {
@@ -459,7 +459,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Units',
     quantities: [4, 10, 20, 35],
     priceUsd: 48500,
-    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Operating weight 21,500 kg, bucket capacity 1.0 m³, Euro Stage V / Tier 4 turbo diesel engine, full spare parts kit.'
   },
   {
@@ -468,7 +468,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Pieces',
     quantities: [5000, 15000, 30000, 50000],
     priceUsd: 3.4,
-    image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: '180-220 GSM 100% combed cotton, reactive dyed, pre-shrunk, OEKO-TEX Standard 100 certified, custom woven neck labels.'
   },
   {
@@ -477,7 +477,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [100, 250, 500, 1200],
     priceUsd: 1090,
-    image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Melt Flow Index (MFI) 1.0-2.0 g/10min, density 0.918-0.954 g/cm³, natural translucent pellets in 25kg heavy-duty bags.'
   },
   {
@@ -486,7 +486,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'MT',
     quantities: [24, 48, 100, 200],
     priceUsd: 5900,
-    image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'HLSO / PDTO sizes 16/20 & 21/25, max 10% protective glaze, HACCP/BRC/EU approved plant, 40ft reefer container at -18°C.'
   },
   {
@@ -495,7 +495,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Units',
     quantities: [500, 1200, 3000, 6000],
     priceUsd: 118,
-    image: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: '18PR/20PR heavy load index, all-steel radial carcass, ECE/DOT/GCC/SONCAP certified, high mileage tread compound.'
   },
   {
@@ -504,7 +504,7 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Units',
     quantities: [100, 300, 800, 2000],
     priceUsd: 890,
-    image: 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: '10.24kWh rack/wall-mounted solar battery bank, Grade-A prismatic cells, 6000+ cycles @ 80% DoD, RS485/CAN BMS.'
   },
   {
@@ -513,8 +513,80 @@ const GO4WORLD_COMMODITIES: CommodityTemplate[] = [
     unit: 'Kg',
     quantities: [250, 500, 1000, 2500],
     priceUsd: 145,
-    image: 'https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=800&auto=format&fit=crop&q=80',
+    image: '',
     specs: 'Vanillin content 1.8%-2.4%, moisture 30%-35%, supple non-split pods, vacuum-sealed in 1kg food-grade pouches.'
+  },
+  {
+    productName: 'Aviation Turbine Jet Fuel A1 (Colonial Grade)',
+    category: 'Metals, Minerals & Energy',
+    unit: 'Barrels',
+    quantities: [50000, 100000, 250000, 500000],
+    priceUsd: 78,
+    image: '',
+    specs: 'ASTM D1655 / DEF STAN 91-91 international aviation turbine fuel standard, SGS Q&Q inspection at loading/discharge port.'
+  },
+  {
+    productName: '5-Axis CNC Vertical Machining Center & Milling System',
+    category: 'Industrial Machinery',
+    unit: 'Units',
+    quantities: [2, 5, 10, 18],
+    priceUsd: 64000,
+    image: '',
+    specs: 'High-precision 12,000 RPM direct-drive spindle, Fanuc/Siemens controller, 24-station automatic tool changer, CE certified.'
+  },
+  {
+    productName: 'Cold Rolled Stainless Steel Coils 304 / 316L (2B Finish)',
+    category: 'Metals, Minerals & Energy',
+    unit: 'MT',
+    quantities: [50, 150, 400, 1000],
+    priceUsd: 2150,
+    image: '',
+    specs: 'Thickness 0.5mm-3.0mm, width 1000mm-1500mm, ASTM A240 standard, Mill Test Certificate EN 10204 3.1 included.'
+  },
+  {
+    productName: 'Caustic Soda Pearls & Flakes 99% Sodium Hydroxide',
+    category: 'Chemicals & Plastics',
+    unit: 'MT',
+    quantities: [100, 300, 750, 1500],
+    priceUsd: 440,
+    image: '',
+    specs: 'NaOH 99.0% min, Na2CO3 0.4% max, Fe 0.005% max, packed in 25kg 3-layer PP+PE woven bags on palletized shrink wrap.'
+  },
+  {
+    productName: 'Extra Virgin Cold Pressed Olive Oil (Bulk Flexitank & 1L Glass)',
+    category: 'Agriculture & Food Beverage',
+    unit: 'MT',
+    quantities: [25, 60, 120, 300],
+    priceUsd: 4850,
+    image: '',
+    specs: 'Acidity max 0.5%, peroxide index <15 meq O2/kg, first cold extraction, IOC & ISO 22000 certified.'
+  },
+  {
+    productName: 'arabica & Robusta Green Coffee Beans Export Grade 1',
+    category: 'Agriculture & Food Beverage',
+    unit: 'MT',
+    quantities: [18, 36, 90, 180],
+    priceUsd: 3650,
+    image: '',
+    specs: 'Screen 16-18, moisture 11.5% max, zero primary defects, packed in 60kg GrainPro-lined jute bags.'
+  },
+  {
+    productName: 'Three-Phase Pad Mounted Distribution Transformers (500kVA - 2500kVA)',
+    category: 'Electronics & Electrical',
+    unit: 'Units',
+    quantities: [6, 15, 30, 60],
+    priceUsd: 14200,
+    image: '',
+    specs: 'Copper windings, ONAN cooling, 11kV/33kV primary to 415V secondary, IEC 60076 / ANSI IEEE compliant.'
+  },
+  {
+    productName: 'Deformed Reinforcing Steel Rebar ASTM A615 Grade 60 (10mm-32mm)',
+    category: 'Construction & Building Materials',
+    unit: 'MT',
+    quantities: [500, 2000, 5000, 15000],
+    priceUsd: 590,
+    image: '',
+    specs: 'Yield strength 420 MPa min, standard 12m length bundles, 2MT per bundle with heat numbers and SGS mill certificate.'
   }
 ];
 
@@ -534,7 +606,7 @@ const BUYER_COMPANY_SUFFIXES = [
 const BUYER_FIRST_NAMES = [
   'Alexander', 'Tariq', 'Carlos', 'Hiroshi', 'Lukas', 'Jean-Pierre', 'Matteo', 'Kwame',
   'Ibrahim', 'Vikram', 'Sebastian', 'Henrik', 'Fernando', 'Andrei', 'Youssef', 'Daniel',
-  'Samuel', 'Kofi', 'Mustafa', 'David', 'amara', 'Elena', 'Sofia', 'Fatima', 'Chidinma',
+  'Samuel', 'Kofi', 'Mustafa', 'David', 'Amara', 'Elena', 'Sofia', 'Fatima', 'Chidinma',
   'Nadia', 'Mei-Ling', 'Camila', 'Ingrid', 'Katarina'
 ];
 
@@ -554,74 +626,252 @@ const PAYMENT_TERMS_LIST = [
 
 const INCOTERMS_LIST: Incoterm[] = ['CIF', 'FOB', 'CFR', 'DDP', 'CIP'];
 
+const PRODUCT_VARIANT_QUALIFIERS = [
+  'Export Grade A',
+  'Bulk Container Load (20ft / 40ft FCL)',
+  'Commercial Wholesale Specification',
+  'ISO 9001 & SGS Inspected Batch',
+  'Direct Factory OEM / Private Label Supply',
+  'Premium Industrial & Commercial Grade',
+  'High-Purity Certified Export Lot',
+  'Annual Contract Monthly Shipment'
+];
+
+export interface ContextualPageRfqOptions {
+  page: number;
+  count?: number;
+  searchTerm?: string;
+  category?: string;
+  country?: string;
+  budgetRange?: string;
+  minBudget?: number;
+  maxBudget?: number;
+  urgentOnly?: boolean;
+  existingIds?: Set<string>;
+  seed?: number;
+  startSequence?: number;
+}
+
 /**
- * Generates deterministic or seeded Go4WorldBusiness-style Global Buy Orders
- * covering countries across the entire world with flags and realistic B2B inquiry copy.
+ * Dynamically generates fresh, non-duplicate B2B RFQs for any pagination page (`page = 1, 2, 3...`),
+ * strictly honoring active search keywords, category, country, budget range, and urgency filters.
  */
-export function generateRandomGo4WorldBuyOrders(count = 72, seedOffset = 0): RfqRequirement[] {
+export function generateContextualPageRfqs(options: ContextualPageRfqOptions): RfqRequirement[] {
+  const count = Math.max(6, Math.min(72, options.count || 18));
+  const page = Math.max(1, options.page || 1);
+  const cleanSearch = String(options.searchTerm || '').trim();
+  const cleanCategory = options.category && options.category !== 'ALL' ? options.category.trim() : '';
+  const cleanCountry = options.country && options.country !== 'ALL' ? options.country.trim() : '';
+  const budgetRange = options.budgetRange && options.budgetRange !== 'ALL' ? options.budgetRange : 'ALL';
+  const existingIds = options.existingIds || new Set<string>();
+  const baseSeed = (options.seed || 0) + page * 53;
+  const startSeq = options.startSequence || page * 1000;
+
+  // Resolve country pool
+  const matchingCountries = cleanCountry
+    ? WORLD_COUNTRIES_LIST.filter(
+        c =>
+          c.name.toLowerCase() === cleanCountry.toLowerCase() ||
+          c.code.toLowerCase() === cleanCountry.toLowerCase() ||
+          c.name.toLowerCase().includes(cleanCountry.toLowerCase())
+      )
+    : WORLD_COUNTRIES_LIST;
+  const countryPool =
+    matchingCountries.length > 0
+      ? matchingCountries
+      : [getCountryFlagInfo(cleanCountry)];
+
+  // Resolve commodity templates pool
+  let commodityPool = GO4WORLD_COMMODITIES;
+  if (cleanCategory) {
+    const catMatches = GO4WORLD_COMMODITIES.filter(
+      c => c.category.toLowerCase() === cleanCategory.toLowerCase() ||
+           c.category.toLowerCase().includes(cleanCategory.toLowerCase()) ||
+           cleanCategory.toLowerCase().includes(c.category.toLowerCase())
+    );
+    if (catMatches.length > 0) {
+      commodityPool = catMatches;
+    }
+  }
+
+  if (cleanSearch) {
+    const qLower = cleanSearch.toLowerCase();
+    const searchMatches = commodityPool.filter(
+      c =>
+        c.productName.toLowerCase().includes(qLower) ||
+        c.specs.toLowerCase().includes(qLower) ||
+        c.category.toLowerCase().includes(qLower)
+    );
+    if (searchMatches.length > 0) {
+      commodityPool = searchMatches;
+    }
+  }
+
   const results: RfqRequirement[] = [];
-  const totalCountries = WORLD_COUNTRIES_LIST.length;
+  const frequencies: Array<'One-Time' | 'Monthly' | 'Quarterly' | 'Annual Contract'> = [
+    'Monthly',
+    'Quarterly',
+    'Annual Contract',
+    'One-Time'
+  ];
+  const postedLabels = [
+    'Just now',
+    '18 mins ago',
+    '42 mins ago',
+    '1 hour ago',
+    '2 hours ago',
+    '3 hours ago',
+    '5 hours ago',
+    'Today'
+  ];
 
   for (let i = 0; i < count; i++) {
-    const idx = i + seedOffset;
-    const country = WORLD_COUNTRIES_LIST[(idx * 3 + 1) % totalCountries];
-    const commodity = GO4WORLD_COMMODITIES[idx % GO4WORLD_COMMODITIES.length];
-    const qty = commodity.quantities[idx % commodity.quantities.length];
-    const incoterm = INCOTERMS_LIST[idx % INCOTERMS_LIST.length];
-    const paymentTerm = PAYMENT_TERMS_LIST[idx % PAYMENT_TERMS_LIST.length];
+    const idx = baseSeed + i;
+    const country = countryPool[(idx * 3 + i) % countryPool.length];
+    const baseTemplate = commodityPool[(idx + i) % commodityPool.length];
+    const qualifier = PRODUCT_VARIANT_QUALIFIERS[(idx + i * 2) % PRODUCT_VARIANT_QUALIFIERS.length];
 
-    const firstName = BUYER_FIRST_NAMES[(idx * 5) % BUYER_FIRST_NAMES.length];
-    const lastName = BUYER_LAST_NAMES[(idx * 7) % BUYER_LAST_NAMES.length];
+    // If user searched a custom keyword not in templates, synthesize a tailored product name
+    const usesCustomKeyword =
+      cleanSearch.length >= 2 &&
+      !baseTemplate.productName.toLowerCase().includes(cleanSearch.toLowerCase());
+
+    const cleanKeywordTitle = cleanSearch
+      .replace(/\b\w/g, ch => ch.toUpperCase());
+
+    const productName = usesCustomKeyword
+      ? `${cleanKeywordTitle} - ${qualifier}`
+      : i >= commodityPool.length
+      ? `${baseTemplate.productName} (${qualifier})`
+      : baseTemplate.productName;
+
+    const resolvedCategory = cleanCategory || baseTemplate.category;
+    const unit = baseTemplate.unit || 'MT';
+
+    let qty = baseTemplate.quantities[(idx + i) % baseTemplate.quantities.length] || 100;
+    const priceVariance = 1 + ((((idx + i) % 9) - 4) * 0.03);
+    let targetPriceUsd = Number((baseTemplate.priceUsd * priceVariance).toFixed(2));
+
+    // Adjust quantity/price to satisfy active budget filter if set
+    const adjustToBudget = (minUsd: number, maxUsd: number) => {
+      const currentTotal = qty * targetPriceUsd;
+      if (currentTotal < minUsd || currentTotal > maxUsd) {
+        const targetMid = minUsd + ((idx % 7) + 1) * ((maxUsd - minUsd) / 9);
+        qty = Math.max(1, Math.round(targetMid / Math.max(1, targetPriceUsd)));
+        if (qty * targetPriceUsd < minUsd) {
+          targetPriceUsd = Number((targetMid / qty).toFixed(2));
+        }
+      }
+    };
+
+    if (budgetRange === 'UNDER_25K') adjustToBudget(4500, 24000);
+    else if (budgetRange === '25K_100K') adjustToBudget(26000, 96000);
+    else if (budgetRange === '100K_500K') adjustToBudget(105000, 485000);
+    else if (budgetRange === '500K_2M') adjustToBudget(520000, 1950000);
+    else if (budgetRange === 'OVER_2M') adjustToBudget(2100000, 8500000);
+    else if (budgetRange === 'CUSTOM') {
+      const minB = typeof options.minBudget === 'number' && !isNaN(options.minBudget) ? options.minBudget : 1000;
+      const maxB = typeof options.maxBudget === 'number' && !isNaN(options.maxBudget) ? options.maxBudget : minB * 10;
+      adjustToBudget(minB, Math.max(minB + 1000, maxB));
+    }
+
+    const incoterm = INCOTERMS_LIST[(idx + i) % INCOTERMS_LIST.length];
+    const paymentTerm = PAYMENT_TERMS_LIST[(idx + i * 2) % PAYMENT_TERMS_LIST.length];
+
+    const firstName = BUYER_FIRST_NAMES[(idx * 5 + i) % BUYER_FIRST_NAMES.length];
+    const lastName = BUYER_LAST_NAMES[(idx * 7 + i * 3) % BUYER_LAST_NAMES.length];
     const buyerName = `${firstName.charAt(0).toUpperCase() + firstName.slice(1)} ${lastName}`;
 
-    const prefix = BUYER_COMPANY_PREFIXES[(idx * 11) % BUYER_COMPANY_PREFIXES.length];
-    const suffix = BUYER_COMPANY_SUFFIXES[(idx * 13) % BUYER_COMPANY_SUFFIXES.length];
+    const prefix = BUYER_COMPANY_PREFIXES[(idx * 11 + i) % BUYER_COMPANY_PREFIXES.length];
+    const suffix = BUYER_COMPANY_SUFFIXES[(idx * 13 + i) % BUYER_COMPANY_SUFFIXES.length];
     const buyerCompany = `${country.name} ${prefix} ${suffix}`;
 
     const cleanComp = buyerCompany.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 22);
     const cleanPerson = `${firstName}.${lastName}`.toLowerCase().replace(/[^a-z.]/g, '');
 
-    const daysAgo = idx % 9;
+    const daysAgo = (page - 1) + (i % 5);
     const d = new Date(Date.now() - daysAgo * 86400000);
     const postedDate = d.toISOString().split('T')[0];
-    const exp = new Date(Date.now() + (30 + (idx % 45)) * 86400000).toISOString().split('T')[0];
+    const exp = new Date(Date.now() + (35 + ((idx + i) % 45)) * 86400000).toISOString().split('T')[0];
 
-    const priceVariance = 1 + (((idx % 7) - 3) * 0.025);
-    const targetPriceUsd = Number((commodity.priceUsd * priceVariance).toFixed(2));
+    let candidateId = `rfq-auto-p${page}-${idx}-${country.code.toLowerCase()}`;
+    let dupAttempt = 1;
+    while (existingIds.has(candidateId)) {
+      candidateId = `rfq-auto-p${page}-${idx}-${dupAttempt++}-${country.code.toLowerCase()}`;
+    }
+    existingIds.add(candidateId);
 
-    results.push({
-      id: `G4W-BUY-${202600 + idx}-${country.code}`,
-      title: `WANTED: ${qty.toLocaleString()} ${commodity.unit} ${commodity.productName} (${incoterm} ${country.port})`,
-      productName: `WANTED : ${commodity.productName}`,
-      category: commodity.category,
+    const specsText = usesCustomKeyword
+      ? `Export grade ${cleanKeywordTitle} (${qualifier}), international quality inspection (SGS / Bureau Veritas), seaworthy export packaging with certificate of origin and phytosanitary/mill test compliance.`
+      : baseTemplate.specs;
+
+    const urgencyVal = options.urgentOnly
+      ? 'URGENT'
+      : (idx + i) % 3 === 0
+      ? 'URGENT'
+      : (idx + i) % 3 === 1
+      ? 'LONG_TERM_CONTRACT'
+      : 'STANDARD';
+
+    const orderFreq = frequencies[(idx + i) % frequencies.length];
+    const estimatedOrderValueUsd = Number((qty * targetPriceUsd).toFixed(2));
+
+    const generatedItem: RfqRequirement & { pageSequenceOrder?: number } = {
+      id: candidateId,
+      title: `WANTED: ${qty.toLocaleString()} ${unit} ${productName} (${incoterm} ${country.port})`,
+      productName,
+      category: resolvedCategory,
       targetQuantity: qty,
-      quantityUnit: commodity.unit,
+      quantityUnit: unit,
+      orderFrequency: orderFreq,
       targetPriceUsd,
+      estimatedOrderValueUsd,
       preferredIncoterm: incoterm,
       destinationPort: `${country.port}, ${country.name}`,
       destinationCountry: country.name,
       paymentTerms: paymentTerm,
-      detailedRequirements: `Buyer from ${country.name} (${country.code}) is actively sourcing ${qty.toLocaleString()} ${commodity.unit} of ${commodity.productName}. Delivery required to ${country.port} under ${incoterm} terms. ${commodity.specs}`,
-      detailedDescription: `[Verified ${country.name} Buyer Inquiry] Dear Sir/Madam, We are an established importing house in ${country.name} looking for reliable manufacturers and direct exporters of ${commodity.productName}. Required volume: ${qty.toLocaleString()} ${commodity.unit} (${incoterm} ${country.port}). ${commodity.specs} Payment via ${paymentTerm}. Please send your official FCO / Proforma quotation with past B/L track record and SGS certificates.`,
-      image: commodity.image,
-      images: [commodity.image],
-      urgency: idx % 3 === 0 ? 'URGENT' : idx % 3 === 1 ? 'LONG_TERM_CONTRACT' : 'STANDARD',
+      detailedRequirements: `Verified buyer in ${country.name} (${country.code}) is actively sourcing ${qty.toLocaleString()} ${unit} of ${productName}. Delivery to ${country.port} under ${incoterm} terms. ${specsText}`,
+      detailedDescription: `[Verified ${country.name} Import Tender] Active procurement inquiry from ${buyerCompany} (${country.name}) for ${qty.toLocaleString()} ${unit} of ${productName} (${incoterm} ${country.port}). ${specsText} Payment terms: ${paymentTerm}. Direct manufacturers and verified exporters are invited to submit FCO / Proforma quotations.`,
+      image: '',
+      images: [],
+      urgency: urgencyVal,
       status: 'OPEN',
       buyerId: `buyer-g4w-${country.code.toLowerCase()}-${idx}`,
       buyerName,
       buyerCompany,
       buyerCountry: country.name,
-      buyerEmail: `${cleanPerson}@${cleanComp}.com`,
-      buyerPhone: `+${10 + (idx % 89)}-${200 + ((idx * 19) % 700)}-${1000 + ((idx * 37) % 8999)}`,
+      buyerEmail: `${cleanPerson}.${page}${i}@${cleanComp}.com`,
+      buyerPhone: `+${10 + (idx % 89)}-${200 + ((idx * 19) % 700)}-${1000 + (((idx + i) * 37) % 8999)}`,
+      buyerAddress: `${country.port} Commercial Trade Zone, ${country.name}`,
       buyerVerified: true,
-      quotesCount: (idx % 11) + 2,
-      viewsCount: 140 + ((idx * 29) % 820),
+      quotesCount: ((idx + i) % 9) + 1,
+      viewsCount: 120 + (((idx + i) * 29) % 740),
       postedDate,
-      expiryDate: exp
-    });
+      postedLabel: postedLabels[(idx + i) % postedLabels.length],
+      expiryDate: exp,
+      source: 'auto_generated',
+      syncTag: 'market_sync',
+      searchKeyword: cleanSearch || productName,
+      marketDemandVerified: true,
+      pageSequenceOrder: startSeq + i
+    };
+
+    results.push(generatedItem);
   }
 
   return results;
+}
+
+/**
+ * Generates deterministic or seeded Go4WorldBusiness-style Global Buy Orders
+ * covering countries across the entire world with flags and realistic B2B inquiry copy.
+ */
+export function generateRandomGo4WorldBuyOrders(count = 72, seedOffset = 0): RfqRequirement[] {
+  return generateContextualPageRfqs({
+    page: 1,
+    count,
+    seed: seedOffset
+  });
 }
 
 export const GO4WORLD_STYLE_BUY_ORDERS: RfqRequirement[] = generateRandomGo4WorldBuyOrders(80, 0);

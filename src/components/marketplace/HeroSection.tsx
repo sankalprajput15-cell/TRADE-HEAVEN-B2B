@@ -1162,7 +1162,7 @@ export const HeroSection: React.FC<Props> = ({
                                 className="p-3 rounded-2xl border border-slate-200/90 hover:border-sky-500 hover:bg-sky-50/30 transition-all cursor-pointer flex items-center gap-3.5 group/item bg-white shadow-2xs hover:shadow-sm overflow-hidden"
                               >
                                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                                  <SafeImage src={imgUrl} alt={prod.title} category={prod.category} productId={prod.id} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform" />
+                                  <SafeImage src={imgUrl} alt={prod.title} productTitle={prod.title} category={prod.category} productId={prod.id} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform" />
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-1 overflow-hidden">
                                   <div className="text-xs sm:text-sm font-bold text-slate-900 group-hover/item:text-sky-700 transition-colors line-clamp-1 truncate">

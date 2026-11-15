@@ -9,6 +9,10 @@ import { AdminActivityLogger, adminActivityBus } from '../admin/AdminActivityLog
 import { bigrockApi, DbInquiry, DbListing, DbFaq, DbUser } from '../../services/bigrockApi';
 import { ImageUploadService } from '../../services/imageUploadService';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
+import { SafeImage } from '../common/SafeImage';
+import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
+import { isManuallyUploadedImageUrl, autoUploadDisplayedProductImage } from '../../services/visualProductImageService';
+import { productImageManagerService } from '../../services/productImageManagerService';
 import { 
   Landmark, 
   ShieldCheck, 
@@ -177,7 +181,10 @@ export const ClientAdminView: React.FC<Props> = ({
   const [newListingPrice, setNewListingPrice] = useState('1200');
   const [newListingMoq, setNewListingMoq] = useState(10);
   const [newListingSupplier, setNewListingSupplier] = useState('Trade Heaven Verified Supplier');
-  const [newListingImageUrl, setNewListingImageUrl] = useState('https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80');
+  const [newListingImageUrl, setNewListingImageUrl] = useState('');
+  const [newListingImages, setNewListingImages] = useState<string[]>([]);
+  const [newListingHasManualImage, setNewListingHasManualImage] = useState(false);
+  const [newListingAutoMatched, setNewListingAutoMatched] = useState(false);
   const [isUploadingListingImage, setIsUploadingListingImage] = useState(false);
 
   // 4. FAQs State (Secure Database)
@@ -414,13 +421,19 @@ export const ClientAdminView: React.FC<Props> = ({
     e.preventDefault();
     if (!newListingTitle.trim()) return;
 
+    const finalListingImages =
+      newListingHasManualImage && newListingImageUrl.trim()
+        ? [newListingImageUrl.trim(), ...newListingImages.filter(u => u !== newListingImageUrl.trim())].slice(0, 4)
+        : newListingImages;
+
     setIsLoading(true);
     const res = await bigrockApi.createListing({
       title: newListingTitle.trim(),
       description: newListingDesc.trim() || `Factory direct supply of ${newListingTitle}. Direct export with Swiss Trade Protection guarantee.`,
       category: newListingCategory,
       price: parseFloat(newListingPrice) || 0,
-      image_url: newListingImageUrl,
+      image_url: finalListingImages[0] || '',
+      images: finalListingImages,
       moq: newListingMoq,
       moq_unit: 'Units',
       supplier_name: newListingSupplier,
@@ -429,10 +442,41 @@ export const ClientAdminView: React.FC<Props> = ({
 
     setIsLoading(false);
     if (res.success) {
+      const createdListingId = (res as any)?.data?.id ? `prod-db-${(res as any).data.id}` : '';
+      const createdTitle = newListingTitle.trim();
+      if (finalListingImages.length > 0) {
+        const primaryUrl = finalListingImages[0];
+        productImageManagerService.registerAutoSavedImage({
+          productId: createdListingId || undefined,
+          productTitle: createdTitle,
+          url: primaryUrl
+        });
+        if (/^https?:\/\//i.test(primaryUrl)) {
+          void autoUploadDisplayedProductImage({
+            imageUrl: primaryUrl,
+            productId: createdListingId || undefined,
+            productName: createdTitle,
+            category: newListingCategory
+          }).then(localUrl => {
+            if (localUrl) {
+              productImageManagerService.registerAutoSavedImage({
+                productId: createdListingId || undefined,
+                productTitle: createdTitle,
+                url: localUrl,
+                originalUrl: primaryUrl
+              });
+            }
+          });
+        }
+      }
       showToast('success', '✓ New Product/Service listing published to Secure Database database.');
       setShowAddListingModal(false);
       setNewListingTitle('');
       setNewListingDesc('');
+      setNewListingImageUrl('');
+      setNewListingImages([]);
+      setNewListingHasManualImage(false);
+      setNewListingAutoMatched(false);
       loadAllData();
     } else {
       showToast('error', 'Failed to create listing: ' + res.error);
@@ -1986,10 +2030,14 @@ export const ClientAdminView: React.FC<Props> = ({
                   <div key={l.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between gap-3 relative group">
                     <div className="space-y-2">
                       <div className="w-full h-36 rounded-xl overflow-hidden bg-white border border-slate-200 relative">
-                        <img
-                          src={l.image_url && l.image_url.trim() ? l.image_url.trim() : '/assets/aistudio/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'}
+                        <SafeImage
+                          src={l.image_url && l.image_url.trim() ? l.image_url.trim() : ''}
                           alt={l.title}
-                          className="w-full h-full object-cover"
+                          productTitle={l.title}
+                          category={l.category}
+                          className="w-full h-full"
+                          imgClassName="w-full h-full object-cover"
+                          disableLiveUpload
                         />
                         <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/70 text-white text-[10px] font-bold uppercase font-mono backdrop-blur-xs">
                           {l.category}
@@ -2089,8 +2137,10 @@ export const ClientAdminView: React.FC<Props> = ({
             </div>
 
             {/* Image Upload / Storage */}
-            <div className="space-y-1.5">
-              <label className="block font-bold text-slate-700">Product Image URL / Asset</label>
+            <div className="space-y-2">
+              <label className="block font-bold text-slate-700">
+                Product Image Upload / Custom URL (Leave empty to auto-fetch via Visual Product Search)
+              </label>
               <div className="flex items-center gap-2">
                 <label className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 flex items-center gap-1.5 cursor-pointer shrink-0">
                   {isUploadingListingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
@@ -2110,6 +2160,8 @@ export const ClientAdminView: React.FC<Props> = ({
                           maxSizeBytes: 8 * 1024 * 1024
                         });
                         setNewListingImageUrl(preview.previewUrl);
+                        setNewListingHasManualImage(true);
+                        setNewListingAutoMatched(false);
                         showToast('success', `Preview generated (${preview.formattedSize}). Syncing storage...`);
 
                         // 2. Storage upload
@@ -2130,11 +2182,39 @@ export const ClientAdminView: React.FC<Props> = ({
                 <input
                   type="url"
                   value={newListingImageUrl}
-                  onChange={e => setNewListingImageUrl(e.target.value)}
-                  placeholder="https://..."
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewListingImageUrl(val);
+                    setNewListingHasManualImage(isManuallyUploadedImageUrl(val));
+                    if (val.trim()) setNewListingAutoMatched(false);
+                  }}
+                  placeholder="https://... (leave empty for Visual Product Search)"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-mono text-[11px] focus:outline-none focus:border-blue-500"
                 />
               </div>
+
+              <VisualProductImagePicker
+                productName={newListingTitle}
+                category={newListingCategory}
+                specifications={newListingDesc}
+                hasManualImage={newListingHasManualImage}
+                selectedImages={
+                  newListingHasManualImage && newListingImageUrl.trim()
+                    ? [newListingImageUrl.trim()]
+                    : newListingImages
+                }
+                isAutoMatched={!newListingHasManualImage && newListingAutoMatched}
+                maxSelect={4}
+                compact
+                onSelectImages={(urls, isAuto) => {
+                  setNewListingImages(urls);
+                  setNewListingAutoMatched(isAuto);
+                  if (urls.length > 0 && newListingHasManualImage) {
+                    setNewListingImageUrl('');
+                    setNewListingHasManualImage(false);
+                  }
+                }}
+              />
             </div>
 
             <div>

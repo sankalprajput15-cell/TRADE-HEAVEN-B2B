@@ -84,6 +84,8 @@ export interface BigRockRfqPayload {
   search_keyword?: string;
   market_insight?: string;
   posted_label?: string;
+  image_url?: string;
+  images?: string[];
 }
 
 export interface DbInquiry {
@@ -279,7 +281,16 @@ export function mapInquiryToRfq(raw: any, index: number = 0): RfqRequirement {
     sync_tag: raw.sync_tag || raw.syncTag || (isAuto ? 'market_sync' : undefined),
     searchKeyword: raw.searchKeyword || raw.search_keyword || '',
     marketInsight: raw.marketInsight || raw.market_insight || '',
-    marketDemandVerified: isAuto
+    marketDemandVerified: isAuto,
+    image:
+      raw.image ||
+      raw.image_url ||
+      (Array.isArray(raw.images) && raw.images.length > 0 ? raw.images[0] : undefined),
+    images: Array.isArray(raw.images)
+      ? raw.images
+      : raw.image_url
+      ? [raw.image_url]
+      : undefined
   };
 }
 
@@ -690,6 +701,14 @@ export const bigrockApi = {
       search_keyword: payload.search_keyword || '',
       market_insight: payload.market_insight || '',
       posted_label: payload.posted_label || '',
+      image_url:
+        payload.image_url ||
+        (Array.isArray(payload.images) && payload.images.length > 0 ? payload.images[0] : ''),
+      images: Array.isArray(payload.images)
+        ? payload.images
+        : payload.image_url
+        ? [payload.image_url]
+        : [],
       name: payload.name || payload.buyer_name || 'Procurement Officer',
       email: payload.email || payload.buyer_email || 'buyer@tradeheaven.net',
       phone: payload.phone || payload.buyer_phone || '',

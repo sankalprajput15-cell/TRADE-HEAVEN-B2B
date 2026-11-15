@@ -222,10 +222,21 @@ export const RfqComparisonView: React.FC<Props> = ({
   }, [rfqs]);
 
   useEffect(() => {
-    if (initialSearch !== undefined && initialSearch !== searchTerm) {
+    if (initialSearch !== undefined) {
       setSearchTerm(initialSearch);
     }
   }, [initialSearch]);
+
+  useEffect(() => {
+    const handleSearchSubmitted = (e: Event) => {
+      const q = (e as CustomEvent<{ query?: string }>)?.detail?.query;
+      if (typeof q === 'string') {
+        setSearchTerm(q);
+      }
+    };
+    window.addEventListener('tradeheaven_search_submitted', handleSearchSubmitted);
+    return () => window.removeEventListener('tradeheaven_search_submitted', handleSearchSubmitted);
+  }, []);
 
   const triggerMarketDemandSearch = useCallback(
     async (rawKeyword: string, forceScan: boolean = false) => {
@@ -403,7 +414,7 @@ export const RfqComparisonView: React.FC<Props> = ({
               Scanning live global buyer demand for {scanningKeyword || searchTerm}...
             </div>
             <p className="text-xs text-slate-600">
-              Fetching real-time importing ports, wholesale market rates, and export packaging specs from Google Trade Search...
+              Fetching real-time importing ports, wholesale market rates, and export packaging specs from Global Trade Index...
             </p>
           </div>
         </div>

@@ -969,7 +969,7 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
             </span>
           </div>
           <span className="text-[10px] font-mono font-semibold text-blue-700 shrink-0">
-            Google Trade Sync
+            Live Trade Sync
           </span>
         </div>
       )}
@@ -1005,7 +1005,7 @@ export const SearchAutoSuggestDropdown: React.FC<DropdownProps> = ({
                 Scanning live global buyer demand for "{trimmed}"...
               </div>
               <div className="text-[11px] text-slate-500">
-                Fetching active importing countries, ports, and wholesale buyer RFQs from Google Trade Search...
+                Fetching active importing countries, ports, and wholesale buyer RFQs from Global Trade Index...
               </div>
             </div>
           ) : (

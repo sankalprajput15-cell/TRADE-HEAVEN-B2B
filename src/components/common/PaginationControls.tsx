@@ -12,6 +12,8 @@ export interface PaginationControlsProps {
   itemLabel?: string;
   scrollTargetId?: string;
   className?: string;
+  continuousNext?: boolean;
+  onLoadNextPage?: (targetPage: number) => void;
 }
 
 export const PaginationControls: React.FC<PaginationControlsProps> = ({
@@ -24,16 +26,25 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
   itemsPerPageOptions = [12, 24, 48],
   itemLabel = 'results',
   scrollTargetId,
-  className = ''
+  className = '',
+  continuousNext = false,
+  onLoadNextPage
 }) => {
   const [jumpPageInput, setJumpPageInput] = useState('');
 
   if (totalItems <= 0) return null;
 
   const handlePageSelect = (pageNum: number) => {
-    const validPage = Math.max(1, Math.min(totalPages, pageNum));
-    if (validPage === currentPage) return;
-    onPageChange(validPage);
+    const targetPage = continuousNext
+      ? Math.max(1, pageNum)
+      : Math.max(1, Math.min(totalPages, pageNum));
+
+    if (continuousNext && onLoadNextPage && targetPage >= totalPages - 1) {
+      onLoadNextPage(targetPage);
+    }
+
+    if (targetPage === currentPage && targetPage <= totalPages) return;
+    onPageChange(targetPage);
     if (scrollTargetId) {
       const el = document.getElementById(scrollTargetId);
       if (el) {
@@ -47,7 +58,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
   const handleJumpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseInt(jumpPageInput, 10);
-    if (!isNaN(parsed) && parsed >= 1 && parsed <= totalPages) {
+    if (!isNaN(parsed) && parsed >= 1 && (continuousNext || parsed <= totalPages)) {
       handlePageSelect(parsed);
       setJumpPageInput('');
     }
@@ -105,7 +116,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
         <div>
           Showing <span className="font-bold text-slate-900 font-mono">{startItem}</span> to{' '}
           <span className="font-bold text-slate-900 font-mono">{endItem}</span> of{' '}
-          <span className="font-black text-slate-900 font-mono">{totalItems.toLocaleString()}</span> {itemLabel}
+          <span className="font-black text-slate-900 font-mono">{totalItems.toLocaleString()}{continuousNext ? '+' : ''}</span> {itemLabel}
         </div>
 
         {/* Optional Page Size Selector */}
@@ -183,7 +194,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
                 <button
                   key={`dots-right-${idx}`}
                   type="button"
-                  onClick={() => handlePageSelect(Math.min(totalPages, currentPage + 5))}
+                  onClick={() => handlePageSelect(continuousNext ? currentPage + 5 : Math.min(totalPages, currentPage + 5))}
                   title="Jump forward 5 pages"
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-slate-100 text-xs font-bold cursor-pointer transition-colors"
                 >
@@ -213,10 +224,10 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
           })}
         </div>
 
-        {/* Next Button */}
+        {/* Next Button (Never disabled when continuousNext is enabled) */}
         <button
           type="button"
-          disabled={currentPage >= totalPages}
+          disabled={!continuousNext && currentPage >= totalPages}
           onClick={() => handlePageSelect(currentPage + 1)}
           className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none text-slate-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
         >
@@ -224,14 +235,14 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
 
-        {/* Last Page */}
+        {/* Last Page / Advance +3 Pages */}
         {totalPages > 5 && (
           <button
             type="button"
-            disabled={currentPage >= totalPages}
-            onClick={() => handlePageSelect(totalPages)}
-            title="Last Page"
-            aria-label="Go to last page"
+            disabled={!continuousNext && currentPage >= totalPages}
+            onClick={() => handlePageSelect(continuousNext && currentPage >= totalPages ? totalPages + 2 : totalPages)}
+            title={continuousNext ? "Load More Pages Ahead" : "Last Page"}
+            aria-label={continuousNext ? "Go to further pages" : "Go to last page"}
             className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none text-slate-600 cursor-pointer transition-colors shadow-2xs"
           >
             <ChevronsRight className="w-4 h-4" />
@@ -239,13 +250,13 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
         )}
 
         {/* Direct Page Jump */}
-        {totalPages > 3 && (
+        {(totalPages > 3 || continuousNext) && (
           <form onSubmit={handleJumpSubmit} className="flex items-center gap-1 pl-2 border-l border-slate-200 ml-1">
             <span className="text-[11px] text-slate-400 hidden sm:inline">Go to:</span>
             <input
               type="number"
               min={1}
-              max={totalPages}
+              max={continuousNext ? undefined : totalPages}
               value={jumpPageInput}
               onChange={(e) => setJumpPageInput(e.target.value)}
               placeholder={`${currentPage}`}
