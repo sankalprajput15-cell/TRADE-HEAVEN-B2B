@@ -99,7 +99,8 @@ export function prewarmAndAutoSaveRfqImages(rfqs: RfqRequirement[]): void {
 
     const existingOverride =
       productImageManagerService.getProductImage(rfq.id) ||
-      productImageManagerService.getProductImage(cleanTitle);
+      productImageManagerService.getProductImage(cleanTitle) ||
+      productImageManagerService.resolveImageSrc({ productTitle: cleanTitle, category: rfq.category, productId: rfq.id });
 
     if (existingOverride && existingOverride.startsWith('/assets/uploads/')) {
       rfq.image = existingOverride;
@@ -236,7 +237,8 @@ export function generateAndPersistNextPageRfqs(
   rawBatch.forEach(rfq => {
     const savedImg =
       productImageManagerService.getProductImage(rfq.id) ||
-      productImageManagerService.getProductImage(rfq.productName);
+      productImageManagerService.getProductImage(rfq.productName) ||
+      productImageManagerService.resolveImageSrc({ productTitle: rfq.productName, category: rfq.category, productId: rfq.id });
     if (savedImg && savedImg.startsWith('/assets/uploads/')) {
       rfq.image = savedImg;
       rfq.images = [savedImg];

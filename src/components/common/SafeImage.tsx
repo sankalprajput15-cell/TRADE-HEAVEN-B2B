@@ -379,9 +379,77 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       }
     }
 
+    const contextText = `${productTitle || ''} ${category || ''} ${alt || ''} ${productId || ''}`.toLowerCase();
+    const isConstructionOrBrick = /(brick|bricks|masonry|construction|building|paver|tile|mortar|cement|clinker|concrete)/i.test(contextText);
+    const isSareeOrTextile = /(saree|sari|textile|apparel|fabric|garment|silk|clothing|lehenga|kurti|dress)/i.test(contextText);
+    const isAgricultureOrFood = /(apple|mango|banana|fruit|food|grain|rice|wheat|spice|agriculture|produce|vegetable)/i.test(contextText);
+    const isEnergyOrFuel = /(diesel|fuel|petroleum|oil|tanker|en590|jet|gas|bitumen)/i.test(contextText);
+    const isMachineryOrIndustrial = /(machinery|machine|engine|generator|cnc|equipment|turbine|pump|tool)/i.test(contextText);
+    const isGemOrMineral = /(jade|stone|gem|mineral|turquoise|coal|copper|ore)/i.test(contextText);
+
+    let guaranteedLocalFallbacks: string[];
+    if (isConstructionOrBrick) {
+      guaranteedLocalFallbacks = [
+        '/assets/uploads/auto-bricks-bcc0b0120401.webp',
+        '/assets/uploads/auto-bricks-93945c6b34e1.webp',
+        '/assets/uploads/auto-bricks-7ee8786c0984.webp',
+        '/assets/uploads/auto-bricks-036049844c92.webp',
+        '/assets/uploads/auto-bricks-d10b47ffddb0.webp'
+      ];
+    } else if (isAgricultureOrFood) {
+      guaranteedLocalFallbacks = [
+        '/assets/uploads/auto-fresh-fresh-cavendish-bananas-class--7458f990f354.webp',
+        '/assets/uploads/auto-1121-extra-long-grain-steam-basmati--c9dbe73aeab5.webp',
+        '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg'
+      ];
+    } else if (isEnergyOrFuel) {
+      guaranteedLocalFallbacks = [
+        '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg',
+        '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg'
+      ];
+    } else if (isMachineryOrIndustrial) {
+      guaranteedLocalFallbacks = [
+        '/assets/uploads/image002_50ab7837.png',
+        '/assets/uploads/image003_6c1f0619.jpg',
+        '/assets/uploads/image005_20fe3db0.png'
+      ];
+    } else if (isGemOrMineral) {
+      guaranteedLocalFallbacks = [
+        '/assets/uploads/auto-black-jade-raw-stone-b58e35b77c44.webp',
+        '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.20_PM_754649c9.jpeg',
+        '/assets/uploads/WhatsApp_Image_2026-11-04_at_7.44.21_PM_c5859618.jpeg'
+      ];
+    } else {
+      guaranteedLocalFallbacks = [
+        '/assets/uploads/auto-bricks-bcc0b0120401.webp',
+        '/assets/uploads/image002_50ab7837.png',
+        '/assets/uploads/auto-1121-extra-long-grain-steam-basmati--c9dbe73aeab5.webp',
+        '/assets/uploads/vecteezy_cargo-tanker-ship-marine-vessel-docking-and-oversea-berth_8017034_96d25d6f.jpg'
+      ];
+    }
+
+    // Strict Anti-Pollution Shield: Never show saree/shree images for non-textile products
+    let sanitizedList = list;
+    if (!isSareeOrTextile) {
+      sanitizedList = sanitizedList.filter(
+        u => !u.toLowerCase().includes('saree') && !u.toLowerCase().includes('shree')
+      );
+    }
+
+    const validList = sanitizedList.filter(u => u && !FAILED_IMAGE_URLS.has(u) && !isBrokenExternalImageUrl(u));
+    if (validList.length === 0 && !isLogoOrAvatar) {
+      const seedStr = String(productId || productTitle || alt || 'tradeheaven');
+      let h = 0;
+      for (let i = 0; i < seedStr.length; i++) {
+        h = (h * 31 + seedStr.charCodeAt(i)) >>> 0;
+      }
+      const fallbackChosen = guaranteedLocalFallbacks[h % guaranteedLocalFallbacks.length];
+      validList.push(fallbackChosen);
+    }
+
     // Filter out globally known dead URLs — never loop back to broken external assets
-    return list.filter(u => u && !FAILED_IMAGE_URLS.has(u) && !isBrokenExternalImageUrl(u));
-  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, visualPool, optimalWidth, isThumbnail, productId, imageIndex]);
+    return validList;
+  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt]);
 
   const primaryCandidate = candidates[0] || '';
   const lastCandidateRef = useRef<string>(primaryCandidate);

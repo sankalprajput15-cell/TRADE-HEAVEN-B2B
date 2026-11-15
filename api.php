@@ -390,12 +390,6 @@ if ($db_connected) {
 // Centralized PHP Mail Notification Engine (Failsafe & Multi-Recipient)
 // -------------------------------------------------------------
 function sendPhpMailAlert($subject, $title, $description, $details = [], $extra_recipients = []) {
-    // Hard safeguard: NEVER send emails for product image uploads, product listings, or RFQ listings/auto-generation
-    $combined_check = strtolower($subject . ' ' . $title . ' ' . $description);
-    if (preg_match('/\b(rfq|listing|product|image|upload|media|catalog|auto_generated|market_sync)\b/i', $combined_check)) {
-        return;
-    }
-
     $recipients = [
         'sankalprajput15@gmail.com',
         'solutionthe87@gmail.com',
@@ -1854,6 +1848,24 @@ switch ($action) {
                 "images" => $image_url ? [$image_url] : [],
                 "created_at" => date("Y-m-d H:i:s")
             ];
+        }
+
+        if ($source !== 'auto_generated') {
+            @sendPhpMailAlert(
+                "New Buy Lead RFQ Submitted: {$title}",
+                "New Procurement Request Posted",
+                "A buyer has posted a new buying lead / RFQ on Trade Heaven.",
+                [
+                    "Product / Title" => $title,
+                    "Category" => $category,
+                    "Quantity" => "{$quantity} {$unit}",
+                    "Target Price" => "\${$targetPrice}",
+                    "Buyer Name" => $buyer_name,
+                    "Buyer Company" => $buyer_company,
+                    "Buyer Country" => $buyer_country,
+                    "Buyer Email" => $buyer_email
+                ]
+            );
         }
 
         echo json_encode([

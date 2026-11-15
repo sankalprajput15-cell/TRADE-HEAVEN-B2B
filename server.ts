@@ -8830,6 +8830,24 @@ app.post('/api.php', async (req, res) => {
 
     if (source !== 'auto_generated') {
       logServerActivity(req, 'RFQ_LISTED', buyerEmail, 'BUYER', `/api.php?action=submit_rfq`, `New B2B RFQ listed for: "${productName}" - Vol: ${quantity} ${unit}.`, 'SUCCESS');
+      for (const adminTo of ['yr943334@gmail.com', 'sankalprajput15@gmail.com']) {
+        void automatedSmtpService.sendCustomAdminEmail({
+          recipientEmail: adminTo,
+          recipientName: 'Trade Heaven Admin',
+          companyName: buyerCompany,
+          subject: `[Trade Heaven RFQ Alert] ${productName} (${quantity} ${unit}) - ${buyerCompany}`,
+          introMessage: `⚡ New B2B RFQ Submitted on Trade Heaven:
+Product: ${productName}
+Quantity: ${quantity} ${unit} (${orderFrequency})
+Target Price: $${targetPrice} USD (${incoterms})
+Destination Port: ${destinationPort}
+Buyer: ${buyerName} (${buyerCompany})
+Country: ${buyerCountry}
+Email: ${buyerEmail}
+Phone: ${buyerPhone || 'N/A'}
+Specifications: ${specifications}`
+        }).catch(err => console.warn('[Admin RFQ Notification Error]:', err?.message));
+      }
     }
 
     return res.json({
@@ -8870,6 +8888,23 @@ app.post('/api.php', async (req, res) => {
       quantity: formattedInquiry.target_quantity,
       message: formattedInquiry.message
     });
+
+    for (const adminTo of ['yr943334@gmail.com', 'sankalprajput15@gmail.com']) {
+      void automatedSmtpService.sendCustomAdminEmail({
+        recipientEmail: adminTo,
+        recipientName: 'Trade Heaven Admin',
+        companyName: formattedInquiry.company_name,
+        subject: `[Trade Heaven New Inquiry Alert] ${formattedInquiry.subject} - ${formattedInquiry.company_name}`,
+        introMessage: `⚡ New Direct Buyer Inquiry Received on Trade Heaven:
+Subject: ${formattedInquiry.subject}
+Product: ${formattedInquiry.product_name}
+Quantity: ${formattedInquiry.target_quantity}
+Buyer: ${formattedInquiry.name} (${formattedInquiry.company_name})
+Email: ${formattedInquiry.email}
+Phone: ${formattedInquiry.phone || 'N/A'}
+Message: ${formattedInquiry.message}`
+      }).catch(err => console.warn('[Admin Inquiry Notification Error]:', err?.message));
+    }
 
     return res.json({ success: true, id: newId, message: 'Inquiry received and recorded in database!' });
   }
@@ -13807,6 +13842,7 @@ function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array
   const isMetalOrMineral = /(copper|aluminium|aluminum|steel|iron|zinc|nickel|lithium|cobalt|gold|silver|scrap|cathode|billet|ingot|ore|coal|cement|clinker|slag|quartz)/i.test(lower);
   const isEnergyOrChem = /(diesel|en590|jet|fuel|bitumen|urea|sulphur|sulfur|petcoke|lng|lpg|crude|acid|polymer|resin|pvc|hdpe|ldpe|caustic|chemical|solvent)/i.test(lower);
   const isMachineryOrTech = /(cnc|machine|excavator|tractor|generator|turbine|solar|inverter|battery|panel|transformer|pump|valve|compressor|elevator|drone|laptop|iphone|ipad|macbook|electronics|semiconductor|led)/i.test(lower);
+  const isConstructionMaterial = /(brick|bricks|tile|tiles|ceramic|masonry|granite|marble|timber|lumber|plywood|glass|cement|clinker|concrete|paver|pavers|slate|stone|plaster|insulation|roofing)/i.test(lower);
 
   let category = 'Agriculture & Foodstuff';
   let unit = 'Metric Tons';
@@ -14071,6 +14107,42 @@ function synthesizeStructuredMarketDemand(rawKeyword: string, liveSources: Array
         freq: 'Monthly',
         price: 2680,
         specs: `Must include ISO 9001/14001 manufacturer certification, 3% critical spare parts allocation, and third-party pre-shipment inspection report.`
+      }
+    ];
+  } else if (isConstructionMaterial) {
+    category = 'Building & Construction Materials';
+    unit = 'Pieces';
+    basePrice = 0.55;
+    typicalPriceRange = '$0.35 – $0.95 per Piece / Palletized FCL (CIF)';
+    packagingStandards = 'Heavy-duty shrink-wrapped seaworthy pallets with edge protectors and high-tensile steel banding';
+    variants = [
+      {
+        title: `Red Clay & Facing ${cleanTitle} - ASTM C216 Export Grade`,
+        qty: 50000,
+        freq: 'Monthly',
+        price: 0.45,
+        specs: `High compressive strength (>35 MPa), low water absorption (<8%), frost-resistant ASTM C216 Grade SW compliant. Strapped on ISPM-15 fumigated export pallets.`
+      },
+      {
+        title: `Bulk Commercial ${cleanTitle} - Verified Importer Annual Contract`,
+        qty: 120000,
+        freq: 'Monthly',
+        price: 0.38,
+        specs: `Direct kiln / factory supply, uniform dimensional tolerances (+/- 2mm), pre-shipment SGS load & compressive batch testing certificate required.`
+      },
+      {
+        title: `Industrial High-Density Refractory & Engineering ${cleanTitle}`,
+        qty: 35000,
+        freq: 'Quarterly',
+        price: 1.25,
+        specs: `High thermal shock resistance, Al2O3 content certified, ISO 9001 kiln quality documentation, heavy-duty wooden crating suitable for multi-modal freight.`
+      },
+      {
+        title: `Architectural Grade Paver & Construction ${cleanTitle} - Tender Spec`,
+        qty: 60000,
+        freq: 'Bi-Weekly',
+        price: 0.52,
+        specs: `Slip-resistant surface finish, color-fast non-efflorescent formulation, palletized 20ft heavy-duty container dispatch with Certificate of Origin.`
       }
     ];
   } else {
@@ -14409,16 +14481,46 @@ Strict requirements:
       const createdIso = new Date(nowMs - idx * 35 * 60000).toISOString();
       const uid = nowMs + idSuffix;
 
+      const resolvedTitle = String(item.productName || `${rawKeyword} - Export Grade A`).trim();
+      let attachedImg = String(item.image || item.image_url || '').trim();
+      if (!attachedImg) {
+        const cachedEntry =
+          serverProductImageCacheMap.get(normalizedKeyword) ||
+          serverProductImageCacheMap.get(rawKeyword.toLowerCase()) ||
+          serverProductImageCacheMap.get(cleanProductSearchSubject(resolvedTitle).toLowerCase());
+        if (cachedEntry && Array.isArray(cachedEntry.images) && cachedEntry.images.length > 0) {
+          attachedImg = cachedEntry.images[idx % cachedEntry.images.length]?.url || '';
+        } else if (serverProductImageState.overrides[normalizedKeyword]?.primary) {
+          attachedImg = serverProductImageState.overrides[normalizedKeyword].primary;
+        } else if (serverProductImageState.overrides[rawKeyword.toLowerCase()]?.primary) {
+          attachedImg = serverProductImageState.overrides[rawKeyword.toLowerCase()].primary;
+        } else if (serverProductImageState.overrides[resolvedTitle]?.primary) {
+          attachedImg = serverProductImageState.overrides[resolvedTitle].primary;
+        } else if (/brick/i.test(resolvedTitle) || /brick/i.test(rawKeyword)) {
+          attachedImg = '/assets/uploads/auto-bricks-bcc0b0120401.webp';
+        }
+      }
+
+      if (attachedImg) {
+        bindAutoSavedImageOverride({
+          localUrl: attachedImg,
+          productId: `rfq-mkt-${uid}`,
+          productName: resolvedTitle,
+          gallery: [attachedImg],
+          flushNow: false
+        });
+      }
+
       return {
         id: `rfq-mkt-${uid}`,
         raw_id: uid,
-        title: String(item.productName || `${rawKeyword} - Export Grade A`).trim(),
-        productName: String(item.productName || `${rawKeyword} - Export Grade A`).trim(),
-        category: String(item.category || 'Agriculture & Global Commodities').trim(),
+        title: resolvedTitle,
+        productName: resolvedTitle,
+        category: String(item.category || (/brick/i.test(resolvedTitle) || /brick/i.test(rawKeyword) ? 'Building & Construction Materials' : 'Agriculture & Global Commodities')).trim(),
         quantity: String(qty),
         targetQuantity: qty,
-        unit: String(item.quantityUnit || 'Metric Tons').trim(),
-        quantityUnit: String(item.quantityUnit || 'Metric Tons').trim(),
+        unit: String(item.quantityUnit || (/brick/i.test(resolvedTitle) ? 'Pieces' : 'Metric Tons')).trim(),
+        quantityUnit: String(item.quantityUnit || (/brick/i.test(resolvedTitle) ? 'Pieces' : 'Metric Tons')).trim(),
         order_frequency: String(item.orderFrequency || 'Monthly').trim(),
         orderFrequency: String(item.orderFrequency || 'Monthly').trim(),
         targetPrice: String(price),
@@ -14459,6 +14561,9 @@ Strict requirements:
         marketInsight: insightObj.summary,
         market_insight: insightObj.summary,
         marketDemandVerified: true,
+        image: attachedImg || undefined,
+        image_url: attachedImg || undefined,
+        images: attachedImg ? [attachedImg] : [],
         persisted: true,
         created_at: createdIso
       };

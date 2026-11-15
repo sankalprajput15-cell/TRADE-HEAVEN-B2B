@@ -249,10 +249,45 @@ const DEFAULT_BUILTIN_OVERRIDES: Record<string, ProductImageOverrideEntry> = {
     gallery: [regeneratedSupplierCoalImg],
     format: 'JPG',
     updatedAt: '2026-11-09T00:00:00.000Z'
+  },
+  'bricks': {
+    primary: '/assets/uploads/auto-bricks-bcc0b0120401.webp',
+    gallery: [
+      '/assets/uploads/auto-bricks-bcc0b0120401.webp',
+      '/assets/uploads/auto-bricks-93945c6b34e1.webp',
+      '/assets/uploads/auto-bricks-7ee8786c0984.webp',
+      '/assets/uploads/auto-bricks-036049844c92.webp'
+    ],
+    format: 'WEBP',
+    updatedAt: '2026-11-15T00:00:00.000Z'
+  },
+  'brick': {
+    primary: '/assets/uploads/auto-bricks-93945c6b34e1.webp',
+    gallery: [
+      '/assets/uploads/auto-bricks-93945c6b34e1.webp',
+      '/assets/uploads/auto-bricks-bcc0b0120401.webp',
+      '/assets/uploads/auto-bricks-7ee8786c0984.webp'
+    ],
+    format: 'WEBP',
+    updatedAt: '2026-11-15T00:00:00.000Z'
   }
 };
 
 const DEFAULT_BUILTIN_MEDIA: MediaLibraryItem[] = [
+  {
+    id: 'builtin-construction-red-clay-bricks',
+    url: '/assets/uploads/auto-bricks-bcc0b0120401.webp',
+    name: 'Red Clay Construction Bricks - High Compressive Strength Masonry.webp',
+    format: 'WEBP',
+    uploadedAt: '2026-11-15T05:00:00Z'
+  },
+  {
+    id: 'builtin-commercial-building-bricks',
+    url: '/assets/uploads/auto-bricks-93945c6b34e1.webp',
+    name: 'Commercial Facing & Construction Bricks.webp',
+    format: 'WEBP',
+    uploadedAt: '2026-11-15T05:01:00Z'
+  },
   {
     id: 'builtin-rice-husk-powder',
     url: '/assets/uploads/Agricultural_Rice_Husk_Powder__Grind___Ashtradeheaven_d9763edd.jpeg',
@@ -979,11 +1014,36 @@ class ProductImageManagerService {
       }
     }
 
-    // 2. Check productTitle override if matched by title
+    // 2. Check productTitle override (exact, case-insensitive, or key token match)
     if (productTitle) {
       const cleanTitle = productTitle.trim();
-      const entry = this.state.overrides[cleanTitle];
-      if (entry?.primary) return normalizeProductAssetUrl(entry.primary);
+      const lowerTitle = cleanTitle.toLowerCase();
+      let matchedEntry = this.state.overrides[cleanTitle] || this.state.overrides[lowerTitle];
+
+      if (!matchedEntry) {
+        // Smart keyword resolution for multi-word titles like "Bulk Commercial Bricks - Verified Importer"
+        for (const [key, entry] of Object.entries(this.state.overrides)) {
+          if (!entry?.primary) continue;
+          const lowerKey = key.toLowerCase().trim();
+          if (lowerKey.length >= 3 && lowerTitle.includes(lowerKey)) {
+            // Anti-cross-contamination check: don't match saree onto non-saree
+            const isTargetSaree = /(saree|sari|textile|apparel|fabric|garment|silk|dress)/i.test(lowerTitle);
+            const isEntrySaree = entry.primary.toLowerCase().includes('saree') || entry.primary.toLowerCase().includes('shree');
+            if (isEntrySaree && !isTargetSaree) continue;
+            matchedEntry = entry;
+            break;
+          }
+        }
+      }
+
+      if (matchedEntry?.primary) {
+        // Anti-cross-contamination safeguard
+        const isTargetSaree = /(saree|sari|textile|apparel|fabric|garment|silk|dress)/i.test(lowerTitle);
+        const isEntrySaree = matchedEntry.primary.toLowerCase().includes('saree') || matchedEntry.primary.toLowerCase().includes('shree');
+        if (!isEntrySaree || isTargetSaree) {
+          return normalizeProductAssetUrl(matchedEntry.primary);
+        }
+      }
     }
 
     // 3. Check URL replacement rules
