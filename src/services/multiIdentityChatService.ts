@@ -158,6 +158,65 @@ export async function deleteBuyerIdentity(id: string): Promise<void> {
   emitLocalChatBroadcast('chat:identity_deleted', { id });
 }
 
+export function stripLegacyProtectionTags(value?: string): string {
+  return String(value || '')
+    .replace(/\s*\[Protected(?:\s+by\s+Trade\s+Heaven)?\]/gi, '')
+    .replace(/\s*\[Exact Address Hidden\]/gi, '')
+    .trim();
+}
+
+function normalizeCleanMaskedPhone(phone?: string): string {
+  const cleaned = stripLegacyProtectionTags(phone);
+  if (!cleaned) return '+1 (•••) •••-••••';
+  if (cleaned.includes('•') || cleaned.includes('*')) {
+    const ccMatch = cleaned.match(/^\+?(\d{1,3})/);
+    const areaMatch = cleaned.match(/\(\s*(\d{2,4})\s*\)/);
+    if (ccMatch && areaMatch) return `+${ccMatch[1]} (${areaMatch[1]}) •••-••••`;
+    if (ccMatch) return `+${ccMatch[1]} (•••) •••-••••`;
+    return '+1 (•••) •••-••••';
+  }
+  return cleaned;
+}
+
+function normalizeCleanMaskedEmail(email?: string): string {
+  const cleaned = stripLegacyProtectionTags(email);
+  if (!cleaned) return 'b••••@••••.com';
+  return cleaned;
+}
+
+export function sanitizeConversationForDisplay(
+  conv: ChatConversation,
+  viewMode: 'admin' | 'supplier' = 'supplier'
+): ChatConversation {
+  if (!conv || !conv.identity) return conv;
+  const idn = conv.identity;
+  const cleanCountry = stripLegacyProtectionTags(idn.country || 'United States') || 'United States';
+  const cleanCity = stripLegacyProtectionTags(idn.city || '');
+  const cleanPhone = stripLegacyProtectionTags(idn.phone || '');
+  const cleanEmail = stripLegacyProtectionTags(idn.email || '');
+  const cleanCompany = stripLegacyProtectionTags(idn.companyName || '');
+  const cleanAddress = stripLegacyProtectionTags(idn.address || '');
+
+  return {
+    ...conv,
+    identity: {
+      ...idn,
+      country: cleanCountry,
+      city: cleanCity,
+      phone: viewMode === 'supplier' && !conv.showPhone ? normalizeCleanMaskedPhone(cleanPhone) : cleanPhone,
+      email: viewMode === 'supplier' && !conv.showEmail ? normalizeCleanMaskedEmail(cleanEmail) : cleanEmail,
+      companyName:
+        viewMode === 'supplier' && !conv.showCompany
+          ? cleanCompany || `Verified Importer • ${cleanCountry}`
+          : cleanCompany,
+      address:
+        viewMode === 'supplier' && !conv.showCompany
+          ? cleanAddress || (cleanCity ? `${cleanCity}, ${cleanCountry}` : cleanCountry)
+          : cleanAddress
+    }
+  };
+}
+
 export async function fetchChatConversations(options: {
   viewMode: 'admin' | 'supplier';
   supplierId?: string;
@@ -178,8 +237,9 @@ export async function fetchChatConversations(options: {
       headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' }
     });
     if (Array.isArray(json?.data)) {
-      cachedConversationsByKey.set(cacheKey, json.data);
-      return json.data;
+      const sanitized = json.data.map((c: ChatConversation) => sanitizeConversationForDisplay(c, options.viewMode));
+      cachedConversationsByKey.set(cacheKey, sanitized);
+      return sanitized;
     }
     return cachedConversationsByKey.get(cacheKey) || [];
   } catch {

@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   BadgeCheck,
   Building2,
-  Crown,
   Loader2,
   Lock,
   Mail,
@@ -493,13 +492,21 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
   if (!isAuthenticatedUser) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
           <Lock className="h-6 w-6" />
         </div>
-        <h2 className="text-base font-extrabold text-slate-900">Supplier Sign-In Required</h2>
-        <p className="mx-auto mt-1 max-w-md text-xs text-slate-600">
-          Please sign in with your registered supplier account to access private buyer inquiries, contact permissions, and message read receipts.
+        <h2 className="text-base font-extrabold text-slate-900">Sign in to access secure inquiry</h2>
+        <p className="mx-auto mt-1.5 max-w-md text-xs text-slate-600">
+          Please sign in to your registered supplier account to view buyer contact details, respond to inquiries, and manage live trade conversations.
         </p>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('tradeheaven_open_login'))}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 cursor-pointer"
+        >
+          <Lock className="h-3.5 w-3.5" />
+          <span>Login to Reply &amp; View Contact Details</span>
+        </button>
       </div>
     );
   }
@@ -671,65 +678,77 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                   </div>
                 </div>
 
-                {/* Buyer Contact Details Grid (Masked vs Unmasked Live) */}
-                <div className="mt-3 grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 sm:p-3 sm:grid-cols-3 min-w-0">
-                  <div className="flex min-w-0 items-start gap-2">
-                    <Phone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">Phone / WhatsApp</p>
-                      {activeConv.showPhone ? (
-                        <p className="truncate text-xs font-bold text-slate-900">
-                          {activeConv.identity?.phone || 'Not listed'}
-                        </p>
-                      ) : (
-                        <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
-                          <Lock className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{activeConv.identity?.phone}</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex min-w-0 items-start gap-2">
-                    <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">Email Address</p>
-                      {activeConv.showEmail ? (
-                        <p className="truncate text-xs font-bold text-slate-900">
-                          {activeConv.identity?.email || 'Not listed'}
-                        </p>
-                      ) : (
-                        <p className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-amber-700">
-                          <Lock className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{activeConv.identity?.email}</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex min-w-0 items-start gap-2">
-                    <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">Company & Address</p>
-                      {activeConv.showCompany ? (
-                        <div>
+                {/* Buyer Contact Details Grid (Clean Standard B2B Masking) */}
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 sm:p-3 min-w-0">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 min-w-0">
+                    <div className="flex min-w-0 items-start gap-2">
+                      <Phone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase text-slate-400">Phone / WhatsApp</p>
+                        {activeConv.showPhone ? (
                           <p className="truncate text-xs font-bold text-slate-900">
-                            {activeConv.identity?.companyName}
+                            {activeConv.identity?.phone || 'Not listed'}
                           </p>
-                          {activeConv.identity?.address && (
-                            <p className="inline-flex items-center gap-1 truncate text-[11px] text-slate-600">
-                              <MapPin className="h-3 w-3 shrink-0" /> {activeConv.identity.address}
+                        ) : (
+                          <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 font-mono">
+                            <Lock className="h-3 w-3 shrink-0 text-slate-400" />
+                            <span className="truncate">{activeConv.identity?.phone || '+1 (•••) •••-••••'}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex min-w-0 items-start gap-2">
+                      <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase text-slate-400">Email Address</p>
+                        {activeConv.showEmail ? (
+                          <p className="truncate text-xs font-bold text-slate-900">
+                            {activeConv.identity?.email || 'Not listed'}
+                          </p>
+                        ) : (
+                          <p className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-slate-700">
+                            <Lock className="h-3 w-3 shrink-0 text-slate-400" />
+                            <span className="truncate">{activeConv.identity?.email || 'b••••@••••.com'}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex min-w-0 items-start gap-2">
+                      <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase text-slate-400">Company & Location</p>
+                        {activeConv.showCompany ? (
+                          <div>
+                            <p className="truncate text-xs font-bold text-slate-900">
+                              {activeConv.identity?.companyName}
                             </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
-                          <Lock className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{activeConv.identity?.companyName}</span>
-                        </p>
-                      )}
+                            {activeConv.identity?.address && (
+                              <p className="inline-flex items-center gap-1 truncate text-[11px] text-slate-600">
+                                <MapPin className="h-3 w-3 shrink-0" /> {activeConv.identity.address}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700">
+                            <Lock className="h-3 w-3 shrink-0 text-slate-400" />
+                            <span className="truncate">
+                              {activeConv.identity?.companyName || `Verified Importer • ${activeConv.identity?.country || 'Global'}`}
+                            </span>
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  {(!activeConv.showPhone || !activeConv.showEmail || !activeConv.showCompany) && (
+                    <div className="mt-2 flex items-center gap-1.5 border-t border-slate-200/80 pt-2 text-[11px] text-slate-500">
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+                      <span>
+                        Authenticated account portal: Sign in to access secure inquiry details and buyer-authorized contact information.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -798,48 +817,36 @@ export const SupplierMessagesInbox: React.FC<SupplierMessagesInboxProps> = ({ cu
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Free Member Daily Message Quota Banner */}
+              {/* Daily Messaging Allowance Banner */}
               {isFreeMember && (
                 <div
                   className={`border-t px-3.5 py-2.5 text-xs flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between ${
                     isMessageLimitReached
                       ? 'border-rose-200 bg-rose-50 text-rose-900'
-                      : 'border-amber-200 bg-amber-50 text-amber-950'
+                      : 'border-slate-200 bg-slate-50 text-slate-700'
                   }`}
                 >
                   <div className="flex items-start gap-2 min-w-0">
                     {isMessageLimitReached ? (
                       <Lock className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
                     ) : (
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                     )}
                     <div className="min-w-0">
                       <p className="font-extrabold">
                         {isMessageLimitReached
                           ? `Daily Buyer Message Limit Reached (${effectiveQuota.sentToday}/${effectiveQuota.dailyLimit || 1} sent today)`
-                          : `Free Member Messaging Allowance: ${effectiveQuota.remainingToday ?? 1} of ${effectiveQuota.dailyLimit || 1} buyer message left today`}
+                          : `Account Messaging Allowance: ${effectiveQuota.remainingToday ?? 1} of ${effectiveQuota.dailyLimit || 1} outgoing buyer message left today`}
                       </p>
                       <p className="text-[11px] opacity-90">
                         {isMessageLimitReached
-                          ? `Free members can only send 1 message to buyers per day.${
-                              effectiveQuota.resetInFormatted ? ` Resets in ${effectiveQuota.resetInFormatted}.` : ' Resets after 24 hours.'
-                            } Upgrade or clear your Basic Plan balance to message buyers without daily limits.`
-                          : 'Free Tier members are limited to 1 outgoing buyer message every 24 hours. Upgrade to Basic or VIP for unlimited buyer chat.'}
+                          ? `Standard accounts can send 1 outgoing buyer inquiry per day.${
+                              effectiveQuota.resetInFormatted ? ` Resets in ${effectiveQuota.resetInFormatted}.` : ' Allowance resets after 24 hours.'
+                            }`
+                          : 'Standard accounts are limited to 1 outgoing buyer message every 24 hours.'}
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent('tradeheaven_navigate', { detail: 'PLANS' }))}
-                    className={`inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-3 py-1.5 text-[11px] font-black shadow-xs transition cursor-pointer sm:self-auto ${
-                      isMessageLimitReached
-                        ? 'bg-rose-600 text-white hover:bg-rose-700'
-                        : 'bg-amber-400 text-slate-950 hover:bg-amber-300'
-                    }`}
-                  >
-                    <Crown className="h-3.5 w-3.5" />
-                    <span>{isMessageLimitReached ? 'Upgrade / Clear Balance' : 'Upgrade Plan'}</span>
-                  </button>
                 </div>
               )}
 

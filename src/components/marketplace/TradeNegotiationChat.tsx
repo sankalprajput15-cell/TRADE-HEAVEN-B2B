@@ -1331,13 +1331,27 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* Free Member Daily Message Quota Notice */}
-                {(isFreeMember || quotaErrorNotice) && (
+                {/* Account Inquiry Allowance / Secure Sign-In Notice */}
+                {!currentUser ? (
+                  <div className="px-3.5 py-2.5 rounded-xl text-[11px] flex flex-wrap items-center justify-between gap-2 border bg-slate-50 border-slate-200 text-slate-800">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <Lock className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+                      Sign in to access secure inquiry details and respond directly inside this trade room.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => window.dispatchEvent(new CustomEvent('tradeheaven_open_login'))}
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] cursor-pointer"
+                    >
+                      Login to Reply &amp; View Contact Details
+                    </button>
+                  </div>
+                ) : (isFreeMember || quotaErrorNotice) && (
                   <div
                     className={`px-3.5 py-2 rounded-xl text-[11px] flex flex-wrap items-center justify-between gap-2 border ${
                       isDailyMessageRestricted || quotaErrorNotice
                         ? 'bg-rose-50 border-rose-200 text-rose-900'
-                        : 'bg-amber-50 border-amber-200 text-amber-950'
+                        : 'bg-slate-50 border-slate-200 text-slate-700'
                     }`}
                   >
                     <span className="flex items-center gap-1.5 font-semibold">
@@ -1345,16 +1359,9 @@ export const TradeNegotiationChat: React.FC<Props> = ({
                       {quotaErrorNotice
                         ? quotaErrorNotice
                         : isDailyMessageRestricted
-                        ? `Daily Buyer Message Limit Reached (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used today) — Free members can only send 1 message to buyers daily.`
-                        : `Free Tier Allowance: ${dailyQuota.remainingToday ?? 1}/${dailyQuota.dailyLimit || 1} buyer message remaining today.`}
+                        ? `Daily Buyer Message Limit Reached (${dailyQuota.sentToday}/${dailyQuota.dailyLimit || 1} used today) — Standard accounts can send 1 outgoing inquiry daily.`
+                        : `Account Messaging Allowance: ${dailyQuota.remainingToday ?? 1}/${dailyQuota.dailyLimit || 1} outgoing buyer message remaining today.`}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate?.('PLANS')}
-                      className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-black text-[10px] cursor-pointer"
-                    >
-                      Upgrade Plan
-                    </button>
                   </div>
                 )}
 

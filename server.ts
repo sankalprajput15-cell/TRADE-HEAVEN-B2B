@@ -7675,25 +7675,103 @@ function persistChatSystemStore() {
 
 loadChatSystemStore();
 
+function stripLegacyProtectionTags(value: string): string {
+  return String(value || '')
+    .replace(/\s*\[Protected(?:\s+by\s+Trade\s+Heaven)?\]/gi, '')
+    .replace(/\s*\[Exact Address Hidden\]/gi, '')
+    .trim();
+}
+
 function maskChatPhone(phone: string): string {
-  const digits = String(phone || '').replace(/\D+/g, '');
-  if (digits.length >= 4) {
-    const prefix = String(phone || '').trim().slice(0, 2) || '+1';
-    return `${prefix} •••-•••-${digits.slice(-4)} [Protected by Trade Heaven]`;
+  const cleaned = stripLegacyProtectionTags(phone);
+  if (!cleaned || cleaned.includes('•') || cleaned.includes('*')) {
+    const ccMatch = cleaned.match(/^\+?(\d{1,3})/);
+    const areaMatch = cleaned.match(/\(\s*(\d{2,4})\s*\)/);
+    if (ccMatch && areaMatch) {
+      return `+${ccMatch[1]} (${areaMatch[1]}) •••-••••`;
+    }
+    if (ccMatch) {
+      return `+${ccMatch[1]} (•••) •••-••••`;
+    }
+    return '+1 (•••) •••-••••';
   }
-  return '+•• •••-•••-•••• [Protected by Trade Heaven]';
+  const intlMatch = cleaned.match(/^\+(\d{1,3})[\s\-().]+(\d{2,4})/);
+  if (intlMatch) {
+    return `+${intlMatch[1]} (${intlMatch[2]}) •••-••••`;
+  }
+  const digits = cleaned.replace(/\D+/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+1 (${digits.slice(1, 4)}) •••-••••`;
+  }
+  if (digits.length > 10) {
+    const ccLen = digits.length - 10;
+    return `+${digits.slice(0, ccLen)} (${digits.slice(ccLen, ccLen + 3)}) •••-••••`;
+  }
+  if (digits.length === 10) {
+    return `+1 (${digits.slice(0, 3)}) •••-••••`;
+  }
+  if (digits.length >= 4) {
+    return `+${digits.slice(0, 2)} (•••) •••-••••`;
+  }
+  return '+1 (•••) •••-••••';
 }
 
 function maskChatEmail(email: string): string {
-  const clean = String(email || '').trim();
-  const [local = 'b', domain = 'company.com'] = clean.split('@');
-  const tld = domain.includes('.') ? domain.slice(domain.lastIndexOf('.') + 1) : 'com';
-  const firstChar = local.length > 0 ? local[0] : 'b';
-  return `${firstChar}••••@••••.${tld}`;
+  const clean = stripLegacyProtectionTags(email);
+  const [local = 'buyer', domain = 'company.com'] = clean.split('@');
+  const tldRaw = domain.includes('.') ? domain.slice(domain.lastIndexOf('.') + 1) : 'com';
+  const tld = tldRaw.replace(/[^a-zA-Z0-9]/g, '') || 'com';
+  if (local.includes('•') || local.includes('*')) {
+    const existingPrefix = local.replace(/[•*]+.*$/, '').trim() || 'b';
+    return `${existingPrefix}••••@••••.${tld}`;
+  }
+  const firstSegment = (local.split(/[._-]+/)[0] || '').replace(/[^a-zA-Z0-9]/g, '');
+  const alphaLocal = local.replace(/[^a-zA-Z0-9]/g, '');
+  const visible =
+    firstSegment.length >= 2
+      ? firstSegment.slice(0, 6)
+      : alphaLocal.length >= 4
+        ? alphaLocal.slice(0, 4)
+        : alphaLocal.slice(0, 1) || 'b';
+  return `${visible}••••@••••.${tld}`;
 }
 
 function maskChatCompany(country: string): string {
-  return `Verified Importer • ${country || 'Global'} [Protected by Trade Heaven]`;
+  const cleanCountry = stripLegacyProtectionTags(country) || 'Global';
+  return `Verified Importer • ${cleanCountry}`;
+}
+
+function maskChatAddress(city: string, country: string): string {
+  const cleanCity = stripLegacyProtectionTags(city);
+  const cleanCountry = stripLegacyProtectionTags(country) || 'Global';
+  return cleanCity ? `${cleanCity}, ${cleanCountry}` : cleanCountry;
+}
+
+function sanitizeChatConversationForClient(conv: any, viewMode: 'admin' | 'supplier'): any {
+  if (!conv || typeof conv !== 'object' || !conv.identity) return conv;
+  const idn = conv.identity;
+  const rawCountry = stripLegacyProtectionTags(idn.country || 'United States') || 'United States';
+  const rawCity = stripLegacyProtectionTags(idn.city || '');
+  const showPhone = Boolean(conv.showPhone);
+  const showEmail = Boolean(conv.showEmail);
+  const showCompany = Boolean(conv.showCompany);
+  const cleanPhone = stripLegacyProtectionTags(idn.phone || '');
+  const cleanEmail = stripLegacyProtectionTags(idn.email || '');
+  const cleanCompany = stripLegacyProtectionTags(idn.companyName || '');
+  const cleanAddress = stripLegacyProtectionTags(idn.address || '');
+
+  return {
+    ...conv,
+    identity: {
+      ...idn,
+      country: rawCountry,
+      city: rawCity,
+      phone: viewMode === 'supplier' && !showPhone ? maskChatPhone(cleanPhone) : cleanPhone,
+      email: viewMode === 'supplier' && !showEmail ? maskChatEmail(cleanEmail) : cleanEmail,
+      companyName: viewMode === 'supplier' && !showCompany ? maskChatCompany(rawCountry) : cleanCompany,
+      address: viewMode === 'supplier' && !showCompany ? maskChatAddress(rawCity, rawCountry) : cleanAddress
+    }
+  };
 }
 
 function buildConversationView(conv: ServerChatConversationRecord, viewMode: 'admin' | 'supplier') {
@@ -7751,9 +7829,7 @@ function buildConversationView(conv: ServerChatConversationRecord, viewMode: 'ad
       companyName: isSupplierView && !conv.showCompany ? maskChatCompany(rawCountry) : rawCompany,
       address:
         isSupplierView && !conv.showCompany
-          ? rawCity
-            ? `${rawCity}, ${rawCountry} [Exact Address Hidden]`
-            : `${rawCountry} [Exact Address Hidden]`
+          ? maskChatAddress(rawCity, rawCountry)
           : rawAddress,
       phoneHidden: !conv.showPhone,
       emailHidden: !conv.showEmail,
@@ -8123,9 +8199,7 @@ async function processUnseenChatAlerts(
       const safeCompany = conv.showCompany ? rawCompany : maskChatCompany(buyerCountry);
       const safeAddress = conv.showCompany
         ? rawAddress
-        : buyerCity
-          ? `${buyerCity}, ${buyerCountry} [Protected]`
-          : `${buyerCountry} [Protected]`;
+        : maskChatAddress(buyerCity, buyerCountry);
 
       const buildSnippets = (list: any[]) => ({
         html: list
@@ -8169,7 +8243,7 @@ async function processUnseenChatAlerts(
               <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">You have ${dueFullBuyerMsgs.length} unread message(s) from ${escapeChatHtml(buyerName)} (${escapeChatHtml(buyerCountry)})</p>
             </div>
             <div style="padding:24px;">
-              <p style="margin:0 0 14px;font-size:14px;color:#334155;"><strong>Action Required:</strong> An international buyer sent a message over 1 minute ago and is awaiting your response on Trade Heaven.</p>
+              <p style="margin:0 0 14px;font-size:14px;color:#334155;"><strong>Action Required:</strong> An international buyer sent a message over 1 minute ago and is awaiting your response on Trade Heaven. Sign in to access secure inquiry details.</p>
               <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;">
                 <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;width:140px;">Buyer Name:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerName)}</td></tr>
                 <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Company:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeCompany)}</td></tr>
@@ -8178,15 +8252,16 @@ async function processUnseenChatAlerts(
                 <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Email:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeEmail)}</td></tr>
                 ${buyerInterest ? `<tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Product Interest:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerInterest)}</td></tr>` : ''}
               </table>
-              <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;">
+              <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:18px;">
                 <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Unread Message Preview:</p>
                 <ul style="margin:0;padding-left:18px;font-size:13px;">${snippets.html}</ul>
               </div>
-              <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Reply to Buyer Now &rarr;</a>
+              <p style="margin:0 0 14px;font-size:12px;color:#64748b;">Sign in to access secure inquiry details and respond directly inside your portal inbox.</p>
+              <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Login to Reply &amp; View Contact Details &rarr;</a>
             </div>
           </div>
         </body></html>`;
-        const text = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven\n\nBuyer: ${buyerName}\nCompany: ${safeCompany}\nLocation: ${safeAddress}\nPhone: ${safePhone}\nEmail: ${safeEmail}\n\nUnread Messages:\n${snippets.text}\n\nReply now: ${replyLink}`;
+        const text = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven\n\nSign in to access secure inquiry details.\n\nBuyer: ${buyerName}\nCompany: ${safeCompany}\nLocation: ${safeAddress}\nPhone: ${safePhone}\nEmail: ${safeEmail}\n\nUnread Messages:\n${snippets.text}\n\nLogin to Reply & View Contact Details: ${replyLink}`;
 
         const supplierDispatch = await dispatchVerifiedChatAlertEmail({
           toEmail: targetSupplierEmail,
@@ -9081,37 +9156,91 @@ async function forwardApiPhpToLiveUpstream(
       return false;
     }
 
-    // Strict post-filter for supplier conversations
+    // Strict post-filter & clean masking normalization for supplier conversations
     if (action === 'get_chat_conversations' && Array.isArray(parsed?.data)) {
-      const viewMode = String(searchParams.get('view_mode') || req.body?.view_mode || 'admin').toLowerCase();
+      const viewMode = String(searchParams.get('view_mode') || req.body?.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
       if (viewMode === 'supplier') {
         const sId = String(searchParams.get('supplier_id') || req.body?.supplier_id || '').trim();
         const sEmail = String(searchParams.get('supplier_email') || req.body?.supplier_email || '').trim().toLowerCase();
         parsed.data = parsed.data.filter((c: any) => matchesSupplierConversation(c, sId, sEmail));
       }
+      parsed.data = parsed.data.map((c: any) => sanitizeChatConversationForClient(c, viewMode));
     }
 
     // Overlay authoritative local serverUsersStore tier/membership/verification state on upstream get_users
+    // and merge any non-deleted seeded/local platform users (e.g. Mark Johnson) missing from upstream DB
     if ((action === 'get_users' || action === 'users') && Array.isArray(parsed?.data)) {
       const byEmail = new Map(
         serverUsersStore.map((u) => [String(u.email || '').toLowerCase().trim(), u])
       );
-      parsed.data = parsed.data.map((row: any) => {
-        const em = String(row?.email || '').toLowerCase().trim();
-        const localMatch = em ? byEmail.get(em) : undefined;
-        if (!localMatch) return row;
-        return {
-          ...row,
-          tier: localMatch.tier || row.tier,
-          membershipStatus: localMatch.membershipStatus || row.membershipStatus,
-          membership_status: localMatch.membershipStatus || row.membershipStatus,
-          isPremium: localMatch.isPremium,
-          is_premium: localMatch.isPremium,
-          isVerified: localMatch.isVerified,
-          is_verified: localMatch.isVerified ? 1 : 0,
-          status: localMatch.status || row.status
-        };
-      });
+      const presentEmails = new Set<string>();
+      const presentIds = new Set<string>();
+
+      parsed.data = parsed.data
+        .filter((row: any) => {
+          const em = String(row?.email || '').toLowerCase().trim();
+          const id = String(row?.id || '').trim();
+          if (em && serverDeletedUsersRegistry.emails.has(em)) return false;
+          if (id && serverDeletedUsersRegistry.ids.has(id)) return false;
+          return true;
+        })
+        .map((row: any) => {
+          const em = String(row?.email || '').toLowerCase().trim();
+          const id = String(row?.id || '').trim();
+          if (em) presentEmails.add(em);
+          if (id) presentIds.add(id);
+          const localMatch = em ? byEmail.get(em) : undefined;
+          if (!localMatch) return row;
+          return {
+            ...row,
+            name: localMatch.name || row.name,
+            companyName: localMatch.companyName || row.companyName || row.company_name,
+            company_name: localMatch.companyName || row.company_name || row.companyName,
+            country: localMatch.country || row.country,
+            tier: localMatch.tier || row.tier,
+            membershipStatus: localMatch.membershipStatus || row.membershipStatus,
+            membership_status: localMatch.membershipStatus || row.membershipStatus,
+            isPremium: localMatch.isPremium,
+            is_premium: localMatch.isPremium,
+            isVerified: localMatch.isVerified,
+            is_verified: localMatch.isVerified ? 1 : 0,
+            status: localMatch.status || row.status
+          };
+        });
+
+      const missingLocalUsers = serverUsersStore
+        .filter((u) => {
+          const em = String(u.email || '').toLowerCase().trim();
+          const id = String(u.id || '').trim();
+          if (!em || presentEmails.has(em) || (id && presentIds.has(id))) return false;
+          if (serverDeletedUsersRegistry.emails.has(em)) return false;
+          if (id && serverDeletedUsersRegistry.ids.has(id)) return false;
+          return true;
+        })
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone || '+1 800-555-0199',
+          role: u.role,
+          company_name: u.companyName,
+          companyName: u.companyName,
+          country: u.country,
+          status: u.status || 'ACTIVE',
+          is_verified: u.isVerified ? 1 : 0,
+          isVerified: u.isVerified,
+          is_premium: u.isPremium,
+          isPremium: u.isPremium,
+          membership_status: u.membershipStatus || (u.isPremium ? 'paid' : 'verified'),
+          membershipStatus: u.membershipStatus || (u.isPremium ? 'paid' : 'verified'),
+          tier: u.tier || (u.isPremium ? 'VIP' : 'Verified Supplier'),
+          avatar_url: u.avatarUrl,
+          avatarUrl: u.avatarUrl
+        }));
+
+      if (missingLocalUsers.length > 0) {
+        parsed.data = [...missingLocalUsers, ...parsed.data];
+      }
     }
 
     // Sync local serverUsersStore when upstream upsert_user / update_profile / edit_profile succeeds
@@ -11636,16 +11765,17 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
         <p style="margin:6px 0 0;font-size:13px;color:#cbd5e1;">Buyer ${escapeChatHtml(buyerName)} (${escapeChatHtml(buyerCountry)}) is awaiting your reply</p>
       </div>
       <div style="padding:24px;">
-        <p style="margin:0 0 14px;font-size:14px;color:#334155;">Hello <strong>${escapeChatHtml(supplierName)}</strong> (${escapeChatHtml(supplierCompany)}), you have an unread buyer inquiry on Trade Heaven:</p>
-        <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;">
+        <p style="margin:0 0 14px;font-size:14px;color:#334155;">Hello <strong>${escapeChatHtml(supplierName)}</strong> (${escapeChatHtml(supplierCompany)}), you have an unread buyer inquiry on Trade Heaven. Sign in to access secure inquiry details:</p>
+        <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:18px;">
           <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Buyer Message:</p>
           <p style="margin:0;font-size:13px;color:#0f172a;">${escapeChatHtml(messageText || '[Buyer Attachment / Message]')}</p>
         </div>
-        <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Reply to Buyer Now &rarr;</a>
+        <p style="margin:0 0 14px;font-size:12px;color:#64748b;">Sign in to access secure inquiry details and respond directly to this buyer.</p>
+        <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Login to Reply &amp; View Contact Details &rarr;</a>
       </div>
     </div>
   </body></html>`;
-  const text = `Urgent Deal Update from ${buyerName} (${buyerCountry}) on Trade Heaven:\n\n${messageText}\n\nReply now: ${replyLink}`;
+  const text = `Urgent Deal Update from ${buyerName} (${buyerCountry}) on Trade Heaven:\n\nSign in to access secure inquiry details.\n\n${messageText}\n\nLogin to Reply & View Contact Details: ${replyLink}`;
 
   const supplierResult = await dispatchVerifiedChatAlertEmail({
     toEmail: supplierEmail,

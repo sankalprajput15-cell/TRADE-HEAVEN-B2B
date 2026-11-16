@@ -179,11 +179,11 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
           country: String(u.country || 'Global'),
           role: String(u.role || 'SUPPLIER').toUpperCase()
         }));
-      // Prioritize SUPPLIER accounts at the top
+      // Prioritize SUPPLIER accounts at the top sorted cleanly by supplier name
       mapped.sort((a, b) => {
         if (a.role === 'SUPPLIER' && b.role !== 'SUPPLIER') return -1;
         if (a.role !== 'SUPPLIER' && b.role === 'SUPPLIER') return 1;
-        return a.companyName.localeCompare(b.companyName);
+        return a.name.localeCompare(b.name);
       });
       setSuppliers(mapped);
       if (mapped.length > 0) {
@@ -896,7 +896,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
               <option value="">-- Select Registered Supplier --</option>
               {suppliers.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.companyName} ({s.name} • {s.country} • {s.role})
+                  {s.name} — {s.companyName} ({s.country} • {s.role})
                 </option>
               ))}
             </select>

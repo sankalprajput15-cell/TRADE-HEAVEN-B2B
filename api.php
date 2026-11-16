@@ -1364,24 +1364,29 @@ switch ($action) {
                 }
             } catch (Exception $e) {}
         }
-        if (empty($users_list)) {
-            $seedUsers = getBuiltInSeedAuthUsers();
-            foreach ($seedUsers as $u) {
-                $users_list[] = [
-                    'id' => $u['id'],
-                    'name' => $u['name'],
-                    'email' => $u['email'],
-                    'role' => $u['role'],
-                    'companyName' => $u['companyName'] ?? '',
-                    'country' => $u['country'] ?? 'United States',
-                    'status' => $u['status'] ?? 'ACTIVE',
-                    'isVerified' => true,
-                    'isPremium' => !empty($u['isPremium']),
-                    'membershipStatus' => $u['membershipStatus'] ?? 'paid',
-                    'tier' => $u['tier'] ?? 'VIP',
-                    'avatarUrl' => $u['avatarUrl'] ?? ''
-                ];
-            }
+        $existing_emails = [];
+        foreach ($users_list as $existing_u) {
+            $em = strtolower(trim((string)($existing_u['email'] ?? '')));
+            if ($em !== '') $existing_emails[$em] = true;
+        }
+        $seedUsers = getBuiltInSeedAuthUsers();
+        foreach ($seedUsers as $u) {
+            $em = strtolower(trim((string)($u['email'] ?? '')));
+            if ($em !== '' && isset($existing_emails[$em])) continue;
+            $users_list[] = [
+                'id' => $u['id'],
+                'name' => $u['name'],
+                'email' => $u['email'],
+                'role' => $u['role'],
+                'companyName' => $u['companyName'] ?? '',
+                'country' => $u['country'] ?? 'United States',
+                'status' => $u['status'] ?? 'ACTIVE',
+                'isVerified' => true,
+                'isPremium' => !empty($u['isPremium']),
+                'membershipStatus' => $u['membershipStatus'] ?? 'paid',
+                'tier' => $u['tier'] ?? 'VIP',
+                'avatarUrl' => $u['avatarUrl'] ?? ''
+            ];
         }
         echo json_encode([
             "status" => "success",
@@ -3842,12 +3847,38 @@ switch ($action) {
                     $raw_country = (string)($r['i_country'] ?? 'United States');
                     $raw_city = (string)($r['i_city'] ?? '');
 
-                    $masked_phone = strlen(preg_replace('/\D+/', '', $raw_phone)) >= 4
-                        ? substr($raw_phone, 0, 2) . ' •••-•••-' . substr(preg_replace('/\D+/', '', $raw_phone), -4) . ' [Protected by Trade Heaven]'
-                        : '+•• •••-•••-•••• [Protected by Trade Heaven]';
-                    $email_parts = explode('@', $raw_email);
-                    $masked_email = (strlen($email_parts[0] ?? '') > 0 ? substr($email_parts[0], 0, 1) : 'b') . '••••@••••.' . (strpos($email_parts[1] ?? '', '.') !== false ? substr(strrchr($email_parts[1], '.'), 1) : 'com');
-                    $masked_company = 'Verified Importer • ' . $raw_country . ' [Protected by Trade Heaven]';
+                    $clean_phone_digits = preg_replace('/\D+/', '', $raw_phone);
+                    if (preg_match('/^\+(\d{1,3})[\s\-().]+(\d{2,4})/', trim($raw_phone), $pm)) {
+                        $masked_phone = '+' . $pm[1] . ' (' . $pm[2] . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) === 11 && strpos($clean_phone_digits, '1') === 0) {
+                        $masked_phone = '+1 (' . substr($clean_phone_digits, 1, 3) . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) > 10) {
+                        $cc_len = strlen($clean_phone_digits) - 10;
+                        $masked_phone = '+' . substr($clean_phone_digits, 0, $cc_len) . ' (' . substr($clean_phone_digits, $cc_len, 3) . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) === 10) {
+                        $masked_phone = '+1 (' . substr($clean_phone_digits, 0, 3) . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) >= 4) {
+                        $masked_phone = '+' . substr($clean_phone_digits, 0, 2) . ' (•••) •••-••••';
+                    } else {
+                        $masked_phone = '+1 (•••) •••-••••';
+                    }
+
+                    $email_parts = explode('@', trim($raw_email));
+                    $ep_local = (string)($email_parts[0] ?? '');
+                    $ep_domain = (string)($email_parts[1] ?? 'company.com');
+                    $ep_tld = strpos($ep_domain, '.') !== false ? preg_replace('/[^a-zA-Z0-9]/', '', substr(strrchr($ep_domain, '.'), 1)) : 'com';
+                    if ($ep_tld === '') $ep_tld = 'com';
+                    $ep_seg = preg_replace('/[^a-zA-Z0-9]/', '', explode('_', str_replace(['.', '-'], '_', $ep_local))[0] ?? '');
+                    $ep_alpha = preg_replace('/[^a-zA-Z0-9]/', '', $ep_local);
+                    if (strlen($ep_seg) >= 2) {
+                        $ep_vis = substr($ep_seg, 0, 6);
+                    } elseif (strlen($ep_alpha) >= 4) {
+                        $ep_vis = substr($ep_alpha, 0, 4);
+                    } else {
+                        $ep_vis = strlen($ep_alpha) > 0 ? substr($ep_alpha, 0, 1) : 'b';
+                    }
+                    $masked_email = $ep_vis . '••••@••••.' . $ep_tld;
+                    $masked_company = 'Verified Importer • ' . $raw_country;
 
                     // Count unread messages & last message read status
                     $unread_admin = 0;
@@ -3901,7 +3932,7 @@ switch ($action) {
                             'phone' => ($is_supplier_view && !$show_phone) ? $masked_phone : $raw_phone,
                             'email' => ($is_supplier_view && !$show_email) ? $masked_email : $raw_email,
                             'companyName' => ($is_supplier_view && !$show_company) ? $masked_company : $raw_company,
-                            'address' => ($is_supplier_view && !$show_company) ? ($raw_city ? "{$raw_city}, {$raw_country} [Exact Address Hidden]" : "{$raw_country} [Exact Address Hidden]") : $raw_address,
+                            'address' => ($is_supplier_view && !$show_company) ? ($raw_city ? "{$raw_city}, {$raw_country}" : "{$raw_country}") : $raw_address,
                             'phoneHidden' => !$show_phone,
                             'emailHidden' => !$show_email,
                             'companyHidden' => !$show_company
@@ -4195,17 +4226,43 @@ switch ($action) {
                     $raw_company = (string)($meta['i_company_name'] ?? '');
                     $raw_address = (string)($meta['i_address'] ?? '');
 
-                    $masked_phone = strlen(preg_replace('/\D+/', '', $raw_phone)) >= 4
-                        ? substr($raw_phone, 0, 2) . ' •••-•••-' . substr(preg_replace('/\D+/', '', $raw_phone), -4) . ' [Protected by Trade Heaven]'
-                        : '+•• •••-•••-•••• [Protected by Trade Heaven]';
-                    $ep = explode('@', $raw_email);
-                    $masked_email = (strlen($ep[0] ?? '') > 0 ? substr($ep[0], 0, 1) : 'b') . '••••@••••.' . (strpos($ep[1] ?? '', '.') !== false ? substr(strrchr($ep[1], '.'), 1) : 'com');
-                    $masked_company = 'Verified Importer • ' . $buyer_country . ' [Protected by Trade Heaven]';
+                    $clean_phone_digits = preg_replace('/\D+/', '', $raw_phone);
+                    if (preg_match('/^\+(\d{1,3})[\s\-().]+(\d{2,4})/', trim($raw_phone), $pm)) {
+                        $masked_phone = '+' . $pm[1] . ' (' . $pm[2] . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) === 11 && strpos($clean_phone_digits, '1') === 0) {
+                        $masked_phone = '+1 (' . substr($clean_phone_digits, 1, 3) . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) > 10) {
+                        $cc_len = strlen($clean_phone_digits) - 10;
+                        $masked_phone = '+' . substr($clean_phone_digits, 0, $cc_len) . ' (' . substr($clean_phone_digits, $cc_len, 3) . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) === 10) {
+                        $masked_phone = '+1 (' . substr($clean_phone_digits, 0, 3) . ') •••-••••';
+                    } elseif (strlen($clean_phone_digits) >= 4) {
+                        $masked_phone = '+' . substr($clean_phone_digits, 0, 2) . ' (•••) •••-••••';
+                    } else {
+                        $masked_phone = '+1 (•••) •••-••••';
+                    }
+
+                    $ep = explode('@', trim($raw_email));
+                    $ep_local = (string)($ep[0] ?? '');
+                    $ep_domain = (string)($ep[1] ?? 'company.com');
+                    $ep_tld = strpos($ep_domain, '.') !== false ? preg_replace('/[^a-zA-Z0-9]/', '', substr(strrchr($ep_domain, '.'), 1)) : 'com';
+                    if ($ep_tld === '') $ep_tld = 'com';
+                    $ep_seg = preg_replace('/[^a-zA-Z0-9]/', '', explode('_', str_replace(['.', '-'], '_', $ep_local))[0] ?? '');
+                    $ep_alpha = preg_replace('/[^a-zA-Z0-9]/', '', $ep_local);
+                    if (strlen($ep_seg) >= 2) {
+                        $ep_vis = substr($ep_seg, 0, 6);
+                    } elseif (strlen($ep_alpha) >= 4) {
+                        $ep_vis = substr($ep_alpha, 0, 4);
+                    } else {
+                        $ep_vis = strlen($ep_alpha) > 0 ? substr($ep_alpha, 0, 1) : 'b';
+                    }
+                    $masked_email = $ep_vis . '••••@••••.' . $ep_tld;
+                    $masked_company = 'Verified Importer • ' . $buyer_country;
 
                     $safe_phone = $show_phone ? $raw_phone : $masked_phone;
                     $safe_email = $show_email ? $raw_email : $masked_email;
                     $safe_company = $show_company ? $raw_company : $masked_company;
-                    $safe_address = $show_company ? $raw_address : ($buyer_city ? "{$buyer_city}, {$buyer_country} [Protected]" : "{$buyer_country} [Protected]");
+                    $safe_address = $show_company ? $raw_address : ($buyer_city ? "{$buyer_city}, {$buyer_country}" : "{$buyer_country}");
 
                     $snippets = '';
                     foreach (array_slice($msgs, -3) as $um) {
@@ -4237,7 +4294,7 @@ switch ($action) {
                                   <p style=\"margin:6px 0 0;font-size:13px;color:#cbd5e1;\">You have " . count($msgs) . " unread message(s) from {$buyer_name} ({$buyer_country})</p>
                                 </div>
                                 <div style=\"padding:24px;\">
-                                  <p style=\"margin:0 0 14px;font-size:14px;color:#334155;\"><strong>Action Required:</strong> An international buyer sent an inquiry over 1 minute ago and is awaiting your response on Trade Heaven.</p>
+                                  <p style=\"margin:0 0 14px;font-size:14px;color:#334155;\"><strong>Action Required:</strong> An international buyer sent an inquiry over 1 minute ago and is awaiting your response on Trade Heaven. Sign in to access secure inquiry details.</p>
                                   <table style=\"width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;\">
                                     <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;width:140px;\">Buyer Name:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($buyer_name) . "</td></tr>
                                     <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Company:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($safe_company) . "</td></tr>
@@ -4246,11 +4303,12 @@ switch ($action) {
                                     <tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Email:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($safe_email) . "</td></tr>
                                     " . ($buyer_interest !== '' ? "<tr><td style=\"padding:8px 12px;font-weight:bold;color:#475569;\">Product Interest:</td><td style=\"padding:8px 12px;color:#0f172a;\">" . htmlspecialchars($buyer_interest) . "</td></tr>" : "") . "
                                   </table>
-                                  <div style=\"background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:20px;\">
+                                  <div style=\"background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:18px;\">
                                     <p style=\"margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;\">Unread Message Preview:</p>
                                     <ul style=\"margin:0;padding-left:18px;font-size:13px;\">{$snippets}</ul>
                                   </div>
-                                  <a href=\"{$reply_link}\" style=\"display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;\">Reply to Buyer Now &rarr;</a>
+                                  <p style=\"margin:0 0 14px;font-size:12px;color:#64748b;\">Sign in to access secure inquiry details and respond directly inside your portal inbox.</p>
+                                  <a href=\"{$reply_link}\" style=\"display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;\">Login to Reply &amp; View Contact Details &rarr;</a>
                                 </div>
                               </div>
                             </body></html>";

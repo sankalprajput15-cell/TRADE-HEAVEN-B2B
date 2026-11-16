@@ -1217,13 +1217,20 @@ const MainApp: React.FC = () => {
         setActiveView('BUY_LEADS');
       }
     };
+    const handleOpenAuthEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ mode?: 'LOGIN' | 'REGISTER' }>;
+      setAuthModalMode(customEvent?.detail?.mode === 'REGISTER' ? 'REGISTER' : 'LOGIN');
+      setIsAuthModalOpen(true);
+    };
     window.addEventListener('tradeheaven_open_register', handleRegisterEvent);
     window.addEventListener('tradeheaven_open_login', handleLoginEvent);
+    window.addEventListener('tradeheaven_open_auth', handleOpenAuthEvent);
     window.addEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
     window.addEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
     return () => {
       window.removeEventListener('tradeheaven_open_register', handleRegisterEvent);
       window.removeEventListener('tradeheaven_open_login', handleLoginEvent);
+      window.removeEventListener('tradeheaven_open_auth', handleOpenAuthEvent);
       window.removeEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
       window.removeEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
     };
