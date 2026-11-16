@@ -19,6 +19,7 @@ import { productImageManagerService } from './services/productImageManagerServic
 import { MOCK_PRODUCTS, MOCK_RFQS, CATEGORIES_TREE, MOCK_COMPANIES, MOCK_BUYER_PROFILES } from './data/mockData';
 import { ALL_COUNTRY_ITEMS } from './data/countriesData';
 import { installGlobalAutoLayoutContainment, runAutoLayoutContainmentPass } from './utils/autoLayoutContainment';
+import { resolveUserStorefrontId } from './utils/storefrontUtils';
 
 // Common Components
 import { Header } from './components/marketplace/Header';
@@ -2009,14 +2010,37 @@ const MainApp: React.FC = () => {
     setActiveView('RFQ_HUB');
   };
 
-  const handleProductCreated = async (newProd: Partial<Product>) => {
+  const handleProductCreated = async (
+    newProd: Partial<Product>,
+    opts?: { stayInDashboard?: boolean; alreadySaved?: boolean }
+  ) => {
     const fullProd = {
       ...newProd,
       id: newProd.id || `prod-${Date.now()}`
     } as Product;
-    await api.createProduct(fullProd);
+    if (!opts?.alreadySaved) {
+      await api.createProduct(fullProd);
+    }
     setProducts(prev => [fullProd, ...prev.filter(p => p.id !== fullProd.id)]);
-    setActiveView('PRODUCT_DIRECTORY');
+    if (!opts?.stayInDashboard) {
+      setActiveView('PRODUCT_DIRECTORY');
+    }
+  };
+
+  const handleProductUpdated = (updatedProd: Product) => {
+    setProducts(prev => {
+      const exists = prev.some(p => p.id === updatedProd.id);
+      if (exists) {
+        return prev.map(p => (p.id === updatedProd.id ? updatedProd : p));
+      }
+      return [updatedProd, ...prev];
+    });
+    setSelectedProduct(prev => (prev && prev.id === updatedProd.id ? updatedProd : prev));
+  };
+
+  const handleProductDeleted = (productId: string) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setSelectedProduct(prev => (prev && prev.id === productId ? null : prev));
   };
 
   const handleInitiateEscrow = (thread: NegotiationThread) => {
@@ -2247,7 +2271,15 @@ const MainApp: React.FC = () => {
       }
       // Handle other generic options
       Object.entries(options).forEach(([key, val]) => {
-        if (key !== 'search' && key !== 'category' && key !== 'subcategory' && key !== 'productId' && key !== 'tab') {
+        if (
+          key !== 'search' &&
+          key !== 'category' &&
+          key !== 'subcategory' &&
+          key !== 'productId' &&
+          key !== 'tab' &&
+          key !== 'openAddProduct' &&
+          key !== 'subSection'
+        ) {
           url.searchParams.set(key, String(val));
         }
       });
@@ -2258,6 +2290,32 @@ const MainApp: React.FC = () => {
             detail: { tab: options.tab }
           })
         );
+      }
+      if (
+        (target === 'DASHBOARD' || target === 'SUPPLIER_DASHBOARD' || target === 'MY_DASHBOARD') &&
+        (options.tab || options.openAddProduct || options.subSection)
+      ) {
+        try {
+          sessionStorage.setItem(
+            'th_pending_dashboard_intent',
+            JSON.stringify({
+              tab: options.tab,
+              openAddProduct: Boolean(options.openAddProduct),
+              subSection: options.subSection
+            })
+          );
+        } catch {}
+        window.setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent('tradeheaven_open_dashboard_tab', {
+              detail: {
+                tab: options.tab,
+                openAddProduct: Boolean(options.openAddProduct),
+                subSection: options.subSection
+              }
+            })
+          );
+        }, 40);
       }
     }
 
@@ -2789,6 +2847,11 @@ const MainApp: React.FC = () => {
                     <VerifiedSupplierDedicatedDashboard
                       currentUser={currentUser}
                       selectedCurrency={selectedCurrency}
+                      products={products}
+                      rfqs={rfqs}
+                      onProductCreated={handleProductCreated}
+                      onProductUpdated={handleProductUpdated}
+                      onProductDeleted={handleProductDeleted}
                       onOpenStorefront={handleOpenStorefront}
                       onNavigate={handleNavigate}
                       onOpenCreateRfq={handleOpenCreateRfq}
@@ -2800,7 +2863,11 @@ const MainApp: React.FC = () => {
                     currentUser={currentUser}
                     currentUserRole={currentUser?.role || 'BUYER'}
                     selectedCurrency={selectedCurrency}
+                    products={products}
                     rfqs={rfqs}
+                    onProductCreated={handleProductCreated}
+                    onProductUpdated={handleProductUpdated}
+                    onProductDeleted={handleProductDeleted}
                     onOpenCreateRfq={handleOpenCreateRfq}
                     onOpenStorefront={handleOpenStorefront}
                     onNavigate={handleNavigate}
@@ -2831,6 +2898,7 @@ const MainApp: React.FC = () => {
                 return (
                   <PostSellOfferView
                     selectedCurrency={selectedCurrency}
+                    currentUser={currentUser}
                     onProductCreated={handleProductCreated}
                     onNavigate={handleNavigate}
                   />
@@ -2947,16 +3015,7 @@ const MainApp: React.FC = () => {
                 );
 
               case 'VENDOR_PROFILE': {
-                const resolvedVendorCompanyId = storefrontCompanyId || (
-                  currentUser?.email?.toLowerCase().includes('mpcommoditybroker')
-                    ? 'comp-melissa-mpcommodity'
-                    : (currentUser?.role === 'SUPPLIER'
-                        ? (MOCK_COMPANIES.find(c =>
-                            (c.contactEmail && currentUser.email && c.contactEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
-                            (c.companyName && currentUser.companyName && c.companyName.toLowerCase() === currentUser.companyName.toLowerCase())
-                          )?.id || 'comp-melissa-mpcommodity')
-                        : 'comp-melissa-mpcommodity')
-                );
+                const resolvedVendorCompanyId = storefrontCompanyId || resolveUserStorefrontId(currentUser);
                 return (
                   <VendorProfilePage
                     companyId={resolvedVendorCompanyId}

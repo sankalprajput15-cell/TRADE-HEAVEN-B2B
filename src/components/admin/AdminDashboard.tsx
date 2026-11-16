@@ -38,6 +38,7 @@ import {
   PlatformAuthEventItem
 } from './ActiveUsersPanel';
 import { AdminBuyerChatDeskModule } from './AdminBuyerChatDeskModule';
+import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
 import { useNotifications } from '../../context/NotificationContext';
 import { 
   Layout, 
@@ -1075,6 +1076,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* VIEW CONDITIONAL RENDERING */}
         {activeTab === 'ADMIN_MENU_OVERVIEW' && (
           <div className="space-y-6" data-testid="admin-menu-overview">
+            <CatalogImageAuditorWidget
+              onAuditCompleted={(res) => {
+                triggerToast(
+                  'success',
+                  `Catalog Image Audit Complete: Cleaned ${res.duplicates_detected} duplicate(s) & fixed ${res.mismatched_detected || 0} mismatched/placeholder photo(s)!`
+                );
+              }}
+            />
+
             {/* ADMIN MENU GRID RIGHT IN MAIN VIEWPORT */}
             <section
               aria-labelledby="admin-viewport-menu-heading"

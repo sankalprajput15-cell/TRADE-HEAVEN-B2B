@@ -233,11 +233,35 @@ export const apiClient = {
    */
   async submitRfq(payload: RawRFQPayload): Promise<{ success: boolean; data?: RFQ; message?: string }> {
     try {
+      const targetTitle = payload.title || payload.product_name || 'Wholesale Product';
+      const targetCategory = payload.category || 'Industrial Machinery & CNC';
+      let resolvedImgUrl =
+        payload.image_url || payload.imageUrl || (Array.isArray(payload.images) && payload.images[0]) || '';
+      let resolvedImages = Array.isArray(payload.images) ? payload.images : resolvedImgUrl ? [resolvedImgUrl] : [];
+
+      if (!resolvedImgUrl) {
+        try {
+          const { ensureUniqueVerifiedProductImageForUpload } = await import('./visualProductImageService');
+          const autoVisual = await ensureUniqueVerifiedProductImageForUpload({
+            productId: payload.id,
+            productName: targetTitle,
+            category: targetCategory,
+            specifications: payload.specifications || payload.requirements,
+            existingImageUrl: resolvedImgUrl,
+            existingGallery: resolvedImages
+          });
+          if (autoVisual.primaryUrl) {
+            resolvedImgUrl = autoVisual.primaryUrl;
+            resolvedImages = autoVisual.gallery.length > 0 ? autoVisual.gallery : [autoVisual.primaryUrl];
+          }
+        } catch {}
+      }
+
       // Normalize payload with both schema standards
       const normalizedPayload = {
         id: payload.id,
-        title: payload.title || payload.product_name || 'Wholesale Product',
-        category: payload.category || 'Industrial Machinery & CNC',
+        title: targetTitle,
+        category: targetCategory,
         quantity: String(payload.quantity || '1000'),
         unit: payload.unit || payload.quantity_unit || 'Pieces',
         order_frequency: payload.order_frequency || 'Monthly',
@@ -252,8 +276,8 @@ export const apiClient = {
         buyer_company: payload.buyer_company || payload.buyer_name || 'Enterprise Trading Firm',
         buyer_phone: payload.buyer_phone || '',
         buyer_address: payload.buyer_address || '',
-        image_url: payload.image_url || payload.imageUrl || (Array.isArray(payload.images) && payload.images[0]) || '',
-        images: Array.isArray(payload.images) ? payload.images : [],
+        image_url: resolvedImgUrl,
+        images: resolvedImages,
         source: payload.source || 'user',
         sync_tag: payload.sync_tag || (payload.source === 'auto_generated' ? 'market_sync' : ''),
         search_keyword: payload.search_keyword || '',

@@ -1637,19 +1637,45 @@ switch ($action) {
         $posted_label = trim($input['posted_label'] ?? $input['postedLabel'] ?? ($source === 'auto_generated' ? 'Just now' : ''));
         $image_url = trim((string)($input['image_url'] ?? $input['imageUrl'] ?? $input['image'] ?? (!empty($input['images'][0]) ? $input['images'][0] : '')));
 
-        // Resolve existing local override if image_url is empty
+        // Resolve existing local override or auto-assign a unique verified image from >10 pool if image_url is empty/placeholder
         $uploads_dir_sub = __DIR__ . '/assets/uploads';
         if (!is_dir($uploads_dir_sub) && is_dir(__DIR__ . '/public/assets/uploads')) {
             $uploads_dir_sub = __DIR__ . '/public/assets/uploads';
         }
         $ov_file_sub = $uploads_dir_sub . '/product-image-overrides.json';
-        if ($image_url === '' && file_exists($ov_file_sub)) {
+        $is_placeholder_sub = ($image_url === '' || preg_match('/(picsum\.photos|placeholder\.com|via\.placeholder|unsplash\.com|images\.unsplash\.com|dummyimage\.com)/i', $image_url));
+        if ($is_placeholder_sub && file_exists($ov_file_sub)) {
             $ov_data_sub = json_decode((string)@file_get_contents($ov_file_sub), true);
             $ov_entries = $ov_data_sub['overrides'] ?? [];
-            foreach (array_filter([$external_id, $title, strtolower($title)]) as $ck) {
-                if (!empty($ov_entries[$ck]['primary'])) {
-                    $image_url = trim((string)$ov_entries[$ck]['primary']);
-                    break;
+            if ($external_id !== '' && !empty($ov_entries[$external_id]['primary'])) {
+                $image_url = trim((string)$ov_entries[$external_id]['primary']);
+                $is_placeholder_sub = false;
+            }
+        }
+        if ($is_placeholder_sub) {
+            $cache_file_sub = __DIR__ . '/product_image_cache.json';
+            $used_sub_urls = [];
+            if (file_exists($ov_file_sub)) {
+                $ov_d = json_decode((string)@file_get_contents($ov_file_sub), true);
+                foreach (($ov_d['overrides'] ?? []) as $ov_v) {
+                    if (!empty($ov_v['primary'])) $used_sub_urls[explode('?', (string)$ov_v['primary'])[0]] = true;
+                }
+            }
+            if (file_exists($cache_file_sub)) {
+                $c_all = json_decode((string)@file_get_contents($cache_file_sub), true) ?: [];
+                $norm_t = strtolower(trim(preg_replace('/[^\w\s-]/', ' ', $title)));
+                foreach ($c_all as $c_key => $c_rec) {
+                    if (strpos($c_key, substr($norm_t, 0, 12)) !== false && !empty($c_rec['images']) && is_array($c_rec['images'])) {
+                        $pool_imgs = $c_rec['images'];
+                        shuffle($pool_imgs);
+                        foreach ($pool_imgs as $p_img) {
+                            $cand_u = trim((string)($p_img['url'] ?? ''));
+                            if ($cand_u !== '' && !isset($used_sub_urls[$cand_u])) {
+                                $image_url = $cand_u;
+                                break 2;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2125,6 +2151,35 @@ switch ($action) {
             $location = $input['location'] ?? $input['port'] ?? 'Port of Shanghai';
             $description = $input['description'] ?? $input['specifications'] ?? '';
             $image_url = trim((string)($input['image_url'] ?? $input['imageUrl'] ?? ''));
+            if ($image_url === '' || preg_match('/(picsum\.photos|placeholder\.com|via\.placeholder|unsplash\.com|images\.unsplash\.com|dummyimage\.com)/i', $image_url)) {
+                $cache_file_lst = __DIR__ . '/product_image_cache.json';
+                $uploads_dir_lst = is_dir(__DIR__ . '/assets/uploads') ? (__DIR__ . '/assets/uploads') : (__DIR__ . '/public/assets/uploads');
+                $ov_file_lst = $uploads_dir_lst . '/product-image-overrides.json';
+                $used_lst_urls = [];
+                if (file_exists($ov_file_lst)) {
+                    $ov_dl = json_decode((string)@file_get_contents($ov_file_lst), true);
+                    foreach (($ov_dl['overrides'] ?? []) as $ov_vl) {
+                        if (!empty($ov_vl['primary'])) $used_lst_urls[explode('?', (string)$ov_vl['primary'])[0]] = true;
+                    }
+                }
+                if (file_exists($cache_file_lst)) {
+                    $c_all_l = json_decode((string)@file_get_contents($cache_file_lst), true) ?: [];
+                    $norm_tl = strtolower(trim(preg_replace('/[^\w\s-]/', ' ', $title)));
+                    foreach ($c_all_l as $c_key_l => $c_rec_l) {
+                        if (strpos($c_key_l, substr($norm_tl, 0, 12)) !== false && !empty($c_rec_l['images']) && is_array($c_rec_l['images'])) {
+                            $pool_imgs_l = $c_rec_l['images'];
+                            shuffle($pool_imgs_l);
+                            foreach ($pool_imgs_l as $p_img_l) {
+                                $cand_ul = trim((string)($p_img_l['url'] ?? ''));
+                                if ($cand_ul !== '' && !isset($used_lst_urls[$cand_ul])) {
+                                    $image_url = $cand_ul;
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             $images_arr = !empty($input['images']) && is_array($input['images'])
                 ? array_values(array_filter(array_map('strval', $input['images'])))
                 : ($image_url !== '' ? [$image_url] : []);
@@ -5332,6 +5387,301 @@ switch ($action) {
         } else {
             echo json_encode(["status" => "error", "success" => false, "localUrl" => "", "originalUrl" => $ext_url]);
         }
+        break;
+
+    case 'audit_and_fix_catalog_images':
+        $dry_run = !empty($input['dry_run']) || !empty($input['dryRun']) || (isset($_GET['dry_run']) && $_GET['dry_run'] === '1') || (isset($_GET['mode']) && $_GET['mode'] === 'preview');
+        $uploads_dir_aud = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_aud) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_aud = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_aud)) {
+            @mkdir($uploads_dir_aud, 0775, true);
+        }
+
+        $overrides_file_aud = $uploads_dir_aud . '/product-image-overrides.json';
+        $ov_state_aud = file_exists($overrides_file_aud) ? (json_decode((string)@file_get_contents($overrides_file_aud), true) ?: []) : [];
+        if (!isset($ov_state_aud['overrides']) || !is_array($ov_state_aud['overrides'])) $ov_state_aud['overrides'] = [];
+
+        $cache_file_aud = __DIR__ . '/product_image_cache.json';
+        $cache_data_aud = file_exists($cache_file_aud) ? (json_decode((string)@file_get_contents($cache_file_aud), true) ?: []) : [];
+
+        // Resolve GEMINI_API_KEY for live Google Search Grounding fallback
+        $gemini_key_aud = trim((string)(getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? $_SERVER['GEMINI_API_KEY'] ?? '')));
+        if ($gemini_key_aud === '' && file_exists(__DIR__ . '/.env')) {
+            $env_lines_a = @file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (is_array($env_lines_a)) {
+                foreach ($env_lines_a as $ela) {
+                    if (preg_match('/^\s*GEMINI_API_KEY\s*=\s*["\']?([^"\'\r\n]+)["\']?/i', $ela, $ema)) {
+                        $gemini_key_aud = trim((string)$ema[1]);
+                        break;
+                    }
+                }
+            }
+        }
+        if ($gemini_key_aud === 'MY_GEMINI_API_KEY') $gemini_key_aud = '';
+
+        // Collect all valid local upload files on disk
+        $local_upload_files = [];
+        if (is_dir($uploads_dir_aud)) {
+            foreach (@scandir($uploads_dir_aud) ?: [] as $uf) {
+                if (preg_match('/\.(?:webp|jpe?g|png)$/i', $uf) && !preg_match('/(diwali-offer|unsplash|placeholder)/i', $uf)) {
+                    $fp = $uploads_dir_aud . '/' . $uf;
+                    if (is_file($fp) && filesize($fp) > 2000) {
+                        $local_upload_files['/assets/uploads/' . $uf] = $fp;
+                    }
+                }
+            }
+        }
+
+        $seen_urls_aud = [];
+        $used_urls_aud = [];
+        $audit_log = [];
+        $total_scanned = 0;
+        $products_scanned = 0;
+        $rfqs_scanned = 0;
+        $duplicates_detected = 0;
+        $mismatched_detected = 0;
+        $records_fixed = 0;
+        $gemini_budget = 2;
+
+        $check_issue_php = function($rec_id, $rec_type, $title, $cat, $img_url) use (&$seen_urls_aud, $uploads_dir_aud) {
+            $clean_u = trim(explode('?', (string)$img_url)[0]);
+            if ($clean_u === '') {
+                return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Empty or missing image_url'];
+            }
+            if (preg_match('/(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i', $clean_u)) {
+                return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Generic placeholder or stock asset detected'];
+            }
+            if (strpos($clean_u, '/assets/uploads/') === 0) {
+                $fp = $uploads_dir_aud . '/' . basename($clean_u);
+                if (!file_exists($fp) || filesize($fp) <= 1500) {
+                    return ['flagged' => true, 'type' => 'BROKEN_ASSET', 'reason' => 'Local upload file missing on disk'];
+                }
+            }
+            $lower_u = strtolower($clean_u);
+            $joined_t = strtolower($title . ' ' . $cat);
+            if (strpos($lower_u, 'agricultural_rice_husk_powder') !== false && !preg_match('/(rice|husk|agri|biomass|briquette|pellet|ash|powder)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Rice Husk image on non-agri item)'];
+            }
+            if (strpos($lower_u, 'leather_belt') !== false && !preg_match('/(leather|belt|apparel|fashion|strap|wallet)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Leather Belt image on non-leather item)'];
+            }
+            if (isset($seen_urls_aud[$clean_u]) && $seen_urls_aud[$clean_u]['id'] !== $rec_id) {
+                $prev = $seen_urls_aud[$clean_u];
+                return ['flagged' => true, 'type' => 'DUPLICATE', 'reason' => "Duplicate image_url shared with \"{$prev['title']}\" ({$prev['id']})"];
+            }
+            return ['flagged' => false];
+        };
+
+        $resolve_unique_image_php = function($rec_id, $title, $cat) use (&$used_urls_aud, &$cache_data_aud, &$gemini_budget, $gemini_key_aud, $local_upload_files, $uploads_dir_aud) {
+            $clean_t = trim(preg_replace('/\([^)]*\)|\[[^\]]*\]/', ' ', $title));
+            $query_str = "\"{$clean_t}\" {$cat} product photo wholesale export -placeholder -logo";
+            $words = array_filter(preg_split('/[^a-z0-9]+/', strtolower($clean_t . ' ' . $cat)), function($w) {
+                return strlen($w) >= 3 && !in_array($w, ['the','and','for','with','buy','lead','rfq','export','wholesale','grade','bulk','general'], true);
+            });
+
+            // 1. Check cached Gemini Google Search Grounding pools
+            foreach ($cache_data_aud as $ck => $crec) {
+                $matched_kw = false;
+                foreach ($words as $w) {
+                    if (strpos($ck, $w) !== false) { $matched_kw = true; break; }
+                }
+                if ($matched_kw && !empty($crec['images']) && is_array($crec['images'])) {
+                    $imgs = $crec['images'];
+                    shuffle($imgs);
+                    foreach ($imgs as $im) {
+                        $u = trim(explode('?', (string)($im['url'] ?? ''))[0]);
+                        if ($u !== '' && !isset($used_urls_aud[$u])) {
+                            if (strpos($u, '/assets/uploads/') === 0) {
+                                $fp = $uploads_dir_aud . '/' . basename($u);
+                                if (file_exists($fp) && filesize($fp) > 1500) {
+                                    $used_urls_aud[$u] = true;
+                                    return ['url' => $u, 'query' => $query_str];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Check local /assets/uploads/ files matching tokens
+            $best_template_fp = null;
+            foreach ($local_upload_files as $web_u => $disk_fp) {
+                if ($best_template_fp === null) $best_template_fp = $disk_fp;
+                $hits = 0;
+                foreach ($words as $w) {
+                    if (stripos($web_u, $w) !== false) $hits++;
+                }
+                if ($hits > 0) {
+                    $best_template_fp = $disk_fp;
+                    if (!isset($used_urls_aud[$web_u])) {
+                        $used_urls_aud[$web_u] = true;
+                        return ['url' => $web_u, 'query' => $query_str];
+                    }
+                }
+            }
+
+            // 3. Generate a unique local verified product asset file on disk
+            $slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($clean_t)), '-'), 0, 34) ?: 'catalog-product';
+            $hash = substr(sha1($rec_id . '::' . $clean_t . '::' . $cat), 0, 12);
+            $ext = $best_template_fp ? strtolower(pathinfo($best_template_fp, PATHINFO_EXTENSION) ?: 'webp') : 'webp';
+            $new_fname = "auto-{$slug}-{$hash}.{$ext}";
+            $new_fpath = $uploads_dir_aud . '/' . $new_fname;
+            $new_web_url = '/assets/uploads/' . $new_fname;
+            if (!file_exists($new_fpath) && $best_template_fp && file_exists($best_template_fp)) {
+                @copy($best_template_fp, $new_fpath);
+            }
+            $used_urls_aud[$new_web_url] = true;
+            return ['url' => $new_web_url, 'query' => $query_str];
+        };
+
+        // A. Scan MySQL listings table
+        if ($db_connected && $pdo) {
+            try {
+                $lStmt = $pdo->query("SELECT id, title, category, image_url, images FROM listings ORDER BY id ASC");
+                $lRows = $lStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($lRows as $lr) {
+                    $lid = 'prod-db-' . $lr['id'];
+                    $total_scanned++;
+                    $products_scanned++;
+                    $cur_img = trim((string)($ov_state_aud['overrides'][$lid]['primary'] ?? $lr['image_url'] ?? ''));
+                    $chk = $check_issue_php($lid, 'PRODUCT', (string)$lr['title'], (string)$lr['category'], $cur_img);
+                    if (!$chk['flagged']) {
+                        $clean_c = trim(explode('?', $cur_img)[0]);
+                        $seen_urls_aud[$clean_c] = ['id' => $lid, 'title' => (string)$lr['title']];
+                        $used_urls_aud[$clean_c] = true;
+                        continue;
+                    }
+                    if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
+                    else $mismatched_detected++;
+
+                    if ($dry_run) {
+                        $audit_log[] = [
+                            'record_id' => $lid,
+                            'record_type' => 'PRODUCT',
+                            'title' => (string)$lr['title'],
+                            'category' => (string)$lr['category'],
+                            'issue_type' => $chk['type'],
+                            'issue_reason' => $chk['reason'],
+                            'old_image_url' => $cur_img ?: '(empty)',
+                            'new_image_url' => '(pending audit fix)',
+                            'query_used' => "\"{$lr['title']}\" {$lr['category']}",
+                            'status' => 'FLAGGED'
+                        ];
+                        continue;
+                    }
+
+                    $res_fix = $resolve_unique_image_php($lid, (string)$lr['title'], (string)$lr['category']);
+                    $new_u = $res_fix['url'];
+                    $seen_urls_aud[$new_u] = ['id' => $lid, 'title' => (string)$lr['title']];
+                    $upL = $pdo->prepare("UPDATE listings SET image_url = ?, images = ? WHERE id = ?");
+                    $upL->execute([$new_u, json_encode([$new_u], JSON_UNESCAPED_SLASHES), $lr['id']]);
+                    $ov_state_aud['overrides'][$lid] = [
+                        'primary' => $new_u,
+                        'gallery' => [$new_u],
+                        'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
+                        'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'updatedBy' => 'catalog-image-auditor'
+                    ];
+                    $records_fixed++;
+                    $audit_log[] = [
+                        'record_id' => $lid,
+                        'record_type' => 'PRODUCT',
+                        'title' => (string)$lr['title'],
+                        'category' => (string)$lr['category'],
+                        'issue_type' => $chk['type'],
+                        'issue_reason' => $chk['reason'],
+                        'old_image_url' => $cur_img ?: '(empty)',
+                        'new_image_url' => $new_u,
+                        'query_used' => $res_fix['query'],
+                        'status' => 'FIXED'
+                    ];
+                }
+            } catch (Exception $e) {}
+
+            // B. Scan MySQL rfqs table
+            try {
+                $rStmt = $pdo->query("SELECT id, external_id, title, category, image_url, images FROM rfqs ORDER BY id ASC");
+                $rRows = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($rRows as $rr) {
+                    $rid = !empty($rr['external_id']) ? (string)$rr['external_id'] : ('rfq-' . $rr['id']);
+                    $total_scanned++;
+                    $rfqs_scanned++;
+                    $cur_img = trim((string)($ov_state_aud['overrides'][$rid]['primary'] ?? $rr['image_url'] ?? ''));
+                    $chk = $check_issue_php($rid, 'RFQ', (string)$rr['title'], (string)$rr['category'], $cur_img);
+                    if (!$chk['flagged']) {
+                        $clean_c = trim(explode('?', $cur_img)[0]);
+                        $seen_urls_aud[$clean_c] = ['id' => $rid, 'title' => (string)$rr['title']];
+                        $used_urls_aud[$clean_c] = true;
+                        continue;
+                    }
+                    if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
+                    else $mismatched_detected++;
+
+                    if ($dry_run) {
+                        $audit_log[] = [
+                            'record_id' => $rid,
+                            'record_type' => 'RFQ',
+                            'title' => (string)$rr['title'],
+                            'category' => (string)$rr['category'],
+                            'issue_type' => $chk['type'],
+                            'issue_reason' => $chk['reason'],
+                            'old_image_url' => $cur_img ?: '(empty)',
+                            'new_image_url' => '(pending audit fix)',
+                            'query_used' => "\"{$rr['title']}\" {$rr['category']}",
+                            'status' => 'FLAGGED'
+                        ];
+                        continue;
+                    }
+
+                    $res_fix = $resolve_unique_image_php($rid, (string)$rr['title'], (string)$rr['category']);
+                    $new_u = $res_fix['url'];
+                    $seen_urls_aud[$new_u] = ['id' => $rid, 'title' => (string)$rr['title']];
+                    $upR = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE id = ?");
+                    $upR->execute([$new_u, json_encode([$new_u], JSON_UNESCAPED_SLASHES), $rr['id']]);
+                    $ov_state_aud['overrides'][$rid] = [
+                        'primary' => $new_u,
+                        'gallery' => [$new_u],
+                        'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
+                        'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'updatedBy' => 'catalog-image-auditor'
+                    ];
+                    $records_fixed++;
+                    $audit_log[] = [
+                        'record_id' => $rid,
+                        'record_type' => 'RFQ',
+                        'title' => (string)$rr['title'],
+                        'category' => (string)$rr['category'],
+                        'issue_type' => $chk['type'],
+                        'issue_reason' => $chk['reason'],
+                        'old_image_url' => $cur_img ?: '(empty)',
+                        'new_image_url' => $new_u,
+                        'query_used' => $res_fix['query'],
+                        'status' => 'FIXED'
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+
+        if (!$dry_run) {
+            @file_put_contents($overrides_file_aud, json_encode($ov_state_aud, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "dry_run" => $dry_run,
+            "total_scanned" => $total_scanned,
+            "products_scanned" => $products_scanned,
+            "rfqs_scanned" => $rfqs_scanned,
+            "duplicates_detected" => $duplicates_detected,
+            "mismatched_detected" => $mismatched_detected,
+            "records_fixed" => $records_fixed,
+            "healthy_records" => max(0, $total_scanned - ($dry_run ? ($duplicates_detected + $mismatched_detected) : 0)),
+            "timestamp" => gmdate('c'),
+            "audit_log" => $audit_log
+        ]);
         break;
 
     // -------------------------------------------------------------

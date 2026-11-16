@@ -698,6 +698,35 @@ export const bigrockApi = {
   },
 
   async submitRfq(payload: BigRockRfqPayload): Promise<{ success: boolean; status: string; message?: string; data?: any; id?: any }> {
+    const resolvedProductName = payload.product_name || payload.subject || payload.title || 'Wholesale Commodity';
+    const resolvedCategory = payload.category || 'Industrial Machinery & CNC';
+    let initialImgUrl =
+      payload.image_url ||
+      (Array.isArray(payload.images) && payload.images.length > 0 ? payload.images[0] : '') ||
+      '';
+    let initialGallery = Array.isArray(payload.images)
+      ? payload.images
+      : initialImgUrl
+      ? [initialImgUrl]
+      : [];
+
+    if (!initialImgUrl) {
+      try {
+        const { ensureUniqueVerifiedProductImageForUpload } = await import('./visualProductImageService');
+        const autoVisual = await ensureUniqueVerifiedProductImageForUpload({
+          productName: resolvedProductName,
+          category: resolvedCategory,
+          specifications: payload.requirements || payload.detailed_requirements || payload.message,
+          existingImageUrl: initialImgUrl,
+          existingGallery: initialGallery
+        });
+        if (autoVisual.primaryUrl) {
+          initialImgUrl = autoVisual.primaryUrl;
+          initialGallery = autoVisual.gallery.length > 0 ? autoVisual.gallery : [autoVisual.primaryUrl];
+        }
+      } catch {}
+    }
+
     const postBody = {
       title: payload.title || `Buy Lead RFQ: ${payload.product_name || payload.subject || 'Wholesale Commodity'}`,
       buyer_name: payload.buyer_name || payload.name || 'Procurement Officer',
@@ -706,8 +735,8 @@ export const bigrockApi = {
       buyer_company: payload.buyer_company || payload.name || 'Enterprise Buyer Ltd',
       buyer_country: payload.buyer_country || 'United States',
       buyer_address: payload.buyer_address || '',
-      product_name: payload.product_name || payload.subject || 'Wholesale Commodity',
-      category: payload.category || 'Industrial Machinery & CNC',
+      product_name: resolvedProductName,
+      category: resolvedCategory,
       quantity: Number(payload.quantity || payload.target_quantity) || 1000,
       quantity_unit: payload.quantity_unit || 'Pieces',
       order_frequency: payload.order_frequency || 'Monthly',
@@ -723,14 +752,8 @@ export const bigrockApi = {
       search_keyword: payload.search_keyword || '',
       market_insight: payload.market_insight || '',
       posted_label: payload.posted_label || '',
-      image_url:
-        payload.image_url ||
-        (Array.isArray(payload.images) && payload.images.length > 0 ? payload.images[0] : ''),
-      images: Array.isArray(payload.images)
-        ? payload.images
-        : payload.image_url
-        ? [payload.image_url]
-        : [],
+      image_url: initialImgUrl,
+      images: initialGallery,
       name: payload.name || payload.buyer_name || 'Procurement Officer',
       email: payload.email || payload.buyer_email || 'buyer@tradeheaven.net',
       phone: payload.phone || payload.buyer_phone || '',

@@ -1760,12 +1760,38 @@ export const api = {
 
   async createProduct(product: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
     try {
+      const targetId = product.id || `prod-custom-${Date.now()}`;
+      const targetTitle = product.title || 'New Marketplace Product';
+      const targetCategory = product.category || 'General Agriculture & Commodities';
+
+      // Collect existing override primary URLs to guarantee uniqueness across the catalog
+      const existingOverrides = productImageManagerService.getState().overrides || {};
+      const usedOverrideUrls = Object.values(existingOverrides)
+        .map(o => o?.primary)
+        .filter((u): u is string => Boolean(u));
+
+      const { ensureUniqueVerifiedProductImageForUpload } = await import('./visualProductImageService');
+      const resolvedVisual = await ensureUniqueVerifiedProductImageForUpload({
+        productId: targetId,
+        productName: targetTitle,
+        category: targetCategory,
+        specifications: product.description,
+        existingImageUrl: product.images?.[0],
+        existingGallery: product.images,
+        usedUrls: usedOverrideUrls
+      });
+
       const createdProd: Product = {
-        id: product.id || `prod-custom-${Date.now()}`,
-        title: product.title || 'New Marketplace Product',
-        category: product.category || 'General Agriculture & Commodities',
+        id: targetId,
+        title: targetTitle,
+        category: targetCategory,
         subCategory: product.subCategory || 'Raw Materials',
-        images: product.images && product.images.length > 0 ? product.images : [],
+        images:
+          resolvedVisual.gallery.length > 0
+            ? resolvedVisual.gallery
+            : product.images && product.images.length > 0
+            ? product.images
+            : [],
         moq: product.moq || 1,
         moqUnit: product.moqUnit || 'Kgs',
         priceTiers: product.priceTiers || [

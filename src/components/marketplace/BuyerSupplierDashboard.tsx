@@ -11,6 +11,8 @@ import { formatBalanceInNativeCurrency } from '../../utils/entityCurrency';
 import { generateCommercialInvoicePDF } from '../common/ExportToPDF';
 import { SafeImage } from '../common/SafeImage';
 import { SupplierMessagesInbox } from '../vendor/SupplierMessagesInbox';
+import { MyStorefrontStudioTab } from '../vendor/MyStorefrontStudioTab';
+import { resolveUserStorefrontId } from '../../utils/storefrontUtils';
 import { 
   LayoutDashboard, 
   Landmark,
@@ -47,7 +49,8 @@ import {
   BookmarkCheck,
   Trash2,
   Crown,
-  ArrowRight
+  ArrowRight,
+  Store
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 import { getSavedLeads, removeSavedLead, subscribeToSavedLeads } from '../../services/savedLeadsService';
@@ -59,13 +62,17 @@ interface Props {
   currentUser: AuthUser | null;
   currentUserRole: UserRole;
   selectedCurrency: Currency;
+  products?: Product[];
   rfqs?: RfqRequirement[];
+  onProductCreated?: (product: Product, opts?: { stayInDashboard?: boolean; alreadySaved?: boolean }) => void;
+  onProductUpdated?: (product: Product) => void;
+  onProductDeleted?: (productId: string) => void;
   onOpenCreateRfq: () => void;
   onOpenStorefront: (companyId: string) => void;
   onNavigate?: (view: ActiveView) => void;
   onSelectRfq?: (rfq: RfqRequirement) => void;
   onOpenUpgradeModal?: () => void;
-  initialTab?: 'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'MESSAGES' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
+  initialTab?: 'OVERVIEW' | 'MY_STOREFRONT' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'MESSAGES' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS';
 }
 
 const AVAILABLE_CATEGORIES = [
@@ -99,7 +106,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   currentUser,
   currentUserRole,
   selectedCurrency,
+  products = MOCK_PRODUCTS,
   rfqs = MOCK_RFQS,
+  onProductCreated,
+  onProductUpdated,
+  onProductDeleted,
   onOpenCreateRfq,
   onOpenStorefront,
   onNavigate,
@@ -107,9 +118,12 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   onOpenUpgradeModal,
   initialTab
 }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'MESSAGES' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
+  const userStorefrontId = useMemo(() => resolveUserStorefrontId(currentUser), [currentUser]);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MY_STOREFRONT' | 'TOPUP_WALLET' | 'BANK_ACCOUNTS' | 'TRANSACTION_LEDGER' | 'MEDIATION_WALLET' | 'RFQS' | 'SAVED_LEADS' | 'MESSAGES' | 'SETTINGS' | 'DOCUMENTS' | 'RECEIVE_FUNDS'>(
     initialTab || 'TRANSACTION_LEDGER'
   );
+  const [storefrontSection, setStorefrontSection] = useState<'PRODUCTS' | 'BRANDING' | 'CERTIFICATES'>('PRODUCTS');
+  const [openAddStorefrontProduct, setOpenAddStorefrontProduct] = useState(false);
 
   const [savedLeadList, setSavedLeadList] = useState<RfqRequirement[]>(() => 
     getSavedLeads(rfqs, currentUser?.email)
@@ -125,11 +139,43 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
   }, [rfqs, currentUser?.email]);
 
   useEffect(() => {
-    const handleDashboardTab = (e: Event) => {
-      const custom = e as CustomEvent<{ tab?: string }>;
-      if (custom?.detail?.tab) {
-        setActiveTab(custom.detail.tab as any);
+    const applyIntent = (detail?: { tab?: string; openAddProduct?: boolean; subSection?: string }) => {
+      if (!detail) return;
+      const requestedTab = String(detail.tab || '').toUpperCase();
+      if (
+        requestedTab === 'MY_STOREFRONT' ||
+        requestedTab === 'PRODUCTS' ||
+        requestedTab === 'BRANDING' ||
+        requestedTab === 'CERTIFICATES' ||
+        requestedTab === 'STOREFRONT_BRANDING'
+      ) {
+        setActiveTab('MY_STOREFRONT');
+        if (requestedTab === 'BRANDING' || detail.subSection === 'BRANDING') {
+          setStorefrontSection('BRANDING');
+        } else if (requestedTab === 'CERTIFICATES' || detail.subSection === 'CERTIFICATES') {
+          setStorefrontSection('CERTIFICATES');
+        } else {
+          setStorefrontSection('PRODUCTS');
+        }
+        if (detail.openAddProduct) {
+          setOpenAddStorefrontProduct(true);
+        }
+      } else if (requestedTab) {
+        setActiveTab(requestedTab as any);
       }
+    };
+
+    try {
+      const pendingRaw = sessionStorage.getItem('th_pending_dashboard_intent');
+      if (pendingRaw) {
+        sessionStorage.removeItem('th_pending_dashboard_intent');
+        applyIntent(JSON.parse(pendingRaw));
+      }
+    } catch {}
+
+    const handleDashboardTab = (e: Event) => {
+      const custom = e as CustomEvent<{ tab?: string; openAddProduct?: boolean; subSection?: string }>;
+      applyIntent(custom?.detail);
     };
     const handleMediationStage = (e: Event) => {
       const custom = e as CustomEvent<{ stage?: string }>;
@@ -692,84 +738,150 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       )}
 
       {/* Top Header */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold text-blue-600">
-            <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
-            <span>Enterprise B2B Trade &amp; Escrow Protection Center</span>
-            <span aria-hidden="true">·</span>
-            <span className="text-slate-500 font-mono">KYC Level 3 Verified</span>
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold text-blue-600">
+              <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
+              <span>All-in-One Account, Storefront &amp; Trade Console</span>
+              <span aria-hidden="true">·</span>
+              <span className="text-slate-500 font-mono">KYC Level 3 Verified</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
+              {currentUserRole === 'SUPPLIER'
+                ? 'Manufacturer & Exporter Console'
+                : 'Unified Account & Storefront Hub'}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
+              Manage your storefront products, company branding, certificates, buyer messages, RFQ tenders, wallet deposits, and bank withdrawals from one workspace.
+            </p>
           </div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
-            {currentUserRole === 'SUPPLIER'
-              ? 'Manufacturer & Exporter Console'
-              : 'Global Procurement & Treasury Dashboard'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
-            Manage wallet deposits, inspect double-entry transaction ledger records, track mediated escrow milestones, and respond to global RFQ tenders.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('MY_STOREFRONT');
+                setStorefrontSection('PRODUCTS');
+                setOpenAddStorefrontProduct(true);
+              }}
+              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span>Add Storefront Product</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenStorefront(userStorefrontId)}
+              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <Eye className="w-4 h-4 text-blue-600 shrink-0" />
+              <span>View Storefront</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenCreateRfq}
+              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <FileText className="w-4 h-4 shrink-0" />
+              <span>Post New RFQ</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* All-in-One Quick Task Strip */}
+        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-1 whitespace-nowrap">
+            Quick Actions:
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('MY_STOREFRONT');
+              setStorefrontSection('PRODUCTS');
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'MY_STOREFRONT' && storefrontSection === 'PRODUCTS'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+          >
+            <Package className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span>My Storefront Products</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('MY_STOREFRONT');
+              setStorefrontSection('BRANDING');
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'MY_STOREFRONT' && storefrontSection === 'BRANDING'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+          >
+            <Store className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span>Logo &amp; Storefront Info</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('MY_STOREFRONT');
+              setStorefrontSection('CERTIFICATES');
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'MY_STOREFRONT' && storefrontSection === 'CERTIFICATES'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Certificates &amp; Factory Photos</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('MESSAGES')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === 'MESSAGES'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span>Buyer Inquiries</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('TOPUP_WALLET')}
-            className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'TOPUP_WALLET'
-                ? 'bg-indigo-700 text-white ring-2 ring-indigo-500/30'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
             }`}
           >
-            <CreditCard className="w-4 h-4 shrink-0" />
+            <CreditCard className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
             <span>Wallet Top-Up</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('BANK_ACCOUNTS')}
-            className={`h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer whitespace-nowrap ${
               activeTab === 'BANK_ACCOUNTS'
-                ? 'bg-emerald-700 text-white ring-2 ring-emerald-500/30'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
             }`}
           >
-            <Landmark className="w-4 h-4 shrink-0" />
+            <Landmark className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             <span>Bank &amp; Withdraw</span>
-          </button>
-          {onNavigate && (
-            <button
-              type="button"
-              onClick={() => onNavigate('SUPPLIER_DASHBOARD')}
-              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
-            >
-              <Package className="w-4 h-4 shrink-0" />
-              <span>Supplier Console (Products &amp; Quotes)</span>
-            </button>
-          )}
-          {onNavigate && (
-            <button
-              type="button"
-              onClick={() => onNavigate('SUPPLIER_WITHDRAWAL')}
-              className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Withdrawal Portal</span>
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onOpenCreateRfq}
-            className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-          >
-            <PlusCircle className="w-4 h-4 shrink-0" />
-            <span>Post New RFQ</span>
           </button>
           <a
             href={OFFICIAL_WHATSAPP_DATA.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 sm:h-10 px-3.5 sm:px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
+            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap"
           >
-            <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             <span>Trade Desk</span>
           </a>
         </div>
@@ -870,6 +982,11 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           {(
             [
               {
+                id: 'MY_STOREFRONT',
+                label: 'My Storefront & Products',
+                icon: Store
+              },
+              {
                 id: 'TRANSACTION_LEDGER',
                 label: 'Transaction Ledger',
                 icon: BookOpen
@@ -948,6 +1065,23 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           })}
         </div>
       </div>
+
+      {/* Tab Content: Unified Storefront, Product Catalog, Branding & Certificates Studio */}
+      {activeTab === 'MY_STOREFRONT' && (
+        <MyStorefrontStudioTab
+          currentUser={currentUser}
+          selectedCurrency={selectedCurrency}
+          products={products}
+          onProductCreated={onProductCreated}
+          onProductUpdated={onProductUpdated}
+          onProductDeleted={onProductDeleted}
+          onOpenStorefront={onOpenStorefront}
+          onOpenCreateRfq={onOpenCreateRfq}
+          initialSection={storefrontSection}
+          openAddProductInitially={openAddStorefrontProduct}
+          onClearAddProductTrigger={() => setOpenAddStorefrontProduct(false)}
+        />
+      )}
 
       {/* Tab Content: Bank Accounts & Fund Withdrawals */}
       {activeTab === 'BANK_ACCOUNTS' && (

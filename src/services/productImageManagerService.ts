@@ -1018,23 +1018,7 @@ class ProductImageManagerService {
     if (productTitle) {
       const cleanTitle = productTitle.trim();
       const lowerTitle = cleanTitle.toLowerCase();
-      let matchedEntry = this.state.overrides[cleanTitle] || this.state.overrides[lowerTitle];
-
-      if (!matchedEntry) {
-        // Smart keyword resolution for multi-word titles like "Bulk Commercial Bricks - Verified Importer"
-        for (const [key, entry] of Object.entries(this.state.overrides)) {
-          if (!entry?.primary) continue;
-          const lowerKey = key.toLowerCase().trim();
-          if (lowerKey.length >= 3 && lowerTitle.includes(lowerKey)) {
-            // Anti-cross-contamination check: don't match saree onto non-saree
-            const isTargetSaree = /(saree|sari|textile|apparel|fabric|garment|silk|dress)/i.test(lowerTitle);
-            const isEntrySaree = entry.primary.toLowerCase().includes('saree') || entry.primary.toLowerCase().includes('shree');
-            if (isEntrySaree && !isTargetSaree) continue;
-            matchedEntry = entry;
-            break;
-          }
-        }
-      }
+      const matchedEntry = this.state.overrides[cleanTitle] || this.state.overrides[lowerTitle];
 
       if (matchedEntry?.primary) {
         // Anti-cross-contamination safeguard
@@ -1082,7 +1066,7 @@ class ProductImageManagerService {
       ? product.images.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
       : product.image
         ? [normalizeProductAssetUrl(product.image)]
-        : ['https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop&q=80'];
+        : [];
 
     if (product.id) {
       const cleanId = product.id.trim();

@@ -17,6 +17,7 @@ import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
 import { isManuallyUploadedImageUrl } from '../../services/visualProductImageService';
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
+import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
 import { autoSeoEngine, AutoSeoRecord } from '../../services/autoSeoEngine';
 import {
   Image as ImageIcon,
@@ -1151,6 +1152,18 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
           )}
         </div>
       </div>
+
+      {/* AUTOMATED CATALOG IMAGE QUALITY & DUPLICATE AUDITOR WIDGET */}
+      <CatalogImageAuditorWidget
+        products={allProducts}
+        onAuditCompleted={async (res) => {
+          await refreshState();
+          showToast(
+            'success',
+            `Cleaned ${res.duplicates_detected} duplicate(s) & fixed ${res.mismatched_detected || 0} mismatched/placeholder photo(s) across ${res.total_scanned} catalog records!`
+          );
+        }}
+      />
 
       {/* =====================================================================
           TAB 1: ALL LISTED PRODUCTS VISUAL MANAGER

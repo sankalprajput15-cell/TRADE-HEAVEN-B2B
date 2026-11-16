@@ -613,3 +613,180 @@ export async function fetchVisualProductImages(params: {
     INFLIGHT_REQUESTS.delete(inflightKey);
   }
 }
+
+const ASSIGNED_UPLOAD_IMAGE_URLS = new Set<string>();
+
+/**
+ * Ensures any new product or RFQ posted without a manual image upload (or with a placeholder/duplicate image)
+ * automatically receives a verified, unique, category-relevant image from our >10 randomized relevant results pool.
+ */
+export async function ensureUniqueVerifiedProductImageForUpload(params: {
+  productId?: string;
+  productName: string;
+  category?: string;
+  specifications?: string;
+  existingImageUrl?: string;
+  existingGallery?: string[];
+  usedUrls?: Iterable<string>;
+}): Promise<{ primaryUrl: string; gallery: string[]; autoAssigned: boolean }> {
+  const used = new Set<string>(ASSIGNED_UPLOAD_IMAGE_URLS);
+  if (params.usedUrls) {
+    for (const u of params.usedUrls) {
+      const clean = String(u || '').trim().split('?')[0];
+      if (clean) used.add(clean);
+    }
+  }
+
+  const rawPrimary = String(
+    params.existingImageUrl ||
+      (Array.isArray(params.existingGallery) && params.existingGallery.length > 0 ? params.existingGallery[0] : '') ||
+      ''
+  ).trim();
+  const cleanPrimary = rawPrimary.split('?')[0];
+
+  // If a valid manual upload is provided and is not a generic placeholder or duplicate, keep it
+  if (
+    cleanPrimary &&
+    !isGenericOrPlaceholderImageUrl(cleanPrimary) &&
+    !used.has(cleanPrimary) &&
+    isManuallyUploadedImageUrl(cleanPrimary)
+  ) {
+    ASSIGNED_UPLOAD_IMAGE_URLS.add(cleanPrimary);
+    const gallery =
+      Array.isArray(params.existingGallery) && params.existingGallery.length > 0
+        ? params.existingGallery.filter(Boolean)
+        : [rawPrimary];
+    return { primaryUrl: rawPrimary, gallery, autoAssigned: false };
+  }
+
+  // Otherwise automatically fetch from our >10 randomized relevant results pool
+  try {
+    const searchRes = await fetchVisualProductImages({
+      productName: params.productName || 'Wholesale Commodity',
+      productId: params.productId,
+      category: params.category,
+      specifications: params.specifications,
+      count: 15,
+      forceRefresh: false
+    });
+
+    const pool = fisherYatesShuffle(
+      Array.isArray(searchRes.pool) && searchRes.pool.length > 0
+        ? searchRes.pool
+        : Array.isArray(searchRes.images)
+        ? searchRes.images
+        : []
+    );
+
+    const pickedGallery: string[] = [];
+    for (const cand of pool) {
+      const candUrl = resolveLocalMirroredImageUrl(String(cand?.url || '').trim());
+      const cleanCand = candUrl.split('?')[0];
+      if (!cleanCand || isGenericOrPlaceholderImageUrl(cleanCand) || used.has(cleanCand)) continue;
+      pickedGallery.push(candUrl);
+      used.add(cleanCand);
+      if (pickedGallery.length >= 3) break;
+    }
+
+    if (pickedGallery.length > 0) {
+      let finalPrimary = pickedGallery[0];
+      if (/^https?:\/\//i.test(finalPrimary)) {
+        const mirrored = await autoUploadDisplayedProductImage({
+          imageUrl: finalPrimary,
+          productId: params.productId,
+          productName: params.productName,
+          category: params.category
+        });
+        if (mirrored) {
+          finalPrimary = mirrored;
+          pickedGallery[0] = mirrored;
+        }
+      }
+      ASSIGNED_UPLOAD_IMAGE_URLS.add(finalPrimary.split('?')[0]);
+      return {
+        primaryUrl: finalPrimary,
+        gallery: pickedGallery,
+        autoAssigned: true
+      };
+    }
+  } catch {
+    // Backend submit_rfq / submit_listing / POST /api/v1/products will also enforce server-side visual resolution
+  }
+
+  return {
+    primaryUrl: rawPrimary,
+    gallery: Array.isArray(params.existingGallery) ? params.existingGallery.filter(Boolean) : rawPrimary ? [rawPrimary] : [],
+    autoAssigned: false
+  };
+}
+
+export interface CatalogImageAuditLogItem {
+  record_id: string;
+  record_type: 'PRODUCT' | 'RFQ' | 'OVERRIDE';
+  title: string;
+  category: string;
+  issue_type: 'DUPLICATE' | 'PLACEHOLDER_OR_MISSING' | 'MISMATCHED' | 'BROKEN_ASSET';
+  issue_reason: string;
+  old_image_url: string;
+  new_image_url: string;
+  query_used: string;
+  status: 'FIXED' | 'FLAGGED';
+}
+
+export interface CatalogImageAuditSummary {
+  status: string;
+  success: boolean;
+  dry_run?: boolean;
+  total_scanned: number;
+  products_scanned?: number;
+  rfqs_scanned?: number;
+  duplicates_detected: number;
+  mismatched_detected?: number;
+  records_fixed: number;
+  healthy_records?: number;
+  timestamp?: string;
+  audit_log: CatalogImageAuditLogItem[];
+}
+
+export async function runCatalogImageAuditAndCleanup(options?: {
+  dryRun?: boolean;
+  catalogItems?: Array<{
+    id: string;
+    type?: 'PRODUCT' | 'RFQ';
+    title: string;
+    category?: string;
+    image_url?: string;
+  }>;
+}): Promise<CatalogImageAuditSummary> {
+  const dryRun = Boolean(options?.dryRun);
+  const querySuffix = dryRun ? '&dry_run=1' : '';
+  const bodyPayload = {
+    dry_run: dryRun,
+    catalog_items: options?.catalogItems || []
+  };
+
+  try {
+    const res = await fetch(`/api.php?action=audit_and_fix_catalog_images${querySuffix}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(bodyPayload)
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json && typeof json.total_scanned === 'number') {
+        return json as CatalogImageAuditSummary;
+      }
+    }
+  } catch {}
+
+  const fallbackRes = await fetch(`/api/v1/admin/audit-and-fix-catalog-images${dryRun ? '?dry_run=1' : ''}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(bodyPayload)
+  });
+  if (!fallbackRes.ok) {
+    throw new Error(`Catalog image audit failed with HTTP ${fallbackRes.status}`);
+  }
+  return (await fallbackRes.json()) as CatalogImageAuditSummary;
+}
+

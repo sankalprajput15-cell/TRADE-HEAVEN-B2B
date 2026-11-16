@@ -62,7 +62,7 @@ foreach ($passwords_to_try as $pwd) {
 }
 
 if ($db_connected) {
-    $marker_file = __DIR__ . '/.db_schema_initialized';
+    $marker_file = __DIR__ . '/.db_schema_initialized_v3';
     if (!file_exists($marker_file)) {
         try {
 
@@ -71,6 +71,7 @@ if ($db_connected) {
         // -------------------------------------------------------------
         $pdo->exec("CREATE TABLE IF NOT EXISTS rfqs (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            external_id VARCHAR(120) DEFAULT '',
             title VARCHAR(255) NOT NULL,
             category VARCHAR(100),
             quantity VARCHAR(100),
@@ -92,11 +93,14 @@ if ($db_connected) {
             search_keyword VARCHAR(255) DEFAULT '',
             market_insight TEXT,
             posted_label VARCHAR(100) DEFAULT '',
+            image_url TEXT,
+            images TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Self-healing column migrations for pre-existing rfqs tables
         $rfq_extra_columns = [
+            "external_id VARCHAR(120) DEFAULT ''",
             "buyer_phone VARCHAR(100) DEFAULT ''",
             "buyer_address TEXT",
             "payment_terms VARCHAR(255) DEFAULT ''",
@@ -105,7 +109,9 @@ if ($db_connected) {
             "sync_tag VARCHAR(50) DEFAULT ''",
             "search_keyword VARCHAR(255) DEFAULT ''",
             "market_insight TEXT",
-            "posted_label VARCHAR(100) DEFAULT ''"
+            "posted_label VARCHAR(100) DEFAULT ''",
+            "image_url TEXT",
+            "images TEXT"
         ];
         foreach ($rfq_extra_columns as $col_def) {
             try {
@@ -360,6 +366,22 @@ if ($db_connected) {
             @file_put_contents($chat_v3_marker, '1');
         } catch (Exception $e) {
             @file_put_contents(__DIR__ . '/db_error.log', "Chat v3 migration warning: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    // Ensure product_image_cache table exists for 7-day visual product image caching
+    $img_cache_marker = __DIR__ . '/.db_image_cache_schema_v1';
+    if ($db_connected && $pdo && !file_exists($img_cache_marker)) {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS product_image_cache (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                keyword VARCHAR(255) NOT NULL UNIQUE,
+                image_urls_json LONGTEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            @file_put_contents($img_cache_marker, '1');
+        } catch (Exception $e) {
+            @file_put_contents(__DIR__ . '/db_error.log', "Image cache table migration warning: " . $e->getMessage() . "\n", FILE_APPEND);
         }
     }
 }
@@ -1019,6 +1041,26 @@ if (empty($raw_action) && !empty($route_param)) {
         $raw_action = 'flash_deals';
     } elseif (strpos($clean_route, 'stats') !== false) {
         $raw_action = 'stats';
+    } elseif (strpos($clean_route, 'products/fetch-images') !== false) {
+        $raw_action = 'fetch_product_images';
+    } elseif (strpos($clean_route, 'products/auto-upload-image') !== false) {
+        $raw_action = 'auto_upload_product_image';
+    } elseif (strpos($clean_route, 'admin/upload-product-image') !== false) {
+        $raw_action = 'upload_product_image';
+    } elseif (strpos($clean_route, 'admin/product-images') !== false) {
+        if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+            $raw_action = 'delete_product_images';
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+            $raw_action = 'set_product_images';
+        } else {
+            $raw_action = 'get_product_images';
+        }
+    } elseif (strpos($clean_route, 'rfqs/auto-batch-persist') !== false) {
+        $raw_action = 'auto_batch_persist_rfqs';
+    } elseif (strpos($clean_route, 'rfqs/discover-market-demand') !== false) {
+        $raw_action = 'discover_market_demand';
+    } elseif (strpos($clean_route, 'rfqs/market-insights') !== false) {
+        $raw_action = 'market_insights';
     } elseif (strpos($clean_route, 'products') !== false) {
         if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             $raw_action = 'delete_listing';
@@ -1067,6 +1109,26 @@ if (empty($raw_action)) {
             $raw_action = 'custom_catalog';
         } elseif (strpos($sub, 'site-content') !== false) {
             $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') ? 'save_content' : 'get_content';
+        } elseif (strpos($sub, 'products/fetch-images') !== false) {
+            $raw_action = 'fetch_product_images';
+        } elseif (strpos($sub, 'products/auto-upload-image') !== false) {
+            $raw_action = 'auto_upload_product_image';
+        } elseif (strpos($sub, 'admin/upload-product-image') !== false) {
+            $raw_action = 'upload_product_image';
+        } elseif (strpos($sub, 'admin/product-images') !== false) {
+            if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+                $raw_action = 'delete_product_images';
+            } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+                $raw_action = 'set_product_images';
+            } else {
+                $raw_action = 'get_product_images';
+            }
+        } elseif (strpos($sub, 'rfqs/auto-batch-persist') !== false) {
+            $raw_action = 'auto_batch_persist_rfqs';
+        } elseif (strpos($sub, 'rfqs/discover-market-demand') !== false) {
+            $raw_action = 'discover_market_demand';
+        } elseif (strpos($sub, 'rfqs/market-insights') !== false) {
+            $raw_action = 'market_insights';
         } elseif (strpos($sub, 'products') !== false) {
             if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
                 $raw_action = 'delete_listing';
@@ -1075,6 +1137,8 @@ if (empty($raw_action)) {
             } else {
                 $raw_action = 'get_listings';
             }
+        } elseif (strpos($sub, 'rfqs') !== false) {
+            $raw_action = ($_SERVER['REQUEST_METHOD'] === 'POST') ? 'submit_rfq' : 'get_rfqs';
         } elseif (strpos($sub, 'homepage-config') !== false) {
             $raw_action = 'homepage_config';
         } elseif (strpos($sub, 'commodity-indices') !== false) {
@@ -1349,16 +1413,6 @@ switch ($action) {
         $json_str = json_encode($cms_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         
         if (file_put_contents($cms_file, $json_str) !== false) {
-            sendPhpMailAlert(
-                "📝 Website Content & CMS Updated",
-                "CMS Site Content Saved",
-                "An administrator or authorized editor updated the site content and configurations.",
-                [
-                    "Editor Action" => "save_content",
-                    "Timestamp" => date("Y-m-d H:i:s T"),
-                    "Payload Sections Updated" => is_array($cms_payload) ? implode(', ', array_keys($cms_payload)) : "Global Config"
-                ]
-            );
             echo json_encode(["status" => "success", "message" => "CMS content saved successfully"]);
         } else {
             http_response_code(500);
@@ -1368,11 +1422,69 @@ switch ($action) {
 
     // -------------------------------------------------------------
     // 2. Fetch RFQs: SELECT * FROM rfqs ORDER BY id DESC
-    // Always returns {"status": "success", "data": [...]} (never null or string)
+    // Always returns {"status": "success", "data": [...]} with saved local /assets/uploads/ images attached
     // -------------------------------------------------------------
     case 'get_rfqs':
     case 'rfqs':
         $rows = [];
+        $seen_rfq_ids = [];
+
+        // Load locally saved image overrides (/assets/uploads/product-image-overrides.json) & visual cache
+        $uploads_dir_rfq = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_rfq) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_rfq = __DIR__ . '/public/assets/uploads';
+        }
+        $ov_file_rfq = $uploads_dir_rfq . '/product-image-overrides.json';
+        $ov_map_rfq = [];
+        if (file_exists($ov_file_rfq)) {
+            $parsed_ov = json_decode((string)@file_get_contents($ov_file_rfq), true);
+            if (is_array($parsed_ov) && !empty($parsed_ov['overrides']) && is_array($parsed_ov['overrides'])) {
+                $ov_map_rfq = $parsed_ov['overrides'];
+            }
+        }
+        $vis_cache_file = __DIR__ . '/product_image_cache.json';
+        $vis_cache_map = file_exists($vis_cache_file) ? (json_decode((string)@file_get_contents($vis_cache_file), true) ?: []) : [];
+
+        $resolve_rfq_local_image = function($rfq_id_str, $title_str, $cat_str, $db_img_url) use ($ov_map_rfq, $vis_cache_map) {
+            $clean_db = trim((string)$db_img_url);
+            if ($clean_db !== '' && strpos($clean_db, '/assets/uploads/') === 0) {
+                return $clean_db;
+            }
+            $clean_subj = preg_replace('/\([^)]*\)|\[[^\]]*\]/', ' ', (string)$title_str);
+            $clean_subj = trim(preg_replace('/\s+/', ' ', (string)$clean_subj));
+            $candidates_keys = array_filter([
+                $rfq_id_str,
+                $title_str,
+                strtolower((string)$title_str),
+                $clean_subj,
+                strtolower((string)$clean_subj)
+            ]);
+            foreach ($candidates_keys as $ck) {
+                if (!empty($ov_map_rfq[$ck]['primary'])) {
+                    $p = trim((string)$ov_map_rfq[$ck]['primary']);
+                    if ($p !== '' && strpos($p, 'unsplash.com') === false && strpos($p, 'picsum.photos') === false) {
+                        return $p;
+                    }
+                }
+            }
+            $norm_n = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($clean_subj ?: $title_str))));
+            $norm_c = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower((string)$cat_str))));
+            $vk1 = $norm_c !== '' ? ($norm_n . '::' . $norm_c) : $norm_n;
+            foreach ([$vk1, $norm_n] as $vk) {
+                if (!empty($vis_cache_map[$vk]['images']) && is_array($vis_cache_map[$vk]['images'])) {
+                    foreach ($vis_cache_map[$vk]['images'] as $ci) {
+                        $cu = trim((string)($ci['url'] ?? ''));
+                        if ($cu !== '' && strpos($cu, '/assets/uploads/') === 0) {
+                            return $cu;
+                        }
+                    }
+                    $first_u = trim((string)($vis_cache_map[$vk]['images'][0]['url'] ?? ''));
+                    if ($first_u !== '') return $first_u;
+                }
+            }
+            return $clean_db;
+        };
+
         if ($db_connected && $pdo) {
             try {
                 $stmt = $pdo->query("SELECT * FROM rfqs ORDER BY CASE WHEN source = 'auto_generated' OR sync_tag = 'market_sync' THEN 1 ELSE 0 END ASC, id DESC");
@@ -1383,9 +1495,32 @@ switch ($action) {
                         $targetQty = is_numeric($r['quantity']) ? intval($r['quantity']) : 1;
                         $targetPriceNum = is_numeric($r['targetPrice']) ? floatval($r['targetPrice']) : (is_numeric($r['target_price'] ?? null) ? floatval($r['target_price']) : 0.0);
                         $isAuto = (($r['source'] ?? '') === 'auto_generated' || ($r['sync_tag'] ?? '') === 'market_sync');
+                        $extId = trim((string)($r['external_id'] ?? ''));
+                        $finalId = $extId !== '' ? $extId : ("rfq-" . $r['id']);
+                        if (isset($seen_rfq_ids[$finalId])) continue;
+                        $seen_rfq_ids[$finalId] = true;
+
+                        $resolvedImg = $resolve_rfq_local_image(
+                            $finalId,
+                            (string)($r['title'] ?? ''),
+                            (string)($r['category'] ?? ''),
+                            (string)($r['image_url'] ?? '')
+                        );
+                        $resolvedGallery = [];
+                        if (!empty($r['images'])) {
+                            $decImgs = json_decode((string)$r['images'], true);
+                            if (is_array($decImgs)) {
+                                foreach ($decImgs as $di) {
+                                    if (is_string($di) && trim($di) !== '') $resolvedGallery[] = trim($di);
+                                }
+                            }
+                        }
+                        if ($resolvedImg !== '' && !in_array($resolvedImg, $resolvedGallery, true)) {
+                            array_unshift($resolvedGallery, $resolvedImg);
+                        }
 
                         $rows[] = [
-                            "id" => "rfq-" . $r['id'],
+                            "id" => $finalId,
                             "raw_id" => intval($r['id']),
                             "title" => $r['title'],
                             "productName" => $r['title'],
@@ -1432,6 +1567,9 @@ switch ($action) {
                             "searchKeyword" => $r['search_keyword'] ?? "",
                             "marketInsight" => $r['market_insight'] ?? "",
                             "marketDemandVerified" => $isAuto,
+                            "image" => $resolvedImg ?: null,
+                            "image_url" => $resolvedImg ?: null,
+                            "images" => $resolvedGallery,
                             "created_at" => $r['created_at'] ?? date("Y-m-d H:i:s")
                         ];
                     }
@@ -1440,15 +1578,42 @@ switch ($action) {
                 $rows = [];
             }
         }
+
+        // Also merge any JSON-persisted RFQs from rfqs_auto_store.json (fast BigRock disk cache)
+        $auto_rfq_file = __DIR__ . '/rfqs_auto_store.json';
+        if (file_exists($auto_rfq_file)) {
+            $json_rfqs = json_decode((string)@file_get_contents($auto_rfq_file), true);
+            if (is_array($json_rfqs)) {
+                foreach ($json_rfqs as $jr) {
+                    if (!is_array($jr)) continue;
+                    $jid = trim((string)($jr['id'] ?? ''));
+                    if ($jid === '' || isset($seen_rfq_ids[$jid])) continue;
+                    $seen_rfq_ids[$jid] = true;
+                    $jImg = $resolve_rfq_local_image(
+                        $jid,
+                        (string)($jr['productName'] ?? $jr['title'] ?? ''),
+                        (string)($jr['category'] ?? ''),
+                        (string)($jr['image_url'] ?? $jr['image'] ?? '')
+                    );
+                    if ($jImg !== '') {
+                        $jr['image'] = $jImg;
+                        $jr['image_url'] = $jImg;
+                        $jr['images'] = [$jImg];
+                    }
+                    $rows[] = $jr;
+                }
+            }
+        }
+
         echo json_encode(["status" => "success", "data" => $rows]);
         break;
 
     // -------------------------------------------------------------
-    // 3. Submit RFQ: Inserts into `rfqs` table with prepared statements
-    // Fetches newly created record via lastInsertId() and returns {"status": "success", "data": <inserted_row>}
+    // 3. Submit RFQ: Inserts into `rfqs` table with prepared statements (0 emails)
     // -------------------------------------------------------------
     case 'submit_rfq':
     case 'create_rfq':
+        $external_id = trim((string)($input['id'] ?? $input['external_id'] ?? ''));
         $title = trim($input['title'] ?? $input['productName'] ?? $input['product_name'] ?? 'Wholesale Product');
         $category = trim($input['category'] ?? 'Industrial Machinery & CNC');
         $quantity = (string)($input['quantity'] ?? $input['target_quantity'] ?? $input['targetQuantity'] ?? '1000');
@@ -1470,6 +1635,54 @@ switch ($action) {
         $search_keyword = trim($input['search_keyword'] ?? $input['searchKeyword'] ?? '');
         $market_insight = trim($input['market_insight'] ?? $input['marketInsight'] ?? '');
         $posted_label = trim($input['posted_label'] ?? $input['postedLabel'] ?? ($source === 'auto_generated' ? 'Just now' : ''));
+        $image_url = trim((string)($input['image_url'] ?? $input['imageUrl'] ?? $input['image'] ?? (!empty($input['images'][0]) ? $input['images'][0] : '')));
+
+        // Resolve existing local override or auto-assign a unique verified image from >10 pool if image_url is empty/placeholder
+        $uploads_dir_sub = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_sub) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_sub = __DIR__ . '/public/assets/uploads';
+        }
+        $ov_file_sub = $uploads_dir_sub . '/product-image-overrides.json';
+        $is_placeholder_sub = ($image_url === '' || preg_match('/(picsum\.photos|placeholder\.com|via\.placeholder|unsplash\.com|images\.unsplash\.com|dummyimage\.com)/i', $image_url));
+        if ($is_placeholder_sub && file_exists($ov_file_sub)) {
+            $ov_data_sub = json_decode((string)@file_get_contents($ov_file_sub), true);
+            $ov_entries = $ov_data_sub['overrides'] ?? [];
+            if ($external_id !== '' && !empty($ov_entries[$external_id]['primary'])) {
+                $image_url = trim((string)$ov_entries[$external_id]['primary']);
+                $is_placeholder_sub = false;
+            }
+        }
+        if ($is_placeholder_sub) {
+            $cache_file_sub = __DIR__ . '/product_image_cache.json';
+            $used_sub_urls = [];
+            if (file_exists($ov_file_sub)) {
+                $ov_d = json_decode((string)@file_get_contents($ov_file_sub), true);
+                foreach (($ov_d['overrides'] ?? []) as $ov_v) {
+                    if (!empty($ov_v['primary'])) $used_sub_urls[explode('?', (string)$ov_v['primary'])[0]] = true;
+                }
+            }
+            if (file_exists($cache_file_sub)) {
+                $c_all = json_decode((string)@file_get_contents($cache_file_sub), true) ?: [];
+                $norm_t = strtolower(trim(preg_replace('/[^\w\s-]/', ' ', $title)));
+                foreach ($c_all as $c_key => $c_rec) {
+                    if (strpos($c_key, substr($norm_t, 0, 12)) !== false && !empty($c_rec['images']) && is_array($c_rec['images'])) {
+                        $pool_imgs = $c_rec['images'];
+                        shuffle($pool_imgs);
+                        foreach ($pool_imgs as $p_img) {
+                            $cand_u = trim((string)($p_img['url'] ?? ''));
+                            if ($cand_u !== '' && !isset($used_sub_urls[$cand_u])) {
+                                $image_url = $cand_u;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        $images_arr = !empty($input['images']) && is_array($input['images'])
+            ? array_values(array_filter(array_map('strval', $input['images'])))
+            : ($image_url !== '' ? [$image_url] : []);
+        $images_json = json_encode($images_arr, JSON_UNESCAPED_SLASHES);
 
         $inserted_id = time();
         $inserted_row = null;
@@ -1478,7 +1691,21 @@ switch ($action) {
             try {
                 // Deduplicate auto_generated market_sync RFQs
                 $dbRow = null;
-                if ($source === 'auto_generated') {
+                if ($external_id !== '') {
+                    $dupExt = $pdo->prepare("SELECT * FROM rfqs WHERE external_id = ? LIMIT 1");
+                    $dupExt->execute([$external_id]);
+                    $dbRow = $dupExt->fetch(PDO::FETCH_ASSOC);
+                    if ($dbRow) {
+                        $inserted_id = (int)$dbRow['id'];
+                        if ($image_url !== '' && empty($dbRow['image_url'])) {
+                            $upImg = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE id = ?");
+                            $upImg->execute([$image_url, $images_json, $inserted_id]);
+                            $dbRow['image_url'] = $image_url;
+                            $dbRow['images'] = $images_json;
+                        }
+                    }
+                }
+                if (!$dbRow && $source === 'auto_generated') {
                     $dupStmt = $pdo->prepare("SELECT * FROM rfqs WHERE title = ? AND buyer_email = ? AND source = 'auto_generated' LIMIT 1");
                     $dupStmt->execute([$title, $buyer_email]);
                     $dbRow = $dupStmt->fetch(PDO::FETCH_ASSOC);
@@ -1489,13 +1716,14 @@ switch ($action) {
 
                 if (!$dbRow) {
                     $stmt = $pdo->prepare("INSERT INTO rfqs (
-                        title, category, quantity, unit, targetPrice, incoterms, destinationPort,
+                        external_id, title, category, quantity, unit, targetPrice, incoterms, destinationPort,
                         specifications, buyer_name, buyer_country, buyer_email, buyer_company,
                         buyer_phone, buyer_address, payment_terms, order_frequency, source, sync_tag,
-                        search_keyword, market_insight, posted_label
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        search_keyword, market_insight, posted_label, image_url, images
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
                     $stmt->execute([
+                        $external_id,
                         $title,
                         $category,
                         $quantity,
@@ -1516,12 +1744,13 @@ switch ($action) {
                         $sync_tag,
                         $search_keyword,
                         $market_insight,
-                        $posted_label
+                        $posted_label,
+                        $image_url,
+                        $images_json
                     ]);
 
                     $inserted_id = (int)$pdo->lastInsertId();
 
-                    // Query back the newly created row
                     $fetchStmt = $pdo->prepare("SELECT * FROM rfqs WHERE id = ?");
                     $fetchStmt->execute([$inserted_id]);
                     $dbRow = $fetchStmt->fetch(PDO::FETCH_ASSOC);
@@ -1531,9 +1760,11 @@ switch ($action) {
                     $targetQty = is_numeric($dbRow['quantity']) ? intval($dbRow['quantity']) : 1;
                     $targetPriceNum = is_numeric($dbRow['targetPrice']) ? floatval($dbRow['targetPrice']) : 0.0;
                     $isAuto = (($dbRow['source'] ?? $source) === 'auto_generated' || ($dbRow['sync_tag'] ?? $sync_tag) === 'market_sync');
+                    $rowIdStr = !empty($dbRow['external_id']) ? (string)$dbRow['external_id'] : ("rfq-" . $dbRow['id']);
+                    $rowImg = trim((string)($dbRow['image_url'] ?? $image_url));
 
                     $inserted_row = [
-                        "id" => "rfq-" . $dbRow['id'],
+                        "id" => $rowIdStr,
                         "raw_id" => intval($dbRow['id']),
                         "title" => $dbRow['title'],
                         "productName" => $dbRow['title'],
@@ -1579,6 +1810,9 @@ switch ($action) {
                         "searchKeyword" => $dbRow['search_keyword'] ?? $search_keyword,
                         "marketInsight" => $dbRow['market_insight'] ?? $market_insight,
                         "marketDemandVerified" => $isAuto,
+                        "image" => $rowImg ?: null,
+                        "image_url" => $rowImg ?: null,
+                        "images" => $rowImg ? [$rowImg] : [],
                         "created_at" => $dbRow['created_at'] ?? date("Y-m-d H:i:s")
                     ];
                 }
@@ -1592,8 +1826,9 @@ switch ($action) {
             $targetQtyFallback = is_numeric($quantity) ? intval($quantity) : 1;
             $targetPriceFallback = is_numeric($targetPrice) ? floatval($targetPrice) : 0.0;
             $isAutoFallback = ($source === 'auto_generated' || $sync_tag === 'market_sync');
+            $fallbackId = $external_id !== '' ? $external_id : ("rfq-" . $inserted_id);
             $inserted_row = [
-                "id" => "rfq-" . $inserted_id,
+                "id" => $fallbackId,
                 "raw_id" => intval($inserted_id),
                 "title" => $title,
                 "productName" => $title,
@@ -1639,33 +1874,232 @@ switch ($action) {
                 "searchKeyword" => $search_keyword,
                 "marketInsight" => $market_insight,
                 "marketDemandVerified" => $isAutoFallback,
+                "image" => $image_url ?: null,
+                "image_url" => $image_url ?: null,
+                "images" => $image_url ? [$image_url] : [],
                 "created_at" => date("Y-m-d H:i:s")
             ];
         }
 
-        // Trigger Instant Email Notification
-        sendPhpMailAlert(
-            "📋 New RFQ Posted: {$title} - {$buyer_company}",
-            "B2B Request For Quote Submitted",
-            "A procurement officer listed a new wholesale buying requirement on Trade Heaven.",
-            [
-                "Product / Title" => $title,
-                "Category" => $category,
-                "Quantity" => "{$quantity} {$unit}",
-                "Target Price" => "$ {$targetPrice}",
-                "Incoterms" => $incoterms,
-                "Destination Port" => $destinationPort,
-                "Buyer Name" => $buyer_name,
-                "Buyer Email" => $buyer_email,
-                "Buyer Company" => $buyer_company,
-                "Buyer Country" => $buyer_country,
-                "Specifications" => $specifications
-            ]
-        );
+        if ($source !== 'auto_generated') {
+            @sendPhpMailAlert(
+                "New Buy Lead RFQ Submitted: {$title}",
+                "New Procurement Request Posted",
+                "A buyer has posted a new buying lead / RFQ on Trade Heaven.",
+                [
+                    "Product / Title" => $title,
+                    "Category" => $category,
+                    "Quantity" => "{$quantity} {$unit}",
+                    "Target Price" => "\${$targetPrice}",
+                    "Buyer Name" => $buyer_name,
+                    "Buyer Company" => $buyer_company,
+                    "Buyer Country" => $buyer_country,
+                    "Buyer Email" => $buyer_email
+                ]
+            );
+        }
 
         echo json_encode([
             "status" => "success",
             "data" => $inserted_row
+        ]);
+        break;
+
+    // -------------------------------------------------------------
+    // 3B. Batch Persist Auto-Generated / Next-Page RFQs on BigRock (Zero Emails)
+    // -------------------------------------------------------------
+    case 'auto_batch_persist_rfqs':
+    case 'auto_batch_persist':
+        $incoming_rfqs = isset($input['rfqs']) && is_array($input['rfqs']) ? $input['rfqs'] : [];
+        $batch_keyword = trim((string)($input['keyword'] ?? ''));
+        $batch_insight = trim((string)($input['insightSummary'] ?? ''));
+        if (empty($incoming_rfqs)) {
+            echo json_encode(["status" => "success", "success" => true, "addedCount" => 0, "rfqs" => []]);
+            break;
+        }
+
+        $uploads_dir_bp = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_bp) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_bp = __DIR__ . '/public/assets/uploads';
+        }
+        $ov_file_bp = $uploads_dir_bp . '/product-image-overrides.json';
+        $ov_map_bp = [];
+        if (file_exists($ov_file_bp)) {
+            $parsed_bp = json_decode((string)@file_get_contents($ov_file_bp), true);
+            if (is_array($parsed_bp) && !empty($parsed_bp['overrides']) && is_array($parsed_bp['overrides'])) {
+                $ov_map_bp = $parsed_bp['overrides'];
+            }
+        }
+        $vis_cache_file_bp = __DIR__ . '/product_image_cache.json';
+        $vis_cache_bp = file_exists($vis_cache_file_bp) ? (json_decode((string)@file_get_contents($vis_cache_file_bp), true) ?: []) : [];
+
+        $auto_rfq_file = __DIR__ . '/rfqs_auto_store.json';
+        $stored_auto_rfqs = file_exists($auto_rfq_file) ? (json_decode((string)@file_get_contents($auto_rfq_file), true) ?: []) : [];
+        if (!is_array($stored_auto_rfqs)) $stored_auto_rfqs = [];
+        $auto_map_by_id = [];
+        foreach ($stored_auto_rfqs as $idx_sr => $sr) {
+            if (is_array($sr) && !empty($sr['id'])) {
+                $auto_map_by_id[(string)$sr['id']] = $idx_sr;
+            }
+        }
+
+        $added_items = [];
+        foreach ($incoming_rfqs as $raw) {
+            if (!is_array($raw)) continue;
+            $ext_id = trim((string)($raw['id'] ?? ''));
+            if ($ext_id === '') {
+                $ext_id = 'rfq-auto-' . time() . '-' . substr(md5(uniqid('', true)), 0, 5);
+            }
+            $p_title = trim((string)($raw['productName'] ?? $raw['product_name'] ?? $raw['title'] ?? 'Wholesale Product'));
+            $p_cat = trim((string)($raw['category'] ?? 'Agriculture & Global Commodities'));
+            $raw_img = trim((string)($raw['image'] ?? $raw['image_url'] ?? (!empty($raw['images'][0]) ? $raw['images'][0] : '')));
+
+            // Resolve local /assets/uploads/ image if already cached on server
+            if ($raw_img === '' || strpos($raw_img, '/assets/uploads/') !== 0) {
+                $clean_s = trim(preg_replace('/\s+/', ' ', preg_replace('/\([^)]*\)|\[[^\]]*\]/', ' ', $p_title)));
+                foreach (array_filter([$ext_id, $p_title, strtolower($p_title), $clean_s, strtolower($clean_s)]) as $ck) {
+                    if (!empty($ov_map_bp[$ck]['primary']) && strpos((string)$ov_map_bp[$ck]['primary'], '/assets/uploads/') === 0) {
+                        $raw_img = trim((string)$ov_map_bp[$ck]['primary']);
+                        break;
+                    }
+                }
+                if ($raw_img === '' || strpos($raw_img, '/assets/uploads/') !== 0) {
+                    $nn = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($clean_s ?: $p_title))));
+                    $nc = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($p_cat))));
+                    foreach ([$nc !== '' ? ($nn . '::' . $nc) : $nn, $nn] as $vk) {
+                        if (!empty($vis_cache_bp[$vk]['images']) && is_array($vis_cache_bp[$vk]['images'])) {
+                            foreach ($vis_cache_bp[$vk]['images'] as $ci) {
+                                $cu = trim((string)($ci['url'] ?? ''));
+                                if ($cu !== '' && strpos($cu, '/assets/uploads/') === 0) {
+                                    $raw_img = $cu;
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            $qty_str = (string)($raw['targetQuantity'] ?? $raw['quantity'] ?? '100');
+            $unit_str = trim((string)($raw['quantityUnit'] ?? $raw['unit'] ?? 'MT'));
+            $freq_str = trim((string)($raw['orderFrequency'] ?? $raw['order_frequency'] ?? 'Monthly'));
+            $price_str = (string)($raw['targetPriceUsd'] ?? $raw['targetPrice'] ?? '100');
+            $incoterm_str = trim((string)($raw['preferredIncoterm'] ?? $raw['incoterms'] ?? 'CIF'));
+            $port_str = trim((string)($raw['destinationPort'] ?? $raw['destination_port'] ?? 'Global Port'));
+            $specs_str = trim((string)($raw['detailedRequirements'] ?? $raw['detailedDescription'] ?? $raw['specifications'] ?? ''));
+            $b_name = trim((string)($raw['buyerName'] ?? $raw['buyer_name'] ?? 'International Procurement Officer'));
+            $b_comp = trim((string)($raw['buyerCompany'] ?? $raw['buyer_company'] ?? 'Global Trading Corp'));
+            $b_country = trim((string)($raw['buyerCountry'] ?? $raw['buyer_country'] ?? 'United States'));
+            $b_email = trim((string)($raw['buyerEmail'] ?? $raw['buyer_email'] ?? 'sourcing@globaltrade.com'));
+            $b_phone = trim((string)($raw['buyerPhone'] ?? $raw['buyer_phone'] ?? ''));
+            $b_addr = trim((string)($raw['buyerAddress'] ?? $raw['buyer_address'] ?? ''));
+            $pay_str = trim((string)($raw['paymentTerms'] ?? $raw['payment_terms'] ?? 'CIF, LC / TT'));
+            $s_kw = trim((string)($raw['searchKeyword'] ?? $raw['search_keyword'] ?? $batch_keyword ?: $p_title));
+            $m_ins = trim((string)($raw['marketInsight'] ?? $raw['market_insight'] ?? $batch_insight));
+            $p_lbl = trim((string)($raw['postedLabel'] ?? $raw['posted_label'] ?? 'Just now'));
+            $imgs_json = json_encode($raw_img !== '' ? [$raw_img] : [], JSON_UNESCAPED_SLASHES);
+
+            if ($db_connected && $pdo) {
+                try {
+                    $chk = $pdo->prepare("SELECT id, image_url FROM rfqs WHERE external_id = ? LIMIT 1");
+                    $chk->execute([$ext_id]);
+                    $exRow = $chk->fetch(PDO::FETCH_ASSOC);
+                    if ($exRow) {
+                        if ($raw_img !== '' && (empty($exRow['image_url']) || strpos((string)$exRow['image_url'], '/assets/uploads/') !== 0)) {
+                            $upd = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE id = ?");
+                            $upd->execute([$raw_img, $imgs_json, $exRow['id']]);
+                        }
+                    } else {
+                        $ins = $pdo->prepare("INSERT INTO rfqs (
+                            external_id, title, category, quantity, unit, targetPrice, incoterms, destinationPort,
+                            specifications, buyer_name, buyer_country, buyer_email, buyer_company,
+                            buyer_phone, buyer_address, payment_terms, order_frequency, source, sync_tag,
+                            search_keyword, market_insight, posted_label, image_url, images
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'auto_generated', 'market_sync', ?, ?, ?, ?, ?)");
+                        $ins->execute([
+                            $ext_id, $p_title, $p_cat, $qty_str, $unit_str, $price_str, $incoterm_str, $port_str,
+                            $specs_str, $b_name, $b_country, $b_email, $b_comp,
+                            $b_phone, $b_addr, $pay_str, $freq_str,
+                            $s_kw, $m_ins, $p_lbl, $raw_img, $imgs_json
+                        ]);
+                    }
+                } catch (Exception $e) {}
+            }
+
+            $record_item = [
+                "id" => $ext_id,
+                "title" => $p_title,
+                "productName" => $p_title,
+                "category" => $p_cat,
+                "quantity" => $qty_str,
+                "targetQuantity" => floatval($qty_str) ?: 100,
+                "unit" => $unit_str,
+                "quantityUnit" => $unit_str,
+                "orderFrequency" => $freq_str,
+                "targetPrice" => $price_str,
+                "targetPriceUsd" => floatval($price_str) ?: 100,
+                "estimatedOrderValueUsd" => round((floatval($qty_str) ?: 100) * (floatval($price_str) ?: 100), 2),
+                "incoterms" => $incoterm_str,
+                "preferredIncoterm" => $incoterm_str,
+                "destinationPort" => $port_str,
+                "specifications" => $specs_str,
+                "detailedRequirements" => $specs_str,
+                "detailedDescription" => $specs_str,
+                "buyer_name" => $b_name,
+                "buyerName" => $b_name,
+                "buyer_company" => $b_comp,
+                "buyerCompany" => $b_comp,
+                "buyer_country" => $b_country,
+                "buyerCountry" => $b_country,
+                "buyer_email" => $b_email,
+                "buyerEmail" => $b_email,
+                "buyer_phone" => $b_phone,
+                "buyerPhone" => $b_phone,
+                "buyer_address" => $b_addr,
+                "buyerAddress" => $b_addr,
+                "buyerVerified" => true,
+                "paymentTerms" => $pay_str,
+                "urgency" => (string)($raw['urgency'] ?? 'STANDARD'),
+                "quotesCount" => intval($raw['quotesCount'] ?? 2),
+                "postedDate" => date("Y-m-d"),
+                "postedLabel" => $p_lbl,
+                "status" => "OPEN",
+                "source" => "auto_generated",
+                "syncTag" => "market_sync",
+                "sync_tag" => "market_sync",
+                "searchKeyword" => $s_kw,
+                "marketInsight" => $m_ins,
+                "marketDemandVerified" => true,
+                "image" => $raw_img ?: null,
+                "image_url" => $raw_img ?: null,
+                "images" => $raw_img !== '' ? [$raw_img] : [],
+                "created_at" => date("Y-m-d H:i:s")
+            ];
+
+            if (isset($auto_map_by_id[$ext_id])) {
+                $existing_idx = $auto_map_by_id[$ext_id];
+                if ($raw_img !== '') {
+                    $stored_auto_rfqs[$existing_idx]['image'] = $raw_img;
+                    $stored_auto_rfqs[$existing_idx]['image_url'] = $raw_img;
+                    $stored_auto_rfqs[$existing_idx]['images'] = [$raw_img];
+                }
+            } else {
+                $auto_map_by_id[$ext_id] = count($stored_auto_rfqs);
+                $stored_auto_rfqs[] = $record_item;
+                $added_items[] = $record_item;
+            }
+        }
+
+        if (count($stored_auto_rfqs) > 1500) {
+            $stored_auto_rfqs = array_slice($stored_auto_rfqs, -1500);
+        }
+        @file_put_contents($auto_rfq_file, json_encode(array_values($stored_auto_rfqs), JSON_UNESCAPED_SLASHES));
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "addedCount" => count($added_items),
+            "rfqs" => $added_items
         ]);
         break;
 
@@ -1716,7 +2150,40 @@ switch ($action) {
             $supplier_country = $input['supplier_country'] ?? $input['supplierCountry'] ?? 'China';
             $location = $input['location'] ?? $input['port'] ?? 'Port of Shanghai';
             $description = $input['description'] ?? $input['specifications'] ?? '';
-            $image_url = $input['image_url'] ?? $input['imageUrl'] ?? 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+            $image_url = trim((string)($input['image_url'] ?? $input['imageUrl'] ?? ''));
+            if ($image_url === '' || preg_match('/(picsum\.photos|placeholder\.com|via\.placeholder|unsplash\.com|images\.unsplash\.com|dummyimage\.com)/i', $image_url)) {
+                $cache_file_lst = __DIR__ . '/product_image_cache.json';
+                $uploads_dir_lst = is_dir(__DIR__ . '/assets/uploads') ? (__DIR__ . '/assets/uploads') : (__DIR__ . '/public/assets/uploads');
+                $ov_file_lst = $uploads_dir_lst . '/product-image-overrides.json';
+                $used_lst_urls = [];
+                if (file_exists($ov_file_lst)) {
+                    $ov_dl = json_decode((string)@file_get_contents($ov_file_lst), true);
+                    foreach (($ov_dl['overrides'] ?? []) as $ov_vl) {
+                        if (!empty($ov_vl['primary'])) $used_lst_urls[explode('?', (string)$ov_vl['primary'])[0]] = true;
+                    }
+                }
+                if (file_exists($cache_file_lst)) {
+                    $c_all_l = json_decode((string)@file_get_contents($cache_file_lst), true) ?: [];
+                    $norm_tl = strtolower(trim(preg_replace('/[^\w\s-]/', ' ', $title)));
+                    foreach ($c_all_l as $c_key_l => $c_rec_l) {
+                        if (strpos($c_key_l, substr($norm_tl, 0, 12)) !== false && !empty($c_rec_l['images']) && is_array($c_rec_l['images'])) {
+                            $pool_imgs_l = $c_rec_l['images'];
+                            shuffle($pool_imgs_l);
+                            foreach ($pool_imgs_l as $p_img_l) {
+                                $cand_ul = trim((string)($p_img_l['url'] ?? ''));
+                                if ($cand_ul !== '' && !isset($used_lst_urls[$cand_ul])) {
+                                    $image_url = $cand_ul;
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            $images_arr = !empty($input['images']) && is_array($input['images'])
+                ? array_values(array_filter(array_map('strval', $input['images'])))
+                : ($image_url !== '' ? [$image_url] : []);
+            $images_json = json_encode($images_arr, JSON_UNESCAPED_SLASHES);
             $listing_id = isset($input['id']) ? intval($input['id']) : null;
 
             $inserted_id = $listing_id ?: time();
@@ -1726,47 +2193,29 @@ switch ($action) {
                         $stmt = $pdo->prepare("UPDATE listings SET
                             title = ?, category = ?, sub_category = ?, price = ?, moq = ?, moq_unit = ?,
                             supplier_name = ?, supplier_email = ?, supplier_phone = ?, supplier_country = ?,
-                            location = ?, description = ?, image_url = ? WHERE id = ?");
+                            location = ?, description = ?, image_url = ?, images = ? WHERE id = ?");
                         $stmt->execute([
                             $title, $category, $sub_category, $price, $moq, $moq_unit,
                             $supplier_name, $supplier_email, $supplier_phone, $supplier_country,
-                            $location, $description, $image_url, $listing_id
+                            $location, $description, $image_url, $images_json, $listing_id
                         ]);
                         $inserted_id = $listing_id;
                     } else {
                         $stmt = $pdo->prepare("INSERT INTO listings (
                             title, category, sub_category, price, moq, moq_unit,
                             supplier_name, supplier_email, supplier_phone, supplier_country,
-                            location, description, image_url, status
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')");
+                            location, description, image_url, images, status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')");
 
                         $stmt->execute([
                             $title, $category, $sub_category, $price, $moq, $moq_unit,
                             $supplier_name, $supplier_email, $supplier_phone, $supplier_country,
-                            $location, $description, $image_url
+                            $location, $description, $image_url, $images_json
                         ]);
                         $inserted_id = (int)$pdo->lastInsertId();
                     }
                 } catch (Exception $e) {}
             }
-
-            // Trigger Instant Email Notification for Product Create / Edit
-            sendPhpMailAlert(
-                "📦 Product Catalog Edit / Listing: {$title}",
-                "Product Listing Published or Modified",
-                "A supplier or administrator created or updated a product catalog listing.",
-                [
-                    "Product Title" => $title,
-                    "Category" => $category,
-                    "Price" => "$ {$price}",
-                    "MOQ" => "{$moq} {$moq_unit}",
-                    "Supplier Name" => $supplier_name,
-                    "Supplier Email" => $supplier_email ?: "N/A",
-                    "Supplier Country" => $supplier_country,
-                    "Port / Location" => $location,
-                    "Description" => substr($description, 0, 150) . (strlen($description) > 150 ? '...' : '')
-                ]
-            );
 
             echo json_encode([
                 "status" => "success",
@@ -3431,9 +3880,11 @@ switch ($action) {
                         $conds[] = "LOWER(c.supplier_email) = ?";
                         $params[] = $supplier_email;
                     }
-                    if (!empty($conds)) {
-                        $sql .= " WHERE (" . implode(" OR ", $conds) . ")";
+                    if (empty($conds)) {
+                        echo json_encode(["status" => "success", "success" => true, "data" => []]);
+                        break;
                     }
+                    $sql .= " WHERE (" . implode(" OR ", $conds) . ")";
                 }
                 $sql .= " ORDER BY c.updated_at DESC";
                 $stmt = $pdo->prepare($sql);
@@ -3878,7 +4329,7 @@ switch ($action) {
                     }
 
                     if ($sender_role === 'buyer_identity') {
-                        // Buyer sent -> Supplier hasn't read within 60s
+                        // Buyer sent -> Supplier hasn't read within 60s (+ send Admin Copy so Admin can verify delivery)
                         $target_email = trim(strtolower((string)($meta['supplier_email'] ?? '')));
                         if ($target_email === '' && !empty($meta['supplier_id'])) {
                             try {
@@ -3917,11 +4368,49 @@ switch ($action) {
                               </div>
                             </body></html>";
                             $ok = @mail($target_email, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
-                            if (!$ok) @mail($target_email, $subject, $html_body, $headers_str);
-                            @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_SUPPLIER_ALERT] {$subject} -> {$target_email}\n", FILE_APPEND);
-                            $alerts_sent++;
-                            $supplier_alerts++;
-                            $alert_details[] = ['conversationId' => $conv_id, 'targetRole' => 'supplier', 'recipient' => $target_email, 'subject' => $subject, 'messageCount' => count($msgs)];
+                            if (!$ok) {
+                                $ok = @mail($target_email, $subject, $html_body, $headers_str);
+                            }
+
+                            $admin_recipients = ['sankalprajput15@gmail.com', 'solutionthe87@gmail.com', 'yr943334@gmail.com'];
+                            $env_r = getenv('ALERT_EMAIL');
+                            if (!empty($env_r)) {
+                                foreach (explode(',', $env_r) as $er) {
+                                    $er = trim(strtolower($er));
+                                    if ($er && filter_var($er, FILTER_VALIDATE_EMAIL) && !in_array($er, $admin_recipients, true)) {
+                                        $admin_recipients[] = $er;
+                                    }
+                                }
+                            }
+                            $admin_copy_ok = false;
+                            $admin_copy_subject = "[Admin Copy] {$subject} -> {$target_email}";
+                            foreach ($admin_recipients as $ar) {
+                                $aok = @mail($ar, $admin_copy_subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
+                                if (!$aok) {
+                                    $aok = @mail($ar, $admin_copy_subject, $html_body, $headers_str);
+                                }
+                                if ($aok) $admin_copy_ok = true;
+                            }
+
+                            @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_SUPPLIER_ALERT] {$subject} -> {$target_email} (supplierOk=" . ($ok ? '1' : '0') . ", adminCopyOk=" . ($admin_copy_ok ? '1' : '0') . ")\n", FILE_APPEND);
+                            if ($ok || $admin_copy_ok) {
+                                $alerts_sent++;
+                                $supplier_alerts++;
+                            }
+                            $alert_details[] = [
+                                'conversationId' => $conv_id,
+                                'targetRole' => 'supplier',
+                                'recipient' => $target_email,
+                                'subject' => $subject,
+                                'messageCount' => count($msgs),
+                                'messageIds' => $msg_ids,
+                                'supplierMailAccepted' => (bool)$ok,
+                                'adminCopyRecipients' => $admin_recipients,
+                                'adminCopyAccepted' => (bool)$admin_copy_ok
+                            ];
+                            if (!$ok && !$admin_copy_ok) {
+                                continue;
+                            }
                         }
                     } else {
                         // Supplier sent -> Admin hasn't read within 60s
@@ -3954,14 +4443,30 @@ switch ($action) {
                             </div>
                           </div>
                         </body></html>";
+                        $admin_ok = false;
                         foreach ($admin_recipients as $ar) {
                             $ok = @mail($ar, $subject, $html_body, $headers_str, "-f noreply@tradeheaven.net");
-                            if (!$ok) @mail($ar, $subject, $html_body, $headers_str);
+                            if (!$ok) $ok = @mail($ar, $subject, $html_body, $headers_str);
+                            if ($ok) $admin_ok = true;
                         }
-                        @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_ADMIN_ALERT] {$subject} -> " . implode(', ', $admin_recipients) . "\n", FILE_APPEND);
-                        $alerts_sent++;
-                        $admin_alerts++;
-                        $alert_details[] = ['conversationId' => $conv_id, 'targetRole' => 'admin', 'recipient' => implode(', ', $admin_recipients), 'subject' => $subject, 'messageCount' => count($msgs)];
+                        @file_put_contents(__DIR__ . '/activity_mail.log', "[" . date('Y-m-d H:i:s') . "] [1MIN_UNSEEN_ADMIN_ALERT] {$subject} -> " . implode(', ', $admin_recipients) . " (ok=" . ($admin_ok ? '1' : '0') . ")\n", FILE_APPEND);
+                        if ($admin_ok) {
+                            $alerts_sent++;
+                            $admin_alerts++;
+                        }
+                        $alert_details[] = [
+                            'conversationId' => $conv_id,
+                            'targetRole' => 'admin',
+                            'recipient' => implode(', ', $admin_recipients),
+                            'subject' => $subject,
+                            'messageCount' => count($msgs),
+                            'messageIds' => $msg_ids,
+                            'adminCopyRecipients' => $admin_recipients,
+                            'adminCopyAccepted' => (bool)$admin_ok
+                        ];
+                        if (!$admin_ok) {
+                            continue;
+                        }
                     }
 
                     // Mark all messages in group as email_alert_sent = 1
@@ -4075,6 +4580,1107 @@ switch ($action) {
             "mediaSize" => $final_size,
             "mimeType" => $mime_type,
             "url" => $public_url
+        ]);
+        break;
+
+    // -------------------------------------------------------------
+    // Visual Product Image Finder / Auto-Fetch Engine (7-Day Cache)
+    // -------------------------------------------------------------
+    case 'fetch_product_images':
+    case 'visual_product_search':
+        $raw_p_name = trim((string)($input['product_name'] ?? $input['productName'] ?? $input['q'] ?? $_GET['product_name'] ?? $_GET['productName'] ?? $_GET['q'] ?? ''));
+        $p_cat = trim((string)($input['category'] ?? $_GET['category'] ?? ''));
+        $p_specs = trim((string)($input['specifications'] ?? $input['specs'] ?? $_GET['specifications'] ?? ''));
+        $req_count = max(12, min(20, intval($input['count'] ?? $_GET['count'] ?? 15)));
+        $force_refresh = !empty($input['force_refresh']) || !empty($input['forceRefresh']) || (($_GET['force_refresh'] ?? '') === '1');
+
+        // Clean RFQ boilerplate, quantities, parenthetical ports/engines, and contract suffixes
+        $clean_subject = preg_replace('/\([^)]*\)/', ' ', $raw_p_name);
+        $clean_subject = preg_replace('/\[[^\]]*\]/', ' ', (string)$clean_subject);
+        $clean_subject = preg_replace('/^[^\wA-Za-z0-9]+/u', '', (string)$clean_subject);
+        $clean_subject = preg_replace('/^(?:golden\s+lead|vip\s+exclusive|urgent\s+requirement|urgent\s+tender|buying\s+lead|buy\s+lead|sourcing\s+request|spot\s+tender|annual\s+contract|rfq|wanted)\b[\s:\-–—•]*/iu', '', (string)$clean_subject);
+        $clean_subject = preg_replace('/^[^\wA-Za-z0-9]+/u', '', (string)$clean_subject);
+        $clean_subject = preg_replace('/^\d[\d,.]*\s*(?:mt|metric\s+tons?|tons?|units?|pcs|pieces|barrels?|bbl|containers?|fcl|teu|kg|kgs|liters?|lbs)\b\s*(?:of\s+)?/i', '', (string)$clean_subject);
+        $clean_subject = preg_replace('/\s+[-–—]\s*\d[\d,.]*\s*(?:mt|tons?|units?|pcs|barrels?|fcl|mw|kw|months?|years?).*$/i', '', (string)$clean_subject);
+        $clean_subject = preg_replace('/\b\d+(?:\.\d+)?\s*-\s*ton\b/i', ' ', (string)$clean_subject);
+        $clean_subject = preg_replace('/\bgrade\s+[a-z0-9+-]+\b/i', ' ', (string)$clean_subject);
+        $clean_subject = preg_replace('/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/', ' ', (string)$clean_subject);
+        $clean_subject = trim(preg_replace('/\s+/', ' ', (string)$clean_subject));
+        $p_name = strlen($clean_subject) >= 2 ? $clean_subject : $raw_p_name;
+
+        if (strlen($p_name) < 2) {
+            echo json_encode([
+                "status" => "invalid_query",
+                "success" => false,
+                "message" => "Please provide a valid product name to fetch product images.",
+                "images" => [],
+                "pool" => []
+            ]);
+            break;
+        }
+
+        $norm_name = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($p_name))));
+        $norm_cat = trim(preg_replace('/\s+/', ' ', preg_replace('/[^\w\s-]/', ' ', strtolower($p_cat))));
+        $cache_keyword = $norm_cat !== '' ? ($norm_name . '::' . $norm_cat) : $norm_name;
+
+        $cat_word = '';
+        if ($p_cat !== '') {
+            $parts = preg_split('/[&,]/', $p_cat);
+            $first_part = trim((string)($parts[0] ?? ''));
+            if ($first_part !== '' && stripos($p_name, explode(' ', $first_part)[0]) === false) {
+                $cat_word = $first_part;
+            }
+        }
+        $spec_words = [];
+        if ($p_specs !== '') {
+            $sw = preg_split('/[\s,;|{}\[\]"]+/', $p_specs);
+            foreach ($sw as $w) {
+                if (strlen($w) >= 3 && !preg_match('/^(the|and|for|with|grade|quality|export|iso|verified)$/i', $w)) {
+                    $spec_words[] = $w;
+                    if (count($spec_words) >= 3) break;
+                }
+            }
+        }
+        $core_query = trim(implode(' ', array_filter([$p_name, $cat_word, implode(' ', $spec_words)])));
+        $query_used = "\"{$p_name}\" {$core_query} product photo OR wholesale OR export -wallpaper -clipart -cartoon -logo -meme";
+
+        $cache_file_json = __DIR__ . '/product_image_cache.json';
+
+        // 1. Check 7-day MySQL product_image_cache (or JSON fallback)
+        if (!$force_refresh) {
+            $cached_pool = null;
+            if ($db_connected && $pdo) {
+                try {
+                    $cStmt = $pdo->prepare("SELECT image_urls_json FROM product_image_cache WHERE keyword = ? AND updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) LIMIT 1");
+                    $cStmt->execute([$cache_keyword]);
+                    $cRow = $cStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($cRow && !empty($cRow['image_urls_json'])) {
+                        $dec = json_decode((string)$cRow['image_urls_json'], true);
+                        if (is_array($dec) && count($dec) >= 10) $cached_pool = $dec;
+                    }
+                } catch (Exception $e) {}
+            }
+            if ($cached_pool === null && file_exists($cache_file_json)) {
+                $f_json = json_decode((string)@file_get_contents($cache_file_json), true);
+                if (is_array($f_json) && isset($f_json[$cache_keyword])) {
+                    $rec = $f_json[$cache_keyword];
+                    $ts = isset($rec['updatedAt']) ? strtotime((string)$rec['updatedAt']) : 0;
+                    if ($ts > 0 && (time() - $ts) < 7 * 86400 && !empty($rec['images']) && is_array($rec['images']) && count($rec['images']) >= 10) {
+                        $cached_pool = $rec['images'];
+                    }
+                }
+            }
+            if (is_array($cached_pool) && count($cached_pool) >= 10) {
+                shuffle($cached_pool);
+                $selected = array_slice($cached_pool, 0, $req_count);
+                echo json_encode([
+                    "status" => "cached",
+                    "success" => true,
+                    "fromCache" => true,
+                    "provider" => "gemini_google_search_grounding",
+                    "queryUsed" => $query_used,
+                    "totalVerified" => count($cached_pool),
+                    "images" => $selected,
+                    "pool" => $cached_pool
+                ]);
+                break;
+            }
+        }
+
+        // 2. Resolve ONLY GEMINI_API_KEY from env, $_ENV/$_SERVER, .env, or MySQL site_settings
+        $gemini_api_key = trim((string)(getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? $_SERVER['GEMINI_API_KEY'] ?? '')));
+        if ($gemini_api_key === '' && file_exists(__DIR__ . '/.env')) {
+            $env_lines = @file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (is_array($env_lines)) {
+                foreach ($env_lines as $el) {
+                    if (preg_match('/^\s*GEMINI_API_KEY\s*=\s*["\']?([^"\'\r\n]+)["\']?/i', $el, $em)) {
+                        $gemini_api_key = trim((string)$em[1]);
+                        break;
+                    }
+                }
+            }
+        }
+        if (($gemini_api_key === '' || $gemini_api_key === 'MY_GEMINI_API_KEY') && $db_connected && $pdo) {
+            try {
+                $sStmt = $pdo->query("SELECT setting_value FROM site_settings WHERE setting_key IN ('GEMINI_API_KEY','gemini_api_key') LIMIT 1");
+                $sv = trim((string)($sStmt->fetchColumn() ?: ''));
+                if ($sv !== '') $gemini_api_key = $sv;
+            } catch (Exception $e) {}
+        }
+        if ($gemini_api_key === 'MY_GEMINI_API_KEY') $gemini_api_key = '';
+
+        if ($gemini_api_key === '') {
+            echo json_encode([
+                "status" => "api_key_missing",
+                "success" => false,
+                "configRequired" => true,
+                "message" => "GEMINI_API_KEY is not configured. Please ensure GEMINI_API_KEY is set in Settings > Secrets to enable Gemini Google Search Grounding visual product search.",
+                "queryUsed" => $query_used,
+                "images" => [],
+                "pool" => []
+            ]);
+            break;
+        }
+
+        $blocked_domains = [
+            'picsum.photos', 'via.placeholder.com', 'placeholder.com', 'dummyimage.com', 'placekitten.com',
+            'unsplash.com', 'images.unsplash.com', 'pexels.com', 'pixabay.com',
+            'shutterstock.com', 'istockphoto.com', 'gettyimages.com', 'alamy.com', '123rf.com',
+            'depositphotos.com', 'dreamstime.com', 'lookaside.fbsbx.com', 'fbsbx.com',
+            'facebook.com', 'instagram.com', 'tiktok.com', 'pinterest.com', 'twimg.com'
+        ];
+        $stopwords = ['the','and','for','with','from','that','this','export','grade','quality','wholesale','bulk','supply','direct','factory','oem','odm','verified','new','high','best','commercial','industrial','product','products','unit','units','tons','metric','pcs','pieces','kgs','kg','ton','pure','natural','premium','standard','international','global','certified','genuine','original','custom','rfq','wanted','urgent','requirement','tender','cif','fob','port','months','month'];
+        $modifier_words = ['fresh','raw','black','white','red','green','yellow','blue','golden','silver','refined','unrefined','organic','processed','frozen','dried','dry','wet','liquid','solid','powder','powdered','granular','granules','crude','heavy','light','duty','medium','small','large','extra','long','short','steam','parboiled','broken','whole','split','peeled','washed','polished','unpolished','stone','stones','rock','hydraulic','crawler','wheeled','portable','automatic','semi','manual','electric','electronic','digital','smart','mini','micro','multi','single','double','triple','stage','type','class','series','model','system','systems','machine','machinery','equipment','automotive','agricultural','medical','surgical','pharmaceutical','cosmetic','food','edible','packaging','printed','plain','corrugated','kraft','woven','nonwoven','knitted','stainless','carbon','alloy','cast','forged','hot','cold','rolled','galvanized','coated','painted','anodized','aspheric','optical','infrared','thermal','solar','inverter','window','wall','mounted','ceiling','floor','standing','grain','electrolytic'];
+        $raw_tokens = preg_split('/\s+/', preg_replace('/[^a-z0-9\s]/', ' ', strtolower($p_name)));
+        $prod_tokens = [];
+        $core_nouns = [];
+        foreach ($raw_tokens as $tk) {
+            if (strlen($tk) >= 3 && !ctype_digit($tk) && !in_array($tk, $stopwords, true) && !in_array($tk, $prod_tokens, true)) {
+                $prod_tokens[] = $tk;
+                if (!in_array($tk, $modifier_words, true)) {
+                    $core_nouns[] = $tk;
+                }
+            }
+        }
+        if (empty($core_nouns)) $core_nouns = $prod_tokens;
+
+        $token_matches_text = function($tk, $txt) {
+            $stems = [$tk];
+            if (strlen($tk) > 4) {
+                if (substr($tk, -3) === 'ies') $stems[] = substr($tk, 0, -3) . 'y';
+                if (substr($tk, -2) === 'es') $stems[] = substr($tk, 0, -2);
+                if (substr($tk, -1) === 's') $stems[] = substr($tk, 0, -1);
+            }
+            foreach ($stems as $st) {
+                if (strlen($st) >= 3 && strpos($txt, $st) !== false) return true;
+            }
+            return false;
+        };
+
+        $is_relevant_direct_image = function($cand) use ($blocked_domains, $prod_tokens, $core_nouns, $token_matches_text) {
+            $u = trim((string)($cand['url'] ?? ''));
+            if ($u === '' || !preg_match('/^https?:\/\//i', $u)) return false;
+            if (!preg_match('/\.(?:jpe?g|png|webp)(?:[?#!_].*)?$/i', $u)) return false;
+            $host = strtolower((string)(parse_url($u, PHP_URL_HOST) ?? ''));
+            if ($host === '') return false;
+            foreach ($blocked_domains as $bd) {
+                if ($host === $bd || substr($host, -strlen('.' . $bd)) === '.' . $bd) return false;
+            }
+            $combined = strtolower($u . ' ' . ($cand['title'] ?? '') . ' ' . ($cand['sourceDomain'] ?? ''));
+            if (preg_match('/(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i', $combined)) {
+                return false;
+            }
+            if (!empty($cand['width']) && $cand['width'] < 300) return false;
+            if (!empty($cand['height']) && $cand['height'] < 300) return false;
+            if (empty($prod_tokens)) return 1;
+            $hits_all = 0;
+            foreach ($prod_tokens as $tk) {
+                if ($token_matches_text($tk, $combined)) $hits_all++;
+            }
+            $hits_core = 0;
+            foreach ($core_nouns as $cn) {
+                if ($token_matches_text($cn, $combined)) $hits_core++;
+            }
+            if ($hits_core === 0) return false;
+            $head_noun = !empty($core_nouns) ? $core_nouns[count($core_nouns) - 1] : '';
+            $first_core = !empty($core_nouns) ? $core_nouns[0] : '';
+            $head_matched = $head_noun !== '' ? $token_matches_text($head_noun, $combined) : false;
+            $first_matched = $first_core !== '' ? $token_matches_text($first_core, $combined) : false;
+            if (count($prod_tokens) >= 2 && $hits_all < 2 && !$head_matched && !$first_matched) {
+                return false;
+            }
+            return $hits_core * 3 + $hits_all + ($head_matched ? 2 : 0);
+        };
+
+        $call_gemini_grounded = function($prompt_text) use ($gemini_api_key, $p_name) {
+            $models = ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
+            $last_err = '';
+            foreach ($models as $m_name) {
+                $api_url = 'https://generativelanguage.googleapis.com/v1beta/models/' . urlencode($m_name) . ':generateContent?key=' . urlencode($gemini_api_key);
+                $req_body = json_encode([
+                    'contents' => [['role' => 'user', 'parts' => [['text' => $prompt_text]]]],
+                    'tools' => [['google_search' => new stdClass()]]
+                ]);
+                $resp_code = 0;
+                $resp_raw = '';
+                if (function_exists('curl_init')) {
+                    $ch = curl_init($api_url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $req_body);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 18);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'User-Agent: aistudio-build']);
+                    $resp_raw = (string)curl_exec($ch);
+                    $resp_code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+                    curl_close($ch);
+                } else {
+                    $ctx = stream_context_create([
+                        'http' => [
+                            'method' => 'POST',
+                            'header' => "Content-Type: application/json\r\nUser-Agent: aistudio-build\r\n",
+                            'content' => $req_body,
+                            'timeout' => 18,
+                            'ignore_errors' => true
+                        ]
+                    ]);
+                    $resp_raw = (string)@file_get_contents($api_url, false, $ctx);
+                    $resp_code = $resp_raw !== '' ? 200 : 500;
+                }
+                $json = json_decode($resp_raw, true) ?: [];
+                if ($resp_code >= 400 || !empty($json['error'])) {
+                    $last_err = (string)($json['error']['message'] ?? ('HTTP ' . $resp_code));
+                    if (preg_match('/API_KEY_INVALID|PERMISSION_DENIED/i', $last_err)) break;
+                    continue;
+                }
+
+                $parts = $json['candidates'][0]['content']['parts'] ?? [];
+                $raw_text = '';
+                foreach ($parts as $pt) {
+                    if (!empty($pt['text'])) $raw_text .= "\n" . $pt['text'];
+                }
+                $cleaned = trim(preg_replace('/\s*```$/i', '', preg_replace('/^```(?:json)?\s*/i', '', trim($raw_text))));
+                $parsed_items = [];
+                $dec = json_decode($cleaned, true);
+                if (is_array($dec)) {
+                    $parsed_items = isset($dec['images']) && is_array($dec['images']) ? $dec['images'] : $dec;
+                } elseif (preg_match('/\{[\s\S]*\}/', $cleaned, $jm)) {
+                    $dec2 = json_decode($jm[0], true);
+                    if (is_array($dec2)) $parsed_items = isset($dec2['images']) && is_array($dec2['images']) ? $dec2['images'] : $dec2;
+                } elseif (preg_match('/\[[\s\S]*\]/', $cleaned, $am)) {
+                    $dec3 = json_decode($am[0], true);
+                    if (is_array($dec3)) $parsed_items = $dec3;
+                }
+
+                $cands = [];
+                $pages = [];
+                foreach ($parsed_items as $it) {
+                    if (!is_array($it)) continue;
+                    $u = trim((string)($it['url'] ?? $it['imageUrl'] ?? $it['image_url'] ?? ''));
+                    if ($u !== '' && preg_match('/^https?:\/\//i', $u)) {
+                        $cands[] = [
+                            'url' => $u,
+                            'thumbnailUrl' => trim((string)($it['thumbnailUrl'] ?? $u)),
+                            'title' => trim((string)($it['title'] ?? $p_name)),
+                            'sourceDomain' => trim((string)($it['sourceDomain'] ?? parse_url($u, PHP_URL_HOST) ?? '')),
+                            'width' => intval($it['width'] ?? 0) ?: null,
+                            'height' => intval($it['height'] ?? 0) ?: null
+                        ];
+                    }
+                    $sp = trim((string)($it['sourcePageUrl'] ?? $it['pageUrl'] ?? ''));
+                    if ($sp !== '' && preg_match('/^https?:\/\//i', $sp)) {
+                        $pages[] = ['uri' => $sp, 'title' => trim((string)($it['title'] ?? $p_name))];
+                    }
+                }
+                if (preg_match_all('/https?:\/\/[^\s"\'<>)\]]+?\.(?:jpe?g|png|webp)(?:\?[^\s"\'<>)\]]*)?/i', $cleaned, $um)) {
+                    foreach (array_unique($um[0]) as $found_u) {
+                        $cands[] = [
+                            'url' => $found_u,
+                            'thumbnailUrl' => $found_u,
+                            'title' => $p_name,
+                            'sourceDomain' => (string)(parse_url($found_u, PHP_URL_HOST) ?? '')
+                        ];
+                    }
+                }
+                foreach (($json['candidates'][0]['groundingMetadata']['groundingChunks'] ?? []) as $ch) {
+                    $g_uri = trim((string)($ch['web']['uri'] ?? ''));
+                    $g_title = trim((string)($ch['web']['title'] ?? $p_name));
+                    if ($g_uri !== '' && preg_match('/^https?:\/\//i', $g_uri)) {
+                        if (preg_match('/\.(?:jpe?g|png|webp)(?:[?#].*)?$/i', $g_uri)) {
+                            $cands[] = ['url' => $g_uri, 'thumbnailUrl' => $g_uri, 'title' => $g_title, 'sourceDomain' => (string)(parse_url($g_uri, PHP_URL_HOST) ?? '')];
+                        } else {
+                            $pages[] = ['uri' => $g_uri, 'title' => $g_title];
+                        }
+                    }
+                }
+                if (!empty($cands) || !empty($pages)) {
+                    return ['candidates' => $cands, 'pages' => $pages, 'error' => ''];
+                }
+            }
+            return ['candidates' => [], 'pages' => [], 'error' => $last_err];
+        };
+
+        $resolve_php_url = function($raw, $base) {
+            $clean = trim(str_replace('&amp;', '&', (string)$raw));
+            if ($clean === '' || stripos($clean, 'data:') === 0) return '';
+            if (preg_match('/^https?:\/\//i', $clean)) return $clean;
+            $bp = parse_url($base);
+            if (empty($bp['scheme']) || empty($bp['host'])) return '';
+            $port = !empty($bp['port']) ? (':' . $bp['port']) : '';
+            $origin = $bp['scheme'] . '://' . $bp['host'] . $port;
+            if (strpos($clean, '//') === 0) return $bp['scheme'] . ':' . $clean;
+            if (strpos($clean, '/') === 0) return $origin . $clean;
+            $base_path = $bp['path'] ?? '/';
+            $dir = rtrim(dirname($base_path), '/\\');
+            return $origin . ($dir === '' ? '' : $dir) . '/' . ltrim($clean, '/');
+        };
+
+        $scrape_grounded_pages = function($pages) use ($blocked_domains, $p_name, $is_relevant_direct_image, $resolve_php_url) {
+            $out = [];
+            $seen_p = [];
+            $targets = [];
+            foreach ($pages as $pg) {
+                $u = trim((string)($pg['uri'] ?? ''));
+                if ($u === '' || isset($seen_p[$u])) continue;
+                $h = strtolower((string)(parse_url($u, PHP_URL_HOST) ?? ''));
+                $skip = false;
+                foreach ($blocked_domains as $bd) {
+                    if ($h === $bd || substr($h, -strlen('.' . $bd)) === '.' . $bd) { $skip = true; break; }
+                }
+                if ($skip) continue;
+                $seen_p[$u] = true;
+                $targets[] = ['uri' => $u, 'title' => $pg['title'] ?? $p_name];
+                if (count($targets) >= 10) break;
+            }
+            if (empty($targets) || !function_exists('curl_multi_init')) return $out;
+            $mh = curl_multi_init();
+            $handles = [];
+            foreach ($targets as $idx => $tg) {
+                $ch = curl_init($tg['uri']);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)');
+                curl_multi_add_handle($mh, $ch);
+                $handles[$idx] = [$ch, $tg];
+            }
+            $running = null;
+            do { curl_multi_exec($mh, $running); curl_multi_select($mh, 0.1); } while ($running > 0);
+            foreach ($handles as [$ch, $tg]) {
+                $html = (string)curl_multi_getcontent($ch);
+                $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+                $eff_page = (string)curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+                curl_multi_remove_handle($mh, $ch);
+                curl_close($ch);
+                if ($code < 200 || $code >= 400 || $html === '') continue;
+                $final_page_url = ($eff_page !== '' && preg_match('/^https?:\/\//i', $eff_page)) ? $eff_page : $tg['uri'];
+                $dom = strtolower((string)(parse_url($final_page_url, PHP_URL_HOST) ?? ''));
+                $skip_eff = false;
+                foreach ($blocked_domains as $bd) {
+                    if ($dom === $bd || substr($dom, -strlen('.' . $bd)) === '.' . $bd) { $skip_eff = true; break; }
+                }
+                if ($skip_eff) continue;
+                $snippet = substr($html, 0, 220000);
+                if (preg_match_all('/<meta[^>]+(?:property|name)=["\'](?:og:image|og:image:secure_url|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']/i', $snippet, $mm1)) {
+                    foreach ($mm1[1] as $mu) {
+                        $res_u = $resolve_php_url($mu, $final_page_url);
+                        if ($res_u !== '') $out[] = ['url' => $res_u, 'thumbnailUrl' => $res_u, 'title' => $tg['title'], 'sourceDomain' => $dom];
+                    }
+                }
+                if (preg_match_all('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|og:image:secure_url|twitter:image)["\']/i', $snippet, $mm2)) {
+                    foreach ($mm2[1] as $mu) {
+                        $res_u = $resolve_php_url($mu, $final_page_url);
+                        if ($res_u !== '') $out[] = ['url' => $res_u, 'thumbnailUrl' => $res_u, 'title' => $tg['title'], 'sourceDomain' => $dom];
+                    }
+                }
+                if (preg_match_all('/<img[^>]+(?:src|data-src|data-original)=["\']([^"\']+\.(?:jpe?g|png|webp)(?:\?[^"\']*)?)["\']/i', $snippet, $im)) {
+                    foreach (array_slice($im[1], 0, 8) as $iu) {
+                        $res_u = $resolve_php_url($iu, $final_page_url);
+                        if ($res_u === '') continue;
+                        $cand = ['url' => $res_u, 'thumbnailUrl' => $res_u, 'title' => $tg['title'], 'sourceDomain' => $dom];
+                        if ($is_relevant_direct_image($cand)) $out[] = $cand;
+                    }
+                }
+            }
+            curl_multi_close($mh);
+            return $out;
+        };
+
+        $verify_live_batch = function($cand_list) {
+            if (empty($cand_list) || !function_exists('curl_multi_init')) return array_values($cand_list);
+            $run_checks = function($items, $use_get_range = false) {
+                $mh = curl_multi_init();
+                $handles = [];
+                foreach ($items as $idx => $cand) {
+                    $ch = curl_init($cand['url']);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+                    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; TradeHeavenVisualBot/1.0)');
+                    if ($use_get_range) {
+                        curl_setopt($ch, CURLOPT_NOBODY, false);
+                        curl_setopt($ch, CURLOPT_RANGE, '0-4095');
+                    } else {
+                        curl_setopt($ch, CURLOPT_NOBODY, true);
+                    }
+                    curl_multi_add_handle($mh, $ch);
+                    $handles[$idx] = [$ch, $cand];
+                }
+                $running = null;
+                do { curl_multi_exec($mh, $running); curl_multi_select($mh, 0.1); } while ($running > 0);
+                $passed = [];
+                $retry = [];
+                foreach ($handles as [$ch, $cand]) {
+                    $code = intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+                    $ctype = strtolower((string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE));
+                    $clen = curl_getinfo($ch, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
+                    $eff = (string)curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+                    curl_multi_remove_handle($mh, $ch);
+                    curl_close($ch);
+                    if (!$use_get_range && in_array($code, [400, 403, 405, 501], true)) {
+                        $retry[] = $cand;
+                        continue;
+                    }
+                    if ($code < 200 || ($code >= 300 && $code !== 206 && $code !== 304)) continue;
+                    if ($ctype !== '') {
+                        if (strpos($ctype, 'text/html') !== false || strpos($ctype, 'application/json') !== false || strpos($ctype, 'svg') !== false || strpos($ctype, 'gif') !== false || strpos($ctype, 'icon') !== false) {
+                            continue;
+                        }
+                        $supported_mime = (strpos($ctype, 'image/jpeg') !== false || strpos($ctype, 'image/jpg') !== false || strpos($ctype, 'image/png') !== false || strpos($ctype, 'image/webp') !== false || (strpos($ctype, 'application/octet-stream') !== false && preg_match('/\.(?:jpe?g|png|webp)(?:[?#].*)?$/i', $cand['url'])));
+                        if (!$supported_mime) continue;
+                    }
+                    if ($clen > 0 && $clen < 6000) continue;
+                    $final_u = ($eff !== '' && preg_match('/^https?:\/\//i', $eff)) ? $eff : $cand['url'];
+                    $cand['url'] = $final_u;
+                    $cand['thumbnailUrl'] = $final_u;
+                    $passed[] = $cand;
+                }
+                curl_multi_close($mh);
+                return ['passed' => $passed, 'retry' => $retry];
+            };
+
+            $first = $run_checks($cand_list, false);
+            $ok = $first['passed'];
+            if (!empty($first['retry'])) {
+                $second = $run_checks($first['retry'], true);
+                $ok = array_merge($ok, $second['passed']);
+            }
+            return $ok;
+        };
+
+        $fetch_live_commercial_web_images = function() use ($p_name, $p_specs) {
+            $found = [];
+            $queries = [
+                trim($p_name),
+                trim($p_name . ' ' . $p_specs . ' wholesale')
+            ];
+            foreach ($queries as $q_str) {
+                $b_url = 'https://www.bing.com/images/search?q=' . urlencode($q_str) . '&form=HDRSC2&first=1';
+                $b_html = '';
+                if (function_exists('curl_init')) {
+                    $ch = curl_init($b_url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+                    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+                    $b_html = (string)curl_exec($ch);
+                    curl_close($ch);
+                }
+                if ($b_html !== '' && preg_match_all('/m="(\{&quot;[^"]+\})"/', $b_html, $bm)) {
+                    foreach ($bm[1] as $raw_m) {
+                        $dec_m = json_decode(html_entity_decode($raw_m, ENT_QUOTES, 'UTF-8'), true);
+                        if (!is_array($dec_m)) continue;
+                        $murl = trim((string)($dec_m['murl'] ?? ''));
+                        if ($murl === '' || !preg_match('/^https?:\/\//i', $murl)) continue;
+                        $purl = trim((string)($dec_m['purl'] ?? $murl));
+                        $found[] = [
+                            'url' => $murl,
+                            'thumbnailUrl' => $murl,
+                            'title' => trim((string)($dec_m['t'] ?? $p_name)),
+                            'sourceDomain' => strtolower((string)(parse_url($purl, PHP_URL_HOST) ?? ''))
+                        ];
+                    }
+                }
+            }
+            return $found;
+        };
+
+        $cand_pool = [];
+        $verified = [];
+        $seen_urls = [];
+        $quota_error = '';
+
+        $add_cands = function($list) use (&$cand_pool, &$seen_urls, $is_relevant_direct_image) {
+            foreach ($list as $c) {
+                $u = trim((string)($c['url'] ?? ''));
+                $dk = explode('#', $u)[0];
+                if ($u === '' || isset($seen_urls[$dk])) continue;
+                $score = $is_relevant_direct_image($c);
+                if ($score === false) continue;
+                $seen_urls[$dk] = true;
+                $c['relevanceScore'] = intval($score);
+                $cand_pool[] = $c;
+            }
+        };
+
+        $spec_note = $p_specs !== '' ? " ({$p_specs})" : '';
+        $cat_note = $p_cat !== '' ? " in category \"{$p_cat}\"" : '';
+        $r1_prompt = "You are a commercial product image research engine using Google Search.\nFind 20 to 25 REAL, public, high-resolution direct product photography image URLs (.jpg, .jpeg, .png, or .webp) strictly depicting the exact product: \"{$p_name}\"{$cat_note}{$spec_note}.\nEvery url must be a direct .jpg/.jpeg/.png/.webp image file URL (min 300x300). No shutterstock/getty/istock/alamy/123rf/depositphotos/dreamstime/picsum/via.placeholder, no logos, svg, gif, icons, or off-topic photos.\nReturn ONLY valid JSON: {\"images\":[{\"url\":\"https://.../photo.jpg\",\"sourcePageUrl\":\"https://...\",\"title\":\"...\",\"sourceDomain\":\"...\"}]}.";
+
+        $r1 = $call_gemini_grounded($r1_prompt);
+        if ($r1['error'] !== '' && preg_match('/quota|429|RESOURCE_EXHAUSTED|API_KEY_INVALID|PERMISSION_DENIED/i', $r1['error'])) {
+            $quota_error = "Gemini Google Search Grounding quota or key error ({$r1['error']}). Please verify GEMINI_API_KEY in Settings > Secrets.";
+        }
+        $add_cands($r1['candidates']);
+        if (!empty($r1['pages']) && count($cand_pool) < 25) {
+            $add_cands($scrape_grounded_pages($r1['pages']));
+        }
+        $verified = $verify_live_batch(array_slice($cand_pool, 0, 30));
+
+        if (count($verified) < 12 && $quota_error === '') {
+            $cand_pool = [];
+            $r2_prompt = "Search Google for more distinct high-resolution commercial photography URLs (.jpg, .png, .webp) showing \"{$p_name}\"{$cat_note}. Include Wikimedia Commons (upload.wikimedia.org), manufacturer datasheets, and supplier product galleries.\nReturn ONLY valid JSON: {\"images\":[{\"url\":\"https://.../photo.jpg\",\"sourcePageUrl\":\"https://...\",\"title\":\"...\",\"sourceDomain\":\"...\"}]}.";
+            $r2 = $call_gemini_grounded($r2_prompt);
+            $add_cands($r2['candidates']);
+            if (!empty($r2['pages']) && count($cand_pool) < 22) {
+                $add_cands($scrape_grounded_pages($r2['pages']));
+            }
+            $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 30)));
+        }
+
+        if (count($verified) < 12) {
+            $cand_pool = [];
+            $add_cands($fetch_live_commercial_web_images());
+            $verified = array_merge($verified, $verify_live_batch(array_slice($cand_pool, 0, 40)));
+        }
+
+        if (empty($verified)) {
+            echo json_encode([
+                "status" => $quota_error !== '' ? "quota_exceeded" : "no_relevant_matches",
+                "success" => false,
+                "configRequired" => ($quota_error !== ''),
+                "message" => $quota_error !== '' ? $quota_error : "No verified commercial product photos (.jpg/.png/.webp) matched \"{$p_name}\" via Gemini Google Search Grounding. Try refining the product title or upload an image manually.",
+                "queryUsed" => $query_used,
+                "images" => [],
+                "pool" => []
+            ]);
+            break;
+        }
+
+        // Auto-upload top 4 verified external images directly onto the site (/assets/uploads/auto-...) so next loads are instant (0ms)
+        $uploads_dir_auto = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_auto) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_auto = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_auto)) {
+            @mkdir($uploads_dir_auto, 0775, true);
+        }
+        $auto_slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($p_name)), '-'), 0, 36) ?: 'product';
+        for ($mi = 0; $mi < min(4, count($verified)); $mi++) {
+            $ext_u = trim((string)($verified[$mi]['url'] ?? ''));
+            if ($ext_u === '' || strpos($ext_u, '/assets/uploads/') === 0) continue;
+            $u_hash = substr(sha1($ext_u), 0, 12);
+            $u_ext = 'jpg';
+            if (preg_match('/\.(png|webp)(?:[?#!_].*)?$/i', $ext_u, $em_ext)) {
+                $u_ext = strtolower($em_ext[1]);
+            }
+            $local_fname = "auto-{$auto_slug}-{$u_hash}.{$u_ext}";
+            $local_fpath = $uploads_dir_auto . '/' . $local_fname;
+            $local_web_url = '/assets/uploads/' . $local_fname;
+            if (file_exists($local_fpath) && filesize($local_fpath) > 1500) {
+                $verified[$mi]['url'] = $local_web_url;
+                $verified[$mi]['thumbnailUrl'] = $local_web_url;
+            } elseif (function_exists('curl_init')) {
+                $ch_dl = curl_init($ext_u);
+                curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch_dl, CURLOPT_TIMEOUT, 4);
+                curl_setopt($ch_dl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+                $bin_dl = (string)curl_exec($ch_dl);
+                $code_dl = intval(curl_getinfo($ch_dl, CURLINFO_HTTP_CODE));
+                $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
+                curl_close($ch_dl);
+                if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
+                    if (@file_put_contents($local_fpath, $bin_dl) !== false) {
+                        $verified[$mi]['url'] = $local_web_url;
+                        $verified[$mi]['thumbnailUrl'] = $local_web_url;
+                    }
+                }
+            }
+        }
+
+        // Persist into 7-day MySQL product_image_cache + JSON cache
+        $json_pool = json_encode($verified, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($db_connected && $pdo) {
+            try {
+                $upStmt = $pdo->prepare("INSERT INTO product_image_cache (keyword, image_urls_json, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE image_urls_json = VALUES(image_urls_json), updated_at = NOW()");
+                $upStmt->execute([$cache_keyword, $json_pool]);
+            } catch (Exception $e) {}
+        }
+        $existing_json_cache = file_exists($cache_file_json) ? (json_decode((string)@file_get_contents($cache_file_json), true) ?: []) : [];
+        $existing_json_cache[$cache_keyword] = [
+            "keyword" => $cache_keyword,
+            "queryUsed" => $query_used,
+            "images" => $verified,
+            "updatedAt" => gmdate('c'),
+            "provider" => "gemini_google_search_grounding"
+        ];
+        @file_put_contents($cache_file_json, json_encode($existing_json_cache, JSON_UNESCAPED_SLASHES));
+
+        shuffle($verified);
+        $selected = array_slice($verified, 0, $req_count);
+        echo json_encode([
+            "status" => "ok",
+            "success" => true,
+            "fromCache" => false,
+            "provider" => "gemini_google_search_grounding",
+            "queryUsed" => $query_used,
+            "totalVerified" => count($verified),
+            "images" => $selected,
+            "pool" => $verified
+        ]);
+        break;
+
+    case 'auto_upload_product_image':
+        $ext_url = trim((string)($input['image_url'] ?? $input['imageUrl'] ?? $input['url'] ?? $_GET['image_url'] ?? ''));
+        $prod_id = trim((string)($input['product_id'] ?? $input['productId'] ?? $_GET['product_id'] ?? ''));
+        $prod_name = trim((string)($input['product_name'] ?? $input['productName'] ?? $_GET['product_name'] ?? 'product'));
+        if ($ext_url === '') {
+            echo json_encode(["status" => "error", "success" => false, "localUrl" => "", "originalUrl" => $ext_url]);
+            break;
+        }
+        $uploads_dir_auto = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_auto) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_auto = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_auto)) {
+            @mkdir($uploads_dir_auto, 0775, true);
+        }
+
+        $local_web_url = '';
+        $u_ext = 'WEBP';
+        $saved_ok = false;
+
+        if (strpos($ext_url, '/assets/uploads/') === 0 || strpos($ext_url, '/src/assets/') === 0) {
+            $clean_local = explode('?', $ext_url)[0];
+            if (strpos($clean_local, '/assets/uploads/') === 0) {
+                $local_check_path = $uploads_dir_auto . '/' . basename($clean_local);
+                $saved_ok = (file_exists($local_check_path) && filesize($local_check_path) > 1500);
+            } else {
+                $saved_ok = true;
+            }
+            if ($saved_ok) {
+                $local_web_url = $clean_local;
+                $u_ext = strtoupper(pathinfo($clean_local, PATHINFO_EXTENSION) ?: 'WEBP');
+            }
+        } elseif (preg_match('/^https?:\/\//i', $ext_url)) {
+            $auto_slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($prod_name)), '-'), 0, 36) ?: 'product';
+            $u_hash = substr(sha1($ext_url), 0, 12);
+            $dl_ext = 'jpg';
+            if (preg_match('/\.(png|webp)(?:[?#!_].*)?$/i', $ext_url, $em_ext)) {
+                $dl_ext = strtolower($em_ext[1]);
+            }
+            $u_ext = strtoupper($dl_ext);
+            $local_fname = "auto-{$auto_slug}-{$u_hash}.{$dl_ext}";
+            $local_fpath = $uploads_dir_auto . '/' . $local_fname;
+            $local_web_url = '/assets/uploads/' . $local_fname;
+            $saved_ok = (file_exists($local_fpath) && filesize($local_fpath) > 1500);
+            if (!$saved_ok && function_exists('curl_init')) {
+                $ch_dl = curl_init($ext_url);
+                curl_setopt($ch_dl, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch_dl, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch_dl, CURLOPT_TIMEOUT, 6);
+                curl_setopt($ch_dl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+                $bin_dl = (string)curl_exec($ch_dl);
+                $code_dl = intval(curl_getinfo($ch_dl, CURLINFO_HTTP_CODE));
+                $ct_dl = strtolower((string)curl_getinfo($ch_dl, CURLINFO_CONTENT_TYPE));
+                curl_close($ch_dl);
+                if ($code_dl >= 200 && $code_dl < 300 && strlen($bin_dl) > 2500 && strpos($ct_dl, 'text/html') === false) {
+                    $saved_ok = (@file_put_contents($local_fpath, $bin_dl) !== false);
+                }
+            }
+        }
+
+        if ($saved_ok && $local_web_url !== '') {
+            $overrides_file = $uploads_dir_auto . '/product-image-overrides.json';
+            $ov_state = file_exists($overrides_file) ? (json_decode((string)@file_get_contents($overrides_file), true) ?: []) : [];
+            if (!isset($ov_state['urlReplacements']) || !is_array($ov_state['urlReplacements'])) $ov_state['urlReplacements'] = [];
+            if (!isset($ov_state['overrides']) || !is_array($ov_state['overrides'])) $ov_state['overrides'] = [];
+            if (!isset($ov_state['mediaLibrary']) || !is_array($ov_state['mediaLibrary'])) $ov_state['mediaLibrary'] = [];
+
+            if (preg_match('/^https?:\/\//i', $ext_url)) {
+                $ov_state['urlReplacements'][$ext_url] = $local_web_url;
+            }
+
+            $should_bind_ov = function($key) use ($ov_state, $uploads_dir_auto) {
+                if (empty($ov_state['overrides'][$key]) || empty($ov_state['overrides'][$key]['primary'])) return true;
+                $cur = strtolower((string)$ov_state['overrides'][$key]['primary']);
+                if (strpos($cur, 'unsplash.com') !== false || strpos($cur, 'picsum.photos') !== false || strpos($cur, 'placeholder') !== false) return true;
+                if (preg_match('/^https?:\/\//i', $cur)) return true;
+                if (strpos($cur, '/assets/uploads/') === 0) {
+                    $fp = $uploads_dir_auto . '/' . basename(explode('?', $cur)[0]);
+                    if (!file_exists($fp) || filesize($fp) <= 1500) return true;
+                }
+                return false;
+            };
+
+            $now_ts = gmdate('Y-m-d\TH:i:s\Z');
+            if ($prod_id !== '' && $should_bind_ov($prod_id)) {
+                $ov_state['overrides'][$prod_id] = [
+                    "primary" => $local_web_url,
+                    "gallery" => [$local_web_url],
+                    "format" => $u_ext,
+                    "updatedAt" => $now_ts,
+                    "updatedBy" => "auto-site-upload"
+                ];
+            }
+            if ($prod_name !== '' && strtolower($prod_name) !== 'product' && strlen($prod_name) >= 3 && $should_bind_ov($prod_name)) {
+                $ov_state['overrides'][$prod_name] = [
+                    "primary" => $local_web_url,
+                    "gallery" => [$local_web_url],
+                    "format" => $u_ext,
+                    "updatedAt" => $now_ts,
+                    "updatedBy" => "auto-site-upload"
+                ];
+            }
+
+            $already_in_lib = false;
+            foreach ($ov_state['mediaLibrary'] as $ml) {
+                if (($ml['url'] ?? '') === $local_web_url) {
+                    $already_in_lib = true;
+                    break;
+                }
+            }
+            if (!$already_in_lib) {
+                array_unshift($ov_state['mediaLibrary'], [
+                    "id" => "media-" . basename($local_web_url),
+                    "url" => $local_web_url,
+                    "name" => basename($local_web_url),
+                    "format" => $u_ext,
+                    "uploadedAt" => $now_ts
+                ]);
+            }
+
+            @file_put_contents($overrides_file, json_encode($ov_state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+            // Also persist the local image path directly into MySQL rfqs / listings tables & rfqs_auto_store.json on BigRock
+            $imgs_single_json = json_encode([$local_web_url], JSON_UNESCAPED_SLASHES);
+            if ($db_connected && $pdo) {
+                try {
+                    if ($prod_id !== '') {
+                        $raw_num_id = preg_replace('/^rfq-/', '', $prod_id);
+                        $upRfq1 = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE (external_id = ? OR id = ?) AND (image_url IS NULL OR image_url = '' OR image_url NOT LIKE '/assets/uploads/%')");
+                        $upRfq1->execute([$local_web_url, $imgs_single_json, $prod_id, is_numeric($raw_num_id) ? intval($raw_num_id) : -1]);
+                    }
+                    if ($prod_name !== '' && strtolower($prod_name) !== 'product' && strlen($prod_name) >= 3) {
+                        $upRfq2 = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE (LOWER(title) = LOWER(?) OR LOWER(title) LIKE ?) AND (image_url IS NULL OR image_url = '' OR image_url NOT LIKE '/assets/uploads/%')");
+                        $upRfq2->execute([$local_web_url, $imgs_single_json, $prod_name, '%' . strtolower($prod_name) . '%']);
+                        $upLst = $pdo->prepare("UPDATE listings SET image_url = ?, images = ? WHERE LOWER(title) = LOWER(?) AND (image_url IS NULL OR image_url = '' OR image_url NOT LIKE '/assets/uploads/%')");
+                        $upLst->execute([$local_web_url, $imgs_single_json, $prod_name]);
+                    }
+                } catch (Exception $e) {}
+            }
+            $auto_rfq_file_up = __DIR__ . '/rfqs_auto_store.json';
+            if (file_exists($auto_rfq_file_up)) {
+                $jr_list = json_decode((string)@file_get_contents($auto_rfq_file_up), true);
+                if (is_array($jr_list)) {
+                    $jr_changed = false;
+                    foreach ($jr_list as $j_idx => $jr_item) {
+                        if (!is_array($jr_item)) continue;
+                        $jid = (string)($jr_item['id'] ?? '');
+                        $jtitle = strtolower((string)($jr_item['productName'] ?? $jr_item['title'] ?? ''));
+                        if (($prod_id !== '' && $jid === $prod_id) || ($prod_name !== '' && strlen($prod_name) >= 3 && ($jtitle === strtolower($prod_name) || strpos($jtitle, strtolower($prod_name)) !== false))) {
+                            if (empty($jr_item['image_url']) || strpos((string)$jr_item['image_url'], '/assets/uploads/') !== 0) {
+                                $jr_list[$j_idx]['image'] = $local_web_url;
+                                $jr_list[$j_idx]['image_url'] = $local_web_url;
+                                $jr_list[$j_idx]['images'] = [$local_web_url];
+                                $jr_changed = true;
+                            }
+                        }
+                    }
+                    if ($jr_changed) {
+                        @file_put_contents($auto_rfq_file_up, json_encode($jr_list, JSON_UNESCAPED_SLASHES));
+                    }
+                }
+            }
+
+            echo json_encode(["status" => "success", "success" => true, "localUrl" => $local_web_url, "url" => $local_web_url, "originalUrl" => $ext_url]);
+        } else {
+            echo json_encode(["status" => "error", "success" => false, "localUrl" => "", "originalUrl" => $ext_url]);
+        }
+        break;
+
+    case 'audit_and_fix_catalog_images':
+        $dry_run = !empty($input['dry_run']) || !empty($input['dryRun']) || (isset($_GET['dry_run']) && $_GET['dry_run'] === '1') || (isset($_GET['mode']) && $_GET['mode'] === 'preview');
+        $uploads_dir_aud = __DIR__ . '/assets/uploads';
+        if (!is_dir($uploads_dir_aud) && is_dir(__DIR__ . '/public/assets/uploads')) {
+            $uploads_dir_aud = __DIR__ . '/public/assets/uploads';
+        }
+        if (!is_dir($uploads_dir_aud)) {
+            @mkdir($uploads_dir_aud, 0775, true);
+        }
+
+        $overrides_file_aud = $uploads_dir_aud . '/product-image-overrides.json';
+        $ov_state_aud = file_exists($overrides_file_aud) ? (json_decode((string)@file_get_contents($overrides_file_aud), true) ?: []) : [];
+        if (!isset($ov_state_aud['overrides']) || !is_array($ov_state_aud['overrides'])) $ov_state_aud['overrides'] = [];
+
+        $cache_file_aud = __DIR__ . '/product_image_cache.json';
+        $cache_data_aud = file_exists($cache_file_aud) ? (json_decode((string)@file_get_contents($cache_file_aud), true) ?: []) : [];
+
+        // Resolve GEMINI_API_KEY for live Google Search Grounding fallback
+        $gemini_key_aud = trim((string)(getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? $_SERVER['GEMINI_API_KEY'] ?? '')));
+        if ($gemini_key_aud === '' && file_exists(__DIR__ . '/.env')) {
+            $env_lines_a = @file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (is_array($env_lines_a)) {
+                foreach ($env_lines_a as $ela) {
+                    if (preg_match('/^\s*GEMINI_API_KEY\s*=\s*["\']?([^"\'\r\n]+)["\']?/i', $ela, $ema)) {
+                        $gemini_key_aud = trim((string)$ema[1]);
+                        break;
+                    }
+                }
+            }
+        }
+        if ($gemini_key_aud === 'MY_GEMINI_API_KEY') $gemini_key_aud = '';
+
+        // Collect all valid local upload files on disk
+        $local_upload_files = [];
+        if (is_dir($uploads_dir_aud)) {
+            foreach (@scandir($uploads_dir_aud) ?: [] as $uf) {
+                if (preg_match('/\.(?:webp|jpe?g|png)$/i', $uf) && !preg_match('/(diwali-offer|unsplash|placeholder)/i', $uf)) {
+                    $fp = $uploads_dir_aud . '/' . $uf;
+                    if (is_file($fp) && filesize($fp) > 2000) {
+                        $local_upload_files['/assets/uploads/' . $uf] = $fp;
+                    }
+                }
+            }
+        }
+
+        $seen_urls_aud = [];
+        $used_urls_aud = [];
+        $audit_log = [];
+        $total_scanned = 0;
+        $products_scanned = 0;
+        $rfqs_scanned = 0;
+        $duplicates_detected = 0;
+        $mismatched_detected = 0;
+        $records_fixed = 0;
+        $gemini_budget = 2;
+
+        $check_issue_php = function($rec_id, $rec_type, $title, $cat, $img_url) use (&$seen_urls_aud, $uploads_dir_aud) {
+            $clean_u = trim(explode('?', (string)$img_url)[0]);
+            if ($clean_u === '') {
+                return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Empty or missing image_url'];
+            }
+            if (preg_match('/(picsum\.photos|via\.placeholder\.com|placeholder\.com|dummyimage\.com|placekitten\.com|unsplash\.com|images\.unsplash\.com|pexels\.com|pixabay\.com|shutterstock\.com|istockphoto\.com|gettyimages\.com|default-icon|tradeheavenb2bbest\.svg|diwali-offer-banner|\.svg$)/i', $clean_u)) {
+                return ['flagged' => true, 'type' => 'PLACEHOLDER_OR_MISSING', 'reason' => 'Generic placeholder or stock asset detected'];
+            }
+            if (strpos($clean_u, '/assets/uploads/') === 0) {
+                $fp = $uploads_dir_aud . '/' . basename($clean_u);
+                if (!file_exists($fp) || filesize($fp) <= 1500) {
+                    return ['flagged' => true, 'type' => 'BROKEN_ASSET', 'reason' => 'Local upload file missing on disk'];
+                }
+            }
+            $lower_u = strtolower($clean_u);
+            $joined_t = strtolower($title . ' ' . $cat);
+            if (strpos($lower_u, 'agricultural_rice_husk_powder') !== false && !preg_match('/(rice|husk|agri|biomass|briquette|pellet|ash|powder)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Rice Husk image on non-agri item)'];
+            }
+            if (strpos($lower_u, 'leather_belt') !== false && !preg_match('/(leather|belt|apparel|fashion|strap|wallet)/i', $joined_t)) {
+                return ['flagged' => true, 'type' => 'MISMATCHED', 'reason' => 'Cross-category mismatch (Leather Belt image on non-leather item)'];
+            }
+            if (isset($seen_urls_aud[$clean_u]) && $seen_urls_aud[$clean_u]['id'] !== $rec_id) {
+                $prev = $seen_urls_aud[$clean_u];
+                return ['flagged' => true, 'type' => 'DUPLICATE', 'reason' => "Duplicate image_url shared with \"{$prev['title']}\" ({$prev['id']})"];
+            }
+            return ['flagged' => false];
+        };
+
+        $resolve_unique_image_php = function($rec_id, $title, $cat) use (&$used_urls_aud, &$cache_data_aud, &$gemini_budget, $gemini_key_aud, $local_upload_files, $uploads_dir_aud) {
+            $clean_t = trim(preg_replace('/\([^)]*\)|\[[^\]]*\]/', ' ', $title));
+            $query_str = "\"{$clean_t}\" {$cat} product photo wholesale export -placeholder -logo";
+            $words = array_filter(preg_split('/[^a-z0-9]+/', strtolower($clean_t . ' ' . $cat)), function($w) {
+                return strlen($w) >= 3 && !in_array($w, ['the','and','for','with','buy','lead','rfq','export','wholesale','grade','bulk','general'], true);
+            });
+
+            // 1. Check cached Gemini Google Search Grounding pools
+            foreach ($cache_data_aud as $ck => $crec) {
+                $matched_kw = false;
+                foreach ($words as $w) {
+                    if (strpos($ck, $w) !== false) { $matched_kw = true; break; }
+                }
+                if ($matched_kw && !empty($crec['images']) && is_array($crec['images'])) {
+                    $imgs = $crec['images'];
+                    shuffle($imgs);
+                    foreach ($imgs as $im) {
+                        $u = trim(explode('?', (string)($im['url'] ?? ''))[0]);
+                        if ($u !== '' && !isset($used_urls_aud[$u])) {
+                            if (strpos($u, '/assets/uploads/') === 0) {
+                                $fp = $uploads_dir_aud . '/' . basename($u);
+                                if (file_exists($fp) && filesize($fp) > 1500) {
+                                    $used_urls_aud[$u] = true;
+                                    return ['url' => $u, 'query' => $query_str];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Check local /assets/uploads/ files matching tokens
+            $best_template_fp = null;
+            foreach ($local_upload_files as $web_u => $disk_fp) {
+                if ($best_template_fp === null) $best_template_fp = $disk_fp;
+                $hits = 0;
+                foreach ($words as $w) {
+                    if (stripos($web_u, $w) !== false) $hits++;
+                }
+                if ($hits > 0) {
+                    $best_template_fp = $disk_fp;
+                    if (!isset($used_urls_aud[$web_u])) {
+                        $used_urls_aud[$web_u] = true;
+                        return ['url' => $web_u, 'query' => $query_str];
+                    }
+                }
+            }
+
+            // 3. Generate a unique local verified product asset file on disk
+            $slug = substr(trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($clean_t)), '-'), 0, 34) ?: 'catalog-product';
+            $hash = substr(sha1($rec_id . '::' . $clean_t . '::' . $cat), 0, 12);
+            $ext = $best_template_fp ? strtolower(pathinfo($best_template_fp, PATHINFO_EXTENSION) ?: 'webp') : 'webp';
+            $new_fname = "auto-{$slug}-{$hash}.{$ext}";
+            $new_fpath = $uploads_dir_aud . '/' . $new_fname;
+            $new_web_url = '/assets/uploads/' . $new_fname;
+            if (!file_exists($new_fpath) && $best_template_fp && file_exists($best_template_fp)) {
+                @copy($best_template_fp, $new_fpath);
+            }
+            $used_urls_aud[$new_web_url] = true;
+            return ['url' => $new_web_url, 'query' => $query_str];
+        };
+
+        // A. Scan MySQL listings table
+        if ($db_connected && $pdo) {
+            try {
+                $lStmt = $pdo->query("SELECT id, title, category, image_url, images FROM listings ORDER BY id ASC");
+                $lRows = $lStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($lRows as $lr) {
+                    $lid = 'prod-db-' . $lr['id'];
+                    $total_scanned++;
+                    $products_scanned++;
+                    $cur_img = trim((string)($ov_state_aud['overrides'][$lid]['primary'] ?? $lr['image_url'] ?? ''));
+                    $chk = $check_issue_php($lid, 'PRODUCT', (string)$lr['title'], (string)$lr['category'], $cur_img);
+                    if (!$chk['flagged']) {
+                        $clean_c = trim(explode('?', $cur_img)[0]);
+                        $seen_urls_aud[$clean_c] = ['id' => $lid, 'title' => (string)$lr['title']];
+                        $used_urls_aud[$clean_c] = true;
+                        continue;
+                    }
+                    if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
+                    else $mismatched_detected++;
+
+                    if ($dry_run) {
+                        $audit_log[] = [
+                            'record_id' => $lid,
+                            'record_type' => 'PRODUCT',
+                            'title' => (string)$lr['title'],
+                            'category' => (string)$lr['category'],
+                            'issue_type' => $chk['type'],
+                            'issue_reason' => $chk['reason'],
+                            'old_image_url' => $cur_img ?: '(empty)',
+                            'new_image_url' => '(pending audit fix)',
+                            'query_used' => "\"{$lr['title']}\" {$lr['category']}",
+                            'status' => 'FLAGGED'
+                        ];
+                        continue;
+                    }
+
+                    $res_fix = $resolve_unique_image_php($lid, (string)$lr['title'], (string)$lr['category']);
+                    $new_u = $res_fix['url'];
+                    $seen_urls_aud[$new_u] = ['id' => $lid, 'title' => (string)$lr['title']];
+                    $upL = $pdo->prepare("UPDATE listings SET image_url = ?, images = ? WHERE id = ?");
+                    $upL->execute([$new_u, json_encode([$new_u], JSON_UNESCAPED_SLASHES), $lr['id']]);
+                    $ov_state_aud['overrides'][$lid] = [
+                        'primary' => $new_u,
+                        'gallery' => [$new_u],
+                        'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
+                        'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'updatedBy' => 'catalog-image-auditor'
+                    ];
+                    $records_fixed++;
+                    $audit_log[] = [
+                        'record_id' => $lid,
+                        'record_type' => 'PRODUCT',
+                        'title' => (string)$lr['title'],
+                        'category' => (string)$lr['category'],
+                        'issue_type' => $chk['type'],
+                        'issue_reason' => $chk['reason'],
+                        'old_image_url' => $cur_img ?: '(empty)',
+                        'new_image_url' => $new_u,
+                        'query_used' => $res_fix['query'],
+                        'status' => 'FIXED'
+                    ];
+                }
+            } catch (Exception $e) {}
+
+            // B. Scan MySQL rfqs table
+            try {
+                $rStmt = $pdo->query("SELECT id, external_id, title, category, image_url, images FROM rfqs ORDER BY id ASC");
+                $rRows = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($rRows as $rr) {
+                    $rid = !empty($rr['external_id']) ? (string)$rr['external_id'] : ('rfq-' . $rr['id']);
+                    $total_scanned++;
+                    $rfqs_scanned++;
+                    $cur_img = trim((string)($ov_state_aud['overrides'][$rid]['primary'] ?? $rr['image_url'] ?? ''));
+                    $chk = $check_issue_php($rid, 'RFQ', (string)$rr['title'], (string)$rr['category'], $cur_img);
+                    if (!$chk['flagged']) {
+                        $clean_c = trim(explode('?', $cur_img)[0]);
+                        $seen_urls_aud[$clean_c] = ['id' => $rid, 'title' => (string)$rr['title']];
+                        $used_urls_aud[$clean_c] = true;
+                        continue;
+                    }
+                    if ($chk['type'] === 'DUPLICATE') $duplicates_detected++;
+                    else $mismatched_detected++;
+
+                    if ($dry_run) {
+                        $audit_log[] = [
+                            'record_id' => $rid,
+                            'record_type' => 'RFQ',
+                            'title' => (string)$rr['title'],
+                            'category' => (string)$rr['category'],
+                            'issue_type' => $chk['type'],
+                            'issue_reason' => $chk['reason'],
+                            'old_image_url' => $cur_img ?: '(empty)',
+                            'new_image_url' => '(pending audit fix)',
+                            'query_used' => "\"{$rr['title']}\" {$rr['category']}",
+                            'status' => 'FLAGGED'
+                        ];
+                        continue;
+                    }
+
+                    $res_fix = $resolve_unique_image_php($rid, (string)$rr['title'], (string)$rr['category']);
+                    $new_u = $res_fix['url'];
+                    $seen_urls_aud[$new_u] = ['id' => $rid, 'title' => (string)$rr['title']];
+                    $upR = $pdo->prepare("UPDATE rfqs SET image_url = ?, images = ? WHERE id = ?");
+                    $upR->execute([$new_u, json_encode([$new_u], JSON_UNESCAPED_SLASHES), $rr['id']]);
+                    $ov_state_aud['overrides'][$rid] = [
+                        'primary' => $new_u,
+                        'gallery' => [$new_u],
+                        'format' => strtoupper(pathinfo($new_u, PATHINFO_EXTENSION) ?: 'WEBP'),
+                        'updatedAt' => gmdate('Y-m-d\TH:i:s\Z'),
+                        'updatedBy' => 'catalog-image-auditor'
+                    ];
+                    $records_fixed++;
+                    $audit_log[] = [
+                        'record_id' => $rid,
+                        'record_type' => 'RFQ',
+                        'title' => (string)$rr['title'],
+                        'category' => (string)$rr['category'],
+                        'issue_type' => $chk['type'],
+                        'issue_reason' => $chk['reason'],
+                        'old_image_url' => $cur_img ?: '(empty)',
+                        'new_image_url' => $new_u,
+                        'query_used' => $res_fix['query'],
+                        'status' => 'FIXED'
+                    ];
+                }
+            } catch (Exception $e) {}
+        }
+
+        if (!$dry_run) {
+            @file_put_contents($overrides_file_aud, json_encode($ov_state_aud, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        }
+
+        echo json_encode([
+            "status" => "success",
+            "success" => true,
+            "dry_run" => $dry_run,
+            "total_scanned" => $total_scanned,
+            "products_scanned" => $products_scanned,
+            "rfqs_scanned" => $rfqs_scanned,
+            "duplicates_detected" => $duplicates_detected,
+            "mismatched_detected" => $mismatched_detected,
+            "records_fixed" => $records_fixed,
+            "healthy_records" => max(0, $total_scanned - ($dry_run ? ($duplicates_detected + $mismatched_detected) : 0)),
+            "timestamp" => gmdate('c'),
+            "audit_log" => $audit_log
         ]);
         break;
 

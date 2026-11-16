@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { AuthUser, Currency, ActiveView, SupplierTier } from '../../types';
-import { CURRENCY_RATES } from '../../data/mockData';
+import { AuthUser, Currency, ActiveView, SupplierTier, Product, RfqRequirement } from '../../types';
+import { CURRENCY_RATES, CATEGORIES_TREE } from '../../data/mockData';
 import {
   RANDY_10_PETROLEUM_BUYER_VISITS,
   MARK_JOHNSON_15_BUYER_VISITS
@@ -10,9 +10,22 @@ import { VisualProductImagePicker } from '../common/VisualProductImagePicker';
 import { api } from '../../services/apiService';
 import { bigrockApi } from '../../services/bigrockApi';
 import { validateUploadFile, compressAndResizeImage } from '../../utils/fileUploadGuard';
-import { isManuallyUploadedImageUrl, autoUploadDisplayedProductImage } from '../../services/visualProductImageService';
+import {
+  isManuallyUploadedImageUrl,
+  autoUploadDisplayedProductImage,
+  ensureUniqueVerifiedProductImageForUpload
+} from '../../services/visualProductImageService';
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { SupplierMessagesInbox } from './SupplierMessagesInbox';
+import { MyStorefrontStudioTab } from './MyStorefrontStudioTab';
+import { TopUpWallet } from '../marketplace/TopUpWallet';
+import { TransactionLedgerView } from '../marketplace/TransactionLedgerView';
+import { SupplierBankAccountManagement } from '../marketplace/SupplierBankAccountManagement';
+import {
+  resolveUserStorefrontId,
+  buildVendorProfileForUser,
+  doesProductBelongToStorefront
+} from '../../utils/storefrontUtils';
 import {
   ShieldCheck,
   Package,
@@ -47,7 +60,11 @@ import {
   SlidersHorizontal,
   ChevronDown,
   Upload,
-  Loader2
+  Loader2,
+  Store,
+  Wallet,
+  CreditCard,
+  BookOpen
 } from 'lucide-react';
 
 export interface SupplierProductItem {
@@ -110,36 +127,55 @@ export interface PendingRfqItem {
 export interface VerifiedSupplierDedicatedDashboardProps {
   currentUser: AuthUser | null;
   selectedCurrency: Currency;
+  products?: Product[];
+  rfqs?: RfqRequirement[];
+  onProductCreated?: (product: Partial<Product>, opts?: { stayInDashboard?: boolean; alreadySaved?: boolean }) => void;
+  onProductUpdated?: (product: Product) => void;
+  onProductDeleted?: (productId: string) => void;
   onOpenStorefront?: (companyId: string) => void;
-  onNavigate?: (view: ActiveView) => void;
+  onNavigate?: (view: ActiveView | string, options?: any) => void;
   onOpenCreateRfq?: () => void;
 }
 
 export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedicatedDashboardProps> = ({
   currentUser,
   selectedCurrency,
+  products: globalProducts = [],
+  rfqs: globalRfqs = [],
+  onProductCreated,
+  onProductUpdated,
+  onProductDeleted,
   onOpenStorefront,
-  onNavigate
+  onNavigate,
+  onOpenCreateRfq
 }) => {
-  const currencyRate = CURRENCY_RATES[selectedCurrency]?.rateToUSD || 1;
-  const currencySymbol = CURRENCY_RATES[selectedCurrency]?.symbol || '$';
+  const curr = (CURRENCY_RATES || []).find(c => c && c.code === selectedCurrency) ||
+    CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
 
   const formatPrice = (priceUsd: number) => {
-    const converted = priceUsd * currencyRate;
-    return `${currencySymbol}${converted.toLocaleString(undefined, {
+    const converted = priceUsd * curr.rateToUSD;
+    return `${curr.symbol}${converted.toLocaleString(undefined, {
       minimumFractionDigits: converted < 10 ? 2 : 0,
       maximumFractionDigits: 2
     })}`;
   };
 
   // Active Main Navigation Tab
-  const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'INQUIRIES' | 'PENDING_RFQS' | 'MESSAGES'>('PRODUCTS');
+  const [activeTab, setActiveTab] = useState<
+    'PRODUCTS' | 'STOREFRONT_BRANDING' | 'INQUIRIES' | 'PENDING_RFQS' | 'MESSAGES' | 'ACCOUNT_TOOLS'
+  >('PRODUCTS');
+  const [storefrontSubSection, setStorefrontSubSection] = useState<'PRODUCTS' | 'BRANDING' | 'CERTIFICATES'>('BRANDING');
+  const [accountSubTab, setAccountSubTab] = useState<'LEDGER' | 'TOPUP' | 'BANK_PAYOUTS'>('LEDGER');
   const [productPendingDelete, setProductPendingDelete] = useState<SupplierProductItem | null>(null);
 
-  // Supplier identity resolution
+  // Canonical supplier & storefront identity resolution
   const supplierEmail = (currentUser?.email || '').toLowerCase().trim();
-  const companyName = currentUser?.companyName || 'Verified Global Supplier';
-  const supplierId = currentUser?.id || 'comp-verified-supplier-01';
+  const supplierId = resolveUserStorefrontId(currentUser);
+  const vendorProfile = useMemo(
+    () => buildVendorProfileForUser(currentUser, supplierId),
+    [currentUser, supplierId]
+  );
+  const companyName = vendorProfile.companyName || currentUser?.companyName || 'Verified Global Supplier';
 
   // Dynamic Supplier Tier resolution (syncs with Admin tier changes & localStorage overrides)
   const resolveCurrentSupplierTier = () => {
@@ -236,13 +272,76 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
   const [activeRfqForQuote, setActiveRfqForQuote] = useState<PendingRfqItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Listen for dashboard tab/action shortcuts (from Header or Public Storefront page)
+  useEffect(() => {
+    const applyIntent = (detail?: { tab?: string; openAddProduct?: boolean; subSection?: string }) => {
+      if (!detail) return;
+      const t = String(detail.tab || '').toUpperCase();
+      if (t === 'MY_STOREFRONT' || t === 'STOREFRONT_BRANDING' || t === 'BRANDING' || t === 'CERTIFICATES') {
+        if (detail.subSection === 'PRODUCTS' || detail.openAddProduct) {
+          setActiveTab('PRODUCTS');
+          if (detail.openAddProduct) setIsAddProductOpen(true);
+        } else {
+          setActiveTab('STOREFRONT_BRANDING');
+          setStorefrontSubSection(
+            detail.subSection === 'CERTIFICATES' || t === 'CERTIFICATES' ? 'CERTIFICATES' : 'BRANDING'
+          );
+        }
+      } else if (t === 'PRODUCTS') {
+        setActiveTab('PRODUCTS');
+        if (detail.openAddProduct) setIsAddProductOpen(true);
+      } else if (t === 'INQUIRIES') {
+        setActiveTab('INQUIRIES');
+      } else if (t === 'PENDING_RFQS' || t === 'RFQS') {
+        setActiveTab('PENDING_RFQS');
+      } else if (t === 'MESSAGES') {
+        setActiveTab('MESSAGES');
+      } else if (t === 'TOPUP_WALLET' || t === 'TOPUP') {
+        setActiveTab('ACCOUNT_TOOLS');
+        setAccountSubTab('TOPUP');
+      } else if (t === 'BANK_ACCOUNTS' || t === 'BANK_PAYOUTS') {
+        setActiveTab('ACCOUNT_TOOLS');
+        setAccountSubTab('BANK_PAYOUTS');
+      } else if (t === 'TRANSACTION_LEDGER' || t === 'ACCOUNT_TOOLS') {
+        setActiveTab('ACCOUNT_TOOLS');
+        setAccountSubTab('LEDGER');
+      } else if (detail.openAddProduct) {
+        setActiveTab('PRODUCTS');
+        setIsAddProductOpen(true);
+      }
+    };
+
+    try {
+      const pendingRaw = sessionStorage.getItem('th_pending_dashboard_intent');
+      if (pendingRaw) {
+        sessionStorage.removeItem('th_pending_dashboard_intent');
+        applyIntent(JSON.parse(pendingRaw));
+      }
+    } catch {}
+
+    const onOpenDashboardTab = (e: Event) => {
+      const custom = e as CustomEvent<{ tab?: string; openAddProduct?: boolean; subSection?: string }>;
+      applyIntent(custom?.detail);
+    };
+    window.addEventListener('tradeheaven_open_dashboard_tab', onOpenDashboardTab);
+    return () => window.removeEventListener('tradeheaven_open_dashboard_tab', onOpenDashboardTab);
+  }, []);
+
   // New Product Form State
   const [newProdTitle, setNewProdTitle] = useState('');
-  const [newProdCategory, setNewProdCategory] = useState('Industrial Machinery');
-  const [newProdPrice, setNewProdPrice] = useState('25000');
-  const [newProdMoq, setNewProdMoq] = useState('1');
-  const [newProdMoqUnit, setNewProdMoqUnit] = useState('Units');
-  const [newProdPort, setNewProdPort] = useState('Port of Houston / Long Beach');
+  const [newProdCategory, setNewProdCategory] = useState(
+    supplierId === 'comp-melissa-mpcommodity' || supplierEmail.includes('midforkcap')
+      ? 'Petroleum & Refined Fuels'
+      : (CATEGORIES_TREE[0]?.name || 'Industrial Machinery & Automation')
+  );
+  const [newProdPrice, setNewProdPrice] = useState('950');
+  const [newProdMoq, setNewProdMoq] = useState('100');
+  const [newProdMoqUnit, setNewProdMoqUnit] = useState(
+    supplierId === 'comp-melissa-mpcommodity' ? 'Metric Tons' : 'Units'
+  );
+  const [newProdPort, setNewProdPort] = useState(
+    vendorProfile.portsOfDispatch?.[0] || 'Port of Houston / Long Beach'
+  );
   const [newProdLeadTime, setNewProdLeadTime] = useState('14');
   const [newProdImageUrl, setNewProdImageUrl] = useState('');
   const [newProdImages, setNewProdImages] = useState<string[]>([]);
@@ -497,7 +596,43 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     ];
   }, [supplierEmail]);
 
+  const mapCatalogProductToSupplierItem = (p: Product): SupplierProductItem => {
+    const specsObj: Record<string, string> = {};
+    if (Array.isArray(p.specifications)) {
+      p.specifications.forEach(s => {
+        if (s?.name) specsObj[s.name] = s.value || '';
+      });
+    }
+    return {
+      id: p.id,
+      title: p.title,
+      sku: p.id.toUpperCase().slice(0, 18),
+      category: p.category || 'Wholesale Commodities',
+      priceUsd: Number(p.priceTiers?.[0]?.priceUsd ?? p.fobPriceUsd ?? 0),
+      moq: Number(p.moq || 1),
+      moqUnit: p.moqUnit || 'Units',
+      stockCount: 50,
+      inStock: p.inStock !== false,
+      leadTimeDays: Number(p.leadTimeDays || 14),
+      images: Array.isArray(p.images) ? p.images : [],
+      inquiryCount: 0,
+      fobPort: p.portOfDispatch || vendorProfile.portsOfDispatch?.[0] || 'International Port',
+      isVerifiedListing: true,
+      specifications: specsObj,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+  };
+
+  const matchedGlobalProducts = useMemo<SupplierProductItem[]>(() => {
+    return (globalProducts || [])
+      .filter(p => doesProductBelongToStorefront(p, supplierId, currentUser))
+      .map(mapCatalogProductToSupplierItem);
+  }, [globalProducts, supplierId, currentUser, vendorProfile.portsOfDispatch]);
+
   const [products, setProducts] = useState<SupplierProductItem[]>(() => {
+    if (matchedGlobalProducts.length > 0) {
+      return matchedGlobalProducts;
+    }
     try {
       const saved = localStorage.getItem(`th_supplier_products_${supplierId}`);
       if (saved) {
@@ -507,6 +642,13 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     } catch {}
     return initialProducts;
   });
+
+  // Keep supplier dashboard products synchronized with live storefront & marketplace catalog
+  useEffect(() => {
+    if (matchedGlobalProducts.length > 0) {
+      setProducts(matchedGlobalProducts);
+    }
+  }, [matchedGlobalProducts]);
 
   // Save products to local storage
   useEffect(() => {
@@ -868,24 +1010,41 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
   // -------------------------------------------------------------
   // HANDLERS: ADD PRODUCT, EDIT PRODUCT, QUOTE INQUIRY, QUOTE RFQ
   // -------------------------------------------------------------
-  const handleCreateProductSubmit = (e: React.FormEvent) => {
+  const handleCreateProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProdTitle.trim()) {
       showToast('Please enter a valid product title.');
       return;
     }
 
-    const priceNum = parseFloat(newProdPrice) || 1000;
-    const moqNum = parseInt(newProdMoq) || 1;
-    const leadTimeNum = parseInt(newProdLeadTime) || 7;
+    const priceNum = parseFloat(newProdPrice) || 100;
+    const moqNum = parseInt(newProdMoq, 10) || 1;
+    const leadTimeNum = parseInt(newProdLeadTime, 10) || 7;
+    const targetId = `prod-${Date.now()}`;
 
-    const resolvedImages =
+    let resolvedImages =
       newProdHasManualImage && newProdImageUrl.trim()
         ? [newProdImageUrl.trim(), ...newProdImages.filter(u => u !== newProdImageUrl.trim())].slice(0, 4)
         : newProdImages;
 
+    if (resolvedImages.length === 0) {
+      try {
+        const existingOverrides = productImageManagerService.getState().overrides || {};
+        const usedUrls = Object.values(existingOverrides)
+          .map(o => o?.primary)
+          .filter((u): u is string => Boolean(u));
+        const matched = await ensureUniqueVerifiedProductImageForUpload({
+          productId: targetId,
+          productName: newProdTitle.trim(),
+          category: newProdCategory,
+          usedUrls
+        });
+        resolvedImages = matched.gallery.length > 0 ? matched.gallery : (matched.primaryUrl ? [matched.primaryUrl] : []);
+      } catch {}
+    }
+
     const newProd: SupplierProductItem = {
-      id: `prod-${Date.now()}`,
+      id: targetId,
       title: newProdTitle.trim(),
       sku: `SKU-${Date.now().toString().slice(-6)}`,
       category: newProdCategory,
@@ -897,7 +1056,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       leadTimeDays: leadTimeNum,
       images: resolvedImages,
       inquiryCount: 0,
-      fobPort: newProdPort.trim() || 'Port of Origin',
+      fobPort: newProdPort.trim() || vendorProfile.portsOfDispatch?.[0] || 'Port of Origin',
       isVerifiedListing: true,
       specifications: {
         'Quality Standard': 'ISO 9001:2015 Verified',
@@ -933,22 +1092,30 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
           }
         });
       }
-      void api.createProduct({
-        id: newProd.id,
-        title: newProd.title,
-        category: newProd.category,
-        description: `${newProd.title} — ISO 9001:2015 Verified Supply`,
-        moq: newProd.moq,
-        moqUnit: newProd.moqUnit,
-        priceTiers: [{ minUnits: newProd.moq, priceUsd: newProd.priceUsd }],
-        images: resolvedImages,
-        supplierId,
-        supplierName: companyName,
-        supplierCountry: currentUser?.country || 'Global',
-        supplierTier: (currentUser?.tier as SupplierTier) || 'GOLD',
-        supplierIsVerified: true
-      }).catch(() => {});
     }
+
+    const fullCatalogProd: Partial<Product> = {
+      id: newProd.id,
+      title: newProd.title,
+      category: newProd.category,
+      subCategory: newProd.category,
+      description: `${newProd.title} — ISO 9001:2015 Verified Wholesale Supply from ${companyName}`,
+      moq: newProd.moq,
+      moqUnit: newProd.moqUnit,
+      priceTiers: [{ minUnits: newProd.moq, priceUsd: newProd.priceUsd }],
+      images: resolvedImages,
+      portOfDispatch: newProd.fobPort,
+      leadTimeDays: newProd.leadTimeDays,
+      supportedIncoterms: (vendorProfile.supportedIncotermsList as any) || ['FOB', 'CIF'],
+      supplierId,
+      supplierName: companyName,
+      supplierCountry: vendorProfile.country || currentUser?.country || 'Global',
+      supplierTier: (vendorProfile.tier as SupplierTier) || (currentUser?.tier as SupplierTier) || 'GOLD',
+      supplierIsVerified: true
+    };
+
+    await api.createProduct(fullCatalogProd).catch(() => {});
+    onProductCreated?.(fullCatalogProd, { stayInDashboard: true, alreadySaved: true });
 
     setIsAddProductOpen(false);
     setNewProdTitle('');
@@ -956,7 +1123,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     setNewProdImages([]);
     setNewProdHasManualImage(false);
     setNewProdAutoMatched(false);
-    showToast(`✓ Published "${newProd.title}" to your active catalog.`);
+    showToast(`Published "${newProd.title}" to your live storefront & catalog.`);
   };
 
   const handleUpdateProductSubmit = (e: React.FormEvent) => {
@@ -981,19 +1148,39 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
           category: editingProduct.category
         });
       }
-      void api.updateProduct(editingProduct.id, {
-        title: editingProduct.title,
-        category: editingProduct.category,
-        moq: editingProduct.moq,
-        moqUnit: editingProduct.moqUnit,
-        priceTiers: [{ minUnits: editingProduct.moq, priceUsd: editingProduct.priceUsd }],
-        images: editingProduct.images
-      }).catch(() => {});
     }
+
+    const existingFull = (globalProducts || []).find(p => p.id === editingProduct.id);
+    const updatedFull: Product = {
+      ...(existingFull || {
+        id: editingProduct.id,
+        subCategory: editingProduct.category,
+        description: `${editingProduct.title} — ${companyName}`,
+        supportedIncoterms: ['FOB', 'CIF'],
+        supplierId,
+        supplierName: companyName,
+        supplierCountry: vendorProfile.country || 'Global',
+        supplierTier: (vendorProfile.tier as SupplierTier) || 'GOLD',
+        supplierTrustScore: vendorProfile.trustScore || 95,
+        specifications: Object.entries(editingProduct.specifications || {}).map(([name, value]) => ({ name, value }))
+      }),
+      title: editingProduct.title,
+      category: editingProduct.category,
+      moq: editingProduct.moq,
+      moqUnit: editingProduct.moqUnit,
+      portOfDispatch: editingProduct.fobPort,
+      leadTimeDays: editingProduct.leadTimeDays,
+      priceTiers: [{ minUnits: editingProduct.moq, priceUsd: editingProduct.priceUsd }],
+      images: editingProduct.images
+    };
+
+    void api.updateProduct(editingProduct.id, updatedFull).catch(() => {});
+    onProductUpdated?.(updatedFull);
+
     setEditingProduct(null);
     setEditProdHasManualImage(false);
     setEditProdAutoMatched(false);
-    showToast(`✓ Updated listing details for "${editingProduct.title}".`);
+    showToast(`Updated listing details for "${editingProduct.title}".`);
   };
 
   const handleDeleteProduct = (prodId: string) => {
@@ -1003,6 +1190,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     } else {
       setProducts((prev) => prev.filter((p) => p.id !== prodId));
       void api.deleteProduct(prodId);
+      onProductDeleted?.(prodId);
       showToast('Product listing removed from your catalog.');
     }
   };
@@ -1013,6 +1201,7 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     setProductPendingDelete(null);
     setProducts((prev) => prev.filter((p) => p.id !== prod.id));
     await api.deleteProduct(prod.id);
+    onProductDeleted?.(prod.id);
     showToast('Product listing removed from your catalog.');
   };
 
@@ -1133,49 +1322,129 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
             </div>
 
             {/* Quick Actions Header */}
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={() => setIsAddProductOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                onClick={() => {
+                  setActiveTab('PRODUCTS');
+                  setIsAddProductOpen(true);
+                }}
+                className="h-9 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>+ Add Product Listing</span>
+                <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Add Product to Storefront</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setStorefrontSubSection('BRANDING');
+                  setActiveTab('STOREFRONT_BRANDING');
+                }}
+                className="h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <Store className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Edit Storefront &amp; Media</span>
               </button>
 
               {onOpenStorefront && (
                 <button
                   type="button"
                   onClick={() => onOpenStorefront(supplierId)}
-                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
+                  className="h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                   title="Preview how your company and catalog appear to global buyers"
                 >
-                  <Eye className="w-4 h-4 text-slate-500" />
+                  <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span>View Public Storefront</span>
                 </button>
               )}
 
+              {onOpenCreateRfq && (
+                <button
+                  type="button"
+                  onClick={onOpenCreateRfq}
+                  className="h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Post Buy RFQ</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountSubTab('BANK_PAYOUTS');
+                  setActiveTab('ACCOUNT_TOOLS');
+                }}
+                className="h-9 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <Wallet className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Wallet &amp; Bank Payouts</span>
+              </button>
+            </div>
+          </div>
+
+          {/* All-in-One Supplier Quick Task Bar */}
+          <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="font-semibold text-slate-500 whitespace-nowrap">
+              All Storefront &amp; Account Actions:
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('PRODUCTS');
+                  setIsAddProductOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 text-slate-700 font-semibold cursor-pointer whitespace-nowrap"
+              >
+                Add / Edit Products
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStorefrontSubSection('BRANDING');
+                  setActiveTab('STOREFRONT_BRANDING');
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 text-slate-700 font-semibold cursor-pointer whitespace-nowrap"
+              >
+                Logo, Banner &amp; Terms
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStorefrontSubSection('CERTIFICATES');
+                  setActiveTab('STOREFRONT_BRANDING');
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 text-slate-700 font-semibold cursor-pointer whitespace-nowrap"
+              >
+                Certificates &amp; Facility Photos
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('MESSAGES')}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 text-slate-700 font-semibold cursor-pointer whitespace-nowrap"
+              >
+                Buyer Messages
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountSubTab('LEDGER');
+                  setActiveTab('ACCOUNT_TOOLS');
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 text-slate-700 font-semibold cursor-pointer whitespace-nowrap"
+              >
+                Ledger, Top-Up &amp; Withdrawals
+              </button>
               {onNavigate && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('TRADE_ASSURANCE_CERTIFICATE')}
-                    className="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
-                    title="View your official Loss-Only Trade Assurance certificate"
-                  >
-                    <Award className="w-4 h-4 text-amber-700" />
-                    <span>Assurance Certificate</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('SUPPLIER_WITHDRAWAL')}
-                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
-                    title="Manage bank payout accounts and withdraw trade proceeds"
-                  >
-                    <Landmark className="w-4 h-4 text-emerald-400" />
-                    <span>Bank Payouts</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('TRADE_ASSURANCE_CERTIFICATE')}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 text-slate-700 font-semibold cursor-pointer whitespace-nowrap"
+                >
+                  Assurance Certificate
+                </button>
               )}
             </div>
           </div>
@@ -1277,72 +1546,88 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
       {/* Main Tabbed Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center justify-between border-b border-slate-200 mb-6 flex-wrap gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar gap-4">
+          <div className="flex items-center gap-1 min-w-max">
             <button
               type="button"
               onClick={() => setActiveTab('PRODUCTS')}
-              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'PRODUCTS'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Package className="w-4 h-4" />
-              <span>Active Product Listings</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800">
-                {products.length}
-              </span>
+              <Package className="w-4 h-4 shrink-0" />
+              <span>Storefront Products</span>
+              <span className="font-mono tabular-nums text-xs text-slate-500">({products.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('STOREFRONT_BRANDING')}
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
+                activeTab === 'STOREFRONT_BRANDING'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Store className="w-4 h-4 shrink-0" />
+              <span>Branding, Media &amp; Certificates</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('INQUIRIES')}
-              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'INQUIRIES'
                   ? 'border-emerald-600 text-emerald-600'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Mail className="w-4 h-4" />
-              <span>Received Buyer Inquiries</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
-                {inquiries.length}
-              </span>
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>Buyer Inquiries</span>
+              <span className="font-mono tabular-nums text-xs text-slate-500">({inquiries.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('PENDING_RFQS')}
-              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'PENDING_RFQS'
                   ? 'border-amber-600 text-amber-600'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4 shrink-0" />
               <span>Pending RFQ Quotes</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900">
-                {pendingRfqs.length}
-              </span>
+              <span className="font-mono tabular-nums text-xs text-slate-500">({pendingRfqs.length})</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('MESSAGES')}
-              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'MESSAGES'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-slate-600 hover:text-slate-900'
               }`}
             >
-              <MessageCircle className="w-4 h-4" />
-              <span>Messages / Buyer Inquiries</span>
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              <span>Messages</span>
             </button>
-          </div>
 
-          <div className="pb-3 text-xs text-slate-500 font-medium hidden sm:block">
-            All records synchronized with Trade Heaven Database
+            <button
+              type="button"
+              onClick={() => setActiveTab('ACCOUNT_TOOLS')}
+              className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
+                activeTab === 'ACCOUNT_TOOLS'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Wallet className="w-4 h-4 shrink-0" />
+              <span>Wallet, Ledger &amp; Payouts</span>
+            </button>
           </div>
         </div>
 
@@ -1605,9 +1890,9 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
 
                       <div className="flex items-center gap-2 self-start sm:self-center">
                         {inq.status === 'NEW' ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                            <span>Awaiting Your Reply</span>
+                          <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>Awaiting Reply</span>
                           </span>
                         ) : (
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1">
@@ -1671,8 +1956,100 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
           </div>
         )}
 
+        {activeTab === 'STOREFRONT_BRANDING' && (
+          <MyStorefrontStudioTab
+            currentUser={currentUser}
+            selectedCurrency={selectedCurrency}
+            products={globalProducts}
+            onProductCreated={onProductCreated as any}
+            onProductUpdated={onProductUpdated}
+            onProductDeleted={onProductDeleted}
+            onOpenStorefront={(cid) => onOpenStorefront?.(cid)}
+            onOpenCreateRfq={onOpenCreateRfq}
+            initialSection={storefrontSubSection}
+          />
+        )}
+
         {activeTab === 'MESSAGES' && (
           <SupplierMessagesInbox currentUser={currentUser} />
+        )}
+
+        {activeTab === 'ACCOUNT_TOOLS' && (
+          <div className="space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1">
+                {[
+                  { id: 'LEDGER' as const, label: 'Transaction Ledger', icon: BookOpen },
+                  { id: 'TOPUP' as const, label: 'Wallet Funds Top-Up', icon: CreditCard },
+                  { id: 'BANK_PAYOUTS' as const, label: 'Bank Accounts & Withdrawals', icon: Landmark }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const active = accountSubTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setAccountSubTab(item.id)}
+                      className={`h-9 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+                        active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {onNavigate && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('BUY_LEADS')}
+                    className="h-8 px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-xs font-semibold text-slate-700 cursor-pointer whitespace-nowrap"
+                  >
+                    Browse Active Buy Leads ({globalRfqs.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('TRADE_ASSURANCE_CERTIFICATE')}
+                    className="h-8 px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-xs font-semibold text-slate-700 cursor-pointer whitespace-nowrap"
+                  >
+                    Trade Assurance Certificate
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {accountSubTab === 'LEDGER' && (
+              <TransactionLedgerView
+                onNavigateToTopUp={() => setAccountSubTab('TOPUP')}
+                onNavigateToMediationEngine={() => onNavigate?.('MEDIATOR_ENGINE')}
+              />
+            )}
+
+            {accountSubTab === 'TOPUP' && (
+              <TopUpWallet
+                onNavigateToFullEngine={() => onNavigate?.('MEDIATOR_ENGINE')}
+              />
+            )}
+
+            {accountSubTab === 'BANK_PAYOUTS' && (
+              <SupplierBankAccountManagement
+                currentUser={
+                  currentUser
+                    ? {
+                        id: currentUser.id,
+                        name: currentUser.name,
+                        company: companyName,
+                        email: currentUser.email,
+                        role: currentUser.role
+                      }
+                    : null
+                }
+              />
+            )}
+          </div>
         )}
 
         {/* ========================================================= */}
@@ -1902,13 +2279,24 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
                     onChange={(e) => setNewProdCategory(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
                   >
-                    <option value="Heavy Equipment & Generators">Heavy Equipment &amp; Generators</option>
-                    <option value="Mobile Cranes & Earthmoving">Mobile Cranes &amp; Earthmoving</option>
-                    <option value="Petroleum & Refined Fuels">Petroleum &amp; Refined Fuels</option>
-                    <option value="Industrial Machinery">Industrial Machinery</option>
-                    <option value="Metals & Construction">Metals &amp; Construction</option>
-                    <option value="Agriculture & Food Commodities">Agriculture &amp; Food Commodities</option>
-                    <option value="Renewable Energy">Renewable Energy</option>
+                    {Array.from(
+                      new Set([
+                        'Petroleum & Refined Fuels',
+                        'Heavy Equipment & Generators',
+                        'Mobile Cranes & Earthmoving',
+                        'Agriculture, Spices & Food Commodities',
+                        'Industrial Machinery & Automation',
+                        'Metals, Steel & Minerals',
+                        'Renewable Energy & Solar',
+                        'Chemicals, Polymers & Resins',
+                        'Construction, Hardware & Building Materials',
+                        ...CATEGORIES_TREE.map(c => c.name)
+                      ])
+                    ).map(catName => (
+                      <option key={catName} value={catName}>
+                        {catName}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

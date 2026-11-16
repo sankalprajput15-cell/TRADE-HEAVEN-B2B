@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Product, Currency, Incoterm, ActiveView } from '../../types';
+import { Product, Currency, Incoterm, ActiveView, AuthUser, SupplierTier } from '../../types';
 import { CATEGORIES_TREE, CURRENCY_RATES } from '../../data/mockData';
 import { bigrockApi } from '../../services/bigrockApi';
 import { productImageManagerService } from '../../services/productImageManagerService';
 import { ImageUploadService, ImagePreviewResult } from '../../services/imageUploadService';
 import { ImagePreview, ImagePreviewItem } from '../common/ImagePreview';
+import { resolveUserStorefrontId, buildVendorProfileForUser } from '../../utils/storefrontUtils';
 import { 
   PackagePlus, 
   ShieldCheck, 
@@ -22,15 +23,20 @@ import {
 
 interface Props {
   selectedCurrency: Currency;
-  onProductCreated: (product: Partial<Product>) => void;
+  currentUser?: AuthUser | null;
+  onProductCreated: (product: Partial<Product>, opts?: { stayInDashboard?: boolean; alreadySaved?: boolean }) => void;
   onNavigate?: (view: ActiveView | string) => void;
 }
 
 export const PostSellOfferView: React.FC<Props> = ({
   selectedCurrency,
+  currentUser = null,
   onProductCreated,
   onNavigate
 }) => {
+  const userStorefrontId = resolveUserStorefrontId(currentUser);
+  const userVendorProfile = buildVendorProfileForUser(currentUser, userStorefrontId);
+
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(CATEGORIES_TREE[0]?.name || 'Industrial Machinery');
   const [subCategory, setSubCategory] = useState('CNC & Precision Tooling');
@@ -47,10 +53,14 @@ export const PostSellOfferView: React.FC<Props> = ({
   const [moqUnit, setMoqUnit] = useState('Units');
   const [priceTier1, setPriceTier1] = useState<number>(120);
   const [priceTier2, setPriceTier2] = useState<number>(95);
-  const [portOfDispatch, setPortOfDispatch] = useState('Ningbo / Shanghai Port');
+  const [portOfDispatch, setPortOfDispatch] = useState(
+    userVendorProfile.portsOfDispatch?.[0] || 'Ningbo / Shanghai Port'
+  );
   const [leadTimeDays, setLeadTimeDays] = useState<number>(15);
   const [description, setDescription] = useState('');
-  const [supplierName, setSupplierName] = useState('Zhejiang Precision Machinery Co.');
+  const [supplierName, setSupplierName] = useState(
+    currentUser?.companyName || userVendorProfile.companyName || 'Verified Global Supplier'
+  );
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -182,10 +192,16 @@ export const PostSellOfferView: React.FC<Props> = ({
 
     const imageList = productImages.length > 0 ? productImages.map(img => img.url) : [imageUrl];
 
+    const resolvedCountry = currentUser?.country || userVendorProfile.country || 'Global';
+    const resolvedTier = (currentUser?.tier as SupplierTier) || (userVendorProfile.tier as SupplierTier) || 'GOLD';
+
     const newProd: Partial<Product> = {
       title,
       category,
       subCategory,
+      description:
+        description ||
+        `Direct wholesale supply of ${title} from ${supplierName}. MOQ: ${moq} ${moqUnit}, Dispatch: ${portOfDispatch}.`,
       images: imageList,
       moq: Number(moq),
       moqUnit,
@@ -198,10 +214,11 @@ export const PostSellOfferView: React.FC<Props> = ({
       leadTimeDays: Number(leadTimeDays),
       supplyAbilityPerMonth: '50,000 Units / Month',
       packagingDetails: 'Export standard seaworthy carton & wooden pallet packaging',
+      supplierId: userStorefrontId,
       supplierName,
-      supplierCountry: 'China',
-      supplierTier: 'GOLD',
-      supplierTrustScore: 95,
+      supplierCountry: resolvedCountry,
+      supplierTier: resolvedTier,
+      supplierTrustScore: userVendorProfile.trustScore || 95,
       specifications: [
         { name: 'Material Standard', value: 'Aerospace Grade 6061-T6' },
         { name: 'Certification', value: 'ISO 9001:2015, CE, RoHS' }
@@ -228,7 +245,7 @@ export const PostSellOfferView: React.FC<Props> = ({
         moq,
         moq_unit: moqUnit,
         supplier_name: supplierName,
-        supplier_country: 'China'
+        supplier_country: resolvedCountry
       });
       const createdListingId = (listingRes as any)?.data?.id ? `prod-db-${(listingRes as any).data.id}` : '';
       if (primaryImg && createdListingId) {

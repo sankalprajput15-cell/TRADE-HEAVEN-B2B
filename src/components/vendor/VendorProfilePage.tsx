@@ -11,6 +11,7 @@ import {
 import { CURRENCY_RATES, MOCK_PRODUCTS } from '../../data/mockData';
 import { DETAILED_VENDOR_PROFILES, getDetailedVendorProfile, RANDY_10_PETROLEUM_BUYER_VISITS, MARK_JOHNSON_15_BUYER_VISITS } from '../../data/detailedVendorProfiles';
 import { loadCustomVendorProfile } from '../../utils/mediaUploadUtils';
+import { resolveUserStorefrontId, buildVendorProfileForUser } from '../../utils/storefrontUtils';
 import { MediaManagementStudio } from './MediaManagementStudio';
 import { CompanyHeader } from './CompanyHeader';
 import { PremiumContactGate } from '../common/PremiumContactGate';
@@ -64,7 +65,7 @@ interface Props {
   onOpenCreateRfq?: () => void;
   currentUser?: AuthUser | null;
   onOpenUpgradeModal?: () => void;
-  onNavigate?: (view: string) => void;
+  onNavigate?: (view: string, options?: any) => void;
   isModalView?: boolean;
   onCloseModal?: () => void;
 }
@@ -114,11 +115,15 @@ export const VendorProfilePage: React.FC<Props> = ({
   
   // Active Profile state (raw + security-gated for non-paid callers)
   const [rawProfile, setProfile] = useState<DetailedVendorProfile>(() => {
-    const savedCustom = loadCustomVendorProfile();
+    const savedCustom = loadCustomVendorProfile(companyId);
     if (savedCustom && savedCustom.id === companyId) {
       return savedCustom;
     }
-    return initialCompany || getDetailedVendorProfile(companyId);
+    if (initialCompany) return initialCompany;
+    if (currentUser && resolveUserStorefrontId(currentUser) === companyId) {
+      return buildVendorProfileForUser(currentUser, companyId);
+    }
+    return getDetailedVendorProfile(companyId);
   });
 
   // Media Management Studio state
@@ -128,6 +133,7 @@ export const VendorProfilePage: React.FC<Props> = ({
   const isAuthorizedToEdit = Boolean(
     currentUser?.role === 'ADMIN' ||
     currentUser?.isVerifiedAdmin === true ||
+    (currentUser && resolveUserStorefrontId(currentUser) === rawProfile.id) ||
     (currentUser?.email && rawProfile.contactEmail && currentUser.email.toLowerCase() === rawProfile.contactEmail.toLowerCase()) ||
     (rawProfile.id === 'comp-melissa-mpcommodity' && currentUser?.email?.toLowerCase().includes('mpcommoditybroker'))
   );
@@ -258,13 +264,22 @@ export const VendorProfilePage: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    const savedCustom = loadCustomVendorProfile();
-    if (savedCustom && savedCustom.id === companyId) {
-      setProfile(savedCustom);
-    } else if (companyId) {
-      setProfile(getDetailedVendorProfile(companyId, initialCompany));
-    }
-  }, [companyId, initialCompany]);
+    const syncProfile = () => {
+      const savedCustom = loadCustomVendorProfile(companyId);
+      if (savedCustom && savedCustom.id === companyId) {
+        setProfile(savedCustom);
+      } else if (initialCompany) {
+        setProfile(initialCompany);
+      } else if (currentUser && resolveUserStorefrontId(currentUser) === companyId) {
+        setProfile(buildVendorProfileForUser(currentUser, companyId));
+      } else if (companyId) {
+        setProfile(getDetailedVendorProfile(companyId, initialCompany));
+      }
+    };
+    syncProfile();
+    window.addEventListener('tradeheaven_vendor_profile_updated', syncProfile);
+    return () => window.removeEventListener('tradeheaven_vendor_profile_updated', syncProfile);
+  }, [companyId, initialCompany, currentUser]);
 
   const curr = (CURRENCY_RATES || []).find(c => c.code === selectedCurrency) || CURRENCY_RATES?.[0] || { code: 'USD', symbol: '$', rateToUSD: 1 };
   
@@ -520,13 +535,30 @@ export const VendorProfilePage: React.FC<Props> = ({
           </button>
 
           {isAuthorizedToEdit && (
-            <button
-              onClick={() => setIsMediaStudioOpen(true)}
-              className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer"
-            >
-              <Layers className="w-3 h-3 text-amber-600" />
-              <span>Edit Assets</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  onNavigate?.('DASHBOARD', {
+                    tab: 'MY_STOREFRONT',
+                    subSection: 'PRODUCTS',
+                    openAddProduct: true
+                  })
+                }
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Add Product</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMediaStudioOpen(true)}
+                className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold hover:bg-amber-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <Layers className="w-3 h-3 text-amber-600" />
+                <span>Edit Assets</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -753,6 +785,23 @@ export const VendorProfilePage: React.FC<Props> = ({
                       {cat}
                     </button>
                   ))}
+
+                  {isAuthorizedToEdit && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onNavigate?.('DASHBOARD', {
+                          tab: 'MY_STOREFRONT',
+                          subSection: 'PRODUCTS',
+                          openAddProduct: true
+                        })
+                      }
+                      className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Add Product</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

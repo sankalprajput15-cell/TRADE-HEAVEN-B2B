@@ -104,20 +104,49 @@ export function reorderArray<T>(list: T[], startIndex: number, endIndex: number)
 }
 
 export const VENDOR_CUSTOM_PROFILE_KEY = 'tradeheaven_custom_vendor_profile';
+export const VENDOR_CUSTOM_PROFILES_MAP_KEY = 'tradeheaven_custom_vendor_profiles_v2';
 
 export function saveCustomVendorProfile(profile: any): void {
   try {
     localStorage.setItem(VENDOR_CUSTOM_PROFILE_KEY, JSON.stringify(profile));
+    if (profile && profile.id) {
+      let map: Record<string, any> = {};
+      try {
+        const rawMap = localStorage.getItem(VENDOR_CUSTOM_PROFILES_MAP_KEY);
+        if (rawMap) map = JSON.parse(rawMap) || {};
+      } catch {}
+      map[String(profile.id)] = profile;
+      localStorage.setItem(VENDOR_CUSTOM_PROFILES_MAP_KEY, JSON.stringify(map));
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('tradeheaven_vendor_profile_updated', {
+          detail: { companyId: profile?.id, profile }
+        })
+      );
+    }
   } catch (err) {
     console.error('Failed to save custom vendor profile to localStorage:', err);
   }
 }
 
-export function loadCustomVendorProfile(): any | null {
+export function loadCustomVendorProfile(companyId?: string): any | null {
   try {
+    if (companyId) {
+      const rawMap = localStorage.getItem(VENDOR_CUSTOM_PROFILES_MAP_KEY);
+      if (rawMap) {
+        const map = JSON.parse(rawMap);
+        if (map && map[companyId]) {
+          return map[companyId];
+        }
+      }
+    }
     const saved = localStorage.getItem(VENDOR_CUSTOM_PROFILE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (!companyId || parsed?.id === companyId) {
+        return parsed;
+      }
     }
   } catch (err) {
     console.error('Failed to load custom vendor profile from localStorage:', err);
