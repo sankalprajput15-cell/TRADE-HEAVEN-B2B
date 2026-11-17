@@ -53,7 +53,16 @@ const GENERIC_PLACEHOLDER_PATTERNS = [
   'vecteezy_',
   'default-icon',
   'diwali-offer-banner',
-  'tradeheavenb2bbest.svg'
+  'tradeheavenb2bbest.svg',
+  '3c3cbe4e5111',
+  '7a4884fb28b0',
+  'cfabdbbb40fa',
+  'e31092549661',
+  'market-share',
+  'global-market-insights',
+  'changing-automotive',
+  '3d-render',
+  '3d_render'
 ];
 
 export function isMismatchedProductImageUrl(
@@ -164,6 +173,7 @@ export function cleanProductSearchSubject(rawName: string): string {
   s = s.replace(/\bgrade\s+[a-z0-9+-]+\b/gi, ' ');
   // Remove manufacturer slash lists like "CAT / Cummins " so core product noun remains dominant
   s = s.replace(/\b[A-Za-z0-9]+\s*\/\s*[A-Za-z0-9]+\b/g, ' ');
+  s = s.replace(/\s*&\s*/g, ' ');
   s = s.replace(/\s+/g, ' ').trim();
   return s || String(rawName || '').trim();
 }

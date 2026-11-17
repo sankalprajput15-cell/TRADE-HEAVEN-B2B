@@ -261,7 +261,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categoriesToRender.map(cat => {
           const isSelected = selectedCategory === cat.name;
-          const catImage = cat.image || '/assets/uploads/vecteezy_in-the-evening-cargo-ships-oil-ships-dock-at-the-port_4639072_54378ca6.jpg';
+          const catImage = cat.image || '';
           
           // Parse subcategories into array
           const rawSubcats = (cat as any).subcategories && Array.isArray((cat as any).subcategories) && (cat as any).subcategories.length > 0
@@ -288,6 +288,7 @@ export const CategoryMegaMenu: React.FC<Props> = ({
                     <SafeImage 
                       src={catImage} 
                       alt={tText(cat.name)} 
+                      productTitle={cat.name}
                       category={cat.name}
                       productId={cat.id}
                       type="category"

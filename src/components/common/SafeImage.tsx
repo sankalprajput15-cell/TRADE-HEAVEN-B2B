@@ -243,10 +243,10 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     [src, productId, productTitle, category, imageIndex, isLogoOrAvatar, overrideVersion]
   );
 
-  // Automatic Visual Product Finder fallback ONLY when no manual/saved product image exists
+  // Automatic Visual Product & Category Header Finder fallback ONLY when no manual/saved image exists
   useEffect(() => {
-    if (isLogoOrAvatar || (type !== 'product' && type !== 'rfq')) return;
-    const cleanTitle = (productTitle || alt || '').trim();
+    if (isLogoOrAvatar || (type !== 'product' && type !== 'rfq' && type !== 'category')) return;
+    const cleanTitle = (productTitle || category || alt || '').trim();
     if (cleanTitle.length < 3) return;
 
     let cancelled = false;
@@ -281,9 +281,40 @@ export const SafeImage: React.FC<SafeImageProps> = ({
         return;
       }
 
-      const lookupKey = normalizeVisualQueryKey(cleanTitle, category);
+      const lookupKey = `${type}:${normalizeVisualQueryKey(cleanTitle, category)}`;
       if (visualFetchedKeyRef.current === lookupKey && visualPool.length > 0) return;
       visualFetchedKeyRef.current = lookupKey;
+
+      if (type === 'category') {
+        try {
+          const catRes = await fetch('/api/v1/categories/auto-fetch-google-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              categoryId: productId || '',
+              categoryName: productTitle || category || cleanTitle,
+              forceRefresh: Boolean(hasError)
+            })
+          });
+          if (!cancelled && catRes.ok) {
+            const catJson = await catRes.json();
+            const localUrl = String(catJson?.localUrl || '').trim();
+            if (catJson?.success && localUrl && !isGenericOrPlaceholderImageUrl(localUrl)) {
+              setVisualPool([localUrl]);
+              setHasError(false);
+              setAttemptIndex(0);
+              productImageManagerService.registerAutoSavedImage({
+                productId,
+                productTitle: productTitle || category || cleanTitle,
+                url: localUrl
+              });
+              return;
+            }
+          }
+        } catch {
+          // fallback to standard visual product image search
+        }
+      }
 
       fetchVisualProductImages({
         productName: cleanTitle,
@@ -509,8 +540,8 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     if (currentCandidate) {
       LOADED_IMAGE_URLS.add(currentCandidate);
-      // Auto-upload & bind displayed product/RFQ image onto the site (/assets/uploads/...) so next load is instant & persistent
-      if (!isLogoOrAvatar && (type === 'product' || type === 'rfq' || Boolean(productId || productTitle))) {
+      // Auto-upload & bind displayed product/category/RFQ image onto the site (/assets/uploads/...) so next load is instant & persistent
+      if (!isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
         const cleanCandidate =
           currentCandidate.startsWith('/assets/uploads/') || currentCandidate.startsWith('/src/assets/')
             ? currentCandidate.split('?')[0]

@@ -9506,7 +9506,7 @@ async function dispatchVerifiedChatAlertEmail(params: {
   companyId?: string;
   category?: EmailHistoryCategory;
   summaryText?: string;
-}): Promise<{ accepted: boolean; deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED'; error?: string }> {
+}): Promise<{ accepted: boolean; deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED'; messageId?: string; error?: string }> {
   const cleanEmail = normalizeRecipientEmail(params.toEmail);
   if (!cleanEmail || !cleanEmail.includes('@')) {
     return { accepted: false, deliveryMode: 'UNCONFIGURED', error: 'Invalid recipient email address' };
@@ -9538,7 +9538,7 @@ async function dispatchVerifiedChatAlertEmail(params: {
         skipLegacyInquiryRelay: true
       });
       if (receipt.success && receipt.deliveryMode === 'LIVE_SMTP') {
-        return { accepted: true, deliveryMode: 'LIVE_SMTP' };
+        return { accepted: true, deliveryMode: 'LIVE_SMTP', messageId: receipt.messageId };
       }
     } catch (err: any) {
       // fall through to live domain mail relay
@@ -12012,10 +12012,10 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
   const conversationId = String(body.conversationId || '').trim();
   const messageId = String(body.messageId || '').trim();
   const supplierEmail = normalizeRecipientEmail(String(body.supplierEmail || ''));
-  const supplierName = String(body.supplierName || 'Supplier');
-  const supplierCompany = String(body.supplierCompany || 'Trade Heaven Supplier');
-  const buyerName = String(body.buyerName || 'International Buyer');
-  const buyerCountry = String(body.buyerCountry || 'Global');
+  let supplierName = String(body.supplierName || 'Supplier');
+  let supplierCompany = String(body.supplierCompany || 'Trade Heaven Supplier');
+  let buyerName = String(body.buyerName || 'International Buyer');
+  let buyerCountry = String(body.buyerCountry || 'Global');
   const messageText = String(body.messageText || '').trim();
 
   if (!messageId || !supplierEmail || !supplierEmail.includes('@')) {
@@ -12024,6 +12024,76 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
       message: 'Valid messageId and supplierEmail are required to re-verify email alert delivery.'
     });
   }
+
+  let matchedConv = conversationId
+    ? serverChatConversationsStore.find(c => c.id === conversationId)
+    : undefined;
+  if (!matchedConv && conversationId && LIVE_UPSTREAM_PROXY_ENABLED) {
+    const liveConvsRes = await fetchLiveUpstreamJson('get_chat_conversations', { view_mode: 'admin' });
+    if (Array.isArray(liveConvsRes?.data)) {
+      matchedConv = liveConvsRes.data.find((c: any) => String(c?.id) === conversationId);
+    }
+  }
+
+  let matchedIdentity =
+    (matchedConv?.identityId && serverBuyerIdentitiesStore.find(i => i.id === matchedConv.identityId)) ||
+    (matchedConv as any)?.identity ||
+    null;
+  if (!matchedIdentity && matchedConv?.identityId && LIVE_UPSTREAM_PROXY_ENABLED) {
+    const liveIdentsRes = await fetchLiveUpstreamJson('get_buyer_identities');
+    if (Array.isArray(liveIdentsRes?.data)) {
+      matchedIdentity = liveIdentsRes.data.find((i: any) => String(i?.id) === String(matchedConv.identityId)) || null;
+    }
+  }
+
+  if (matchedConv?.supplierName) supplierName = String(matchedConv.supplierName);
+  if (matchedConv?.supplierCompany) supplierCompany = String(matchedConv.supplierCompany);
+  if (matchedIdentity?.buyerName && matchedIdentity.buyerName !== 'Verified Buyer') {
+    buyerName = String(matchedIdentity.buyerName);
+  }
+  if (matchedIdentity?.country) buyerCountry = String(matchedIdentity.country);
+
+  const buyerCity = String(matchedIdentity?.city || '');
+  const buyerInterest = String(matchedIdentity?.productInterest || '');
+  const rawPhone = String(matchedIdentity?.phone || '');
+  const rawEmail = String(matchedIdentity?.email || '');
+  const rawCompany = String(matchedIdentity?.companyName || '');
+  const rawAddress = String(matchedIdentity?.address || '');
+
+  const showPhone = Boolean(matchedConv?.showPhone);
+  const showEmail = Boolean(matchedConv?.showEmail);
+  const showCompany = Boolean(matchedConv?.showCompany);
+
+  const safePhone = rawPhone ? (showPhone ? rawPhone : maskChatPhone(rawPhone)) : 'Protected (Sign in to view)';
+  const safeEmail = rawEmail ? (showEmail ? rawEmail : maskChatEmail(rawEmail)) : 'Protected (Sign in to view)';
+  const safeCompany = showCompany ? (rawCompany || maskChatCompany(buyerCountry)) : maskChatCompany(buyerCountry);
+  const safeAddress = showCompany
+    ? (rawAddress || maskChatAddress(buyerCity, buyerCountry))
+    : maskChatAddress(buyerCity, buyerCountry);
+
+  let threadBuyerMsgs = conversationId
+    ? serverChatMessagesStore.filter(m => m.conversationId === conversationId && m.senderRole === 'buyer_identity')
+    : [];
+  if (threadBuyerMsgs.length === 0 && conversationId && LIVE_UPSTREAM_PROXY_ENABLED) {
+    const liveMsgsRes = await fetchLiveUpstreamJson('get_chat_messages', { conversation_id: conversationId });
+    if (Array.isArray(liveMsgsRes?.data)) {
+      threadBuyerMsgs = liveMsgsRes.data.filter((m: any) => m?.senderRole === 'buyer_identity');
+    }
+  }
+
+  const previews = threadBuyerMsgs.length > 0
+    ? threadBuyerMsgs.slice(-3).map((m: any) => {
+        const txt = String(m.messageText || '').trim();
+        const mediaNote =
+          m.mediaType && m.mediaType !== 'none'
+            ? `[${String(m.mediaType).toUpperCase()}: ${m.mediaName || 'Attachment'}]`
+            : '';
+        return [txt, mediaNote].filter(Boolean).join(' ') || '[Buyer Attachment / Message]';
+      })
+    : [messageText || '[Buyer Attachment / Message]'];
+
+  const snippetsHtml = previews.map(p => `<li style="margin-bottom:6px;color:#0f172a;">${escapeChatHtml(p)}</li>`).join('');
+  const snippetsText = previews.map(p => `- ${p}`).join('\n');
 
   const subject = `Urgent Deal Update: Unread message from ${buyerName} (${buyerCountry}) on Trade Heaven`;
   const replyLink = 'https://tradeheaven.net/?view=SUPPLIER_MESSAGES';
@@ -12035,16 +12105,24 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
       </div>
       <div style="padding:24px;">
         <p style="margin:0 0 14px;font-size:14px;color:#334155;">Hello <strong>${escapeChatHtml(supplierName)}</strong> (${escapeChatHtml(supplierCompany)}), you have an unread buyer inquiry on Trade Heaven. Sign in to access secure inquiry details:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px;background:#f8fafc;border:1px solid #e2e8f0;">
+          <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;width:140px;">Buyer Name:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerName)}</td></tr>
+          <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Company:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeCompany)}</td></tr>
+          <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Location:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeAddress)}</td></tr>
+          <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Phone:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safePhone)}</td></tr>
+          <tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Email:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(safeEmail)}</td></tr>
+          ${buyerInterest ? `<tr><td style="padding:8px 12px;font-weight:bold;color:#475569;">Product Interest:</td><td style="padding:8px 12px;color:#0f172a;">${escapeChatHtml(buyerInterest)}</td></tr>` : ''}
+        </table>
         <div style="background:#eff6ff;border-left:4px solid #2563eb;padding:12px 16px;margin-bottom:18px;">
-          <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Buyer Message:</p>
-          <p style="margin:0;font-size:13px;color:#0f172a;">${escapeChatHtml(messageText || '[Buyer Attachment / Message]')}</p>
+          <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e40af;">Unread Buyer Message(s) &amp; Attachments:</p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;">${snippetsHtml}</ul>
         </div>
         <p style="margin:0 0 14px;font-size:12px;color:#64748b;">Sign in to access secure inquiry details and respond directly to this buyer.</p>
         <a href="${replyLink}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 22px;border-radius:8px;">Login to Reply &amp; View Contact Details &rarr;</a>
       </div>
     </div>
   </body></html>`;
-  const text = `Urgent Deal Update from ${buyerName} (${buyerCountry}) on Trade Heaven:\n\nSign in to access secure inquiry details.\n\n${messageText}\n\nLogin to Reply & View Contact Details: ${replyLink}`;
+  const text = `Urgent Deal Update from ${buyerName} (${buyerCountry}) on Trade Heaven:\n\nSign in to access secure inquiry details.\n\nBuyer: ${buyerName}\nCompany: ${safeCompany}\nLocation: ${safeAddress}\nPhone: ${safePhone}\nEmail: ${safeEmail}\n\nBuyer Message(s):\n${snippetsText}\n\nLogin to Reply & View Contact Details: ${replyLink}`;
 
   const resolvedCompanyId =
     supplierEmail.includes('mpcommoditybrokers')
@@ -12060,7 +12138,7 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
     companyName: supplierCompany,
     companyId: resolvedCompanyId,
     category: 'BUYER_INQUIRY',
-    summaryText: `BUYER CHAT ALERT SENT TO ${supplierEmail}: Unread message from ${buyerName} (${buyerCountry}). Preview: ${messageText || '[Attachment]'}`
+    summaryText: `BUYER CHAT ALERT SENT TO ${supplierEmail}: ${previews.length} unread message(s) from ${buyerName} (${buyerCountry}). Preview: ${previews.join(' | ')}`
   });
 
   const adminRecipients = getAlertRecipients();
@@ -12077,13 +12155,13 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
       companyName: supplierCompany,
       companyId: resolvedCompanyId,
       category: 'BUYER_INQUIRY',
-      summaryText: `[ADMIN COPY] Buyer chat alert for ${supplierEmail} (${buyerName}): ${messageText || '[Attachment]'}`
+      summaryText: `[ADMIN COPY] Buyer chat alert for ${supplierEmail} (${buyerName}): ${previews.join(' | ')}`
     });
     if (adminRes.accepted) adminCopyAccepted = true;
     else if (adminRes.error && !adminErr) adminErr = adminRes.error;
   }
 
-  const record: VerifiedEmailAlertRecord = {
+  const record: VerifiedEmailAlertRecord & { supplierMessageId?: string } = {
     messageId,
     conversationId,
     supplierEmail,
@@ -12091,6 +12169,7 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
     adminCopyRecipients: adminRecipients,
     adminCopyAccepted,
     deliveryMode: supplierResult.deliveryMode,
+    supplierMessageId: supplierResult.messageId,
     sentAt: new Date().toISOString(),
     error: [supplierResult.error, adminErr].filter(Boolean).join(' | ') || undefined
   };
@@ -17651,6 +17730,24 @@ const BLOCKED_IMAGE_DOMAINS = [
   '123rf.com',
   'depositphotos.com',
   'dreamstime.com',
+  'ftcdn.net',
+  'as1.ftcdn.net',
+  'as2.ftcdn.net',
+  'stock.adobe.com',
+  'vecteezy.com',
+  'freepik.com',
+  'img.freepik.com',
+  'canva.com',
+  'gminsights.com',
+  'marketsandmarkets.com',
+  'grandviewresearch.com',
+  'fortunebusinessinsights.com',
+  'mordorintelligence.com',
+  'statista.com',
+  'researchandmarkets.com',
+  'coherentmarketinsights.com',
+  'verifiedmarketresearch.com',
+  'akadauto.com',
   'lookaside.fbsbx.com',
   'fbsbx.com',
   'facebook.com',
@@ -17661,7 +17758,7 @@ const BLOCKED_IMAGE_DOMAINS = [
 ];
 
 const EXCLUDED_IMAGE_TERMS_REGEX =
-  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|archaeology|manuscript|djvu|storybook|story_book|study_in|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
+  /(logo|icon|favicon|sprite|clipart|cartoon|meme|wallpaper|avatar|watermark|placeholder|vector|infographic|diagram|chart|barcode|qrcode|banner-ad|archaeology|manuscript|djvu|storybook|story_book|study_in|ai-generated|futuristic|3d-render|3d_render|concept-art|digital-art|market-share|market-size|market-growth|cagr|market-research|collage|changing-automotive|future-of-driving|global-market-insights|advert|advertisement|newspaper|magazine|catalogue|brochure|leaflet|flyer|postcard|statelib|fortepan|bundesarchiv|efta\d|press_information|inaugur|ceremony|circa|18[89]\d|19[0-8]\d|baker_electric|stetson|\.svg($|\?)|\.gif($|\?)|\.ico($|\?))/i;
 
 const PRODUCT_STOPWORDS = new Set([
   'the', 'and', 'for', 'with', 'from', 'that', 'this', 'export', 'grade', 'quality',
@@ -17694,10 +17791,75 @@ function getWordStems(word: string): string[] {
   const stems = new Set<string>([w]);
   if (w.length > 4) {
     if (w.endsWith('ies')) stems.add(w.slice(0, -3) + 'y');
-    if (w.endsWith('es')) stems.add(w.slice(0, -2));
-    if (w.endsWith('s')) stems.add(w.slice(0, -1));
+    if (w.endsWith('sses') || w.endsWith('ches') || w.endsWith('shes') || w.endsWith('xes')) {
+      stems.add(w.slice(0, -2));
+    }
+    if (w.endsWith('s') && !w.endsWith('ss')) stems.add(w.slice(0, -1));
   }
   return Array.from(stems).filter(s => s.length >= 3);
+}
+
+function buildRealPhotoSubjectHints(productName: string, category?: string): {
+  primaryQuery: string;
+  expandedTokens: string[];
+} {
+  const joined = `${productName || ''} ${category || ''}`.toLowerCase();
+  if (/(automotive|electric vehicle|ev battery|charging station)/i.test(joined)) {
+    return {
+      primaryQuery: 'electric car charging station',
+      expandedTokens: ['electric', 'car', 'vehicle', 'automotive', 'charging', 'ev', 'station']
+    };
+  }
+  if (/(machinery|industrial equipment|cnc|hydraulic press)/i.test(joined)) {
+    return {
+      primaryQuery: 'cnc milling machine',
+      expandedTokens: ['cnc', 'machinery', 'machine', 'industrial', 'lathe', 'milling', 'factory']
+    };
+  }
+  if (/(electronics|semiconductor|microcontroller|circuit board)/i.test(joined)) {
+    return {
+      primaryQuery: 'semiconductor silicon wafer',
+      expandedTokens: ['semiconductor', 'electronic', 'circuit', 'board', 'pcb', 'silicon', 'wafer']
+    };
+  }
+  if (/(chemical|polymer|hdpe|petrochemical|laboratory)/i.test(joined)) {
+    return {
+      primaryQuery: 'polymer pellets resin',
+      expandedTokens: ['chemical', 'polymer', 'resin', 'pellet', 'pellets', 'refinery', 'hdpe']
+    };
+  }
+  if (/(textile|garment|leather belt|fabrics)/i.test(joined) && !/belt/i.test(joined)) {
+    return {
+      primaryQuery: 'textile weaving loom',
+      expandedTokens: ['textile', 'fabric', 'garment', 'weaving', 'cotton', 'yarn', 'loom']
+    };
+  }
+  if (/(renewable energy|solar panel|photovoltaic)/i.test(joined)) {
+    return {
+      primaryQuery: 'photovoltaic solar farm',
+      expandedTokens: ['solar', 'photovoltaic', 'panel', 'renewable', 'energy', 'farm']
+    };
+  }
+  if (/(agriculture|agro commodities|wheat|grain|soy)/i.test(joined)) {
+    return {
+      primaryQuery: 'combine wheat field',
+      expandedTokens: ['agriculture', 'wheat', 'grain', 'harvest', 'combine', 'farm', 'crop']
+    };
+  }
+  if (/(medical|diagnostic|hospital equipment)/i.test(joined)) {
+    return {
+      primaryQuery: 'hospital mri scanner',
+      expandedTokens: ['medical', 'diagnostic', 'hospital', 'scanner', 'mri', 'surgical']
+    };
+  }
+  if (/(building|construction materials|rebar|aluminum profile)/i.test(joined)) {
+    return {
+      primaryQuery: 'steel rebar construction',
+      expandedTokens: ['steel', 'rebar', 'construction', 'building', 'aluminum', 'concrete']
+    };
+  }
+  const clean = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
+  return { primaryQuery: clean, expandedTokens: [] };
 }
 
 interface ProductTokenProfile {
@@ -17710,13 +17872,11 @@ function extractProductKeywordTokens(productName: string): ProductTokenProfile {
   const raw = cleanedSubject
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ');
-  const allTokens = Array.from(
-    new Set(
-      raw
-        .split(/\s+/)
-        .filter(t => t.length >= 3 && !/^\d+$/.test(t) && !PRODUCT_STOPWORDS.has(t))
-    )
-  );
+  const hints = buildRealPhotoSubjectHints(cleanedSubject);
+  const baseTokens = raw
+    .split(/\s+/)
+    .filter(t => t.length >= 3 && !/^\d+$/.test(t) && !PRODUCT_STOPWORDS.has(t));
+  const allTokens = Array.from(new Set([...baseTokens, ...hints.expandedTokens]));
   const coreNouns = allTokens.filter(t => !GENERIC_MODIFIER_WORDS.has(t));
   return {
     allTokens,
@@ -17969,6 +18129,15 @@ async function verifyLiveProductImageUrl(
   const url = String(cand.url || '').trim();
   if (!url || !/^https?:\/\//i.test(url)) return null;
 
+  // Wikimedia Commons imageinfo API already validates MIME, dimensions, and live CDN thumburl
+  if (cand.sourceDomain === 'commons.wikimedia.org' && url.includes('wikimedia.org') && cand.width && cand.height) {
+    return {
+      ...cand,
+      url,
+      thumbnailUrl: cand.thumbnailUrl || url
+    };
+  }
+
   const inspectResponse = (resp: Response): VisualImageCandidate | null => {
     if (!resp.ok && resp.status !== 206) return null;
     const ctype = String(resp.headers.get('content-type') || '').toLowerCase();
@@ -17992,12 +18161,13 @@ async function verifyLiveProductImageUrl(
         ctype.includes('image/webp') ||
         (ctype.includes('application/octet-stream') && DIRECT_IMAGE_EXT_REGEX.test(url));
       if (!isSupportedMime) return null;
-    } else if (!DIRECT_IMAGE_EXT_REGEX.test(url)) {
+    } else if (!DIRECT_IMAGE_EXT_REGEX.test(url) && !url.includes('encrypted-tbn0.gstatic.com/images')) {
       return null;
     }
 
-    // Reject tiny placeholder pixels or <6KB thumbnails when Content-Length header is supplied
-    if (!Number.isNaN(clen) && clen > 0 && clen < 6000) {
+    // Reject tiny placeholder pixels (allow >= 2KB for verified Google encrypted-tbn results, >= 6KB for general URLs)
+    const minBytes = url.includes('encrypted-tbn0.gstatic.com/images') ? 2000 : 6000;
+    if (!Number.isNaN(clen) && clen > 0 && clen < minBytes) {
       return null;
     }
 
@@ -18068,7 +18238,7 @@ async function runGeminiGroundedImageSearchRound(params: {
     };
   }
 
-  const models = ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
+  const models = ['gemini-2.5-flash', 'gemini-2.5-pro'];
   let lastError = '';
 
   for (const modelName of models) {
@@ -18164,61 +18334,142 @@ async function runGeminiGroundedImageSearchRound(params: {
   return { candidates: [], groundedPages: [], errorMessage: lastError };
 }
 
-async function fetchWikimediaCommonsProductImages(
+async function fetchGoogleImagesProductPhotos(
   productName: string,
-  _category?: string
+  category?: string
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
-  const cleanedSubject = cleanProductSearchSubject(productName);
-  if (!cleanedSubject) return discovered;
-  try {
-    const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
-      `${cleanedSubject} filetype:bitmap`
-    )}&gsrnamespace=6&gsrlimit=25&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=900&format=json`;
-    const resp = await fetch(apiUrl, {
-      headers: {
-        'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
-      },
-      signal: AbortSignal.timeout(4500)
-    });
-    if (!resp.ok) return discovered;
-    const data: any = await resp.json();
-    const pages = Object.values(data?.query?.pages || {}) as any[];
-    for (const p of pages) {
-      const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
-      if (!info) continue;
-      const mime = String(info.mime || '').toLowerCase();
-      if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
-      const w = Number(info.width || 0);
-      const h = Number(info.height || 0);
-      if ((w > 0 && w < 300) || (h > 0 && h < 220)) continue;
-      const candidateUrl = String(info.thumburl || info.url || '').trim();
-      if (!candidateUrl || !/^https?:\/\//i.test(candidateUrl)) continue;
-      const titleText = String(p?.title || '')
-        .replace(/^File:/i, '')
-        .replace(/\.[^.]+$/, '')
-        .replace(/[_-]+/g, ' ')
-        .trim();
-      discovered.push({
-        url: candidateUrl,
-        thumbnailUrl: candidateUrl,
-        title: titleText || cleanedSubject,
-        sourceDomain: 'commons.wikimedia.org',
-        width: w || undefined,
-        height: h || undefined
+  const hints = buildRealPhotoSubjectHints(productName, category);
+  const query = `${hints.primaryQuery} photograph`.replace(/\s+/g, ' ').trim();
+  if (!query) return discovered;
+
+  const userAgents = [
+    'Googlebot/2.1 (+http://www.google.com/bot.html)',
+    'Opera/9.80 (J2ME/MIDP; Opera Mini/9.80 (S60; SymbOS; Opera Mobi/23.348; U; en) Presto/2.5.25 Version/10.54)'
+  ];
+
+  for (const ua of userAgents) {
+    try {
+      const url = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`;
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': ua,
+          'Accept-Language': 'en-US,en;q=0.9'
+        },
+        signal: AbortSignal.timeout(4000)
       });
-    }
-  } catch {}
+      if (!resp.ok) continue;
+      const html = await resp.text();
+      if (/sorry\/index|recaptcha/i.test(html)) continue;
+
+      const imgurlMatches = [...html.matchAll(/imgurl=([^&"']+)/gi)].slice(0, 12);
+      for (const m of imgurlMatches) {
+        try {
+          const decoded = decodeURIComponent(m[1]).trim();
+          if (!/^https?:\/\//i.test(decoded)) continue;
+          if (/google\.com|gstatic\.com|googleapis\.com/i.test(decoded)) continue;
+          discovered.push({
+            url: decoded,
+            thumbnailUrl: decoded,
+            title: `${hints.primaryQuery} Google Photo`,
+            sourceDomain: 'images.google.com',
+            relevanceScore: 10
+          });
+        } catch {}
+      }
+
+      const tbnMatches = [...html.matchAll(/https:\/\/encrypted-tbn0\.gstatic\.com\/images\?q=tbn:[^"'<>\s\\]+/gi)].slice(0, 12);
+      for (const m of tbnMatches) {
+        const cleanTbn = m[0].replace(/&amp;/g, '&').trim();
+        if (!cleanTbn) continue;
+        discovered.push({
+          url: cleanTbn,
+          thumbnailUrl: cleanTbn,
+          title: `${hints.primaryQuery} Google Image`,
+          sourceDomain: 'images.google.com',
+          relevanceScore: 8
+        });
+      }
+
+      if (discovered.length >= 6) break;
+    } catch {}
+  }
+
+  return discovered;
+}
+
+async function fetchWikimediaCommonsProductImages(
+  productName: string,
+  category?: string
+): Promise<VisualImageCandidate[]> {
+  const discovered: VisualImageCandidate[] = [];
+  const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
+  const hints = buildRealPhotoSubjectHints(productName, category);
+  const queriesToTry =
+    hints.expandedTokens.length > 0 && hints.primaryQuery
+      ? [hints.primaryQuery]
+      : Array.from(new Set([hints.primaryQuery, cleanedSubject].filter(q => q.length >= 2)));
+  if (queriesToTry.length === 0) return discovered;
+
+  const wikiBadTitleRegex = /(diagram|chart|logo|icon|map|coat_of_arms|flag|signature|screenshot|pdf|djvu|infographic|cartoon|drawing|painting|sketch|poster|brochure|advert|newspaper|magazine|catalogue|postcard|statelib|fortepan|bundesarchiv|rian|efta|lccn|ceremony|inaugur|minister|delegation|baker_electric|stetson|young_girl|18[89]\d|19[0-8]\d)/i;
+
+  await Promise.allSettled(
+    queriesToTry.map(async qStr => {
+      try {
+        const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+          `${qStr} filetype:bitmap`
+        )}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=960&format=json`;
+        const resp = await fetch(apiUrl, {
+          headers: {
+            'User-Agent': 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net)'
+          },
+          signal: AbortSignal.timeout(4500)
+        });
+        if (!resp.ok) return;
+        const data: any = await resp.json();
+        const pages = Object.values(data?.query?.pages || {}) as any[];
+        for (const p of pages) {
+          const info = Array.isArray(p?.imageinfo) ? p.imageinfo[0] : null;
+          if (!info) continue;
+          const rawTitle = String(p?.title || '');
+          if (wikiBadTitleRegex.test(rawTitle)) continue;
+          const mime = String(info.mime || '').toLowerCase();
+          if (!mime.includes('jpeg') && !mime.includes('png') && !mime.includes('webp')) continue;
+          const w = Number(info.width || 0);
+          const h = Number(info.height || 0);
+          if ((w > 0 && w < 480) || (h > 0 && h < 320)) continue;
+          const candidateUrl = String(info.thumburl || info.url || '').trim();
+          if (!candidateUrl || !/^https?:\/\//i.test(candidateUrl)) continue;
+          const titleText = rawTitle
+            .replace(/^File:/i, '')
+            .replace(/\.[^.]+$/, '')
+            .replace(/[_-]+/g, ' ')
+            .trim();
+          const isLandscape = w >= h && w >= 640;
+          discovered.push({
+            url: candidateUrl,
+            thumbnailUrl: candidateUrl,
+            title: titleText || qStr,
+            sourceDomain: 'commons.wikimedia.org',
+            width: w || undefined,
+            height: h || undefined,
+            relevanceScore: isLandscape ? 18 : 11
+          });
+        }
+      } catch {}
+    })
+  );
   return discovered;
 }
 
 async function fetchLiveCommercialWebProductImages(
   productName: string,
-  _category?: string,
+  category?: string,
   specifications?: string
 ): Promise<VisualImageCandidate[]> {
   const discovered: VisualImageCandidate[] = [];
-  const cleanedSubject = cleanProductSearchSubject(productName);
+  const cleanedSubject = cleanProductSearchSubject(productName).replace(/&/g, ' ').replace(/\s+/g, ' ').trim();
+  const hints = buildRealPhotoSubjectHints(productName, category);
   const specHint = specifications
     ? specifications
         .replace(/[^\w\s-]/g, ' ')
@@ -18228,21 +18479,31 @@ async function fetchLiveCommercialWebProductImages(
         .join(' ')
     : '';
 
-  const searchQueries = [
-    cleanedSubject,
-    `${cleanedSubject} ${specHint} commercial product`.replace(/\s+/g, ' ').trim()
-  ];
+  const searchQueries = Array.from(
+    new Set(
+      [
+        hints.primaryQuery ? `${hints.primaryQuery} photograph` : '',
+        cleanedSubject,
+        specHint ? `${cleanedSubject} ${specHint}`.replace(/\s+/g, ' ').trim() : ''
+      ].filter(q => q.length >= 3)
+    )
+  );
 
-  const subjectTokens = cleanedSubject
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(w => w.length >= 3 && !['the', 'and', 'for', 'with', 'from', 'bulk', 'wholesale', 'grade', 'origin', 'certified', 'premium', 'high', 'quality'].includes(w));
-  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game/i;
+  const subjectTokens = Array.from(
+    new Set([
+      ...cleanedSubject
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(w => w.length >= 3 && !['the', 'and', 'for', 'with', 'from', 'bulk', 'wholesale', 'grade', 'origin', 'certified', 'premium', 'high', 'quality'].includes(w)),
+      ...hints.expandedTokens
+    ])
+  );
+  const bannedLiveRegex = /wallpaper|desktop|screensaver|tattoo|piano|sheet music|chord|lyric|mustang|lamborghini|ferrari|porsche|supercar|blossom|tulip|orchid|sunset|sunrise|mountain landscape|vineyard|museum|archaeolog|artifact|wikimedia|wikipedia|holy bible|scripture|calligraphy|tca cycle|krebs|flowchart|infographic|cartoon|anime|clipart|steamcommunity|steampowered|video game|market share|market size|market growth|cagr|global market insights|how evs|future of|changing automotive|3d render|ai generated|futuristic concept|ftcdn|adobe stock|vecteezy|freepik|dreamstime|shutterstock|istockphoto/i;
 
   await Promise.allSettled(
     searchQueries.map(async qStr => {
       try {
-        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}&qft=+filterui:photo-photo&form=HDRSC2&first=1`;
+        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(qStr)}&qft=+filterui:photo-photo+filterui:imagesize-large&form=HDRSC2&first=1`;
         const resp = await fetch(searchUrl, {
           headers: {
             'User-Agent':
@@ -18314,15 +18575,15 @@ async function filterCandidatesWithGemini(
     }));
     const prompt = `You are a strict B2B e-commerce visual QA reviewer.
 Target product: "${productName}" (Category: "${category || 'General'}").
-Review the image candidates below and return ONLY a JSON array of integer indices (e.g. [0, 2, 5]) that genuinely depict the real commercial product "${productName}".
-Discard charts, company logos, unrelated portraits, generic warehouses/offices/ships (unless the product itself is a ship or warehouse), cartoons, or off-topic items.
+Review the image candidates below and return ONLY a JSON array of integer indices (e.g. [0, 2, 5]) that genuinely depict the real commercial product "${productName}" as a REAL PHOTOGRAPH.
+Discard infographics, market share charts, AI-generated futuristic renders, collages, company logos, unrelated portraits, cartoons, or off-topic items.
 Candidates:
 ${JSON.stringify(compact)}`;
 
     const timeoutPromise = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Gemini relevance timeout')), 6000));
     const resp = await Promise.race([
       ai.models.generateContent({
-        model: 'gemini-4-hydrogen',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       }),
@@ -18469,9 +18730,16 @@ async function handleVisualProductImageSearch(params: {
       const cleanUrl = String(c.url || '').trim();
       const dedupKey = cleanUrl.split('#')[0];
       if (!cleanUrl || candidateMap.has(dedupKey) || verifiedMap.has(dedupKey)) continue;
-      const rel = isCandidateStrictlyRelevant(c, tokenProfile);
+      const isGoogleThumb = cleanUrl.includes('encrypted-tbn0.gstatic.com/images');
+      const rel = isCandidateStrictlyRelevant(c, tokenProfile, { allowCdnWithoutExt: isGoogleThumb });
       if (!rel.valid) continue;
-      candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score });
+      const sourceBoost =
+        c.sourceDomain === 'commons.wikimedia.org'
+          ? 8
+          : c.sourceDomain === 'images.google.com'
+            ? 5
+            : 0;
+      candidateMap.set(dedupKey, { ...c, relevanceScore: rel.score + sourceBoost });
     }
   };
 
@@ -18579,14 +18847,15 @@ Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourceP
     }
   }
 
-  // 3C. Commercial Web + Wikimedia Commons multi-source product photo discovery (always ensures >10 real verified photos)
+  // 3C. Google Images + Wikimedia Commons Real Photography + Commercial Web discovery
   if (verifiedMap.size < 12) {
-    const [webCandidates, wikiCandidates] = await Promise.all([
-      fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs),
-      fetchWikimediaCommonsProductImages(cleanName, cleanCategory)
+    const [googleCandidates, wikiCandidates, webCandidates] = await Promise.all([
+      fetchGoogleImagesProductPhotos(cleanName, cleanCategory),
+      fetchWikimediaCommonsProductImages(cleanName, cleanCategory),
+      fetchLiveCommercialWebProductImages(cleanName, cleanCategory, cleanSpecs)
     ]);
-    collectAndFilter([...webCandidates, ...wikiCandidates]);
-    await verifyPendingBatch(45);
+    collectAndFilter([...googleCandidates, ...wikiCandidates, ...webCandidates]);
+    await verifyPendingBatch(50);
   }
 
   const allVerified = Array.from(verifiedMap.values()).sort(
@@ -18637,9 +18906,11 @@ Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourceP
   // Mirror remaining pool items in background
   void mirrorVerifiedPoolInBackground(normalizedKey, cleanName, geminiVerified);
 
-  // Fisher-Yates shuffle on every request so >10 randomized results appear
-  const shuffledPool = fisherYatesShuffle(geminiVerified);
-  const selected = shuffledPool.slice(0, requestedCount);
+  // Keep highest-relevance real photographs (local uploads first) while preserving randomness within top tier
+  const topLocal = geminiVerified.filter(item => String(item.url || '').startsWith('/assets/uploads/'));
+  const topExternal = fisherYatesShuffle(geminiVerified.filter(item => !String(item.url || '').startsWith('/assets/uploads/')));
+  const orderedPool = [...topLocal, ...topExternal];
+  const selected = orderedPool.slice(0, requestedCount);
 
   return {
     success: true,
@@ -18647,9 +18918,9 @@ Return ONLY valid JSON { "images": [{ "url": "https://...jpg|png|webp", "sourceP
     fromCache: false,
     provider: 'gemini_google_search_grounding',
     queryUsed,
-    totalVerified: shuffledPool.length,
+    totalVerified: orderedPool.length,
     images: selected,
-    pool: shuffledPool
+    pool: orderedPool
   };
 }
 
@@ -18908,12 +19179,14 @@ async function mirrorExternalProductImageToLocalUploads(params: {
 
   const job = (async (): Promise<string | null> => {
     const tryDownload = async (withReferer: boolean) => {
+      const isWikimedia = rawUrl.includes('wikimedia.org');
       const headers: Record<string, string> = {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': isWikimedia
+          ? 'TradeHeavenVisualCatalogBot/1.0 (https://tradeheaven.net; admin@tradeheaven.net)'
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         Accept: 'image/webp,image/png,image/jpeg,image/*;q=0.8'
       };
-      if (withReferer) {
+      if (withReferer && !isWikimedia) {
         try {
           headers.Referer = `${new URL(rawUrl).origin}/`;
         } catch {}
@@ -19131,6 +19404,221 @@ app.get('/api/v1/products/fetch-images', async (req, res) => {
       message: err?.message || 'Failed to fetch product images.',
       images: [],
       pool: []
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// AUTOMATIC GOOGLE-TO-SITE PRODUCT HEADER / CATEGORY IMAGE SYSTEM
+// -------------------------------------------------------------
+const DEFAULT_PRODUCT_HEADER_CATEGORIES: Array<{ id: string; name: string; defaultImage: string }> = [
+  { id: 'cat-1', name: 'Machinery & Industrial Equipment', defaultImage: '' },
+  { id: 'cat-2', name: 'Automotive & Electric Vehicles', defaultImage: '' },
+  { id: 'cat-3', name: 'Electronics & Semiconductors', defaultImage: '' },
+  { id: 'cat-4', name: 'Chemicals & Raw Polymers', defaultImage: '' },
+  { id: 'cat-6', name: 'Renewable Energy & Solar', defaultImage: '' },
+  { id: 'cat-7', name: 'Agriculture & Agro Commodities', defaultImage: '' },
+  { id: 'cat-8', name: 'Medical & Diagnostic Supplies', defaultImage: '' },
+  { id: 'cat-9', name: 'Building & Construction Materials', defaultImage: '' }
+];
+
+const KNOWN_BAD_CATEGORY_HEADER_FILES = new Set([
+  'auto-automotive-electric-vehicles-3c3cbe4e5111.webp',
+  'auto-automotive-electric-vehicles-7a4884fb28b0.webp',
+  'auto-automotive-electric-vehicles-cfabdbbb40fa.webp',
+  'auto-automotive-electric-vehicles-e31092549661.webp',
+  'auto-automotive-electric-vehicles-49aa99051a54.webp',
+  'auto-automotive-electric-vehicles-c6a4583ac7c5.webp',
+  'auto-machinery-industrial-equipment-568701d4b626.webp',
+  'auto-renewable-energy-solar-da14e6ab17f4.webp',
+  'auto-agriculture-agro-commodities-7c00917c08d9.webp'
+]);
+
+function syncCategoryHeaderUrlIntoSiteContent(catId: string, catName: string, localUrl: string) {
+  if (!serverSiteContent || typeof serverSiteContent !== 'object') return;
+  const hp = serverSiteContent.homepage;
+  if (!hp || !Array.isArray(hp.categoriesList)) return;
+  let updated = false;
+  hp.categoriesList = hp.categoriesList.map((cat: any) => {
+    if (!cat) return cat;
+    const idMatch = catId && String(cat.id || '').trim() === catId;
+    const nameMatch = catName && String(cat.name || '').trim().toLowerCase() === catName.trim().toLowerCase();
+    if (idMatch || nameMatch) {
+      updated = true;
+      return { ...cat, image: localUrl };
+    }
+    return cat;
+  });
+  if (updated) {
+    serverSiteContent = { ...serverSiteContent, homepage: { ...hp } };
+  }
+}
+
+async function autoFetchAndUploadCategoryHeaderImage(params: {
+  categoryId: string;
+  categoryName: string;
+  forceRefresh?: boolean;
+}): Promise<{ categoryId: string; categoryName: string; localUrl: string; updated: boolean; provider?: string }> {
+  const catId = String(params.categoryId || '').trim();
+  const catName = String(params.categoryName || '').trim();
+  if (!catId && !catName) {
+    return { categoryId: catId, categoryName: catName, localUrl: '', updated: false };
+  }
+
+  const existing = serverProductImageState.overrides?.[catId] || serverProductImageState.overrides?.[catName];
+  const existingPrimary = String(existing?.primary || '').trim();
+  const existingFileName = existingPrimary ? path.basename(existingPrimary.split('?')[0]) : '';
+  const hasHealthyExistingLocal =
+    Boolean(existingPrimary) &&
+    existingPrimary.startsWith('/assets/uploads/') &&
+    isLocalUploadPresentOnDisk(existingPrimary) &&
+    !KNOWN_BAD_CATEGORY_HEADER_FILES.has(existingFileName) &&
+    !isGenericOrPlaceholderServerUrl(existingPrimary);
+
+  if (hasHealthyExistingLocal && !params.forceRefresh) {
+    syncCategoryHeaderUrlIntoSiteContent(catId, catName, existingPrimary);
+    return { categoryId: catId, categoryName: catName, localUrl: existingPrimary, updated: false, provider: 'cached_local' };
+  }
+
+  // Purge stale cache entry for this category so fresh Google/Wikimedia real photography is fetched
+  if (params.forceRefresh || KNOWN_BAD_CATEGORY_HEADER_FILES.has(existingFileName)) {
+    const normalizedKey = normalizeVisualSearchKeyword(cleanProductSearchSubject(catName || catId), catName);
+    if (serverProductImageCacheMap.has(normalizedKey)) {
+      serverProductImageCacheMap.delete(normalizedKey);
+      saveProductImageCacheToDisk();
+    }
+  }
+
+  const searchRes = await handleVisualProductImageSearch({
+    productName: catName || catId,
+    category: catName || catId,
+    count: 15,
+    forceRefresh: Boolean(params.forceRefresh || KNOWN_BAD_CATEGORY_HEADER_FILES.has(existingFileName))
+  });
+
+  if (!searchRes.success || !Array.isArray(searchRes.images) || searchRes.images.length === 0) {
+    return { categoryId: catId, categoryName: catName, localUrl: '', updated: false };
+  }
+
+  const candidateUrls = searchRes.images.map(img => String(img?.url || '').trim()).filter(Boolean);
+  let chosenLocalUrl = candidateUrls.find(
+    u => u.startsWith('/assets/uploads/') && !KNOWN_BAD_CATEGORY_HEADER_FILES.has(path.basename(u.split('?')[0]))
+  );
+
+  if (!chosenLocalUrl) {
+    for (const rawCand of candidateUrls) {
+      if (KNOWN_BAD_CATEGORY_HEADER_FILES.has(path.basename(rawCand.split('?')[0]))) continue;
+      const mirrored = await mirrorExternalProductImageToLocalUploads({
+        externalUrl: rawCand,
+        productId: catId,
+        productName: catName,
+        category: catName,
+        flushNow: true
+      });
+      if (mirrored && mirrored.startsWith('/assets/uploads/')) {
+        chosenLocalUrl = mirrored;
+        break;
+      }
+    }
+  }
+
+  if (!chosenLocalUrl) {
+    return { categoryId: catId, categoryName: catName, localUrl: '', updated: false };
+  }
+
+  const allLocalGallery = candidateUrls
+    .filter(u => u.startsWith('/assets/uploads/') && !KNOWN_BAD_CATEGORY_HEADER_FILES.has(path.basename(u.split('?')[0])))
+    .slice(0, 4);
+  if (!allLocalGallery.includes(chosenLocalUrl)) {
+    allLocalGallery.unshift(chosenLocalUrl);
+  }
+
+  bindAutoSavedImageOverride({
+    localUrl: chosenLocalUrl,
+    productId: catId || undefined,
+    productName: catName || undefined,
+    gallery: allLocalGallery,
+    flushNow: true,
+    forceOverwrite: true,
+    bindByTitle: Boolean(catName)
+  });
+
+  syncCategoryHeaderUrlIntoSiteContent(catId, catName, chosenLocalUrl);
+  return {
+    categoryId: catId,
+    categoryName: catName,
+    localUrl: chosenLocalUrl,
+    updated: true,
+    provider: searchRes.provider || 'google_visual_auto_upload'
+  };
+}
+
+let isSyncingCategoryHeaders = false;
+async function ensureRealHeaderImagesForCategories(forceRefreshAll = false) {
+  if (isSyncingCategoryHeaders) return [];
+  isSyncingCategoryHeaders = true;
+  const results: Array<{ categoryId: string; categoryName: string; localUrl: string; updated: boolean }> = [];
+  try {
+    const dynamicCats: Array<{ id: string; name: string }> =
+      Array.isArray(serverSiteContent?.homepage?.categoriesList) && serverSiteContent.homepage.categoriesList.length > 0
+        ? serverSiteContent.homepage.categoriesList.map((c: any) => ({
+            id: String(c?.id || '').trim(),
+            name: String(c?.name || '').trim()
+          }))
+        : DEFAULT_PRODUCT_HEADER_CATEGORIES.map(c => ({ id: c.id, name: c.name }));
+
+    for (const cat of dynamicCats) {
+      if (!cat.id && !cat.name) continue;
+      const res = await autoFetchAndUploadCategoryHeaderImage({
+        categoryId: cat.id,
+        categoryName: cat.name,
+        forceRefresh: forceRefreshAll
+      }).catch(() => ({ categoryId: cat.id, categoryName: cat.name, localUrl: '', updated: false }));
+      results.push(res);
+    }
+  } finally {
+    isSyncingCategoryHeaders = false;
+  }
+  return results;
+}
+
+app.post('/api/v1/categories/auto-fetch-google-image', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const categoryId = String(body.categoryId || body.category_id || body.productId || '').trim();
+    const categoryName = String(body.categoryName || body.category_name || body.name || '').trim();
+    const forceRefresh = Boolean(body.forceRefresh || body.force_refresh);
+    const result = await autoFetchAndUploadCategoryHeaderImage({
+      categoryId,
+      categoryName,
+      forceRefresh
+    });
+    return res.json({
+      success: Boolean(result.localUrl),
+      ...result
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Failed to auto-fetch category header image from Google.'
+    });
+  }
+});
+
+app.post('/api/v1/categories/sync-all-google-headers', async (req, res) => {
+  try {
+    const forceRefresh = Boolean(req.body?.forceRefresh || req.query?.force_refresh === '1');
+    const results = await ensureRealHeaderImagesForCategories(forceRefresh);
+    return res.json({
+      success: true,
+      syncedCount: results.filter(r => r.localUrl).length,
+      updatedCount: results.filter(r => r.updated).length,
+      results
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err?.message || 'Category header sync failed.'
     });
   }
 });
@@ -20356,6 +20844,9 @@ async function startServer() {
 
   const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Trade Heaven Server running on http://0.0.0.0:${PORT}`);
+    setTimeout(() => {
+      void ensureRealHeaderImagesForCategories(false);
+    }, 1500);
     setTimeout(() => {
       void runAutonomousImageOptimizerCycle('BOOT_INITIALIZATION_EVERY_MINUTE_DAEMON');
     }, 15000);

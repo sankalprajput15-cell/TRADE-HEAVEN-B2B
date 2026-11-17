@@ -67,6 +67,8 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
   const [copiedJson, setCopiedJson] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
+  const [autoFetchingCatKey, setAutoFetchingCatKey] = useState<string | null>(null);
+  const [isSyncingAllCats, setIsSyncingAllCats] = useState(false);
 
   const auth = isUserAuthorized(currentUser);
   const isAdmin = Boolean(
@@ -142,7 +144,7 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
       name: 'New Industrial Category',
       description: 'Custom industrial raw materials and factory supplies.',
       iconName: 'Box',
-      image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=480&q=75',
+      image: '',
       badge: 'Verified',
       productCount: '10,000+ Products'
     };
@@ -153,6 +155,74 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
         categoriesList: [...(prev.homepage.categoriesList || []), newCat]
       }
     }));
+  };
+
+  const handleAutoFetchCategoryImageFromGoogle = async (idx: number, cat: CategoryItemCMS) => {
+    const key = cat.id || `idx-${idx}`;
+    setAutoFetchingCatKey(key);
+    try {
+      const res = await fetch('/api/v1/categories/auto-fetch-google-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categoryId: cat.id,
+          categoryName: cat.name,
+          forceRefresh: true
+        })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const localUrl = String(json?.localUrl || '').trim();
+        if (json?.success && localUrl) {
+          setFormData(prev => {
+            const nextList = [...(prev.homepage.categoriesList || [])];
+            if (nextList[idx]) {
+              nextList[idx] = { ...nextList[idx], image: localUrl };
+            }
+            return {
+              ...prev,
+              homepage: { ...prev.homepage, categoriesList: nextList }
+            };
+          });
+          setSavedSuccess(true);
+          setTimeout(() => setSavedSuccess(false), 2000);
+        }
+      }
+    } catch {
+      // ignore network error
+    } finally {
+      setAutoFetchingCatKey(null);
+    }
+  };
+
+  const handleSyncAllCategoriesFromGoogle = async () => {
+    setIsSyncingAllCats(true);
+    try {
+      const res = await fetch('/api/v1/categories/sync-all-google-headers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceRefresh: true })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const results: Array<{ categoryId: string; categoryName: string; localUrl: string }> = Array.isArray(json?.results) ? json.results : [];
+        if (results.length > 0) {
+          setFormData(prev => {
+            const nextList = (prev.homepage.categoriesList || []).map(cat => {
+              const match = results.find(r => (r.categoryId && r.categoryId === cat.id) || (r.categoryName && r.categoryName.toLowerCase() === cat.name.toLowerCase()));
+              return match?.localUrl ? { ...cat, image: match.localUrl } : cat;
+            });
+            return { ...prev, homepage: { ...prev.homepage, categoriesList: nextList } };
+          });
+          setSavedSuccess(true);
+          setTimeout(() => setSavedSuccess(false), 2500);
+        }
+      }
+    } catch {
+      // ignore network error
+    } finally {
+      setIsSyncingAllCats(false);
+    }
   };
 
   const handleRemoveCategory = (index: number) => {
@@ -660,14 +730,25 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
                     Customize directory categories, badges, product counts, and cover images.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddCategory}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold flex items-center gap-1 hover:bg-blue-700 transition-colors self-start sm:self-auto cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add New Category</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    disabled={isSyncingAllCats}
+                    onClick={handleSyncAllCategoriesFromGoogle}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-700 disabled:opacity-60 transition-colors cursor-pointer"
+                  >
+                    <Globe2 className={`w-3.5 h-3.5 ${isSyncingAllCats ? 'animate-spin' : ''}`} />
+                    <span>{isSyncingAllCats ? 'Syncing Real Photos...' : 'Auto-Fetch All Header Photos'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold flex items-center gap-1 hover:bg-blue-700 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add New Category</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -757,7 +838,18 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Cover Image URL</label>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <label className="block text-[11px] font-bold text-slate-600">Cover Image URL</label>
+                          <button
+                            type="button"
+                            disabled={autoFetchingCatKey === (cat.id || `idx-${idx}`)}
+                            onClick={() => handleAutoFetchCategoryImageFromGoogle(idx, cat)}
+                            className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                          >
+                            <Globe2 className="w-3 h-3" />
+                            <span>{autoFetchingCatKey === (cat.id || `idx-${idx}`) ? 'Fetching...' : 'Google Photo'}</span>
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={cat.image}

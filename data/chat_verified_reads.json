@@ -136,7 +136,8 @@
       ],
       "adminCopyAccepted": true,
       "deliveryMode": "LIVE_SMTP",
-      "sentAt": "2026-11-17T09:05:57.782Z"
+      "supplierMessageId": "<43867684-78b2-e09c-3ed4-e54372d24c4e@tradeheaven.net>",
+      "sentAt": "2026-11-17T10:16:53.519Z"
     },
     "msg-1794902125534-8fa72": {
       "messageId": "msg-1794902125534-8fa72",

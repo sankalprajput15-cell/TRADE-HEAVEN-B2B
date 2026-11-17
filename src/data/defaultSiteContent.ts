@@ -311,7 +311,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Machinery & Industrial Equipment",
         description: "CNC milling machines, packaging lines, hydraulic presses, automation.",
         iconName: "Cpu",
-        image: "https://images.unsplash.com/photo-1578844251758-2f71da64c96f?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-machinery-industrial-equipment-0f837bff532d.webp",
         badge: "Top Sourced",
         productCount: "48,200+ Products"
       },
@@ -320,7 +320,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Automotive & Electric Vehicles",
         description: "EV battery cells, charging stations, Tier-1 brake assemblies, alloy wheels.",
         iconName: "Car",
-        image: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-automotive-electric-vehicles-e1d9ff82a34f.webp",
         badge: "High Growth",
         productCount: "32,900+ Products"
       },
@@ -329,7 +329,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Electronics & Semiconductors",
         description: "SMD microcontrollers, OLED display panels, power transformers, sensors.",
         iconName: "Radio",
-        image: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-electronics-semiconductors-446bd6820c13.webp",
         badge: "Verified OEM",
         productCount: "64,100+ Products"
       },
@@ -338,7 +338,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Chemicals & Raw Polymers",
         description: "Industrial solvents, HDPE resins, specialty pigments, organic additives.",
         iconName: "FlaskConical",
-        image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-chemicals-raw-polymers-944cb1e5e03a.webp",
         badge: "REACH Compliant",
         productCount: "28,500+ Products"
       },
@@ -356,7 +356,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Renewable Energy & Solar",
         description: "Tier-1 N-Type TOPCon solar panels, commercial hybrid inverters, BESS.",
         iconName: "Sun",
-        image: "https://images.unsplash.com/photo-1532601224476-15c79f2f7a51?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-renewable-energy-solar-eee659d6f297.webp",
         badge: "CE / TÜV Certified",
         productCount: "19,800+ Products"
       },
@@ -365,7 +365,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Agriculture & Agro Commodities",
         description: "Refined ICUMSA 45 sugar, Non-GMO soy, Robusta coffee, cashew nuts.",
         iconName: "Wheat",
-        image: "https://images.unsplash.com/photo-1600189020840-e9918c25269d?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-agriculture-agro-commodities-42c7f6e111e6.webp",
         badge: "Phytosanitary Cert",
         productCount: "41,300+ Products"
       },
@@ -374,7 +374,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Medical & Diagnostic Supplies",
         description: "Nitrile examination gloves, hospital ICU patient monitors, surgical drape sets.",
         iconName: "Stethoscope",
-        image: "https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-medical-diagnostic-supplies-2bee0a25897e.webp",
         badge: "FDA 510(k) / CE",
         productCount: "15,700+ Products"
       },
@@ -383,7 +383,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
         name: "Building & Construction Materials",
         description: "Deformed steel rebar, porcelain floor tiles, extruded aluminum profiles.",
         iconName: "Box",
-        image: "https://images.unsplash.com/photo-1565043589221-1a6fd9ae45c7?w=800&auto=format&fit=crop&q=80",
+        image: "/assets/uploads/auto-building-construction-materials-60e128f6255b.webp",
         badge: "ASTM / ISO",
         productCount: "37,000+ Products"
       }

@@ -86,6 +86,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
 }) => {
   const getLocalFallbackEntries = useCallback((): {
     entries: CompanyEmailHistoryEntry[];
+    localOnlyEntries: CompanyEmailHistoryEntry[];
     stats: MailSuiteAnalyticsSummary;
   } => {
     let serviceEntries: CompanyEmailHistoryEntry[] = [];
@@ -133,7 +134,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
           success: true,
           messageId: '<melissa-profile-updates-sblc-platts-sydney@tradeheaven.net>',
-          dispatchedAt: new Date(Date.now() - 15000).toISOString(),
+          dispatchedAt: '2026-11-12T12:32:29.742Z',
           enforcedDelayMs: 0,
           summaryText: 'PROFILE & LISTING UPDATES CONFIRMATION SENT TO melissa@mpcommoditybrokers.com (Melissa Prezios • MP Commodity Brokers Australia Pty Ltd • WhatsApp: +61411510887): Confirmed (1) SBLC is the only form of payment, (2) Pricing is as per Platts with no set price, and (3) Street address completely removed from platform — displaying Sydney, Australia only.',
           opened: true,
@@ -155,7 +156,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           sender: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
           success: true,
           messageId: '<congrats-cert-thc-2026-mpc-61648-melissa@tradeheaven.net>',
-          dispatchedAt: new Date(Date.now() - 120000).toISOString(),
+          dispatchedAt: '2026-11-09T06:38:38.307Z',
           enforcedDelayMs: 0,
           summaryText: 'CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO melissa@mpcommoditybrokers.com & yr943334@gmail.com: Congratulations Melissa Prezios (MP Commodity Brokers Australia Pty Ltd) on receiving Official Trade Assurance Certificate No. THC-2026-MPC-61648 (Issued Today). Verified by Trade Heaven and its bank. Attachment: TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf',
           opened: true,
@@ -177,7 +178,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           sender: '"Trade Heaven Verification & Escrow Desk" <noreply@tradeheaven.net>',
           success: true,
           messageId: '<congrats-cert-thc-2026-mpc-61648-yr943334@tradeheaven.net>',
-          dispatchedAt: new Date(Date.now() - 115000).toISOString(),
+          dispatchedAt: '2026-11-09T06:38:49.153Z',
           enforcedDelayMs: 0,
           summaryText: 'CONGRATULATIONS EMAIL + ATTACHED TRADE ASSURANCE CERTIFICATE PDF SENT TO yr943334@gmail.com: Congratulations Melissa Prezios (MP Commodity Brokers Australia Pty Ltd) on receiving Official Trade Assurance Certificate No. THC-2026-MPC-61648 (Issued Today). Verified by Trade Heaven and its bank. Attachment: TradeHeaven-Certificate-THC-2026-MPC-61648-Melissa-Prezios.pdf',
           opened: true,
@@ -199,7 +200,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           sender: '"Trade Heaven Global B2B" <noreply@tradeheaven.net>',
           success: true,
           messageId: '<melissa-cert-thc-2026-mpc-61648@tradeheaven.net>',
-          dispatchedAt: new Date(Date.now() - 3600000).toISOString(),
+          dispatchedAt: '2026-11-04T04:48:19.836Z',
           enforcedDelayMs: 2000,
           summaryText: 'Official 2-Page Sovereign Trade Assurance Certificate Draft Indenture (Serial THC-2026-MPC-61648 • $1.1M USD Escrow Vault TH-VAULT-AU-61648) with strict Clause 3.1 & 3.2 actual-loss-only underwriting.',
           opened: true,
@@ -303,7 +304,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
       }
     }
     merged.sort((a, b) => new Date(b.dispatchedAt).getTime() - new Date(a.dispatchedAt).getTime());
-    return { entries: merged, stats: serviceStats };
+    return { entries: merged, localOnlyEntries: localEntries, stats: serviceStats };
   }, [companyId, companyName, contactEmail, contactName]);
 
   const [entries, setEntries] = useState<CompanyEmailHistoryEntry[]>(() => {
@@ -382,7 +383,7 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
           serverEntries.map((e) => e.messageId || `${e.subject}-${e.dispatchedAt}`)
         );
         const merged = [...serverEntries];
-        for (const loc of localData.entries) {
+        for (const loc of localData.localOnlyEntries || []) {
           const key = loc.messageId || `${loc.subject}-${loc.dispatchedAt}`;
           if (!seenMsgIds.has(key)) {
             seenMsgIds.add(key);
