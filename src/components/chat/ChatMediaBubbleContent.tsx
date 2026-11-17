@@ -32,6 +32,11 @@ export const ChatMediaBubbleContent: React.FC<ChatMediaBubbleContentProps> = ({
             <img
               src={message.mediaUrl}
               alt={message.mediaName || 'Shared trade image'}
+              onLoad={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('tradeheaven_chat_media_loaded'));
+                }
+              }}
               className="max-h-60 w-full max-w-[220px] sm:max-w-[300px] rounded-xl object-cover transition-transform duration-200 group-hover:scale-[1.02]"
             />
             <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] font-semibold text-white opacity-90 group-hover:opacity-100">
@@ -105,6 +110,11 @@ export const ChatMediaBubbleContent: React.FC<ChatMediaBubbleContentProps> = ({
             controls
             preload="metadata"
             playsInline
+            onLoadedMetadata={() => {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('tradeheaven_chat_media_loaded'));
+              }
+            }}
             className="max-h-60 w-full rounded-xl bg-black"
           />
         </div>

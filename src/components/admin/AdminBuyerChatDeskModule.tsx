@@ -27,6 +27,7 @@ import { ChatMediaComposer } from '../chat/ChatMediaComposer';
 import { MessageReadStatus } from '../chat/MessageReadStatus';
 import { setupChatViewportReadObserver } from '../../utils/chatViewportReadObserver';
 import {
+  ArrowDown,
   BadgeCheck,
   BellRing,
   Building2,
@@ -156,6 +157,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
   const [savingPersona, setSavingPersona] = useState(false);
   const [personaError, setPersonaError] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -293,12 +295,75 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     }
   }, [selectedConvId, loadMessagesForThread, loadThreadInsight]);
 
-  useEffect(() => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const container = messagesContainerRef.current;
     if (container) {
-      container.scrollTop = container.scrollHeight;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior
+      });
     }
-  }, [messages.length, selectedConvId]);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
+  }, []);
+
+  const handleMessagesScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    setIsScrolledUp(distanceToBottom > 160);
+  }, []);
+
+  // Multi-pass auto-scroll to handle immediate render, microtasks, and dynamic font/media heights
+  useEffect(() => {
+    scrollToBottom('auto');
+    const t1 = setTimeout(() => scrollToBottom('auto'), 40);
+    const t2 = setTimeout(() => scrollToBottom('smooth'), 150);
+    const t3 = setTimeout(() => scrollToBottom('smooth'), 450);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [messages.length, selectedConvId, scrollToBottom]);
+
+  // Keep pinned when media loads
+  useEffect(() => {
+    const handleMediaLoaded = () => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceToBottom < 320) {
+        scrollToBottom('smooth');
+      }
+    };
+    window.addEventListener('tradeheaven_chat_media_loaded', handleMediaLoaded);
+    return () => window.removeEventListener('tradeheaven_chat_media_loaded', handleMediaLoaded);
+  }, [scrollToBottom]);
+
+  // ResizeObserver to track layout changes and auto-scroll if near bottom
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    let rafId: number;
+    const observer = new ResizeObserver(() => {
+      const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceToBottom < 260) {
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          scrollToBottom('smooth');
+        });
+      }
+    });
+
+    observer.observe(container);
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
+  }, [selectedConvId, scrollToBottom]);
 
   // Viewport Intersection & Open Thread Read Observer
   useEffect(() => {
@@ -622,17 +687,76 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     mediaUrl: string;
     mediaName: string;
     mediaSize: number;
+    attachments?: Array<{
+      id: string;
+      mediaType: ChatMediaType;
+      mediaUrl: string;
+      mediaName: string;
+      mediaSize: number;
+    }>;
   }) => {
     if (!activeConversation) return;
     setSendingMessage(true);
     try {
-      const sent = await sendChatMessage({
-        conversationId: activeConversation.id,
-        senderRole: 'buyer_identity',
-        ...payload
-      });
-      setMessages(prev => (prev.some(m => m.id === sent.id) ? prev : [...prev, sent]));
+      const items = payload.attachments && payload.attachments.length > 0
+        ? payload.attachments
+        : payload.mediaUrl
+          ? [{
+              id: 'att-first',
+              mediaType: payload.mediaType,
+              mediaUrl: payload.mediaUrl,
+              mediaName: payload.mediaName,
+              mediaSize: payload.mediaSize
+            }]
+          : [];
+
+      if (items.length > 0) {
+        // Send first attachment alongside user's text message
+        const first = items[0];
+        const sentFirst = await sendChatMessage({
+          conversationId: activeConversation.id,
+          senderRole: 'buyer_identity',
+          messageText: payload.messageText,
+          mediaType: first.mediaType,
+          mediaUrl: first.mediaUrl,
+          mediaName: first.mediaName,
+          mediaSize: first.mediaSize
+        });
+        setMessages(prev => (prev.some(m => m.id === sentFirst.id) ? prev : [...prev, sentFirst]));
+        scrollToBottom('smooth');
+
+        // Send all subsequent attachments (e.g. video, additional screenshots, etc.)
+        for (let i = 1; i < items.length; i++) {
+          const item = items[i];
+          const sentExtra = await sendChatMessage({
+            conversationId: activeConversation.id,
+            senderRole: 'buyer_identity',
+            messageText: '',
+            mediaType: item.mediaType,
+            mediaUrl: item.mediaUrl,
+            mediaName: item.mediaName,
+            mediaSize: item.mediaSize
+          });
+          setMessages(prev => (prev.some(m => m.id === sentExtra.id) ? prev : [...prev, sentExtra]));
+          scrollToBottom('smooth');
+        }
+      } else {
+        const sent = await sendChatMessage({
+          conversationId: activeConversation.id,
+          senderRole: 'buyer_identity',
+          messageText: payload.messageText,
+          mediaType: 'none',
+          mediaUrl: '',
+          mediaName: '',
+          mediaSize: 0
+        });
+        setMessages(prev => (prev.some(m => m.id === sent.id) ? prev : [...prev, sent]));
+      }
+
       await fetchChatConversations({ viewMode: 'admin' }).then(setConversations);
+      scrollToBottom('smooth');
+      setTimeout(() => scrollToBottom('smooth'), 60);
+      setTimeout(() => scrollToBottom('smooth'), 220);
     } finally {
       setSendingMessage(false);
     }
@@ -914,7 +1038,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       </div>
 
       {/* Main Split Workspace: Left Thread List + Center Active Chat Window */}
-      <div className="grid w-full max-w-full min-w-0 grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-[min(74vh,720px)] lg:min-h-[540px] lg:grid-cols-12">
+      <div className="grid w-full max-w-full min-w-0 grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm h-[740px] max-h-[calc(100vh-130px)] min-h-[580px] lg:h-[min(84vh,860px)] lg:min-h-[620px] lg:grid-cols-12">
         {/* LEFT SIDEBAR: Multi-Thread Conversation Inbox */}
         <div className="flex w-full max-w-full min-w-0 min-h-0 flex-col border-b border-slate-200 bg-slate-50/70 lg:col-span-4 lg:border-b-0 lg:border-r">
           <div className="border-b border-slate-200 bg-white p-3.5">
