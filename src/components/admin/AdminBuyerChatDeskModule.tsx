@@ -1170,7 +1170,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
         </div>
 
         {/* CENTER CHAT WINDOW */}
-        <div className="flex w-full max-w-full min-w-0 min-h-0 flex-col overflow-hidden lg:col-span-8">
+        <div className="flex w-full max-w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-white lg:col-span-8">
           {!activeConversation ? (
             <div className="flex flex-1 flex-col items-center justify-center p-6 sm:p-10 text-center text-slate-500">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
@@ -1282,7 +1282,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
               {/* Messages List (Focused Container) */}
               <div
                 ref={messagesContainerRef}
-                className="flex-1 min-h-[280px] sm:min-h-[320px] max-h-[55vh] lg:max-h-none space-y-3 overflow-y-auto overflow-x-hidden bg-slate-50/40 p-3 sm:p-4"
+                className="flex-1 min-h-0 space-y-3 overflow-y-auto overflow-x-hidden bg-slate-50/40 p-3 sm:p-4"
               >
                 {(() => {
                   const supplierReplies = messages.filter(m => m.senderRole === 'supplier');
