@@ -106,13 +106,13 @@ const IDB_KEY = 'active_state_v7';
 export function normalizeProductAssetUrl(url: string | undefined | null): string {
   if (!url || typeof url !== 'string') return '';
   let clean = url.trim().replace(/^\/assets\/aistudio\//, '/assets/uploads/');
-  if (
-    clean.startsWith('/assets/uploads/') ||
-    clean.startsWith('/assets/tradeheaven/') ||
-    clean.startsWith('/src/assets/images/')
-  ) {
-    clean = clean.split('?')[0];
+  let existingQuery = '';
+  const qIdx = clean.indexOf('?');
+  if (qIdx !== -1) {
+    existingQuery = clean.slice(qIdx + 1);
+    clean = clean.slice(0, qIdx);
   }
+
   // Repair malformed double-query Unsplash strings like "...?w=800&auto=format&fit=crop&q=80-hash?w=100..."
   if (clean.includes('images.unsplash.com/photo-')) {
     const basePhoto = clean.split('?')[0];
@@ -121,6 +121,24 @@ export function normalizeProductAssetUrl(url: string | undefined | null): string
       clean = `${basePhoto}?${clean.slice(lastQueryIdx + 1)}`;
     }
   }
+
+  if (
+    clean.startsWith('/assets/uploads/') ||
+    clean.startsWith('/assets/tradeheaven/') ||
+    clean.startsWith('/src/assets/images/')
+  ) {
+    const params = new URLSearchParams(existingQuery);
+    if (!params.has('v') && !params.has('cb')) {
+      const versionTag = productImageManagerService.getVersionTagForUrl(clean) || String(Date.now());
+      params.set('v', versionTag);
+    }
+    const qStr = params.toString();
+    return qStr ? `${clean}?${qStr}` : clean;
+  }
+
+  if (existingQuery) {
+    return `${clean}?${existingQuery}`;
+  }
   return clean;
 }
 
@@ -128,30 +146,35 @@ export function optimizeImageUrl(
   rawUrl: string | undefined | null,
   options: { width?: number; quality?: number; isThumbnail?: boolean } = {}
 ): string {
-  const clean = normalizeProductAssetUrl(rawUrl);
-  if (!clean || clean.startsWith('data:') || clean.startsWith('blob:')) return clean;
+  const normalized = normalizeProductAssetUrl(rawUrl);
+  if (!normalized || normalized.startsWith('data:') || normalized.startsWith('blob:')) return normalized;
+
+  let base = normalized.split('?')[0];
+  const queryParams = new URLSearchParams(normalized.split('?')[1] || '');
 
   const targetWidth = options.width || (options.isThumbnail ? 320 : 480);
 
-  if (clean.includes('images.unsplash.com')) {
-    const base = clean.split('?')[0];
-    const q = options.quality || (targetWidth <= 360 ? 72 : 76);
-    return `${base}?auto=format&fit=crop&w=${targetWidth}&q=${q}`;
+  if (base.includes('images.unsplash.com')) {
+    queryParams.set('auto', 'format');
+    queryParams.set('fit', 'crop');
+    queryParams.set('w', String(targetWidth));
+    queryParams.set('q', String(options.quality || (targetWidth <= 360 ? 72 : 76)));
+    return `${base}?${queryParams.toString()}`;
   }
 
   if (
-    clean.startsWith('/assets/uploads/') ||
-    clean.startsWith('/assets/tradeheaven/') ||
-    clean.startsWith('/src/assets/images/')
+    base.startsWith('/assets/uploads/') ||
+    base.startsWith('/assets/tradeheaven/') ||
+    base.startsWith('/src/assets/images/')
   ) {
-    if (clean.toLowerCase().endsWith('.svg') || clean.toLowerCase().endsWith('.gif')) {
-      return clean;
+    if (base.toLowerCase().endsWith('.svg') || base.toLowerCase().endsWith('.gif')) {
+      return normalized;
     }
-    const base = clean.split('?')[0];
-    return `${base}?w=${targetWidth}`;
+    queryParams.set('w', String(targetWidth));
+    return `${base}?${queryParams.toString()}`;
   }
 
-  return clean;
+  return normalized;
 }
 
 const RAW_BUILTIN_BASE: Record<string, ProductImageOverrideEntry> = {
@@ -403,6 +426,31 @@ class ProductImageManagerService {
       .join(';');
     const globalDef = st.globalDefaultImage ? normalizeProductAssetUrl(st.globalDefaultImage) : '';
     return `O=[${sortedOverrides}]|G=[${globalDef}]|C=[${sortedCats}]|U=[${sortedUrls}]`;
+  }
+
+  public getVersionTagForUrl(url: string): string {
+    const cleanUrl = (url || '').split('?')[0];
+    for (const entry of Object.values(this.state.overrides || {})) {
+      if (!entry) continue;
+      if (entry.primary && entry.primary.split('?')[0] === cleanUrl) {
+        if (entry.updatedAt) {
+          const t = new Date(entry.updatedAt).getTime();
+          if (!isNaN(t)) return String(t);
+        }
+      }
+      if (Array.isArray(entry.gallery) && entry.gallery.some(u => u && u.split('?')[0] === cleanUrl)) {
+        if (entry.updatedAt) {
+          const t = new Date(entry.updatedAt).getTime();
+          if (!isNaN(t)) return String(t);
+        }
+      }
+    }
+    const media = (this.state.mediaLibrary || []).find(m => m && m.url && m.url.split('?')[0] === cleanUrl);
+    if (media?.uploadedAt) {
+      const t = new Date(media.uploadedAt).getTime();
+      if (!isNaN(t)) return String(t);
+    }
+    return String(this.stateWriteVersion || Date.now());
   }
 
   public isHydrated(): boolean {
