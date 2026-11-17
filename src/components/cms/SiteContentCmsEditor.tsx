@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { SiteContent, DEFAULT_SITE_CONTENT, CategoryItemCMS, TestimonialCMS, H2HFeatureCMS, TierPlanCMS } from '../../data/defaultSiteContent';
+import { productImageManagerService, normalizeProductAssetUrl } from '../../services/productImageManagerService';
 import { 
   FileEdit, 
   Save, 
@@ -68,7 +69,9 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
   const [jsonInput, setJsonInput] = useState('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [autoFetchingCatKey, setAutoFetchingCatKey] = useState<string | null>(null);
+  const [uploadingCatKey, setUploadingCatKey] = useState<string | null>(null);
   const [isSyncingAllCats, setIsSyncingAllCats] = useState(false);
+  const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
 
   const auth = isUserAuthorized(currentUser);
   const isAdmin = Boolean(
@@ -90,18 +93,26 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    setSaveErrorMsg(null);
     const res = await updateSiteContent(formData, currentUser);
     if (res.success) {
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
+    } else {
+      setSaveErrorMsg(res.message || 'Failed to save changes to server.');
     }
   };
 
   const handleReset = async () => {
-    await resetToDefaults(currentUser);
+    setSaveErrorMsg(null);
+    const res = await resetToDefaults(currentUser);
     setFormData(DEFAULT_SITE_CONTENT);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    if (res.success) {
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+    } else {
+      setSaveErrorMsg(res.message || 'Failed to reset website content.');
+    }
   };
 
   const handleExportJson = () => {
@@ -120,7 +131,7 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
     setTimeout(() => setCopiedJson(false), 2000);
   };
 
-  const handleApplyJson = () => {
+  const handleApplyJson = async () => {
     try {
       if (jsonInput.length > 5 * 1024 * 1024) {
         setJsonError(`JSON payload exceeds 5 MB limit (${(jsonInput.length / (1024 * 1024)).toFixed(1)} MB).`);
@@ -128,10 +139,14 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
       }
       const parsed = JSON.parse(jsonInput);
       setFormData(parsed);
-      updateSiteContent(parsed, currentUser);
+      const res = await updateSiteContent(parsed, currentUser);
       setJsonError(null);
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2500);
+      if (res.success) {
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 2500);
+      } else {
+        setSaveErrorMsg(res.message || 'Failed to persist JSON update to server.');
+      }
     } catch (err: any) {
       setJsonError('Invalid JSON format: ' + err.message);
     }
@@ -157,9 +172,45 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
     }));
   };
 
+  const handleUploadCategoryCoverFile = async (idx: number, cat: CategoryItemCMS, file: File) => {
+    const key = cat.id || `idx-${idx}`;
+    setUploadingCatKey(key);
+    setSaveErrorMsg(null);
+    try {
+      const uploaded = await productImageManagerService.uploadAndAssignImageFile(file, {
+        productId: cat.id || undefined,
+        targetFormat: 'original'
+      });
+      const cleanUrl = normalizeProductAssetUrl(uploaded.url);
+      if (cleanUrl) {
+        const nextList = [...(formData.homepage.categoriesList || [])];
+        if (nextList[idx]) {
+          nextList[idx] = { ...nextList[idx], image: cleanUrl };
+        }
+        const nextContent: SiteContent = {
+          ...formData,
+          homepage: { ...formData.homepage, categoriesList: nextList }
+        };
+        setFormData(nextContent);
+        const saveRes = await updateSiteContent(nextContent, currentUser);
+        if (saveRes.success) {
+          setSavedSuccess(true);
+          setTimeout(() => setSavedSuccess(false), 2500);
+        } else {
+          setSaveErrorMsg(saveRes.message || 'Uploaded photo, but failed to persist CMS changes.');
+        }
+      }
+    } catch (err: any) {
+      setSaveErrorMsg(err?.message || 'Category cover upload failed.');
+    } finally {
+      setUploadingCatKey(null);
+    }
+  };
+
   const handleAutoFetchCategoryImageFromGoogle = async (idx: number, cat: CategoryItemCMS) => {
     const key = cat.id || `idx-${idx}`;
     setAutoFetchingCatKey(key);
+    setSaveErrorMsg(null);
     try {
       const res = await fetch('/api/v1/categories/auto-fetch-google-image', {
         method: 'POST',
@@ -172,24 +223,31 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
       });
       if (res.ok) {
         const json = await res.json();
-        const localUrl = String(json?.localUrl || '').trim();
+        const localUrl = normalizeProductAssetUrl(String(json?.localUrl || '').trim());
         if (json?.success && localUrl) {
-          setFormData(prev => {
-            const nextList = [...(prev.homepage.categoriesList || [])];
-            if (nextList[idx]) {
-              nextList[idx] = { ...nextList[idx], image: localUrl };
-            }
-            return {
-              ...prev,
-              homepage: { ...prev.homepage, categoriesList: nextList }
-            };
-          });
-          setSavedSuccess(true);
-          setTimeout(() => setSavedSuccess(false), 2000);
+          const nextList = [...(formData.homepage.categoriesList || [])];
+          if (nextList[idx]) {
+            nextList[idx] = { ...nextList[idx], image: localUrl };
+          }
+          const nextContent: SiteContent = {
+            ...formData,
+            homepage: { ...formData.homepage, categoriesList: nextList }
+          };
+          setFormData(nextContent);
+          if (cat.id) {
+            await productImageManagerService.setProductImage(cat.id, localUrl, [localUrl]);
+          }
+          const saveRes = await updateSiteContent(nextContent, currentUser);
+          if (saveRes.success) {
+            setSavedSuccess(true);
+            setTimeout(() => setSavedSuccess(false), 2000);
+          } else {
+            setSaveErrorMsg(saveRes.message || 'Fetched photo, but failed to persist CMS changes.');
+          }
         }
       }
     } catch {
-      // ignore network error
+      setSaveErrorMsg('Network error while fetching category photo.');
     } finally {
       setAutoFetchingCatKey(null);
     }
@@ -197,6 +255,7 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
 
   const handleSyncAllCategoriesFromGoogle = async () => {
     setIsSyncingAllCats(true);
+    setSaveErrorMsg(null);
     try {
       const res = await fetch('/api/v1/categories/sync-all-google-headers', {
         method: 'POST',
@@ -207,19 +266,27 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
         const json = await res.json();
         const results: Array<{ categoryId: string; categoryName: string; localUrl: string }> = Array.isArray(json?.results) ? json.results : [];
         if (results.length > 0) {
-          setFormData(prev => {
-            const nextList = (prev.homepage.categoriesList || []).map(cat => {
-              const match = results.find(r => (r.categoryId && r.categoryId === cat.id) || (r.categoryName && r.categoryName.toLowerCase() === cat.name.toLowerCase()));
-              return match?.localUrl ? { ...cat, image: match.localUrl } : cat;
-            });
-            return { ...prev, homepage: { ...prev.homepage, categoriesList: nextList } };
+          const nextList = (formData.homepage.categoriesList || []).map(cat => {
+            const match = results.find(r => (r.categoryId && r.categoryId === cat.id) || (r.categoryName && r.categoryName.toLowerCase() === cat.name.toLowerCase()));
+            const cleanUrl = match?.localUrl ? normalizeProductAssetUrl(match.localUrl) : '';
+            return cleanUrl ? { ...cat, image: cleanUrl } : cat;
           });
-          setSavedSuccess(true);
-          setTimeout(() => setSavedSuccess(false), 2500);
+          const nextContent: SiteContent = {
+            ...formData,
+            homepage: { ...formData.homepage, categoriesList: nextList }
+          };
+          setFormData(nextContent);
+          const saveRes = await updateSiteContent(nextContent, currentUser);
+          if (saveRes.success) {
+            setSavedSuccess(true);
+            setTimeout(() => setSavedSuccess(false), 2500);
+          } else {
+            setSaveErrorMsg(saveRes.message || 'Synced photos, but failed to persist CMS changes.');
+          }
         }
       }
     } catch {
-      // ignore network error
+      setSaveErrorMsg('Network error while syncing category photos.');
     } finally {
       setIsSyncingAllCats(false);
     }
@@ -382,6 +449,23 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-bold flex items-center gap-2 animate-fadeIn">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>All website changes published successfully! The entire platform is now synchronized with your edits.</span>
+        </div>
+      )}
+
+      {/* Save Error Notification */}
+      {saveErrorMsg && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-900 font-bold flex items-center justify-between gap-2 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <span>{saveErrorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveErrorMsg(null)}
+            className="text-rose-600 hover:text-rose-800 underline text-[11px] cursor-pointer"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -840,15 +924,32 @@ export const SiteContentCmsEditor: React.FC<{ currentUser?: any }> = ({ currentU
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <label className="block text-[11px] font-bold text-slate-600">Cover Image URL</label>
-                          <button
-                            type="button"
-                            disabled={autoFetchingCatKey === (cat.id || `idx-${idx}`)}
-                            onClick={() => handleAutoFetchCategoryImageFromGoogle(idx, cat)}
-                            className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                          >
-                            <Globe2 className="w-3 h-3" />
-                            <span>{autoFetchingCatKey === (cat.id || `idx-${idx}`) ? 'Fetching...' : 'Google Photo'}</span>
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <label className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer">
+                              <Upload className="w-3 h-3" />
+                              <span>{uploadingCatKey === (cat.id || `idx-${idx}`) ? 'Uploading...' : 'Upload'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingCatKey === (cat.id || `idx-${idx}`)}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) void handleUploadCategoryCoverFile(idx, cat, f);
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              disabled={autoFetchingCatKey === (cat.id || `idx-${idx}`)}
+                              onClick={() => handleAutoFetchCategoryImageFromGoogle(idx, cat)}
+                              className="text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                            >
+                              <Globe2 className="w-3 h-3" />
+                              <span>{autoFetchingCatKey === (cat.id || `idx-${idx}`) ? 'Fetching...' : 'Google Photo'}</span>
+                            </button>
+                          </div>
                         </div>
                         <input
                           type="text"

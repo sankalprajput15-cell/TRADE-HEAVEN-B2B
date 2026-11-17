@@ -243,9 +243,14 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     [src, productId, productTitle, category, imageIndex, isLogoOrAvatar, overrideVersion]
   );
 
+  const hasManualOverride = useMemo(
+    () => productImageManagerService.isManualOverride(productId, isLogoOrAvatar ? undefined : productTitle),
+    [productId, productTitle, isLogoOrAvatar, overrideVersion]
+  );
+
   // Automatic Visual Product & Category Header Finder fallback ONLY when no manual/saved image exists
   useEffect(() => {
-    if (isLogoOrAvatar || (type !== 'product' && type !== 'rfq' && type !== 'category')) return;
+    if (isLogoOrAvatar || hasManualOverride || (type !== 'product' && type !== 'rfq' && type !== 'category')) return;
     const cleanTitle = (productTitle || category || alt || '').trim();
     if (cleanTitle.length < 3) return;
 
@@ -380,14 +385,31 @@ export const SafeImage: React.FC<SafeImageProps> = ({
       return isMismatchedProductImageUrl(url, productTitle || alt, category);
     };
 
+    const optManualEff =
+      hasManualOverride && effectiveSrc && typeof effectiveSrc === 'string' && effectiveSrc.trim()
+        ? (() => {
+            const mirroredEff = resolveLocalMirroredImageUrl(effectiveSrc.trim());
+            return mirroredEff.startsWith('data:image/')
+              ? mirroredEff
+              : optimizeImageUrl(mirroredEff, { width: optimalWidth, isThumbnail });
+          })()
+        : '';
+
+    if (optManualEff && !list.includes(optManualEff)) {
+      list.push(optManualEff);
+    }
+
     if (pid.startsWith('prod-leather-belt-')) {
       const num = pid.replace('prod-leather-belt-', '');
-      list.push(`/assets/uploads/verified-belt-${num}.webp`);
+      const legacyBelt = `/assets/uploads/verified-belt-${num}.webp`;
+      if (!list.includes(legacyBelt)) list.push(legacyBelt);
     } else if (pid.startsWith('prod-exc-')) {
-      list.push(`/assets/uploads/verified-${pid}.webp`);
+      const legacyExc = `/assets/uploads/verified-${pid}.webp`;
+      if (!list.includes(legacyExc)) list.push(legacyExc);
     }
 
     if (
+      !optManualEff &&
       effectiveSrc &&
       typeof effectiveSrc === 'string' &&
       effectiveSrc.trim() &&
@@ -439,11 +461,11 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     const contextText = `${productTitle || ''} ${category || ''} ${alt || ''} ${productId || ''}`.toLowerCase();
     const isSareeOrTextile = /(saree|sari|textile|apparel|fabric|garment|silk|clothing|lehenga|kurti|dress)/i.test(contextText);
 
-    // Strict Anti-Pollution Shield: Never show saree/shree or cross-company images
-    let sanitizedList = list.filter(u => !isCrossCompanyAsset(u));
+    // Strict Anti-Pollution Shield: Never show saree/shree or cross-company images (unless explicitly overridden by admin manual upload)
+    let sanitizedList = list.filter(u => (optManualEff && u === optManualEff) || !isCrossCompanyAsset(u));
     if (!isSareeOrTextile) {
       sanitizedList = sanitizedList.filter(
-        u => !u.toLowerCase().includes('saree') && !u.toLowerCase().includes('shree')
+        u => (optManualEff && u === optManualEff) || (!u.toLowerCase().includes('saree') && !u.toLowerCase().includes('shree'))
       );
     }
 
@@ -489,7 +511,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     }
 
     return validList;
-  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName]);
+  }, [effectiveSrc, fallbackSrc, isLogoOrAvatar, hasManualOverride, visualPool, optimalWidth, isThumbnail, productId, imageIndex, productTitle, category, alt, supplierName]);
 
   const primaryCandidate = candidates[0] || '';
   const lastCandidateRef = useRef<string>(primaryCandidate);
@@ -541,7 +563,7 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     if (currentCandidate) {
       LOADED_IMAGE_URLS.add(currentCandidate);
       // Auto-upload & bind displayed product/category/RFQ image onto the site (/assets/uploads/...) so next load is instant & persistent
-      if (!isLogoOrAvatar && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
+      if (!isLogoOrAvatar && !hasManualOverride && (type === 'product' || type === 'rfq' || type === 'category' || Boolean(productId || productTitle))) {
         const cleanCandidate =
           currentCandidate.startsWith('/assets/uploads/') || currentCandidate.startsWith('/src/assets/')
             ? currentCandidate.split('?')[0]
@@ -595,20 +617,22 @@ export const SafeImage: React.FC<SafeImageProps> = ({
     setIsUploadingFile(true);
     setUploadStatusMsg('Uploading & syncing to server (Incognito ready)...');
     try {
-      const oldImgBefore = currentCandidate || src || '';
+      const oldImgBefore = normalizeProductAssetUrl(currentCandidate || src || '');
       setBeforeImageUrl(oldImgBefore);
+      const cleanOldTarget = normalizeProductAssetUrl(src || currentCandidate || '');
       const res = await productImageManagerService.uploadAndAssignImageFile(file, {
         targetFormat: 'jpg',
         quality: 0.92,
         productId: productId || undefined,
-        oldUrlToReplace: !productId && (src || currentCandidate) ? (src || currentCandidate) : undefined
+        oldUrlToReplace: !productId && cleanOldTarget ? cleanOldTarget : undefined
       });
       if (productId) {
         await productImageManagerService.setProductImage(productId, res.url);
-      } else if (src || currentCandidate) {
-        await productImageManagerService.replaceImageUrlEverywhere(src || currentCandidate, res.url);
+      } else if (cleanOldTarget) {
+        await productImageManagerService.replaceImageUrlEverywhere(cleanOldTarget, res.url);
       }
-      await productImageManagerService.forceSyncToServer();
+      setHasError(false);
+      setAttemptIndex(0);
       setAfterImageUrl(res.url);
       setCustomUrlInput(res.url);
       setOverrideVersion(v => v + 1);
@@ -621,21 +645,23 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   };
 
   const handleApplyDirectUrl = async (targetUrl: string) => {
-    const clean = targetUrl.trim();
+    const clean = normalizeProductAssetUrl(targetUrl);
     if (!clean) return;
     setIsUploadingFile(true);
     setUploadStatusMsg('Applying image & syncing to server...');
     try {
-      const oldImgBefore = currentCandidate || src || '';
+      const oldImgBefore = normalizeProductAssetUrl(currentCandidate || src || '');
       if (oldImgBefore && oldImgBefore !== clean) {
         setBeforeImageUrl(oldImgBefore);
       }
+      const cleanOldTarget = normalizeProductAssetUrl(src || currentCandidate || '');
       if (productId) {
         await productImageManagerService.setProductImage(productId, clean);
-      } else if (src || currentCandidate) {
-        await productImageManagerService.replaceImageUrlEverywhere(src || currentCandidate, clean);
+      } else if (cleanOldTarget) {
+        await productImageManagerService.replaceImageUrlEverywhere(cleanOldTarget, clean);
       }
-      await productImageManagerService.forceSyncToServer();
+      setHasError(false);
+      setAttemptIndex(0);
       setAfterImageUrl(clean);
       setCustomUrlInput(clean);
       setOverrideVersion(v => v + 1);

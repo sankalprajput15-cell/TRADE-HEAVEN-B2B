@@ -5,6 +5,7 @@ import { useAuth, isStrictVerifiedRootAdmin } from './AuthContext';
 import { api } from '../services/apiService';
 import { securityService } from '../services/securityService';
 import { apiClient } from '../services/apiClient';
+import { productImageManagerService, normalizeProductAssetUrl } from '../services/productImageManagerService';
 
 export interface RbacRolePermissions {
   canEditCmsContent: boolean;
@@ -151,9 +152,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [saveStatus, setSaveStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
   const hasUnsavedChanges = saveStatus === 'pending';
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLocalSiteMutationRef = useRef<boolean>(false);
 
-  // Remove the useEffect that wrote to localStorage
-  
   const [rbacConfig, setRbacConfig] = useState<RbacMatrix>(() => {
     try {
       const cached = localStorage.getItem(RBAC_STORAGE_KEY);
@@ -187,28 +187,6 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
     return DEFAULT_SITE_CONTENT;
   });
-
-  // Initial Hydration from Server API
-  useEffect(() => {
-    let isMounted = true;
-    const fetchLiveContent = async () => {
-      try {
-        const res = await apiClient.getSiteContent();
-        if (res.success && res.data && isMounted) {
-          // Merge with default to ensure no missing keys
-          const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...res.data });
-          setSiteContent(merged);
-          try {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-          } catch {}
-        }
-      } catch (err) {
-        console.warn('Failed to hydrate CMS content from server, using fallback.', err);
-      }
-    };
-    fetchLiveContent();
-    return () => { isMounted = false; };
-  }, []);
 
   const [authorizedUsers, setAuthorizedUsers] = useState<CmsAuthorizedUser[]>([
     {
@@ -282,27 +260,30 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   useEffect(() => {
+    let isMounted = true;
     async function loadServerContent() {
       try {
         setIsLoading(true);
-        const [res, permsData] = await Promise.all([
-          fetch('/api/site-content'),
+        const [contentRes, permsData] = await Promise.all([
+          apiClient.getSiteContent(),
           api.getCmsPermissions()
         ]);
-        if (res.ok) {
-          const contentType = res.headers.get('content-type') || '';
-          if (!contentType || contentType.includes('application/json')) {
-            const data = await res.json().catch(() => null);
-            if (data && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
-              setSiteContent(prev => {
-                const merged = { ...DEFAULT_SITE_CONTENT, ...prev, ...data.data };
-                try {
-                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
-                } catch {}
-                return merged;
-              });
-            }
-          }
+        if (!isMounted) return;
+        if (
+          !hasLocalSiteMutationRef.current &&
+          contentRes.success &&
+          contentRes.data &&
+          typeof contentRes.data === 'object' &&
+          !Array.isArray(contentRes.data)
+        ) {
+          setSiteContent(prev => {
+            if (hasLocalSiteMutationRef.current) return prev;
+            const merged = normalizeHeroImage({ ...DEFAULT_SITE_CONTENT, ...prev, ...contentRes.data });
+            try {
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
         }
         if (permsData) {
           if (Array.isArray(permsData.authorizedUsers)) setAuthorizedUsers(permsData.authorizedUsers);
@@ -311,10 +292,13 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       } catch (err) {
         console.warn('Using local site content store');
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
     loadServerContent();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Helper to check if a specific user is authorized to edit CMS or access admin areas
@@ -351,6 +335,13 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!isUserAuthorized(currentUser).isAuthorized) {
       return;
     }
+    hasLocalSiteMutationRef.current = true;
+    const normalizedVal =
+      typeof value === 'string' && (path.toLowerCase().includes('image') || path.toLowerCase().includes('logo') || path.toLowerCase().includes('avatar'))
+        ? normalizeProductAssetUrl(value)
+        : value;
+
+    let updatedSnapshot: SiteContent | null = null;
     setSiteContent(prev => {
       const clone = JSON.parse(JSON.stringify(prev));
       const parts = path.split('.');
@@ -359,32 +350,47 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (!current[parts[i]]) current[parts[i]] = {};
         current = current[parts[i]];
       }
-      current[parts[parts.length - 1]] = value;
+      current[parts[parts.length - 1]] = normalizedVal;
+      updatedSnapshot = clone;
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(clone));
+      } catch {}
       return clone;
     });
     setSaveStatus('pending');
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      if (updatedSnapshot) {
+        void forceSaveNow(updatedSnapshot, currentUser);
+      }
+    }, 350);
   };
 
   const publishChangesToServer = async (): Promise<{ success: boolean; message?: string }> => {
-
     return await forceSaveNow(siteContent, currentUser);
   };
 
   const saveToServer = publishChangesToServer;
 
   const forceSaveNow = async (content: SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
-    const auth = isUserAuthorized(user ?? currentUser);
+    const effectiveUser = user ?? currentUser;
+    const auth = isUserAuthorized(effectiveUser);
     if (!auth.isAuthorized) return { success: false, message: 'Permission Denied' };
-    
+
+    hasLocalSiteMutationRef.current = true;
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(content));
+    } catch {}
+
     setSaveStatus('saving');
-    const apiResult = await apiClient.saveSiteContent(content);
-    
+    const apiResult = await apiClient.saveSiteContent(content, effectiveUser);
+
     if (!apiResult.success) {
       console.warn('Offline persistence active for site content');
       setSaveStatus('error');
       return { success: false, message: apiResult.message || 'Server rejected changes. Saved locally in browser cache.' };
     }
-    
+
     setSaveStatus('saved');
     setTimeout(() => {
       setSaveStatus(prev => prev === 'saved' ? 'idle' : prev);
@@ -393,7 +399,8 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const updateSiteContent = async (newContent: SiteContent, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> => {
-    const auth = isUserAuthorized(user ?? currentUser);
+    const effectiveUser = user ?? currentUser;
+    const auth = isUserAuthorized(effectiveUser);
     if (!auth.isAuthorized) {
       return {
         success: false,
@@ -401,14 +408,29 @@ export const SiteContentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
 
+    hasLocalSiteMutationRef.current = true;
+    const prevCats = siteContent?.homepage?.categoriesList || [];
+    const nextCats = newContent?.homepage?.categoriesList || [];
+
     setSiteContent(newContent);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newContent));
     } catch {}
 
-    setSaveStatus('pending');
+    // Keep productImageManagerService overrides in sync for any updated category cover images
+    for (const cat of nextCats) {
+      if (!cat?.id || !cat?.image) continue;
+      const cleanImg = normalizeProductAssetUrl(cat.image);
+      if (!cleanImg) continue;
+      const prevCat = prevCats.find(c => c.id === cat.id);
+      const prevImg = prevCat?.image ? normalizeProductAssetUrl(prevCat.image) : '';
+      const existingOv = productImageManagerService.getProductImage(cat.id);
+      if (cleanImg !== prevImg || !existingOv || existingOv !== cleanImg) {
+        void productImageManagerService.setProductImage(cat.id, cleanImg, [cleanImg]).catch(() => {});
+      }
+    }
 
-    return { success: true, message: 'Changes staged. Click Save & Publish to push live.' };
+    return await forceSaveNow(newContent, effectiveUser);
   };
 
   const updatePageContent = async <K extends keyof SiteContent>(

@@ -15,7 +15,7 @@ import {
   autoUploadDisplayedProductImage,
   ensureUniqueVerifiedProductImageForUpload
 } from '../../services/visualProductImageService';
-import { productImageManagerService } from '../../services/productImageManagerService';
+import { productImageManagerService, normalizeProductAssetUrl } from '../../services/productImageManagerService';
 import { SupplierMessagesInbox } from './SupplierMessagesInbox';
 import { MyStorefrontStudioTab } from './MyStorefrontStudioTab';
 import { TopUpWallet } from '../marketplace/TopUpWallet';
@@ -1069,28 +1069,33 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     setProducts((prev) => [newProd, ...prev]);
 
     if (resolvedImages.length > 0) {
-      const primaryUrl = resolvedImages[0];
-      productImageManagerService.registerAutoSavedImage({
-        productId: newProd.id,
-        productTitle: newProd.title,
-        url: primaryUrl
-      });
-      if (/^https?:\/\//i.test(primaryUrl)) {
-        void autoUploadDisplayedProductImage({
-          imageUrl: primaryUrl,
+      const cleanGallery = resolvedImages.map(u => normalizeProductAssetUrl(u)).filter(Boolean);
+      const primaryUrl = cleanGallery[0] || resolvedImages[0];
+      if (newProdHasManualImage) {
+        await productImageManagerService.setProductImage(newProd.id, primaryUrl, cleanGallery);
+      } else {
+        productImageManagerService.registerAutoSavedImage({
           productId: newProd.id,
-          productName: newProd.title,
-          category: newProd.category
-        }).then(localUrl => {
-          if (localUrl) {
-            productImageManagerService.registerAutoSavedImage({
-              productId: newProd.id,
-              productTitle: newProd.title,
-              url: localUrl,
-              originalUrl: primaryUrl
-            });
-          }
+          productTitle: newProd.title,
+          url: primaryUrl
         });
+        if (/^https?:\/\//i.test(primaryUrl)) {
+          void autoUploadDisplayedProductImage({
+            imageUrl: primaryUrl,
+            productId: newProd.id,
+            productName: newProd.title,
+            category: newProd.category
+          }).then(localUrl => {
+            if (localUrl) {
+              productImageManagerService.registerAutoSavedImage({
+                productId: newProd.id,
+                productTitle: newProd.title,
+                url: localUrl,
+                originalUrl: primaryUrl
+              });
+            }
+          });
+        }
       }
     }
 
@@ -1126,61 +1131,60 @@ export const VerifiedSupplierDedicatedDashboard: React.FC<VerifiedSupplierDedica
     showToast(`Published "${newProd.title}" to your live storefront & catalog.`);
   };
 
-  const handleUpdateProductSubmit = (e: React.FormEvent) => {
+  const handleUpdateProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
 
+    const cleanImages = Array.isArray(editingProduct.images)
+      ? editingProduct.images.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
+      : [];
+    const normalizedEditingProduct: SupplierProductItem = {
+      ...editingProduct,
+      images: cleanImages
+    };
+
     setProducts((prev) =>
-      prev.map((p) => (p.id === editingProduct.id ? editingProduct : p))
+      prev.map((p) => (p.id === normalizedEditingProduct.id ? normalizedEditingProduct : p))
     );
-    if (Array.isArray(editingProduct.images) && editingProduct.images.length > 0) {
-      const primaryUrl = editingProduct.images[0];
-      productImageManagerService.registerAutoSavedImage({
-        productId: editingProduct.id,
-        productTitle: editingProduct.title,
-        url: primaryUrl
-      });
-      if (/^https?:\/\//i.test(primaryUrl)) {
-        void autoUploadDisplayedProductImage({
-          imageUrl: primaryUrl,
-          productId: editingProduct.id,
-          productName: editingProduct.title,
-          category: editingProduct.category
-        });
-      }
+    if (cleanImages.length > 0) {
+      await productImageManagerService.setProductImage(
+        normalizedEditingProduct.id,
+        cleanImages[0],
+        cleanImages
+      );
     }
 
-    const existingFull = (globalProducts || []).find(p => p.id === editingProduct.id);
+    const existingFull = (globalProducts || []).find(p => p.id === normalizedEditingProduct.id);
     const updatedFull: Product = {
       ...(existingFull || {
-        id: editingProduct.id,
-        subCategory: editingProduct.category,
-        description: `${editingProduct.title} — ${companyName}`,
+        id: normalizedEditingProduct.id,
+        subCategory: normalizedEditingProduct.category,
+        description: `${normalizedEditingProduct.title} — ${companyName}`,
         supportedIncoterms: ['FOB', 'CIF'],
         supplierId,
         supplierName: companyName,
         supplierCountry: vendorProfile.country || 'Global',
         supplierTier: (vendorProfile.tier as SupplierTier) || 'GOLD',
         supplierTrustScore: vendorProfile.trustScore || 95,
-        specifications: Object.entries(editingProduct.specifications || {}).map(([name, value]) => ({ name, value }))
+        specifications: Object.entries(normalizedEditingProduct.specifications || {}).map(([name, value]) => ({ name, value }))
       }),
-      title: editingProduct.title,
-      category: editingProduct.category,
-      moq: editingProduct.moq,
-      moqUnit: editingProduct.moqUnit,
-      portOfDispatch: editingProduct.fobPort,
-      leadTimeDays: editingProduct.leadTimeDays,
-      priceTiers: [{ minUnits: editingProduct.moq, priceUsd: editingProduct.priceUsd }],
-      images: editingProduct.images
+      title: normalizedEditingProduct.title,
+      category: normalizedEditingProduct.category,
+      moq: normalizedEditingProduct.moq,
+      moqUnit: normalizedEditingProduct.moqUnit,
+      portOfDispatch: normalizedEditingProduct.fobPort,
+      leadTimeDays: normalizedEditingProduct.leadTimeDays,
+      priceTiers: [{ minUnits: normalizedEditingProduct.moq, priceUsd: normalizedEditingProduct.priceUsd }],
+      images: cleanImages
     };
 
-    void api.updateProduct(editingProduct.id, updatedFull).catch(() => {});
+    await api.updateProduct(normalizedEditingProduct.id, updatedFull).catch(() => {});
     onProductUpdated?.(updatedFull);
 
     setEditingProduct(null);
     setEditProdHasManualImage(false);
     setEditProdAutoMatched(false);
-    showToast(`Updated listing details for "${editingProduct.title}".`);
+    showToast(`Updated listing details for "${normalizedEditingProduct.title}".`);
   };
 
   const handleDeleteProduct = (prodId: string) => {

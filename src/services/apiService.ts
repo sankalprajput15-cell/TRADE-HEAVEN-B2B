@@ -21,7 +21,7 @@ import {
 import { MOCK_PRODUCTS, MOCK_RFQS, MOCK_QUOTES, MOCK_COMPANIES, MOCK_BUYER_PROFILES, CATEGORIES_TREE, MOCK_BANK_ACCOUNTS, DEFAULT_USERS, NORMALIZED_B2B_DATABASE } from '../data/mockData';
 import { securityService } from './securityService';
 import { bigrockApi, mapInquiryToRfq } from './bigrockApi';
-import { productImageManagerService } from './productImageManagerService';
+import { productImageManagerService, normalizeProductAssetUrl } from './productImageManagerService';
 import { autoSeoEngine } from './autoSeoEngine';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
@@ -1763,35 +1763,40 @@ export const api = {
       const targetId = product.id || `prod-custom-${Date.now()}`;
       const targetTitle = product.title || 'New Marketplace Product';
       const targetCategory = product.category || 'General Agriculture & Commodities';
+      const providedImages = Array.isArray(product.images)
+        ? product.images
+            .map(u => normalizeProductAssetUrl(u))
+            .filter(Boolean)
+        : [];
+      const hasManualImages = providedImages.length > 0;
 
-      // Collect existing override primary URLs to guarantee uniqueness across the catalog
-      const existingOverrides = productImageManagerService.getState().overrides || {};
-      const usedOverrideUrls = Object.values(existingOverrides)
-        .map(o => o?.primary)
-        .filter((u): u is string => Boolean(u));
+      let finalImages = providedImages;
+      if (!hasManualImages) {
+        // Collect existing override primary URLs to guarantee uniqueness across the catalog
+        const existingOverrides = productImageManagerService.getState().overrides || {};
+        const usedOverrideUrls = Object.values(existingOverrides)
+          .map(o => o?.primary)
+          .filter((u): u is string => Boolean(u));
 
-      const { ensureUniqueVerifiedProductImageForUpload } = await import('./visualProductImageService');
-      const resolvedVisual = await ensureUniqueVerifiedProductImageForUpload({
-        productId: targetId,
-        productName: targetTitle,
-        category: targetCategory,
-        specifications: product.description,
-        existingImageUrl: product.images?.[0],
-        existingGallery: product.images,
-        usedUrls: usedOverrideUrls
-      });
+        const { ensureUniqueVerifiedProductImageForUpload } = await import('./visualProductImageService');
+        const resolvedVisual = await ensureUniqueVerifiedProductImageForUpload({
+          productId: targetId,
+          productName: targetTitle,
+          category: targetCategory,
+          specifications: product.description,
+          existingImageUrl: undefined,
+          existingGallery: [],
+          usedUrls: usedOverrideUrls
+        });
+        finalImages = resolvedVisual.gallery.length > 0 ? resolvedVisual.gallery.map(u => normalizeProductAssetUrl(u)).filter(Boolean) : [];
+      }
 
       const createdProd: Product = {
         id: targetId,
         title: targetTitle,
         category: targetCategory,
         subCategory: product.subCategory || 'Raw Materials',
-        images:
-          resolvedVisual.gallery.length > 0
-            ? resolvedVisual.gallery
-            : product.images && product.images.length > 0
-            ? product.images
-            : [],
+        images: finalImages,
         moq: product.moq || 1,
         moqUnit: product.moqUnit || 'Kgs',
         priceTiers: product.priceTiers || [
@@ -1849,32 +1854,33 @@ export const api = {
         if (typeof window !== 'undefined' && window.localStorage) {
           const raw = localStorage.getItem('trade_heaven_custom_products');
           const current: Product[] = raw ? JSON.parse(raw) : [];
-          localStorage.setItem('trade_heaven_custom_products', JSON.stringify([createdProd, ...current]));
+          localStorage.setItem('trade_heaven_custom_products', JSON.stringify([createdProd, ...current.filter(p => p.id !== createdProd.id)]));
           window.dispatchEvent(new Event('tradeheaven_products_updated'));
         }
       } catch {}
 
-      // Save directly to BigRock MySQL database
-      bigrockApi.createListing({
-        title: createdProd.title,
-        description: createdProd.description,
-        category: createdProd.category,
-        sub_category: createdProd.subCategory,
-        price: String(createdProd.priceTiers[0]?.priceUsd || 100),
-        image_url: createdProd.images[0],
-        moq: createdProd.moq,
-        moq_unit: createdProd.moqUnit,
-        supplier_name: createdProd.supplierName,
-        supplier_country: createdProd.supplierCountry,
-        location: createdProd.portOfDispatch
-      }).catch(() => {});
-
-      // Forward to Express backend
-      fetch('/api/v1/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createdProd)
-      }).catch(() => {});
+      // Persist to Express backend and MySQL listing gateway
+      await Promise.allSettled([
+        fetch('/api/v1/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...createdProd, isManualImages: hasManualImages })
+        }),
+        bigrockApi.createListing({
+          title: createdProd.title,
+          description: createdProd.description,
+          category: createdProd.category,
+          sub_category: createdProd.subCategory,
+          price: String(createdProd.priceTiers[0]?.priceUsd || 100),
+          image_url: createdProd.images[0],
+          images: createdProd.images,
+          moq: createdProd.moq,
+          moq_unit: createdProd.moqUnit,
+          supplier_name: createdProd.supplierName,
+          supplier_country: createdProd.supplierCountry,
+          location: createdProd.portOfDispatch
+        })
+      ]);
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tradeheaven_notify', {
@@ -1895,23 +1901,31 @@ export const api = {
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<{ success: boolean; data?: Product; message?: string }> {
     try {
+      const cleanImages = Array.isArray(updates.images)
+        ? updates.images.map(u => normalizeProductAssetUrl(u)).filter(Boolean)
+        : undefined;
+      const normalizedUpdates: Partial<Product> & { isManualImages?: boolean } = {
+        ...updates,
+        ...(cleanImages ? { images: cleanImages, isManualImages: cleanImages.length > 0 } : {})
+      };
+
       // If images are updated via product editor, also persist in Dedicated Product Image System
-      if (Array.isArray(updates.images) && updates.images.length > 0) {
+      if (cleanImages && cleanImages.length > 0) {
         try {
-          await productImageManagerService.setProductImage(id, updates.images[0], updates.images);
+          await productImageManagerService.setProductImage(id, cleanImages[0], cleanImages);
         } catch {}
       }
 
       let savedTitle = id;
+      let mergedProd: Product = { id, ...normalizedUpdates } as Product;
       // Save updates to localStorage
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
           const raw = localStorage.getItem('trade_heaven_custom_products');
           const current: Product[] = raw ? JSON.parse(raw) : [];
           const idx = current.findIndex(p => p.id === id);
-          let mergedProd: Product = { id, ...updates } as Product;
           if (idx !== -1) {
-            mergedProd = { ...current[idx], ...updates };
+            mergedProd = { ...current[idx], ...normalizedUpdates };
             current[idx] = mergedProd;
           } else {
             current.unshift(mergedProd);
@@ -1928,11 +1942,11 @@ export const api = {
         }
       } catch {}
 
-      // Forward to Express backend
-      fetch(`/api/v1/products/${id}`, {
+      // Await Express backend persistence so immediate reloads never revert images
+      await fetch(`/api/v1/products/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(normalizedUpdates)
       }).catch(() => {});
 
       if (typeof window !== 'undefined') {
@@ -1946,7 +1960,7 @@ export const api = {
         }));
       }
 
-      return { success: true, message: 'Product details updated successfully!' };
+      return { success: true, data: mergedProd, message: 'Product details updated successfully!' };
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to update product details' };
     }

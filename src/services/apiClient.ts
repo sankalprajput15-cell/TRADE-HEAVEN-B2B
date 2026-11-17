@@ -167,17 +167,41 @@ export const apiClient = {
    */
   async getSiteContent(): Promise<{ success: boolean; data?: any; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}?action=get_content&t=${Date.now()}`, {
+      // 1. Try primary Express backend
+      try {
+        const res = await fetch(`/api/site-content?t=${Date.now()}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const json = await safeParseJson(res);
+          if (json && (json.success === true || json.status === 'success') && (json.data || json.siteContent)) {
+            return {
+              success: true,
+              data: json.data || json.siteContent,
+              message: json.message
+            };
+          }
+        }
+      } catch {}
+
+      // 2. Fallback to PHP endpoint
+      const phpRes = await fetch(`${API_BASE}?action=get_content&t=${Date.now()}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
         },
-        cache: 'no-cache'
+        cache: 'no-store'
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await safeParseJson(res);
-      if (!json) return { success: false, message: 'Invalid response' };
-      return { success: json.status === 'success' || json.success === true, data: json.data || json.siteContent, message: json.message };
+      if (!phpRes.ok) throw new Error(`HTTP ${phpRes.status}`);
+      const json = await safeParseJson(phpRes);
+      if (!json || isPhpGatewayDefaultBanner(json)) return { success: false, message: 'Invalid response' };
+      return {
+        success: json.status === 'success' || json.success === true,
+        data: json.data || json.siteContent,
+        message: json.message
+      };
     } catch (e: any) {
       console.warn('[apiClient] getSiteContent error:', e);
       return { success: false, message: e.message || 'Failed to fetch site content' };
@@ -186,21 +210,59 @@ export const apiClient = {
 
   /**
    * Update live CMS Site Content via the backend API.
-   * Uses ./api.php?action=save_content
+   * Uses Express /api/site-content (PUT) with PHP ./api.php?action=save_content fallback
    */
-  async saveSiteContent(payload: any): Promise<{ success: boolean; message?: string }> {
+  async saveSiteContent(payload: any, user?: AuthUser | null): Promise<{ success: boolean; message?: string }> {
+    let resolvedUser: any = user;
+    if (!resolvedUser && typeof window !== 'undefined') {
+      try {
+        const rawAdmin = localStorage.getItem('th_verified_otp_session_v5_strict_admin');
+        if (rawAdmin) resolvedUser = JSON.parse(rawAdmin);
+      } catch {}
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    if (resolvedUser?.role) headers['x-user-role'] = String(resolvedUser.role);
+    if (resolvedUser?.email) headers['x-user-email'] = String(resolvedUser.email);
+
     try {
-      const res = await fetch(`${API_BASE}?action=save_content`, {
+      // 1. Primary Express endpoint
+      try {
+        const res = await fetch('/api/site-content', {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ data: payload, siteContent: payload, user: resolvedUser })
+        });
+        const json = await safeParseJson(res);
+        if (res.ok && (json?.success === true || json?.status === 'success')) {
+          return { success: true, message: json?.message || 'Site content updated on server' };
+        }
+        if (res.status === 401 || res.status === 403) {
+          return { success: false, message: json?.message || `Permission denied (HTTP ${res.status})` };
+        }
+      } catch {}
+
+      // 2. PHP / Express action fallback
+      const phpRes = await fetch(`${API_BASE}?action=save_content`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ siteContent: payload })
+        headers,
+        body: JSON.stringify({ siteContent: payload, data: payload, user: resolvedUser })
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await safeParseJson(res);
-      return { success: json?.status === 'success' || json?.success === true || true, message: json?.message || 'Updated successfully' };
+      const phpJson = await safeParseJson(phpRes);
+      if (!phpRes.ok || isPhpGatewayDefaultBanner(phpJson)) {
+        return {
+          success: false,
+          message: phpJson?.message || `Failed to persist site content (HTTP ${phpRes.status})`
+        };
+      }
+      const isOk = Boolean(phpJson?.status === 'success' || phpJson?.success === true);
+      return {
+        success: isOk,
+        message: phpJson?.message || (isOk ? 'Updated successfully' : 'Server rejected site content update')
+      };
     } catch (e: any) {
       console.error('[apiClient] saveSiteContent error:', e);
       return { success: false, message: e.message || 'Failed to save site content' };

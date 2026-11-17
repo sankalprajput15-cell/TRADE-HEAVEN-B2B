@@ -6,6 +6,7 @@ import {
   PRODUCT_IMAGE_SAVED_EVENT,
   PRODUCT_IMAGE_STORAGE_SAVED_EVENT,
   ProductImageSavedEventDetail,
+  normalizeProductAssetUrl,
   optimizeImageUrl
 } from '../services/productImageManagerService';
 
@@ -170,14 +171,14 @@ export const EditableImage: React.FC<EditableImageProps> = ({
     if (!canEdit) return;
     e.preventDefault();
     e.stopPropagation();
-    setUrlInput(currentSrc);
+    setUrlInput(normalizeProductAssetUrl(currentSrc));
     setStatusMessage(null);
     setIsModalOpen(true);
   };
 
   // Save new URL to storage
   const handleSaveUrl = async () => {
-    const trimmed = urlInput.trim();
+    const trimmed = normalizeProductAssetUrl(urlInput);
     if (!trimmed) {
       setStatusMessage({ type: 'error', text: 'Please enter a valid image URL' });
       return;

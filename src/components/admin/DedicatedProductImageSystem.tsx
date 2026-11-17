@@ -357,7 +357,6 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
           payload.images[0],
           payload.images
         );
-        await productImageManagerService.forceSyncToServer();
       }
 
       if (isAddingNewProduct) {
@@ -3969,7 +3968,6 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
       setPrimaryUrl(res.url);
       setGalleryUrls(prev => [res.url, ...prev.filter(u => u && u !== res.url)]);
       setMediaLibrary(productImageManagerService.getState().mediaLibrary);
-      await productImageManagerService.forceSyncToServer();
       if (onSaved) {
         onSaved(
           applyToAllProducts
@@ -3993,7 +3991,6 @@ export const QuickProductImageModal: React.FC<QuickProductImageModalProps> = ({
     setIsUploading(true);
     try {
       await productImageManagerService.setProductImage(product.id, cleanPrimary, cleanGallery);
-      await productImageManagerService.forceSyncToServer();
       if (onSaved) {
         onSaved(`Saved updated product image(s) for "${product.title.slice(0, 40)}..."`);
       }
