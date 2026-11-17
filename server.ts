@@ -9079,11 +9079,23 @@ async function forwardApiPhpToLiveUpstream(
           req
         });
         if (freeSupplierQuotaOnSend.isFreeMember && freeSupplierQuotaOnSend.isRestricted) {
+          if (
+            freeSupplierQuotaOnSend.supplierEmail === 'zac@otec.ltd' ||
+            freeSupplierQuotaOnSend.supplierId === 'user-supplier-zac' ||
+            String(req.body?.supplierEmail || req.body?.supplier_email || '').toLowerCase() === 'zac@otec.ltd'
+          ) {
+            void automatedSmtpService.sendZacMessageAttemptBalanceReminderEmail({
+              email: 'zac@otec.ltd',
+              amountPaidUsd: 400,
+              standardPlanAmountUsd: 1100,
+              remainingBalanceUsd: 700
+            });
+          }
           res.status(429).json({
             status: 'error',
             success: false,
             code: 'FREE_MEMBER_DAILY_MESSAGE_LIMIT',
-            message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${freeSupplierQuotaOnSend.sentToday}/${freeSupplierQuotaOnSend.dailyLimit} used). Please upgrade or clear your Basic Plan balance to send more messages.`,
+            message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${freeSupplierQuotaOnSend.sentToday}/${freeSupplierQuotaOnSend.dailyLimit} used). Please pay the $700.00 USD Basic Plan balance to restart services and unlock messaging.`,
             quota: freeSupplierQuotaOnSend
           });
           return true;
@@ -11668,11 +11680,23 @@ app.post('/api/v1/chat/record-daily-message', async (req, res) => {
     });
 
     if (quota.isFreeMember && quota.isRestricted) {
+      if (
+        quota.supplierEmail === 'zac@otec.ltd' ||
+        quota.supplierId === 'user-supplier-zac' ||
+        String(body.supplierEmail || body.supplier_email || '').toLowerCase() === 'zac@otec.ltd'
+      ) {
+        void automatedSmtpService.sendZacMessageAttemptBalanceReminderEmail({
+          email: 'zac@otec.ltd',
+          amountPaidUsd: 400,
+          standardPlanAmountUsd: 1100,
+          remainingBalanceUsd: 700
+        });
+      }
       return res.status(429).json({
         status: 'error',
         success: false,
         code: 'FREE_MEMBER_DAILY_MESSAGE_LIMIT',
-        message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${quota.sentToday}/${quota.dailyLimit} used).`,
+        message: `Daily limit reached: Free tier members can only send 1 message to buyers per day (${quota.sentToday}/${quota.dailyLimit} used). Please pay the $700.00 USD Basic Plan balance to restart services and unlock messaging.`,
         data: quota
       });
     }

@@ -1228,6 +1228,134 @@ export function buildZacBalanceFundPaymentAndAdminRightTemplates(
   };
 }
 
+export function buildZacMessageAttemptBalanceReminderTemplates(
+  params?: Partial<ZacBalanceFundConfirmationPayload>
+) {
+  const companyName = params?.companyName || 'IMPORTATION FADE-TECH (OTEC LTD)';
+  const address = params?.address || '42a Bassett street hurstville, New South Wales 2220, Australia';
+  const email = params?.email || 'zac@otec.ltd';
+  const decisionMakerName = params?.decisionMakerName || 'Zachary Aldin (Zac)';
+  const contactPhone = params?.contactPhone || '+61 424 854 899';
+  const amountPaidUsd = typeof params?.amountPaidUsd === 'number' ? params.amountPaidUsd : 400;
+  const standardPlanAmountUsd = typeof params?.standardPlanAmountUsd === 'number' ? params.standardPlanAmountUsd : 1100;
+  const remainingBalanceUsd = typeof params?.remainingBalanceUsd === 'number' ? params.remainingBalanceUsd : 700;
+  const invoiceRef = params?.invoiceRef || 'TRD-INV-27-0004';
+  const rootUrl = getPublicTrackingBaseUrl().replace(/\/+$/, '');
+  const ctaUrl =
+    params?.ctaUrl ||
+    `${rootUrl}/?pay_zac=1&email=${encodeURIComponent(email)}&amount=${remainingBalanceUsd}&company=${encodeURIComponent(companyName)}`;
+  const ctaText = `Pay $${remainingBalanceUsd}.00 USD Balance & Restart Services Now →`;
+
+  const zacSubject = `Action Required: Pay $${remainingBalanceUsd}.00 USD Basic Plan Balance to Restart Services & Unlock Messaging (Ref: ${invoiceRef})`;
+
+  const zacText = [
+    'TRADE HEAVEN • TREASURY & BILLING DESK',
+    `Messaging Paused: Paid Only $${amountPaidUsd}.00 USD of $${standardPlanAmountUsd}.00 USD Basic Plan — Balance Due: $${remainingBalanceUsd}.00 USD`,
+    '',
+    `Dear ${decisionMakerName},`,
+    '',
+    `Your recent attempt to send a buyer message on Trade Heaven for ${companyName} was paused because your account is on the Basic Business Plan with only an initial deposit of $${amountPaidUsd}.00 USD paid (Remaining Balance Due: $${remainingBalanceUsd}.00 USD).`,
+    '',
+    '============================================================',
+    'ACCOUNT RESTART & BALANCE SUMMARY',
+    '============================================================',
+    `• Supplier Entity: ${companyName}`,
+    `• Account Holder: ${decisionMakerName} (${email})`,
+    `• Invoice / Contract Ref: ${invoiceRef}`,
+    `• Standard Basic Plan Total: $${standardPlanAmountUsd.toLocaleString()}.00 USD`,
+    `• Amount Paid Earlier: -$${amountPaidUsd.toLocaleString()}.00 USD (Credited)`,
+    `• Balance Due to Restart Services: $${remainingBalanceUsd.toLocaleString()}.00 USD`,
+    '',
+    '============================================================',
+    'HOW TO RESTART SERVICES & UNLOCK MESSAGING',
+    '============================================================',
+    `1. Complete payment of the $${remainingBalanceUsd}.00 USD remaining balance.`,
+    '2. Upon payment verification, your services, sponsored ads, and buyer messaging channels are instantly unlocked.',
+    '',
+    `Pay your $${remainingBalanceUsd}.00 USD balance directly here: ${ctaUrl}`,
+    '',
+    'Need help? Contact Trade Heaven Treasury on WhatsApp at +91 85329 34479 or email help@tradeheaven.net.'
+  ].join('\n');
+
+  const zacHtml = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 6px 20px rgba(0,0,0,0.08);">
+      <div style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 55%, #0f172a 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <div style="display: inline-block; font-size: 11px; font-weight: 900; letter-spacing: 1.6px; color: #fde68a; text-transform: uppercase; margin-bottom: 10px; background: rgba(245, 158, 11, 0.22); border: 1px solid rgba(253, 230, 138, 0.45); padding: 5px 14px; border-radius: 9999px;">
+          TRADE HEAVEN • TREASURY &amp; BILLING DESK
+        </div>
+        <h1 style="margin: 0; font-size: 22px; font-weight: 900; color: #ffffff; line-height: 1.3;">
+          Pay $${remainingBalanceUsd}.00 USD Balance to Restart Services &amp; Unlock Messaging
+        </h1>
+        <p style="margin: 8px 0 0 0; font-size: 13px; color: #cbd5e1;">
+          <strong>${companyName}</strong> • Attn: <strong>${decisionMakerName}</strong> • Ref: <strong>${invoiceRef}</strong>
+        </p>
+      </div>
+
+      <div style="padding: 28px 24px; background: #ffffff; color: #1e293b;">
+        <p style="font-size: 15px; line-height: 1.6; margin: 0 0 12px 0; color: #0f172a;">
+          Dear <strong>${decisionMakerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.65; margin: 0 0 18px 0; color: #334155;">
+          Your recent attempt to send a message to buyers on Trade Heaven for <strong>${companyName}</strong> has been paused. Our records indicate that you have paid only <strong>$${amountPaidUsd}.00 USD</strong> toward your Basic Business Plan (leaving a <strong>remaining balance due of $${remainingBalanceUsd}.00 USD</strong> out of $${standardPlanAmountUsd}.00 USD).
+        </p>
+
+        <div style="background: #fffbeb; border: 2px solid #fcd34d; border-radius: 14px; padding: 20px; margin: 0 0 22px 0;">
+          <div style="font-size: 11px; font-weight: 900; color: #92400e; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span>BASIC PLAN BALANCE STATEMENT</span>
+            <span style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 900;">⚠️ MESSAGING PAUSED</span>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #475569; width: 190px; font-weight: 600;">Supplier Entity:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 800;">${companyName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Account Holder:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">${decisionMakerName} (${email})</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #475569; font-weight: 600;">Basic Plan Total:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 700;">$${standardPlanAmountUsd.toLocaleString()}.00 USD</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #059669; font-weight: 800;">Amount Paid Earlier:</td>
+              <td style="padding: 6px 0; color: #059669; font-weight: 900;">-$${amountPaidUsd.toLocaleString()}.00 USD (Credited)</td>
+            </tr>
+            <tr style="border-top: 2px solid #fcd34d;">
+              <td style="padding: 10px 0 4px 0; color: #0f172a; font-weight: 900; font-size: 14px;">Balance Due to Restart:</td>
+              <td style="padding: 10px 0 4px 0; color: #dc2626; font-weight: 900; font-size: 18px;">$${remainingBalanceUsd.toLocaleString()}.00 USD</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${ctaUrl}" style="display: inline-block; background: linear-gradient(135deg, #b45309 0%, #92400e 100%); color: #ffffff; font-weight: 900; font-size: 14px; text-decoration: none; padding: 16px 34px; border-radius: 12px; box-shadow: 0 6px 16px rgba(180, 83, 9, 0.3);">
+            Pay $${remainingBalanceUsd}.00 USD Balance &amp; Restart Services Now →
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return {
+    resolvedFields: {
+      companyName,
+      address,
+      email,
+      decisionMakerName,
+      contactPhone,
+      amountPaidUsd,
+      standardPlanAmountUsd,
+      remainingBalanceUsd,
+      invoiceRef,
+      ctaUrl
+    },
+    zacSubject,
+    zacText,
+    zacHtml
+  };
+}
+
 export function buildZacClearBalanceAndFreeTierTemplates(
   params?: Partial<ZacBalanceFundConfirmationPayload>
 ) {
@@ -6453,6 +6581,83 @@ export class AutomatedSmtpService {
             recipientName: `Admin Copy (${adminEmail})`,
             trackingId: `${trackingId}-admin-${adminEmail.split('@')[0]}`,
             summaryText: `[ADMIN COPY] Basic Plan balance clearance notice ($${built.resolvedFields.remainingBalanceUsd}.00 USD) + Free Tier Member transition dispatched to ${built.resolvedFields.decisionMakerName} (${cleanZacEmail}).`
+          },
+          transporter || undefined
+        );
+        adminReceipts.push(adminRec);
+      }
+    }
+
+    return {
+      success: zacReceipt.success,
+      zacReceipt,
+      adminReceipts
+    };
+  }
+
+  /**
+   * Dispatches automated email to Zac (zac@otec.ltd) when he attempts to send a message
+   * notifying him that he has paid only $400.00 USD for the Basic Plan (leaving a $700.00 USD balance due)
+   * and prompting him to pay the balance to restart services and unlock messaging.
+   */
+  public async sendZacMessageAttemptBalanceReminderEmail(
+    payload?: Partial<ZacBalanceFundConfirmationPayload> & { sendAdminCopy?: boolean }
+  ): Promise<{
+    success: boolean;
+    zacReceipt: SerializedDeliveryReceipt;
+    adminReceipts: SerializedDeliveryReceipt[];
+  }> {
+    const built = buildZacMessageAttemptBalanceReminderTemplates(payload);
+    const transporter = this.createPrimaryTransporter();
+    const cleanZacEmail = normalizeRecipientEmail(built.resolvedFields.email || 'zac@otec.ltd');
+    const trackingId = `ms-trk-zac-msg-reminder-${Date.now().toString(36)}`;
+
+    const zacReceipt = await serverDeliveryQueueManager.enqueueSingle(
+      cleanZacEmail,
+      {
+        from: this.senderFormatted,
+        replyTo: this.replyToAddress,
+        subject: built.zacSubject,
+        text: built.zacText,
+        html: built.zacHtml,
+        dispatchType: payload?.dispatchType || 'AUTOMATED',
+        category: 'CUSTOM_ADMIN',
+        companyName: built.resolvedFields.companyName,
+        companyId: 'comp-zac-importation-fadetech',
+        recipientName: built.resolvedFields.decisionMakerName,
+        trackingId,
+        summaryText: `AUTOMATED MAIL TO ZAC (${cleanZacEmail}): Message attempt paused — paid only $${built.resolvedFields.amountPaidUsd} of Basic Plan ($${built.resolvedFields.remainingBalanceUsd} balance due to restart services).`
+      },
+      transporter || undefined
+    );
+
+    const adminReceipts: SerializedDeliveryReceipt[] = [];
+    if (payload?.sendAdminCopy !== false) {
+      const rawAdminTargets =
+        Array.isArray(payload?.adminEmails) && payload!.adminEmails.length > 0
+          ? payload!.adminEmails
+          : ['yr943334@gmail.com', 'sankalprajput15@gmail.com'];
+      const uniqueAdmins = Array.from(
+        new Set(rawAdminTargets.map((e) => normalizeRecipientEmail(e)).filter((e) => e && e.includes('@')))
+      );
+
+      for (const adminEmail of uniqueAdmins) {
+        if (adminEmail === cleanZacEmail) continue;
+        const adminRec = await serverDeliveryQueueManager.enqueueSingle(
+          adminEmail,
+          {
+            from: this.senderFormatted,
+            replyTo: this.replyToAddress,
+            subject: `[Admin Copy] Zac Message Attempt Balance Notice ($${built.resolvedFields.remainingBalanceUsd} Due)`,
+            text: built.zacText,
+            html: built.zacHtml,
+            dispatchType: payload?.dispatchType || 'AUTOMATED',
+            category: 'CUSTOM_ADMIN',
+            companyName: built.resolvedFields.companyName,
+            companyId: 'comp-zac-importation-fadetech',
+            recipientName: `Admin Copy (${adminEmail})`,
+            trackingId: `${trackingId}-admin-${adminEmail.split('@')[0]}`,
+            summaryText: `[ADMIN COPY] Zac message attempt balance reminder ($${built.resolvedFields.remainingBalanceUsd} due) dispatched to ${built.resolvedFields.decisionMakerName} (${cleanZacEmail}).`
           },
           transporter || undefined
         );
