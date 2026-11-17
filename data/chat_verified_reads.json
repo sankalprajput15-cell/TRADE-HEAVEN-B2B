@@ -1,0 +1,156 @@
+{
+  "logins": {
+    "yr943334@gmail.com": {
+      "email": "yr943334@gmail.com",
+      "name": "Administrator",
+      "role": "ADMIN",
+      "companyName": "Trade Heaven Global Operations & Treasury",
+      "country": "United Kingdom",
+      "lastLoginAt": "2026-11-17T08:52:53.957Z",
+      "loginCount": 7
+    }
+  },
+  "reads": {},
+  "emailAlerts": {
+    "msg-1794825454086-91eb5": {
+      "messageId": "msg-1794825454086-91eb5",
+      "conversationId": "conv-1794741737078-40fdd",
+      "supplierEmail": "zac@otec.ltd",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794827071839-71c5b": {
+      "messageId": "msg-1794827071839-71c5b",
+      "conversationId": "conv-1794741737078-40fdd",
+      "supplierEmail": "zac@otec.ltd",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794805649272-965cf": {
+      "messageId": "msg-1794805649272-965cf",
+      "conversationId": "conv-1794805539936-4b8e0",
+      "supplierEmail": "larsbarnhart25@gmail.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794804280335-76c1c": {
+      "messageId": "msg-1794804280335-76c1c",
+      "conversationId": "conv-1794803063810-0cf1f",
+      "supplierEmail": "sales@medlabspeptides.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794801284671-ee636": {
+      "messageId": "msg-1794801284671-ee636",
+      "conversationId": "conv-1794800952935-ea29a",
+      "supplierEmail": "mjohnson@atlanticpowerequip.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794801398986-b1e2f": {
+      "messageId": "msg-1794801398986-b1e2f",
+      "conversationId": "conv-1794800952935-ea29a",
+      "supplierEmail": "mjohnson@atlanticpowerequip.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794753935647-6f080": {
+      "messageId": "msg-1794753935647-6f080",
+      "conversationId": "conv-1794753917120-696e4",
+      "supplierEmail": "sorkindon@gmail.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T04:02:31.874Z"
+    },
+    "msg-1794897517821-a144d": {
+      "messageId": "msg-1794897517821-a144d",
+      "conversationId": "conv-1794741737078-40fdd",
+      "supplierEmail": "zac@otec.ltd",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T06:40:02.752Z"
+    },
+    "msg-1794902125033-93e2e": {
+      "messageId": "msg-1794902125033-93e2e",
+      "conversationId": "conv-1794899054716-704cf",
+      "supplierEmail": "melissa@mpcommoditybrokers.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T09:05:57.782Z"
+    },
+    "msg-1794902125534-8fa72": {
+      "messageId": "msg-1794902125534-8fa72",
+      "conversationId": "conv-1794899054716-704cf",
+      "supplierEmail": "melissa@mpcommoditybrokers.com",
+      "supplierMailAccepted": true,
+      "adminCopyRecipients": [
+        "sankalprajput15@gmail.com",
+        "solutionthe87@gmail.com",
+        "yr943334@gmail.com"
+      ],
+      "adminCopyAccepted": true,
+      "deliveryMode": "LIVE_SMTP",
+      "sentAt": "2026-11-17T09:05:57.782Z"
+    }
+  }
+}

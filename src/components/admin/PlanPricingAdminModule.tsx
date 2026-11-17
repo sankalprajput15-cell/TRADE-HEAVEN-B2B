@@ -53,9 +53,17 @@ interface PlanPricingAdminModuleProps {
 type AdminSubTab = 'PLANS_CRUD' | 'PRICING_PREVIEW' | 'RATE_LIMITS' | 'STRIPE_GATEWAY' | 'SCHEMA_INSPECTOR';
 
 export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
-  currentUserRole = 'BUYER',
+  currentUserRole = 'ADMIN',
   onNavigateView
 }) => {
+  const resolvedRole = String(currentUserRole || 'ADMIN').toUpperCase();
+  const isAdminOrManager = Boolean(
+    resolvedRole === 'ADMIN' ||
+    resolvedRole === 'SUPER_ADMIN' ||
+    resolvedRole === 'VERIFIED_ADMIN' ||
+    resolvedRole === 'MODERATOR' ||
+    resolvedRole === 'SUPPLIER'
+  );
   // Data State
   const [plans, setPlans] = useState<SaaSPlan[]>([]);
   const [metrics, setMetrics] = useState<PlanPricingMetrics | null>(null);
@@ -224,14 +232,17 @@ export const PlanPricingAdminModule: React.FC<PlanPricingAdminModuleProps> = ({
                 <span>Sync Stripe</span>
               </button>
 
-              <button
-                type="button"
-                onClick={handleCreateNewPlan}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create New Plan</span>
-              </button>
+              {isAdminOrManager && (
+                <button
+                  type="button"
+                  onClick={handleCreateNewPlan}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  title="Create new SaaS plan or membership tier"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create New Plan</span>
+                </button>
+              )}
             </div>
 
           </div>

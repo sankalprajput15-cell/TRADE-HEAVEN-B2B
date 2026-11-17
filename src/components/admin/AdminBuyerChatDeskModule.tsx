@@ -1421,14 +1421,39 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
 
                             {isBuyerIdentity ? (
                               <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
-                                {(msg.emailAlertSent || Boolean(threadInsight?.emailAlertReceiptsByMsgId?.[msg.id])) && (() => {
+                                {(() => {
                                   const alertReceipt = threadInsight?.emailAlertReceiptsByMsgId?.[msg.id];
+                                  const hasAnyAlert = Boolean(msg.emailAlertSent || alertReceipt);
                                   const isFullyVerified = Boolean(
                                     alertReceipt?.supplierMailAccepted && alertReceipt?.adminCopyAccepted
                                   );
                                   const isReverifying = reverifyingMsgId === msg.id;
-                                  const supplierTarget = alertReceipt?.supplierEmail || activeConversation.supplierEmail || 'supplier';
-                                  const adminList = (alertReceipt?.adminCopyRecipients || threadInsight?.adminAlertRecipients || []).join(', ');
+                                  const supplierTarget =
+                                    alertReceipt?.supplierEmail || activeConversation.supplierEmail || 'supplier';
+                                  const adminList = (
+                                    alertReceipt?.adminCopyRecipients ||
+                                    threadInsight?.adminAlertRecipients ||
+                                    []
+                                  ).join(', ');
+
+                                  if (!hasAnyAlert) {
+                                    return (
+                                      <button
+                                        type="button"
+                                        disabled={isReverifying}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          void handleReverifyMessageAlert(msg);
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded bg-white/15 px-1.5 py-0.5 text-[10px] font-bold text-blue-100 hover:bg-white/25 disabled:opacity-60"
+                                        title={`Immediately email ${supplierTarget} + Admin Copy regarding this buyer message`}
+                                      >
+                                        <BellRing className="h-2.5 w-2.5 shrink-0" />
+                                        <span>{isReverifying ? 'Sending Email...' : `Email ${supplierTarget}`}</span>
+                                      </button>
+                                    );
+                                  }
+
                                   return (
                                     <span
                                       className={`inline-flex flex-wrap items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold ${
@@ -1456,19 +1481,21 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
                                           Unverified PHP Alert → {supplierTarget} (0 Admin Copy)
                                         </span>
                                       )}
-                                      {!isFullyVerified && (
-                                        <button
-                                          type="button"
-                                          disabled={isReverifying}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            void handleReverifyMessageAlert(msg);
-                                          }}
-                                          className="ml-1 rounded bg-white/20 px-1.5 py-0.2 text-[9px] font-extrabold text-white hover:bg-white/30 disabled:opacity-60"
-                                        >
-                                          {isReverifying ? 'Sending...' : 'Re-verify & Copy Admin'}
-                                        </button>
-                                      )}
+                                      <button
+                                        type="button"
+                                        disabled={isReverifying}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          void handleReverifyMessageAlert(msg);
+                                        }}
+                                        className="ml-1 rounded bg-white/20 px-1.5 py-0.2 text-[9px] font-extrabold text-white hover:bg-white/30 disabled:opacity-60"
+                                      >
+                                        {isReverifying
+                                          ? 'Sending...'
+                                          : isFullyVerified
+                                            ? 'Resend'
+                                            : 'Re-verify & Copy Admin'}
+                                      </button>
                                     </span>
                                   );
                                 })()}

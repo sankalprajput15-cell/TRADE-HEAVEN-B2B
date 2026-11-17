@@ -27,10 +27,12 @@ export interface SmtpDispatchResult {
  */
 export function normalizeRecipientEmail(rawEmail: string): string {
   const clean = (rawEmail || '').toLowerCase().trim();
-  if (clean.startsWith('mail-') && clean.includes('@')) {
-    return clean.slice(5);
+  const withoutPrefix =
+    clean.startsWith('mail-') && clean.includes('@') ? clean.slice(5) : clean;
+  if (withoutPrefix.endsWith('@mpcommoditybroker.com')) {
+    return withoutPrefix.replace(/@mpcommoditybroker\.com$/i, '@mpcommoditybrokers.com');
   }
-  return clean;
+  return withoutPrefix;
 }
 
 export type EmailDispatchType = 'AUTOMATED' | 'MANUAL';
@@ -3810,6 +3812,65 @@ export class ServerDeliveryQueueManager {
       }
       this.saveTelemetryToDisk();
     }
+  }
+
+  /**
+   * Records an external / PHP relay dispatch in the MailSuite email history log
+   * so CompanyEmailHistorySection always shows chat alerts and relay receipts.
+   */
+  public recordExternalDispatch(params: {
+    recipient: string;
+    recipientName?: string;
+    companyName?: string;
+    companyId?: string;
+    subject: string;
+    text?: string;
+    html?: string;
+    success: boolean;
+    deliveryMode?: SerializedDeliveryReceipt['deliveryMode'];
+    category?: EmailHistoryCategory;
+    dispatchType?: EmailDispatchType;
+    summaryText?: string;
+    error?: string;
+  }): void {
+    const cleanEmail = normalizeRecipientEmail(params.recipient);
+    if (!cleanEmail || !cleanEmail.includes('@')) return;
+    const nowIso = new Date().toISOString();
+    const trackingId = `ms-trk-ext-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const receipt: SerializedDeliveryReceipt = {
+      recipient: cleanEmail,
+      success: params.success,
+      deliveryMode: params.deliveryMode || 'PHP_MAIL_RELAY',
+      messageId: `<relay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@tradeheaven.net>`,
+      trackingId,
+      trackingPixelUrl: `${getPublicTrackingBaseUrl()}/api/v1/track/open/${trackingId}.gif`,
+      dispatchedAt: nowIso,
+      enforcedDelayMs: 0,
+      error: params.error
+    };
+    const task: QueuedEmailTask = {
+      id: `ext-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      recipient: cleanEmail,
+      mailOptions: {
+        from: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+        replyTo: 'help@tradeheaven.net',
+        to: cleanEmail,
+        subject: params.subject,
+        text: params.text || '',
+        html: params.html || ''
+      },
+      metadata: {
+        dispatchType: params.dispatchType || 'AUTOMATED',
+        category: params.category || 'BUYER_INQUIRY',
+        companyName: params.companyName,
+        companyId: params.companyId,
+        recipientName: params.recipientName,
+        summaryText: params.summaryText
+      },
+      enqueuedAt: Date.now(),
+      resolve: () => {}
+    };
+    this.recordReceipt(receipt, task);
   }
 
   private normalizeHistoryEntryTracking(entry: CompanyEmailHistoryEntry): CompanyEmailHistoryEntry {

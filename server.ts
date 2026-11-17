@@ -25,7 +25,8 @@ import {
   automatedSmtpService,
   normalizeRecipientEmail,
   serverDeliveryQueueManager,
-  setDynamicPublicTrackingBaseUrl
+  setDynamicPublicTrackingBaseUrl,
+  type EmailHistoryCategory
 } from './src/services/smtpService';
 import { MOCK_COMPANIES } from './src/data/mockData';
 
@@ -1811,7 +1812,28 @@ function loadChatVerifiedAuditStore() {
           serverVerifiedConvReadsByConvId = parsed.reads;
         }
         if (parsed.emailAlerts && typeof parsed.emailAlerts === 'object') {
-          serverVerifiedEmailAlertsByMsgId = parsed.emailAlerts;
+          const alerts: Record<string, VerifiedEmailAlertRecord> = {};
+          let migrated = false;
+          for (const [mid, rawRec] of Object.entries(parsed.emailAlerts as Record<string, VerifiedEmailAlertRecord>)) {
+            if (!rawRec || typeof rawRec !== 'object') continue;
+            const rawSup = String(rawRec.supplierEmail || '').toLowerCase().trim();
+            const normSup = normalizeRecipientEmail(rawSup);
+            if (rawSup && normSup && rawSup !== normSup) {
+              alerts[mid] = {
+                ...rawRec,
+                supplierEmail: normSup,
+                supplierMailAccepted: false,
+                error: `Corrected typo domain ${rawSup} -> ${normSup}; queued for verified delivery`
+              };
+              migrated = true;
+            } else {
+              alerts[mid] = rawRec;
+            }
+          }
+          serverVerifiedEmailAlertsByMsgId = alerts;
+          if (migrated) {
+            saveChatVerifiedAuditStore();
+          }
         }
       }
     }
@@ -7749,7 +7771,15 @@ function maskChatAddress(city: string, country: string): string {
 }
 
 function sanitizeChatConversationForClient(conv: any, viewMode: 'admin' | 'supplier'): any {
-  if (!conv || typeof conv !== 'object' || !conv.identity) return conv;
+  if (!conv || typeof conv !== 'object') return conv;
+  const normalizedSupplierEmail = conv.supplierEmail
+    ? normalizeRecipientEmail(String(conv.supplierEmail))
+    : conv.supplierEmail;
+  if (!conv.identity) {
+    return normalizedSupplierEmail !== conv.supplierEmail
+      ? { ...conv, supplierEmail: normalizedSupplierEmail }
+      : conv;
+  }
   const idn = conv.identity;
   const rawCountry = stripLegacyProtectionTags(idn.country || 'United States') || 'United States';
   const rawCity = stripLegacyProtectionTags(idn.city || '');
@@ -7763,6 +7793,7 @@ function sanitizeChatConversationForClient(conv: any, viewMode: 'admin' | 'suppl
 
   return {
     ...conv,
+    supplierEmail: normalizedSupplierEmail,
     identity: {
       ...idn,
       country: rawCountry,
@@ -7784,6 +7815,7 @@ function buildConversationView(conv: ServerChatConversationRecord, viewMode: 'ad
   const rawCompany = identity?.companyName || '';
   const rawAddress = identity?.address || '';
   const isSupplierView = viewMode === 'supplier';
+  const normalizedSupplierEmail = normalizeRecipientEmail(conv.supplierEmail || '');
 
   let unreadForAdmin = 0;
   let unreadForSupplier = 0;
@@ -7803,7 +7835,7 @@ function buildConversationView(conv: ServerChatConversationRecord, viewMode: 'ad
     identityId: conv.identityId,
     supplierId: conv.supplierId,
     supplierName: conv.supplierName,
-    supplierEmail: conv.supplierEmail,
+    supplierEmail: normalizedSupplierEmail,
     supplierCompany: conv.supplierCompany,
     supplierCountry: conv.supplierCountry,
     showPhone: Boolean(conv.showPhone),
@@ -7886,7 +7918,9 @@ function matchesSupplierConversation(
   supplierEmail: string
 ): boolean {
   if (!supplierId && !supplierEmail) return false;
-  if (supplierEmail && c.supplierEmail && c.supplierEmail.trim().toLowerCase() === supplierEmail) {
+  const normConvEmail = normalizeRecipientEmail(String(c.supplierEmail || ''));
+  const normReqEmail = normalizeRecipientEmail(String(supplierEmail || ''));
+  if (normReqEmail && normConvEmail && normConvEmail === normReqEmail) {
     return true;
   }
   if (supplierId && c.supplierId) {
@@ -8142,7 +8176,19 @@ async function processUnseenChatAlerts(
       }, 0);
 
       const cleanSupplierEmail = normalizeRecipientEmail(String(conv.supplierEmail || ''));
-      const auditLogin = cleanSupplierEmail ? serverVerifiedLoginsByEmail[cleanSupplierEmail] : undefined;
+      let targetSupplierEmail = cleanSupplierEmail;
+      if (!targetSupplierEmail && conv.supplierId) {
+        const matchedUser = serverUsersStore.find(u => u.id === conv.supplierId);
+        if (matchedUser?.email) {
+          targetSupplierEmail = normalizeRecipientEmail(matchedUser.email);
+        }
+      }
+      const resolvedSupplierCompanyId =
+        targetSupplierEmail.includes('mpcommoditybrokers')
+          ? 'comp-melissa-mpcommodity'
+          : String(conv.supplierId || '').trim() || undefined;
+
+      const auditLogin = targetSupplierEmail ? serverVerifiedLoginsByEmail[targetSupplierEmail] : undefined;
       const lastVerifiedLoginMs = auditLogin?.lastLoginAt ? new Date(auditLogin.lastLoginAt).getTime() : 0;
       const verifiedReadIdsSet = new Set<string>(serverVerifiedConvReadsByConvId[convId]?.verifiedMessageIds || []);
 
@@ -8166,11 +8212,22 @@ async function processUnseenChatAlerts(
         if (!Number.isFinite(createdMs) || nowMs - createdMs < thresholdMs) continue;
 
         const existingReceipt = serverVerifiedEmailAlertsByMsgId[String(m.id)];
+        const existingReceiptMatchesEmail = Boolean(
+          existingReceipt &&
+            targetSupplierEmail &&
+            normalizeRecipientEmail(existingReceipt.supplierEmail || '') === targetSupplierEmail
+        );
         if (m.senderRole === 'buyer_identity') {
           if (isBuyerMsgConfirmedRead(m)) continue;
-          if (existingReceipt?.supplierMailAccepted && existingReceipt?.adminCopyAccepted) continue;
+          if (
+            existingReceipt?.supplierMailAccepted &&
+            existingReceipt?.adminCopyAccepted &&
+            existingReceiptMatchesEmail
+          ) {
+            continue;
+          }
 
-          if (!m.emailAlertSent && !existingReceipt) {
+          if ((!m.emailAlertSent && !existingReceipt) || (existingReceipt && !existingReceipt.supplierMailAccepted)) {
             dueFullBuyerMsgs.push(m);
           } else if (manualTrigger && m.emailAlertSent && !existingReceipt?.adminCopyAccepted) {
             dueAdminCopyOnlyMsgs.push(m);
@@ -8223,14 +8280,6 @@ async function processUnseenChatAlerts(
           .join('\n')
       });
 
-      let targetSupplierEmail = cleanSupplierEmail;
-      if (!targetSupplierEmail && conv.supplierId) {
-        const matchedUser = serverUsersStore.find(u => u.id === conv.supplierId);
-        if (matchedUser?.email) {
-          targetSupplierEmail = normalizeRecipientEmail(matchedUser.email);
-        }
-      }
-
       // A. Un-alerted buyer messages -> Send verified SMTP to Supplier + Admin Copy
       if (dueFullBuyerMsgs.length > 0 && targetSupplierEmail && targetSupplierEmail.includes('@')) {
         dueFullBuyerMsgs.sort((a, b) => parseChatTimestampMs(a.createdAt) - parseChatTimestampMs(b.createdAt));
@@ -8270,7 +8319,10 @@ async function processUnseenChatAlerts(
           text,
           html,
           recipientName: conv.supplierName || conv.supplierCompany || 'Supplier',
-          companyName: conv.supplierCompany || 'Trade Heaven Supplier'
+          companyName: conv.supplierCompany || 'Trade Heaven Supplier',
+          companyId: resolvedSupplierCompanyId,
+          category: 'BUYER_INQUIRY',
+          summaryText: `BUYER CHAT ALERT SENT TO ${targetSupplierEmail}: ${dueFullBuyerMsgs.length} unread message(s) from ${buyerName} (${buyerCountry}). ${snippets.text.replace(/\n+/g, ' ')}`
         });
 
         const adminCopySubject = `[Admin Copy] ${subject} -> ${targetSupplierEmail}`;
@@ -8282,8 +8334,11 @@ async function processUnseenChatAlerts(
             subject: adminCopySubject,
             text: `${text}\n\n--- Supplier Recipient: ${targetSupplierEmail} (Accepted=${supplierDispatch.accepted}) ---`,
             html,
-            recipientName: 'Trade Heaven Admin',
-            companyName: 'Trade Heaven Operations'
+            recipientName: `Trade Heaven Admin (Copy for ${conv.supplierName || targetSupplierEmail})`,
+            companyName: conv.supplierCompany || 'Trade Heaven Operations',
+            companyId: resolvedSupplierCompanyId,
+            category: 'BUYER_INQUIRY',
+            summaryText: `[ADMIN COPY] Buyer chat alert for ${targetSupplierEmail} (${buyerName}): ${snippets.text.replace(/\n+/g, ' ')}`
           });
           if (adminRes.accepted) adminCopyAccepted = true;
           else if (adminRes.error && !adminCopyErr) adminCopyErr = adminRes.error;
@@ -9155,7 +9210,15 @@ async function forwardApiPhpToLiveUpstream(
         headers['Content-Type'] = `multipart/form-data; boundary=${boundary}`;
       } else {
         headers['Content-Type'] = 'application/json';
-        bodyBuffer = Buffer.from(JSON.stringify(req.body || {}), 'utf8');
+        const forwardPayload =
+          req.body && typeof req.body === 'object' ? { ...req.body } : {};
+        if (forwardPayload.supplierEmail) {
+          forwardPayload.supplierEmail = normalizeRecipientEmail(String(forwardPayload.supplierEmail));
+        }
+        if (forwardPayload.supplier_email) {
+          forwardPayload.supplier_email = normalizeRecipientEmail(String(forwardPayload.supplier_email));
+        }
+        bodyBuffer = Buffer.from(JSON.stringify(forwardPayload), 'utf8');
       }
     }
 
@@ -9172,9 +9235,13 @@ async function forwardApiPhpToLiveUpstream(
     // Strict post-filter & clean masking normalization for supplier conversations
     if (action === 'get_chat_conversations' && Array.isArray(parsed?.data)) {
       const viewMode = String(searchParams.get('view_mode') || req.body?.view_mode || 'admin').toLowerCase() === 'supplier' ? 'supplier' : 'admin';
+      parsed.data = parsed.data.map((c: any) => ({
+        ...c,
+        supplierEmail: c?.supplierEmail ? normalizeRecipientEmail(String(c.supplierEmail)) : c?.supplierEmail
+      }));
       if (viewMode === 'supplier') {
         const sId = String(searchParams.get('supplier_id') || req.body?.supplier_id || '').trim();
-        const sEmail = String(searchParams.get('supplier_email') || req.body?.supplier_email || '').trim().toLowerCase();
+        const sEmail = normalizeRecipientEmail(String(searchParams.get('supplier_email') || req.body?.supplier_email || ''));
         parsed.data = parsed.data.filter((c: any) => matchesSupplierConversation(c, sId, sEmail));
       }
       parsed.data = parsed.data.map((c: any) => sanitizeChatConversationForClient(c, viewMode));
@@ -9184,28 +9251,31 @@ async function forwardApiPhpToLiveUpstream(
     // and merge any non-deleted seeded/local platform users (e.g. Mark Johnson) missing from upstream DB
     if ((action === 'get_users' || action === 'users') && Array.isArray(parsed?.data)) {
       const byEmail = new Map(
-        serverUsersStore.map((u) => [String(u.email || '').toLowerCase().trim(), u])
+        serverUsersStore.map((u) => [normalizeRecipientEmail(String(u.email || '')), u])
       );
       const presentEmails = new Set<string>();
       const presentIds = new Set<string>();
 
       parsed.data = parsed.data
         .filter((row: any) => {
-          const em = String(row?.email || '').toLowerCase().trim();
+          const em = normalizeRecipientEmail(String(row?.email || ''));
           const id = String(row?.id || '').trim();
           if (em && serverDeletedUsersRegistry.emails.has(em)) return false;
           if (id && serverDeletedUsersRegistry.ids.has(id)) return false;
           return true;
         })
         .map((row: any) => {
-          const em = String(row?.email || '').toLowerCase().trim();
+          const em = normalizeRecipientEmail(String(row?.email || ''));
           const id = String(row?.id || '').trim();
           if (em) presentEmails.add(em);
           if (id) presentIds.add(id);
           const localMatch = em ? byEmail.get(em) : undefined;
-          if (!localMatch) return row;
+          if (!localMatch) {
+            return em && em !== row?.email ? { ...row, email: em } : row;
+          }
           return {
             ...row,
+            email: em || row.email,
             name: localMatch.name || row.name,
             companyName: localMatch.companyName || row.companyName || row.company_name,
             company_name: localMatch.companyName || row.company_name || row.companyName,
@@ -9363,6 +9433,12 @@ async function forwardApiPhpToLiveUpstream(
 
       if (method === 'POST') {
         emitLocalChatEventFromUpstream(action, parsed, (req.body || {}) as Record<string, any>);
+        if (action === 'send_chat_message' && parsed?.data?.senderRole === 'buyer_identity' && parsed?.data?.conversationId) {
+          const scheduledConvId = String(parsed.data.conversationId);
+          setTimeout(() => {
+            void processUnseenChatAlerts(60, { conversationId: scheduledConvId });
+          }, 62000);
+        }
       }
     }
 
@@ -9383,11 +9459,23 @@ async function dispatchVerifiedChatAlertEmail(params: {
   html: string;
   recipientName: string;
   companyName: string;
+  companyId?: string;
+  category?: EmailHistoryCategory;
+  summaryText?: string;
 }): Promise<{ accepted: boolean; deliveryMode: 'LIVE_SMTP' | 'PHP_MAIL_RELAY' | 'UNCONFIGURED'; error?: string }> {
   const cleanEmail = normalizeRecipientEmail(params.toEmail);
   if (!cleanEmail || !cleanEmail.includes('@')) {
     return { accepted: false, deliveryMode: 'UNCONFIGURED', error: 'Invalid recipient email address' };
   }
+
+  const resolvedCompanyId =
+    params.companyId ||
+    (cleanEmail.includes('mpcommoditybrokers')
+      ? 'comp-melissa-mpcommodity'
+      : cleanEmail.includes('zac@otec') || cleanEmail.includes('fadetech')
+        ? 'comp-zac-importation-fadetech'
+        : undefined);
+  const category: EmailHistoryCategory = params.category || 'BUYER_INQUIRY';
 
   if (automatedSmtpService.isSmtpConfigured()) {
     try {
@@ -9398,9 +9486,11 @@ async function dispatchVerifiedChatAlertEmail(params: {
         text: params.text,
         html: params.html,
         dispatchType: 'AUTOMATED',
-        category: 'SYSTEM_ALERT',
+        category,
         recipientName: params.recipientName,
         companyName: params.companyName,
+        companyId: resolvedCompanyId,
+        summaryText: params.summaryText,
         skipLegacyInquiryRelay: true
       });
       if (receipt.success && receipt.deliveryMode === 'LIVE_SMTP') {
@@ -9438,16 +9528,48 @@ async function dispatchVerifiedChatAlertEmail(params: {
       );
       const parsed = JSON.parse(relayRes.body.toString('utf8'));
       const ok = Boolean(relayRes.status >= 200 && relayRes.status < 300 && parsed?.success === true);
+      const relayErr = ok ? undefined : String(parsed?.message || 'Domain PHP mail() rejected or failed delivery');
+      serverDeliveryQueueManager.recordExternalDispatch({
+        recipient: cleanEmail,
+        recipientName: params.recipientName,
+        companyName: params.companyName,
+        companyId: resolvedCompanyId,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+        success: ok,
+        deliveryMode: 'PHP_MAIL_RELAY',
+        category,
+        dispatchType: 'AUTOMATED',
+        summaryText: params.summaryText,
+        error: relayErr
+      });
       return {
         accepted: ok,
         deliveryMode: 'PHP_MAIL_RELAY',
-        error: ok ? undefined : String(parsed?.message || 'Domain PHP mail() rejected or failed delivery')
+        error: relayErr
       };
     } catch (err: any) {
+      const errMsg = err?.message || 'Upstream domain mail relay unreachable';
+      serverDeliveryQueueManager.recordExternalDispatch({
+        recipient: cleanEmail,
+        recipientName: params.recipientName,
+        companyName: params.companyName,
+        companyId: resolvedCompanyId,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+        success: false,
+        deliveryMode: 'PHP_MAIL_RELAY',
+        category,
+        dispatchType: 'AUTOMATED',
+        summaryText: params.summaryText,
+        error: errMsg
+      });
       return {
         accepted: false,
         deliveryMode: 'PHP_MAIL_RELAY',
-        error: err?.message || 'Upstream domain mail relay unreachable'
+        error: errMsg
       };
     }
   }
@@ -11517,6 +11639,11 @@ Message: ${formattedInquiry.message}`
     }
     persistChatSystemStore();
     broadcastChatEvent('chat:new_message', { conversationId: convId, message: msg });
+    if (senderRole === 'buyer_identity') {
+      setTimeout(() => {
+        void processUnseenChatAlerts(60, { conversationId: convId });
+      }, 62000);
+    }
     return res.json({ status: 'success', success: true, data: msg });
   }
 
@@ -11869,13 +11996,21 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
   </body></html>`;
   const text = `Urgent Deal Update from ${buyerName} (${buyerCountry}) on Trade Heaven:\n\nSign in to access secure inquiry details.\n\n${messageText}\n\nLogin to Reply & View Contact Details: ${replyLink}`;
 
+  const resolvedCompanyId =
+    supplierEmail.includes('mpcommoditybrokers')
+      ? 'comp-melissa-mpcommodity'
+      : String(body.supplierId || '').trim() || undefined;
+
   const supplierResult = await dispatchVerifiedChatAlertEmail({
     toEmail: supplierEmail,
     subject,
     text,
     html,
     recipientName: supplierName,
-    companyName: supplierCompany
+    companyName: supplierCompany,
+    companyId: resolvedCompanyId,
+    category: 'BUYER_INQUIRY',
+    summaryText: `BUYER CHAT ALERT SENT TO ${supplierEmail}: Unread message from ${buyerName} (${buyerCountry}). Preview: ${messageText || '[Attachment]'}`
   });
 
   const adminRecipients = getAlertRecipients();
@@ -11888,8 +12023,11 @@ app.post('/api/v1/admin/chat-reverify-email-alert', async (req, res) => {
       subject: adminCopySubject,
       text: `${text}\n\n--- Dispatched To Supplier: ${supplierEmail} (Accepted=${supplierResult.accepted}) ---`,
       html,
-      recipientName: 'Trade Heaven Admin',
-      companyName: 'Trade Heaven Operations'
+      recipientName: `Trade Heaven Admin (Copy for ${supplierName})`,
+      companyName: supplierCompany,
+      companyId: resolvedCompanyId,
+      category: 'BUYER_INQUIRY',
+      summaryText: `[ADMIN COPY] Buyer chat alert for ${supplierEmail} (${buyerName}): ${messageText || '[Attachment]'}`
     });
     if (adminRes.accepted) adminCopyAccepted = true;
     else if (adminRes.error && !adminErr) adminErr = adminRes.error;

@@ -562,6 +562,9 @@ function normalizeAuthEmail($rawEmail) {
     if (strpos($clean, 'mail-') === 0 && strpos($clean, '@') !== false) {
         $clean = substr($clean, 5);
     }
+    if (substr($clean, -strlen('@mpcommoditybroker.com')) === '@mpcommoditybroker.com') {
+        $clean = substr($clean, 0, -strlen('@mpcommoditybroker.com')) . '@mpcommoditybrokers.com';
+    }
     return $clean;
 }
 
@@ -4330,13 +4333,13 @@ switch ($action) {
 
                     if ($sender_role === 'buyer_identity') {
                         // Buyer sent -> Supplier hasn't read within 60s (+ send Admin Copy so Admin can verify delivery)
-                        $target_email = trim(strtolower((string)($meta['supplier_email'] ?? '')));
+                        $target_email = normalizeAuthEmail((string)($meta['supplier_email'] ?? ''));
                         if ($target_email === '' && !empty($meta['supplier_id'])) {
                             try {
                                 $uStmt = $pdo->prepare("SELECT email FROM users WHERE id = ? LIMIT 1");
                                 $uStmt->execute([$meta['supplier_id']]);
                                 $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
-                                if (!empty($uRow['email'])) $target_email = trim(strtolower((string)$uRow['email']));
+                                if (!empty($uRow['email'])) $target_email = normalizeAuthEmail((string)$uRow['email']);
                             } catch (Exception $e) {}
                         }
                         if ($target_email !== '' && filter_var($target_email, FILTER_VALIDATE_EMAIL)) {
