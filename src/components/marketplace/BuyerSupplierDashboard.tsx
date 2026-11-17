@@ -2414,13 +2414,26 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
         companyName={effectiveUser?.companyName || (effectiveUser as any)?.company || 'Trade Heaven Supplier'}
         onTriggerUpgrade={() => {
           setShowUpgradeRequiredModal(false);
-          if (onOpenUpgradeModal) {
-            onOpenUpgradeModal();
-          } else {
-            window.dispatchEvent(
-              new CustomEvent('tradeheaven_open_membership_upgrade_modal')
-            );
-          }
+          window.dispatchEvent(
+            new CustomEvent('tradeheaven_open_payment_checkout', {
+              detail: {
+                planId: 'vip-business-plan',
+                title: 'VIP Business Plan (Annual — $6,100)',
+                planName: 'VIP Business Plan',
+                description: 'VIP Business Plan (Annual) • Direct Treasury Payout & SWIFT Wire Liquidity Upgrade',
+                amountUsd: 6100,
+                amount: 6100,
+                type: 'SUBSCRIPTION',
+                currency: 'USD',
+                billingCycle: 'ANNUAL',
+                supplierCompany: effectiveUser?.companyName || (effectiveUser as any)?.company || 'Trade Heaven Supplier',
+                companyName: effectiveUser?.companyName || (effectiveUser as any)?.company || 'Trade Heaven Supplier',
+                clientEmail: effectiveUser?.email || 'procurement@tradeheaven.net',
+                billingName: effectiveUser?.name || 'Supplier Member',
+                preferredPaymentMethod: 'WIRE_TRANSFER'
+              }
+            })
+          );
         }}
       />
     </div>

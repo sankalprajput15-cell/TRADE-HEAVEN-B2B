@@ -994,7 +994,24 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
         onTriggerUpgrade={() => {
           setShowUpgradeRequiredModal(false);
           window.dispatchEvent(
-            new CustomEvent('tradeheaven_open_membership_upgrade_modal')
+            new CustomEvent('tradeheaven_open_payment_checkout', {
+              detail: {
+                planId: 'vip-business-plan',
+                title: 'VIP Business Plan (Annual — $6,100)',
+                planName: 'VIP Business Plan',
+                description: 'VIP Business Plan (Annual) • Direct Treasury Payout & SWIFT Wire Liquidity Upgrade',
+                amountUsd: 6100,
+                amount: 6100,
+                type: 'SUBSCRIPTION',
+                currency: 'USD',
+                billingCycle: 'ANNUAL',
+                supplierCompany: effectiveUser?.companyName || activeWallet?.company_name || 'Trade Heaven Supplier',
+                companyName: effectiveUser?.companyName || activeWallet?.company_name || 'Trade Heaven Supplier',
+                clientEmail: effectiveUser?.email || 'procurement@tradeheaven.net',
+                billingName: effectiveUser?.name || 'Supplier Member',
+                preferredPaymentMethod: 'WIRE_TRANSFER'
+              }
+            })
           );
         }}
       />
