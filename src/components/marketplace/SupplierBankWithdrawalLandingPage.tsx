@@ -27,19 +27,101 @@ import {
   FileText,
   Building2,
   CreditCard,
-  BookOpen
+  BookOpen,
+  Crown,
+  ArrowRight
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import {
+  UpgradeRequiredModal,
+  triggerUpgradeRequiredModal
+} from '../modals/UpgradeRequiredModal';
+import { MembershipUpgradeModal } from '../modals/MembershipUpgradeModal';
 
 interface SupplierBankWithdrawalLandingPageProps {
   currentUser: AuthUser | null;
   selectedCurrency?: Currency;
   onNavigate: (view: any) => void;
+  onOpenUpgradeModal?: () => void;
 }
 
 export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalLandingPageProps> = ({
   currentUser,
-  onNavigate
+  selectedCurrency = 'USD',
+  onNavigate,
+  onOpenUpgradeModal
 }) => {
+  const { user: authUser, currentUser: contextUser } = useAuth();
+  const effectiveUser = contextUser || authUser || currentUser;
+
+  const currentTier = useMemo(() => {
+    return String(
+      effectiveUser?.tier ||
+      effectiveUser?.plan ||
+      effectiveUser?.membershipStatus ||
+      'Basic Plan'
+    );
+  }, [effectiveUser]);
+
+  const isVipOrEnterprise = useMemo(() => {
+    if (!effectiveUser) return false;
+    const tierUpper = String(effectiveUser.tier || '').trim().toUpperCase();
+    const planUpper = String(effectiveUser.plan || '').trim().toUpperCase();
+    const statusUpper = String(effectiveUser.membershipStatus || '').trim().toUpperCase();
+
+    const isDirectTier = tierUpper === 'VIP' || tierUpper === 'ENTERPRISE';
+    const isDirectPlan = planUpper.includes('VIP') || planUpper.includes('ENTERPRISE');
+    const isDirectStatus = statusUpper === 'VIP' || statusUpper === 'ENTERPRISE';
+
+    const isExplicitBasic =
+      tierUpper === 'BASIC' ||
+      tierUpper === 'BASIC PLAN' ||
+      tierUpper === 'FREE' ||
+      tierUpper === 'SILVER' ||
+      tierUpper === 'GOLD' ||
+      tierUpper === 'PLATINUM';
+
+    if (isExplicitBasic && !tierUpper.includes('VIP') && !tierUpper.includes('ENTERPRISE')) {
+      return false;
+    }
+
+    return isDirectTier || isDirectPlan || isDirectStatus;
+  }, [effectiveUser]);
+
+  const [showUpgradeRequiredModal, setShowUpgradeRequiredModal] = useState<boolean>(() => {
+    return Boolean(effectiveUser && !isVipOrEnterprise);
+  });
+  const [showMembershipUpgradeModal, setShowMembershipUpgradeModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (effectiveUser && !isVipOrEnterprise) {
+      setShowUpgradeRequiredModal(true);
+    }
+  }, [effectiveUser, isVipOrEnterprise]);
+
+  useEffect(() => {
+    const handleUpgradeModalReq = () => {
+      if (!isVipOrEnterprise) {
+        setShowUpgradeRequiredModal(true);
+      }
+    };
+    window.addEventListener('tradeheaven_open_upgrade_required_modal', handleUpgradeModalReq);
+    return () => window.removeEventListener('tradeheaven_open_upgrade_required_modal', handleUpgradeModalReq);
+  }, [isVipOrEnterprise]);
+
+  const handleTriggerMembershipUpgrade = () => {
+    setShowUpgradeRequiredModal(false);
+    setShowMembershipUpgradeModal(true);
+    if (onOpenUpgradeModal) {
+      onOpenUpgradeModal();
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('tradeheaven_open_membership_upgrade_modal')
+      );
+    }
+  };
+
   const [state, setState] = useState<MediationSystemState | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [savedBanks, setSavedBanks] = useState<SavedSupplierBankAccount[]>(() => getSavedSupplierBanks());
@@ -315,6 +397,43 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
           </div>
         </div>
 
+        {/* Tier Upgrade Required Banner if user is not VIP or Enterprise */}
+        {!isVipOrEnterprise && (
+          <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-600/15 border-2 border-amber-400 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                    Upgrade Required
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">
+                    Current Tier: <strong className="text-slate-800">{currentTier}</strong>
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  VIP or Enterprise Membership Tier Required for Bank Withdrawals
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed max-w-3xl">
+                  VIP plan member are eligible to do it. Treasury payouts and international SWIFT releases are restricted to verified VIP and Enterprise accounts. Upgrade today to unlock direct bank wire disbursements.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowUpgradeRequiredModal(true)}
+              className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-sm cursor-pointer shrink-0 self-stretch md:self-auto justify-center"
+            >
+              <Crown className="w-4 h-4 text-amber-200" />
+              <span>View Upgrade Requirements</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Main Interactive Supplier Bank Details & Withdrawal Panel */}
         <SupplierBankWithdrawalPanel
           currentUser={currentUser}
@@ -400,6 +519,37 @@ export const SupplierBankWithdrawalLandingPage: React.FC<SupplierBankWithdrawalL
           </div>
         </div>
       </div>
+
+      {/* Upgrade Required Modal */}
+      <UpgradeRequiredModal
+        isOpen={showUpgradeRequiredModal}
+        onClose={() => setShowUpgradeRequiredModal(false)}
+        currentTier={currentTier}
+        userName={effectiveUser?.name || 'Member'}
+        companyName={effectiveUser?.companyName || activeWallet?.company_name || 'Trade Heaven Supplier'}
+        onTriggerUpgrade={handleTriggerMembershipUpgrade}
+      />
+
+      {/* Membership Upgrade Modal triggered by Upgrade Required Modal */}
+      <MembershipUpgradeModal
+        isOpen={showMembershipUpgradeModal}
+        onClose={() => setShowMembershipUpgradeModal(false)}
+        selectedCurrency={selectedCurrency}
+        onSelectPlanCheckout={(checkoutData) => {
+          setShowMembershipUpgradeModal(false);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('tradeheaven_open_payment_checkout', {
+                detail: { checkoutData }
+              })
+            );
+          }
+        }}
+        onViewAllPlans={() => {
+          setShowMembershipUpgradeModal(false);
+          onNavigate('PREMIUM_MEMBERSHIP');
+        }}
+      />
     </div>
   );
 };

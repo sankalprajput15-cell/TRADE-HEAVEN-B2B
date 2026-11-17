@@ -28,6 +28,7 @@ import {
   localAmountToPaise,
   paiseToLocalAmount,
 } from '../../utils/entityCurrency';
+import { AuthUser } from '../../types';
 import {
   SavedSupplierBankAccount,
   SupplierWithdrawalRequestItem,
@@ -37,16 +38,24 @@ import {
   VipWithdrawalRequiredModal,
   triggerVipWithdrawalModal,
 } from '../modals/VipWithdrawalRequiredModal';
+import {
+  UpgradeRequiredModal,
+  triggerUpgradeRequiredModal
+} from '../modals/UpgradeRequiredModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface SupplierBankAccountManagementProps {
-  currentUser?: {
+  currentUser?: (Partial<AuthUser> & {
     id?: string;
-    name: string;
+    name?: string;
     company?: string;
+    companyName?: string;
     email?: string;
-    role?: string;
-    tier?: string;
-  } | null;
+    role?: any;
+    tier?: any;
+    plan?: string;
+    membershipStatus?: any;
+  }) | null;
   mediationState?: MediationSystemState | null;
 }
 
@@ -77,8 +86,9 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
   const mediationState = propMediationState || localMediationState;
 
   const entityId = currentUser?.id || 'comp-melissa-mpcommodity';
+  const effectiveCompanyName = (currentUser as any)?.companyName || (currentUser as any)?.company;
   const supplierCompany =
-    currentUser?.company || currentUser?.name || 'Verified Supplier Corporate Account';
+    effectiveCompanyName || currentUser?.name || 'Verified Supplier Corporate Account';
 
   const activeWallet = useMemo(() => {
     if (!mediationState) return null;
@@ -87,8 +97,8 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
         (w) =>
           w.entity_id === entityId ||
           w.entity_id.includes(entityId) ||
-          (currentUser?.company &&
-            w.company_name.toLowerCase().includes(currentUser.company.toLowerCase()))
+          (effectiveCompanyName &&
+            w.company_name.toLowerCase().includes(effectiveCompanyName.toLowerCase()))
       ) ||
       mediationState.wallets.find((w) => w.wallet_type === 'SUPPLIER' || (w as any).entity_type === 'SUPPLIER') ||
       mediationState.wallets[1] ||
@@ -147,17 +157,56 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
   });
   const [withdrawReference, setWithdrawReference] = useState('ORD-ESC-2026-8841');
   const [submittingWithdrawal, setSubmittingWithdrawal] = useState(false);
+  const { user: authUser, currentUser: contextUser } = useAuth();
+  const effectiveUser = contextUser || authUser || currentUser;
+
+  const currentTier = useMemo(() => {
+    return String(
+      effectiveUser?.tier ||
+      effectiveUser?.plan ||
+      effectiveUser?.membershipStatus ||
+      'Basic Plan'
+    );
+  }, [effectiveUser]);
+
+  const isVipOrEnterprise = useMemo(() => {
+    if (!effectiveUser) return false;
+    const tierUpper = String(effectiveUser.tier || '').trim().toUpperCase();
+    const planUpper = String(effectiveUser.plan || '').trim().toUpperCase();
+    const statusUpper = String(effectiveUser.membershipStatus || '').trim().toUpperCase();
+
+    const isDirectTier = tierUpper === 'VIP' || tierUpper === 'ENTERPRISE';
+    const isDirectPlan = planUpper.includes('VIP') || planUpper.includes('ENTERPRISE');
+    const isDirectStatus = statusUpper === 'VIP' || statusUpper === 'ENTERPRISE';
+
+    const isExplicitBasic =
+      tierUpper === 'BASIC' ||
+      tierUpper === 'BASIC PLAN' ||
+      tierUpper === 'FREE' ||
+      tierUpper === 'SILVER' ||
+      tierUpper === 'GOLD' ||
+      tierUpper === 'PLATINUM';
+
+    if (isExplicitBasic && !tierUpper.includes('VIP') && !tierUpper.includes('ENTERPRISE')) {
+      return false;
+    }
+
+    return isDirectTier || isDirectPlan || isDirectStatus;
+  }, [effectiveUser]);
+
   const [showVipModal, setShowVipModal] = useState<boolean>(false);
+  const [showUpgradeRequiredModal, setShowUpgradeRequiredModal] = useState<boolean>(false);
 
   const isBasicUser = useMemo(() => {
+    if (!isVipOrEnterprise) return true;
     return (
       tradeHeavenMediationService.isBasicPlanStatus(activeWallet?.plan_status, entityId) ||
       entityId.toLowerCase().includes('melissa') ||
-      (currentUser?.email || '').toLowerCase().includes('melissa') ||
-      currentUser?.tier === 'Basic Plan' ||
+      (effectiveUser?.email || '').toLowerCase().includes('melissa') ||
+      String(effectiveUser?.tier || '').toLowerCase().includes('basic') ||
       activeWallet?.plan_status === 'BASIC'
     );
-  }, [activeWallet, entityId, currentUser]);
+  }, [isVipOrEnterprise, activeWallet, entityId, effectiveUser]);
 
   const [withdrawStatus, setWithdrawStatus] = useState<{
     type: 'success' | 'error';
@@ -370,17 +419,23 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
     e.preventDefault();
     setWithdrawStatus(null);
 
-    if (isBasicUser) {
+    if (!isVipOrEnterprise || isBasicUser) {
       setSubmittingWithdrawal(false);
+      setShowUpgradeRequiredModal(true);
+      triggerUpgradeRequiredModal({
+        currentTier,
+        userName: effectiveUser?.name || activeWallet?.entity_name || 'Member',
+        companyName: supplierCompany || 'Verified Supplier'
+      });
       setShowVipModal(true);
       triggerVipWithdrawalModal({
-        userName: currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
+        userName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
         companyName: supplierCompany || 'MP Commodity Brokers Australia Pty Ltd',
         balanceFormatted: nativeAvailFormatted.nativeAmount
       });
       setWithdrawStatus({
         type: 'error',
-        text: 'Withdrawal restricted: VIP plan member are eligible to do it. Basic Plan members cannot withdraw funds to bank accounts.'
+        text: `Withdrawal restricted: VIP plan member are eligible to do it. Your current tier (${currentTier}) requires upgrading to VIP or Enterprise to withdraw funds.`
       });
       return;
     }
@@ -1128,6 +1183,21 @@ export const SupplierBankAccountManagement: React.FC<SupplierBankAccountManageme
         userName={currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios'}
         companyName={supplierCompany || 'MP Commodity Brokers Australia Pty Ltd'}
         balanceFormatted={nativeAvailFormatted.nativeAmount}
+      />
+
+      {/* Upgrade Required Modal triggering MembershipUpgradeModal */}
+      <UpgradeRequiredModal
+        isOpen={showUpgradeRequiredModal}
+        onClose={() => setShowUpgradeRequiredModal(false)}
+        currentTier={currentTier}
+        userName={effectiveUser?.name || 'Member'}
+        companyName={supplierCompany || 'Trade Heaven Supplier'}
+        onTriggerUpgrade={() => {
+          setShowUpgradeRequiredModal(false);
+          window.dispatchEvent(
+            new CustomEvent('tradeheaven_open_membership_upgrade_modal')
+          );
+        }}
       />
     </div>
   );

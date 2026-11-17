@@ -30,10 +30,15 @@ import {
   Crown,
   Lock
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import {
   VipWithdrawalRequiredModal,
   triggerVipWithdrawalModal
 } from '../modals/VipWithdrawalRequiredModal';
+import {
+  UpgradeRequiredModal,
+  triggerUpgradeRequiredModal
+} from '../modals/UpgradeRequiredModal';
 
 export interface SavedSupplierBankAccount {
   id: string;
@@ -196,17 +201,56 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
   const [requestNote, setRequestNote] = useState<string>(
     'Requesting Trade Heaven Treasury to release cleared supplier wallet funds to registered corporate bank account.'
   );
+  const { user: authUser, currentUser: contextUser } = useAuth();
+  const effectiveUser = contextUser || authUser || currentUser;
+
+  const currentTier = useMemo(() => {
+    return String(
+      effectiveUser?.tier ||
+      effectiveUser?.plan ||
+      effectiveUser?.membershipStatus ||
+      'Basic Plan'
+    );
+  }, [effectiveUser]);
+
+  const isVipOrEnterprise = useMemo(() => {
+    if (!effectiveUser) return false;
+    const tierUpper = String(effectiveUser.tier || '').trim().toUpperCase();
+    const planUpper = String(effectiveUser.plan || '').trim().toUpperCase();
+    const statusUpper = String(effectiveUser.membershipStatus || '').trim().toUpperCase();
+
+    const isDirectTier = tierUpper === 'VIP' || tierUpper === 'ENTERPRISE';
+    const isDirectPlan = planUpper.includes('VIP') || planUpper.includes('ENTERPRISE');
+    const isDirectStatus = statusUpper === 'VIP' || statusUpper === 'ENTERPRISE';
+
+    const isExplicitBasic =
+      tierUpper === 'BASIC' ||
+      tierUpper === 'BASIC PLAN' ||
+      tierUpper === 'FREE' ||
+      tierUpper === 'SILVER' ||
+      tierUpper === 'GOLD' ||
+      tierUpper === 'PLATINUM';
+
+    if (isExplicitBasic && !tierUpper.includes('VIP') && !tierUpper.includes('ENTERPRISE')) {
+      return false;
+    }
+
+    return isDirectTier || isDirectPlan || isDirectStatus;
+  }, [effectiveUser]);
+
   const [showVipModal, setShowVipModal] = useState<boolean>(false);
+  const [showUpgradeRequiredModal, setShowUpgradeRequiredModal] = useState<boolean>(false);
 
   const isBasicUser = useMemo(() => {
+    if (!isVipOrEnterprise) return true;
     return (
       tradeHeavenMediationService.isBasicPlanStatus(activeWallet?.plan_status, entityId) ||
       entityId.toLowerCase().includes('melissa') ||
-      (currentUser?.email || '').toLowerCase().includes('melissa') ||
-      String(currentUser?.tier || '').toLowerCase().includes('basic') ||
+      (effectiveUser?.email || '').toLowerCase().includes('melissa') ||
+      String(effectiveUser?.tier || '').toLowerCase().includes('basic') ||
       activeWallet?.plan_status === 'BASIC'
     );
-  }, [activeWallet, entityId, currentUser]);
+  }, [isVipOrEnterprise, activeWallet, entityId, effectiveUser]);
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{
@@ -319,17 +363,23 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
     e.preventDefault();
     setFeedback(null);
 
-    if (isBasicUser) {
+    if (!isVipOrEnterprise || isBasicUser) {
+      setShowUpgradeRequiredModal(true);
+      triggerUpgradeRequiredModal({
+        currentTier,
+        userName: effectiveUser?.name || activeWallet?.entity_name || 'Member',
+        companyName: effectiveUser?.companyName || activeWallet?.company_name || 'Verified Supplier'
+      });
       setShowVipModal(true);
       triggerVipWithdrawalModal({
-        userName: currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
-        companyName: currentUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd',
+        userName: effectiveUser?.name || activeWallet?.entity_name || 'Melissa Prezios',
+        companyName: effectiveUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd',
         balanceFormatted: nativeAvailFormatted.nativeAmount
       });
       setFeedback({
         type: 'error',
-        title: 'VIP Plan Required for Fund Withdrawal',
-        message: 'Withdrawal restricted: VIP plan member are eligible to do it. Basic Plan members cannot withdraw funds to bank accounts.'
+        title: 'Upgrade Required: VIP or Enterprise Tier Required',
+        message: `Withdrawal restricted: VIP plan member are eligible to do it. Your current tier (${currentTier}) requires upgrading to VIP or Enterprise to withdraw funds.`
       });
       return;
     }
@@ -933,6 +983,20 @@ export const SupplierBankWithdrawalPanel: React.FC<SupplierBankWithdrawalPanelPr
         userName={currentUser?.name || activeWallet?.entity_name || 'Melissa Prezios'}
         companyName={currentUser?.companyName || activeWallet?.company_name || 'MP Commodity Brokers Australia Pty Ltd'}
         balanceFormatted={nativeAvailFormatted.nativeAmount}
+      />
+
+      <UpgradeRequiredModal
+        isOpen={showUpgradeRequiredModal}
+        onClose={() => setShowUpgradeRequiredModal(false)}
+        currentTier={currentTier}
+        userName={effectiveUser?.name || activeWallet?.entity_name || 'Member'}
+        companyName={effectiveUser?.companyName || activeWallet?.company_name || 'Trade Heaven Supplier'}
+        onTriggerUpgrade={() => {
+          setShowUpgradeRequiredModal(false);
+          window.dispatchEvent(
+            new CustomEvent('tradeheaven_open_membership_upgrade_modal')
+          );
+        }}
       />
     </div>
   );

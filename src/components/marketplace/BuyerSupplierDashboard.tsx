@@ -61,6 +61,11 @@ import {
   VipWithdrawalRequiredModal,
   triggerVipWithdrawalModal,
 } from '../modals/VipWithdrawalRequiredModal';
+import {
+  UpgradeRequiredModal,
+  triggerUpgradeRequiredModal,
+} from '../modals/UpgradeRequiredModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface Props {
   currentUser: AuthUser | null;
@@ -306,20 +311,65 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
     return () => window.removeEventListener('tradeheaven_mediation_updated', fetchMediation);
   }, []);
 
+  const { user: authUser, currentUser: contextUser } = useAuth();
+  const effectiveUser = contextUser || authUser || currentUser;
+
+  const currentTier = useMemo(() => {
+    return String(
+      effectiveUser?.tier ||
+      effectiveUser?.plan ||
+      effectiveUser?.membershipStatus ||
+      'Basic Plan'
+    );
+  }, [effectiveUser]);
+
+  const isVipOrEnterprise = useMemo(() => {
+    if (!effectiveUser) return false;
+    const tierUpper = String(effectiveUser.tier || '').trim().toUpperCase();
+    const planUpper = String(effectiveUser.plan || '').trim().toUpperCase();
+    const statusUpper = String(effectiveUser.membershipStatus || '').trim().toUpperCase();
+
+    const isDirectTier = tierUpper === 'VIP' || tierUpper === 'ENTERPRISE';
+    const isDirectPlan = planUpper.includes('VIP') || planUpper.includes('ENTERPRISE');
+    const isDirectStatus = statusUpper === 'VIP' || statusUpper === 'ENTERPRISE';
+
+    const isExplicitBasic =
+      tierUpper === 'BASIC' ||
+      tierUpper === 'BASIC PLAN' ||
+      tierUpper === 'FREE' ||
+      tierUpper === 'SILVER' ||
+      tierUpper === 'GOLD' ||
+      tierUpper === 'PLATINUM';
+
+    if (isExplicitBasic && !tierUpper.includes('VIP') && !tierUpper.includes('ENTERPRISE')) {
+      return false;
+    }
+
+    return isDirectTier || isDirectPlan || isDirectStatus;
+  }, [effectiveUser]);
+
   const [showVipModal, setShowVipModal] = useState(false);
+  const [showUpgradeRequiredModal, setShowUpgradeRequiredModal] = useState(false);
 
   useEffect(() => {
     const handleOpenVip = () => setShowVipModal(true);
+    const handleOpenUpgradeReq = () => {
+      if (!isVipOrEnterprise) setShowUpgradeRequiredModal(true);
+    };
     window.addEventListener('tradeheaven_open_vip_withdrawal_modal', handleOpenVip);
-    return () => window.removeEventListener('tradeheaven_open_vip_withdrawal_modal', handleOpenVip);
-  }, []);
+    window.addEventListener('tradeheaven_open_upgrade_required_modal', handleOpenUpgradeReq);
+    return () => {
+      window.removeEventListener('tradeheaven_open_vip_withdrawal_modal', handleOpenVip);
+      window.removeEventListener('tradeheaven_open_upgrade_required_modal', handleOpenUpgradeReq);
+    };
+  }, [isVipOrEnterprise]);
 
   const isMelissa = useMemo(() => {
-    if (!currentUser) return false;
-    const email = (currentUser.email || '').toLowerCase();
-    const id = (currentUser.id || '').toLowerCase();
-    const name = (currentUser.name || '').toLowerCase();
-    const comp = (currentUser.companyName || (currentUser as any).company || '').toLowerCase();
+    if (!effectiveUser) return false;
+    const email = (effectiveUser.email || '').toLowerCase();
+    const id = (effectiveUser.id || '').toLowerCase();
+    const name = (effectiveUser.name || '').toLowerCase();
+    const comp = (effectiveUser.companyName || (effectiveUser as any).company || '').toLowerCase();
     return (
       id === 'user-supplier-melissa' ||
       id.includes('melissa') ||
@@ -327,13 +377,14 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       name.includes('melissa') ||
       comp.includes('mp commodity')
     );
-  }, [currentUser]);
+  }, [effectiveUser]);
 
   const isBasicUser = useMemo(() => {
+    if (!isVipOrEnterprise) return true;
     if (isMelissa) return true;
-    const plan = ((currentUser as any)?.plan || (currentUser as any)?.tier || (currentUser as any)?.membershipStatus || '').toLowerCase();
+    const plan = ((effectiveUser as any)?.plan || (effectiveUser as any)?.tier || (effectiveUser as any)?.membershipStatus || '').toLowerCase();
     return !plan.includes('vip') && !plan.includes('enterprise');
-  }, [isMelissa, currentUser]);
+  }, [isVipOrEnterprise, isMelissa, effectiveUser]);
 
   const userBalance = useMemo(() => {
     if (!mediationState || !currentUser) return { avail: '$0.00', locked: '$0.00', hasLocked: false };
@@ -945,16 +996,16 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               </button>
               <button 
                 onClick={() => {
-                  if (isBasicUser) {
-                    setShowVipModal(true);
+                  if (!isVipOrEnterprise || isBasicUser) {
+                    setShowUpgradeRequiredModal(true);
                   } else {
                     setActiveTab('BANK_ACCOUNTS');
                   }
                 }}
                 className="text-[10px] font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200 transition-colors"
-                title={isBasicUser ? "Withdrawals restricted: VIP plan member are eligible to do it" : "Withdraw funds to saved bank account"}
+                title={(!isVipOrEnterprise || isBasicUser) ? "Withdrawals restricted: VIP plan member are eligible to do it" : "Withdraw funds to saved bank account"}
               >
-                {isBasicUser && <Lock className="w-2.5 h-2.5 text-amber-600" />}
+                {(!isVipOrEnterprise || isBasicUser) && <Lock className="w-2.5 h-2.5 text-amber-600" />}
                 Withdraw
               </button>
             </div>
@@ -974,8 +1025,8 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
             </div>
             <button 
               onClick={() => {
-                if (isBasicUser) {
-                  setShowVipModal(true);
+                if (!isVipOrEnterprise || isBasicUser) {
+                  setShowUpgradeRequiredModal(true);
                 } else {
                   setActiveTab('BANK_ACCOUNTS');
                 }
@@ -983,7 +1034,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
               className="text-[10px] text-emerald-700 hover:text-emerald-800 font-medium transition-colors text-left cursor-pointer flex items-center justify-between"
             >
               <span>Manage saved bank accounts (SWIFT/IFSC) &amp; withdraw funds →</span>
-              {isBasicUser && (
+              {(!isVipOrEnterprise || isBasicUser) && (
                 <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 flex items-center gap-0.5">
                   <Crown className="w-2.5 h-2.5" />
                   VIP Only
@@ -1147,17 +1198,7 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
       {/* Tab Content: Bank Accounts & Fund Withdrawals */}
       {activeTab === 'BANK_ACCOUNTS' && (
         <SupplierBankAccountManagement
-          currentUser={
-            currentUser
-              ? {
-                  id: currentUser.id,
-                  name: currentUser.name,
-                  company: currentUser.companyName,
-                  email: currentUser.email,
-                  role: currentUser.role,
-                }
-              : null
-          }
+          currentUser={currentUser}
         />
       )}
 
@@ -2360,6 +2401,25 @@ export const BuyerSupplierDashboard: React.FC<Props> = ({
           setShowVipModal(false);
           if (onOpenUpgradeModal) {
             onOpenUpgradeModal();
+          }
+        }}
+      />
+
+      {/* Upgrade Required Modal triggering MembershipUpgradeModal */}
+      <UpgradeRequiredModal
+        isOpen={showUpgradeRequiredModal}
+        onClose={() => setShowUpgradeRequiredModal(false)}
+        currentTier={currentTier}
+        userName={effectiveUser?.name || 'Member'}
+        companyName={effectiveUser?.companyName || (effectiveUser as any)?.company || 'Trade Heaven Supplier'}
+        onTriggerUpgrade={() => {
+          setShowUpgradeRequiredModal(false);
+          if (onOpenUpgradeModal) {
+            onOpenUpgradeModal();
+          } else {
+            window.dispatchEvent(
+              new CustomEvent('tradeheaven_open_membership_upgrade_modal')
+            );
           }
         }}
       />

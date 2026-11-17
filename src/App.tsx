@@ -1235,12 +1235,17 @@ const MainApp: React.FC = () => {
       }
       setIsVipWithdrawalModalOpen(true);
     };
+    const handleMembershipUpgradeEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ rfq?: RfqRequirement }>;
+      handleOpenMembershipUpgradeModal(customEvent?.detail?.rfq || undefined);
+    };
     window.addEventListener('tradeheaven_open_register', handleRegisterEvent);
     window.addEventListener('tradeheaven_open_login', handleLoginEvent);
     window.addEventListener('tradeheaven_open_auth', handleOpenAuthEvent);
     window.addEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
     window.addEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
     window.addEventListener('tradeheaven_open_vip_withdrawal_modal', handleVipWithdrawalEvent);
+    window.addEventListener('tradeheaven_open_membership_upgrade_modal', handleMembershipUpgradeEvent);
     return () => {
       window.removeEventListener('tradeheaven_open_register', handleRegisterEvent);
       window.removeEventListener('tradeheaven_open_login', handleLoginEvent);
@@ -1248,6 +1253,7 @@ const MainApp: React.FC = () => {
       window.removeEventListener('tradeheaven_search_product_directory', handleSearchProductDirectory);
       window.removeEventListener('tradeheaven_search_rfq_leads', handleSearchRfqLeads);
       window.removeEventListener('tradeheaven_open_vip_withdrawal_modal', handleVipWithdrawalEvent);
+      window.removeEventListener('tradeheaven_open_membership_upgrade_modal', handleMembershipUpgradeEvent);
     };
   }, [currentUser]);
 
@@ -3252,6 +3258,7 @@ const MainApp: React.FC = () => {
                     currentUser={currentUser}
                     selectedCurrency={selectedCurrency}
                     onNavigate={handleNavigate}
+                    onOpenUpgradeModal={handleOpenMembershipUpgradeModal}
                   />
                 );
 
