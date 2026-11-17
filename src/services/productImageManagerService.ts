@@ -1,6 +1,7 @@
 import { Product } from '../types';
 import { autoSeoEngine } from './autoSeoEngine';
 import backupOverridesJson from '../data/productImageOverridesBackup.json';
+import { imageCdnService } from './imageCdnService';
 const regeneratedSupplierCoalImg = '/src/assets/images/regenerated_image_1794231796775.jpg';
 
 
@@ -148,6 +149,12 @@ export function optimizeImageUrl(
 ): string {
   const normalized = normalizeProductAssetUrl(rawUrl);
   if (!normalized || normalized.startsWith('data:') || normalized.startsWith('blob:')) return normalized;
+
+  // Route through Image CDN service if enabled
+  const cdnOptimized = imageCdnService.optimize(normalized, options);
+  if (cdnOptimized && cdnOptimized !== normalized) {
+    return cdnOptimized;
+  }
 
   let base = normalized.split('?')[0];
   const queryParams = new URLSearchParams(normalized.split('?')[1] || '');

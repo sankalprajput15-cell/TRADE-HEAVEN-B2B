@@ -18,6 +18,7 @@ import { isManuallyUploadedImageUrl } from '../../services/visualProductImageSer
 import { ImageEditingOverlay } from './ImageEditingOverlay';
 import { MultiImageBatchUploader } from './MultiImageBatchUploader';
 import { CatalogImageAuditorWidget } from './CatalogImageAuditorWidget';
+import { ImageCdnAcceleratorWidget } from './ImageCdnAcceleratorWidget';
 import { autoSeoEngine, AutoSeoRecord } from '../../services/autoSeoEngine';
 import {
   Image as ImageIcon,
@@ -46,7 +47,8 @@ import {
   ArrowRight,
   Sun,
   Edit,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 
 export interface DeleteImageConfirmationState {
@@ -74,7 +76,7 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
   const [systemState, setSystemState] = useState<ProductImageSystemState>(() =>
     productImageManagerService.getState()
   );
-  const [activeSubTab, setActiveSubTab] = useState<'ALL_PRODUCTS' | 'BULK_DRAG_DROP_MAPPER' | 'BULK_GLOBAL' | 'BY_EXISTING_IMAGE' | 'MEDIA_LIBRARY' | 'AUTO_SEO_ENGINE'>('ALL_PRODUCTS');
+  const [activeSubTab, setActiveSubTab] = useState<'ALL_PRODUCTS' | 'BULK_DRAG_DROP_MAPPER' | 'BULK_GLOBAL' | 'BY_EXISTING_IMAGE' | 'MEDIA_LIBRARY' | 'AUTO_SEO_ENGINE' | 'IMAGE_CDN'>('ALL_PRODUCTS');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
   const [seoRecords, setSeoRecords] = useState<AutoSeoRecord[]>(() => autoSeoEngine.getAllSeoRecords());
   const [seoFilterType, setSeoFilterType] = useState<'ALL' | 'product' | 'image' | 'article'>('ALL');
@@ -1132,6 +1134,19 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
             >
               <Search className="w-4 h-4" />
               <span>6. Auto-SEO &amp; Top Search Engine ({seoRecords.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('IMAGE_CDN')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                activeSubTab === 'IMAGE_CDN'
+                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40'
+                  : 'bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 hover:bg-indigo-900 hover:text-white'
+              }`}
+            >
+              <Zap className="w-4 h-4" />
+              <span>7. Global Image CDN &amp; Optimization</span>
             </button>
           </div>
 
@@ -3230,6 +3245,15 @@ export const DedicatedProductImageSystem: React.FC<DedicatedProductImageSystemPr
         </div>
         );
       })()}
+
+      {/* =====================================================================
+          TAB 7: GLOBAL IMAGE CDN & OPTIMIZATION ACCELERATOR
+      ===================================================================== */}
+      {activeSubTab === 'IMAGE_CDN' && (
+        <div className="py-2">
+          <ImageCdnAcceleratorWidget />
+        </div>
+      )}
 
       {/* =====================================================================
           MODAL 1: SINGLE PRODUCT IMAGE & GALLERY MANAGER MODAL
