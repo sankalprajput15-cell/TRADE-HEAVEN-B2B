@@ -265,7 +265,10 @@ export const CompanyEmailHistorySection: React.FC<CompanyEmailHistorySectionProp
               const iComp = String(item.companyName || '').toLowerCase().trim();
               return (
                 (cleanTargetEmail && iEmail === cleanTargetEmail) ||
-                (cleanTargetCompany && iComp && iComp.includes(cleanTargetCompany))
+                (cleanTargetCompany &&
+                  iComp &&
+                  (iComp === cleanTargetCompany ||
+                    (cleanTargetCompany.length >= 5 && iComp.length >= 5 && iComp.includes(cleanTargetCompany))))
               );
             })
             .map((item: any) => ({

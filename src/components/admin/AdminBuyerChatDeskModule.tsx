@@ -26,6 +26,7 @@ import { ChatMediaBubbleContent } from '../chat/ChatMediaBubbleContent';
 import { ChatMediaComposer } from '../chat/ChatMediaComposer';
 import { MessageReadStatus } from '../chat/MessageReadStatus';
 import { setupChatViewportReadObserver } from '../../utils/chatViewportReadObserver';
+import { CompanyEmailHistorySection } from './CompanyEmailHistorySection';
 import {
   ArrowDown,
   BadgeCheck,
@@ -143,6 +144,7 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
   const [reverifyingMsgId, setReverifyingMsgId] = useState<string | null>(null);
   const [alertStatusBanner, setAlertStatusBanner] = useState<string | null>(null);
   const [threadInsight, setThreadInsight] = useState<ChatThreadInsight | null>(null);
+  const [showSupplierEmailHistory, setShowSupplierEmailHistory] = useState(false);
 
   // Filters & Top Switcher
   const [sidebarSearch, setSidebarSearch] = useState('');
@@ -767,8 +769,11 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
     setCheckingAlerts(true);
     setAlertStatusBanner(null);
     try {
-      const summary = await processUnseenChatAlerts(60, { manualTrigger: true });
+      const summary = await processUnseenChatAlerts(0, { manualTrigger: true });
       await refreshDeskData(true);
+      if (activeConversation) {
+        await loadThreadInsight(activeConversation);
+      }
       if (summary.alertsSent > 0 || (summary.adminCopiesSent || 0) > 0) {
         const idSet = new Set(summary.messageIds || []);
         setMessages(prev =>
@@ -790,15 +795,15 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
       } else if ((summary.failedCount || 0) > 0) {
         const firstErr = summary.details?.find(d => d.error)?.error || 'SMTP/mail relay rejected delivery';
         setAlertStatusBanner(
-          `Found pending >60s alert(s) across ${summary.checkedConversations || 0} thread(s), but delivery failed: ${firstErr}`
+          `Found pending alert(s) across ${summary.checkedConversations || 0} thread(s), but delivery failed: ${firstErr}`
         );
       } else {
         setAlertStatusBanner(
-          `Scanned ${summary.checkedConversations || 0} thread(s) (${summary.checkedMessages || 0} message(s)): no unverified >60s buyer/supplier messages pending delivery.`
+          `Scanned ${summary.checkedConversations || 0} thread(s) (${summary.checkedMessages || 0} message(s)): all unread buyer/supplier chat alerts are verified and delivered.`
         );
       }
     } catch {
-      setAlertStatusBanner('Unable to check 1-minute unseen alerts right now.');
+      setAlertStatusBanner('Unable to check unseen alerts right now.');
     } finally {
       setCheckingAlerts(false);
     }
@@ -1261,6 +1266,22 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
                       <span className="truncate">Company &amp; Addr: {activeConversation.showCompany ? 'Visible' : 'Hidden'}</span>
                       {activeConversation.showCompany ? <Eye className="h-3.5 w-3.5 shrink-0" /> : <EyeOff className="h-3.5 w-3.5 shrink-0" />}
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowSupplierEmailHistory(prev => !prev)}
+                      className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
+                        showSupplierEmailHistory
+                          ? 'border-indigo-400 bg-indigo-600 text-white shadow-sm'
+                          : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                      }`}
+                      title="View all emails disposed to this supplier (Onboarding, Chat Alerts, Campaigns & Custom Dispatches)"
+                    >
+                      <Mail className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">
+                        {showSupplierEmailHistory ? 'Hide Email History' : 'Supplier Email History'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1278,6 +1299,17 @@ export const AdminBuyerChatDeskModule: React.FC = () => {
                 </span>
                 <span className="shrink-0 text-[10px] text-slate-400">Changes sync live to supplier</span>
               </div>
+
+              {showSupplierEmailHistory && (
+                <div className="max-h-80 overflow-y-auto border-b border-indigo-100 bg-indigo-50/30 p-3">
+                  <CompanyEmailHistorySection
+                    companyId={activeConversation.supplierId}
+                    companyName={activeConversation.supplierCompany || activeConversation.supplierName}
+                    contactName={activeConversation.supplierName}
+                    contactEmail={activeConversation.supplierEmail}
+                  />
+                </div>
+              )}
 
               {/* Messages List (Focused Container) */}
               <div

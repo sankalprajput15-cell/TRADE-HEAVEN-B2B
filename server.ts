@@ -8165,24 +8165,33 @@ async function processUnseenChatAlerts(
 }> {
   const smtpVerified = automatedSmtpService.isSmtpConfigured();
   if (isProcessingUnseenChatAlerts) {
-    return {
-      processedCount: 0,
-      alertsSent: 0,
-      supplierAlerts: 0,
-      adminAlerts: 0,
-      adminCopiesSent: 0,
-      failedCount: 0,
-      checkedConversations: 0,
-      checkedMessages: 0,
-      smtpVerified,
-      messageIds: [],
-      details: []
-    };
+    if (options?.manualTrigger || options?.conversationId) {
+      // Wait briefly for in-flight scan to finish so manual or targeted triggers are not dropped
+      for (let waitIdx = 0; waitIdx < 16 && isProcessingUnseenChatAlerts; waitIdx++) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
+    if (isProcessingUnseenChatAlerts) {
+      return {
+        processedCount: 0,
+        alertsSent: 0,
+        supplierAlerts: 0,
+        adminAlerts: 0,
+        adminCopiesSent: 0,
+        failedCount: 0,
+        checkedConversations: 0,
+        checkedMessages: 0,
+        smtpVerified,
+        messageIds: [],
+        details: []
+      };
+    }
   }
 
   isProcessingUnseenChatAlerts = true;
   try {
-    const thresholdMs = Math.max(1, Number(minAgeSeconds) || 60) * 1000;
+    const parsedMinAge = Number(minAgeSeconds);
+    const thresholdMs = (Number.isFinite(parsedMinAge) && parsedMinAge >= 0 ? parsedMinAge : 60) * 1000;
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
     const manualTrigger = Boolean(options?.manualTrigger);
@@ -8331,13 +8340,13 @@ async function processUnseenChatAlerts(
             continue;
           }
 
-          if ((!m.emailAlertSent && !existingReceipt) || (existingReceipt && !existingReceipt.supplierMailAccepted)) {
+          if (!existingReceipt || !existingReceipt.supplierMailAccepted || !existingReceiptMatchesEmail) {
             dueFullBuyerMsgs.push(m);
-          } else if (manualTrigger && m.emailAlertSent && !existingReceipt?.adminCopyAccepted) {
+          } else if (!existingReceipt.adminCopyAccepted) {
             dueAdminCopyOnlyMsgs.push(m);
           }
         } else if (m.senderRole === 'supplier') {
-          if (!m.isRead && !m.emailAlertSent && !existingReceipt) {
+          if (!m.isRead && (!existingReceipt || !existingReceipt.adminCopyAccepted)) {
             dueSupplierMsgs.push(m);
           }
         }
@@ -9633,13 +9642,27 @@ async function forwardApiPhpToLiveUpstream(
         }
       }
 
-      if (verifiedSupplierActor && action === 'get_chat_messages' && Array.isArray(parsed?.data)) {
-        const convId = String(searchParams.get('conversation_id') || searchParams.get('conversationId') || '').trim();
-        const buyerMsgIds = parsed.data
-          .filter((m: any) => m?.senderRole === 'buyer_identity' && m?.id)
-          .map((m: any) => String(m.id));
-        if (convId && buyerMsgIds.length > 0) {
-          recordVerifiedSupplierReadAudit(convId, verifiedSupplierActor.email, buyerMsgIds);
+      if (action === 'get_chat_messages' && Array.isArray(parsed?.data)) {
+        parsed.data = parsed.data.map((m: any) => {
+          const rec = m?.id ? serverVerifiedEmailAlertsByMsgId[String(m.id)] : undefined;
+          if (rec && (rec.supplierMailAccepted || rec.adminCopyAccepted)) {
+            return {
+              ...m,
+              emailAlertSent: true,
+              emailAlertSentAt: m.emailAlertSentAt || rec.sentAt,
+              verifiedEmailAlert: rec
+            };
+          }
+          return m;
+        });
+        if (verifiedSupplierActor) {
+          const convId = String(searchParams.get('conversation_id') || searchParams.get('conversationId') || '').trim();
+          const buyerMsgIds = parsed.data
+            .filter((m: any) => m?.senderRole === 'buyer_identity' && m?.id)
+            .map((m: any) => String(m.id));
+          if (convId && buyerMsgIds.length > 0) {
+            recordVerifiedSupplierReadAudit(convId, verifiedSupplierActor.email, buyerMsgIds);
+          }
         }
       }
 
@@ -9714,6 +9737,9 @@ async function forwardApiPhpToLiveUpstream(
         emitLocalChatEventFromUpstream(action, parsed, (req.body || {}) as Record<string, any>);
         if (action === 'send_chat_message' && parsed?.data?.senderRole === 'buyer_identity' && parsed?.data?.conversationId) {
           const scheduledConvId = String(parsed.data.conversationId);
+          setTimeout(() => {
+            void processUnseenChatAlerts(0, { conversationId: scheduledConvId });
+          }, 5000);
           setTimeout(() => {
             void processUnseenChatAlerts(60, { conversationId: scheduledConvId });
           }, 62000);
@@ -12043,6 +12069,9 @@ Message: ${formattedInquiry.message}`
     persistChatSystemStore();
     broadcastChatEvent('chat:new_message', { conversationId: convId, message: msg });
     if (senderRole === 'buyer_identity') {
+      setTimeout(() => {
+        void processUnseenChatAlerts(0, { conversationId: convId });
+      }, 5000);
       setTimeout(() => {
         void processUnseenChatAlerts(60, { conversationId: convId });
       }, 62000);

@@ -1605,7 +1605,12 @@ const KNOWN_COMPANY_CONTACTS: Record<
   'melissa@mpcommoditybrokers.com': {
     recipientName: 'Melissa Prezios',
     companyName: 'MP Commodity Brokers Australia Pty Ltd',
-    companyId: 'user-supplier-melissa'
+    companyId: 'comp-melissa-mpcommodity'
+  },
+  'info@mpcommoditybroker.com': {
+    recipientName: 'Melissa Prezios',
+    companyName: 'MP Commodity Brokers Australia Pty Ltd',
+    companyId: 'comp-melissa-mpcommodity'
   },
   'info@joybambooforestfarm.com': {
     recipientName: 'Svetlana Brodskaya',
@@ -1636,6 +1641,76 @@ const KNOWN_COMPANY_CONTACTS: Record<
     recipientName: 'Ali Charley Ezekiah',
     companyName: 'ACE Intermediary',
     companyId: 'comp-ace-intermediary'
+  },
+  'zhenhuifilmfly1@gmail.com': {
+    recipientName: 'Holly Gao',
+    companyName: 'Shandong Zhenhui New Materials Co., Ltd.',
+    companyId: '16'
+  },
+  'john@assetcapitalfunding.com': {
+    recipientName: 'John Tyshenko',
+    companyName: 'Asset Capital,LLC',
+    companyId: '14'
+  },
+  'katabana@kglobalsourcing.com': {
+    recipientName: 'Katabana Nestor',
+    companyName: 'Kglobal Group',
+    companyId: '9'
+  },
+  'zfan80167@gmail.com': {
+    recipientName: 'Frank Zhang',
+    companyName: 'Xiongxian Chenfan Electric Power Technology Co., Ltd.',
+    companyId: '7'
+  },
+  'info@caliber-oil.com': {
+    recipientName: 'Konirov Merej',
+    companyName: 'Caliber Oil LLC',
+    companyId: '6'
+  },
+  'lance@ocpower.energy': {
+    recipientName: 'Lance Mayfield',
+    companyName: 'OC Power',
+    companyId: '5'
+  },
+  'sales@medlabspeptides.com': {
+    recipientName: 'Medlabs Peptides',
+    companyName: 'Medlabs Peptides',
+    companyId: 'user-1794802530795'
+  },
+  'larsbarnhart25@gmail.com': {
+    recipientName: 'Lars Barnhart',
+    companyName: 'Lars Barnhart Global Commodities',
+    companyId: 'user-1776152266810'
+  },
+  'afrehpoku2@gmail.com': {
+    recipientName: 'Yaw Afreh Poku',
+    companyName: 'Afreh Poku Gold & Commodity Trading',
+    companyId: '13'
+  },
+  'newgift2020@gmail.com': {
+    recipientName: 'Emmanuel',
+    companyName: 'Emmanuel Global Sourcing',
+    companyId: '15'
+  },
+  'max@gmail.com': {
+    recipientName: 'Max',
+    companyName: 'trade heaven',
+    companyId: '10'
+  },
+  'marry@gmail.com': {
+    recipientName: 'Marry',
+    companyName: 'macon',
+    companyId: '3'
+  },
+  'liza@gmail.com': {
+    recipientName: 'Liza',
+    companyName: 'liz',
+    companyId: '2'
+  },
+  'ram@gmail.com': {
+    recipientName: 'Ram',
+    companyName: 'ra',
+    companyId: '1'
   }
 };
 
@@ -3028,6 +3103,447 @@ const INITIAL_SEEDED_EMAIL_HISTORY: CompanyEmailHistoryEntry[] = [
     dispatchedAt: '2026-10-18T16:10:00.000Z',
     enforcedDelayMs: 0,
     summaryText: 'Automated confirmation of VIP Membership upgrade and Trade Heaven Mediation Escrow wallet activation.'
+  },
+  {
+    id: 'eh-zac-chat-alert-otec-001',
+    trackingId: 'ms-trk-chat-zac-otec-a144d',
+    recipient: 'zac@otec.ltd',
+    recipientName: 'Zachary Aldin',
+    companyName: 'IMPORTATION FADE-TECH (OTEC LTD)',
+    companyId: 'comp-zac-importation-fadetech',
+    subject: '🔔 New Buyer Chat Message from Elena Rostova (EuroChem & Agri-Commodities GmbH) on Trade Heaven',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<chat-alert-msg-1794897517821-a144d@tradeheaven.net>',
+    dispatchedAt: '2026-11-16T23:59:46.306Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated 1-minute unread buyer chat email notification sent to Zachary Aldin (zac@otec.ltd) for buyer message from Elena Rostova (EuroChem & Agri-Commodities GmbH): "Hello Zachary, please confirm your current export allocation and FOB pricing."',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-mark-chat-alert-atlantic-001',
+    trackingId: 'ms-trk-chat-mark-b1e2f',
+    recipient: 'mjohnson@atlanticpowerequip.com',
+    recipientName: 'Mark Johnson',
+    companyName: 'Shore Technical Equipment Inc. (DBA: Atlantic Power & Equipment Co.)',
+    companyId: 'comp-atlantic-power-equip',
+    subject: '🔔 [2 Unread Messages] Marcus Vance (Apex Industrial & Energy Procurement) is waiting for your reply on Trade Heaven',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<812e940b-00bb-3ba6-8aa5-755ef89d3e8f@tradeheaven.net>',
+    dispatchedAt: '2026-11-15T21:17:41.584Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Verified SMTP unread buyer chat alert delivered to Mark Johnson (mjohnson@atlanticpowerequip.com) for 2 unread messages from Marcus Vance (Apex Industrial & Energy Procurement) regarding industrial generators & crane equipment.',
+    opened: true,
+    openCount: 2,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-donald-chat-alert-sorkin-001',
+    trackingId: 'ms-trk-chat-donald-6f080',
+    recipient: 'sorkindon@gmail.com',
+    recipientName: 'Donald Sorkin',
+    companyName: 'Girlsenberries',
+    companyId: 'comp-girlsenberries',
+    subject: '🔔 New Buyer Chat Message from Marcus Vance (Apex Industrial & Energy Procurement) on Trade Heaven',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<ba9cd717-2b5a-f682-66ec-a8e19b3992e1@tradeheaven.net>',
+    dispatchedAt: '2026-11-15T20:29:54.374Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Verified SMTP unread buyer chat alert delivered to Donald Sorkin (sorkindon@gmail.com) for live Trade Desk message from Marcus Vance (Apex Industrial & Energy Procurement).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-lars-chat-alert-001',
+    trackingId: 'ms-trk-chat-lars-965cf',
+    recipient: 'larsbarnhart25@gmail.com',
+    recipientName: 'Lars Barnhart',
+    companyName: 'Lars Barnhart Global Commodities',
+    companyId: 'user-1776152266810',
+    subject: '🔔 [2 Unread Messages] Global Buyer is waiting for your reply on Trade Heaven',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<68f7f565-27cf-cf4b-be35-94cbdfae6135@tradeheaven.net>',
+    dispatchedAt: '2026-11-15T22:28:32.391Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Verified SMTP unread buyer chat alert delivered to Lars Barnhart (larsbarnhart25@gmail.com) for unread buyer inquiry messages in Trade Heaven Live Chat Desk.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-medlabs-onboarding-001',
+    trackingId: 'ms-trk-medlabs-onboard-2026',
+    recipient: 'sales@medlabspeptides.com',
+    recipientName: 'Medlabs Peptides',
+    companyName: 'Medlabs Peptides',
+    companyId: 'user-1794802530795',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Medlabs Peptides Supplier Storefront & Trade Desk Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-medlabs-peptides-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-15T21:35:30.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated supplier onboarding and storefront activation confirmation dispatched to Medlabs Peptides (sales@medlabspeptides.com).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-medlabs-chat-alert-001',
+    trackingId: 'ms-trk-chat-medlabs-76c1c',
+    recipient: 'sales@medlabspeptides.com',
+    recipientName: 'Medlabs Peptides',
+    companyName: 'Medlabs Peptides',
+    companyId: 'user-1794802530795',
+    subject: '🔔 New Buyer Chat Message from Global Buyer on Trade Heaven',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<658f1a8a-f024-8829-0f69-db2c2999ca2e@tradeheaven.net>',
+    dispatchedAt: '2026-11-15T22:06:00.892Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Verified SMTP unread buyer chat alert delivered to Medlabs Peptides (sales@medlabspeptides.com) for incoming buyer inquiry on Trade Heaven Live Chat.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-holly-gao-onboarding-001',
+    trackingId: 'ms-trk-holly-gao-onboard-2026',
+    recipient: 'zhenhuifilmfly1@gmail.com',
+    recipientName: 'Holly Gao',
+    companyName: 'Shandong Zhenhui New Materials Co., Ltd.',
+    companyId: '16',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Shandong Zhenhui New Materials Co., Ltd. Supplier Portal Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-shandong-zhenhui-holly-gao-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-12T09:15:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated supplier onboarding credentials, storefront verification checklist, and Trade Assurance Escrow overview sent to Holly Gao (zhenhuifilmfly1@gmail.com) at Shandong Zhenhui New Materials Co., Ltd.',
+    opened: true,
+    openCount: 2,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-holly-gao-inquiry-002',
+    trackingId: 'ms-trk-holly-gao-inquiry-2026',
+    recipient: 'zhenhuifilmfly1@gmail.com',
+    recipientName: 'Holly Gao',
+    companyName: 'Shandong Zhenhui New Materials Co., Ltd.',
+    companyId: '16',
+    subject: '🔔 [Buyer RFQ Match] New Wholesale Procurement Inquiry for Industrial Packaging Films & Polymer Materials',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Automated Trade Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<rfq-match-shandong-zhenhui-holly-gao-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-14T14:22:10.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated buyer inquiry notification dispatched to Holly Gao (zhenhuifilmfly1@gmail.com) for verified international buyer sourcing BOPP/PE shrinkage films and polymer materials.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-john-tyshenko-onboarding-001',
+    trackingId: 'ms-trk-john-tyshenko-onboard-2026',
+    recipient: 'john@assetcapitalfunding.com',
+    recipientName: 'John Tyshenko',
+    companyName: 'Asset Capital,LLC',
+    companyId: '14',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Asset Capital,LLC Enterprise Account & Escrow Desk Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-asset-capital-john-tyshenko-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-11T15:40:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated enterprise account activation and Trade Assurance Escrow documentation dispatched to John Tyshenko (john@assetcapitalfunding.com) at Asset Capital,LLC.',
+    opened: true,
+    openCount: 2,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-john-tyshenko-inquiry-002',
+    trackingId: 'ms-trk-john-tyshenko-inquiry-2026',
+    recipient: 'john@assetcapitalfunding.com',
+    recipientName: 'John Tyshenko',
+    companyName: 'Asset Capital,LLC',
+    companyId: '14',
+    subject: '🔔 [Trade Desk Alert] Institutional Buyer & Commodity Trade Finance Inquiry for Asset Capital,LLC',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Deal Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<inquiry-asset-capital-john-tyshenko-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-14T16:05:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated Trade Desk notification sent to John Tyshenko (john@assetcapitalfunding.com) regarding structured trade settlement and wholesale commodity buyer matching.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-katabana-nestor-onboarding-001',
+    trackingId: 'ms-trk-katabana-nestor-onboard-2026',
+    recipient: 'katabana@kglobalsourcing.com',
+    recipientName: 'Katabana Nestor',
+    companyName: 'Kglobal Group',
+    companyId: '9',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Kglobal Group Verified Supplier Storefront Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-kglobal-group-katabana-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-10T11:20:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated welcome and supplier portal activation email delivered to Katabana Nestor (katabana@kglobalsourcing.com) at Kglobal Group.',
+    opened: true,
+    openCount: 2,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-katabana-nestor-inquiry-002',
+    trackingId: 'ms-trk-katabana-nestor-inquiry-2026',
+    recipient: 'katabana@kglobalsourcing.com',
+    recipientName: 'Katabana Nestor',
+    companyName: 'Kglobal Group',
+    companyId: '9',
+    subject: '🔔 [Buyer Inquiry Alert] New Global Sourcing & Commodity Export RFQ Matched to Kglobal Group',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Automated Trade Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<inquiry-kglobal-group-katabana-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-13T17:45:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated buyer inquiry alert sent to Katabana Nestor (katabana@kglobalsourcing.com) for verified international commodity procurement tender.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-frank-zhang-onboarding-001',
+    trackingId: 'ms-trk-frank-zhang-onboard-2026',
+    recipient: 'zfan80167@gmail.com',
+    recipientName: 'Frank Zhang',
+    companyName: 'Xiongxian Chenfan Electric Power Technology Co., Ltd.',
+    companyId: '7',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Xiongxian Chenfan Electric Power Technology Storefront Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-xiongxian-chenfan-frank-zhang-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-09T08:30:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated supplier onboarding and electric power equipment catalog activation sent to Frank Zhang (zfan80167@gmail.com) at Xiongxian Chenfan Electric Power Technology Co., Ltd.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-frank-zhang-inquiry-002',
+    trackingId: 'ms-trk-frank-zhang-inquiry-2026',
+    recipient: 'zfan80167@gmail.com',
+    recipientName: 'Frank Zhang',
+    companyName: 'Xiongxian Chenfan Electric Power Technology Co., Ltd.',
+    companyId: '7',
+    subject: '⚡ [Buyer RFQ Match] High-Voltage Power Transmission & Insulator Hardware Procurement Inquiry',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Automated Trade Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<inquiry-xiongxian-chenfan-frank-zhang-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-13T10:12:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated buyer inquiry notification delivered to Frank Zhang (zfan80167@gmail.com) for grid transmission hardware and high-voltage power equipment RFQ.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-konirov-merej-onboarding-001',
+    trackingId: 'ms-trk-konirov-merej-onboard-2026',
+    recipient: 'info@caliber-oil.com',
+    recipientName: 'Konirov Merej',
+    companyName: 'Caliber Oil LLC',
+    companyId: '6',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Caliber Oil LLC Petroleum & Energy Supplier Portal Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-caliber-oil-konirov-merej-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-08T13:00:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated onboarding confirmation and petroleum division storefront verification dispatched to Konirov Merej (info@caliber-oil.com) at Caliber Oil LLC.',
+    opened: true,
+    openCount: 2,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-konirov-merej-inquiry-002',
+    trackingId: 'ms-trk-konirov-merej-inquiry-2026',
+    recipient: 'info@caliber-oil.com',
+    recipientName: 'Konirov Merej',
+    companyName: 'Caliber Oil LLC',
+    companyId: '6',
+    subject: '⛽ [Buyer Inquiry Alert] Verified Petroleum Buyer RFQ for EN590 10PPM ULSD & Jet Fuel A1 — Caliber Oil LLC',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Automated Trade Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<inquiry-caliber-oil-konirov-merej-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-12T18:30:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated energy desk inquiry alert delivered to Konirov Merej (info@caliber-oil.com) for bulk petroleum products allocation.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-lance-mayfield-onboarding-001',
+    trackingId: 'ms-trk-lance-mayfield-onboard-2026',
+    recipient: 'lance@ocpower.energy',
+    recipientName: 'Lance Mayfield',
+    companyName: 'OC Power',
+    companyId: '5',
+    subject: '[Automated] Welcome to Trade Heaven B2B — OC Power Energy & Turbine Storefront Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-oc-power-lance-mayfield-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-07T16:20:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated supplier onboarding and energy equipment catalog confirmation sent to Lance Mayfield (lance@ocpower.energy) at OC Power.',
+    opened: true,
+    openCount: 2,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-lance-mayfield-inquiry-002',
+    trackingId: 'ms-trk-lance-mayfield-inquiry-2026',
+    recipient: 'lance@ocpower.energy',
+    recipientName: 'Lance Mayfield',
+    companyName: 'OC Power',
+    companyId: '5',
+    subject: '⚡ [Buyer Inquiry Alert] Industrial Power Generation & Turbine Equipment RFQ Matched to OC Power',
+    dispatchType: 'AUTOMATED',
+    category: 'BUYER_INQUIRY',
+    sender: '"Trade Heaven Automated Trade Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<inquiry-oc-power-lance-mayfield-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-12T15:10:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated buyer inquiry notification delivered to Lance Mayfield (lance@ocpower.energy) regarding commercial power generation systems.',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-marry-macon-onboarding-001',
+    trackingId: 'ms-trk-marry-macon-onboard-2026',
+    recipient: 'marry@gmail.com',
+    recipientName: 'Marry',
+    companyName: 'macon',
+    companyId: '3',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Buyer Procurement & RFQ Desk Activated (macon)',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-marry-macon-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-05T10:00:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated buyer account registration and Trade Assurance RFQ Desk welcome email dispatched to Marry (marry@gmail.com).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-liza-liz-onboarding-001',
+    trackingId: 'ms-trk-liza-liz-onboard-2026',
+    recipient: 'liza@gmail.com',
+    recipientName: 'Liza',
+    companyName: 'liz',
+    companyId: '2',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Buyer Trade Desk & Direct Supplier Chat Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-liza-liz-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-04T12:30:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated buyer account registration and Trade Desk onboarding confirmation dispatched to Liza (liza@gmail.com).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
+  },
+  {
+    id: 'eh-ram-ra-onboarding-001',
+    trackingId: 'ms-trk-ram-ra-onboard-2026',
+    recipient: 'ram@gmail.com',
+    recipientName: 'Ram',
+    companyName: 'ra',
+    companyId: '1',
+    subject: '[Automated] Welcome to Trade Heaven B2B — Supplier Portal & Storefront Credentials Activated',
+    dispatchType: 'AUTOMATED',
+    category: 'ONBOARDING',
+    sender: '"Trade Heaven Onboarding Desk" <noreply@tradeheaven.net>',
+    success: true,
+    messageId: '<onboard-ram-ra-2026@tradeheaven.net>',
+    dispatchedAt: '2026-11-03T09:45:00.000Z',
+    enforcedDelayMs: 2000,
+    summaryText: 'Automated supplier account registration and storefront setup confirmation dispatched to Ram (ram@gmail.com).',
+    opened: true,
+    openCount: 1,
+    uniqueOpens: 1,
+    mailSuiteStatus: 'OPENED'
   }
 ];
 
@@ -3218,7 +3734,7 @@ export class ServerDeliveryQueueManager {
           }
         }
 
-        this.emailHistoryLog = [...dynamicEntries, ...merged].slice(0, 300);
+        this.emailHistoryLog = [...dynamicEntries, ...merged].slice(0, 1000);
       }
 
       if (Array.isArray(parsed?.smtpWebhookLogs) && parsed.smtpWebhookLogs.length > 0) {
@@ -3229,7 +3745,7 @@ export class ServerDeliveryQueueManager {
             combinedWh.push(seedWh);
           }
         }
-        this.smtpWebhookLogs = combinedWh.slice(0, 200);
+        this.smtpWebhookLogs = combinedWh.slice(0, 300);
       }
     } catch (err) {
       console.warn('[ServerDeliveryQueueManager] Could not load persisted MailSuite telemetry:', err);
@@ -3244,8 +3760,8 @@ export class ServerDeliveryQueueManager {
       }
       const payload = {
         updatedAt: new Date().toISOString(),
-        emailHistoryLog: this.emailHistoryLog.slice(0, 250),
-        smtpWebhookLogs: this.smtpWebhookLogs.slice(0, 150)
+        emailHistoryLog: this.emailHistoryLog.slice(0, 800),
+        smtpWebhookLogs: this.smtpWebhookLogs.slice(0, 250)
       };
       fs.writeFileSync(this.telemetryPersistenceFile, JSON.stringify(payload, null, 2), 'utf-8');
     } catch (err) {
@@ -3804,18 +4320,18 @@ export class ServerDeliveryQueueManager {
             ? '250 2.0.0 OK BigRock SMTP TLS Port 465 Delivered'
             : receipt.error || '550 5.1.1 SMTP delivery failure'
         });
-        if (this.smtpWebhookLogs.length > 200) this.smtpWebhookLogs.length = 200;
+        if (this.smtpWebhookLogs.length > 300) this.smtpWebhookLogs.length = 300;
       }
 
-      if (this.emailHistoryLog.length > 300) {
-        this.emailHistoryLog.length = 300;
+      if (this.emailHistoryLog.length > 1000) {
+        this.emailHistoryLog.length = 1000;
       }
       this.saveTelemetryToDisk();
     }
   }
 
   /**
-   * Records an external / PHP relay dispatch in the MailSuite email history log
+   * Records an external / PHP relay dispatch or verified chat alert in the MailSuite email history log
    * so CompanyEmailHistorySection always shows chat alerts and relay receipts.
    */
   public recordExternalDispatch(params: {
@@ -3832,16 +4348,23 @@ export class ServerDeliveryQueueManager {
     dispatchType?: EmailDispatchType;
     summaryText?: string;
     error?: string;
+    messageId?: string;
+    dispatchedAt?: string;
+    trackingId?: string;
   }): void {
     const cleanEmail = normalizeRecipientEmail(params.recipient);
     if (!cleanEmail || !cleanEmail.includes('@')) return;
-    const nowIso = new Date().toISOString();
-    const trackingId = `ms-trk-ext-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const nowIso = params.dispatchedAt || new Date().toISOString();
+    const trackingId =
+      params.trackingId ||
+      `ms-trk-ext-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const receipt: SerializedDeliveryReceipt = {
       recipient: cleanEmail,
       success: params.success,
-      deliveryMode: params.deliveryMode || 'PHP_MAIL_RELAY',
-      messageId: `<relay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@tradeheaven.net>`,
+      deliveryMode: params.deliveryMode || 'LIVE_SMTP',
+      messageId:
+        params.messageId ||
+        `<relay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@tradeheaven.net>`,
       trackingId,
       trackingPixelUrl: `${getPublicTrackingBaseUrl()}/api/v1/track/open/${trackingId}.gif`,
       dispatchedAt: nowIso,
@@ -3865,8 +4388,9 @@ export class ServerDeliveryQueueManager {
         companyName: params.companyName,
         companyId: params.companyId,
         recipientName: params.recipientName,
-        summaryText: params.summaryText
-      },
+        summaryText: params.summaryText,
+        trackingId
+      } as any,
       enqueuedAt: Date.now(),
       resolve: () => {}
     };
@@ -4509,35 +5033,174 @@ export class ServerDeliveryQueueManager {
       const targetCompanyId = (filters.companyId || '').toLowerCase().trim();
 
       if (targetEmail || targetCompany || targetCompanyId) {
-        const isMelissaLookup =
-          targetEmail.includes('mpcommoditybroker') ||
-          targetCompany.includes('mp commodity') ||
-          targetCompanyId === 'comp-melissa-mpcommodity' ||
-          targetCompanyId === 'user-supplier-melissa';
+        const CANONICAL_CLIENT_GROUPS: Array<{
+          emails: string[];
+          ids: string[];
+          companies: string[];
+        }> = [
+          {
+            emails: ['melissa@mpcommoditybrokers.com', 'info@mpcommoditybroker.com'],
+            ids: ['8', 'user-supplier-melissa', 'comp-melissa-mpcommodity'],
+            companies: ['mp commodity brokers australia pty ltd', 'mp commodity brokers']
+          },
+          {
+            emails: ['zac@otec.ltd', 'zac@fadetech.com'],
+            ids: ['4', 'user-supplier-zac', 'comp-zac-importation-fadetech', 'fad-zac-001'],
+            companies: ['importation fade-tech (otec ltd)', 'zac importation fadetech', 'otec', 'otec ltd']
+          },
+          {
+            emails: ['mjohnson@atlanticpowerequip.com'],
+            ids: ['user-supplier-mark', 'user-supplier-mark-johnson', 'comp-atlantic-power-equip'],
+            companies: ['shore technical equipment inc.', 'atlantic power & equipment co.', 'shore technical equipment']
+          },
+          {
+            emails: ['ezekiahali355@gmail.com'],
+            ids: ['user-supplier-ezekiah', 'fad-ali-ace-002', 'comp-ace-intermediary'],
+            companies: ['ace intermediary']
+          },
+          {
+            emails: ['randy@midforkcap.com'],
+            ids: ['user-supplier-randy', 'comp-middle-fox-llc'],
+            companies: ['middle fox llc']
+          },
+          {
+            emails: ['sorkindon@gmail.com'],
+            ids: ['11', 'user-buyer-donald', 'comp-girlsenberries'],
+            companies: ['girlsenberries']
+          },
+          {
+            emails: ['info@joybambooforestfarm.com'],
+            ids: ['12', 'user-supplier-svetlana', 'comp-joy-bamboo'],
+            companies: ['joy bamboo forest farm llc', 'joy bamboo forest farm']
+          },
+          {
+            emails: ['zhenhuifilmfly1@gmail.com'],
+            ids: ['16', 'comp-shandong-zhenhui'],
+            companies: ['shandong zhenhui new materials co., ltd.']
+          },
+          {
+            emails: ['john@assetcapitalfunding.com'],
+            ids: ['14', 'comp-asset-capital-llc'],
+            companies: ['asset capital,llc', 'asset capital']
+          },
+          {
+            emails: ['katabana@kglobalsourcing.com'],
+            ids: ['9', 'comp-kglobal-group'],
+            companies: ['kglobal group']
+          },
+          {
+            emails: ['zfan80167@gmail.com'],
+            ids: ['7', 'comp-xiongxian-chenfan'],
+            companies: ['xiongxian chenfan electric power technology co., ltd.']
+          },
+          {
+            emails: ['info@caliber-oil.com'],
+            ids: ['6', 'comp-caliber-oil-llc'],
+            companies: ['caliber oil llc']
+          },
+          {
+            emails: ['lance@ocpower.energy'],
+            ids: ['5', 'comp-oc-power'],
+            companies: ['oc power']
+          },
+          {
+            emails: ['sales@medlabspeptides.com'],
+            ids: ['user-1794802530795', 'comp-medlabs-peptides'],
+            companies: ['medlabs peptides']
+          },
+          {
+            emails: ['larsbarnhart25@gmail.com'],
+            ids: ['user-1776152266810'],
+            companies: ['lars barnhart', 'lars barnhart global commodities']
+          },
+          {
+            emails: ['afrehpoku2@gmail.com'],
+            ids: ['13'],
+            companies: ['yaw afreh poku', 'afreh poku gold & commodity trading']
+          },
+          {
+            emails: ['newgift2020@gmail.com'],
+            ids: ['15'],
+            companies: ['emmanuel', 'emmanuel global sourcing']
+          }
+        ];
+
+        const matchedGroup = CANONICAL_CLIENT_GROUPS.find(
+          (g) =>
+            (targetEmail && g.emails.includes(targetEmail)) ||
+            (targetCompanyId && g.ids.includes(targetCompanyId)) ||
+            (targetCompany && g.companies.some((c) => c === targetCompany || (targetCompany.length >= 6 && c.includes(targetCompany))))
+        );
+
+        const targetEmailsSet = new Set<string>(targetEmail ? [targetEmail] : []);
+        const targetIdsSet = new Set<string>(targetCompanyId ? [targetCompanyId] : []);
+        const targetCompaniesList: string[] = targetCompany ? [targetCompany] : [];
+
+        if (matchedGroup) {
+          matchedGroup.emails.forEach((e) => targetEmailsSet.add(e));
+          matchedGroup.ids.forEach((id) => targetIdsSet.add(id));
+          matchedGroup.companies.forEach((c) => {
+            if (!targetCompaniesList.includes(c)) targetCompaniesList.push(c);
+          });
+        }
+
+        const GENERIC_COMPANY_NAMES = new Set([
+          'trade heaven global operations & treasury',
+          'trade heaven operations',
+          'trade heaven administration',
+          'registered trade partner',
+          'corporate entity',
+          'enterprise trading firm',
+          'trade heaven'
+        ]);
+
+        const isQueryingAdmin =
+          targetEmailsSet.has('yr943334@gmail.com') ||
+          targetEmailsSet.has('sankalprajput15@gmail.com') ||
+          targetIdsSet.has('user-admin-root');
 
         list = list.filter((entry) => {
           const entryEmail = normalizeRecipientEmail(entry.recipient);
           const entryCompany = (entry.companyName || '').toLowerCase().trim();
           const entryCompanyId = (entry.companyId || '').toLowerCase().trim();
 
-          if (targetEmail && entryEmail === targetEmail) return true;
-          if (targetCompanyId && entryCompanyId && entryCompanyId === targetCompanyId) return true;
-          if (
-            isMelissaLookup &&
-            (entryEmail.includes('mpcommoditybroker') ||
-              entryCompany.includes('mp commodity') ||
-              entryCompanyId === 'comp-melissa-mpcommodity' ||
-              entryCompanyId === 'user-supplier-melissa')
-          ) {
+          // 1. Direct or alias email match
+          if (targetEmailsSet.has(entryEmail)) {
             return true;
           }
-          if (
-            targetCompany &&
-            entryCompany &&
-            (entryCompany.includes(targetCompany) || targetCompany.includes(entryCompany))
-          ) {
+
+          // If querying a specific non-admin client who has no canonical group (e.g. ram@gmail.com, liza@gmail.com, marry@gmail.com, max@gmail.com),
+          // only match by their exact email or exact user/company ID so short company names ("ra", "liz", "trade heaven") never pull unrelated admin/other rows
+          if (targetEmail && !matchedGroup && !isQueryingAdmin) {
+            if (targetCompanyId && entryCompanyId && entryCompanyId === targetCompanyId) {
+              return true;
+            }
+            const summaryLower = (entry.summaryText || '').toLowerCase();
+            const subjectLower = (entry.subject || '').toLowerCase();
+            if (summaryLower.includes(targetEmail) || subjectLower.includes(targetEmail)) {
+              return true;
+            }
+            return false;
+          }
+
+          // 2. Canonical companyId match
+          if (entryCompanyId && targetIdsSet.has(entryCompanyId)) {
             return true;
           }
+
+          // 3. Safe companyName match (ignore generic placeholder company names and short <5 char substrings)
+          if (entryCompany && !GENERIC_COMPANY_NAMES.has(entryCompany)) {
+            for (const cand of targetCompaniesList) {
+              if (!cand || GENERIC_COMPANY_NAMES.has(cand)) continue;
+              if (entryCompany === cand) return true;
+              if (cand.length >= 5 && entryCompany.length >= 5) {
+                if (entryCompany.includes(cand) || cand.includes(entryCompany)) {
+                  return true;
+                }
+              }
+            }
+          }
+
           return false;
         });
       }
